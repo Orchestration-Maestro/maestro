@@ -173,3 +173,4 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 
 - **BashExecutorOptions:** Optional cleaned-chunk callback and signal for direct shell execution.
 - **BashResult:** Direct shell selected text, numeric status, cancellation and artifact observations.
+- **Artifact:** A mutable dated file retained by the browser application command owner; its ordered map and record handles can outlive a command. See [artifact commands](docs/application/artifacts.md).

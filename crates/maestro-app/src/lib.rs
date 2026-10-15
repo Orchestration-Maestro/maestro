@@ -116,3 +116,8 @@ pub use maestro_tools::{
     EditToolOptions, ReadToolOptions, WriteToolOptions, create_edit_tool_definition,
     create_read_tool_definition, create_write_tool_definition,
 };
+
+pub use browser::tools::artifacts::{Artifact, ArtifactsPanel, ArtifactsParams};
+pub use browser::tools::prompts::{
+    ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO, ATTACHMENTS_RUNTIME_DESCRIPTION,
+};
