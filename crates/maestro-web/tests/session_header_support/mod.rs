@@ -109,6 +109,9 @@ impl AttachmentHost for Host {
     fn spawn_local(&self, _: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
         unreachable!()
     }
+    fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentUiError> {
+        unreachable!("unexpected byte download")
+    }
     fn download(&self, _: Rc<RefCell<maestro_web::Attachment>>) -> Result<(), AttachmentUiError> {
         unreachable!()
     }

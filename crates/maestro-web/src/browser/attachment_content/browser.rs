@@ -297,6 +297,14 @@ impl AttachmentHost for BrowserAttachmentHost {
     fn spawn_local(&self, future: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
         wasm_bindgen_futures::spawn_local(future);
     }
+    fn download_bytes(
+        &self,
+        bytes: &[u8],
+        name: &str,
+        mime: &str,
+    ) -> Result<(), AttachmentUiError> {
+        crate::utils::download::download_bytes(&self.document, bytes, name, mime)
+    }
     fn download(&self, attachment: Rc<RefCell<Attachment>>) -> Result<(), AttachmentUiError> {
         crate::utils::download::download(&self.document, &attachment)
     }

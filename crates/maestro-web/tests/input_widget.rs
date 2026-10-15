@@ -82,6 +82,9 @@ impl AttachmentHost for DefaultHost {
     fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
         Ok(false)
     }
+    fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentUiError> {
+        unreachable!("unexpected byte download")
+    }
     fn download(
         &self,
         _: Rc<std::cell::RefCell<maestro_web::Attachment>>,

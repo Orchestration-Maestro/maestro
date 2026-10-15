@@ -41,6 +41,25 @@ accounting components and truthy nonstring model/provider identities return
 invalid-data errors. Unused non-assistant content remains unread. Raw fields are
 not narrowed to a second history schema or coerced into numeric/string values.
 
+## JSONL download
+
+Call [`download_session_json(&document, host)`](../../crates/maestro-web/src/export_html/template/download.rs)
+through `maestro_web::export_html::template`. It downloads the raw header followed
+by every stored entry in original order, independent of the selected leaf.
+The header gets a default `type` of `header`; an authored `type` replaces that
+value without moving its key. Missing or null headers add no record.
+
+The payload uses compact canonical JSON, LF separators and no final newline,
+with MIME type `application/x-ndjson`. A truthy string header ID becomes the
+literal `<id>.jsonl` filename; an absent or falsy ID uses `session.jsonl`.
+Reached unsupported metadata and serialization failures return
+`AttachmentUiError::Presentation`; supplied host failures propagate unchanged.
+
+The supplied `AttachmentHost::download_bytes` consumes the prepared bytes
+synchronously. The native adapter shares the
+[attachment download owner](attachments.md#platform-ownership), releasing its
+temporary anchor and object URL on success or a reached platform failure.
+
 ## Native identity
 
 Retain a `HeaderState::new(host)` and call

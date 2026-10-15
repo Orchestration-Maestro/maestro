@@ -41,9 +41,18 @@ pub(crate) fn download(
         .map(|c| u8::try_from(u32::from(c)))
         .collect::<Result<Vec<_>, _>>()
         .map_err(|e| AttachmentUiError::Host(e.to_string()))?;
+    download_bytes(document, &bytes, &name, &mime)
+}
+/// Use the single scoped Blob/anchor owner for caller-supplied bytes.
+pub(crate) fn download_bytes(
+    document: &Document,
+    bytes: &[u8],
+    name: &str,
+    mime: &str,
+) -> Result<(), AttachmentUiError> {
     let options = web_sys::BlobPropertyBag::new();
-    options.set_type(&mime);
-    let data = js_sys::Array::of1(&js_sys::Uint8Array::from(bytes.as_slice()));
+    options.set_type(mime);
+    let data = js_sys::Array::of1(&js_sys::Uint8Array::from(bytes));
     let blob = web_sys::Blob::new_with_u8_array_sequence_and_options(&data, &options)
         .map_err(|error| host_error(&error))?;
     let mut owner = Download {
@@ -56,7 +65,7 @@ pub(crate) fn download(
         .dyn_into::<HtmlAnchorElement>()
         .map_err(|e| host_error(&e.into()))?;
     anchor.set_href(&owner.url);
-    anchor.set_download(&name);
+    anchor.set_download(name);
     owner.anchor = Some(anchor.clone());
     document
         .body()
