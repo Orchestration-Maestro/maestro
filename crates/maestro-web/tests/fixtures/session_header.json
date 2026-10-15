@@ -1,0 +1,7086 @@
+{
+  "rows": [
+    {
+      "name": "empty",
+      "input": {
+        "data": {
+          "entries": []
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "populated",
+      "input": {
+        "data": {
+          "header": {
+            "id": "session <雪> & \"quoted\"",
+            "timestamp": "2025-01-02T03:04:05Z"
+          },
+          "entries": [
+            {
+              "type": "message",
+              "message": {
+                "role": "user"
+              }
+            },
+            {
+              "id": "a",
+              "type": "message",
+              "message": {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "call"
+                  }
+                ],
+                "usage": {
+                  "input": 1050,
+                  "output": 10500,
+                  "cacheRead": 999999,
+                  "cacheWrite": 1000000,
+                  "cost": {
+                    "input": 0.1,
+                    "output": 0.2,
+                    "cacheRead": 0.3,
+                    "cacheWrite": 0.4,
+                    "total": 777
+                  }
+                },
+                "model": "<m>",
+                "provider": "p2"
+              }
+            },
+            {
+              "id": "b",
+              "type": "message",
+              "message": {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "call"
+                  }
+                ],
+                "usage": null,
+                "model": "z",
+                "provider": "p1"
+              }
+            },
+            {
+              "id": "c",
+              "type": "message",
+              "message": {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "call"
+                  }
+                ],
+                "usage": null,
+                "model": "<m>",
+                "provider": "p2"
+              }
+            },
+            {
+              "type": "message",
+              "message": {
+                "role": "toolResult"
+              }
+            },
+            {
+              "type": "custom_message",
+              "display": false
+            },
+            {
+              "type": "compaction"
+            },
+            {
+              "type": "branch_summary"
+            }
+          ],
+          "leafId": "a",
+          "systemPrompt": "Literal <script>no</script>\n\nline & end",
+          "tools": [
+            {
+              "name": "plain <x>",
+              "description": "literal & description",
+              "parameters": {}
+            },
+            {
+              "name": "params",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "b": {
+                    "type": "integer",
+                    "description": "count"
+                  },
+                  "a": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "a"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: session <雪> & \"quoted\"",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "1/2/2025, 3:04:05 AM"
+          ],
+          [
+            "Models:",
+            "p2/<m>, p1/z"
+          ],
+          [
+            "Messages:",
+            "1 user, 3 assistant, 1 tool results, 1 custom, 1 compactions, 1 branch summaries"
+          ],
+          [
+            "Tool Calls:",
+            "3"
+          ],
+          [
+            "Tokens:",
+            "↑1.1k ↓11k R1000k W1.0M"
+          ],
+          [
+            "Cost:",
+            "$1.000"
+          ]
+        ],
+        "prompt": {
+          "expandable": false,
+          "heading": "System Prompt",
+          "preview": null,
+          "hint": null,
+          "full": "Literal <script>no</script>\n\nline & end"
+        },
+        "tools": [
+          {
+            "name": "plain <x>",
+            "description": "literal & description",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          },
+          {
+            "name": "params",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "b",
+                "type": "integer",
+                "required": false,
+                "description": "count"
+              },
+              {
+                "name": "a",
+                "type": "string,null",
+                "required": true,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "counter-userMessages",
+      "input": {
+        "data": {
+          "entries": []
+        },
+        "stats": {
+          "userMessages": 2
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "2 user"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "counter-assistantMessages",
+      "input": {
+        "data": {
+          "entries": []
+        },
+        "stats": {
+          "assistantMessages": 2
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "2 assistant"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "counter-toolResults",
+      "input": {
+        "data": {
+          "entries": []
+        },
+        "stats": {
+          "toolResults": 2
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "2 tool results"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "counter-customMessages",
+      "input": {
+        "data": {
+          "entries": []
+        },
+        "stats": {
+          "customMessages": 2
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "2 custom"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "counter-compactions",
+      "input": {
+        "data": {
+          "entries": []
+        },
+        "stats": {
+          "compactions": 2
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "2 compactions"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "counter-branchSummaries",
+      "input": {
+        "data": {
+          "entries": []
+        },
+        "stats": {
+          "branchSummaries": 2
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "2 branch summaries"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "counter-toolCalls",
+      "input": {
+        "data": {
+          "entries": []
+        },
+        "stats": {
+          "toolCalls": 2
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "2"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "stats-snapshot",
+      "input": {
+        "data": {
+          "entries": [],
+          "header": {
+            "id": "prepared"
+          }
+        },
+        "stats": {
+          "models": [
+            "z/<tag>",
+            "a",
+            "z/<tag>"
+          ],
+          "userMessages": 7,
+          "toolCalls": 9,
+          "tokens": {
+            "input": -2,
+            "output": 3,
+            "cacheRead": 4,
+            "cacheWrite": 5
+          },
+          "cost": {
+            "input": 0.03125,
+            "output": 0.00025,
+            "cacheRead": 0.0005,
+            "cacheWrite": 0.001,
+            "total": 999
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: prepared",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "z/<tag>, a, z/<tag>"
+          ],
+          [
+            "Messages:",
+            "7 user"
+          ],
+          [
+            "Tool Calls:",
+            "9"
+          ],
+          [
+            "Tokens:",
+            "↑-2 ↓3 R4 W5"
+          ],
+          [
+            "Cost:",
+            "$0.033"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "all-categories",
+      "input": {
+        "data": {
+          "entries": []
+        },
+        "stats": {
+          "userMessages": 1,
+          "assistantMessages": 2,
+          "toolResults": 3,
+          "customMessages": 4,
+          "compactions": 5,
+          "branchSummaries": 6
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "1 user, 2 assistant, 3 tool results, 4 custom, 5 compactions, 6 branch summaries"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "no-models",
+      "input": {
+        "data": {
+          "entries": []
+        },
+        "stats": {
+          "models": []
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "empty-model-name",
+      "input": {
+        "data": {
+          "entries": []
+        },
+        "stats": {
+          "models": [
+            ""
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "cost-cancellation",
+      "input": {
+        "data": {
+          "entries": []
+        },
+        "stats": {
+          "cost": {
+            "input": 10000000000000000,
+            "output": 1,
+            "cacheRead": -10000000000000000,
+            "cacheWrite": 0.03125
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.031"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "negative-cost",
+      "input": {
+        "data": {
+          "entries": []
+        },
+        "stats": {
+          "cost": {
+            "input": -0.0005
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$-0.001"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "fixed-half",
+      "input": {
+        "data": {
+          "entries": []
+        },
+        "stats": {
+          "cost": {
+            "input": 0.03125
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.031"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "large-cost",
+      "input": {
+        "data": {
+          "entries": []
+        },
+        "stats": {
+          "cost": {
+            "input": 1e+21
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$1e+21"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "all-negative-tokens",
+      "input": {
+        "data": {
+          "entries": []
+        },
+        "stats": {
+          "tokens": {
+            "input": -0.5,
+            "output": -1000,
+            "cacheRead": -1000000,
+            "cacheWrite": -2
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "↑-0.5 ↓-1000 R-1000000 W-2"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "tokens--0",
+      "input": {
+        "operation": "tokens",
+        "count": "-0"
+      },
+      "branch": "success",
+      "output": "0"
+    },
+    {
+      "name": "tokens-0",
+      "input": {
+        "operation": "tokens",
+        "count": "0"
+      },
+      "branch": "success",
+      "output": "0"
+    },
+    {
+      "name": "tokens-0.5",
+      "input": {
+        "operation": "tokens",
+        "count": "0.5"
+      },
+      "branch": "success",
+      "output": "0.5"
+    },
+    {
+      "name": "tokens--1",
+      "input": {
+        "operation": "tokens",
+        "count": "-1"
+      },
+      "branch": "success",
+      "output": "-1"
+    },
+    {
+      "name": "tokens--1000",
+      "input": {
+        "operation": "tokens",
+        "count": "-1000"
+      },
+      "branch": "success",
+      "output": "-1000"
+    },
+    {
+      "name": "tokens-999",
+      "input": {
+        "operation": "tokens",
+        "count": "999"
+      },
+      "branch": "success",
+      "output": "999"
+    },
+    {
+      "name": "tokens-999.5",
+      "input": {
+        "operation": "tokens",
+        "count": "999.5"
+      },
+      "branch": "success",
+      "output": "999.5"
+    },
+    {
+      "name": "tokens-999.999",
+      "input": {
+        "operation": "tokens",
+        "count": "999.999"
+      },
+      "branch": "success",
+      "output": "999.999"
+    },
+    {
+      "name": "tokens-1000",
+      "input": {
+        "operation": "tokens",
+        "count": "1000"
+      },
+      "branch": "success",
+      "output": "1.0k"
+    },
+    {
+      "name": "tokens-1049",
+      "input": {
+        "operation": "tokens",
+        "count": "1049"
+      },
+      "branch": "success",
+      "output": "1.0k"
+    },
+    {
+      "name": "tokens-1050",
+      "input": {
+        "operation": "tokens",
+        "count": "1050"
+      },
+      "branch": "success",
+      "output": "1.1k"
+    },
+    {
+      "name": "tokens-9999",
+      "input": {
+        "operation": "tokens",
+        "count": "9999"
+      },
+      "branch": "success",
+      "output": "10.0k"
+    },
+    {
+      "name": "tokens-9999.5",
+      "input": {
+        "operation": "tokens",
+        "count": "9999.5"
+      },
+      "branch": "success",
+      "output": "10.0k"
+    },
+    {
+      "name": "tokens-9999.999",
+      "input": {
+        "operation": "tokens",
+        "count": "9999.999"
+      },
+      "branch": "success",
+      "output": "10.0k"
+    },
+    {
+      "name": "tokens-10000",
+      "input": {
+        "operation": "tokens",
+        "count": "10000"
+      },
+      "branch": "success",
+      "output": "10k"
+    },
+    {
+      "name": "tokens-10499",
+      "input": {
+        "operation": "tokens",
+        "count": "10499"
+      },
+      "branch": "success",
+      "output": "10k"
+    },
+    {
+      "name": "tokens-10500",
+      "input": {
+        "operation": "tokens",
+        "count": "10500"
+      },
+      "branch": "success",
+      "output": "11k"
+    },
+    {
+      "name": "tokens-999499",
+      "input": {
+        "operation": "tokens",
+        "count": "999499"
+      },
+      "branch": "success",
+      "output": "999k"
+    },
+    {
+      "name": "tokens-999500",
+      "input": {
+        "operation": "tokens",
+        "count": "999500"
+      },
+      "branch": "success",
+      "output": "1000k"
+    },
+    {
+      "name": "tokens-999999",
+      "input": {
+        "operation": "tokens",
+        "count": "999999"
+      },
+      "branch": "success",
+      "output": "1000k"
+    },
+    {
+      "name": "tokens-1000000",
+      "input": {
+        "operation": "tokens",
+        "count": "1000000"
+      },
+      "branch": "success",
+      "output": "1.0M"
+    },
+    {
+      "name": "tokens-1049999",
+      "input": {
+        "operation": "tokens",
+        "count": "1049999"
+      },
+      "branch": "success",
+      "output": "1.0M"
+    },
+    {
+      "name": "tokens-1050000",
+      "input": {
+        "operation": "tokens",
+        "count": "1050000"
+      },
+      "branch": "success",
+      "output": "1.1M"
+    },
+    {
+      "name": "tokens-999999999",
+      "input": {
+        "operation": "tokens",
+        "count": "999999999"
+      },
+      "branch": "success",
+      "output": "1000.0M"
+    },
+    {
+      "name": "tokens-1e21",
+      "input": {
+        "operation": "tokens",
+        "count": "1e21"
+      },
+      "branch": "success",
+      "output": "1000000000000000.0M"
+    },
+    {
+      "name": "tokens-NaN",
+      "input": {
+        "operation": "tokens",
+        "count": "NaN"
+      },
+      "branch": "success",
+      "output": "NaNM"
+    },
+    {
+      "name": "tokens-Infinity",
+      "input": {
+        "operation": "tokens",
+        "count": "Infinity"
+      },
+      "branch": "success",
+      "output": "InfinityM"
+    },
+    {
+      "name": "tokens--Infinity",
+      "input": {
+        "operation": "tokens",
+        "count": "-Infinity"
+      },
+      "branch": "success",
+      "output": "-Infinity"
+    },
+    {
+      "name": "id-missing",
+      "input": {
+        "data": {
+          "entries": [],
+          "header": {}
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "id-null",
+      "input": {
+        "data": {
+          "entries": [],
+          "header": {
+            "id": null
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "id-empty",
+      "input": {
+        "data": {
+          "entries": [],
+          "header": {
+            "id": ""
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "id-zero",
+      "input": {
+        "data": {
+          "entries": [],
+          "header": {
+            "id": 0
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "id-false",
+      "input": {
+        "data": {
+          "entries": [],
+          "header": {
+            "id": false
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "id-text",
+      "input": {
+        "data": {
+          "entries": [],
+          "header": {
+            "id": " <literal> "
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session:  <literal> ",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "date-missing",
+      "input": {
+        "data": {
+          "entries": [],
+          "header": {
+            "id": "date-domain"
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: date-domain",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "date-null",
+      "input": {
+        "data": {
+          "entries": [],
+          "header": {
+            "id": "date-domain",
+            "timestamp": null
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: date-domain",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "date-empty",
+      "input": {
+        "data": {
+          "entries": [],
+          "header": {
+            "id": "date-domain",
+            "timestamp": ""
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: date-domain",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "date-zero",
+      "input": {
+        "data": {
+          "entries": [],
+          "header": {
+            "id": "date-domain",
+            "timestamp": 0
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: date-domain",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "date-false",
+      "input": {
+        "data": {
+          "entries": [],
+          "header": {
+            "id": "date-domain",
+            "timestamp": false
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: date-domain",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "date-text",
+      "input": {
+        "data": {
+          "entries": [],
+          "header": {
+            "id": "date-domain",
+            "timestamp": "not-a-date"
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: date-domain",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "Invalid Date"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "date-number",
+      "input": {
+        "data": {
+          "entries": [],
+          "header": {
+            "id": "date-domain",
+            "timestamp": 1
+          }
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: date-domain",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "1/1/1970, 12:00:00 AM"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "date-boundary-2025-01-02",
+      "input": {
+        "operation": "date",
+        "timestamp": "2025-01-02"
+      },
+      "branch": "success",
+      "output": "1/2/2025, 12:00:00 AM"
+    },
+    {
+      "name": "date-boundary-2025-01-02T03:04:05.999Z",
+      "input": {
+        "operation": "date",
+        "timestamp": "2025-01-02T03:04:05.999Z"
+      },
+      "branch": "success",
+      "output": "1/2/2025, 3:04:05 AM"
+    },
+    {
+      "name": "date-boundary-2025-01-02T05:04:05+02:00",
+      "input": {
+        "operation": "date",
+        "timestamp": "2025-01-02T05:04:05+02:00"
+      },
+      "branch": "success",
+      "output": "1/2/2025, 3:04:05 AM"
+    },
+    {
+      "name": "date-boundary-2025-01-02T03:04:05",
+      "input": {
+        "operation": "date",
+        "timestamp": "2025-01-02T03:04:05"
+      },
+      "branch": "success",
+      "output": "1/2/2025, 3:04:05 AM"
+    },
+    {
+      "name": "date-boundary-2025-03-09T07:00:00Z",
+      "input": {
+        "operation": "date",
+        "timestamp": "2025-03-09T07:00:00Z"
+      },
+      "branch": "success",
+      "output": "3/9/2025, 7:00:00 AM"
+    },
+    {
+      "name": "date-boundary-invalid",
+      "input": {
+        "operation": "date",
+        "timestamp": "invalid"
+      },
+      "branch": "success",
+      "output": "Invalid Date"
+    },
+    {
+      "name": "prompt-null",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": null
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "prompt-empty",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": ""
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "prompt-zero",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": 0
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "prompt-false",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": false
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "prompt-text",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": " ﻿ <literal> "
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": {
+          "expandable": false,
+          "heading": "System Prompt",
+          "preview": null,
+          "hint": null,
+          "full": " ﻿ <literal> "
+        },
+        "tools": []
+      }
+    },
+    {
+      "name": "prompt-number",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": 7
+        }
+      },
+      "branch": "error",
+      "errorKind": "invalid_data"
+    },
+    {
+      "name": "prompt-true",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": true
+        }
+      },
+      "branch": "error",
+      "errorKind": "invalid_data"
+    },
+    {
+      "name": "prompt-object",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": {}
+        }
+      },
+      "branch": "error",
+      "errorKind": "invalid_data"
+    },
+    {
+      "name": "prompt-array",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": []
+        }
+      },
+      "branch": "error",
+      "errorKind": "invalid_data"
+    },
+    {
+      "name": "prompt-lines-9",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9"
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": {
+          "expandable": false,
+          "heading": "System Prompt",
+          "preview": null,
+          "hint": null,
+          "full": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9"
+        },
+        "tools": []
+      }
+    },
+    {
+      "name": "prompt-lines-10",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9\nline 10"
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": {
+          "expandable": false,
+          "heading": "System Prompt",
+          "preview": null,
+          "hint": null,
+          "full": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9\nline 10"
+        },
+        "tools": []
+      }
+    },
+    {
+      "name": "prompt-lines-11",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11"
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": {
+          "expandable": true,
+          "heading": "System Prompt",
+          "preview": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9\nline 10",
+          "hint": "... (1 more lines, click to expand)",
+          "full": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11"
+        },
+        "tools": []
+      }
+    },
+    {
+      "name": "prompt-lines-12",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12"
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": {
+          "expandable": true,
+          "heading": "System Prompt",
+          "preview": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9\nline 10",
+          "hint": "... (2 more lines, click to expand)",
+          "full": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12"
+        },
+        "tools": []
+      }
+    },
+    {
+      "name": "prompt-trailing-newline",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": "a\na\na\na\na\na\na\na\na\na\n"
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": {
+          "expandable": true,
+          "heading": "System Prompt",
+          "preview": "a\na\na\na\na\na\na\na\na\na",
+          "hint": "... (1 more lines, click to expand)",
+          "full": "a\na\na\na\na\na\na\na\na\na\n"
+        },
+        "tools": []
+      }
+    },
+    {
+      "name": "prompt-crlf",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": "a\r\na\r\na\r\na\r\na\r\na\r\na\r\na\r\na\r\na\r\n"
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": {
+          "expandable": true,
+          "heading": "System Prompt",
+          "preview": "a\na\na\na\na\na\na\na\na\na\n",
+          "hint": "... (1 more lines, click to expand)",
+          "full": "a\na\na\na\na\na\na\na\na\na\n"
+        },
+        "tools": []
+      }
+    },
+    {
+      "name": "prompt-lone-cr",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": "a\ra\ra\ra\ra\ra\ra\ra\ra\ra\ra\ra\r"
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": {
+          "expandable": false,
+          "heading": "System Prompt",
+          "preview": null,
+          "hint": null,
+          "full": "a\na\na\na\na\na\na\na\na\na\na\na\n"
+        },
+        "tools": []
+      }
+    },
+    {
+      "name": "prompt-other-separators",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": "a b c"
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": {
+          "expandable": false,
+          "heading": "System Prompt",
+          "preview": null,
+          "hint": null,
+          "full": "a b c"
+        },
+        "tools": []
+      }
+    },
+    {
+      "name": "expansions",
+      "input": {
+        "data": {
+          "entries": [],
+          "systemPrompt": "p\np\np\np\np\np\np\np\np\np\np\n",
+          "tools": [
+            {
+              "name": "same",
+              "description": "one",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            {
+              "name": "same",
+              "description": "two",
+              "parameters": {
+                "properties": {
+                  "y": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "interaction": true
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": {
+          "expandable": true,
+          "heading": "System Prompt",
+          "preview": "p\np\np\np\np\np\np\np\np\np",
+          "hint": "... (2 more lines, click to expand)",
+          "full": "p\np\np\np\np\np\np\np\np\np\np\n"
+        },
+        "tools": [
+          {
+            "name": "same",
+            "description": "one",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": null
+              }
+            ]
+          },
+          {
+            "name": "same",
+            "description": "two",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "y",
+                "type": "integer",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      },
+      "interactions": [
+        [
+          false,
+          false,
+          false
+        ],
+        [
+          "[click to show parameters]",
+          "[click to show parameters]"
+        ],
+        [
+          true,
+          false,
+          false
+        ],
+        [
+          true,
+          true,
+          false
+        ],
+        [
+          true,
+          true,
+          true
+        ],
+        [
+          "[hide parameters]",
+          "[hide parameters]"
+        ],
+        [
+          true,
+          true,
+          true
+        ],
+        [
+          false,
+          false,
+          true
+        ]
+      ]
+    },
+    {
+      "name": "tools-null",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": null
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "tools-empty",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": []
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "tools-zero",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": 0
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "tools-false",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": false
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "tools-text",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": "tools"
+        }
+      },
+      "branch": "error",
+      "errorKind": "invalid_data"
+    },
+    {
+      "name": "tools-object",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": {}
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "tools-array",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            null
+          ]
+        }
+      },
+      "branch": "error",
+      "errorKind": "invalid_data"
+    },
+    {
+      "name": "tool-parameters-missing",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "simple",
+              "description": "desc"
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "tool-parameters-null",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "simple",
+              "description": "desc",
+              "parameters": null
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "tool-parameters-string",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "simple",
+              "description": "desc",
+              "parameters": "text"
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "tool-parameters-number",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "simple",
+              "description": "desc",
+              "parameters": 7
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "tool-parameters-false",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "simple",
+              "description": "desc",
+              "parameters": false
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "tool-parameters-object",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "simple",
+              "description": "desc",
+              "parameters": {}
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "tool-parameters-array",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "simple",
+              "description": "desc",
+              "parameters": []
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "tool-parameters-no-properties",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "simple",
+              "description": "desc",
+              "parameters": {
+                "properties": null
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "tool-parameters-empty-properties",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "simple",
+              "description": "desc",
+              "parameters": {
+                "properties": {}
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "canonical-properties",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "ordered",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "2": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "10": {
+                    "type": "number"
+                  },
+                  "4294967294": {
+                    "type": "boolean"
+                  },
+                  "b": {
+                    "description": "plain <tag>"
+                  },
+                  "a": true,
+                  "01": false,
+                  "4294967295": {
+                    "type": "object"
+                  },
+                  "__proto__": {
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "2",
+                  "b",
+                  "absent"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "ordered",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "2",
+                "type": "string,null",
+                "required": true,
+                "description": null
+              },
+              {
+                "name": "10",
+                "type": "number",
+                "required": false,
+                "description": null
+              },
+              {
+                "name": "4294967294",
+                "type": "boolean",
+                "required": false,
+                "description": null
+              },
+              {
+                "name": "b",
+                "type": "any",
+                "required": true,
+                "description": "plain <tag>"
+              },
+              {
+                "name": "a",
+                "type": "any",
+                "required": false,
+                "description": null
+              },
+              {
+                "name": "01",
+                "type": "any",
+                "required": false,
+                "description": null
+              },
+              {
+                "name": "4294967295",
+                "type": "object",
+                "required": false,
+                "description": null
+              },
+              {
+                "name": "__proto__",
+                "type": "array",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "property-type-missing",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "type",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {}
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "any",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "property-type-null",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "type",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": null
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "any",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "property-type-empty",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "type",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": ""
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "any",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "property-type-zero",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "type",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": 0
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "any",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "property-type-false",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "type",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": false
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "any",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "property-type-text",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "type",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "integer",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "property-type-array",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "type",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string,null",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "property-type-array-empty",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "type",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": []
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "property-type-array-single",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "type",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": [
+                      "string"
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "property-description-missing",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "description",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "description",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "property-description-null",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "description",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "string",
+                    "description": null
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "description",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "property-description-empty",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "description",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "string",
+                    "description": ""
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "description",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "property-description-zero",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "description",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "string",
+                    "description": 0
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "description",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "property-description-false",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "description",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "string",
+                    "description": false
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "description",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "property-description-text",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "description",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "string",
+                    "description": " <desc> "
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "description",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": " <desc> "
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "required-undefined",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "required",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "string"
+                  },
+                  "xx": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": null
+              },
+              {
+                "name": "xx",
+                "type": "number",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "required-null",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "required",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "string"
+                  },
+                  "xx": {
+                    "type": "number"
+                  }
+                },
+                "required": null
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": null
+              },
+              {
+                "name": "xx",
+                "type": "number",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "required-0",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "required",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "string"
+                  },
+                  "xx": {
+                    "type": "number"
+                  }
+                },
+                "required": 0
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": null
+              },
+              {
+                "name": "xx",
+                "type": "number",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "required-false",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "required",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "string"
+                  },
+                  "xx": {
+                    "type": "number"
+                  }
+                },
+                "required": false
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": null
+              },
+              {
+                "name": "xx",
+                "type": "number",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "required-\"\"",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "required",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "string"
+                  },
+                  "xx": {
+                    "type": "number"
+                  }
+                },
+                "required": ""
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": null
+              },
+              {
+                "name": "xx",
+                "type": "number",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "required-[]",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "required",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "string"
+                  },
+                  "xx": {
+                    "type": "number"
+                  }
+                },
+                "required": []
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": null
+              },
+              {
+                "name": "xx",
+                "type": "number",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "required-[\"x\"]",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "required",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "string"
+                  },
+                  "xx": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "x"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": true,
+                "description": null
+              },
+              {
+                "name": "xx",
+                "type": "number",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "required-[\"xx\"]",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "required",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "string"
+                  },
+                  "xx": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "xx"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": null
+              },
+              {
+                "name": "xx",
+                "type": "number",
+                "required": true,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "required-[1,\"other\"]",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "required",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "1": {
+                    "type": "string"
+                  },
+                  "x": {
+                    "type": "string"
+                  },
+                  "xx": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  1,
+                  "other"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "1",
+                "type": "string",
+                "required": false,
+                "description": null
+              },
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": null
+              },
+              {
+                "name": "xx",
+                "type": "number",
+                "required": false,
+                "description": null
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "tool-name-missing",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "description": "description"
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "",
+            "description": "description",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "tool-name-null",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": null,
+              "description": "description"
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "",
+            "description": "description",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "tool-description-missing",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "tool"
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "tool",
+            "description": "",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "tool-description-null",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "tool",
+              "description": null
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "tool",
+            "description": "",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "tools-empty-string",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": ""
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": []
+      }
+    },
+    {
+      "name": "unreached-required-without-properties",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "unreached",
+              "description": "d",
+              "parameters": {
+                "properties": {},
+                "required": 7
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "unreached",
+            "description": "d",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          }
+        ]
+      }
+    },
+    {
+      "name": "property-description-whitespace",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "description",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {
+                    "type": "string",
+                    "description": "  "
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": "description",
+            "description": "d",
+            "expandable": true,
+            "hint": "[click to show parameters]",
+            "parameters": [
+              {
+                "name": "x",
+                "type": "string",
+                "required": false,
+                "description": "  "
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "null-schema-property",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "bad",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": null
+                }
+              }
+            }
+          ]
+        }
+      },
+      "branch": "error",
+      "errorKind": "invalid_data"
+    },
+    {
+      "name": "numeric-required",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": "bad-required",
+              "description": "d",
+              "parameters": {
+                "properties": {
+                  "x": {}
+                },
+                "required": 7
+              }
+            }
+          ]
+        }
+      },
+      "branch": "error",
+      "errorKind": "invalid_data"
+    },
+    {
+      "name": "literal-tool-fields",
+      "input": {
+        "data": {
+          "entries": [],
+          "tools": [
+            {
+              "name": " <name> & \"' 雪 ",
+              "description": " <description> & \n "
+            },
+            {
+              "name": "last",
+              "description": ""
+            }
+          ]
+        }
+      },
+      "branch": "success",
+      "output": {
+        "title": "Session: unknown",
+        "help": "T toggle thinking · O toggle tools",
+        "buttons": [
+          {
+            "text": "Toggle thinking",
+            "title": "Toggle thinking (T)"
+          },
+          {
+            "text": "Toggle tools",
+            "title": "Toggle tools (O)"
+          },
+          {
+            "text": "↓ JSONL",
+            "title": "Download session as JSONL"
+          }
+        ],
+        "info": [
+          [
+            "Date:",
+            "unknown"
+          ],
+          [
+            "Models:",
+            "unknown"
+          ],
+          [
+            "Messages:",
+            "0"
+          ],
+          [
+            "Tool Calls:",
+            "0"
+          ],
+          [
+            "Tokens:",
+            "0"
+          ],
+          [
+            "Cost:",
+            "$0.000"
+          ]
+        ],
+        "prompt": null,
+        "tools": [
+          {
+            "name": " <name> & \"' 雪 ",
+            "description": " <description> & \n ",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          },
+          {
+            "name": "last",
+            "description": "",
+            "expandable": false,
+            "hint": null,
+            "parameters": []
+          }
+        ]
+      }
+    }
+  ]
+}

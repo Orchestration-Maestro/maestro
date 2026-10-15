@@ -27,6 +27,8 @@ pub use maestro_tools::{
 
 pub use presentation_data::footer_data_provider::ReadonlyFooterDataProvider;
 
+/// Canonical property order for frontend schema views.
+pub use maestro_json::canonical_entries;
 pub use maestro_json::is_truthy;
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_process::{
