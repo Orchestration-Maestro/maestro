@@ -1,0 +1,827 @@
+{
+  "projections": [
+    {
+      "model": {
+        "id": "target",
+        "name": "Target",
+        "api": "anthropic-messages",
+        "provider": "target",
+        "baseUrl": "https://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 1000,
+        "maxTokens": 100
+      },
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "target",
+          "model": "target",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": " plan ",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "answer",
+              "textSignature": "text-signed"
+            }
+          ],
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        }
+      ],
+      "expected": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "target",
+          "model": "target",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": " plan ",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "answer",
+              "textSignature": "text-signed"
+            }
+          ],
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        }
+      ]
+    },
+    {
+      "model": {
+        "id": "target",
+        "name": "Target",
+        "api": "anthropic-messages",
+        "provider": "target",
+        "baseUrl": "https://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 1000,
+        "maxTokens": 100
+      },
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "different",
+          "model": "target",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": " plan ",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "answer",
+              "textSignature": "text-signed"
+            }
+          ],
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        }
+      ],
+      "expected": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "different",
+          "model": "target",
+          "content": [
+            {
+              "type": "text",
+              "text": " plan "
+            },
+            {
+              "type": "text",
+              "text": "answer"
+            }
+          ],
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        }
+      ]
+    },
+    {
+      "model": {
+        "id": "target",
+        "name": "Target",
+        "api": "anthropic-messages",
+        "provider": "target",
+        "baseUrl": "https://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 1000,
+        "maxTokens": 100
+      },
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "different",
+          "provider": "target",
+          "model": "target",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": " plan ",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "answer",
+              "textSignature": "text-signed"
+            }
+          ],
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        }
+      ],
+      "expected": [
+        {
+          "role": "assistant",
+          "api": "different",
+          "provider": "target",
+          "model": "target",
+          "content": [
+            {
+              "type": "text",
+              "text": " plan "
+            },
+            {
+              "type": "text",
+              "text": "answer"
+            }
+          ],
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        }
+      ]
+    },
+    {
+      "model": {
+        "id": "target",
+        "name": "Target",
+        "api": "anthropic-messages",
+        "provider": "target",
+        "baseUrl": "https://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 1000,
+        "maxTokens": 100
+      },
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "target",
+          "model": "different",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": " plan ",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "answer",
+              "textSignature": "text-signed"
+            }
+          ],
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        }
+      ],
+      "expected": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "target",
+          "model": "different",
+          "content": [
+            {
+              "type": "text",
+              "text": " plan "
+            },
+            {
+              "type": "text",
+              "text": "answer"
+            }
+          ],
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        }
+      ]
+    },
+    {
+      "model": {
+        "id": "target",
+        "name": "Target",
+        "api": "anthropic-messages",
+        "provider": "target",
+        "baseUrl": "https://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 1000,
+        "maxTokens": 100
+      },
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "target",
+          "model": "different",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "\ufeff"
+            }
+          ],
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        }
+      ],
+      "expected": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "target",
+          "model": "different",
+          "content": [],
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        }
+      ]
+    },
+    {
+      "model": {
+        "id": "target",
+        "name": "Target",
+        "api": "anthropic-messages",
+        "provider": "target",
+        "baseUrl": "https://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 1000,
+        "maxTokens": 100
+      },
+      "messages": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "target",
+          "model": "different",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": "\u0085"
+            }
+          ],
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        }
+      ],
+      "expected": [
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "target",
+          "model": "different",
+          "content": [
+            {
+              "type": "text",
+              "text": "\u0085"
+            }
+          ],
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        }
+      ]
+    },
+    {
+      "model": {
+        "id": "target",
+        "name": "Target",
+        "api": "anthropic-messages",
+        "provider": "target",
+        "baseUrl": "https://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 1000,
+        "maxTokens": 100
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "image"
+            },
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "timestamp": 1
+        }
+      ],
+      "expected": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "image"
+            },
+            {
+              "type": "text",
+              "text": "(image omitted: model does not support images)"
+            }
+          ],
+          "timestamp": 1
+        }
+      ]
+    },
+    {
+      "model": {
+        "id": "target",
+        "name": "Target",
+        "api": "anthropic-messages",
+        "provider": "target",
+        "baseUrl": "https://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 1000,
+        "maxTokens": 100
+      },
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "image"
+            },
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "timestamp": 1
+        }
+      ],
+      "expected": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "image"
+            },
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "timestamp": 1
+        }
+      ]
+    }
+  ],
+  "context": {
+    "input": {
+      "systemPrompt": "Helpful",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "image"
+            },
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "target",
+          "model": "target",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": " plan ",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "answer",
+              "textSignature": "text-signed"
+            }
+          ],
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        },
+        {
+          "role": "toolResult",
+          "toolCallId": "t1",
+          "toolName": "echo",
+          "content": [
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ],
+          "details": null,
+          "isError": false,
+          "timestamp": 2
+        }
+      ],
+      "tools": [
+        {
+          "name": "get_weather",
+          "description": "Look up weather",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "minLength": 1
+              },
+              "units": {
+                "type": "string",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "default": "celsius"
+              }
+            },
+            "required": [
+              "location"
+            ]
+          }
+        }
+      ]
+    },
+    "expected": {
+      "systemPrompt": "Helpful",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "image"
+            },
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "timestamp": 1
+        },
+        {
+          "role": "assistant",
+          "api": "anthropic-messages",
+          "provider": "target",
+          "model": "target",
+          "content": [
+            {
+              "type": "thinking",
+              "thinking": " plan ",
+              "thinkingSignature": "signed"
+            },
+            {
+              "type": "text",
+              "text": "answer",
+              "textSignature": "text-signed"
+            }
+          ],
+          "usage": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0,
+            "totalTokens": 0,
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "total": 0
+            }
+          },
+          "stopReason": "stop",
+          "timestamp": 1
+        },
+        {
+          "role": "toolResult",
+          "toolCallId": "t1",
+          "toolName": "echo",
+          "content": [
+            {
+              "type": "text",
+              "text": "done"
+            }
+          ],
+          "details": null,
+          "isError": false,
+          "timestamp": 2
+        }
+      ],
+      "tools": [
+        {
+          "name": "get_weather",
+          "description": "Look up weather",
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "location": {
+                "type": "string",
+                "minLength": 1
+              },
+              "units": {
+                "type": "string",
+                "enum": [
+                  "celsius",
+                  "fahrenheit"
+                ],
+                "default": "celsius"
+              }
+            },
+            "required": [
+              "location"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

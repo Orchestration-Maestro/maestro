@@ -69,6 +69,7 @@ fn main() {
     #[cfg(target_arch = "wasm32")]
     {
         response_session_callbacks();
+        guide_surface();
         let mut objects = ProviderObjects::default();
         let (client, calls) = local_client();
         objects.insert(client);
@@ -182,4 +183,39 @@ fn bedrock_surface() {
         maestro_models::set_bedrock_provider_module(module);
         assert_eq!(calls.get(), 0);
     }
+}
+
+/// Compile guide records and an explicit-key, injectable browser invocation without running it.
+#[cfg(target_arch = "wasm32")]
+fn guide_surface() {
+    use maestro_models::{
+        AnthropicOptions, Context, Message, StreamOptions, Tool, UserContent, UserMessage,
+    };
+    let Some(model) = get_model("anthropic", "claude-sonnet-4-5") else {
+        return;
+    };
+    let context = Context {
+        system_prompt: Some("Be concise".into()),
+        messages: vec![Message::User(UserMessage {
+            content: UserContent::Text("Hello".into()),
+            timestamp: 0.0,
+        })],
+        tools: Some(vec![Tool {
+            name: "echo".into(),
+            description: "Echo supplied text".into(),
+            parameters: serde_json::json!({
+                "type":"object", "properties":{"text":{"type":"string"}}, "required":["text"]
+            }),
+        }]),
+    };
+    let (client, _) = local_client();
+    let options = AnthropicOptions {
+        common: StreamOptions {
+            api_key: Some("explicit-key".into()),
+            ..Default::default()
+        },
+        client: Some(client),
+        ..Default::default()
+    };
+    let _invocation = std::hint::black_box(move || stream_anthropic(model, context, Some(options)));
 }

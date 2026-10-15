@@ -1,5 +1,8 @@
 # Model invocation records
 
+Start with the [model invocation library guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/api.md)
+for installation, offline executable examples and the delivered protocol/account surface.
+
 `maestro-models` supplies typed conversations, model descriptors and invocation
 options through replaceable registered protocol callbacks. An invocable model
 need not belong to a catalog. Registration wraps both callbacks with a protocol
@@ -19,9 +22,11 @@ A payload hook receives `PayloadHookInput` and returns the selected record. Its 
 field holds JSON parameters to keep, edit or replace; its optional `signal` field carries
 request cancellation for [content generation](models/content-generation.md#public-invocation).
 Other bundled adapters supply no hook signal and ignore the returned signal.
-When an adapter calls a response hook, it supplies status
-and headers before consuming the response body; provider-specific policy is documented
-on each provider page. Both receive the invocation's model, shared and read-only.
+Response hooks receive status and headers under the owning adapter's policy:
+[content generation](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/content-generation.md)
+does not use the hook; [cloud conversations](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/cloud-conversations.md)
+wait for the first known service event. Other adapter policies are documented on
+their focused pages. Both hooks receive the invocation's model, shared and read-only.
 
 Dynamic catalog callbacks accept `StreamOptionsInput::Raw(ProviderStreamOptions)`
 or `StreamOptionsInput::Simple(SimpleStreamOptions)`. The carrier retains the
