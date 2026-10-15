@@ -171,45 +171,10 @@ fn identity_constants_share_branding() {
     assert_eq!(SERVICE_ORIGIN, "");
 }
 
-use maestro_app::{ResourceEntry, ResourceFileType, ResourceOperations};
-use std::{
-    cell::Cell,
-    path::{Path, PathBuf},
-};
-struct Directories {
-    cwd: io::Result<String>,
-    reads: Cell<usize>,
-}
-impl ResourceOperations for Directories {
-    fn exists(&self, _: &Path) -> bool {
-        panic!("unexpected exists")
-    }
-    fn read_dir(&self, _: &Path) -> io::Result<Vec<ResourceEntry>> {
-        panic!("unexpected read_dir")
-    }
-    fn read_file(&self, _: &Path) -> io::Result<String> {
-        panic!("unexpected read_file")
-    }
-    fn metadata(&self, _: &Path) -> io::Result<ResourceFileType> {
-        panic!("unexpected metadata")
-    }
-    fn symlink_metadata(&self, _: &Path) -> io::Result<ResourceFileType> {
-        panic!("unexpected symlink_metadata")
-    }
-    fn canonicalize(&self, _: &Path) -> io::Result<PathBuf> {
-        panic!("unexpected canonicalize")
-    }
-    fn current_directory(&self) -> io::Result<String> {
-        self.reads.set(self.reads.get() + 1);
-        self.cwd
-            .as_ref()
-            .cloned()
-            .map_err(|_| io::Error::from_raw_os_error(2))
-    }
-    fn drive_directories(&self) -> Vec<(char, String)> {
-        Vec::new()
-    }
-}
+use std::cell::Cell;
+#[path = "support/directories.rs"]
+mod directories;
+use directories::Directories;
 
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -509,6 +474,7 @@ fn native_agent_root_reads_disposable_environment() {
                 ("HOME", &home),
                 ("MAESTRO_CODING_AGENT_DIR", override_dir),
             ],
+            &[],
         );
         assert_eq!(output, ["agent-directory-ok", env!("CARGO_PKG_VERSION")]);
     }

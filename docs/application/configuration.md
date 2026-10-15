@@ -18,6 +18,7 @@ reads the agent override and reuses the native home lookup only when needed.
 User-path getters join their suffix onto the supplied root, without rediscovery.
 [Settings](../settings.md), [credentials](../credentials.md) and
 [sessions](../sessions/session_format.md) retain their supplied-path interfaces.
+See [default resource routes](defaults.md) for caller-level selection boundaries.
 
 ## Installation paths
 
