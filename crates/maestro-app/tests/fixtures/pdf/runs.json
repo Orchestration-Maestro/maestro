@@ -1,0 +1,263 @@
+[
+  {
+    "runs": [
+      "",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      "\t",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      "\n",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      "\u000b",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      "\f",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      "\r",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      " ",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      "　",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      "﻿",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "  padded   same same"
+  },
+  {
+    "runs": [
+      "",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "   padded   same same"
+  },
+  {
+    "runs": [
+      "᠎",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "᠎   padded   same same"
+  },
+  {
+    "runs": [
+      "​",
+      "  padded  ",
+      "same",
+      "same"
+    ],
+    "expected": "​   padded   same same"
+  }
+]

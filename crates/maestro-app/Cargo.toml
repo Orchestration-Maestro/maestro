@@ -6,6 +6,8 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+hayro = "=0.8.0"
+hayro-interpret = "=0.8.0"
 maestro-resources = { path = "../maestro-resources" }
 maestro-catalog = { path = "../maestro-catalog" }
 maestro-settings = { path = "../maestro-settings" }

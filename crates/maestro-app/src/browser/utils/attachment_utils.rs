@@ -1,10 +1,13 @@
-//! Image, text and presentation attachment records and loading.
+//! Image, text, PDF and presentation attachment records and loading.
 use crate::browser::docx_preview::{DocxError, OpenXmlPackage, Options, decode_text};
 use base64::{Engine, engine::general_purpose::STANDARD};
 use maestro_models::{Fetch, FetchError, HttpRequest};
 use serde::Serialize;
 use std::fmt::Write;
 use std::{borrow::Cow, fmt};
+
+/// Native PDF text extraction and page rendering.
+pub(crate) mod pdf;
 
 /// Model-facing attachment classification.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -70,6 +73,8 @@ pub enum AttachmentError {
     HttpStatus(u16),
     /// Media type not supported by this loader.
     Unsupported(String),
+    /// Native PDF processing diagnostic.
+    Pdf(String),
     /// Presentation package processing failure.
     Pptx(DocxError),
 }
@@ -81,6 +86,7 @@ impl fmt::Display for AttachmentError {
                 write!(formatter, "Failed to fetch attachment: HTTP {status}")
             }
             Self::Unsupported(mime) => write!(formatter, "Unsupported file type: {mime}"),
+            Self::Pdf(error) => write!(formatter, "Failed to process PDF: {error}"),
             Self::Pptx(error) => write!(formatter, "Failed to process PPTX: {error}"),
         }
     }
@@ -94,11 +100,11 @@ impl std::error::Error for AttachmentError {
         }
     }
 }
-/// Load original bytes as an image, text or presentation attachment.
+/// Load original bytes as an image, text, PDF or presentation attachment.
 ///
 /// # Errors
 /// Returns transport/body failures, non-success status, unsupported media types,
-/// or presentation package processing failures. PDF, Word and spreadsheets remain unsupported.
+/// or PDF/presentation processing failures. Word and spreadsheets remain unsupported.
 pub async fn load_attachment(
     source: AttachmentSource<'_>,
     file_name: Option<&str>,
@@ -106,9 +112,18 @@ pub async fn load_attachment(
 ) -> Result<Attachment, AttachmentError> {
     let file_name = file_name.filter(|name| !name.is_empty());
     let (bytes, name, mime) = resolve_source(source, file_name, fetch).await?;
-    let (mime, extracted_text) = attachment_text(&bytes, &name, mime)?;
-    let image = extracted_text.is_none();
+    let size = bytes.len();
     let content = STANDARD.encode(&bytes);
+    let (mime, extracted_text, preview) =
+        if mime == "application/pdf" || name.to_ascii_lowercase().ends_with(".pdf") {
+            let (text, preview) = pdf::process_pdf(bytes.into_owned(), &name)?;
+            ("application/pdf".into(), Some(text), preview)
+        } else {
+            let (mime, text) = attachment_text(&bytes, &name, mime)?;
+            let preview = text.is_none().then(|| content.clone());
+            (mime, text, preview)
+        };
+    let image = extracted_text.is_none();
     Ok(Attachment {
         id: format!(
             "{name}_{}_{}",
@@ -122,8 +137,8 @@ pub async fn load_attachment(
         },
         file_name: name,
         mime_type: mime,
-        size: bytes.len(),
-        preview: image.then(|| content.clone()),
+        size,
+        preview,
         content,
         extracted_text,
     })
@@ -274,14 +289,8 @@ fn attachment_text(
     mime: String,
 ) -> Result<(String, Option<String>), AttachmentError> {
     let lower_name = name.to_lowercase();
-    if [".pdf", ".docx"]
-        .iter()
-        .any(|suffix| lower_name.ends_with(suffix))
-        || [
-            "application/pdf",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ]
-        .contains(&mime.as_str())
+    if [".docx"].iter().any(|suffix| lower_name.ends_with(suffix))
+        || mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     {
         return Err(AttachmentError::Unsupported(mime));
     }

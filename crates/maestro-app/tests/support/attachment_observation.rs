@@ -19,6 +19,10 @@ pub fn observed(result: Result<Attachment, AttachmentError>) -> Value {
             value.id = format!("{}_<generated>", value.file_name);
             json!({"attachment":value})
         }
+        Err(AttachmentError::Pdf(error)) => {
+            assert!(!error.is_empty());
+            json!({"error_kind":"Pdf", "prefix":"Failed to process PDF: "})
+        }
         Err(AttachmentError::Pptx(error)) => {
             let wrapped = AttachmentError::Pptx(error);
             let source = std::error::Error::source(&wrapped).unwrap();

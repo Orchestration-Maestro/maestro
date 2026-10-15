@@ -154,18 +154,16 @@ fn document_formats_do_not_fall_through_to_images_or_text() {
         ),
     ] {
         let fetch: Fetch = Arc::new(|_| panic!("local source fetched"));
-        assert!(matches!(
-            run(load_attachment(
-                AttachmentSource::File {
-                    bytes,
-                    name,
-                    mime_type: mime
-                },
-                None,
-                &fetch
-            )),
-            Err(AttachmentError::Unsupported(_))
+        let result = run(load_attachment(
+            AttachmentSource::File {
+                bytes,
+                name,
+                mime_type: mime,
+            },
+            None,
+            &fetch,
         ));
+        assert_document_failure(&result, name, mime);
     }
     for (name, mime) in [
         ("a.PDF", "image/png"),
@@ -184,18 +182,29 @@ fn document_formats_do_not_fall_through_to_images_or_text() {
         ),
     ] {
         let fetch: Fetch = Arc::new(|_| panic!("local source fetched"));
-        assert!(matches!(
-            run(load_attachment(
-                AttachmentSource::File {
-                    bytes: b"x",
-                    name,
-                    mime_type: mime
-                },
-                None,
-                &fetch
-            )),
-            Err(AttachmentError::Unsupported(_))
+        let result = run(load_attachment(
+            AttachmentSource::File {
+                bytes: b"x",
+                name,
+                mime_type: mime,
+            },
+            None,
+            &fetch,
         ));
+        assert_document_failure(&result, name, mime);
+    }
+}
+
+/// Preserve format precedence without falling through to text or images.
+fn assert_document_failure(
+    result: &Result<maestro_app::browser::utils::attachment_utils::Attachment, AttachmentError>,
+    name: &str,
+    mime: &str,
+) {
+    if mime == "application/pdf" || name.to_ascii_lowercase().ends_with(".pdf") {
+        assert!(matches!(result, Err(AttachmentError::Pdf(_))));
+    } else {
+        assert!(matches!(result, Err(AttachmentError::Unsupported(_))));
     }
 }
 
