@@ -1,6 +1,6 @@
 //! Request conversion and streamed assistant reduction.
 use super::{Driver, read, write};
-use crate::{AgentEvent, AgentMessage, CustomAgentMessages};
+use crate::{AgentEvent, AgentMessage, AgentTool, CustomAgentMessages};
 use maestro_models::{
     AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo,
     ProviderStreamOptions, SharedAssistantMessage, stream_simple,
@@ -21,17 +21,6 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
             None => Arc::clone(&self.context.messages),
         };
         let messages = (self.config.convert_to_llm)(history).await?;
-        let tools = self.context.tools.as_ref().map(|tools| {
-            read(tools)
-                .iter()
-                .map(|tool| read(tool).definition.clone())
-                .collect()
-        });
-        let context = Context {
-            system_prompt: Some(self.context.system_prompt.clone()),
-            messages,
-            tools,
-        };
         let mut options = self.config.options.clone();
         let provider = read(&self.config.model).provider.clone();
         if let Some(resolve) = &self.config.get_api_key
@@ -44,6 +33,17 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         }
         options.common.signal = self.options.signal.clone();
         let model = read(&self.config.model).clone();
+        let tools = self
+            .context
+            .tools
+            .as_deref()
+            .map(tool_definitions)
+            .transpose()?;
+        let context = Context {
+            system_prompt: Some(self.context.system_prompt.clone()),
+            messages,
+            tools,
+        };
         let stream = match &self.options.stream_fn {
             Some(stream) => {
                 let open = ProviderStreamOptions {
@@ -139,4 +139,22 @@ fn update_partial(event: &AssistantMessageEvent) -> Option<&SharedAssistantMessa
         | AssistantMessageEvent::ToolcallEnd { partial, .. } => Some(partial),
         _ => None,
     }
+}
+
+/// Snapshot entries before invoking live descriptions outside all tool locks.
+fn tool_definitions(
+    tools: &RwLock<Vec<crate::SharedAgentTool>>,
+) -> Result<Vec<maestro_models::Tool>, DiagnosticErrorInfo> {
+    let entries = read(tools).clone();
+    let definitions: Vec<_> = entries
+        .iter()
+        .map(|entry| {
+            let tool = read(entry);
+            (tool.definition.clone(), tool.description.clone())
+        })
+        .collect();
+    definitions
+        .into_iter()
+        .map(|(tool, description)| AgentTool::resolve_definition(tool, description))
+        .collect()
 }

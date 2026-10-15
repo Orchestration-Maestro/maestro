@@ -257,6 +257,7 @@ fn agent_tool(log: &Arc<Mutex<Vec<Call>>>, prepare: &PrepareArguments) -> AgentT
         })
     });
     AgentTool {
+        description: None,
         definition: Tool {
             name: "transform".into(),
             description: "Transform input".into(),
@@ -274,7 +275,7 @@ fn agent_tool_conversion_forwards_execution_without_render_metadata() {
     let log = Arc::new(Mutex::new(Vec::new()));
     let prepare: PrepareArguments = Arc::new(|args| Ok(args.clone()));
     let tool = agent_tool(&log, &prepare);
-    let converted = create_tool_definition_from_agent_tool::<u32>(tool);
+    let converted = create_tool_definition_from_agent_tool::<u32>(tool).unwrap();
     assert_eq!(converted.definition.name, "transform");
     assert_eq!(converted.label, "Transform");
     assert_eq!(converted.execution_mode, Some(ToolExecutionMode::Parallel));
@@ -337,7 +338,8 @@ fn wrapper_preserves_transforming_preparation() {
 #[test]
 fn agent_tool_conversion_preserves_transforming_preparation() {
     let log = Arc::new(Mutex::new(Vec::new()));
-    let converted = create_tool_definition_from_agent_tool::<u32>(agent_tool(&log, &add_ten()));
+    let converted =
+        create_tool_definition_from_agent_tool::<u32>(agent_tool(&log, &add_ten())).unwrap();
     let prepared =
         (converted.prepare_arguments.as_ref().unwrap())(&mut json!({"value": 8})).unwrap();
     assert_eq!(prepared, json!({"value": 18}));
@@ -361,7 +363,7 @@ fn agent_tool_conversion_preserves_execution_errors() {
         counted.fetch_add(1, Ordering::SeqCst);
         Box::pin(async { Err(failure("reverse failed")) })
     });
-    let converted = create_tool_definition_from_agent_tool::<u32>(tool);
+    let converted = create_tool_definition_from_agent_tool::<u32>(tool).unwrap();
     let error = (converted.execute)("id".into(), json!({"value": 1}), None, None, None)
         .now_or_never()
         .unwrap()
@@ -631,4 +633,26 @@ fn tool_context_preserves_missing_arguments_and_environment_handles() {
         env.terminal.get_capabilities().images,
         Some(maestro_tui::ImageProtocol::Kitty)
     );
+}
+
+#[test]
+fn repl_tool_conversion_captures_description_once() {
+    let corpus: Value = serde_json::from_str(include_str!(
+        "../../maestro-app/tests/fixtures/javascript_execution/fixtures.json"
+    ))
+    .unwrap();
+    let state = Arc::new(Mutex::new(
+        corpus["dynamic"]["changed"].as_str().unwrap().to_owned(),
+    ));
+    let mut tool = agent_tool(&Arc::new(Mutex::new(vec![])), &add_ten());
+    let current = Arc::clone(&state);
+    tool.description = Some(Arc::new(move || Ok(current.lock().unwrap().clone())));
+    let converted = create_tool_definition_from_agent_tool::<u32>(tool).unwrap();
+    *state.lock().unwrap() = corpus["dynamic"]["later"].as_str().unwrap().into();
+    let wrapped = wrap_tool_definition(converted, None);
+    assert_eq!(
+        wrapped.definition.description,
+        corpus["dynamic"]["snapshotDescription"]
+    );
+    assert!(wrapped.description.is_none());
 }

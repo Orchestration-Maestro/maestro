@@ -76,6 +76,7 @@ fn native_and_supplied_reads_share_the_caller() {
 /// A tool whose result carries an explicit null in `details`.
 fn null_details_tool() -> AgentTool {
     AgentTool {
+        description: None,
         definition: maestro_models::Tool {
             name: "nullish".into(),
             description: "explicit null".into(),

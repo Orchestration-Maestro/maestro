@@ -45,10 +45,18 @@ pub type ExecuteTool<TParameters = serde_json::Value, TDetails = serde_json::Val
         Option<AgentToolUpdateCallback<TDetails>>,
     ) -> BoxFuture<Result<AgentToolResult<TDetails>, DiagnosticErrorInfo>>,
 >;
+/// Resolve a live model-facing description.
+#[cfg(not(target_arch = "wasm32"))]
+pub type ToolDescription = Arc<dyn Fn() -> Result<String, DiagnosticErrorInfo> + Send + Sync>;
+/// Resolve a browser-local model-facing description.
+#[cfg(target_arch = "wasm32")]
+pub type ToolDescription = Arc<dyn Fn() -> Result<String, DiagnosticErrorInfo>>;
 /// An executable tool retained in conversation state.
 pub struct AgentTool {
     /// Model-facing tool declaration.
     pub definition: Tool,
+    /// Optional live description, resolved outside tool locks.
+    pub description: Option<ToolDescription>,
     /// Display label.
     pub label: String,
     /// Optional argument preparation.
@@ -62,6 +70,19 @@ pub struct AgentTool {
 pub type SharedAgentTool = Arc<RwLock<AgentTool>>;
 
 impl AgentTool {
+    /// Materialize a declaration, preserving a supplied description failure.
+    ///
+    /// # Errors
+    /// Returns the description callback's original diagnostic.
+    pub fn resolve_definition(
+        mut definition: Tool,
+        description: Option<ToolDescription>,
+    ) -> Result<Tool, DiagnosticErrorInfo> {
+        if let Some(description) = description {
+            definition.description = description()?;
+        }
+        Ok(definition)
+    }
     /// Wrap a typed callback in the common JSON tool interface.
     ///
     /// Arguments are decoded with [`serde_json::from_value`] and a decoding
@@ -76,6 +97,7 @@ impl AgentTool {
     ) -> Self {
         Self {
             definition,
+            description: None,
             label,
             prepare_arguments: None,
             execution_mode: None,

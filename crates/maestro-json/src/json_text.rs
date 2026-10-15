@@ -62,6 +62,14 @@ pub fn pretty_object(value: &Map<String, Value>) -> Result<String, serde_json::E
     )
 }
 
+/// Write any JSON value with two-space indentation and canonical keys and numbers.
+///
+/// # Errors
+/// Returns the serializer failure.
+pub fn pretty_json(value: &Value) -> Result<String, serde_json::Error> {
+    write(&Canonical(value), PrettyFormatter::with_indent(b"  "))
+}
+
 /// Serialize with the number spelling layered over the given structural formatter.
 fn write(value: &impl Serialize, formatter: impl Formatter) -> Result<String, serde_json::Error> {
     let mut serializer = serde_json::Serializer::with_formatter(Vec::new(), Numbers(formatter));

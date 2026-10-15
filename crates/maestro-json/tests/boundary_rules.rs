@@ -286,3 +286,13 @@ fn object_guard_uses_the_supplied_expectation() {
         "{duplicate}"
     );
 }
+
+#[test]
+fn repl_json_array_format_reuses_canonical_owner() {
+    let value = json!([{"z": ["é\n\"", -0.0, 1e21, 1e-7], "10": null, "2": true}]);
+    assert_eq!(
+        maestro_json::pretty_json(&value).unwrap(),
+        "[\n  {\n    \"2\": true,\n    \"10\": null,\n    \"z\": [\n      \"é\\n\\\"\",\n      0,\n      1e+21,\n      1e-7\n    ]\n  }\n]"
+    );
+    assert_eq!(maestro_json::pretty_json(&Value::Null).unwrap(), "null");
+}

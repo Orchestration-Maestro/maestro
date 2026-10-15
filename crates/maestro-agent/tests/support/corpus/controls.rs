@@ -378,6 +378,7 @@ fn tool(input: Arc<Input>, observed: Arc<Mutex<Observations>>) -> SharedAgentToo
             }) as PrepareArguments
         });
     Arc::new(RwLock::new(AgentTool {
+        description: None,
         definition: Tool {
             name: "echo".into(),
             description: "Echo".into(),

@@ -48,6 +48,12 @@ documented in [conversation operations](loop.md).
 
 `SharedAgentTool` entries expose declarations, labels, callbacks and scheduling
 preferences directly, including mutable access through the shared handle.
+An optional `ToolDescription` callback supplies a live description. Each stream
+call resolves it after credential lookup, taking fresh tool entries on every
+turn and releasing collection/entry locks before calling out. The model receives
+a plain declaration snapshot; static descriptions remain unchanged. Callback
+failures prevent that stream invocation. `AgentTool::resolve_definition` is the
+same fallible projection used by tool-definition conversion.
 `AgentTool::typed` adapts a typed callback to JSON arguments and details;
 argument decoding failures return without invoking its body. Typed results can
 be read with `serde_json::from_value`. Preparation takes mutable raw JSON and returns JSON for validation; see

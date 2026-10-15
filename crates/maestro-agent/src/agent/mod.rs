@@ -304,12 +304,12 @@ pub(super) fn lock<T>(v: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
     v.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 #[cfg(not(target_arch = "wasm32"))]
-/// Private target-specific bounds for owned execution.
-pub(crate) trait Native: Send + Sync {}
+/// Target-specific bounds for owned execution.
+pub trait Native: Send + Sync {}
 #[cfg(not(target_arch = "wasm32"))]
 impl<T: Send + Sync> Native for T {}
 #[cfg(target_arch = "wasm32")]
-/// Private target-specific bounds for owned execution.
-pub(crate) trait Native {}
+/// Target-specific bounds for owned execution.
+pub trait Native {}
 #[cfg(target_arch = "wasm32")]
 impl<T> Native for T {}

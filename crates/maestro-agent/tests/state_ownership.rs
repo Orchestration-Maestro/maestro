@@ -359,6 +359,7 @@ fn tool(
     let preparation = Arc::clone(&calls);
     let execution = Arc::clone(&calls);
     let entry: SharedAgentTool = Arc::new(RwLock::new(AgentTool {
+        description: None,
         definition: maestro_models::Tool {
             name: name.into(),
             description: format!("{name} tool"),

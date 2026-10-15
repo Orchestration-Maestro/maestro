@@ -169,6 +169,7 @@ pub fn with_execute(execute: maestro_agent::ExecuteTool) -> AgentContext {
     let mut context = context();
     context.tools = Some(Arc::new(RwLock::new(vec![Arc::new(RwLock::new(
         maestro_agent::AgentTool {
+            description: None,
             definition: maestro_models::Tool {
                 name: "echo".into(),
                 description: "Echo".into(),

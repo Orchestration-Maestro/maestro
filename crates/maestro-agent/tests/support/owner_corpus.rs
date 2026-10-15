@@ -287,6 +287,7 @@ fn install_listener(agent: &Arc<Agent<Notice>>, input: Arc<Input>, events: Arc<M
 fn tool(input: &Arc<Input>) -> maestro_agent::SharedAgentTool {
     let input = input.clone();
     Arc::new(RwLock::new(AgentTool {
+        description: None,
         definition: maestro_models::Tool {
             name: "echo".into(),
             description: "Echo".into(),

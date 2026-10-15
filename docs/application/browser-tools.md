@@ -1,4 +1,6 @@
-# Browser document tool
+# Browser executable tools
+
+## Document extraction
 
 `maestro_app::create_extract_document_tool` creates an independently configurable
 `extract_document` declaration using a supplied `Fetch`, or the
@@ -39,3 +41,35 @@ Results contain one text block and exactly four camelCase details:
 `extractedText`, `format`, `fileName` and `size`. Attachment MIME determines the
 format tag (`pdf`, `docx`, `xlsx`, `pptx`, or `unknown`); the name and byte length
 come from the loaded attachment. There is no progress or termination request.
+
+
+## JavaScript execution
+
+[`create_javascript_repl_tool`](../../crates/maestro-app/src/browser/tools/javascript_repl.rs)
+retains a supplied `SandboxHost`. Register its shared `tool` handle; the factory
+wrapper need not remain alive. The host owns hidden creation, execution and
+removal. Removal follows settlement and precedes return-value formatting, including
+on host failures. This interface supplies no browser engine or hard interruption;
+the real browser adapter and default instance are tracked in
+[#815](https://github.com/Orchestration-Maestro/maestro/issues/815).
+
+`runtime_providers_factory` starts as an empty successful factory and may be
+unset. Its current callback runs separately for descriptions and executions,
+outside the setting lock. Descriptions retain nonblank provider text in order.
+The independent `sandbox_url_provider` starts absent and is forwarded as an owned,
+fallible callback. Both settings remain live after registration. Callers release
+setting/tool guards before invoking callbacks.
+
+The tool requires string `title` and `code` arguments. Its factory runs before
+empty-code and pre-abort checks. Whitespace-only code is accepted. A supplied
+`SandboxValue` keeps caller-owned values outside JSON and controls their display;
+the JSON implementation delegates to the canonical JSON writer. Output preserves
+console order, adds the return value and file notices, then trims shared
+whitespace. Failed sandbox results become tool errors and omit return/files.
+
+Details always contain `files`, including an empty array. Downloads preserve
+UTF-8 or binary bytes as padded base64 with byte lengths; only encoded details
+replace empty filenames/MIME types with `file`/`application/octet-stream`.
+Concrete runtime providers and tool cards are tracked in
+[#751](https://github.com/Orchestration-Maestro/maestro/issues/751) and
+[#791](https://github.com/Orchestration-Maestro/maestro/issues/791).

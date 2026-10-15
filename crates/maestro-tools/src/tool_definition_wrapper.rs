@@ -2,6 +2,7 @@
 
 use crate::types::{ToolContextFactory, ToolDefinition};
 use maestro_agent::{AgentTool, ExecuteTool};
+use maestro_models::DiagnosticErrorInfo;
 use serde::{Serialize, de::DeserializeOwned};
 use std::sync::Arc;
 
@@ -52,12 +53,16 @@ where
         .collect()
 }
 
-/// Describe an agent tool as a definition with no prompt text or renderers.
-#[must_use]
-pub fn create_tool_definition_from_agent_tool<C: 'static>(tool: AgentTool) -> ToolDefinition<C> {
+/// Snapshot an agent tool as a definition with no prompt text or renderers.
+///
+/// # Errors
+/// Returns the live description callback's original diagnostic.
+pub fn create_tool_definition_from_agent_tool<C: 'static>(
+    tool: AgentTool,
+) -> Result<ToolDefinition<C>, DiagnosticErrorInfo> {
     let execute = tool.execute;
-    ToolDefinition {
-        definition: tool.definition,
+    let definition = ToolDefinition {
+        definition: AgentTool::resolve_definition(tool.definition, tool.description)?,
         label: tool.label,
         prompt_snippet: None,
         prompt_guidelines: None,
@@ -67,5 +72,6 @@ pub fn create_tool_definition_from_agent_tool<C: 'static>(tool: AgentTool) -> To
         execute: Arc::new(move |id, params, signal, update, _| execute(id, params, signal, update)),
         render_call: None,
         render_result: None,
-    }
+    };
+    Ok(definition)
 }
