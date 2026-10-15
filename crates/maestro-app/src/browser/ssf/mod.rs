@@ -2,6 +2,21 @@
 
 use std::collections::BTreeMap;
 
+mod datenum;
+mod read;
+mod styles;
+pub use read::read;
+mod address;
+mod workbook;
+pub use address::{
+    CellAddress, Range, decode_cell, decode_range, encode_cell, encode_col, encode_range,
+    encode_row,
+};
+pub use workbook::{WorkBook, WorkSheet, WorkbookError};
+mod format;
+mod format_cell;
+pub use format::{FormatTable, Ssf};
+pub use format_cell::{CellObject, CellValue, ExcelDataType, format_cell};
 mod chkcond;
 mod eval_fmt;
 mod general;
@@ -158,6 +173,8 @@ pub enum DateToken {
 /// Failure to render a selected field pattern.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum FormatError {
+    /// A format contains more than four sections.
+    TooManySections,
     /// The selected date field does not support this pattern.
     InvalidDateFormat(DateToken),
     /// The numeric pattern is unsupported.
@@ -173,6 +190,7 @@ pub enum FormatError {
 impl std::fmt::Display for FormatError {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::TooManySections => formatter.write_str("too many format sections"),
             Self::InvalidDateFormat(kind) => write!(formatter, "invalid date format for {kind:?}"),
             Self::UnsupportedNumberFormat => formatter.write_str("unsupported number format"),
             Self::UnterminatedString => formatter.write_str("unterminated string"),

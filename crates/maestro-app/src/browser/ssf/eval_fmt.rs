@@ -1,6 +1,5 @@
 //! Selected spreadsheet section evaluation.
 
-#[cfg(test)]
 use super::{
     DateCode, DateToken, FormatError, GeneralValue, NumberToken, general,
     general::is_general,
@@ -10,59 +9,71 @@ use super::{
 };
 
 mod numbers;
-#[cfg(test)]
 use numbers::render_numbers;
 
 /// A field's role before rendering.
-#[cfg(test)]
 #[derive(Clone, Copy, PartialEq)]
 enum Kind {
+    /// Literal or rendered text.
     Text,
+    /// Literal space before numeric joining.
     Space,
+    /// Fixed denominator digits.
     Digits,
+    /// Numeric placeholder field.
     Number,
+    /// Fraction placeholder field.
     Question,
+    /// Accounting parenthesis.
     Parenthesis,
+    /// Calendar or time field.
     Date(DateToken),
+    /// General scalar substitution.
     General,
+    /// Retained meridiem spelling.
     Meridiem,
 }
 
 /// Owned pattern or rendered text with its interpretation.
-#[cfg(test)]
 struct Piece {
+    /// Current field role.
     kind: Kind,
+    /// Pattern or rendered text.
     text: String,
 }
 
 /// Scalar and lazy calendar observations for one section.
-#[cfg(test)]
 struct Context<'a> {
+    /// Borrowed input scalar.
     value: GeneralValue<'a>,
+    /// Effective 1904 epoch.
     epoch: bool,
+    /// Numeric section count.
     sections: u8,
+    /// Lazily parsed calendar observations.
     date: Option<DateCode>,
+    /// First requested calendar.
     calendar: Calendar,
+    /// Whether a meridiem field requests twelve-hour time.
     twelve: bool,
 }
 
-#[cfg(test)]
 impl Context<'_> {
     /// Numeric input supplied by the section selector.
-    fn number(&self) -> f64 {
+    fn number(&self) -> Result<f64, FormatError> {
         if let GeneralValue::Number(n) = self.value {
-            n
+            Ok(n)
         } else {
-            0.0
+            Err(FormatError::UnsupportedNumberFormat)
         }
     }
     /// Capture the first requested calendar, leaving later markers inert.
-    fn date(&mut self, mode: Calendar) -> bool {
+    fn date(&mut self, mode: Calendar) -> Result<bool, FormatError> {
         if self.date.is_none() {
             self.calendar = mode;
-            self.date = parse_date_code_with_calendar(self.number(), self.epoch, mode);
+            self.date = parse_date_code_with_calendar(self.number()?, self.epoch, mode);
         }
-        self.date.is_some()
+        Ok(self.date.is_some())
     }
     /// Exact text-placeholder spelling, independent of General precision.
     fn text(&self) -> String {
@@ -74,7 +85,6 @@ impl Context<'_> {
 }
 
 /// Evaluate one selected section without choosing a section or resolving a table.
-#[cfg(test)]
 pub(super) fn eval_fmt(
     format: &str,
     value: GeneralValue<'_>,
@@ -110,7 +120,6 @@ pub(super) fn eval_fmt(
 }
 
 /// Scan scalar boundaries while borrowing the original format spelling.
-#[cfg(test)]
 fn tokenize(format: &str, context: &mut Context<'_>) -> Result<Option<Vec<Piece>>, FormatError> {
     let mut pieces = Vec::new();
     let mut offset = 0;
@@ -122,7 +131,7 @@ fn tokenize(format: &str, context: &mut Context<'_>) -> Result<Option<Vec<Piece>
             .next()
             .ok_or(FormatError::UnterminatedString)?;
         let (mut kind, text, consumed) = if "BbMDYHSEmdyhsegAa上".contains(c) {
-            let Some(field) = date_field(remaining, c, context) else {
+            let Some(field) = date_field(remaining, c, context)? else {
                 return Ok(None);
             };
             field
@@ -167,7 +176,6 @@ fn tokenize(format: &str, context: &mut Context<'_>) -> Result<Option<Vec<Piece>
 }
 
 /// Consume quoted, escaped, skipped, placeholder and numeric fragments.
-#[cfg(test)]
 fn literal(
     input: &str,
     c: char,
@@ -224,7 +232,6 @@ fn literal(
 }
 
 /// Discard metadata while preserving currency payloads for numeric formats.
-#[cfg(test)]
 fn block(
     input: &str,
     format: &str,
@@ -232,7 +239,7 @@ fn block(
 ) -> Result<(Kind, String, usize), FormatError> {
     let end = input.find(']').ok_or(FormatError::UnterminatedBlock)? + 1;
     if is_elapsed(&input[..end]) {
-        context.date(Calendar::Gregorian);
+        context.date(Calendar::Gregorian)?;
         return Ok((
             Kind::Date(DateToken::Elapsed),
             input[..end].to_ascii_lowercase(),
@@ -254,8 +261,11 @@ fn block(
 }
 
 /// Capture a calendar before interpreting a date run or meridiem label.
-#[cfg(test)]
-fn date_field(input: &str, c: char, context: &mut Context<'_>) -> Option<(Kind, String, usize)> {
+fn date_field(
+    input: &str,
+    c: char,
+    context: &mut Context<'_>,
+) -> Result<Option<(Kind, String, usize)>, FormatError> {
     let lower = c.to_ascii_lowercase();
     if lower == 'b' && matches!(input.as_bytes().get(1), Some(b'1' | b'2')) {
         let mode = if input.as_bytes()[1] == b'2' {
@@ -263,13 +273,13 @@ fn date_field(input: &str, c: char, context: &mut Context<'_>) -> Option<(Kind, 
         } else {
             Calendar::Gregorian
         };
-        return context.date(mode).then(|| (Kind::Text, String::new(), 2));
+        return Ok(context.date(mode)?.then(|| (Kind::Text, String::new(), 2)));
     }
     if matches!(c, 'A' | 'a' | '上') {
         return meridiem(input, c, context);
     }
-    if !context.date(Calendar::Gregorian) {
-        return None;
+    if !context.date(Calendar::Gregorian)? {
+        return Ok(None);
     }
     let width = input
         .chars()
@@ -284,30 +294,38 @@ fn date_field(input: &str, c: char, context: &mut Context<'_>) -> Option<(Kind, 
         'h' => DateToken::Hour24,
         's' => DateToken::Second,
         'e' => DateToken::Era,
-        _ => return Some((Kind::Text, input[..width].to_owned(), width)),
+        _ => return Ok(Some((Kind::Text, input[..width].to_owned(), width))),
     };
-    Some((Kind::Date(kind), input[..width].to_ascii_lowercase(), width))
+    Ok(Some((
+        Kind::Date(kind),
+        input[..width].to_ascii_lowercase(),
+        width,
+    )))
 }
 
 /// Capture the meridiem spelling for rendering after clock rounding.
-#[cfg(test)]
-fn meridiem(input: &str, c: char, context: &mut Context<'_>) -> Option<(Kind, String, usize)> {
-    context.date(Calendar::Gregorian);
+fn meridiem(
+    input: &str,
+    c: char,
+    context: &mut Context<'_>,
+) -> Result<Option<(Kind, String, usize)>, FormatError> {
+    context.date(Calendar::Gregorian)?;
     let pattern = meridiem_pattern(input);
     let Some(pattern) = pattern else {
-        return Some((Kind::Text, c.to_string(), c.len_utf8()));
+        return Ok(Some((Kind::Text, c.to_string(), c.len_utf8())));
     };
-    context.date.as_ref()?;
+    if context.date.is_none() {
+        return Ok(None);
+    }
     context.twelve = true;
-    Some((
+    Ok(Some((
         Kind::Meridiem,
         input[..pattern.len()].to_owned(),
         pattern.len(),
-    ))
+    )))
 }
 
 /// Render the retained meridiem spelling from the carried clock.
-#[cfg(test)]
 fn meridiem_label(input: &str, context: &Context<'_>) -> String {
     let afternoon = context.date.as_ref().is_some_and(|d| d.hour >= 12);
     match meridiem_pattern(input) {
@@ -321,7 +339,6 @@ fn meridiem_label(input: &str, context: &Context<'_>) -> String {
 }
 
 /// Resolve month/minute context and round all clock fields at one precision.
-#[cfg(test)]
 fn resolve_time(pieces: &mut [Piece], context: &mut Context<'_>) -> u8 {
     let (mut following, mut clock, mut digits) = (None, false, 0);
     for piece in pieces.iter_mut().rev() {
@@ -362,7 +379,6 @@ fn resolve_time(pieces: &mut [Piece], context: &mut Context<'_>) -> u8 {
 }
 
 /// Carry clock rounding through the same serial parser and captured options.
-#[cfg(test)]
 fn round_time(context: &mut Context<'_>, digits: u8) {
     let Some(date) = context.date.as_mut() else {
         return;
@@ -393,7 +409,6 @@ fn round_time(context: &mut Context<'_>, digits: u8) {
 }
 
 /// Scan one numeric run without interpreting its rendered value.
-#[cfg(test)]
 fn number_fragment(input: &str, c: char) -> (Kind, String, usize) {
     let kind = match c {
         '?' => Kind::Question,

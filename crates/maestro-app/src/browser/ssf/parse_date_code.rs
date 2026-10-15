@@ -108,7 +108,6 @@ fn calendar(day: i32) -> Option<(i32, u32, u32, u32)> {
 }
 
 /// Calendar captured by the first date-producing field.
-#[cfg(test)]
 #[derive(Clone, Copy, PartialEq)]
 pub(super) enum Calendar {
     /// Standard spreadsheet calendar.
@@ -118,7 +117,6 @@ pub(super) enum Calendar {
 }
 
 /// Reuse serial normalization before projecting alternate calendar fields.
-#[cfg(test)]
 pub(super) fn parse_date_code_with_calendar(
     value: f64,
     date1904: bool,
@@ -132,7 +130,6 @@ pub(super) fn parse_date_code_with_calendar(
 }
 
 /// Convert date-only observations while retaining explicit synthetic days.
-#[cfg(test)]
 fn fix_hijri(date: &mut DateCode, date1904: bool) -> Option<()> {
     if !date1904 && matches!(date.serial_day, 0 | 60) {
         (date.year, date.month, date.day) = if date.serial_day == 0 {

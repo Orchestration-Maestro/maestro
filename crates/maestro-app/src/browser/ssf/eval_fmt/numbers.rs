@@ -1,10 +1,8 @@
 //! Numeric field joining and redistribution.
 
-#[cfg(test)]
 use super::{Context, FormatError, Kind, NumberToken, Piece, general, write_num};
 
 /// Render numeric fields through the shared writer.
-#[cfg(test)]
 pub(super) fn render_numbers(
     pieces: &mut [Piece],
     context: &Context<'_>,
@@ -13,7 +11,7 @@ pub(super) fn render_numbers(
     if pattern.is_empty() {
         return Ok(());
     }
-    let mut shown_value = context.number();
+    let mut shown_value = context.number()?;
     if shown_value < 0.0 && context.sections > 1 {
         shown_value = -shown_value;
     }
@@ -47,13 +45,11 @@ pub(super) fn render_numbers(
 }
 
 /// Identify unrendered numeric placeholders.
-#[cfg(test)]
 fn numeric(kind: Kind) -> bool {
     matches!(kind, Kind::Number | Kind::Question)
 }
 
 /// Join fraction fragments before sharing one numeric writer result.
-#[cfg(test)]
 fn join_numbers(pieces: &mut [Piece], context: &Context<'_>) -> String {
     let mut pattern = String::new();
     for index in 0..pieces.len() {
@@ -92,7 +88,6 @@ fn join_numbers(pieces: &mut [Piece], context: &Context<'_>) -> String {
 }
 
 /// Allocate a writer's integer text from the last field towards the first.
-#[cfg(test)]
 fn distribute_integer(pieces: &mut [Piece], rendered: &str) {
     let (mut remaining, mut first) = (rendered, None);
     for (index, piece) in pieces.iter_mut().enumerate().rev() {
@@ -101,7 +96,7 @@ fn distribute_integer(pieces: &mut [Piece], rendered: &str) {
         }
         let count = piece.text.len().min(remaining.len());
         let boundary = remaining.len() - count;
-        piece.text = remaining[boundary..].to_owned();
+        remaining[boundary..].clone_into(&mut piece.text);
         piece.kind = Kind::Text;
         remaining = &remaining[..boundary];
         first = Some(index);
@@ -112,7 +107,6 @@ fn distribute_integer(pieces: &mut [Piece], rendered: &str) {
 }
 
 /// Distribute integer and fractional digits around literal interruptions.
-#[cfg(test)]
 fn distribute_decimal(pieces: &mut [Piece], decimal: usize, rendered: &str) {
     let point = rendered.find('.');
     let (mut integer, mut fraction) =

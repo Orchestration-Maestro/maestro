@@ -1,10 +1,11 @@
 # Spreadsheet formatting libraries
 
 `maestro-app` uses these direct dependencies for its
-[spreadsheet value primitives](../application/document-formats.md):
+[spreadsheet values and workbooks](../application/document-formats.md):
 
 | Library | Pin | Requested features | License used |
 | --- | --- | --- | --- |
+| calamine | `=0.36.1` | Defaults off; no optional features | MIT |
 | ryu-js | `=1.0.3` | Existing defaults; no optional features | Apache-2.0 |
 | chrono | `=0.4.45` | Defaults off; `std` (includes `alloc`) | Apache-2.0 |
 | num-traits | `=0.2.19` | Existing defaults and `std` | Apache-2.0 |
@@ -28,4 +29,13 @@ requested features above describe this edge, not the whole workspace.
 
 Derived format data and policy retain the
 [formatting source attribution](../../THIRD-PARTY-NOTICES.md#spreadsheet-formatting-source).
-There is no spreadsheet parser runtime dependency.
+[calamine](https://docs.rs/calamine/0.36.1/calamine/) supplies native XLSX cell
+values through its streaming reader. The application reads style indices, raw
+error labels, dimensions and merges through the existing indexed ZIP/XML owners;
+it uses its own number-format evaluator, not the parser's display text. Legacy
+XLS reading and its style metadata are not exposed by this delivery.
+
+The parser's dependency closure uses MIT or Apache-2.0 where offered, with
+BSD-3-Clause for encoding_rs, Unicode-3.0 for unicode-ident and Zlib for zlib-rs.
+Its ZIP and XML dependencies are implementation details; no additional direct
+ZIP/XML dependency or optional date feature is requested.

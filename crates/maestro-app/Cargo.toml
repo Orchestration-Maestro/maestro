@@ -13,6 +13,7 @@ maestro-catalog = { path = "../maestro-catalog" }
 maestro-settings = { path = "../maestro-settings" }
 maestro-credentials = { path = "../maestro-credentials" }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
+calamine = { version = "=0.36.1", default-features = false }
 num-traits.workspace = true
 maestro-agent = { path = "../maestro-agent" }
 serde = { workspace = true, features = ["rc"] }

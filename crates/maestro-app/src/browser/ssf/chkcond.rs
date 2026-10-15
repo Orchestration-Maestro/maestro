@@ -1,26 +1,31 @@
 //! Numeric condition recognition and comparison.
 
 /// Six spreadsheet threshold comparisons.
-#[cfg(test)]
 #[derive(Clone, Copy)]
 enum Comparison {
+    /// Equal to the threshold.
     Equal,
+    /// Above the threshold.
     Greater,
+    /// Below the threshold.
     Less,
+    /// Different from the threshold.
     NotEqual,
+    /// At or above the threshold.
     GreaterEqual,
+    /// At or below the threshold.
     LessEqual,
 }
 
 /// Parsed comparison and its numeric threshold.
-#[cfg(test)]
 pub(super) struct Condition {
+    /// Comparison operator.
     comparison: Comparison,
+    /// Parsed numeric threshold.
     threshold: f64,
 }
 
 /// Find the first bracket with the ASCII threshold grammar.
-#[cfg(test)]
 pub(super) fn parse_condition(format: &str) -> Option<Condition> {
     format.match_indices('[').find_map(|(start, _)| {
         let body = format.get(start + 1..)?.split_once(']')?.0;
@@ -52,7 +57,6 @@ pub(super) fn parse_condition(format: &str) -> Option<Condition> {
 }
 
 /// Compare a value without coercion; an absent condition is false.
-#[cfg(test)]
 pub(super) fn chkcond(value: f64, condition: Option<Condition>) -> bool {
     use std::cmp::Ordering::{Equal, Greater, Less};
     condition.is_some_and(|c| match c.comparison {

@@ -1,0 +1,10 @@
+{
+  "file": "malformed-style.xlsx",
+  "expected": {
+    "error": {
+      "kind": "invalid_workbook_xml",
+      "part": "xl/styles.xml"
+    }
+  },
+  "record": null
+}

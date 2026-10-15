@@ -1,0 +1,214 @@
+{
+  "file": "implicit-builtin.xlsx",
+  "expected": {
+    "ok": {
+      "sheets": [
+        {
+          "name": "Formats",
+          "range": "A1:F1",
+          "merges": [],
+          "cells": [
+            {
+              "address": "A1",
+              "type": "n",
+              "value": {
+                "number": "1.25"
+              },
+              "w_after_read": "6:00:00",
+              "text": "6:00:00",
+              "w_after_format": "6:00:00"
+            },
+            {
+              "address": "B1",
+              "type": "n",
+              "value": {
+                "number": "1.25"
+              },
+              "w_after_read": "$1.25",
+              "text": "$1.25",
+              "w_after_format": "$1.25"
+            },
+            {
+              "address": "C1",
+              "type": "n",
+              "value": {
+                "number": "0.125"
+              },
+              "w_after_read": "12.5%",
+              "text": "12.5%",
+              "w_after_format": "12.5%"
+            },
+            {
+              "address": "D1",
+              "type": "n",
+              "value": {
+                "number": "1.25"
+              },
+              "w_after_read": "1 1/4",
+              "text": "1 1/4",
+              "w_after_format": "1 1/4"
+            },
+            {
+              "address": "E1",
+              "type": "n",
+              "value": {
+                "number": "44927.5"
+              },
+              "w_after_read": "1/1/23",
+              "text": "1/1/23",
+              "w_after_format": "1/1/23"
+            },
+            {
+              "address": "F1",
+              "type": "n",
+              "value": {
+                "number": "999.99"
+              },
+              "w_after_read": "1.00E+03",
+              "text": "1.00E+03",
+              "w_after_format": "1.00E+03"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "record": {
+    "file": "implicit-builtin.xlsx",
+    "date1904": false,
+    "ssf": [
+      [
+        0,
+        "General"
+      ],
+      [
+        1,
+        "0"
+      ],
+      [
+        2,
+        "0.00"
+      ],
+      [
+        3,
+        "#,##0"
+      ],
+      [
+        4,
+        "#,##0.00"
+      ],
+      [
+        9,
+        "0%"
+      ],
+      [
+        10,
+        "0.00%"
+      ],
+      [
+        11,
+        "0.00E+00"
+      ],
+      [
+        12,
+        "# ?/?"
+      ],
+      [
+        13,
+        "# ??/??"
+      ],
+      [
+        14,
+        "m/d/yy"
+      ],
+      [
+        15,
+        "d-mmm-yy"
+      ],
+      [
+        16,
+        "d-mmm"
+      ],
+      [
+        17,
+        "mmm-yy"
+      ],
+      [
+        18,
+        "h:mm AM/PM"
+      ],
+      [
+        19,
+        "h:mm:ss AM/PM"
+      ],
+      [
+        20,
+        "h:mm"
+      ],
+      [
+        21,
+        "h:mm:ss"
+      ],
+      [
+        22,
+        "m/d/yy h:mm"
+      ],
+      [
+        32,
+        "h:mm:ss"
+      ],
+      [
+        37,
+        "#,##0 ;(#,##0)"
+      ],
+      [
+        38,
+        "#,##0 ;[Red](#,##0)"
+      ],
+      [
+        39,
+        "#,##0.00;(#,##0.00)"
+      ],
+      [
+        40,
+        "#,##0.00;[Red](#,##0.00)"
+      ],
+      [
+        45,
+        "mm:ss"
+      ],
+      [
+        46,
+        "[h]:mm:ss"
+      ],
+      [
+        47,
+        "mmss.0"
+      ],
+      [
+        48,
+        "##0.0E+0"
+      ],
+      [
+        49,
+        "@"
+      ],
+      [
+        56,
+        "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+      ],
+      [
+        60,
+        "yyyy-mm-dd hh:mm:ss"
+      ],
+      [
+        61,
+        "$#,##0.00"
+      ],
+      [
+        62,
+        "0.0%"
+      ]
+    ]
+  }
+}
