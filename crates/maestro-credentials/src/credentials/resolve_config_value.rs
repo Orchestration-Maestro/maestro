@@ -166,16 +166,7 @@ pub(in crate::credentials) mod native {
             })
         }
     }
-    /// Executable with arguments; verbatim arguments are used only by Windows cmd.
-    #[derive(Debug, PartialEq, Eq)]
-    pub(in crate::credentials) struct Launch {
-        /// Executable selected by the caller or default-shell policy.
-        pub(in crate::credentials) executable: String,
-        /// Ordered arguments, including the command.
-        pub(in crate::credentials) args: Vec<String>,
-        /// Whether Windows arguments bypass normal quoting.
-        pub(in crate::credentials) verbatim: bool,
-    }
+    pub(in crate::credentials) use maestro_process::Launch;
     /// A completed attempt is never retried, even when it produces no value.
     pub(in crate::credentials) enum Attempt {
         /// Successful stdout or a completed failure.
@@ -246,27 +237,9 @@ pub(in crate::credentials) mod native {
                 verbatim: false,
             };
         }
-        let executable = comspec
-            .filter(|value| !value.is_empty())
-            .unwrap_or("cmd.exe");
-        let name = executable.rsplit('\\').next().unwrap_or(executable);
-        let cmd = name.eq_ignore_ascii_case("cmd") || name.eq_ignore_ascii_case("cmd.exe");
-        let args = if cmd {
-            vec![
-                "/d".into(),
-                "/s".into(),
-                "/c".into(),
-                format!("\"{command}\""),
-            ]
-        } else {
-            vec!["-c".into(), command.into()]
-        };
-        Launch {
-            executable: executable.into(),
-            args,
-            verbatim: cmd,
-        }
+        maestro_process::windows_shell_launch(command, comspec)
     }
+
     /// Run one launch through the shared synchronous capture.
     fn run(launch: Launch) -> Attempt {
         let mut command = Command::new(&launch.executable);

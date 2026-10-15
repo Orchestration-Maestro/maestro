@@ -28,7 +28,9 @@ pub use presentation_data::footer_data_provider::ReadonlyFooterDataProvider;
 
 pub use maestro_json::is_truthy;
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_process::{OutputMode, SpawnSyncError, SpawnSyncOptions, spawn, spawn_sync};
+pub use maestro_process::{
+    Launch, OutputMode, SpawnSyncError, SpawnSyncOptions, spawn, spawn_sync, windows_shell_launch,
+};
 pub use maestro_session::session_manager::{
     BranchSummaryEntry, CompactionEntry, CustomEntry, CustomMessageEntry, LabelEntry,
     ModelChangeEntry, SessionEntry, SessionEntryBase, SessionInfoEntry, SessionMessageEntry,

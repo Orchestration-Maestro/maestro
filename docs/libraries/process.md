@@ -15,3 +15,9 @@ environment entry order and detached-PID insertion order.
 Synchronous bounded capture uses the existing Tokio 1.53.2 `sync` feature for
 one-shot termination requests through the shared waiter. The byte bound covers
 combined retained stdout and stderr; it adds no separate process lifecycle.
+
+Native `maestro-chat` external editing directly uses Tokio `=1.53.2`, with default
+features disabled and `process` enabled, for the caller-built command accepted by
+the application's inherited-terminal process bridge. This reuses the existing
+locked Tokio process dependency closure; it adds no runtime or deadline policy.
+Tokio is MIT licensed.

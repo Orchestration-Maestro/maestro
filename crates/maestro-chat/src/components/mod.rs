@@ -232,6 +232,8 @@ fn bounded_select_list(
 
 pub mod settings_selector;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub mod extension_editor;
 pub mod login_dialog;
 
 #[cfg(test)]
