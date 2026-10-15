@@ -4,6 +4,10 @@ use maestro_json::{canonical_entries, pretty_object};
 use maestro_path::join;
 use maestro_session::session_manager::get_default_session_dir;
 use serde_json::{Map, Value};
+#[cfg(unix)]
+use std::os::unix::fs::symlink;
+#[cfg(windows)]
+use std::os::windows::fs::symlink_file as symlink;
 use std::{
     fs,
     io::{self, Write},
@@ -156,7 +160,7 @@ pub fn migrate_sessions_from_agent_root() -> io::Result<()> {
     Ok(())
 }
 
-/// Admit the first header and rename the original entry without rewriting its body.
+/// Admit the first header and relocate its entry without rewriting transcript bytes.
 fn move_session(agent_dir: &str, name: &str) -> io::Result<()> {
     let path = join(&[agent_dir, name]);
     let content = fs::read(&path)?;
@@ -176,7 +180,12 @@ fn move_session(agent_dir: &str, name: &str) -> io::Result<()> {
     let directory = get_default_session_dir(cwd, agent_dir)?;
     let target = join(&[&directory, name]);
     if !Path::new(&target).exists() {
-        fs::rename(path, target)?;
+        if fs::read_link(&path).is_ok_and(|link| link.is_relative()) {
+            symlink(fs::canonicalize(&path)?, &target)?;
+            fs::remove_file(path)?;
+        } else {
+            fs::rename(path, target)?;
+        }
     }
     Ok(())
 }

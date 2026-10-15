@@ -55,7 +55,9 @@ or concurrent-writer protocol.
 `migrate_sessions_from_agent_root()` scans direct `.jsonl` children. An admitted
 first-line session header with a nonempty string cwd selects the existing
 [session directory encoding](../sessions/session_manager.md). The original entry
-is renamed using its native basename; transcript bytes are not rewritten.
+is relocated using its native basename; transcript bytes are not rewritten.
+Relative links are re-anchored to their original resolved file so the relocated
+transcript remains readable. Other entries are renamed unchanged.
 Existing destinations are preserved; scan and individual-file failures are
 ignored. Configuration-root lookup errors propagate from both operations.
 These operations are native-only and do not install startup orchestration.

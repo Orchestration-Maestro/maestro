@@ -6123,7 +6123,8 @@
             {
               "path": "sessions/--a--/one.jsonl",
               "kind": "link",
-              "target": "original.data"
+              "target": "{root}/original.data",
+              "text": "{\"type\":\"session\",\"cwd\":\"/a\",\"id\":\"session-1\",\"version\":3,\"timestamp\":\"2026-01-01T00:00:00.000Z\"}"
             }
           ]
         },
@@ -6151,7 +6152,8 @@
             {
               "path": "sessions/--a--/one.jsonl",
               "kind": "link",
-              "target": "original.data"
+              "target": "{root}/original.data",
+              "text": "{\"type\":\"session\",\"cwd\":\"/a\",\"id\":\"session-1\",\"version\":3,\"timestamp\":\"2026-01-01T00:00:00.000Z\"}"
             }
           ]
         }

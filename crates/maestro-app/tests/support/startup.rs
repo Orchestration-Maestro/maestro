@@ -157,10 +157,7 @@ fn check_entry(root: &Path, item: &Entry) {
     match item.kind.as_str() {
         "link" => {
             assert!(meta.is_symlink());
-            assert_eq!(
-                fs::read_link(path).unwrap().to_str(),
-                item.target.as_deref()
-            );
+            check_link(root, &path, item);
         }
         "directory" => assert!(meta.is_dir()),
         "file" => {
@@ -180,6 +177,19 @@ fn check_entry(root: &Path, item: &Entry) {
         assert_eq!(meta.mode() & 0o777, mode, "mode at {}", item.path);
     }
 }
+fn check_link(root: &Path, path: &Path, item: &Entry) {
+    if let Some(text) = &item.text {
+        assert_eq!(fs::read(path).unwrap(), text.as_bytes());
+    }
+    assert_eq!(
+        fs::read_link(path).unwrap().to_str(),
+        item.target
+            .as_ref()
+            .map(|target| target.replace("{root}", root.to_str().unwrap()))
+            .as_deref()
+    );
+}
+
 fn operation() {
     use maestro_app::configuration::migrations::{
         migrate_auth_to_auth_json, migrate_sessions_from_agent_root,
@@ -240,6 +250,22 @@ fn invoke(name: &str, cwd: &Path, envs: &[(&str, &str)], limit: Option<u64>) -> 
 pub fn run(name: &str) {
     if std::env::var_os("STARTUP_OPERATION").is_some() {
         operation();
+        return;
+    }
+    if std::env::var_os("STARTUP_CORPUS_CHILD").is_none() {
+        let output = Command::new("bash")
+            .args(["-c", "umask 002; exec \"$@\"", "startup"])
+            .arg(std::env::current_exe().unwrap())
+            .args(["--exact", name, "--nocapture", "--test-threads=1"])
+            .env("STARTUP_CORPUS_CHILD", "1")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "corpus child failed:\n{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
         return;
     }
     let mut corpus: BTreeMap<String, Vec<Case>> =
