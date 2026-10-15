@@ -58,14 +58,14 @@ pub fn document(provider_fields: &str, model_fields: &str) -> String {
 pub fn request(
     registry: &ModelRegistry,
     operations: &dyn ConfigValueOperations,
-) -> ResolvedRequestAuth {
+) -> maestro_request::model_registry::ResolvedRequestAuth {
     run(registry.get_api_key_and_headers(&registry.find("p", "m").unwrap(), operations))
 }
 /// Assert values without including credential values in failure output.
 /// # Panics
 /// Panics when a controlled test operation or assertion fails.
 pub fn success(result: ResolvedRequestAuth, key: Option<&str>, headers: &[(&str, &str)]) {
-    let ResolvedRequestAuth::Success {
+    let ResolvedRequestAuth::Ok {
         api_key,
         headers: actual,
     } = result

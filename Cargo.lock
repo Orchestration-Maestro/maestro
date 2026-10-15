@@ -2964,6 +2964,7 @@ dependencies = [
  "maestro-json",
  "maestro-models",
  "maestro-pattern",
+ "maestro-request",
  "maestro-text",
  "owo-colors",
  "serde",

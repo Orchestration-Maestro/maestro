@@ -174,6 +174,13 @@ The opt-in faux provider supplies offline queued responses, async factories and
 ordered cancellable events through the ordinary invocation interface. See the
 [scripted model guide](models/faux.md) for a two-turn tool flow and defaults.
 
+## Resolved request authentication
+
+`maestro-request::model_registry::ResolvedRequestAuth` owns the resolved key,
+ordered headers or denial string shared by the [native catalog](catalog.md#request-authentication)
+and [guest authoring library](extensions/guest.md). Both consumers re-export the
+same record; resolution policy remains with the producer.
+
 ## Application message records
 
 `maestro-request::messages` owns `BashExecutionMessage`, generic

@@ -6,23 +6,8 @@
 )]
 
 use crate::{ExtensionFuture, ExtensionResult, Model};
-use indexmap::IndexMap;
+pub use maestro_request::model_registry::ResolvedRequestAuth;
 use std::rc::Rc;
-/// Authentication resolution, distinct from a failed host call.
-pub enum ResolvedRequestAuth {
-    /// Resolved credentials.
-    Ok {
-        /// Optional key, retaining present empty strings.
-        api_key: Option<String>,
-        /// Optional headers in host order.
-        headers: Option<IndexMap<String, String>>,
-    },
-    /// Structured authentication denial.
-    Error {
-        /// The supplied denial message.
-        error: String,
-    },
-}
 port! {
     /// Host queries available through a retained catalog.
     ModelRegistryPort for ModelRegistry via 0 {

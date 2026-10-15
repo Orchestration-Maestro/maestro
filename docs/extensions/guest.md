@@ -297,7 +297,8 @@ capability currently has no author methods.
 `find` passes literal provider and model identifiers. The guest does not filter,
 sort or deduplicate the supplied lists. `get_api_key_and_headers` awaits the host
 operation for the supplied descriptor, without checking catalog membership.
-`ResolvedRequestAuth::Ok` preserves optional keys and ordered headers, including
+`ResolvedRequestAuth` is re-exported from the [shared request owner](../records.md#resolved-request-authentication),
+`maestro_request::model_registry`. `ResolvedRequestAuth::Ok` preserves optional keys and ordered headers, including
 present empty strings; `Error` carries a structured denial, distinct from an
 outer host-call failure.
 

@@ -68,7 +68,7 @@ fn request_headers_merge_exact_names_in_layer_order() {
     let runtime = tokio::runtime::Builder::new_current_thread()
         .build()
         .unwrap();
-    let maestro_catalog::ResolvedRequestAuth::Success { api_key, headers } =
+    let maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } =
         runtime.block_on(registry.get_api_key_and_headers(&model, &Operations))
     else {
         panic!("expected success")
