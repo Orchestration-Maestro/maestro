@@ -94,7 +94,7 @@ fn values(
                     DataRef::String(s) | DataRef::DateTimeIso(s) | DataRef::DurationIso(s) => {
                         CellValue::Text(s.clone())
                     }
-                    DataRef::SharedString(s) => CellValue::Text(s.replace("\r\n", "\n")),
+                    DataRef::SharedString(s) => CellValue::Text((*s).to_owned()),
                     DataRef::Bool(b) => CellValue::Boolean(*b),
                     DataRef::DateTime(d) => CellValue::Number(d.as_f64()),
                     DataRef::Error(_) | DataRef::Empty => continue,
@@ -217,7 +217,10 @@ fn cell(
             });
         (ExcelDataType::Error, value, Some(label))
     } else {
-        let value = value?;
+        let value = match value? {
+            CellValue::Text(text) => CellValue::Text(text.replace("\r\n", "\n")),
+            value => value,
+        };
         let kind = match &value {
             CellValue::Number(_) => ExcelDataType::Number,
             CellValue::Text(_) => ExcelDataType::Text,
@@ -282,5 +285,5 @@ fn string_cell(value: &str) -> String {
             rest = &rest[c.len_utf8()..];
         }
     }
-    String::from_utf16_lossy(&units).replace("\r\n", "\n")
+    String::from_utf16_lossy(&units)
 }

@@ -53,7 +53,8 @@ detached snapshot. `WorkBook` preserves sheet order and the date epoch; each
 Blank sheets retain declared rectangular ranges; empty singleton defaults are omitted.
 Retained error cells load implicit formats into the live table and workbook snapshot.
 Cells retain raw typed values and optional formatted text. Raw string-cell escapes
-are decoded once; shared strings are not decoded again. `format_cell` respects
+are decoded once; shared and inline strings are not decoded again. Decoded text
+normalizes CRLF to LF at the common cell boundary. `format_cell` respects
 present caches, including empty text, and otherwise uses the active default
 format with unrounded raw-scalar fallback on formatting failure, leaving the cache
 absent. Unknown error labels survive
@@ -62,8 +63,9 @@ Malformed archives, required missing parts, XML, reader and address failures hav
 distinct `WorkbookError` variants. Missing style declarations are optional, while
 missing declared style parts and malformed style XML fail with workbook/part
 context. ISO dates and timezone-free datetimes use UTC serial conversion with the
-real March 1900 boundary. Time-only cells use the workbook epoch, so noon is 0.5
-in either epoch; numeric serial 60 retains the spreadsheet's synthetic leap day.
+real March 1900 boundary. Time-only cells attach to the workbook epoch date and
+use the same millisecond serial conversion; noon is 0.5 in either epoch. Numeric
+serial 60 retains the spreadsheet's synthetic leap day.
 `encode_row`, `encode_col`, `encode_cell` and `encode_range` render zero-based
 positions as A1 addresses; decoders accept absolute `$` markers.
 

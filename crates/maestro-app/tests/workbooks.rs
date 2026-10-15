@@ -266,6 +266,13 @@ fn workbook_date_cells_accept_date_local_datetime_and_time_forms() {
 }
 
 #[test]
+fn workbook_time_only_cells_keep_epoch_serial_precision_and_general_text() {
+    for file in ["clocks-false.xlsx", "clocks-true.xlsx"] {
+        check(file);
+    }
+}
+
+#[test]
 fn workbook_blank_templates_keep_declared_rectangles() {
     for file in ["blank-template.xlsx", "blank-default.xlsx"] {
         check(file);
@@ -275,6 +282,11 @@ fn workbook_blank_templates_keep_declared_rectangles() {
 #[test]
 fn workbook_error_cells_load_implicit_formats_into_live_and_snapshot_tables() {
     check("error-implicit-format.xlsx");
+}
+
+#[test]
+fn workbook_inline_multiline_strings_normalize_without_redecoding() {
+    check("inline-multiline.xlsx");
 }
 
 #[test]

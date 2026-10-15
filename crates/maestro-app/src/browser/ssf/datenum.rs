@@ -3,17 +3,16 @@ use super::WorkbookError;
 use num_traits::ToPrimitive;
 /// Convert UTC dates or epoch-relative clocks without a synthetic leap month.
 pub(super) fn datenum(value: &str, date1904: bool) -> Result<f64, WorkbookError> {
-    use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
-    if let Some(time) = ["%H:%M:%S%.f", "%H:%M"]
+    use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+    let clock = ["%H:%M:%S%.f", "%H:%M"]
         .iter()
-        .find_map(|f| NaiveTime::parse_from_str(value, f).ok())
-    {
-        return Ok((f64::from(time.num_seconds_from_midnight())
-            + f64::from(time.nanosecond() / 1_000_000) / 1000.0)
-            / 86_400.0);
-    }
-    let instant = chrono::DateTime::parse_from_rfc3339(value)
-        .map(|d| d.naive_utc())
+        .find_map(|f| NaiveTime::parse_from_str(value, f).ok());
+    let epoch = if date1904 { "1904-01-01" } else { "1899-12-31" };
+    let instant = clock
+        .map_or_else(
+            || chrono::DateTime::parse_from_rfc3339(value).map(|d| d.naive_utc()),
+            |time| NaiveDate::parse_from_str(epoch, "%Y-%m-%d").map(|d| d.and_time(time)),
+        )
         .or_else(|_| {
             NaiveDate::parse_from_str(value, "%Y-%m-%d").map(|d| d.and_time(NaiveTime::MIN))
         })
