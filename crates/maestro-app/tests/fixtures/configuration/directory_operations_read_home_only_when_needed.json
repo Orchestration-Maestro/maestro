@@ -1,0 +1,71 @@
+[
+  {
+    "input": {
+      "op": "getPackageDir",
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "./raw"
+      },
+      "homeError": true
+    },
+    "expected": "./raw",
+    "observations": {
+      "home_reads": 0
+    }
+  },
+  {
+    "input": {
+      "op": "getAgentDir",
+      "env": {
+        "MAESTRO_CODING_AGENT_DIR": "./raw"
+      },
+      "homeError": true
+    },
+    "expected": "./raw",
+    "observations": {
+      "home_reads": 0
+    }
+  },
+  {
+    "input": {
+      "op": "expandTildePath",
+      "env": {},
+      "args": [
+        "ordinary"
+      ],
+      "homeError": true
+    },
+    "expected": "ordinary",
+    "observations": {
+      "home_reads": 0
+    }
+  },
+  {
+    "input": {
+      "op": "expandTildePath",
+      "env": {},
+      "args": [
+        "~"
+      ],
+      "homeError": true
+    },
+    "expected": {
+      "error_kind": "NotFound"
+    },
+    "observations": {
+      "home_reads": 1
+    }
+  },
+  {
+    "input": {
+      "op": "getAgentDir",
+      "env": {},
+      "homeError": true
+    },
+    "expected": {
+      "error_kind": "NotFound"
+    },
+    "observations": {
+      "home_reads": 1
+    }
+  }
+]

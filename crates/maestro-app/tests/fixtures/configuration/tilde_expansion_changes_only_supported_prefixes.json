@@ -1,0 +1,66 @@
+[
+  {
+    "input": {
+      "args": [
+        "~"
+      ]
+    },
+    "expected": "/home/sample"
+  },
+  {
+    "input": {
+      "args": [
+        "~/docs"
+      ]
+    },
+    "expected": "/home/sample/docs"
+  },
+  {
+    "input": {
+      "args": [
+        "~//docs"
+      ]
+    },
+    "expected": "/home/sample//docs"
+  },
+  {
+    "input": {
+      "args": [
+        "~/../docs"
+      ]
+    },
+    "expected": "/home/sample/../docs"
+  },
+  {
+    "input": {
+      "args": [
+        "./~"
+      ]
+    },
+    "expected": "./~"
+  },
+  {
+    "input": {
+      "args": [
+        "~user"
+      ]
+    },
+    "expected": "~user"
+  },
+  {
+    "input": {
+      "args": [
+        "~\\docs"
+      ]
+    },
+    "expected": "~\\docs"
+  },
+  {
+    "input": {
+      "args": [
+        ""
+      ]
+    },
+    "expected": ""
+  }
+]

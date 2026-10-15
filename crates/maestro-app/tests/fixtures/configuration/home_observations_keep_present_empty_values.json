@@ -1,0 +1,14 @@
+[
+  {
+    "input": {
+      "home": ""
+    },
+    "expected": ".maestro/agent"
+  },
+  {
+    "input": {
+      "home": "/account/home"
+    },
+    "expected": "/account/home/.maestro/agent"
+  }
+]

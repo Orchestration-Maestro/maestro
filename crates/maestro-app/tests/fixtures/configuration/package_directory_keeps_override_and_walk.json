@@ -1,0 +1,208 @@
+[
+  {
+    "input": {
+      "env": {},
+      "layout": "package"
+    },
+    "expected": "/package",
+    "observations": {
+      "exists": [
+        "/package/src/package.json",
+        "/package/src/Cargo.toml",
+        "/package/package.json"
+      ]
+    }
+  },
+  {
+    "input": {
+      "env": {
+        "MAESTRO_PACKAGE_DIR": ""
+      },
+      "layout": "package"
+    },
+    "expected": "/package",
+    "observations": {
+      "exists": [
+        "/package/src/package.json",
+        "/package/src/Cargo.toml",
+        "/package/package.json"
+      ]
+    }
+  },
+  {
+    "input": {
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "/override"
+      },
+      "layout": "package"
+    },
+    "expected": "/override",
+    "observations": {
+      "exists": []
+    }
+  },
+  {
+    "input": {
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "../package/./assets"
+      },
+      "layout": "package"
+    },
+    "expected": "../package/./assets",
+    "observations": {
+      "exists": []
+    }
+  },
+  {
+    "input": {
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "~"
+      },
+      "layout": "package"
+    },
+    "expected": "/home/sample",
+    "observations": {
+      "exists": []
+    }
+  },
+  {
+    "input": {
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "~/share"
+      },
+      "layout": "package"
+    },
+    "expected": "/home/sample/share",
+    "observations": {
+      "exists": []
+    }
+  },
+  {
+    "input": {
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "~//share"
+      },
+      "layout": "package"
+    },
+    "expected": "/home/sample//share",
+    "observations": {
+      "exists": []
+    }
+  },
+  {
+    "input": {
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "~name/share"
+      },
+      "layout": "package"
+    },
+    "expected": "~name/share",
+    "observations": {
+      "exists": []
+    }
+  },
+  {
+    "input": {
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "~\\share"
+      },
+      "layout": "package"
+    },
+    "expected": "~\\share",
+    "observations": {
+      "exists": []
+    }
+  },
+  {
+    "input": {
+      "exists": [
+        "/package/src/package.json",
+        "/package/package.json"
+      ],
+      "layout": "package"
+    },
+    "expected": "/package/src",
+    "observations": {
+      "exists": [
+        "/package/src/package.json"
+      ]
+    }
+  },
+  {
+    "input": {
+      "moduleDir": "/package/src/deep",
+      "exists": [
+        "/package/package.json"
+      ],
+      "layout": "package"
+    },
+    "expected": "/package",
+    "observations": {
+      "exists": [
+        "/package/src/deep/package.json",
+        "/package/src/deep/Cargo.toml",
+        "/package/src/package.json",
+        "/package/src/Cargo.toml",
+        "/package/package.json"
+      ]
+    }
+  },
+  {
+    "input": {
+      "exists": [],
+      "layout": "package"
+    },
+    "expected": "/package/src",
+    "observations": {
+      "exists": [
+        "/package/src/package.json",
+        "/package/src/Cargo.toml",
+        "/package/package.json",
+        "/package/Cargo.toml"
+      ]
+    }
+  },
+  {
+    "input": {
+      "exists": [
+        "/package.json"
+      ],
+      "moduleDir": "/src",
+      "layout": "package"
+    },
+    "expected": "/src",
+    "observations": {
+      "exists": [
+        "/src/package.json",
+        "/src/Cargo.toml"
+      ]
+    }
+  },
+  {
+    "input": {
+      "execPath": "/opt/bin/maestro",
+      "exists": [],
+      "layout": "standalone",
+      "moduleDir": "/$bunfs"
+    },
+    "expected": "/opt/bin",
+    "observations": {
+      "exists": []
+    }
+  },
+  {
+    "input": {
+      "execPath": "/opt/bin/maestro",
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "./assets"
+      },
+      "exists": [],
+      "layout": "standalone",
+      "moduleDir": "/$bunfs"
+    },
+    "expected": "./assets",
+    "observations": {
+      "exists": []
+    }
+  }
+]

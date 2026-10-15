@@ -1,0 +1,90 @@
+[
+  {
+    "input": {
+      "op": "getReadmePath",
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "/absolute"
+      },
+      "cwdError": true
+    },
+    "expected": "/absolute/README.md"
+  },
+  {
+    "input": {
+      "op": "getReadmePath",
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "./relative"
+      },
+      "cwdError": true
+    },
+    "expected": {
+      "error_kind": "NotFound"
+    }
+  },
+  {
+    "input": {
+      "op": "getDocsPath",
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "/absolute"
+      },
+      "cwdError": true
+    },
+    "expected": "/absolute/docs"
+  },
+  {
+    "input": {
+      "op": "getDocsPath",
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "./relative"
+      },
+      "cwdError": true
+    },
+    "expected": {
+      "error_kind": "NotFound"
+    }
+  },
+  {
+    "input": {
+      "op": "getExamplesPath",
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "/absolute"
+      },
+      "cwdError": true
+    },
+    "expected": "/absolute/examples"
+  },
+  {
+    "input": {
+      "op": "getExamplesPath",
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "./relative"
+      },
+      "cwdError": true
+    },
+    "expected": {
+      "error_kind": "NotFound"
+    }
+  },
+  {
+    "input": {
+      "op": "getChangelogPath",
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "/absolute"
+      },
+      "cwdError": true
+    },
+    "expected": "/absolute/CHANGELOG.md"
+  },
+  {
+    "input": {
+      "op": "getChangelogPath",
+      "env": {
+        "MAESTRO_PACKAGE_DIR": "./relative"
+      },
+      "cwdError": true
+    },
+    "expected": {
+      "error_kind": "NotFound"
+    }
+  }
+]
