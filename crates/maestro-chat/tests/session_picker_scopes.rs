@@ -124,3 +124,31 @@ fn session_selector_retained_list_owns_callback_state() {
 fn session_scope_action_definitions_keep_default_keys_and_descriptions() {
     session_picker::session_picker_scopes::definitions();
 }
+
+#[cfg(unix)]
+#[path = "../../maestro-app/tests/support/child.rs"]
+mod keybinding_child;
+
+#[cfg(unix)]
+#[test]
+fn session_selector_default_file_manager_and_supplied_manager_are_distinct() {
+    const NAME: &str = "session_selector_default_file_manager_and_supplied_manager_are_distinct";
+    if std::env::var("MAESTRO_SELECTOR_KEYS_CHILD").as_deref() == Ok("yes") {
+        session_picker::session_picker_scopes::default_manager();
+    } else {
+        let dir = keybinding_child::Scratch::new();
+        std::fs::write(
+            dir.join("keybindings.json"),
+            "{\"app.session.toggleNamedFilter\":\"ctrl+x\"}",
+        )
+        .unwrap();
+        keybinding_child::probe(
+            NAME,
+            &dir.0,
+            &[
+                ("MAESTRO_SELECTOR_KEYS_CHILD", "yes"),
+                ("MAESTRO_CODING_AGENT_DIR", dir.0.to_str().unwrap()),
+            ],
+        );
+    }
+}

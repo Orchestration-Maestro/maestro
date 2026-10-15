@@ -36,8 +36,8 @@ pub struct SessionSelectorCallbacks {
 }
 /// Supplied discovery presentation and host observations.
 pub struct SessionSelectorOptions {
-    /// Retained live manager for named filtering.
-    pub keybindings: KeybindingsManager,
+    /// Retained live manager for named filtering; omitted values load application defaults.
+    pub keybindings: Option<KeybindingsManager>,
     /// Explicit rename help visibility.
     pub show_rename_hint: bool,
     /// Current authored session path.
@@ -99,26 +99,21 @@ pub struct SessionSelectorComponent {
     focus: FocusFlag,
 }
 impl SessionSelectorComponent {
-    /// Starts Current discovery immediately through supplied factories.
-    #[must_use]
+    /// Resolves keybindings before starting Current discovery through supplied factories.
+    ///
+    /// # Errors
+    /// Returns a configuration-root lookup error when an omitted manager cannot be loaded.
     pub fn new(
         current_sessions_loader: SessionsLoader,
         all_sessions_loader: SessionsLoader,
         callbacks: SessionSelectorCallbacks,
-        options: SessionSelectorOptions,
-    ) -> Rc<Self> {
-        let header = SessionSelectorHeader::new(
-            SessionScope::Current,
-            SortMode::Threaded,
-            NameFilter::All,
-            SessionSelectorHeaderOptions {
-                theme: options.theme.clone(),
-                runtime: options.runtime.clone(),
-                request_render: options.request_render.clone(),
-                styles_enabled: options.styles_enabled.clone(),
-            },
-        );
-        header.set_show_rename_hint(options.show_rename_hint);
+        mut options: SessionSelectorOptions,
+    ) -> std::io::Result<Rc<Self>> {
+        let keybindings = options
+            .keybindings
+            .take()
+            .map_or_else(default_keybindings, Ok)?;
+        let header = create_header(&options);
         let list = SessionList::new(
             Vec::new(),
             SessionListOptions {
@@ -133,7 +128,7 @@ impl SessionSelectorComponent {
                 styles_enabled: options.styles_enabled,
             },
         );
-        list.configure_keybindings(options.keybindings);
+        list.configure_keybindings(keybindings);
         let state = Rc::new(State {
             scope: Cell::new(SessionScope::Current),
             sort: Cell::new(SortMode::Threaded),
@@ -158,7 +153,7 @@ impl SessionSelectorComponent {
             list,
         });
         state.start(SessionScope::Current);
-        component
+        Ok(component)
     }
     /// Returns the same retained list, including its mutable callback slots.
     #[must_use]
@@ -388,3 +383,34 @@ impl Focusable for SessionSelectorComponent {
     }
 }
 component_children!(SessionSelectorComponent, Container, container);
+
+/// Constructs the retained header from the caller's presentation observations.
+fn create_header(options: &SessionSelectorOptions) -> Rc<SessionSelectorHeader> {
+    let header = SessionSelectorHeader::new(
+        SessionScope::Current,
+        SortMode::Threaded,
+        NameFilter::All,
+        SessionSelectorHeaderOptions {
+            theme: options.theme.clone(),
+            runtime: options.runtime.clone(),
+            request_render: options.request_render.clone(),
+            styles_enabled: options.styles_enabled.clone(),
+        },
+    );
+    header.set_show_rename_hint(options.show_rename_hint);
+    header
+}
+/// Loads a shared native manager, retaining in-memory defaults on browser targets.
+fn default_keybindings() -> std::io::Result<KeybindingsManager> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let manager = maestro_app::KeybindingsManager::create(None)?;
+        Ok(KeybindingsManager::clone(&manager))
+    }
+    #[cfg(target_arch = "wasm32")]
+    {
+        Ok(KeybindingsManager::clone(
+            &maestro_app::KeybindingsManager::default(),
+        ))
+    }
+}

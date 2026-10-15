@@ -8,8 +8,9 @@ session records, a live theme and host observations; storage stays caller-owned.
 ## Discovery
 
 `SessionSelectorComponent::new` takes Current/All `SessionsLoader` factories,
-`SessionSelectorCallbacks` and `SessionSelectorOptions`. It starts Current
-discovery before returning. Factories receive an owned `SessionListProgress`
+`SessionSelectorCallbacks` and `SessionSelectorOptions`. It returns an
+`io::Result`, resolving the optional key manager before starting Current
+discovery. Configuration-root errors return before discovery begins. Factories receive an owned `SessionListProgress`
 callback and return a fallible owned `SessionsFuture`; the supplied runtime drives
 completion. Only the visible scope publishes progress or results. Successful
 snapshots are shared with the list; scope changes reuse caches or pending loads.
@@ -23,7 +24,10 @@ completion, only while All is visible and both scopes have settled successful
 empty results. Unknown or failed results do not count as empty.
 
 Scope, sort and path controls use the live global key manager. Named filtering
-uses the supplied shared manager. Dispatch order is scope, sort, named, then path,
+uses the supplied shared manager, or a retained [file-backed application
+manager](../application/startup.md) when omitted on native targets. An explicit
+manager bypasses default lookup; browser defaults stay in memory. Construction
+does not install a global manager. Dispatch order is scope, sort, named, then path,
 before ordinary list input. The application action table supplies `ctrl+p`,
 `ctrl+s` and `ctrl+n` defaults for path, sort and named controls. Rename help is
 an explicit option; rename/delete input handling remains separate.
