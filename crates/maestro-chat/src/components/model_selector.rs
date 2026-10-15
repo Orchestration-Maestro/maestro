@@ -216,12 +216,8 @@ impl SelectionState {
         self.list.clear();
         let filtered = self.filtered.borrow();
         let count = filtered.len();
-        let start = self
-            .selected
-            .get()
-            .saturating_sub(5)
-            .min(count.saturating_sub(10));
-        let end = (start + 10).min(count);
+        let window = super::list_window(self.selected.get(), count, 10);
+        let (start, end) = (window.start, window.end);
         for (index, item) in filtered.iter().enumerate().take(end).skip(start) {
             self.text(self.row(index, item));
         }
@@ -249,15 +245,9 @@ impl SelectionState {
     /// Wraps one navigation action, leaving empty views untouched.
     fn navigate(&self, up: bool) {
         let count = self.filtered.borrow().len();
-        if count == 0 {
-            return;
+        if super::navigate_list(&self.selected, count, up) {
+            self.update_list();
         }
-        self.selected.set(if up {
-            (self.selected.get() + count - 1) % count
-        } else {
-            (self.selected.get() + 1) % count
-        });
-        self.update_list();
     }
 }
 /// Model search panel with retained Input and editable Container children.

@@ -232,8 +232,8 @@ impl OAuthSelectorComponent {
         self.list.clear();
         let count = self.selection.filtered.borrow().len();
         let selected = self.selection.index.get();
-        let start = selected.saturating_sub(4).min(count.saturating_sub(8));
-        let end = (start + 8).min(count);
+        let window = super::list_window(selected, count, 8);
+        let (start, end) = (window.start, window.end);
         for index in start..end {
             let Some(provider) = self.selection.provider(index) else {
                 continue;

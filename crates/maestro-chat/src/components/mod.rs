@@ -28,7 +28,7 @@ use maestro_tui::{
     Component, DefaultTextStyle, Markdown, MarkdownOptions, MarkdownTheme, TerminalImage,
     TextDecoration,
 };
-use std::rc::Rc;
+use std::{cell::Cell, rc::Rc};
 
 /// Paints a row using the current background, leaving absent themes unstyled.
 fn background(theme: LiveTheme, key: ThemeBg) -> Rc<dyn Fn(&str) -> String> {
@@ -253,3 +253,18 @@ fn shorten_home_path(path: &str, home: Option<&str>) -> String {
 }
 
 pub mod session_selector;
+/// Wraps selection in nonempty results, reporting whether a redraw is needed.
+fn navigate_list(selected: &Cell<usize>, count: usize, up: bool) -> bool {
+    if count == 0 {
+        return false;
+    }
+    selected.set(if up {
+        (selected.get() + count - 1) % count
+    } else {
+        (selected.get() + 1) % count
+    });
+    true
+}
+
+pub mod scoped_models_selector;
+pub use scoped_models_selector::{ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent};
