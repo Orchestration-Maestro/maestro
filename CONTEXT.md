@@ -180,3 +180,5 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 
 - **Workbook:** The application-owned ordered worksheet collection, numeric date epoch and detached number-format table snapshot returned by the XLSX reader. See [spreadsheet values and workbooks](docs/application/document-formats.md).
 - **Worksheet:** Ordered populated spreadsheet cells with retained raw values, optional formatted text, declared or observed range and ordered merged regions.
+
+- **Browser input:** The retained `maestro-web::Input` field, with native browser editing and event/ref handles; distinct from the terminal toolkit `Input`.

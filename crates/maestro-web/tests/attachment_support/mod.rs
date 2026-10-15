@@ -62,6 +62,9 @@ impl AttachmentHost for Host {
         p: &maestro_theme::BrandPresentation<'_>,
     ) -> Result<(), AttachmentUiError> {
         let content = match s.content {
+            AttachmentContent::Input { .. } => {
+                unreachable!("attachment suite does not create inputs")
+            }
             AttachmentContent::Image { source, alt, fit } => {
                 Content::Image(source.into(), alt.into(), fit)
             }
@@ -98,6 +101,20 @@ impl AttachmentHost for Host {
     }
     fn remove(&self, id: egui::Id) {
         self.effects.borrow_mut().push(format!("remove:{id:?}"));
+    }
+    fn take_escape(&self) -> bool {
+        false
+    }
+    fn timer(
+        &self,
+        _: i32,
+        _: bool,
+        _: Rc<dyn Fn()>,
+    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
+        unreachable!("attachment suite does not arm timers")
+    }
+    fn spawn_local(&self, _: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
+        unreachable!("attachment suite does not dispatch futures")
     }
     fn download(&self, a: Rc<RefCell<Attachment>>) -> Result<(), AttachmentUiError> {
         self.downloads.borrow_mut().push(a);

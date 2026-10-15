@@ -19,15 +19,16 @@ font bundle; native tests enable the dev-only egui default fonts.
 | serde_json | 1.0.151 | workspace preserve_order, float_roundtrip | MIT |
 | wasm-bindgen | 0.2.129 | wasm-only, default/std | MIT |
 | js-sys | 0.3.106 | wasm-only, default/std | MIT |
-| wasm-bindgen-futures | 0.4.79 | wasm-only, default/std; native request promises | MIT |
-| web-sys | 0.3.106 | wasm-only browser platform operations | MIT |
+| web-sys | 0.3.106 | public native event/element types; wasm-only platform effects | MIT |
+| wasm-bindgen-futures | 0.4.79 | wasm-only, default/std request promises and local future dispatch | MIT |
 
 The web-sys feature set is Window, Navigator, Storage, Location, console,
 Document, Node, Element, SvgElement, HtmlElement, HtmlAnchorElement, Blob,
 BlobPropertyBag, Url, MediaQueryList, HtmlCanvasElement, DomRect, DomException,
 DomStringList, IdbDatabase, IdbFactory, IdbIndex, IdbIndexParameters, IdbObjectStore,
-IdbObjectStoreParameters, IdbOpenDbRequest, IdbRequest, IdbTransaction and
-IdbTransactionMode. Storage and reload errors remain fallible. Legacy locale access uses the platform property
+IdbObjectStoreParameters, IdbOpenDbRequest, IdbRequest, IdbTransaction,
+IdbTransactionMode, HtmlInputElement, Event, EventTarget and KeyboardEvent.
+Storage and reload errors remain fallible. Legacy locale access uses the platform property
 adapter only on the fallback branch. The real library is built for WebAssembly,
 not replaced with a test-only host.
 

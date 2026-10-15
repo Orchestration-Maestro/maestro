@@ -46,6 +46,19 @@ pub enum TextView {
 }
 /// Borrowed operands for one platform content update.
 pub enum AttachmentContent<'a> {
+    /// Browser-native editable input.
+    Input {
+        /// Live native field configuration.
+        props: &'a crate::components::input::InputProps,
+        /// Localized native accessible name, including the required marker.
+        accessible_label: &'a str,
+        /// Assign the caller's changed value, preserving native edits otherwise.
+        value_changed: bool,
+        /// Containing modal, when placed in a foreground layer.
+        modal: Option<egui::Id>,
+        /// Drawing context notified by native keyboard activity.
+        context: &'a egui::Context,
+    },
     /// Browser-native image.
     Image {
         /// Complete image URL.
@@ -76,15 +89,15 @@ pub enum AttachmentContent<'a> {
 pub struct AttachmentSurface<'a> {
     /// Component identity, independent of attachment identity.
     pub id: egui::Id,
-    /// Full content bounds.
+    /// Full content bounds in canvas points.
     pub rect: egui::Rect,
-    /// Visible clip bounds, without resizing content.
+    /// Visible clip bounds in canvas points, without resizing content.
     pub clip_rect: egui::Rect,
     /// Canvas physical pixels per point.
     pub pixels_per_point: f32,
     /// Native content opacity.
     pub opacity: f32,
-    /// Disjoint canvas control rectangles to exclude from native content.
+    /// Disjoint control rectangles in canvas points to exclude from native content.
     pub occluders: Vec<egui::Rect>,
     /// Content operands copied or retained by the host.
     pub content: AttachmentContent<'a>,
@@ -152,6 +165,19 @@ pub trait AttachmentHost {
     fn hover_capable(&self) -> Result<bool, AttachmentUiError>;
     /// Release the named surface.
     fn remove(&self, id: egui::Id);
+    /// Consume Escape delivered by a native input outside canvas focus.
+    fn take_escape(&self) -> bool;
+    /// Register a native callback whose handle revokes delivery on drop.
+    /// # Errors
+    /// Returns native timer registration failures.
+    fn timer(
+        &self,
+        delay_ms: i32,
+        repeat: bool,
+        callback: Rc<dyn Fn()>,
+    ) -> Result<crate::browser::timer::Timer, AttachmentUiError>;
+    /// Dispatch owned browser-local asynchronous work.
+    fn spawn_local(&self, future: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>);
     /// Download the original record.
     /// # Errors
     /// Returns decoding or platform failures.
@@ -307,3 +333,6 @@ fn style_targets(
     ids.take(if previous == current { 0 } else { usize::MAX })
         .chain(placed.filter(move |_| previous == current))
 }
+
+#[cfg(target_arch = "wasm32")]
+mod input;

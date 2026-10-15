@@ -18,6 +18,8 @@ pub struct BrowserAttachmentHost {
     surfaces: RefCell<HashMap<egui::Id, DomSurface>>,
     /// Open modal identities in mounting order.
     overlays: RefCell<Vec<egui::Id>>,
+    /// Escape pending from native field focus.
+    escape: Rc<std::cell::Cell<bool>>,
 }
 /// One retained content element with its unclipped layout.
 struct DomSurface {
@@ -29,9 +31,14 @@ struct DomSurface {
     tag: &'static str,
     /// Complete layout excluding modal visibility.
     style: String,
+    /// Native field callbacks and reference assignment.
+    input: Option<super::input::DomInput>,
+    /// Containing modal identity, distinct from the field identity.
+    modal: Option<egui::Id>,
 }
 impl Drop for DomSurface {
     fn drop(&mut self) {
+        drop(self.input.take());
         self.wrapper.remove();
     }
 }
@@ -52,6 +59,7 @@ impl BrowserAttachmentHost {
             document,
             surfaces: RefCell::new(HashMap::new()),
             overlays: RefCell::new(Vec::new()),
+            escape: Rc::new(std::cell::Cell::new(false)),
         })
     }
     /// Create a detached element owner, publishing it only after setup.
@@ -72,9 +80,12 @@ impl BrowserAttachmentHost {
             child,
             tag,
             style: String::new(),
+            input: None,
+            modal: None,
         })
     }
-    /// Map canvas points to the full viewport rectangle, clipping without resizing.
+    /// Map canvas points to viewport CSS pixels without resizing for clipping.
+    /// `bounds` is in CSS pixels, `r` in canvas points; `x`/`y` are CSS pixels per point.
     fn placement(&self, s: &AttachmentSurface<'_>) -> Result<String, AttachmentUiError> {
         let bounds = self.canvas.get_bounding_client_rect();
         if self.canvas.width() == 0 || self.canvas.height() == 0 {
@@ -106,12 +117,16 @@ impl BrowserAttachmentHost {
         let surfaces = self.surfaces.borrow();
         for id in super::style_targets(surfaces.keys().copied(), placed, previous, top) {
             let Some(s) = surfaces.get(&id) else { continue };
-            let visibility = if top.is_none_or(|top| top == id) {
+            let visibility = if top.is_none_or(|top| top == id || s.modal == Some(top)) {
                 "visible"
             } else {
                 "hidden"
             };
-            let z = if top == Some(id) { 51 } else { 1 };
+            let z = if top == Some(id) || top.is_some_and(|id| s.modal == Some(id)) {
+                51
+            } else {
+                1
+            };
             let style = format!("{}visibility:{visibility};z-index:{z};", s.style);
             s.wrapper
                 .set_attribute("style", &style)
@@ -121,10 +136,20 @@ impl BrowserAttachmentHost {
     }
     /// Update copied DOM properties while retaining unchanged native content.
     fn content(
-        element: &Element,
+        &self,
+        surface: &mut DomSurface,
         content: &AttachmentContent<'_>,
     ) -> Result<(), AttachmentUiError> {
+        surface.modal = None;
+        let element = &surface.child;
         let css=match content {
+            AttachmentContent::Input { props, modal, .. } => {
+                if surface.input.is_none() { surface.input = Some(super::input::DomInput::new(element)?); }
+                if let Some(input) = surface.input.as_mut() { input.update(content, Rc::clone(&self.escape))?; }
+                surface.wrapper.set_attribute("class", &props.class_name).map_err(|e|host_error(&e))?;
+                surface.modal = *modal;
+                return Ok(());
+            },
             AttachmentContent::Image{source,alt,fit}=>{
                 if element.get_attribute("src").as_deref()!=Some(*source){element.set_attribute("src",source).map_err(|error|host_error(&error))?;}
                 element.set_attribute("alt",alt).map_err(|error|host_error(&error))?;element.set_attribute("title",alt).map_err(|error|host_error(&error))?;
@@ -155,6 +180,7 @@ impl AttachmentHost for BrowserAttachmentHost {
     ) -> Result<(), AttachmentUiError> {
         let id = s.id;
         let tag = match &s.content {
+            AttachmentContent::Input { .. } => "input",
             AttachmentContent::Image { .. } => "img",
             AttachmentContent::Text { .. } => "pre",
             AttachmentContent::Preview { .. } => "div",
@@ -163,6 +189,7 @@ impl AttachmentHost for BrowserAttachmentHost {
         let mut surface = retained.map_or_else(|| self.create(tag), Ok)?;
         let result: Result<(), AttachmentUiError> = (|| {
             if surface.tag != tag {
+                drop(surface.input.take());
                 let child = self
                     .document
                     .create_element(tag)
@@ -190,12 +217,13 @@ impl AttachmentHost for BrowserAttachmentHost {
                     ..
                 }
             );
-            Self::content(&surface.child, &s.content).map_err(|error| match error {
-                AttachmentUiError::Host(message) if presentation => {
-                    AttachmentUiError::Presentation(message)
-                }
-                other => other,
-            })?;
+            self.content(&mut surface, &s.content)
+                .map_err(|error| match error {
+                    AttachmentUiError::Host(message) if presentation => {
+                        AttachmentUiError::Presentation(message)
+                    }
+                    other => other,
+                })?;
             let body = self
                 .document
                 .body()
@@ -220,6 +248,14 @@ impl AttachmentHost for BrowserAttachmentHost {
                 overlays.push(id);
             }
         }
+        if !visible {
+            let removed: Vec<_> = self
+                .surfaces
+                .borrow_mut()
+                .extract_if(|_, s| s.modal == Some(id))
+                .collect();
+            drop(removed);
+        }
         self.visibility(None, previous)
     }
     fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
@@ -234,6 +270,25 @@ impl AttachmentHost for BrowserAttachmentHost {
     fn remove(&self, id: egui::Id) {
         let removed = self.surfaces.borrow_mut().remove(&id);
         drop(removed);
+    }
+    fn take_escape(&self) -> bool {
+        self.escape.replace(false)
+    }
+    fn timer(
+        &self,
+        delay_ms: i32,
+        repeat: bool,
+        callback: Rc<dyn Fn()>,
+    ) -> Result<crate::browser::timer::Timer, AttachmentUiError> {
+        let window = self
+            .document
+            .default_view()
+            .ok_or_else(|| AttachmentUiError::Host("Document has no window".into()))?;
+        crate::browser::timer::native(window, delay_ms, repeat, callback)
+            .map_err(|e| host_error(&e))
+    }
+    fn spawn_local(&self, future: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
+        wasm_bindgen_futures::spawn_local(future);
     }
     fn download(&self, attachment: Rc<RefCell<Attachment>>) -> Result<(), AttachmentUiError> {
         crate::utils::download::download(&self.document, &attachment)

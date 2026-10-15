@@ -4,6 +4,7 @@ pub mod browser;
 pub mod components;
 pub mod dialogs;
 pub use components::attachment_tile::AttachmentTile;
+pub use components::input::Input;
 pub use dialogs::attachment_overlay::AttachmentOverlay;
 pub mod export_html;
 pub mod icons;
