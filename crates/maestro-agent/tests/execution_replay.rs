@@ -107,7 +107,7 @@ fn ownership(id: &str, actual: &Value) {
 }
 /// Run identical callback construction with the concrete public pointer families.
 macro_rules! replay {
-    ($namespace:ident, $mode:ty, $pointer:ident, $new:ident, $run:path) => {
+    ($namespace:ident, $mode:ty, $pointer:ident, $new:ident, $run:path, $options:expr) => {
         pub(crate) mod $namespace {
             use super::*;
             type Mode = $mode;
@@ -971,7 +971,7 @@ macro_rules! replay {
                             .push(support::observations::event(&event, message));
                         Box::pin(std::future::ready(Ok(())))
                     }),
-                    options,
+                    ($options)(options),
                 ))
                 .unwrap();
                 check(
@@ -1006,6 +1006,19 @@ replay!(
     Local,
     Rc,
     new_local,
-    maestro_agent::agent_loop::local::run_agent_loop
+    maestro_agent::agent_loop::local::run_agent_loop,
+    |options: maestro_agent::agent_loop::AgentLoopOptionsRecord<Local>| {
+        maestro_agent::agent_loop::LocalAgentLoopOptions::ReplacementStream {
+            signal: options.signal,
+            stream_fn: options.stream_fn.unwrap(),
+        }
+    }
 );
-replay!(threaded, Threaded, Arc, new, maestro_agent::run_agent_loop);
+replay!(
+    threaded,
+    Threaded,
+    Arc,
+    new,
+    maestro_agent::run_agent_loop,
+    std::convert::identity
+);

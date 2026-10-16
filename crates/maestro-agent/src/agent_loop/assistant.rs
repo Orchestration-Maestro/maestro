@@ -3,7 +3,7 @@ use super::{Driver, read, write};
 use crate::{AgentEvent, AgentMessage, AgentToolRecord, CustomAgentMessages};
 use maestro_models::{
     AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo,
-    ProviderStreamOptions, SharedAssistantMessage, stream_simple,
+    ProviderStreamOptions, SharedAssistantMessage,
 };
 use std::sync::{Arc, RwLock};
 
@@ -44,8 +44,8 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
             messages,
             tools,
         };
-        let stream = match &self.options.stream_fn {
-            Some(stream) => {
+        let stream = match &self.options.route {
+            super::StreamRoute::Replacement(stream) => {
                 let open = ProviderStreamOptions {
                     common: options.common.clone(),
                     extra: self.config.extra.clone(),
@@ -53,7 +53,9 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, 
                 };
                 stream(model, context, options, open).await?
             }
-            None => stream_simple(model, context, Some(options))?,
+            super::StreamRoute::Registered(submission) => {
+                E::provider_stream(model, context, options, submission.clone())?
+            }
         };
         self.consume(stream).await
     }

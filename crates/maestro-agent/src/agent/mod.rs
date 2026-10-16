@@ -32,9 +32,9 @@ pub struct AgentOptions<
     /// Context transformation captured at admission.
     pub transform_context: TransformContext<C, E>,
     /// Model payload hook captured at admission.
-    pub on_payload: Option<OnPayload>,
+    pub on_payload: Option<OnPayload<E>>,
     /// Model response hook captured at admission.
-    pub on_response: Option<OnResponse>,
+    pub on_response: Option<OnResponse<E>>,
     /// Validated tool hook captured at admission.
     pub before_tool_call: Option<BeforeToolCall<C, E>>,
     /// Executed tool hook captured at admission.
@@ -92,9 +92,9 @@ pub struct Agent<C: CustomAgentMessages = crate::NoCustomMessages, E: AgentExecu
     /// Context transformation for subsequently admitted runs.
     pub transform_context: RwLock<TransformContext<C, E>>,
     /// Model payload hook for subsequently admitted runs.
-    pub on_payload: RwLock<Option<OnPayload>>,
+    pub on_payload: RwLock<Option<OnPayload<E>>>,
     /// Model response hook for subsequently admitted runs.
-    pub on_response: RwLock<Option<OnResponse>>,
+    pub on_response: RwLock<Option<OnResponse<E>>>,
     /// Validated tool hook for subsequently admitted runs.
     pub before_tool_call: RwLock<Option<BeforeToolCall<C, E>>>,
     /// Executed tool hook for subsequently admitted runs.

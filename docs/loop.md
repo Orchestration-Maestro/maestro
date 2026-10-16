@@ -5,9 +5,10 @@
 The root operations use thread-safe callables on native targets and `Rc` callables
 on browser targets. Their explicit local counterparts
 have the same names under `maestro_agent::agent_loop::local`, with
-`LocalAgentContext`, `LocalAgentLoopConfig`, `agent_loop::LocalAgentLoopOptions` and an
-`AgentSpawner<Local>`. Both namespaces keep one explicit custom-message type
-argument and share the same operation bodies.
+`LocalAgentContext` and `LocalAgentLoopConfig`. Submitted local operations take
+`AgentLoopOptionsRecord<Local>` plus an `AgentSpawner<Local>`; provider tasks reuse
+that facility. Both namespaces keep one explicit custom-message type argument
+and share the same operation bodies.
 
 `agent_loop(prompts, context, config, options, spawn)` takes a shared config
 (`Arc<AgentLoopConfig>` natively, `Rc<AgentLoopConfig>` in browsers) and submits one
@@ -38,6 +39,12 @@ its entry handles. It returns the prompts and generated entries.
 `run_agent_loop_continue` appends through the supplied history handle and returns
 only generated entries. Empty history and an assistant tail are rejected before
 observations or request conversion; custom tails are converted by the caller.
+
+Local awaited operations take `agent_loop::LocalAgentLoopOptions`:
+`RegisteredDispatch { signal, spawn }` requires the caller's provider task facility;
+`ReplacementStream { signal, stream_fn }` requires no provider submission.
+Threaded awaited options and function arity are unchanged. Configuration payload
+and response hooks follow the selected execution family.
 
 Each lifecycle observation is awaited. Context transformation precedes conversion;
 the credential resolver runs for each request. When `AgentLoopConfig::thinking_budgets`

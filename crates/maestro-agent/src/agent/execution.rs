@@ -185,7 +185,13 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Agent<C, E> {
             prompts,
             context,
             config,
-            stream_fn,
+            options: crate::agent_loop::CapturedOptions::new(
+                AgentLoopOptionsRecord {
+                    signal: Some(signal.clone()),
+                    stream_fn,
+                },
+                E::provider_submission(spawn.clone()),
+            ),
             signal,
             result,
             retired,
@@ -251,8 +257,8 @@ pub struct OwnedRun<C: CustomAgentMessages, E: AgentExecution> {
     pub context: AgentContextRecord<C, E>,
     /// Captured callback and model configuration.
     pub config: AgentLoopConfigRecord<C, E>,
-    /// Captured stream override.
-    pub stream_fn: Option<crate::StreamFn<E>>,
+    /// Captured invocation overrides and provider admission.
+    options: crate::agent_loop::CapturedOptions<E>,
     /// Cancellation for the admitted operation.
     pub signal: Cancellation,
     /// Independent completion result.
@@ -265,11 +271,7 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> OwnedRun<C, E>
     pub async fn drive(self) {
         let emit = E::agent_sink(self.agent.clone(), self.signal.clone());
         drop(self.retired);
-        let options = AgentLoopOptionsRecord {
-            signal: Some(self.signal.clone()),
-            stream_fn: self.stream_fn,
-        };
-        let outcome = run_for(self.prompts, self.context, &self.config, emit, options).await;
+        let outcome = run_for(self.prompts, self.context, &self.config, emit, self.options).await;
         let outcome = match outcome {
             Ok(_) => Ok(()),
             Err(error) => {

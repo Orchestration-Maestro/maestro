@@ -13,7 +13,9 @@ and `Rc` callbacks and local futures on browser targets.
 prompt, continuation and subscription receivers are `Rc<Agent<C, Local>>`.
 Both representations use the same driver and lifecycle. The caller supplies the
 matching task facility; no executor is created by the agent. Model payload and
-response hooks retain their thread-safe contract in either representation.
+response hooks follow the invocation family. Local hooks and their futures may
+retain `Rc` state. Local registered provider work reuses the admitted run's task
+facility; threaded dispatch retains the provider's existing default submission.
 
 `Agent::prompt` and `Agent::r#continue` synchronously reserve a run and submit its work through
 `AgentOptions::spawn`. The caller supplies a facility that retains and drives the
