@@ -113,7 +113,7 @@ impl ResourceType {
         match self {
             Self::Extensions => name
                 .rsplit_once('.')
-                .is_some_and(|(_, extension)| matches!(extension, "ts" | "js")),
+                .is_some_and(|(_, extension)| matches!(extension, "ts" | "js" | "wasm")),
             Self::Skills | Self::Prompts => name
                 .rsplit_once('.')
                 .is_some_and(|(_, extension)| extension == "md"),
@@ -150,7 +150,7 @@ fn resolve_extension_entries(
             return Ok(Some(found));
         }
     }
-    Ok(["index.ts", "index.js"]
+    Ok(["index.ts", "index.js", "index.wasm"]
         .into_iter()
         .map(|name| join(&[dir, name]))
         .find(|path| operations.exists(Path::new(path)))

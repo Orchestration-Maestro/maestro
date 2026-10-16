@@ -1,0 +1,720 @@
+[
+  {
+    "id": "route-0",
+    "input": {
+      "text": ""
+    },
+    "expected": {
+      "stdout": "before:raw-before:raw-during:after:raw-after:",
+      "stderr": "during:",
+      "states": [
+        false,
+        false,
+        true,
+        false
+      ]
+    }
+  },
+  {
+    "id": "route-1",
+    "input": {
+      "text": "diagnostic\n"
+    },
+    "expected": {
+      "stdout": "before:diagnostic\nraw-before:diagnostic\nraw-during:diagnostic\nafter:diagnostic\nraw-after:diagnostic\n",
+      "stderr": "during:diagnostic\n",
+      "states": [
+        false,
+        false,
+        true,
+        false
+      ]
+    }
+  },
+  {
+    "id": "route-2",
+    "input": {
+      "text": "α\u0000🦀"
+    },
+    "expected": {
+      "stdout": "before:α\u0000🦀raw-before:α\u0000🦀raw-during:α\u0000🦀after:α\u0000🦀raw-after:α\u0000🦀",
+      "stderr": "during:α\u0000🦀",
+      "states": [
+        false,
+        false,
+        true,
+        false
+      ]
+    }
+  },
+  {
+    "id": "route-3",
+    "input": {
+      "text": "\u001b[7m  \u001b[27m"
+    },
+    "expected": {
+      "stdout": "before:\u001b[7m  \u001b[27mraw-before:\u001b[7m  \u001b[27mraw-during:\u001b[7m  \u001b[27mafter:\u001b[7m  \u001b[27mraw-after:\u001b[7m  \u001b[27m",
+      "stderr": "during:\u001b[7m  \u001b[27m",
+      "states": [
+        false,
+        false,
+        true,
+        false
+      ]
+    }
+  },
+  {
+    "id": "flush-false-false",
+    "input": {
+      "taken": false,
+      "failed": false
+    },
+    "expected": {
+      "branch": "ok"
+    }
+  },
+  {
+    "id": "flush-false-true",
+    "input": {
+      "taken": false,
+      "failed": true
+    },
+    "expected": {
+      "branch": "error"
+    }
+  },
+  {
+    "id": "flush-true-false",
+    "input": {
+      "taken": true,
+      "failed": false
+    },
+    "expected": {
+      "branch": "ok"
+    }
+  },
+  {
+    "id": "flush-true-true",
+    "input": {
+      "taken": true,
+      "failed": true
+    },
+    "expected": {
+      "branch": "error"
+    }
+  },
+  {
+    "id": "root-absent",
+    "input": {
+      "branch": "absent",
+      "override": null
+    },
+    "expected": {
+      "agent": "$ROOT/home/.maestro/agent",
+      "resolved": {
+        "extensions": [
+          {
+            "path": "$ROOT/project-pkg/project.wasm",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/project-pkg",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$ROOT/project-pkg"
+            }
+          },
+          {
+            "path": "$ROOT/user-pkg/visible.wasm",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/user-pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/user-pkg"
+            }
+          },
+          {
+            "path": "$ROOT/user-pkg/hidden.wasm",
+            "enabled": false,
+            "metadata": {
+              "source": "$ROOT/user-pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/user-pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "listed": [
+        {
+          "source": "$ROOT/user-pkg",
+          "scope": "user",
+          "filtered": true,
+          "installedPath": "$ROOT/user-pkg"
+        },
+        {
+          "source": "../../../work/extra",
+          "scope": "user",
+          "filtered": false,
+          "installedPath": "$ROOT/work/extra"
+        },
+        {
+          "source": "$ROOT/project-pkg",
+          "scope": "project",
+          "filtered": false,
+          "installedPath": "$ROOT/project-pkg"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "install",
+          "source": "$ROOT/work/extra",
+          "message": "Installing $ROOT/work/extra..."
+        },
+        {
+          "type": "complete",
+          "action": "install",
+          "source": "$ROOT/work/extra"
+        },
+        {
+          "type": "start",
+          "action": "remove",
+          "source": "$ROOT/work/extra",
+          "message": "Removing $ROOT/work/extra..."
+        },
+        {
+          "type": "complete",
+          "action": "remove",
+          "source": "$ROOT/work/extra"
+        }
+      ],
+      "removed": true,
+      "global": {
+        "packages": [
+          {
+            "source": "$ROOT/user-pkg",
+            "extensions": [
+              "!hidden.wasm"
+            ]
+          }
+        ]
+      },
+      "project": {
+        "packages": [
+          "$ROOT/project-pkg"
+        ]
+      }
+    }
+  },
+  {
+    "id": "root-empty",
+    "input": {
+      "branch": "empty",
+      "override": ""
+    },
+    "expected": {
+      "agent": "$ROOT/home/.maestro/agent",
+      "resolved": {
+        "extensions": [
+          {
+            "path": "$ROOT/project-pkg/project.wasm",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/project-pkg",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$ROOT/project-pkg"
+            }
+          },
+          {
+            "path": "$ROOT/user-pkg/visible.wasm",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/user-pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/user-pkg"
+            }
+          },
+          {
+            "path": "$ROOT/user-pkg/hidden.wasm",
+            "enabled": false,
+            "metadata": {
+              "source": "$ROOT/user-pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/user-pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "listed": [
+        {
+          "source": "$ROOT/user-pkg",
+          "scope": "user",
+          "filtered": true,
+          "installedPath": "$ROOT/user-pkg"
+        },
+        {
+          "source": "../../../work/extra",
+          "scope": "user",
+          "filtered": false,
+          "installedPath": "$ROOT/work/extra"
+        },
+        {
+          "source": "$ROOT/project-pkg",
+          "scope": "project",
+          "filtered": false,
+          "installedPath": "$ROOT/project-pkg"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "install",
+          "source": "$ROOT/work/extra",
+          "message": "Installing $ROOT/work/extra..."
+        },
+        {
+          "type": "complete",
+          "action": "install",
+          "source": "$ROOT/work/extra"
+        },
+        {
+          "type": "start",
+          "action": "remove",
+          "source": "$ROOT/work/extra",
+          "message": "Removing $ROOT/work/extra..."
+        },
+        {
+          "type": "complete",
+          "action": "remove",
+          "source": "$ROOT/work/extra"
+        }
+      ],
+      "removed": true,
+      "global": {
+        "packages": [
+          {
+            "source": "$ROOT/user-pkg",
+            "extensions": [
+              "!hidden.wasm"
+            ]
+          }
+        ]
+      },
+      "project": {
+        "packages": [
+          "$ROOT/project-pkg"
+        ]
+      }
+    }
+  },
+  {
+    "id": "root-absolute",
+    "input": {
+      "branch": "absolute",
+      "override": "$ROOT/selected"
+    },
+    "expected": {
+      "agent": "$ROOT/selected",
+      "resolved": {
+        "extensions": [
+          {
+            "path": "$ROOT/project-pkg/project.wasm",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/project-pkg",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$ROOT/project-pkg"
+            }
+          },
+          {
+            "path": "$ROOT/user-pkg/visible.wasm",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/user-pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/user-pkg"
+            }
+          },
+          {
+            "path": "$ROOT/user-pkg/hidden.wasm",
+            "enabled": false,
+            "metadata": {
+              "source": "$ROOT/user-pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/user-pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "listed": [
+        {
+          "source": "$ROOT/user-pkg",
+          "scope": "user",
+          "filtered": true,
+          "installedPath": "$ROOT/user-pkg"
+        },
+        {
+          "source": "../work/extra",
+          "scope": "user",
+          "filtered": false,
+          "installedPath": "$ROOT/work/extra"
+        },
+        {
+          "source": "$ROOT/project-pkg",
+          "scope": "project",
+          "filtered": false,
+          "installedPath": "$ROOT/project-pkg"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "install",
+          "source": "$ROOT/work/extra",
+          "message": "Installing $ROOT/work/extra..."
+        },
+        {
+          "type": "complete",
+          "action": "install",
+          "source": "$ROOT/work/extra"
+        },
+        {
+          "type": "start",
+          "action": "remove",
+          "source": "$ROOT/work/extra",
+          "message": "Removing $ROOT/work/extra..."
+        },
+        {
+          "type": "complete",
+          "action": "remove",
+          "source": "$ROOT/work/extra"
+        }
+      ],
+      "removed": true,
+      "global": {
+        "packages": [
+          {
+            "source": "$ROOT/user-pkg",
+            "extensions": [
+              "!hidden.wasm"
+            ]
+          }
+        ]
+      },
+      "project": {
+        "packages": [
+          "$ROOT/project-pkg"
+        ]
+      }
+    }
+  },
+  {
+    "id": "root-tilde",
+    "input": {
+      "branch": "tilde",
+      "override": "~/selected"
+    },
+    "expected": {
+      "agent": "$ROOT/home/selected",
+      "resolved": {
+        "extensions": [
+          {
+            "path": "$ROOT/project-pkg/project.wasm",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/project-pkg",
+              "scope": "project",
+              "origin": "package",
+              "baseDir": "$ROOT/project-pkg"
+            }
+          },
+          {
+            "path": "$ROOT/user-pkg/visible.wasm",
+            "enabled": true,
+            "metadata": {
+              "source": "$ROOT/user-pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/user-pkg"
+            }
+          },
+          {
+            "path": "$ROOT/user-pkg/hidden.wasm",
+            "enabled": false,
+            "metadata": {
+              "source": "$ROOT/user-pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$ROOT/user-pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      },
+      "listed": [
+        {
+          "source": "$ROOT/user-pkg",
+          "scope": "user",
+          "filtered": true,
+          "installedPath": "$ROOT/user-pkg"
+        },
+        {
+          "source": "../../work/extra",
+          "scope": "user",
+          "filtered": false,
+          "installedPath": "$ROOT/work/extra"
+        },
+        {
+          "source": "$ROOT/project-pkg",
+          "scope": "project",
+          "filtered": false,
+          "installedPath": "$ROOT/project-pkg"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "install",
+          "source": "$ROOT/work/extra",
+          "message": "Installing $ROOT/work/extra..."
+        },
+        {
+          "type": "complete",
+          "action": "install",
+          "source": "$ROOT/work/extra"
+        },
+        {
+          "type": "start",
+          "action": "remove",
+          "source": "$ROOT/work/extra",
+          "message": "Removing $ROOT/work/extra..."
+        },
+        {
+          "type": "complete",
+          "action": "remove",
+          "source": "$ROOT/work/extra"
+        }
+      ],
+      "removed": true,
+      "global": {
+        "packages": [
+          {
+            "source": "$ROOT/user-pkg",
+            "extensions": [
+              "!hidden.wasm"
+            ]
+          }
+        ]
+      },
+      "project": {
+        "packages": [
+          "$ROOT/project-pkg"
+        ]
+      }
+    }
+  },
+  {
+    "id": "update-user",
+    "input": {
+      "selected": "user"
+    },
+    "expected": {
+      "calls": [
+        {
+          "phase": "root",
+          "command": "controlled-npm",
+          "args": [
+            "--quiet",
+            "root",
+            "-g"
+          ],
+          "cwd": "$ROOT/work"
+        },
+        {
+          "phase": "view",
+          "command": "controlled-npm",
+          "args": [
+            "--quiet",
+            "view",
+            "outdated",
+            "version",
+            "--json"
+          ],
+          "cwd": "$ROOT/work"
+        },
+        {
+          "phase": "view",
+          "command": "controlled-npm",
+          "args": [
+            "--quiet",
+            "view",
+            "outdated",
+            "version",
+            "--json"
+          ],
+          "cwd": "$ROOT/work"
+        },
+        {
+          "phase": "install",
+          "command": "controlled-npm",
+          "args": [
+            "--quiet",
+            "install",
+            "-g",
+            "outdated@latest"
+          ],
+          "cwd": "$ROOT/work"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:outdated",
+          "message": "Updating npm:outdated..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:outdated"
+        }
+      ],
+      "global": {
+        "packages": [
+          "npm:outdated",
+          "npm:fixed@1",
+          "/missing-local"
+        ],
+        "npmCommand": [
+          "controlled-npm",
+          "--quiet"
+        ]
+      },
+      "project": {
+        "packages": [
+          "npm:outdated",
+          "npm:fixed@1",
+          "/missing-local"
+        ]
+      }
+    }
+  },
+  {
+    "id": "update-project",
+    "input": {
+      "selected": "project"
+    },
+    "expected": {
+      "calls": [
+        {
+          "phase": "root",
+          "command": "controlled-npm",
+          "args": [
+            "--quiet",
+            "root",
+            "-g"
+          ],
+          "cwd": "$ROOT/work"
+        },
+        {
+          "phase": "view",
+          "command": "controlled-npm",
+          "args": [
+            "--quiet",
+            "view",
+            "outdated",
+            "version",
+            "--json"
+          ],
+          "cwd": "$ROOT/work"
+        },
+        {
+          "phase": "view",
+          "command": "controlled-npm",
+          "args": [
+            "--quiet",
+            "view",
+            "outdated",
+            "version",
+            "--json"
+          ],
+          "cwd": "$ROOT/work"
+        },
+        {
+          "phase": "install",
+          "command": "controlled-npm",
+          "args": [
+            "--quiet",
+            "install",
+            "outdated@latest",
+            "--prefix",
+            "$ROOT/work/.maestro/npm"
+          ],
+          "cwd": "$ROOT/work"
+        }
+      ],
+      "events": [
+        {
+          "type": "start",
+          "action": "update",
+          "source": "npm:outdated",
+          "message": "Updating npm:outdated..."
+        },
+        {
+          "type": "complete",
+          "action": "update",
+          "source": "npm:outdated"
+        }
+      ],
+      "global": {
+        "packages": [
+          "npm:outdated",
+          "npm:fixed@1",
+          "/missing-local"
+        ],
+        "npmCommand": [
+          "controlled-npm",
+          "--quiet"
+        ]
+      },
+      "project": {
+        "packages": [
+          "npm:outdated",
+          "npm:fixed@1",
+          "/missing-local"
+        ]
+      }
+    }
+  },
+  {
+    "id": "live-package-stdio",
+    "input": {
+      "stdin": [
+        "first",
+        "second"
+      ]
+    },
+    "expected": {
+      "stdout": "A\nstdin:first\nC\nstdin:second\n",
+      "stderr": "A-err\nB\nB-err\nstdin:\nC-err\n"
+    }
+  }
+]
