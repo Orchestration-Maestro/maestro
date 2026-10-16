@@ -47,9 +47,12 @@ and a CSS projection test exercise this boundary; browser hit testing, image
 animation/selection and device placement remain qualified by
 [#825](https://github.com/Orchestration-Maestro/maestro/issues/825).
 
-Downloads use the owning window's native base64 decoder, a Blob with the original
+Attachment downloads use the owning window's native base64 decoder, a Blob with the original
 MIME type and a temporary anchor with the original filename. The object URL and
-anchor are released on exit. Download errors propagate rather than selecting a
+anchor are released on exit. The same byte sink serves
+[session JSONL downloads](session-viewer.md#jsonl-download) through
+`AttachmentHost::download_bytes`, without base64 conversion.
+Download errors propagate rather than selecting a
 text mode or replacing the preview with a file-display error.
 
 Pass the selected `BrandPresentation` to each render call. Colors, type, radii and

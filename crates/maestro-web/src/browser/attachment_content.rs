@@ -188,6 +188,11 @@ pub trait AttachmentHost {
     ) -> Result<crate::browser::timer::Timer, AttachmentUiError>;
     /// Dispatch owned browser-local asynchronous work.
     fn spawn_local(&self, future: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>);
+    /// Download supplied bytes synchronously without attachment decoding.
+    /// # Errors
+    /// Returns platform failures.
+    fn download_bytes(&self, bytes: &[u8], name: &str, mime: &str)
+    -> Result<(), AttachmentUiError>;
     /// Download the original record.
     /// # Errors
     /// Returns decoding or platform failures.

@@ -1,0 +1,202 @@
+[
+  {
+    "name": "all-branches-and-repeated-records",
+    "test": "session_download_keeps_full_history_and_header_projection",
+    "input_json": "{\"header\":{\"type\":\"session\",\"version\":3,\"id\":\"whole\",\"extra\":{\"note\":\"kept\"}},\"entries\":[{\"id\":\"root\",\"type\":\"message\",\"message\":{\"role\":\"user\",\"content\":\"start\"}},{\"id\":\"left\",\"parentId\":\"root\",\"type\":\"message\",\"message\":{\"role\":\"assistant\",\"content\":[]}},{\"id\":\"right\",\"parentId\":\"root\",\"type\":\"custom\",\"data\":{\"preserved\":true}},{\"id\":\"left\",\"parentId\":\"root\",\"type\":\"label\",\"targetId\":\"right\",\"label\":\"latest record\"}],\"leafId\":\"left\",\"tools\":[{\"name\":\"not-a-history-line\"}]}",
+    "expected": {
+      "text": "{\"type\":\"session\",\"version\":3,\"id\":\"whole\",\"extra\":{\"note\":\"kept\"}}\n{\"id\":\"root\",\"type\":\"message\",\"message\":{\"role\":\"user\",\"content\":\"start\"}}\n{\"id\":\"left\",\"parentId\":\"root\",\"type\":\"message\",\"message\":{\"role\":\"assistant\",\"content\":[]}}\n{\"id\":\"right\",\"parentId\":\"root\",\"type\":\"custom\",\"data\":{\"preserved\":true}}\n{\"id\":\"left\",\"parentId\":\"root\",\"type\":\"label\",\"targetId\":\"right\",\"label\":\"latest record\"}",
+      "mime": "application/x-ndjson",
+      "file_name": "whole.jsonl"
+    }
+  },
+  {
+    "name": "header-default-before-authored-members",
+    "test": "session_download_keeps_full_history_and_header_projection",
+    "input_json": "{\"header\":{\"id\":\"first\",\"z\":2,\"a\":1},\"entries\":[]}",
+    "expected": {
+      "text": "{\"type\":\"header\",\"id\":\"first\",\"z\":2,\"a\":1}",
+      "mime": "application/x-ndjson",
+      "file_name": "first.jsonl"
+    }
+  },
+  {
+    "name": "authored-header-type-replaces-default-without-moving-key",
+    "test": "session_download_keeps_full_history_and_header_projection",
+    "input_json": "{\"header\":{\"z\":2,\"type\":\"session\",\"id\":\"typed\"},\"entries\":[]}",
+    "expected": {
+      "text": "{\"type\":\"session\",\"z\":2,\"id\":\"typed\"}",
+      "mime": "application/x-ndjson",
+      "file_name": "typed.jsonl"
+    }
+  },
+  {
+    "name": "header-type-null-is-not-replaced",
+    "test": "session_download_keeps_full_history_and_header_projection",
+    "input_json": "{\"header\":{\"id\":\"typed-null\",\"type\":null},\"entries\":[]}",
+    "expected": {
+      "text": "{\"type\":null,\"id\":\"typed-null\"}",
+      "mime": "application/x-ndjson",
+      "file_name": "typed-null.jsonl"
+    }
+  },
+  {
+    "name": "header-type-false-is-not-replaced",
+    "test": "session_download_keeps_full_history_and_header_projection",
+    "input_json": "{\"header\":{\"id\":\"typed-false\",\"type\":false},\"entries\":[]}",
+    "expected": {
+      "text": "{\"type\":false,\"id\":\"typed-false\"}",
+      "mime": "application/x-ndjson",
+      "file_name": "typed-false.jsonl"
+    }
+  },
+  {
+    "name": "missing-header",
+    "test": "session_download_uses_session_names_and_unicode_fallbacks",
+    "input_json": "{\"entries\":[{\"type\":\"custom\",\"value\":\"header omitted\"}]}",
+    "expected": {
+      "text": "{\"type\":\"custom\",\"value\":\"header omitted\"}",
+      "mime": "application/x-ndjson",
+      "file_name": "session.jsonl"
+    }
+  },
+  {
+    "name": "null-header",
+    "test": "session_download_uses_session_names_and_unicode_fallbacks",
+    "input_json": "{\"header\":null,\"entries\":[{\"type\":\"custom\",\"value\":\"header null\"}]}",
+    "expected": {
+      "text": "{\"type\":\"custom\",\"value\":\"header null\"}",
+      "mime": "application/x-ndjson",
+      "file_name": "session.jsonl"
+    }
+  },
+  {
+    "name": "empty-header",
+    "test": "session_download_uses_session_names_and_unicode_fallbacks",
+    "input_json": "{\"header\":{},\"entries\":[]}",
+    "expected": {
+      "text": "{\"type\":\"header\"}",
+      "mime": "application/x-ndjson",
+      "file_name": "session.jsonl"
+    }
+  },
+  {
+    "name": "falsy-session-id-null",
+    "test": "session_download_uses_session_names_and_unicode_fallbacks",
+    "input_json": "{\"header\":{\"id\":null},\"entries\":[]}",
+    "expected": {
+      "text": "{\"type\":\"header\",\"id\":null}",
+      "mime": "application/x-ndjson",
+      "file_name": "session.jsonl"
+    }
+  },
+  {
+    "name": "falsy-session-id-empty",
+    "test": "session_download_uses_session_names_and_unicode_fallbacks",
+    "input_json": "{\"header\":{\"id\":\"\"},\"entries\":[]}",
+    "expected": {
+      "text": "{\"type\":\"header\",\"id\":\"\"}",
+      "mime": "application/x-ndjson",
+      "file_name": "session.jsonl"
+    }
+  },
+  {
+    "name": "falsy-session-id-false",
+    "test": "session_download_uses_session_names_and_unicode_fallbacks",
+    "input_json": "{\"header\":{\"id\":false},\"entries\":[]}",
+    "expected": {
+      "text": "{\"type\":\"header\",\"id\":false}",
+      "mime": "application/x-ndjson",
+      "file_name": "session.jsonl"
+    }
+  },
+  {
+    "name": "falsy-session-id-zero",
+    "test": "session_download_uses_session_names_and_unicode_fallbacks",
+    "input_json": "{\"header\":{\"id\":0},\"entries\":[]}",
+    "expected": {
+      "text": "{\"type\":\"header\",\"id\":0}",
+      "mime": "application/x-ndjson",
+      "file_name": "session.jsonl"
+    }
+  },
+  {
+    "name": "unicode-and-markup-looking-session-id",
+    "test": "session_download_uses_session_names_and_unicode_fallbacks",
+    "input_json": "{\"header\":{\"id\":\"保存 🦀 <tag>&\\\"'\"},\"entries\":[]}",
+    "expected": {
+      "text": "{\"type\":\"header\",\"id\":\"保存 🦀 <tag>&\\\"'\"}",
+      "mime": "application/x-ndjson",
+      "file_name": "保存 🦀 <tag>&\"'.jsonl"
+    }
+  },
+  {
+    "name": "whitespace-session-id-is-not-trimmed",
+    "test": "session_download_uses_session_names_and_unicode_fallbacks",
+    "input_json": "{\"header\":{\"id\":\" ﻿ \"},\"entries\":[]}",
+    "expected": {
+      "text": "{\"type\":\"header\",\"id\":\" ﻿ \"}",
+      "mime": "application/x-ndjson",
+      "file_name": " ﻿ .jsonl"
+    }
+  },
+  {
+    "name": "nested-key-order-and-number-spelling",
+    "test": "session_download_keeps_compact_json_order_and_number_spelling",
+    "input_json": "{\"header\":{\"id\":\"numbers\",\"10\":\"ten\",\"2\":\"two\",\"tail\":true},\"entries\":[{\"type\":\"custom\",\"10\":10,\"2\":2,\"negativeZero\":-0,\"small\":1e-7,\"large\":1e21,\"rounded\":9007199254740993,\"nested\":{\"b\":1,\"1\":\"one\",\"a\":2}}]}",
+    "expected": {
+      "text": "{\"2\":\"two\",\"10\":\"ten\",\"type\":\"header\",\"id\":\"numbers\",\"tail\":true}\n{\"2\":2,\"10\":10,\"type\":\"custom\",\"negativeZero\":0,\"small\":1e-7,\"large\":1e+21,\"rounded\":9007199254740992,\"nested\":{\"1\":\"one\",\"b\":1,\"a\":2}}",
+      "mime": "application/x-ndjson",
+      "file_name": "numbers.jsonl"
+    }
+  },
+  {
+    "name": "unknown-record-fields-and-literal-content",
+    "test": "session_download_keeps_compact_json_order_and_number_spelling",
+    "input_json": "{\"header\":{\"id\":\"raw\"},\"entries\":[{\"type\":\"custom\",\"unknown\":[true,false,null,4,\"raw string\",{\"text\":\"<script>\\r\\n\\t🦀&\"},[\"raw array\"]]}]}",
+    "expected": {
+      "text": "{\"type\":\"header\",\"id\":\"raw\"}\n{\"type\":\"custom\",\"unknown\":[true,false,null,4,\"raw string\",{\"text\":\"<script>\\r\\n\\t🦀&\"},[\"raw array\"]]}",
+      "mime": "application/x-ndjson",
+      "file_name": "raw.jsonl"
+    }
+  },
+  {
+    "name": "no-header-no-entries",
+    "test": "session_download_does_not_add_a_final_newline",
+    "input_json": "{\"entries\":[]}",
+    "expected": {
+      "text": "",
+      "mime": "application/x-ndjson",
+      "file_name": "session.jsonl"
+    }
+  },
+  {
+    "name": "header-only",
+    "test": "session_download_does_not_add_a_final_newline",
+    "input_json": "{\"header\":{\"id\":\"one\"},\"entries\":[]}",
+    "expected": {
+      "text": "{\"type\":\"header\",\"id\":\"one\"}",
+      "mime": "application/x-ndjson",
+      "file_name": "one.jsonl"
+    }
+  },
+  {
+    "name": "entry-only",
+    "test": "session_download_does_not_add_a_final_newline",
+    "input_json": "{\"entries\":[{\"x\":\"line\\ninside\"}]}",
+    "expected": {
+      "text": "{\"x\":\"line\\ninside\"}",
+      "mime": "application/x-ndjson",
+      "file_name": "session.jsonl"
+    }
+  },
+  {
+    "name": "header-and-multiple-entries",
+    "test": "session_download_does_not_add_a_final_newline",
+    "input_json": "{\"header\":{\"id\":\"multi\"},\"entries\":[{\"n\":1},{\"n\":2}]}",
+    "expected": {
+      "text": "{\"type\":\"header\",\"id\":\"multi\"}\n{\"n\":1}\n{\"n\":2}",
+      "mime": "application/x-ndjson",
+      "file_name": "multi.jsonl"
+    }
+  }
+]

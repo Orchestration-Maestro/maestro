@@ -122,6 +122,9 @@ impl AttachmentHost for Host {
     fn spawn_local(&self, _: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
         unreachable!("attachment suite does not dispatch futures")
     }
+    fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentUiError> {
+        unreachable!("unexpected byte download")
+    }
     fn download(&self, a: Rc<RefCell<Attachment>>) -> Result<(), AttachmentUiError> {
         self.downloads.borrow_mut().push(a);
         if self.fail_download.get() {

@@ -134,6 +134,9 @@ impl AttachmentHost for Host {
     fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
         Ok(false)
     }
+    fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentUiError> {
+        unreachable!("unexpected byte download")
+    }
     fn download(&self, _: Rc<RefCell<Attachment>>) -> Result<(), AttachmentUiError> {
         unreachable!()
     }

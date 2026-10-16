@@ -7,3 +7,6 @@ pub use stats::{Stats, compute_stats};
 mod header;
 
 pub use header::{HeaderState, HeaderView, render_header};
+
+mod download;
+pub use download::download_session_json;
