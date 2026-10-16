@@ -2,6 +2,7 @@
 /// Offline public-interface behavior checks.
 mod tests {
     use maestro_models::*;
+    mod families;
 
     /// Erase only the future representation of the same generic response body.
     macro_rules! factory {
@@ -382,6 +383,7 @@ mod tests {
     /// Exercise queue exhaustion counts requests through the public invocation boundary.
     fn maestro_queue_exhaustion_counts_requests() {
         let _serial = crate::bundled::registry();
+        families::exercise(families::Scenario::Exhaustion);
         let registration = register_faux_provider(RegisterFauxProviderOptions::default());
         registration.set_responses(vec![scripted("first"), scripted("second")]);
         for text in ["first", "second"] {
@@ -1133,6 +1135,7 @@ mod tests {
     /// Exercise async factories observe live state through the public invocation boundary.
     fn maestro_async_factories_observe_live_state() {
         let _serial = crate::bundled::registry();
+        families::exercise(families::Scenario::Live);
         let registration = fixed(None);
         let (entered_tx, entered_rx) = std::sync::mpsc::channel();
         let (release_tx, release_rx) = tokio::sync::oneshot::channel();
@@ -1322,6 +1325,7 @@ mod tests {
     /// Exercise factory failure is terminal through the public invocation boundary.
     fn maestro_factory_failure_is_terminal() {
         let _serial = crate::bundled::registry();
+        families::exercise(families::Scenario::Failure);
         let registration = fixed(None);
         registration.set_responses(vec![FauxResponseStep::Factory(std::sync::Arc::new(
             FailingFactory,
@@ -1623,6 +1627,7 @@ mod tests {
     /// Exercise raw and simple options reach factory through the public invocation boundary.
     fn maestro_raw_and_simple_options_reach_factory() {
         let _serial = crate::bundled::registry();
+        families::exercise(families::Scenario::Options);
         let registration = fixed(None);
         let factory: FauxResponseFactory = std::sync::Arc::new(ForwardedOptionsFactory);
         registration.set_responses(
@@ -1735,6 +1740,7 @@ mod tests {
     /// Exercise response hook precedes factory through the public invocation boundary.
     fn maestro_response_hook_precedes_factory() {
         let _serial = crate::bundled::registry();
+        families::exercise(families::Scenario::Order);
         let registration = fixed(None);
         let order = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
         let factory_order = order.clone();
