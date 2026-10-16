@@ -162,6 +162,52 @@ These functions are injected into HTML artifact sandbox:
 
 "#;
 
+/// Read-write artifact storage helpers supplied to the model.
+pub const ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW: &str = r"
+### Artifacts Storage
+
+Create, read, update, and delete files in artifacts storage.
+
+#### When to Use
+- Store intermediate results between tool calls
+- Save generated files (images, CSVs, processed data) for user to view and download
+
+#### Do NOT Use For
+- Content you author directly, like summaries of content you read (use artifacts tool instead)
+
+#### Functions
+- listArtifacts() - List all artifact filenames, returns Promise<string[]>
+- getArtifact(filename) - Read artifact content, returns Promise<string | object>. JSON files auto-parse to objects, binary files return base64 string
+- createOrUpdateArtifact(filename, content, mimeType?) - Create or update artifact, returns Promise<void>. JSON files auto-stringify objects, binary requires base64 string with mimeType
+- deleteArtifact(filename) - Delete artifact, returns Promise<void>
+
+#### Example
+JSON workflow:
+```javascript
+// Fetch and save
+const response = await fetch('https://api.example.com/products');
+const products = await response.json();
+await createOrUpdateArtifact('products.json', products);
+
+// Later: read and filter
+const all = await getArtifact('products.json');
+const cheap = all.filter(p => p.price < 100);
+await createOrUpdateArtifact('cheap.json', cheap);
+```
+
+Binary file (image):
+```javascript
+const canvas = document.createElement('canvas');
+canvas.width = 800; canvas.height = 600;
+const ctx = canvas.getContext('2d');
+ctx.fillStyle = 'blue';
+ctx.fillRect(0, 0, 800, 600);
+// Remove data:image/png;base64, prefix
+const base64 = canvas.toDataURL().split(',')[1];
+await createOrUpdateArtifact('chart.png', base64, 'image/png');
+```
+";
+
 /// Read-only artifact storage guidance.
 pub const ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO: &str = r"
 ### Artifacts Storage

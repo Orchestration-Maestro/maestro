@@ -64,3 +64,8 @@ serde_json.workspace = true
 
 [lints]
 workspace = true
+
+[[example]]
+name = "count_prompt_tokens"
+path = "examples/count_prompt_tokens.rs"
+test = true
