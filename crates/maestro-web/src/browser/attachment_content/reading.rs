@@ -47,3 +47,34 @@ pub struct ReadingRoot {
     /// Empty native slots retaining their caller identities.
     pub slots: Vec<(egui::Id, web_sys::Element)>,
 }
+
+/// Publish a full native body through the existing two-phase transaction.
+pub(crate) fn present(
+    host: &dyn super::AttachmentHost,
+    ui: &egui::Ui,
+    surface: (egui::Id, egui::Rect, Option<egui::Id>),
+    reading: &Rc<ReadingContent>,
+    presentation: &maestro_theme::BrandPresentation<'_>,
+) -> Result<(), super::AttachmentUiError> {
+    for phase in [ReadingPhase::Measure, ReadingPhase::Publish] {
+        host.present(
+            super::AttachmentSurface {
+                id: surface.0,
+                rect: surface.1,
+                clip_rect: ui.clip_rect(),
+                pixels_per_point: ui.ctx().pixels_per_point(),
+                opacity: 1.,
+                occluders: vec![],
+                content: super::AttachmentContent::Reading(ReadingPlacement {
+                    content: Rc::clone(reading),
+                    phase,
+                    sizes: &[],
+                    modal: surface.2,
+                    context: ui.ctx(),
+                }),
+            },
+            presentation,
+        )?;
+    }
+    Ok(())
+}

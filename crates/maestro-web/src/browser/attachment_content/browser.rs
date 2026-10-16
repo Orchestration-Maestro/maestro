@@ -212,7 +212,9 @@ impl AttachmentHost for BrowserAttachmentHost {
         let retained = self.surfaces.borrow_mut().remove(&s.id);
         let mut surface = retained.map_or_else(|| self.create(tag), Ok)?;
         let result: Result<(), AttachmentUiError> = (|| {
-            if surface.tag != tag {
+            let was_reading = surface.reading.take().is_some();
+            drop(surface.pending.take());
+            if surface.tag != tag || was_reading {
                 drop(surface.input.take());
                 let child = self
                     .document

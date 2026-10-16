@@ -10,8 +10,10 @@ use std::{
 };
 
 /// One observed content placement.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum Content {
+    /// Native reading factory and its transaction phase.
+    Reading(Rc<ReadingContent>, ReadingPhase),
     /// Browser image operands.
     Image(String, String, ImageFit),
     /// Literal text operands.
@@ -20,7 +22,7 @@ pub enum Content {
     Preview(FileType, Rc<RefCell<Attachment>>, bool),
 }
 /// Recorded surface and presentation.
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Surface {
     /// Component identity.
     pub id: egui::Id,
@@ -68,7 +70,8 @@ impl AttachmentHost for Host {
         p: &maestro_theme::BrandPresentation<'_>,
     ) -> Result<(), AttachmentUiError> {
         let content = match s.content {
-            AttachmentContent::Reading(_) | AttachmentContent::Input { .. } => {
+            AttachmentContent::Reading(reading) => Content::Reading(reading.content, reading.phase),
+            AttachmentContent::Input { .. } => {
                 unreachable!("attachment suite does not create inputs")
             }
             AttachmentContent::Image { source, alt, fit } => {

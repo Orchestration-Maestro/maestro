@@ -44,6 +44,13 @@ for small pages. Unrepresentable targets or PNG encoding failures omit the previ
 without losing extracted text. Opening failures return `AttachmentError::Pdf`,
 displaying `Failed to process PDF: ` followed by the native diagnostic; this native
 error has no `Error::source`. Exhaustive SDK matches must handle this variant.
+The public `attachment_utils::pdf::PdfDocument` owns supplied document bytes.
+`num_pages` enumerates pages; `render_page` accepts a one-based page number and
+returns application-owned `PdfPage` PNG bytes and raster dimensions at scale 1.5.
+Invalid pages, dimensions and PNG failures return `AttachmentError::Pdf`.
+Geometry is projected at full precision before integer truncation. The browser
+uses this same raster operation for both PDF attachment and artifact pages.
+
 The [approved PDF engine](../libraries/document-formats.md#pdf-processing) owns
 text segmentation, Type3 text, bidirectional ordering and font rasterization.
 Thumbnail sizing reads inherited page boxes at full precision before intersecting

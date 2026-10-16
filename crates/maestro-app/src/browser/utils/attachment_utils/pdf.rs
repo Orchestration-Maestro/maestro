@@ -18,6 +18,52 @@ use hayro_interpret::{
 use num_traits::ToPrimitive;
 use std::fmt::Write;
 
+/// An owned native document used for ordered page rendering.
+pub struct PdfDocument {
+    /// Native bytes, cross references and page tree.
+    pdf: Pdf,
+}
+/// An opaque rendered page at its raster dimensions.
+pub struct PdfPage {
+    /// Raster width in pixels.
+    pub width: u16,
+    /// Raster height in pixels.
+    pub height: u16,
+    /// Complete encoded PNG bytes.
+    pub png: Vec<u8>,
+}
+impl PdfDocument {
+    /// Open supplied original bytes.
+    /// # Errors
+    /// Returns a PDF failure when the native document cannot be opened.
+    pub fn new(bytes: Vec<u8>) -> Result<Self, AttachmentError> {
+        Ok(Self {
+            pdf: Pdf::new(bytes).map_err(|error| AttachmentError::Pdf(format!("{error:?}")))?,
+        })
+    }
+    /// Return the number of pages in document order.
+    #[must_use]
+    pub fn num_pages(&self) -> usize {
+        self.pdf.pages().len()
+    }
+    /// Render a one-based page at scale 1.5 on opaque white.
+    /// # Errors
+    /// Returns a PDF failure for an invalid page, raster dimensions or encoding.
+    pub fn render_page(&self, page_number: usize) -> Result<PdfPage, AttachmentError> {
+        let page = page_number
+            .checked_sub(1)
+            .and_then(|index| self.pdf.pages().get(index))
+            .ok_or_else(|| AttachmentError::Pdf("Invalid PDF page".into()))?;
+        let pixels = render_pdf_page(page, &RenderCache::new(), 1.5)
+            .ok_or_else(|| AttachmentError::Pdf("Invalid PDF page dimensions".into()))?;
+        let (width, height) = (pixels.width(), pixels.height());
+        let png = pixels
+            .into_png()
+            .map_err(|error| AttachmentError::Pdf(error.to_string()))?;
+        Ok(PdfPage { width, height, png })
+    }
+}
+
 /// Extract ordered page text and an optional first-page PNG.
 ///
 /// # Errors
@@ -26,7 +72,8 @@ pub(super) fn process_pdf(
     bytes: Vec<u8>,
     name: &str,
 ) -> Result<(String, Option<String>), AttachmentError> {
-    let pdf = Pdf::new(bytes).map_err(|error| AttachmentError::Pdf(format!("{error:?}")))?;
+    let document = PdfDocument::new(bytes)?;
+    let pdf = &document.pdf;
     let cache = InterpreterCache::new();
     let mut text = format!("<pdf filename=\"{name}\">");
     for (index, page) in pdf.pages().iter().enumerate() {
@@ -47,7 +94,7 @@ pub(super) fn process_pdf(
         );
     }
     text.push_str("\n</pdf>");
-    Ok((text, generate_pdf_preview(&pdf)))
+    Ok((text, generate_pdf_preview(pdf)))
 }
 
 /// Fit the first page to 160 pixels, omitting failed PNG encodings.

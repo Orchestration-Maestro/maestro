@@ -80,5 +80,5 @@ live runtime-provider dispatch and source generation for iframe and extension
 channels. Native tests and WebAssembly compilation are distinct from browser
 effect qualification.
 
-See [generic artifact views](artifacts.md) for the independently embeddable native
-reading body and original-byte header download.
+See [artifact views](artifacts.md) for independently embeddable generic reading
+bodies, progressive PDF pages and original-byte header downloads.

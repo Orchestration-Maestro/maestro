@@ -1,9 +1,9 @@
-# Generic artifact views
+# Artifact views
 
 `maestro_web::tools::artifacts::create_artifact_element` constructs an owned
-`Box<dyn maestro_web::ArtifactElement>` for an unrecognized filename suffix.
-Recognized specialized formats return a presentation error until their viewers
-are installed; they never silently become generic downloads.
+`Box<dyn maestro_web::ArtifactElement>` for PDF or an unrecognized filename suffix.
+Other recognized specialized formats return a presentation error until their
+viewers are installed; they never silently become generic downloads.
 
 The element exposes literal filename/content getters and setters, independent
 `get_header_buttons` and `render` operations, and call-scoped `ArtifactView`
@@ -37,8 +37,7 @@ incomplete application presentation implementation.
 
 The tabbed/overlay shell and retained visibility remain in
 [#1108](https://github.com/Orchestration-Maestro/maestro/issues/1108).
-Specialized viewers remain in
-[#795](https://github.com/Orchestration-Maestro/maestro/issues/795),
+Other specialized viewers remain in
 [#797](https://github.com/Orchestration-Maestro/maestro/issues/797),
 [#798](https://github.com/Orchestration-Maestro/maestro/issues/798),
 [#816](https://github.com/Orchestration-Maestro/maestro/issues/816),
@@ -46,3 +45,22 @@ Specialized viewers remain in
 [#819](https://github.com/Orchestration-Maestro/maestro/issues/819).
 HTML runtime-provider composition remains in
 [#753](https://github.com/Orchestration-Maestro/maestro/issues/753).
+
+## PDF artifacts
+
+`tools::artifacts::pdf_artifact::PdfArtifact` retains original filename/content
+and shares the overlay's owned page renderer and native error panel. Its header
+uses the same complete original-byte selector as generic artifacts, with fixed
+`application/pdf` MIME. Download failures propagate independently of body state.
+
+Body drawing opens changed nonempty content and advances one page per repaint
+frame. Completed native images retain their order and opaque white document
+pixels; the scrollable reading wrapper adds 16-point padding. Assigning unchanged
+successful content preserves page nodes, rendering progress and scroll position.
+Replacing content cancels the old document and clears the prior load error;
+assigning the same content after a load error retries instead. Empty content cancels
+unfinished work but retains already displayed successful pages; empty content
+after an error instead shows an empty body. Dropping the view removes its surface.
+Errors use selectable literal native text with the localized `Error loading PDF`
+heading, distinct from the overlay's `Error loading file` heading. Caller branding
+styles page chrome and error text, not document pixels.

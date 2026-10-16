@@ -16,7 +16,7 @@ fn generic_factory_never_replaces_recognized_views() {
     assert_eq!(view.filename(), "a.md.zip");
     assert_eq!(view.content(), "Zg==");
     for name in [
-        "a.html", "a.svg", "a.md", "a.png", "a.pdf", "a.docx", "a.xls", "a.txt",
+        "a.html", "a.svg", "a.md", "a.png", "a.docx", "a.xls", "a.txt",
     ] {
         assert!(create_artifact_element(name, "", host.clone()).is_err());
     }
