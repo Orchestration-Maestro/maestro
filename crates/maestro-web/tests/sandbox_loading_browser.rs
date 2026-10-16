@@ -512,3 +512,36 @@ pub async fn failed_load_releases_native_registration_and_frame() {
     end();
     finish();
 }
+
+/// External resources preserve raw template values and script document boundaries.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn program_resources_preserve_raw_templates_and_document_boundaries() {
+    let mut sandbox = adapter();
+    let html = sandbox.prepare_html_document(
+        "resource-values",
+        "return String.raw`</ScRiPt>雪<!--<script>`;",
+        &[provider("function(){window.providerValue=String.raw`</ScRiPt>雪<!--<script>`;window.complete=(error,value)=>parent.postMessage({type:'resource-result',error,value,provider:window.providerValue,body:!!document.body},'*');}")],
+        Some(maestro_web::components::sandboxed_iframe::PrepareHtmlOptions {
+            is_html_artifact: false, is_standalone: true,
+        }),
+    ).unwrap();
+    wasm_bindgen_futures::JsFuture::from(resource_values(&html))
+        .await
+        .unwrap();
+    sandbox.remove().unwrap();
+}
+
+/// Vector links use their native resolved address during a bubbling click.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn vector_links_dispatch_resolved_addresses() {
+    let mut sandbox = adapter();
+    let html = sandbox
+        .prepare_html_document("vector", "", &[], None)
+        .unwrap();
+    wasm_bindgen_futures::JsFuture::from(navigation(
+        &html,
+        r#"{"kind":"svg","href":"../diagram"}"#,
+        r#"{"events":[["prevent"],["stop"],["post",{"type":"open-external-url","url":"https://example.org/diagram"},"*"]]}"#,
+    )).await.unwrap();
+    sandbox.remove().unwrap();
+}

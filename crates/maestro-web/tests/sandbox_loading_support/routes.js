@@ -160,6 +160,7 @@ export async function validation_check(expected, cssText) {
         const body = frame.contentWindow.getComputedStyle(doc.body), pre = frame.contentWindow.getComputedStyle(doc.querySelector('pre'));
         const fontProbe = doc.createElement('span'); fontProbe.style.fontFamily = css['--maestro-font-mono'];
         equal(body.fontFamily,fontProbe.style.fontFamily,'selected mono family');
+        equal(pre.fontFamily,fontProbe.style.fontFamily,'visible validation mono family');
         equal(pre.whiteSpace,'pre-wrap','error wrapping'); equal(pre.overflowX,'auto','error scrolling');
     }
 }

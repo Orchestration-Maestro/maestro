@@ -1,17 +1,12 @@
-//! Lexical document envelopes; authored HTML is otherwise unchanged.
-/// Protect inline programs from HTML's case-insensitive script terminator.
-pub(super) fn escape_script(code: &str) -> String {
-    let lower = code.to_ascii_lowercase();
-    let mut result = String::with_capacity(code.len());
-    let mut offset = 0;
-    for (start, matched) in lower.match_indices("</script") {
-        result.push_str(&code[offset..start]);
-        result.push_str("<\\");
-        result.push_str(&code[start + 1..start + matched.len()]);
-        offset = start + matched.len();
-    }
-    result.push_str(&code[offset..]);
-    result
+//! Document envelopes with separate program resources; authored HTML is otherwise unchanged.
+use base64::{Engine as _, engine::general_purpose::STANDARD};
+
+/// Deliver UTF-8 source as a separate resource without HTML interpretation.
+pub(super) fn script_resource(code: &str) -> String {
+    format!(
+        "data:text/javascript;charset=utf-8;base64,{}",
+        STANDARD.encode(code)
+    )
 }
 
 /// Insert after the first head prefix, then html prefix, or prepend.
@@ -28,14 +23,10 @@ pub(super) fn insert_runtime(code: &str, runtime: &str) -> String {
 }
 /// Wrap JavaScript in the asynchronous completion envelope.
 pub(super) fn wrap(code: &str, runtime: &str) -> String {
-    let (before, after) = include_str!("repl.html")
-        .split_once("__USER_CODE__")
-        .unwrap_or_default();
-    format!(
-        "{}{}{after}",
-        before.replacen("__RUNTIME__", runtime, 1),
-        escape_script(code)
-    )
+    let program = include_str!("repl.js").replacen("__USER_CODE__", code, 1);
+    include_str!("repl.html")
+        .replacen("__RUNTIME__", runtime, 1)
+        .replacen("__PROGRAM__", &script_resource(&program), 1)
 }
 /// Select authored HTML injection independently of standalone runtime selection.
 pub(super) fn prepare(code: &str, runtime: &str, options: super::PrepareHtmlOptions) -> String {

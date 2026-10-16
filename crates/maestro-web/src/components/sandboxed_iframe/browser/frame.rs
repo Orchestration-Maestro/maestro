@@ -106,7 +106,7 @@ fn validate(html: &str) -> Option<String> {
 fn validation_document(document: &Document, css: &str, error: &str) -> Result<String, JsValue> {
     let html = document.create_element("html")?;
     let style = document.create_element("style")?;
-    style.set_text_content(Some(&format!(":root{{{css}}}body{{font-family:var(--maestro-font-mono);padding:20px;background:var(--maestro-color-background);color:var(--maestro-color-text)}}h3{{color:var(--maestro-color-error)}}pre{{background:var(--maestro-color-panel);padding:10px;border-radius:4px;overflow-x:auto;white-space:pre-wrap}}")));
+    style.set_text_content(Some(&format!(":root{{{css}}}body{{font-family:var(--maestro-font-mono);padding:20px;background:var(--maestro-color-background);color:var(--maestro-color-text)}}h3{{color:var(--maestro-color-error)}}pre{{font-family:inherit;background:var(--maestro-color-panel);padding:10px;border-radius:4px;overflow-x:auto;white-space:pre-wrap}}")));
     let body = document.create_element("body")?;
     let heading = document.create_element("h3")?;
     heading.set_text_content(Some("HTML Validation Error"));

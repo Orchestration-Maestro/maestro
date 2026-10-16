@@ -11,10 +11,12 @@ use wasm_bindgen::{JsCast as _, prelude::*};
 extern "C" {
     /// Decode special native values from the recorded input.
     fn decode(value: JsValue) -> JsValue;
-    /// Compare generated documents and execute all their inline programs.
+    /// Compare generated documents and execute their decoded program resources.
     pub fn observe_document(name: &str, html: &str, output: JsValue) -> js_sys::Promise;
     /// Restore instrumentation and remove all test parents.
     pub fn finish();
+    /// Mount the prepared document with the production sandbox flags.
+    pub fn resource_values(html: &str) -> js_sys::Promise;
 }
 /// Exact checked-in oracle envelope; every field is consumed.
 #[derive(serde::Deserialize)]

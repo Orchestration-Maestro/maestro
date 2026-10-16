@@ -1,11 +1,13 @@
 (function() {
 	document.addEventListener('click', function(e) {
 		const link = e.target.closest('a');
-		if (link && link.href) {
-			if (link.href.startsWith('http://') || link.href.startsWith('https://')) {
+		if (link && link.hasAttribute('href')) {
+			const address = document.createElement('a');
+			address.href = link.getAttribute('href');
+			if (address.protocol === 'http:' || address.protocol === 'https:') {
 				e.preventDefault();
 				e.stopPropagation();
-				window.parent.postMessage({ type: 'open-external-url', url: link.href }, '*');
+				window.parent.postMessage({ type: 'open-external-url', url: address.href }, '*');
 			}
 		}
 	}, true);

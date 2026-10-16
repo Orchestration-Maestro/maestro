@@ -12,13 +12,21 @@ export function decode(value) {
 }
 export function finish() { document.querySelectorAll('[data-sandbox-test]').forEach(node => node.remove()); }
 const stripComments = text => text.split('\n').filter(line => !line.trimStart().startsWith('//')).join('\n');
-function inlineScripts(html) {
-    return [...new DOMParser().parseFromString(html,'text/html').querySelectorAll('script')].map(script=>script.textContent);
+function programSources(html) {
+    return [...new DOMParser().parseFromString(html,'text/html').querySelectorAll('script')].map(script=>script.src ? new TextDecoder().decode(Uint8Array.from(atob(script.src.split(',')[1]), c=>c.charCodeAt(0))) : script.textContent);
 }
 export async function observe_document(name, html, output) {
-    const scripts = inlineScripts(html);
+    const scripts = programSources(html);
+    let suffix = html.slice(html.indexOf('</script>') + 9);
+    const parsed = new DOMParser().parseFromString(html,'text/html');
+    [...parsed.querySelectorAll('script[src]')].forEach((script,index)=> {
+        const original = script.outerHTML;
+        const inline = index === 0 ? '<script>\n'+scripts[index]+'\n</script>' : '<script type="module">\n'+scripts[index]+'\t</script>';
+        html = html.replace(original,inline);
+        suffix = suffix.replace(original,inline);
+    });
     equal(html.slice(0,html.indexOf('<style>')), output.prefix, name + ' prefix');
-    equal(stripComments(html.slice(html.indexOf('</script>') + 9)), stripComments(output.suffix), name + ' suffix');
+    equal(stripComments(suffix), stripComments(output.suffix), name + ' suffix');
     equal(scripts.length, output.script_count, name + ' scripts');
     equal(html.includes('window.sendRuntimeMessage'), output.bridge, name + ' bridge');
     equal(html.includes("document.addEventListener('click'"), output.navigation, name + ' navigation');
@@ -68,7 +76,7 @@ export async function standalone(html) {
         const docAdd = win.document.addEventListener, winAdd = win.addEventListener;
         win.document.addEventListener = function(type,...rest) { registered.push(['document',type]); return docAdd.call(this,type,...rest); };
         win.addEventListener = function(type,...rest) { registered.push(['window',type]); return winAdd.call(this,type,...rest); };
-        win.eval(inlineScripts(html)[0]);
+        win.eval(programSources(html)[0]);
         equal(win.localHelper(), 'offline', 'standalone helper'); equal(registered, [], 'finite synchronous registration set');
         equal(typeof win.sendRuntimeMessage, 'undefined', 'no online bridge');
         equal(typeof win.complete, 'undefined', 'no implicit console');
@@ -88,7 +96,7 @@ export async function callbacks(html, inputText, expectedText) {
         }, async ok => events.push(['second',ok])];
         win.console.error = message => events.push(['diagnostic',message]);
         win.complete = async (error,value) => { if(error) assert(error.stack.length > 0,'native stack'); events.push(['complete',error ? error.message : null,value ?? null]); };
-        const scripts = inlineScripts(html);
+        const scripts = programSources(html);
         const operation = win.eval(scripts[1]);
         if (input.callbacks === 'gated') { await ready; equal(events,[['first',true],['second',true]],'completion still pending'); release(); }
         await operation; equal(events,expected.events,'ordered completion observations');
@@ -102,9 +110,10 @@ export async function navigation(html, inputText, expectedText) {
     try {
         const win = frame.contentWindow, doc = win.document;
         const base = doc.createElement('base'); base.href = 'https://example.org/a'; doc.head.append(base);
-        win.eval(inlineScripts(html)[0]);
+        win.eval(programSources(html)[0]);
         let target;
         if(input.kind === 'form') { target = doc.createElement('form'); target.action = input.href; }
+        else if(input.kind === 'svg') { const svg = doc.createElementNS('http://www.w3.org/2000/svg','svg'); const anchor = doc.createElementNS(svg.namespaceURI,'a'); anchor.setAttribute('href',input.href); target = doc.createElementNS(svg.namespaceURI,'text'); anchor.append(target); svg.append(anchor); doc.body.append(svg); }
         else if(input.kind === 'nonlink') target = doc.createElement('span');
         else { const anchor = doc.createElement('a'); if(input.href) anchor.href = input.kind === 'resolved_hash' ? '#part' : input.href; target = doc.createElement('span'); anchor.append(target); doc.body.append(anchor); }
         if(!target.isConnected) doc.body.append(target);
@@ -117,4 +126,28 @@ export async function navigation(html, inputText, expectedText) {
         equal(events,expected.events,'native resolved navigation '+input.kind);
         equal(event.defaultPrevented,expected.events.length > 0,'default action decision '+input.kind);
     } finally { window.postMessage = original; frame.remove(); }
+}
+
+export async function resource_values(html) {
+    const parsed = new DOMParser().parseFromString(html,'text/html');
+    equal(parsed.querySelectorAll('script').length,2,'both complete program resources survive HTML parsing');
+    assert(parsed.body,'closing wrapper survives');
+    const frame = document.createElement('iframe');
+    frame.setAttribute('sandbox','allow-scripts allow-modals');
+    const result = new Promise(resolve => {
+        const listener = event => {
+            if(event.source === frame.contentWindow && event.data?.type === 'resource-result') {
+                window.removeEventListener('message',listener); resolve(event.data);
+            }
+        };
+        window.addEventListener('message',listener);
+    });
+    frame.srcdoc = html; document.body.append(frame);
+    try {
+        const data = await result;
+        assert(data.error === null,'program completes successfully');
+        assert(data.value === '</ScRiPt>雪<!--<script>','exact raw user value');
+        assert(data.provider === '</ScRiPt>雪<!--<script>','exact raw provider value');
+        assert(data.body,'module sees the intact body');
+    } finally { frame.remove(); }
 }

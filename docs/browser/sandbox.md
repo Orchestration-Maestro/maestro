@@ -8,7 +8,7 @@ on WebAssembly, the browser-local `RUNTIME_MESSAGE_ROUTER` singleton.
 
 On WebAssembly, `maestro_web::SandboxIframe` retains a caller-supplied native
 parent. `load_content` replaces its previous frame and registration, prepends a
-fresh console provider and binds the frame before appending it. Frames allow
+fresh console provider and binds the frame before appending it. Authored-content frames allow
 scripts and modals, without same-origin access. A live `sandbox_url_provider`
 selects URL loading; otherwise the document uses srcdoc. Only the current
 frame's readiness sends the prepared document, once. Its bootstrap error reaches
@@ -27,9 +27,11 @@ provider. Its module's `PrepareHtmlOptions` selects authored-HTML insertion or a
 asynchronous JavaScript wrapper. Standalone documents retain supplied provider
 helpers and data without parent messaging or navigation interception. Provider
 data uses native compact JSON serialization; unsupported values fail rather than
-becoming successful null assignments. Inline script escaping preserves literal
-spelling. Quoted global keys produce valid programs; native Window indexed
+becoming successful null assignments. Generated programs load from separate UTF-8 data resources, preserving literal
+values without interpreting program text as HTML. Quoted global keys produce valid programs; native Window indexed
 properties still ignore numeric assignments, as they do for any browser script.
+External HTML and vector-graphic links resolve through native document addresses
+before interception.
 
 Native HTML parsing accepts recovered markup. Explicit validation errors appear
 as literal preformatted text, with the selected brand pack's background, text,
