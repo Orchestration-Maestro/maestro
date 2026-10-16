@@ -50,6 +50,25 @@ pub fn compact_members<'a>(
     write(&Members(canonical_entries(members)), CompactFormatter)
 }
 
+/// Write borrowed members with the named member first, using its authored value or the fallback.
+///
+/// The first matching member supplies the value; its other occurrences are omitted.
+/// Canonical ordering and number spelling follow [`compact_members`], so index keys still lead.
+///
+/// # Errors
+/// Returns the serializer failure.
+pub fn compact_members_with_default<'a>(
+    members: impl Iterator<Item = (&'a str, BorrowedJson<'a>)> + Clone,
+    name: &'a str,
+    fallback: BorrowedJson<'a>,
+) -> Result<String, serde_json::Error> {
+    let value = members
+        .clone()
+        .find_map(|(key, value)| (key == name).then_some(value))
+        .unwrap_or(fallback);
+    compact_members(std::iter::once((name, value)).chain(members.filter(|(key, _)| *key != name)))
+}
+
 /// Write an object with two-space indentation and no final newline, in the order and
 /// number spelling of [`compact_json`].
 ///

@@ -10,7 +10,7 @@ use super::sessions::{CloseReason, Identity, Socket, acquire, lock};
 use super::{CodexError, OpenAICodexResponsesOptions};
 use crate::arguments::json_parse::whitespace;
 use crate::providers::http::{Raced, client_pairs, decode_utf8, race};
-use crate::providers::json_text::{BorrowedJson, compact_members, raw_json};
+use crate::providers::json_text::{BorrowedJson, raw_json};
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Cancellation, DiagnosticCode,
     DiagnosticErrorInfo, Model, SharedAssistantMessage, Transport,
@@ -18,6 +18,7 @@ use crate::{
 use futures_util::future::{Either, select as select_first};
 use futures_util::{FutureExt, Sink, SinkExt, Stream, StreamExt};
 use indexmap::IndexMap;
+use maestro_json::compact_members_with_default;
 use serde_json::Value;
 use std::borrow::Cow;
 use std::pin::pin;
@@ -274,16 +275,11 @@ pub(super) fn wire_body(body: &Value) -> Result<String, CodexError> {
 
 /// The request object: `type` holds the first non-index position with the members' own value
 /// when they have one; the other members follow. Member order and number spelling are
-/// those of [`compact_members`].
+/// those of [`compact_members_with_default`].
 pub(super) fn wire_members<'a>(
     members: impl Iterator<Item = (&'a str, BorrowedJson<'a>)> + Clone,
 ) -> Result<String, CodexError> {
-    let kind = members
-        .clone()
-        .find_map(|(name, value)| (name == "type").then_some(value))
-        .unwrap_or(BorrowedJson::Value(&REQUEST_TYPE));
-    let rest = members.filter(|(name, _)| *name != "type");
-    compact_members(std::iter::once(("type", kind)).chain(rest))
+    compact_members_with_default(members, "type", BorrowedJson::Value(&REQUEST_TYPE))
         .map_err(|error| CodexError::Transport(diagnostic(error.to_string())))
 }
 

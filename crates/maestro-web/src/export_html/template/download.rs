@@ -1,7 +1,7 @@
 //! Complete original-history JSONL download preparation.
 use super::{SessionDocument, document::invalid};
 use crate::browser::attachment_content::{AttachmentHost, AttachmentUiError};
-use maestro_app::{BorrowedJson, compact_json, compact_members, is_truthy};
+use maestro_app::{BorrowedJson, compact_json, compact_members_with_default, is_truthy};
 use serde_json::Value;
 use std::io;
 
@@ -25,15 +25,16 @@ pub fn download_session_json(
     let mut lines = Vec::new();
     if let Some(header) = header {
         let fallback = Value::String("header".into());
-        let first = (
-            "type",
-            BorrowedJson::Value(header.get("type").unwrap_or(&fallback)),
+        lines.push(
+            compact_members_with_default(
+                header
+                    .iter()
+                    .map(|(name, value)| (name.as_str(), BorrowedJson::Value(value))),
+                "type",
+                BorrowedJson::Value(&fallback),
+            )
+            .map_err(io::Error::other)?,
         );
-        let rest = header
-            .iter()
-            .filter(|(name, _)| name.as_str() != "type")
-            .map(|(name, value)| (name.as_str(), BorrowedJson::Value(value)));
-        lines.push(compact_members(std::iter::once(first).chain(rest)).map_err(io::Error::other)?);
     }
     for entry in entries {
         lines.push(compact_json(entry).map_err(io::Error::other)?);

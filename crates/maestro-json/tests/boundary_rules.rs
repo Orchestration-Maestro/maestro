@@ -2,8 +2,8 @@
 #![cfg(test)]
 use maestro_json::object::{self, record_with};
 use maestro_json::{
-    BorrowedJson, array_index, canonical_entries, compact_json, compact_members, compact_object,
-    is_raw_truthy, is_truthy, pretty_object,
+    BorrowedJson, array_index, canonical_entries, compact_json, compact_members,
+    compact_members_with_default, compact_object, is_raw_truthy, is_truthy, pretty_object,
 };
 use serde::Deserialize;
 use serde_json::value::RawValue;
@@ -195,6 +195,37 @@ fn borrowed_members_keep_values_slices_and_key_order() {
         compact_members(repeated.iter().copied()).unwrap(),
         r#"{"1":"1 first","1":"1 second","b":"b first","b":"b second"}"#
     );
+}
+
+#[test]
+fn default_member_projection_preserves_authored_values_and_canonical_order() {
+    let fallback = json!("header");
+    let items = [json!(-0.0), json!(1e21)];
+    for (input, expected) in [
+        (
+            json!({"tail": true, "10": 10, "2": 2}),
+            r#"{"2":2,"10":10,"type":"header","tail":true,"items":[0,1e+21]}"#,
+        ),
+        (
+            json!({"tail": true, "type": "authored"}),
+            r#"{"type":"authored","tail":true,"items":[0,1e+21]}"#,
+        ),
+        (
+            json!({"tail": true, "type": null}),
+            r#"{"type":null,"tail":true,"items":[0,1e+21]}"#,
+        ),
+    ] {
+        let members = input
+            .as_object()
+            .unwrap()
+            .iter()
+            .map(|(name, value)| (name.as_str(), BorrowedJson::Value(value)))
+            .chain(std::iter::once(("items", BorrowedJson::Slice(&items))));
+        assert_eq!(
+            compact_members_with_default(members, "type", BorrowedJson::Value(&fallback)).unwrap(),
+            expected,
+        );
+    }
 }
 
 /// A record with one borrowed string field.

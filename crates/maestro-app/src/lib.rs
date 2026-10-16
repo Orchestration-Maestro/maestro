@@ -59,7 +59,7 @@ pub use maestro_text::number_format::LocaleNumberFormat;
 /// Agent reasoning levels, including disabled reasoning.
 pub use maestro_agent::ThinkingLevel;
 /// Shared with the terminal frontend.
-pub use maestro_json::{BorrowedJson, compact_json, compact_members};
+pub use maestro_json::{BorrowedJson, compact_json, compact_members_with_default};
 pub use maestro_text::decode_utf8;
 /// Shared with the terminal frontend.
 pub use maestro_text::truncate_utf16;

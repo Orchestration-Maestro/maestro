@@ -2,7 +2,7 @@
 
 `maestro-json` is a core leaf below layer 0 with no workspace dependencies. It holds
 stateless decisions at the edge of JSON data; each caller keeps its own preprocessing,
-defaults, duplicate-member policy and error wording.
+default values, selection policy and error wording.
 
 - **Truth.** `is_truthy` classifies a `serde_json::Value`; `is_raw_truthy` classifies
   valid raw JSON without reading a container. Null, `false`, zero of either sign and
@@ -20,6 +20,9 @@ defaults, duplicate-member policy and error wording.
   ECMAScript spelling (`1e+21`, `1e-7`, `0` for negative zero). A nonfinite host float is
   already `null` in a `Value`. Ordinary serde output elsewhere is unchanged.
   `BorrowedJson` lets a caller write a value or an array slice it already holds.
+  `compact_members_with_default` prepends a named member before canonical ordering,
+  using its first authored value or the caller's fallback, without emitting its
+  original occurrences. Other members follow the compact writer's rules.
 - **Objects.** The `object` module hands a record only the
   map of a JSON object, so a derived record never reads a positional array. `record_with`
   names the caller's expectation in the error; `record`, `from_str`, `list` and
