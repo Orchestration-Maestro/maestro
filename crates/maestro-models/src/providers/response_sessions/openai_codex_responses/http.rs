@@ -124,10 +124,10 @@ use crate::{
 use std::sync::Arc;
 
 /// Send one setup attempt and await its response observation before processing the body.
-async fn attempt(
+async fn attempt<E: crate::ProviderExecution>(
     request: HttpRequest,
     model: &Arc<Model>,
-    options: &OpenAICodexResponsesOptions,
+    options: &OpenAICodexResponsesOptions<E>,
 ) -> Result<HttpResponse, CodexError> {
     let fetch = options
         .common
@@ -156,10 +156,10 @@ async fn attempt(
 }
 
 /// Announce usable HTTP bodies and delegate content updates without ending the caller's stream.
-pub(crate) async fn invoke_sse(
+pub(crate) async fn invoke_sse<E: crate::ProviderExecution>(
     prepared: &PreparedRequest,
     model: &Arc<Model>,
-    options: &OpenAICodexResponsesOptions,
+    options: &OpenAICodexResponsesOptions<E>,
     output: &SharedAssistantMessage,
     events: &AssistantMessageEventStream,
 ) -> Result<(), CodexError> {
@@ -246,10 +246,10 @@ fn caught(error: CodexError) -> Result<CodexError, CodexError> {
 }
 
 /// Retry only setup work; a classified HTTP failure never re-enters the caught network branch.
-async fn send_response(
+async fn send_response<E: crate::ProviderExecution>(
     request: &HttpRequest,
     model: &Arc<Model>,
-    options: &OpenAICodexResponsesOptions,
+    options: &OpenAICodexResponsesOptions<E>,
 ) -> Result<HttpResponse, CodexError> {
     let signal = options.common.signal.as_ref();
     let mut index = 0;

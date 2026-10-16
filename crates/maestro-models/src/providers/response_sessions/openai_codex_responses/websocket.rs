@@ -292,11 +292,11 @@ pub(super) struct Outgoing {
 }
 
 /// Send the request and reduce the response, owning every receive from the first message.
-async fn exchange<S>(
+async fn exchange<S, E: crate::ProviderExecution>(
     socket: &mut S,
     outgoing: Outgoing,
     model: &Model,
-    options: &OpenAICodexResponsesOptions,
+    options: &OpenAICodexResponsesOptions<E>,
     output: WebSocketOutput<'_>,
 ) -> Result<(), CodexError>
 where
@@ -325,11 +325,11 @@ where
 
 /// Run one request on an open socket, then send a best-effort close and release it.
 #[cfg(test)]
-pub(super) async fn run_released<S>(
+pub(super) async fn run_released<S, E: crate::ProviderExecution>(
     mut socket: S,
     body: String,
     model: &Model,
-    options: &OpenAICodexResponsesOptions,
+    options: &OpenAICodexResponsesOptions<E>,
     output: WebSocketOutput<'_>,
 ) -> Result<(), CodexError>
 where
@@ -413,10 +413,10 @@ async fn connect(
 /// clears its context, while an uncached connection and earlier failures leave the owner's
 /// context intact, except that acquiring the connection first evicts a mismatched or ended idle
 /// entry with its context.
-pub(crate) async fn process_web_socket_stream(
+pub(crate) async fn process_web_socket_stream<E: crate::ProviderExecution>(
     prepared: &PreparedRequest,
     model: &Arc<Model>,
-    options: &OpenAICodexResponsesOptions,
+    options: &OpenAICodexResponsesOptions<E>,
     output: WebSocketOutput<'_>,
     request_id: &str,
 ) -> Result<(), CodexError> {

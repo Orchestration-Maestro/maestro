@@ -331,7 +331,7 @@ fn maestro_response_sessions_apply_socket_headers() {
     for row in rows {
         let mut model = super::controlled_model();
         model.headers = Some(row.init.clone());
-        let options = crate::StreamOptions {
+        let options: crate::StreamOptions = crate::StreamOptions {
             headers: Some(row.additional.clone()),
             ..Default::default()
         };

@@ -97,7 +97,10 @@ struct Reasoning<'a> {
 }
 
 /// Keep explicit effort even when the descriptor does not advertise reasoning.
-fn reasoning<'a>(model: &'a Model, options: &OpenAICodexResponsesOptions) -> Option<Reasoning<'a>> {
+fn reasoning<'a, E: crate::ProviderExecution>(
+    model: &'a Model,
+    options: &OpenAICodexResponsesOptions<E>,
+) -> Option<Reasoning<'a>> {
     use crate::ModelThinkingLevel as Level;
     let level = options.reasoning_effort.as_ref()?;
     let fallback = match level {
@@ -130,10 +133,10 @@ struct Text {
 }
 
 /// Convert request data before the arbitrary JSON payload-hook seam.
-fn build_request_body(
+fn build_request_body<E: crate::ProviderExecution>(
     model: &Model,
     context: &Context,
-    options: &OpenAICodexResponsesOptions,
+    options: &OpenAICodexResponsesOptions<E>,
 ) -> Result<Value, DiagnosticErrorInfo> {
     let input = convert_responses_messages(
         model,
@@ -181,10 +184,10 @@ fn build_request_body(
 }
 
 /// Resolve credentials, convert and edit the body once, then validate headers.
-pub(crate) async fn prepare_request(
+pub(crate) async fn prepare_request<E: crate::ProviderExecution>(
     model: &Arc<Model>,
     context: &Context,
-    options: &OpenAICodexResponsesOptions,
+    options: &OpenAICodexResponsesOptions<E>,
     user_agent: &str,
 ) -> Result<PreparedRequest, super::CodexError> {
     let key = options

@@ -16,8 +16,13 @@ After start, that failure ends the stream without replaying the response.
 API/protocol failures and cancellation do not trigger fallback.
 
 The invocation uses independently running request work and shared partial-message
-handles. Native callers supply a running Tokio runtime. Payload hooks run during
+handles. Default native calls require a running Tokio runtime. Payload hooks run during
 preparation before headers or transport are processed.
+
+`stream_openai_codex_responses_for` and `stream_simple_openai_codex_responses_for`
+take an explicit execution family and producer submitter. Their options retain
+that family's hooks through the existing socket and SSE paths; the root simple
+counterpart keeps setup-error settlement.
 
 `get_openai_codex_web_socket_debug_stats` returns an independent snapshot.
 `reset_openai_codex_web_socket_debug_stats` clears counters and fallback state,

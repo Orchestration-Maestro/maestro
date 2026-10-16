@@ -9,7 +9,10 @@ mod host;
 mod http;
 mod request;
 mod stream;
-pub use stream::{stream_openai_codex_responses, stream_simple_openai_codex_responses};
+pub use stream::{
+    stream_openai_codex_responses, stream_openai_codex_responses_for,
+    stream_simple_openai_codex_responses, stream_simple_openai_codex_responses_for,
+};
 #[cfg(not(target_arch = "wasm32"))]
 mod sessions;
 #[cfg(not(target_arch = "wasm32"))]
@@ -18,16 +21,16 @@ mod websocket;
 #[cfg(test)]
 mod tests;
 
-use crate::StreamOptions;
 pub use crate::providers::nullable::Nullable;
 use crate::providers::responses::openai_responses::OpenAIResponsesServiceTier;
+use crate::{ProviderExecution, StreamOptions, Threaded};
 use serde::{Deserialize, Serialize};
 
 /// Raw invocation settings.
 #[derive(Clone, Default)]
-pub struct OpenAICodexResponsesOptions {
+pub struct OpenAICodexResponsesOptions<E: ProviderExecution = Threaded> {
     /// Shared hooks and transport selections.
-    pub common: StreamOptions,
+    pub common: StreamOptions<E>,
     /// Omitted, explicitly null, or named service tier.
     pub service_tier: Option<Nullable<OpenAIResponsesServiceTier>>,
     /// Explicit raw effort, independent of descriptor capability.

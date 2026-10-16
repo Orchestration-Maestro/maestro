@@ -98,7 +98,7 @@ fn main() {
 /// Compile provider records and dedicated/root function paths on either target.
 fn response_session_surface() {
     std::hint::black_box((
-        maestro_models::OpenAICodexResponsesOptions::default(),
+        maestro_models::OpenAICodexResponsesOptions::<maestro_models::Threaded>::default(),
         maestro_models::OpenAICodexWebSocketDebugStats::default(),
         Nullable::<OpenAICodexReasoningSummary>::Null,
         OpenAICodexTextVerbosity::Low,

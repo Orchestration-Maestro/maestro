@@ -64,7 +64,11 @@ fn lock() -> MutexGuard<'static, DebugState> {
 
 /// Count one selected request attempt before it is sent.
 #[cfg(not(target_arch = "wasm32"))]
-pub(super) fn count_request(request: &Request, options: &StreamOptions, reused: bool) {
+pub(super) fn count_request<E: crate::ProviderExecution>(
+    request: &Request,
+    options: &StreamOptions<E>,
+    reused: bool,
+) {
     let Some(id) = options.session_id.as_deref().filter(|id| !id.is_empty()) else {
         return;
     };

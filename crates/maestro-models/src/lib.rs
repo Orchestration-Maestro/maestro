@@ -11,8 +11,9 @@ pub use builtins::{
     stream_simple_anthropic_for, stream_simple_azure_openai_responses,
     stream_simple_azure_openai_responses_for, stream_simple_google, stream_simple_google_for,
     stream_simple_mistral, stream_simple_mistral_for, stream_simple_openai_codex_responses,
-    stream_simple_openai_completions, stream_simple_openai_completions_for,
-    stream_simple_openai_responses, stream_simple_openai_responses_for,
+    stream_simple_openai_codex_responses_for, stream_simple_openai_completions,
+    stream_simple_openai_completions_for, stream_simple_openai_responses,
+    stream_simple_openai_responses_for,
 };
 
 pub mod cancellation;
@@ -106,6 +107,7 @@ pub use oauth::{
 
 pub use providers::response_sessions::openai_codex_responses::{
     OpenAICodexResponsesOptions, OpenAICodexWebSocketDebugStats, stream_openai_codex_responses,
+    stream_openai_codex_responses_for,
 };
 
 pub use providers::json_text::compact_json;

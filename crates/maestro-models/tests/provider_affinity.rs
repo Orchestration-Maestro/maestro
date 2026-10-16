@@ -113,6 +113,7 @@ fn default_sdk_futures_remain_thread_safe() {
 
 #[test]
 fn direct_local_submission_preserves_hook_phases() -> crate::TestResult {
+    let _registry = crate::bundled::registry();
     crate::chat::block_on(
         false,
         tokio::task::LocalSet::new().run_until(async {
@@ -123,6 +124,7 @@ fn direct_local_submission_preserves_hook_phases() -> crate::TestResult {
                 "azure-openai-responses",
                 "mistral-conversations",
                 "google-generative-ai",
+                "openai-codex-responses",
             ] {
                 for simple in [false, true] {
                     direct_local_case(protocol, simple).await?;
@@ -133,6 +135,19 @@ fn direct_local_submission_preserves_hook_phases() -> crate::TestResult {
     )
 }
 
+/// Keep authentication and transport selection on the real direct entry route.
+fn local_direct_options(
+    protocol: &str,
+    phases: Rc<std::cell::RefCell<Vec<&'static str>>>,
+    fetch: maestro_models::Fetch,
+) -> StreamOptions<Local> {
+    StreamOptions {
+        api_key: Some(crate::bundled::api_key(protocol)),
+        transport: Some(maestro_models::Transport::Sse),
+        ..local_common_options(phases, fetch)
+    }
+}
+
 /// Protocol-shaped empty success bodies remain independent of the renderer.
 fn direct_response(protocol: &str) -> crate::transport::Attempt {
     use crate::transport;
@@ -140,7 +155,7 @@ fn direct_response(protocol: &str) -> crate::transport::Attempt {
         "anthropic-messages" => {
             transport::Attempt::body(200, &[], crate::messages::STOP.as_bytes().to_vec())
         }
-        "openai-responses" | "azure-openai-responses" => transport::Attempt::body(
+        "openai-responses" | "azure-openai-responses" | "openai-codex-responses" => transport::Attempt::body(
             200,
             &[],
             crate::response_endpoint::COMPLETE.as_bytes().to_vec(),
@@ -167,7 +182,8 @@ async fn direct_local_case(protocol: &str, simple: bool) -> crate::TestResult {
         context: chat::context(
             &json!({"messages": [{"role":"user", "content":"controlled", "timestamp":0}]}),
         )?,
-        options: Some(local_common_options(
+        options: Some(local_direct_options(
+            protocol,
             Rc::clone(&phases),
             transport.fetch.clone(),
         )),
@@ -237,6 +253,12 @@ fn direct_local_stream(
     input: maestro_models::ProviderCall<Local, StreamOptions<Local>>,
 ) -> maestro_models::AssistantMessageEventStream {
     use maestro_models::*;
+    if matches!(
+        protocol,
+        "openai-responses" | "azure-openai-responses" | "openai-codex-responses"
+    ) {
+        return direct_response_local_stream(protocol, input);
+    }
     let common = input.options.unwrap_or_default();
     match protocol {
         "google-generative-ai" => stream_google_for::<Local>(
@@ -266,10 +288,39 @@ fn direct_local_stream(
             }),
             input.submit,
         ),
+        _ => stream_openai_completions_for::<Local>(
+            input.model,
+            input.context,
+            Some(OpenAICompletionsOptions {
+                common,
+                ..Default::default()
+            }),
+            input.submit,
+        ),
+    }
+}
+
+/// Use the direct response-family exports with the same local settings.
+fn direct_response_local_stream(
+    protocol: &str,
+    input: maestro_models::ProviderCall<Local, StreamOptions<Local>>,
+) -> maestro_models::AssistantMessageEventStream {
+    use maestro_models::*;
+    let common = input.options.unwrap_or_default();
+    match protocol {
         "openai-responses" => stream_openai_responses_for::<Local>(
             input.model,
             input.context,
             Some(OpenAIResponsesOptions {
+                common,
+                ..Default::default()
+            }),
+            input.submit,
+        ),
+        "openai-codex-responses" => stream_openai_codex_responses_for::<Local>(
+            input.model,
+            input.context,
+            Some(OpenAICodexResponsesOptions {
                 common,
                 ..Default::default()
             }),
@@ -284,15 +335,7 @@ fn direct_local_stream(
             }),
             input.submit,
         ),
-        _ => stream_openai_completions_for::<Local>(
-            input.model,
-            input.context,
-            Some(OpenAICompletionsOptions {
-                common,
-                ..Default::default()
-            }),
-            input.submit,
-        ),
+        _ => unreachable!("response protocol selected above"),
     }
 }
 
@@ -315,6 +358,9 @@ fn direct_simple_local_stream(
     match protocol {
         "google-generative-ai" => {
             stream_simple_google_for::<Local>(model, context, options, submit)
+        }
+        "openai-codex-responses" => {
+            stream_simple_openai_codex_responses_for::<Local>(model, context, options, submit)
         }
         "mistral-conversations" => {
             stream_simple_mistral_for::<Local>(model, context, options, submit)

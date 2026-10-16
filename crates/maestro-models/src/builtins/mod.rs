@@ -14,6 +14,7 @@ pub use register_builtins::{
     stream_simple_azure_openai_responses, stream_simple_azure_openai_responses_for,
     stream_simple_google, stream_simple_google_for, stream_simple_mistral,
     stream_simple_mistral_for, stream_simple_openai_codex_responses,
-    stream_simple_openai_completions, stream_simple_openai_completions_for,
-    stream_simple_openai_responses, stream_simple_openai_responses_for,
+    stream_simple_openai_codex_responses_for, stream_simple_openai_completions,
+    stream_simple_openai_completions_for, stream_simple_openai_responses,
+    stream_simple_openai_responses_for,
 };

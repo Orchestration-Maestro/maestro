@@ -217,6 +217,24 @@ pub fn stream_simple_openai_completions_for<E: ProviderExecution>(
     )
 }
 
+/// Start simple response sessions with caller-owned admission, settling setup errors.
+#[must_use]
+pub fn stream_simple_openai_codex_responses_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> AssistantMessageEventStream {
+    settle_simple(
+        move |model, context, options| {
+            sessions::stream_simple_openai_codex_responses_for::<E>(model, context, options, submit)
+        },
+        model,
+        context,
+        options,
+    )
+}
+
 /// Start a conversation-protocol simple invocation; a missing key ends the stream with an error.
 #[must_use]
 pub fn stream_simple_mistral(
