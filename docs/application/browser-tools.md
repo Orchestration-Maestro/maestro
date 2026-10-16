@@ -70,6 +70,53 @@ whitespace. Failed sandbox results become tool errors and omit return/files.
 Details always contain `files`, including an empty array. Downloads preserve
 UTF-8 or binary bytes as padded base64 with byte lengths; only encoded details
 replace empty filenames/MIME types with `file`/`application/octet-stream`.
-Concrete runtime providers and tool cards are tracked in
-[#751](https://github.com/Orchestration-Maestro/maestro/issues/751) and
+Tool cards remain tracked in
 [#791](https://github.com/Orchestration-Maestro/maestro/issues/791).
+
+## Sandbox runtime providers
+
+The application supplies console capture, read-only attachment helpers and
+returned-file collection. The browser SDK re-exports `ConsoleRuntimeProvider`,
+`ConsoleLog`, `AttachmentsRuntimeProvider`, `FileDownloadRuntimeProvider` and
+`DownloadableFile`. Use `BrowserSandboxValue` as their value parameter for the
+browser router; the default JSON parameter supports native controlled hosts.
+The projection trait stays with the application contracts.
+
+This example is also checked in the console provider's public rustdoc:
+
+```rust
+use maestro_app::browser::components::sandbox::{
+    console_runtime_provider::ConsoleRuntimeProvider,
+    sandbox_runtime_provider::SandboxRuntimeProvider,
+};
+
+let console = ConsoleRuntimeProvider::<serde_json::Value>::new();
+let earlier_logs = console.get_logs();
+console.reset();
+assert!(!std::sync::Arc::ptr_eq(&earlier_logs, &console.get_logs()));
+assert!(console.get_data()?.is_empty());
+# Ok::<(), maestro_models::DiagnosticErrorInfo>(())
+```
+
+Log and file getters return live shared collections, allowing callers to retain
+and edit them. Reset replaces the collection: previous aliases keep their entries.
+Collection and replies run when `handle_message` is called; its returned future
+carries their result. Collection precedes acknowledgement, so a response failure
+does not undo it; response callbacks run without internal guards. Host fields remain unformatted
+values. JSON preserves missing versus null arguments; browser values retain
+native handles, including binary data and undefined fields.
+
+Console settlement messages now update its completion getters: success clears
+an earlier error, failure records message/stack, and reset clears settlement.
+Lifecycle messages receive no extra provider acknowledgement. Attachment input
+is retained and read afresh for each data snapshot; projection selects only id,
+filename, MIME, size, content and optional extracted text. Its model-facing
+help is the shared attachments description. Online returned files are collected,
+not downloaded by the host; the injected helper retains its standalone offline
+browser-download branch.
+
+Each provider returns a complete injectable function. Native tests check host
+behavior and full source equivalence; browser builds check adapter signatures.
+Real iframe events, native values and download effects remain qualified by
+[browser smoke checks](https://github.com/Orchestration-Maestro/maestro/issues/825).
+See [sandbox messaging](../browser/sandbox.md) for transport ownership.

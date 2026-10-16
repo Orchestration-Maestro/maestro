@@ -36,13 +36,13 @@ pub enum SandboxFileContent {
 }
 /// Download produced by execution.
 #[derive(Clone, Debug, PartialEq)]
-pub struct SandboxFile {
+pub struct SandboxFile<C = SandboxFileContent, M = String> {
     /// Original filename.
-    pub file_name: String,
+    pub file_name: M,
     /// Original payload.
-    pub content: SandboxFileContent,
+    pub content: C,
     /// Original MIME type.
-    pub mime_type: String,
+    pub mime_type: M,
 }
 /// One captured console entry.
 pub struct SandboxConsoleEntry {

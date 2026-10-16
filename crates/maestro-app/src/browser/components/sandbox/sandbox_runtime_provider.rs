@@ -54,3 +54,110 @@ pub trait SandboxRuntimeProvider<V: SandboxValue = serde_json::Value>: Native {
         Ok(())
     }
 }
+
+/// Typed projections needed by the concrete runtime providers.
+pub trait RuntimeProviderValue: SandboxValue + Clone {
+    /// Read a string tag without coercing or inspecting unrelated fields.
+    ///
+    /// # Errors
+    /// Returns a native property-access failure.
+    fn message_type(&self) -> Result<Option<String>, DiagnosticErrorInfo>;
+    /// Retain the console payload without formatting it.
+    ///
+    /// # Errors
+    /// Returns a native property-access failure.
+    fn project_console(
+        &self,
+    ) -> Result<super::console_runtime_provider::ConsoleLog<Self>, DiagnosticErrorInfo>;
+    /// Retain returned-file fields without coercion.
+    ///
+    /// # Errors
+    /// Returns a native property-access failure.
+    fn project_download(
+        &self,
+    ) -> Result<super::file_download_runtime_provider::DownloadableFile<Self>, DiagnosticErrorInfo>;
+    /// Select the execution error's ordinary message and stack fields.
+    ///
+    /// # Errors
+    /// Returns a native property-access failure.
+    fn project_completion_error(
+        &self,
+    ) -> Result<super::super::sandboxed_iframe::SandboxError, DiagnosticErrorInfo>;
+    /// Create the successful collection acknowledgement.
+    ///
+    /// # Errors
+    /// Returns a native object-construction failure.
+    fn success_response() -> Result<Self, DiagnosticErrorInfo>;
+    /// Snapshot the six injectable attachment fields in input order.
+    ///
+    /// # Errors
+    /// Returns a native object-construction failure.
+    fn attachment_array(
+        attachments: &[crate::browser::utils::attachment_utils::Attachment],
+    ) -> Result<Self, DiagnosticErrorInfo>;
+}
+impl RuntimeProviderValue for serde_json::Value {
+    fn message_type(&self) -> Result<Option<String>, DiagnosticErrorInfo> {
+        Ok(self.get("type").and_then(Self::as_str).map(str::to_owned))
+    }
+    fn project_console(
+        &self,
+    ) -> Result<super::console_runtime_provider::ConsoleLog<Self>, DiagnosticErrorInfo> {
+        use super::console_runtime_provider::{ConsoleLog, ConsoleLogType};
+        Ok(ConsoleLog {
+            r#type: ConsoleLogType::from_method(self.get("method").and_then(Self::as_str)),
+            text: self.get("text").cloned().unwrap_or_default(),
+            args: self.get("args").cloned(),
+        })
+    }
+    fn project_download(
+        &self,
+    ) -> Result<super::file_download_runtime_provider::DownloadableFile<Self>, DiagnosticErrorInfo>
+    {
+        Ok(super::super::sandboxed_iframe::SandboxFile {
+            file_name: self.get("fileName").cloned().unwrap_or_default(),
+            content: self.get("content").cloned().unwrap_or_default(),
+            mime_type: self.get("mimeType").cloned().unwrap_or_default(),
+        })
+    }
+    fn project_completion_error(
+        &self,
+    ) -> Result<super::super::sandboxed_iframe::SandboxError, DiagnosticErrorInfo> {
+        let error = &self["error"];
+        Ok(super::super::sandboxed_iframe::SandboxError {
+            message: error
+                .get("message")
+                .and_then(Self::as_str)
+                .unwrap_or_default()
+                .into(),
+            stack: error
+                .get("stack")
+                .and_then(Self::as_str)
+                .unwrap_or_default()
+                .into(),
+        })
+    }
+    fn success_response() -> Result<Self, DiagnosticErrorInfo> {
+        Ok(serde_json::json!({"success": true}))
+    }
+    fn attachment_array(
+        attachments: &[crate::browser::utils::attachment_utils::Attachment],
+    ) -> Result<Self, DiagnosticErrorInfo> {
+        Ok(Self::Array(
+            attachments
+                .iter()
+                .map(|attachment| {
+                    let mut value = serde_json::json!({
+                        "id": attachment.id, "fileName": attachment.file_name,
+                        "mimeType": attachment.mime_type, "size": attachment.size,
+                        "content": attachment.content,
+                    });
+                    if let Some(text) = &attachment.extracted_text {
+                        value["extractedText"] = Self::String(text.clone());
+                    }
+                    value
+                })
+                .collect(),
+        ))
+    }
+}

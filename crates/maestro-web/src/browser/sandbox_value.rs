@@ -41,3 +41,6 @@ pub(crate) fn diagnostic(value: &JsValue) -> DiagnosticErrorInfo {
         code: None,
     }
 }
+
+/// Concrete runtime-provider projections preserving native handles.
+mod runtime_provider;
