@@ -35,6 +35,7 @@ pub use callable::{
 };
 /// Request hooks and producer submission representations.
 mod provider_execution;
+pub(crate) use provider_execution::admitted;
 pub use provider_execution::{OnPayload, OnResponse, ProviderExecution, ProviderSpawner};
 /// Adapter invocation with an owned model, conversation and unchanged options.
 #[cfg(not(target_arch = "wasm32"))]

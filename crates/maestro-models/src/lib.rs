@@ -10,7 +10,7 @@ pub use builtins::{
     reset_api_providers, set_bedrock_provider_module, stream_simple_anthropic,
     stream_simple_azure_openai_responses, stream_simple_google, stream_simple_mistral,
     stream_simple_openai_codex_responses, stream_simple_openai_completions,
-    stream_simple_openai_responses,
+    stream_simple_openai_completions_for, stream_simple_openai_responses,
 };
 
 pub mod cancellation;
@@ -35,7 +35,7 @@ pub use catalog::models::{
 };
 
 pub use providers::chat::openai_completions::{
-    OpenAICompletionsOptions, stream_openai_completions,
+    OpenAICompletionsOptions, stream_openai_completions, stream_openai_completions_for,
 };
 pub use providers::cloud::amazon_bedrock::{BedrockOptions, BedrockThinkingDisplay};
 pub use providers::content::google::{GoogleOptions, stream_google};

@@ -12,5 +12,6 @@ pub use register_builtins::{
     BedrockProviderModule, register_built_in_api_providers, reset_api_providers,
     set_bedrock_provider_module, stream_simple_anthropic, stream_simple_azure_openai_responses,
     stream_simple_google, stream_simple_mistral, stream_simple_openai_codex_responses,
-    stream_simple_openai_completions, stream_simple_openai_responses,
+    stream_simple_openai_completions, stream_simple_openai_completions_for,
+    stream_simple_openai_responses,
 };

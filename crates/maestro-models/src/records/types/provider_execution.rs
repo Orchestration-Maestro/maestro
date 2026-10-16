@@ -45,7 +45,7 @@ pub type OnResponse<E = Threaded> = <E as Execution>::Shared<<E as ProviderExecu
 pub type ProviderSpawner<E> = <E as Execution>::Shared<<E as ProviderExecution>::Spawner>;
 
 /// Preserve the existing producer-admission failure text.
-fn admitted(accepted: bool) -> Result<(), DiagnosticErrorInfo> {
+pub(crate) fn admitted(accepted: bool) -> Result<(), DiagnosticErrorInfo> {
     if accepted {
         Ok(())
     } else {

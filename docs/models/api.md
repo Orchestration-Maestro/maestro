@@ -15,7 +15,7 @@ Use a workspace checkout, not a presumed published release:
 maestro-models = { path = "../maestro/crates/maestro-models" }
 ```
 
-Adjust the path to your checkout. Native bundled adapters require a Tokio runtime
+Adjust the path to your checkout. Default native bundled adapters require a Tokio runtime
 with time and I/O drivers enabled, for example a current-thread runtime built
 with `enable_all()`. A pure custom callback does not establish that native
 adapters work without this runtime.

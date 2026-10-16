@@ -38,25 +38,25 @@ const AFFINITY_HEADERS: [&str; 3] = ["session_id", "x-client-request-id", "x-ses
 pub(super) const ENDPOINT_PATH: &str = "/chat/completions";
 
 /// One invocation's inputs with the endpoint behavior and cache policy resolved from them.
-pub(super) struct Invocation<'a> {
+pub(super) struct Invocation<'a, E: crate::ProviderExecution> {
     /// Target model.
     model: &'a Model,
     /// Conversation to send.
     context: &'a Context,
     /// Caller options.
-    options: &'a OpenAICompletionsOptions,
+    options: &'a OpenAICompletionsOptions<E>,
     /// Endpoint behavior.
     compat: ResolvedOpenAICompletionsCompat,
     /// Effective cache retention.
     retention: CacheRetention,
 }
 
-impl<'a> Invocation<'a> {
+impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
     /// Resolve compatibility and cache retention for the inputs.
     pub(super) fn new(
         model: &'a Model,
         context: &'a Context,
-        options: &'a OpenAICompletionsOptions,
+        options: &'a OpenAICompletionsOptions<E>,
     ) -> Self {
         let retention = resolve_cache_retention(options.common.cache_retention);
         Self {

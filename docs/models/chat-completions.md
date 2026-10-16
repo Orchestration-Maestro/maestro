@@ -16,7 +16,14 @@ shared assistant updates. Two entry points start a call:
   requested thinking level to what the model supports (absent or `off` requests no
   reasoning) and forwards the typed `tool_choice`.
 
-On native targets the call must run inside a Tokio runtime that has the time driver
+The direct `_for` counterparts take a fourth `ProviderSpawner<E>` argument and
+accept `OpenAICompletionsOptions<E>` or `SimpleStreamOptions<E>`. `E = Local`
+allows hooks and their futures to retain caller-local state; the supplied admission
+function owns the producer. The root simple `_for` wrapper still settles setup
+errors as a stream. Default entry points retain `Threaded` options and their
+three-argument syntax.
+
+On native targets the default call must run inside a Tokio runtime that has the time driver
 enabled (`enable_time`, or `enable_all`); the default HTTP client also needs the I/O
 driver. The request work is owned by the runtime, so dropping the returned stream does
 not cancel it and `result()` still resolves. Called outside a runtime, the stream ends

@@ -15,7 +15,7 @@ use crate::records::api_registry::{
 };
 use crate::{
     AssistantMessage, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Model,
-    ProviderStreamOptions, SimpleStreamOptions,
+    ProviderExecution, ProviderSpawner, ProviderStreamOptions, SimpleStreamOptions,
 };
 use sessions::stream_simple_openai_codex_responses as session_simple;
 use std::sync::{Arc, RwLock};
@@ -24,13 +24,6 @@ use std::sync::{Arc, RwLock};
 type RawStart<T> = fn(Model, Context, Option<T>) -> AssistantMessageEventStream;
 /// Root simple invocation of one protocol.
 type RawSimple = fn(Model, Context, Option<SimpleStreamOptions>) -> AssistantMessageEventStream;
-/// Simple invocation of one protocol whose setup can fail before a stream exists.
-type SimpleStart = fn(
-    Model,
-    Context,
-    Option<SimpleStreamOptions>,
-) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
-
 /// An already failed stream that carries `failure` as its terminal update.
 fn settled(message: AssistantMessage, failure: RequestFailure) -> AssistantMessageEventStream {
     let stream = AssistantMessageEventStream::new();
@@ -40,11 +33,15 @@ fn settled(message: AssistantMessage, failure: RequestFailure) -> AssistantMessa
 }
 
 /// Run a dedicated simple invocation, turning its setup failure into a settled stream.
-fn settle_simple(
-    start: SimpleStart,
+fn settle_simple<E: ProviderExecution>(
+    start: impl FnOnce(
+        Model,
+        Context,
+        Option<SimpleStreamOptions<E>>,
+    ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo>,
     model: Model,
     context: Context,
-    options: Option<SimpleStreamOptions>,
+    options: Option<SimpleStreamOptions<E>>,
 ) -> AssistantMessageEventStream {
     let identity = initial_message(&model);
     start(model, context, options).unwrap_or_else(|error| settled(identity, error.into()))
@@ -178,6 +175,24 @@ pub fn stream_simple_openai_completions(
 ) -> AssistantMessageEventStream {
     settle_simple(
         chat::stream_simple_openai_completions,
+        model,
+        context,
+        options,
+    )
+}
+
+/// Start a simple chat invocation with caller-owned admission, settling setup errors.
+#[must_use]
+pub fn stream_simple_openai_completions_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> AssistantMessageEventStream {
+    settle_simple(
+        move |model, context, options| {
+            chat::stream_simple_openai_completions_for::<E>(model, context, options, submit)
+        },
         model,
         context,
         options,
