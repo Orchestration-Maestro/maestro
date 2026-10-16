@@ -8,7 +8,7 @@ use std::{io, rc::Rc};
 /// Owned draw operands for one prepared native surface.
 struct Placement<'a> {
     /// Retained feature registration.
-    state: &'a HeaderState,
+    state: &'a mut HeaderState,
     /// Owned native factory for this draw.
     content: Rc<ReadingContent>,
     /// Real canvas button sizes.
@@ -48,7 +48,7 @@ impl Placement<'_> {
             .map_err(io::Error::other)
     }
     /// Measure once, then use the same snapshot for publication and controls.
-    fn draw(&self, ui: &mut egui::Ui) -> io::Result<Vec<HeaderAction>> {
+    fn draw(&mut self, ui: &mut egui::Ui) -> io::Result<Vec<HeaderAction>> {
         let available = ui.available_size().max(egui::Vec2::ZERO);
         self.place(
             ui,
@@ -78,31 +78,72 @@ impl Placement<'_> {
             ReadingPhase::Publish,
             controls.iter().map(|(_, r)| *r).collect(),
         )?;
-        Ok(CONTROLS
-            .iter()
-            .zip(&self.sizes)
-            .filter_map(|((label, tooltip, action), (id, _))| {
-                let full = controls.iter().find(|(slot, _)| slot == id)?.1;
-                let visible = full.intersect(rect).intersect(ui.clip_rect());
-                if !visible.is_positive() {
-                    return None;
-                }
-                let mut child = ui.new_child(egui::UiBuilder::new().id_salt(id).max_rect(full));
-                child.set_clip_rect(visible);
-                let response = child.put(full, button(label)).on_hover_text(*tooltip);
-                activated(&response, visible).then_some(*action)
-            })
-            .collect())
+        Ok(self.controls(ui, rect, &controls))
+    }
+    /// Paint full slots while retaining their visible intersections for gesture admission.
+    fn controls(
+        &mut self,
+        ui: &mut egui::Ui,
+        rect: egui::Rect,
+        controls: &[(egui::Id, egui::Rect)],
+    ) -> Vec<HeaderAction> {
+        let mut visible_slots = Vec::new();
+        let mut actions = Vec::new();
+        for ((label, tooltip, action), (id, _)) in CONTROLS.iter().zip(&self.sizes) {
+            let Some((_, full)) = controls.iter().find(|(slot, _)| slot == id) else {
+                continue;
+            };
+            let visible = full.intersect(rect).intersect(ui.clip_rect());
+            if !visible.is_positive() {
+                continue;
+            }
+            visible_slots.push((*action, visible));
+            let mut child = ui.new_child(egui::UiBuilder::new().id_salt(id).max_rect(*full));
+            child.set_clip_rect(visible);
+            let response = child.put(*full, button(label)).on_hover_text(*tooltip);
+            if response.clicked() && !response.clicked_by(egui::PointerButton::Primary) {
+                actions.push(*action);
+            }
+        }
+        ui.input(|input| {
+            actions.extend(pointer_actions(
+                &input.events,
+                &mut self.state.pressed,
+                &visible_slots,
+            ));
+        });
+        actions
     }
 }
-/// Admit pointer clicks only within current visible canvas points, retaining keyboard clicks.
-/// Native CSS pixels have already been converted per axis by the host's transform.
-fn activated(response: &egui::Response, visible_canvas_points: egui::Rect) -> bool {
-    response.clicked()
-        && (!response.clicked_by(egui::PointerButton::Primary)
-            || response
-                .interact_pointer_pos()
-                .is_some_and(|canvas_points| visible_canvas_points.contains(canvas_points)))
+/// Own both ends of primary gestures in canvas points, not native CSS pixels.
+fn pointer_actions(
+    events: &[egui::Event],
+    pressed: &mut Option<HeaderAction>,
+    visible_canvas_slots: &[(HeaderAction, egui::Rect)],
+) -> Vec<HeaderAction> {
+    let mut actions = Vec::new();
+    for event in events {
+        if let egui::Event::PointerButton {
+            pos: canvas_points,
+            button: egui::PointerButton::Primary,
+            pressed: down,
+            ..
+        } = event
+        {
+            let hit = visible_canvas_slots
+                .iter()
+                .find(|(_, rect)| rect.contains(*canvas_points))
+                .map(|(action, _)| *action);
+            if *down {
+                *pressed = hit;
+            } else if let Some(owner) = pressed.take()
+                && hit == Some(owner)
+            {
+                actions.push(owner);
+            }
+        }
+    }
+    actions
 }
 /// Use the same existing button for sizing and painting.
 fn button(label: &str) -> egui::Button<'_> {
@@ -171,10 +212,10 @@ pub fn render_header(
                 if let Some(font) = ui.style_mut().text_styles.get_mut(&egui::TextStyle::Button) {
                     font.size *= 10. / 12.;
                 }
-                let placement = Placement {
+                let mut placement = Placement {
+                    sizes: sizes(ui, state.id),
                     state,
                     content: Rc::clone(&content),
-                    sizes: sizes(ui, state.id),
                     view,
                 };
                 placement.draw(ui)

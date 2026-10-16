@@ -87,6 +87,8 @@ pub struct HeaderState {
     id: egui::Id,
     /// Last successfully published preparation and factory.
     content: Option<(Rc<Prepared>, Rc<ReadingContent>)>,
+    /// Action owning the primary press begun in its visible canvas slot.
+    pressed: Option<HeaderAction>,
 }
 impl HeaderState {
     /// Retain the supplied host without selecting a platform adapter.
@@ -96,6 +98,7 @@ impl HeaderState {
             host,
             id: attachment_content::identity(),
             content: None,
+            pressed: None,
         }
     }
 }

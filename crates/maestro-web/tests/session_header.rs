@@ -527,6 +527,81 @@ fn header_pointer_rejects_previous_slot_after_move() {
     }
 }
 
+/// Movement into a clipped control cannot admit a press begun on background.
+#[test]
+fn header_pointer_rejects_outside_press_released_inside() {
+    let pack = pack();
+    let p = pack.presentation(BrandMode::Dark).unwrap();
+    for index in 0..3 {
+        let mut canvas = Canvas::new(&p);
+        canvas.host.height.set(12.);
+        canvas.frame(vec![]);
+        let rect = canvas.host.holes.borrow()[index];
+        let outside = egui::pos2(rect.center().x, rect.top() + 8.);
+        let inside = outside - egui::vec2(0., 2.);
+        canvas.frame(pointer(outside, true));
+        assert!(
+            canvas.frame(pointer(inside, false)).0.is_empty(),
+            "action {index}"
+        );
+    }
+}
+
+/// A press follows its control identity when the slot moves before release.
+#[test]
+fn header_pointer_accepts_inside_release_after_slot_move() {
+    use maestro_web::export_html::template::HeaderAction;
+    let pack = pack();
+    let p = pack.presentation(BrandMode::Dark).unwrap();
+    for (index, action) in [
+        HeaderAction::ToggleThinking,
+        HeaderAction::ToggleTools,
+        HeaderAction::DownloadSessionJson,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let mut canvas = Canvas::new(&p);
+        canvas.frame(vec![]);
+        let pos = canvas
+            .host
+            .holes
+            .borrow()
+            .iter()
+            .rev()
+            .nth(index)
+            .unwrap()
+            .center();
+        canvas.frame(pointer(pos, true));
+        canvas.host.offset.set(egui::vec2(0., 100.));
+        assert_eq!(
+            canvas.frame(pointer(pos + egui::vec2(0., 100.), false)).0,
+            [action]
+        );
+    }
+}
+
+/// Releasing on nearby background rejects the gesture and consumes its ownership.
+#[test]
+fn header_pointer_rejects_inside_press_released_outside() {
+    let pack = pack();
+    let p = pack.presentation(BrandMode::Dark).unwrap();
+    for index in 0..3 {
+        let mut canvas = Canvas::new(&p);
+        canvas.host.height.set(12.);
+        canvas.frame(vec![]);
+        let rect = canvas.host.holes.borrow()[index];
+        let outside = egui::pos2(rect.center().x, rect.top() + 8.);
+        let inside = outside - egui::vec2(0., 2.);
+        canvas.frame(pointer(inside, true));
+        assert!(
+            canvas.frame(pointer(outside, false)).0.is_empty(),
+            "action {index}"
+        );
+        assert!(canvas.frame(pointer(inside, false)).0.is_empty());
+    }
+}
+
 /// Keyboard activation remains independent of pointer location.
 #[test]
 fn header_keyboard_activation_ignores_pointer_geometry() {
