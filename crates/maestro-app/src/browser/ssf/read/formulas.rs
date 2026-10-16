@@ -43,9 +43,8 @@ fn expand(text: &str, start: CellAddress, end: CellAddress) -> Result<String, Wo
         } else if first == b'[' {
             bracket_length(rest)
         } else {
-            rest.bytes()
-                .take_while(|c| c.is_ascii_alphanumeric() || b"\\._$:".contains(c))
-                .count()
+            rest.find(|c: char| c.is_whitespace() || "+-*/^&=<>%,;(){}!@#\"'[]".contains(c))
+                .unwrap_or(rest.len())
         };
         if length == 0 {
             let length = rest.chars().next().map_or(0, char::len_utf8);
@@ -54,7 +53,10 @@ fn expand(text: &str, start: CellAddress, end: CellAddress) -> Result<String, Wo
             continue;
         }
         let (token, remaining) = rest.split_at(length);
-        if matches!(first, b'\'' | b'"' | b'[') || remaining.starts_with(['!', '(', '[']) {
+        if matches!(first, b'\'' | b'"' | b'[')
+            || remaining.starts_with(['!', '(', '['])
+            || !is_reference(token)
+        {
             result.push_str(token);
         } else {
             result.push_str(
@@ -65,6 +67,45 @@ fn expand(text: &str, start: CellAddress, end: CellAddress) -> Result<String, Wo
         rest = remaining;
     }
     Ok(result)
+}
+
+/// The three endpoint forms admitted by reference ranges.
+#[derive(PartialEq, Eq)]
+enum ReferenceKind {
+    /// A column and a row.
+    Cell,
+    /// An entire column.
+    Column,
+    /// An entire row.
+    Row,
+}
+
+/// Admit complete cell references or same-kind cell, row or column ranges.
+fn is_reference(token: &str) -> bool {
+    let (start, end) = token.split_once(':').unwrap_or((token, ""));
+    let kind = reference_kind(start);
+    if end.is_empty() {
+        !token.contains(':') && kind == Some(ReferenceKind::Cell)
+    } else {
+        kind.is_some() && kind == reference_kind(end)
+    }
+}
+
+/// Recognize an entire endpoint, never a coordinate-shaped fragment of a name.
+fn reference_kind(text: &str) -> Option<ReferenceKind> {
+    let text = text.strip_prefix('$').unwrap_or(text);
+    let boundary = text.bytes().take_while(u8::is_ascii_alphabetic).count();
+    let (column, row) = text.split_at(boundary);
+    let row = row.strip_prefix('$').unwrap_or(row);
+    if !row.bytes().all(|c| c.is_ascii_digit()) {
+        return None;
+    }
+    match (column.is_empty(), row.is_empty()) {
+        (false, false) => Some(ReferenceKind::Cell),
+        (false, true) => Some(ReferenceKind::Column),
+        (true, false) => Some(ReferenceKind::Row),
+        (true, true) => None,
+    }
 }
 
 /// Keep quoted string and sheet-name contents opaque, including doubled delimiters.

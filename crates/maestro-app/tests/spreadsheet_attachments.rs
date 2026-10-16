@@ -349,3 +349,36 @@ fn workbook_shared_formulas_preserve_structured_columns() {
         assert_eq!(sheet.cells[address].f.as_deref(), Some(formula));
     }
 }
+
+/// Check retained formulas and their uncached CSV replay through the reader boundary.
+fn unicode_shared_formula(sheet_name: &str, anchor: &str, follower: &str) {
+    let mut format = Ssf::default();
+    let mut book = ssf::read(
+        include_bytes!("fixtures/spreadsheet/shared-unicode.xlsx"),
+        "unicode.xlsx",
+        &mut format,
+    )
+    .unwrap();
+    let sheet = book.sheets.get_mut(sheet_name).unwrap();
+    assert_eq!(sheet.cells["B1"].f.as_deref(), Some(anchor));
+    assert_eq!(sheet.cells["B2"].f.as_deref(), Some(follower));
+    assert_eq!(
+        ssf::sheet_to_csv(sheet, &format),
+        format!("7,={anchor}\n,={follower}")
+    );
+}
+
+#[test]
+fn workbook_shared_unicode_sheet_name_keeps_identity() {
+    unicode_shared_formula("Q1年", "Q1年!A1", "Q1年!A2");
+}
+
+#[test]
+fn workbook_shared_unicode_defined_name_prefix_keeps_identity() {
+    unicode_shared_formula("Greek", "ΩA1+A1", "ΩA1+A2");
+}
+
+#[test]
+fn workbook_shared_unicode_defined_name_suffix_keeps_identity() {
+    unicode_shared_formula("Suffix", "A1é+A1", "A1é+A2");
+}
