@@ -50,7 +50,7 @@ fn pdf_artifact_fields_start_empty_and_retain_owned_edits() {
 }
 
 #[test]
-fn pdf_artifact_retains_visibility_and_modal_for_pages_and_errors() {
+fn pdf_artifact_retains_visibility_without_modal_ownership_for_pages_and_errors() {
     let frame = artifact_support::Frame::default();
     let modal = Some(egui::Id::new("pdf-panel-modal"));
     for content in [encoded("synthetic-multipage.pdf"), "aGVsbG8=".into()] {
@@ -71,7 +71,7 @@ fn pdf_artifact_retains_visibility_and_modal_for_pages_and_errors() {
             (*id, Rc::clone(reading))
         };
         assert_eq!(host.retained.borrow()[&id], (true, modal));
-        assert_eq!(host.publication_modals.borrow()[&id], modal);
+        assert_eq!(host.publication_modals.borrow()[&id], None);
         view.set_visibility(false, None).unwrap();
         let events = host.events.borrow().len();
         frame.draw(view.as_mut(), false, vec![]).unwrap();

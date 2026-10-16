@@ -102,6 +102,40 @@ fn js(code: &str) -> JsValue {
 fn check(code: &str) {
     assert!(js(code).as_bool().unwrap(), "browser predicate: {code}");
 }
+/// Leaving and returning to panel overlay preserves the PDF's native root and scroll.
+#[wasm_bindgen]
+pub fn artifact_panel_browser_pdf_overlay_return_keeps_root_and_scroll() {
+    use base64::Engine as _;
+    let view = Panel::new();
+    let content = base64::engine::general_purpose::STANDARD.encode(include_bytes!(
+        "../../maestro-app/tests/fixtures/pdf/synthetic-multipage.pdf"
+    ));
+    presentation::ready((view.caller.tool().execute)(
+        "call".into(),
+        serde_json::json!({"command":"create","filename":"a.pdf","content":content}),
+        None,
+        None,
+    ))
+    .unwrap();
+    view.panel.set_overlay(true);
+    for _ in 0..5 {
+        view.draw(vec![]);
+    }
+    js(
+        "globalThis.pdfRoot=document.querySelector('.maestro-pdf');globalThis.pdfWrapper=pdfRoot.parentElement;pdfWrapper.scrollTop=41.5;globalThis.pdfScroll=pdfWrapper.scrollTop;",
+    );
+    check("pdfRoot.querySelectorAll('img').length===3 && pdfScroll>0");
+    view.panel.set_overlay(false);
+    view.draw(vec![]);
+    view.panel.set_overlay(true);
+    view.draw(vec![]);
+    check(
+        "pdfRoot===document.querySelector('.maestro-pdf') && pdfRoot.isConnected && pdfWrapper.scrollTop===pdfScroll",
+    );
+    drop(view);
+    check("!pdfRoot.isConnected");
+}
+
 /// Two generic views preserve native roots, text selection and fractional scrolling.
 #[wasm_bindgen]
 pub fn artifact_panel_browser_switches_keep_native_roots() {

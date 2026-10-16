@@ -28,8 +28,6 @@ pub struct PdfArtifact {
     context: Option<egui::Context>,
     /// Whether the retained body is currently shown.
     visible: bool,
-    /// Foreground layer containing the retained body.
-    modal: Option<egui::Id>,
 }
 impl PdfArtifact {
     /// Start with empty fields using the supplied native host.
@@ -46,7 +44,6 @@ impl PdfArtifact {
             error: error::Error::default(),
             context: None,
             visible: true,
-            modal: None,
         }
     }
     /// Wake the last header or body context after an owned edit.
@@ -82,7 +79,6 @@ impl ArtifactElement for PdfArtifact {
     ) -> Result<(), AttachmentUiError> {
         self.host.set_retained_visibility(self.id, visible, modal)?;
         self.visible = visible;
-        self.modal = modal;
         Ok(())
     }
     fn filename(&self) -> &str {
@@ -135,7 +131,7 @@ impl ArtifactElement for PdfArtifact {
             self.error.present(
                 self.host.as_ref(),
                 ui,
-                (self.id, self.modal, true),
+                (self.id, None, true),
                 (
                     [
                         view.i18n.text("Error loading PDF")?,
@@ -151,7 +147,7 @@ impl ArtifactElement for PdfArtifact {
             self.pdf.present(
                 self.host.as_ref(),
                 ui,
-                (self.id, rect, self.modal, true),
+                (self.id, rect, None, true),
                 view.presentation,
             )?;
         }

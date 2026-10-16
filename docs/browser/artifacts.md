@@ -113,7 +113,8 @@ assigning the same content after a load error retries instead. Empty content can
 unfinished work but retains already displayed successful pages; empty content
 after an error instead shows an empty body. Dropping the view removes its surface.
 Panel visibility hides the retained PDF or error body without releasing it;
-showing it again preserves the native root and applies the current modal placement.
+showing it again preserves the native root and scroll position. The retained policy
+owns panel placement; leaving overlay mode does not release the PDF or error body.
 Errors use selectable literal native text with the localized `Error loading PDF`
 heading, distinct from the overlay's `Error loading file` heading. Caller branding
 styles page chrome and error text, not document pixels.
