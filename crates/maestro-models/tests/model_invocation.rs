@@ -94,6 +94,20 @@ mod tests {
         );
     }
 
+    /// Invoke a retained default-family callback without changing its result observer.
+    fn assert_retained_timestamp<K: maestro_models::StreamOptionsFamily>(
+        callback: &maestro_models::StreamFunction<K>,
+        expected: f64,
+    ) -> crate::child_process::TestResult {
+        let stream = callback.call(
+            model("separate"),
+            context(),
+            maestro_models::ProviderInvocation::Threaded(None, None),
+        )?;
+        assert_timestamp(&stream, expected);
+        Ok(())
+    }
+
     fn assert_cloud_selection() -> crate::child_process::TestResult {
         for (call, expected) in [
             (
@@ -134,20 +148,14 @@ mod tests {
         });
         reset_oauth_providers();
         let account = get_oauth_provider("anthropic").unwrap();
-        assert_timestamp(
-            &retained.stream.call(model("separate"), context(), maestro_models::ProviderInvocation::Threaded(None, None))?,
-            71.0,
-        );
+        assert_retained_timestamp(&retained.stream, 71.0)?;
         cleanup_session_resources(Some("before"))?;
         clear_api_providers();
         assert!(Arc::ptr_eq(
             &account,
             &get_oauth_provider("anthropic").unwrap()
         ));
-        assert_timestamp(
-            &retained.stream_simple.call(model("separate"), context(), maestro_models::ProviderInvocation::Threaded(None, None))?,
-            72.0,
-        );
+        assert_retained_timestamp(&retained.stream_simple, 72.0)?;
         cleanup_session_resources(Some("cleared"))?;
         maestro_models::reset_api_providers();
         assert!(Arc::ptr_eq(
@@ -161,10 +169,7 @@ mod tests {
             *visits.lock().unwrap(),
             [Some("before".into()), Some("cleared".into())]
         );
-        assert_timestamp(
-            &retained.stream.call(model("separate"), context(), maestro_models::ProviderInvocation::Threaded(None, None))?,
-            71.0,
-        );
+        assert_retained_timestamp(&retained.stream, 71.0)?;
         Ok(())
     }
 

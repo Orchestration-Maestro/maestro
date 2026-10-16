@@ -1498,7 +1498,11 @@ impl<E: maestro_models::ProviderExecution>
 
 /// Keep an explicitly ended stream's original result observation across replacement.
 struct RetainedOutput(AssistantMessageEventStream);
-impl<E: maestro_models::ProviderExecution, O> maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for RetainedOutput {
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for RetainedOutput
+{
     type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
-    fn invoke(&self, _: maestro_models::ProviderCall<E, O>) -> Self::Return { Ok(self.0.clone()) }
+    fn invoke(&self, _: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        Ok(self.0.clone())
+    }
 }

@@ -228,7 +228,7 @@ fn child(common: Common, row: &Row) -> TestResult {
     let r = Arc::clone(&response);
     let options = BedrockOptions {
         bearer_token: Some("fixture-token".into()),
-        common: StreamOptions {
+        common: StreamOptions::<maestro_models::Threaded> {
             on_payload: Some(Arc::new(move |input, _| {
                 p.fetch_add(1, Ordering::SeqCst);
                 Box::pin(std::future::ready(Ok(input)))
