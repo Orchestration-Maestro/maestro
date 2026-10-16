@@ -130,7 +130,7 @@ fn response_session_callbacks() {
     };
     let state = std::rc::Rc::new(std::cell::Cell::new(0));
     let seen = std::rc::Rc::clone(&state);
-    let common = maestro_models::StreamOptions {
+    let common = maestro_models::StreamOptions::<maestro_models::Threaded> {
         on_payload: Some(std::sync::Arc::new(move |body, _| {
             seen.set(seen.get() + 1);
             Box::pin(async { Ok(body) })

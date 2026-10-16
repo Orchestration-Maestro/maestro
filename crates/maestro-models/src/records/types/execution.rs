@@ -8,10 +8,10 @@ use std::{
     rc::{Rc, Weak as LocalWeak},
 };
 /// Caller-local owning pointers and futures.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct Local;
 /// Existing SDK representation, thread-safe on native targets.
-#[derive(Default)]
+#[derive(Clone, Copy, Default)]
 pub struct Threaded;
 /// Prevent external execution representations.
 mod sealed {

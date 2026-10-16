@@ -1,6 +1,6 @@
 //! Invocation settings with retained adapter hooks.
-use super::ThinkingLevel;
 use super::{Cancellation, JsonObject, OnPayload, OnResponse};
+use super::{ProviderExecution, ThinkingLevel, Threaded};
 use crate::providers::http::Fetch;
 use indexmap::IndexMap;
 use serde::de::IntoDeserializer;
@@ -59,7 +59,7 @@ pub struct ProviderResponse {
 }
 /// Carry common invocation settings, cooperative cancellation and hooks unchanged.
 #[derive(Clone, Default)]
-pub struct StreamOptions {
+pub struct StreamOptions<E: ProviderExecution = Threaded> {
     /// Temperature.
     pub temperature: Option<f64>,
     /// Max tokens.
@@ -75,9 +75,9 @@ pub struct StreamOptions {
     /// Session id.
     pub session_id: Option<String>,
     /// On payload.
-    pub on_payload: Option<OnPayload>,
+    pub on_payload: Option<OnPayload<E>>,
     /// On response.
-    pub on_response: Option<OnResponse>,
+    pub on_response: Option<OnResponse<E>>,
     /// Headers, applied in insertion order; values follow the rules of `HttpRequest::headers`.
     pub headers: Option<IndexMap<String, String>>,
     /// Timeout ms.
@@ -145,9 +145,9 @@ impl std::fmt::Debug for ProviderObjects {
 
 /// Retain typed common options plus provider-specific open fields.
 #[derive(Clone, Default)]
-pub struct ProviderStreamOptions {
+pub struct ProviderStreamOptions<E: ProviderExecution = Threaded> {
     /// Common.
-    pub common: StreamOptions,
+    pub common: StreamOptions<E>,
     /// Extra.
     pub extra: JsonObject,
     /// Typed objects that cannot travel as JSON, such as an injected client.
@@ -155,9 +155,9 @@ pub struct ProviderStreamOptions {
 }
 /// Carry common options plus requested thinking and optional budgets.
 #[derive(Clone, Default)]
-pub struct SimpleStreamOptions {
+pub struct SimpleStreamOptions<E: ProviderExecution = Threaded> {
     /// Common.
-    pub common: StreamOptions,
+    pub common: StreamOptions<E>,
     /// Reasoning.
     pub reasoning: Option<ThinkingLevel>,
     /// Thinking budgets.
@@ -167,11 +167,22 @@ pub struct SimpleStreamOptions {
 }
 
 /// Original options supplied to a dynamic callback, without conversion between forms.
-pub enum StreamOptionsInput {
+pub enum StreamOptionsInput<E: ProviderExecution = Threaded> {
     /// Open provider-specific options.
-    Raw(ProviderStreamOptions),
+    Raw(ProviderStreamOptions<E>),
     /// Typed simple invocation options.
-    Simple(SimpleStreamOptions),
+    Simple(SimpleStreamOptions<E>),
+}
+
+impl<E: ProviderExecution> From<ProviderStreamOptions<E>> for StreamOptionsInput<E> {
+    fn from(options: ProviderStreamOptions<E>) -> Self {
+        Self::Raw(options)
+    }
+}
+impl<E: ProviderExecution> From<SimpleStreamOptions<E>> for StreamOptionsInput<E> {
+    fn from(options: SimpleStreamOptions<E>) -> Self {
+        Self::Simple(options)
+    }
 }
 
 /// Select whether and which tool the model must call.

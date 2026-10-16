@@ -20,8 +20,8 @@ mod catalog;
 pub mod catalog_generation;
 mod options;
 pub use options::{
-    AdjustedMaxTokens, adjust_max_tokens_for_thinking, build_base_options, clamp_reasoning,
-    is_context_overflow, reasoning_from_thinking_level,
+    AdjustedMaxTokens, adjust_max_tokens_for_thinking, build_base_options, build_base_options_for,
+    clamp_reasoning, is_context_overflow, reasoning_from_thinking_level,
 };
 /// Conversation adaptation for the destination model.
 mod projection;

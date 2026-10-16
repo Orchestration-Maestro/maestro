@@ -178,6 +178,7 @@ mod profile_routes;
 #[cfg(unix)]
 #[path = "support/profile_services.rs"]
 mod profile_services;
+mod provider_affinity;
 #[path = "provider_overflow.rs"]
 mod provider_overflow;
 #[path = "provider_unicode.rs"]

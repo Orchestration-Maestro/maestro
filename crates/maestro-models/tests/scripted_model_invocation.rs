@@ -1210,7 +1210,7 @@ mod tests {
             },
         ))]);
         let options = Some(ProviderStreamOptions {
-            common: StreamOptions {
+            common: StreamOptions::<maestro_models::Threaded> {
                 signal: Some(signal),
                 session_id: Some("abort".into()),
                 on_response: Some(std::sync::Arc::new(move |_, _| {
@@ -1488,7 +1488,7 @@ mod tests {
         );
         let raw = ProviderStreamOptions {
             extra: serde_json::from_value(serde_json::json!({"custom":"retained"})).unwrap(),
-            common: StreamOptions {
+            common: StreamOptions::<maestro_models::Threaded> {
                 signal: Some(Cancellation::new()),
                 session_id: Some("raw".into()),
                 on_response: Some(std::sync::Arc::new(|_, _| Box::pin(async { Ok(()) }))),
@@ -1539,7 +1539,7 @@ mod tests {
         let calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let hook_calls = calls.clone();
         let options = Some(ProviderStreamOptions {
-            common: StreamOptions {
+            common: StreamOptions::<maestro_models::Threaded> {
                 on_response: Some(std::sync::Arc::new(move |response, _| {
                     number(response.status, 200.0);
                     assert!(response.headers.is_empty());
@@ -1562,7 +1562,7 @@ mod tests {
     fn check_rejected_hook(registration: &FauxProviderRegistration) {
         registration.set_responses(vec![scripted("discard")]);
         let options = Some(ProviderStreamOptions {
-            common: StreamOptions {
+            common: StreamOptions::<maestro_models::Threaded> {
                 on_response: Some(std::sync::Arc::new(|_, _| {
                     Box::pin(async { Err(failure("hook failed")) })
                 })),
@@ -1606,7 +1606,7 @@ mod tests {
             },
         ))]);
         let options = Some(ProviderStreamOptions {
-            common: StreamOptions {
+            common: StreamOptions::<maestro_models::Threaded> {
                 on_response: Some(std::sync::Arc::new(move |response, model| {
                     number(response.status, 200.0);
                     assert!(response.headers.is_empty());
@@ -1678,7 +1678,7 @@ mod tests {
                 |_, _, _, _| Box::pin(timed_message()),
             ))]);
             let options = Some(ProviderStreamOptions {
-                common: StreamOptions {
+                common: StreamOptions::<maestro_models::Threaded> {
                     on_response: Some(std::sync::Arc::new(|_, _| Box::pin(timed_hook()))),
                     ..StreamOptions::default()
                 },

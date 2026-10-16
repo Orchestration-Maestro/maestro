@@ -28,42 +28,14 @@ pub struct PayloadHookInput {
     /// Request cancellation; only the content-generation adapter consumes this handle.
     pub signal: Option<Cancellation>,
 }
-/// Retained callback selecting JSON parameters and a provider-specific request signal.
-///
-/// The hook owns its input and returns the selected record. Content generation consumes
-/// its signal; other bundled adapters supply `None` and ignore the returned signal.
-/// The model is shared and read-only.
-#[cfg(not(target_arch = "wasm32"))]
-pub type OnPayload = std::sync::Arc<
-    dyn Fn(
-            PayloadHookInput,
-            std::sync::Arc<Model>,
-        ) -> BoxFuture<Result<PayloadHookInput, DiagnosticErrorInfo>>
-        + Send
-        + Sync,
->;
-/// Browser-local counterpart of the payload-selection callback.
-#[cfg(target_arch = "wasm32")]
-pub type OnPayload = std::sync::Arc<
-    dyn Fn(
-        PayloadHookInput,
-        std::sync::Arc<Model>,
-    ) -> BoxFuture<Result<PayloadHookInput, DiagnosticErrorInfo>>,
->;
-/// Retained callback observing response metadata before body consumption.
-///
-/// The model is shared and read-only.
-#[cfg(not(target_arch = "wasm32"))]
-pub type OnResponse = std::sync::Arc<
-    dyn Fn(ProviderResponse, std::sync::Arc<Model>) -> BoxFuture<Result<(), DiagnosticErrorInfo>>
-        + Send
-        + Sync,
->;
-/// Browser-local callback observing response metadata.
-#[cfg(target_arch = "wasm32")]
-pub type OnResponse = std::sync::Arc<
-    dyn Fn(ProviderResponse, std::sync::Arc<Model>) -> BoxFuture<Result<(), DiagnosticErrorInfo>>,
->;
+/// Invocation-associated callables and original-option envelopes.
+mod callable;
+pub use callable::{
+    Invoke, ProviderCall, ProviderInvocation, RegistryCapture, StreamCallback, StreamOptionsFamily,
+};
+/// Request hooks and producer submission representations.
+mod provider_execution;
+pub use provider_execution::{OnPayload, OnResponse, ProviderExecution, ProviderSpawner};
 /// Adapter invocation with an owned model, conversation and unchanged options.
 #[cfg(not(target_arch = "wasm32"))]
 pub type StreamFunction<O = ProviderStreamOptions> = SharedHandle<
