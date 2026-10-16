@@ -32,6 +32,8 @@ impl Workspace {
             NEXT.fetch_add(1, Ordering::Relaxed)
         ));
         fs::create_dir_all(root.join("bin")).unwrap();
+        toolchain_support::declare_toolchain(&root, include_str!("../../../rust-toolchain.toml"))
+            .unwrap();
         fs::copy(
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../justfile"),
             root.join("justfile"),
@@ -42,6 +44,7 @@ impl Workspace {
         let tool = root.join("bin/cargo");
         assert!(
             toolchain_support::command("rustc")
+                .current_dir(&root)
                 .arg(source)
                 .arg("-o")
                 .arg(&tool)

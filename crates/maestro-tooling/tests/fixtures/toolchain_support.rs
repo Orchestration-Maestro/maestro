@@ -2,7 +2,7 @@
 
 use std::{ffi::OsStr, process::Command};
 
-/// Starts a child build without inheriting the test runner's instrumentation.
+/// Strips runner instrumentation and selects the recorded build toolchain when present.
 pub fn command(program: impl AsRef<OsStr>) -> Command {
     let mut command = Command::new(program);
     if std::env::var_os("__CARGO_LLVM_COV_RUSTC_WRAPPER").is_some() {
@@ -31,5 +31,18 @@ pub fn command(program: impl AsRef<OsStr>) -> Command {
     ] {
         command.env_remove(key);
     }
+    if let Some(channel) = channel() {
+        command.env("RUSTUP_TOOLCHAIN", channel);
+    }
     command
+}
+
+/// The resolved toolchain that compiled this test, independent of runtime overrides.
+pub fn channel() -> Option<&'static str> {
+    option_env!("RUSTUP_TOOLCHAIN")
+}
+
+/// Write the complete supplied toolchain declaration into a fixture root.
+pub fn declare_toolchain(root: &std::path::Path, declaration: &str) -> std::io::Result<()> {
+    std::fs::write(root.join("rust-toolchain.toml"), declaration)
 }
