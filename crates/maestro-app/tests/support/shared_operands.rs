@@ -132,7 +132,9 @@ fn failures(select: impl Fn(usize, &Case) -> bool) -> Vec<String> {
     let mut format = Ssf::default();
     let mut book = ssf::read(BYTES, "operands.xlsx", &mut format).unwrap();
     let mut failures = Vec::new();
+    let mut selected = 0;
     for (i, case) in cases().iter().enumerate().filter(|(i, c)| select(*i, c)) {
+        selected += 1;
         let sheet = book.sheets.get_mut(&format!("Case{i}")).unwrap();
         let actual = sheet.cells[&case.end].f.as_deref();
         if actual != Some(case.expected.as_str()) {
@@ -158,6 +160,7 @@ fn failures(select: impl Fn(usize, &Case) -> bool) -> Vec<String> {
             failures.push(format!("{}: uncached CSV differs", case.id));
         }
     }
+    assert!(selected > 0, "the requested witness must exist");
     failures
 }
 

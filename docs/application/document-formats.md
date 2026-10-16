@@ -79,8 +79,8 @@ codes use their labels; an unknown numeric error stays numeric. Unknown XLSX err
 native conversion, and formulas are not evaluated.
 Cells retain owned `f` formula text and optional `array_formula` range metadata.
 Formula text decodes spreadsheet escapes once, normalizes CRLF to LF and removes
-function prefixes. Shared formulas expand within their own sheet, preserving
-quoted strings and structured column names. Uncached numeric formulas retain missing raw values
+function prefixes. Shared formulas expand within their own sheet using the
+[operand rules](#shared-formula-operands). Uncached numeric formulas retain missing raw values
 rather than fabricated zeroes; explicit string cells without a value retain empty strings.
 Malformed archives, required missing parts, XML, reader and address failures have
 distinct `WorkbookError` variants. Missing style declarations are optional, while
@@ -107,6 +107,43 @@ spaces before literal digits join a fraction only after its denominator slash.
 Numeric fields use the magnitude for negative values in multi-section formats;
 a single-section format retains its sign, moving it into a leading literal when
 needed. Scientific and engineering fields use the same selected value.
+
+## Shared formula operands
+
+The reader recognizes formula operands without evaluating them. A1 cells are
+bounded by XFD and row 1048576. Relative axes advance by follower minus template
+position; `$` binds its own axis. Whole-column and whole-row pairs also advance,
+but bare `A` and `1` remain a name and number. Out-of-grid names such as `XFE1`
+are not partially rewritten. Fixed coordinates and zero applicable displacement
+retain their authored spelling; changed coordinates use native A1 rendering.
+
+Qualifiers are recognized through `!` before coordinate-shaped sheet text.
+Quoted/doubled apostrophes, external-book prefixes, 3-D and Unicode sheet names
+remain opaque. Unquoted sheet recognition stops at expression delimiters and
+quotes: writers quote names containing parentheses, so `SUM(` is a call. Other
+sheet characters such as `#` and `~` remain part of a complete qualifier.
+Deleted-sheet `#REF!A1` retains its prefix while A1 advances.
+
+Defined names, callees, strings (including doubled quotes), numerical exponents,
+booleans, errors and array constants retain their source text. Call arguments
+and parenthesized expressions need no retained stack because enclosing groups
+do not affect operand classification; only opaque arrays retain delimiter
+context. Structured
+references retain their complete balanced brackets, including nested groups and
+apostrophe-escaped special column characters. Outside qualifiers and structured
+references, `:` is an independent operator: both `A1:INDEX(A:A,10)` and
+`A1:LastCell` advance the A1 operand independently of their right-hand expression.
+An unknown unit is copied through the next expression operator, argument
+separator or group delimiter without rescanning its interior. An unterminated
+quote or bracket protects the remainder, without rejecting the workbook.
+
+The operand-blind displacement defect is corrected at this single reader owner:
+coordinate-substring searching corrupts sheet/name/column identities and text,
+and misses relative whole-axis pairs and lowercase coordinates. Operand grammar
+protects opaque spans and delegates isolated coordinate arithmetic to the native
+workbook library. Formula decoding, missing-cache retention and CSV quoting stay
+separate. R1C1 conversion belongs to SpreadsheetML/SYLK readers, not this XLSX
+path; `RC`, `R1C1` and bracketed R1C1 spellings here remain opaque.
 
 ## Default CSV
 

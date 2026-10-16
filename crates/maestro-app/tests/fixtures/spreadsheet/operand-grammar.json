@@ -731,6 +731,62 @@
       "end": "C3"
     },
     {
+      "id": "unquoted-sheet-punctuation",
+      "source": "SUM(Q1#part!A1)+Q1~part!B2",
+      "expected": "SUM(Q1#part!B2)+Q1~part!C3",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "nested-qualified-call",
+      "source": "SUM(Sheet1!A1,MAX(Sheet2!B2:B3))",
+      "expected": "SUM(Sheet1!B2,MAX(Sheet2!C3:C4))",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "quoted-sheet-parentheses",
+      "source": "'Q1(a)'!A1",
+      "expected": "'Q1(a)'!B2",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "deleted-sheet",
+      "source": "#REF!A1",
+      "expected": "#REF!B2",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "deep-qualified-calls",
+      "source": "SUM(Sheet1!A1,MAX(Sheet2!B2,MIN('Q1'!C3,IF(TRUE,Q1年!D4,A1))))",
+      "expected": "SUM(Sheet1!B2,MAX(Sheet2!C3,MIN('Q1'!D4,IF(TRUE,Q1年!E5,B2))))",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "array-in-call",
+      "source": "SUM({1,2;3,4},A1)",
+      "expected": "SUM({1,2;3,4},B2)",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "grouped-range",
+      "source": "(A1:B2)",
+      "expected": "(B2:C3)",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "name-and-callee",
+      "source": "ΩA1+ΩA1(A1)",
+      "expected": "ΩA1+ΩA1(B2)",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
       "id": "composition-first",
       "source": "C3+$A3+C$1+$D$4",
       "expected": "D4+$A4+D$1+$D$4",

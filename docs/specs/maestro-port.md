@@ -143,14 +143,19 @@ and arrays verbatim. A colon outside a qualifier or structured reference is an
 independent range operator, including before a name, call or parenthesis.
 Recognize bounded A1 cells and homogeneous whole-axis pairs; bare columns and
 numbers are not references. Reuse Calamine only for isolated coordinate arithmetic,
-retaining absolute axes and byte-identical zero/fixed displacement. Calls and
-groups use iterative delimiter context without an evaluator, parser API, new
-dependency, budget or diagnostics. Unknown units are opaque through the next
+retaining absolute axes and byte-identical zero/fixed displacement. Call/group
+traversal needs no retained stack because enclosing groups do not affect operand
+classification; only opaque arrays retain delimiter context. Add no evaluator,
+parser API, dependency, budget or diagnostics. Unknown units are opaque through the next
 expression operator/separator/delimiter; unterminated quotes/brackets protect the
 remainder. SpreadsheetML/SYLK own R1C1 conversion; XLSX templates do not. This
 corrects operand-blind displacement without changing formula decoding, sheet-local
 indices, cached values, arrays, CSV serialization or attachment extraction.
-
+Resolve unquoted-sheet ambiguity at expression group delimiters and quotes:
+writers quote sheet names containing parentheses, so `SUM(` begins a call,
+not a qualifier. Other admitted sheet characters, including `#` and `~`, remain
+opaque when a complete qualifier ends at `!`; `#REF!A1` retains the deleted-sheet
+prefix while its cell advances.
 
 Recreate DOM iframe sandboxing, injected runtime providers, postMessage bridges/routing, initialization/ready/run/cleanup lifetimes, console capture, attachments, downloads and artifact access from Rust. The browser tool intentionally executes user-supplied JavaScript in its browser sandbox; that is application behavior, not a second extension host. Keep the document-extraction tool, the JavaScript REPL tool (`javascript_repl`, with `title` and `code` parameters), and artifact commands/prompts. The calculation-result renderer remains rendering only, not an executable calculation tool. Do not use the stronger-looking native extension permission model to alter browser sandbox observations.
 
