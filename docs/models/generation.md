@@ -133,3 +133,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 ```
+
+## Fixed image fixture
+
+```sh
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped cargo run --quiet --locked \
+  -p maestro-models --example generate_circle_fixture
+```
+
+This explicit native command recreates the fixed 200×200 red circle on white at
+`crates/maestro-models/tests/data/red-circle.png` from embedded PNG bytes. The
+example uses its package directory, not the working directory. It creates missing
+parents recursively and replaces an existing target. It does not fetch feeds or
+run automatically during builds, tests or catalog generation.
+
+The native `catalog_generation::generate_test_image::generate_test_image` operation
+accepts a package directory and output writer. After the complete file is written,
+it emits `Generated test image at: {selected_path}` with one trailing newline.
+Directory or file failures return the original I/O error without a notice;
+notice-writer failures return their original error and leave the completed image.
+Writes have ordinary filesystem semantics, without atomic replacement or rollback.

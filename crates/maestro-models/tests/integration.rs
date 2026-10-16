@@ -55,6 +55,8 @@ mod cache_preferences;
 #[path = "support/cases.rs"]
 mod cases;
 mod catalog_command;
+#[path = "support/catalog_command.rs"]
+mod catalog_command_support;
 mod catalog_generation;
 mod catalog_route_smoke;
 #[allow(
@@ -75,6 +77,7 @@ mod chat_tool_choices;
 mod checked_tool_arguments;
 #[path = "support/child_process.rs"]
 mod child_process;
+mod circle_fixture;
 mod cloud_content_projection;
 mod cloud_conversation_configuration;
 mod cloud_conversation_conversion;

@@ -1,35 +1,15 @@
 //! Controlled command effects on native files and output sinks.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+use crate::catalog_command_support::{FailingWriter, Scratch};
 use maestro_models::catalog_generation::generate_models::generate_models;
 use maestro_models::{Fetch, HttpResponse, Model};
 use std::{
     fs,
     future::Future,
     io,
-    path::PathBuf,
     sync::{Arc, Mutex},
 };
-/// Own native command output files.
-struct Scratch(PathBuf);
-impl Scratch {
-    /// Allocate a unique command directory.
-    fn new() -> Self {
-        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-        let path = std::env::temp_dir().join(format!(
-            "maestro-command-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-        ));
-        fs::create_dir(&path).unwrap();
-        Self(path)
-    }
-}
-impl Drop for Scratch {
-    fn drop(&mut self) {
-        fs::remove_dir_all(&self.0).unwrap();
-    }
-}
 /// Build a controlled fetch whose request occurs after the previous body closes.
 fn controlled(fail: Option<usize>) -> (Fetch, Arc<Mutex<Vec<String>>>) {
     controlled_with_bodies(fail, Vec::new())
@@ -203,27 +183,6 @@ fn catalog_command_preserves_feed_failure_fallbacks() {
     }
 }
 
-/// Fail a writer at an exact byte boundary with an identifiable native cause.
-struct FailingWriter {
-    /// Accepted prefix.
-    bytes: Vec<u8>,
-    /// Remaining capacity.
-    remaining: usize,
-}
-impl io::Write for FailingWriter {
-    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
-        if self.remaining == 0 {
-            return Err(io::Error::from_raw_os_error(28));
-        }
-        let size = bytes.len().min(self.remaining);
-        self.bytes.extend_from_slice(&bytes[..size]);
-        self.remaining -= size;
-        Ok(size)
-    }
-    fn flush(&mut self) -> io::Result<()> {
-        Ok(())
-    }
-}
 #[test]
 fn catalog_command_returns_write_and_output_errors() {
     let scratch = Scratch::new();

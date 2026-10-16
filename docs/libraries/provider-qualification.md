@@ -56,3 +56,16 @@ These are MIT or Apache-2.0 alternatives. Tokio enables `io-util` alongside its 
 features. One TLS configuration supplies platform trust to reqwest and the SOCKS connector;
 Hyper's HTTP/1 connection is driven by its request and response body, without detached work
 or automatic replay. None of these declarations reaches the browser build.
+
+## Fixed image fixture qualification
+
+Native `maestro-models` tests use `image =0.24.9` with defaults off and only the
+`png` feature to decode the fixed circle fixture. They check the encoded PNG
+and all decoded RGBA bytes against independently recorded SHA-256 digests using
+the existing `sha2 =0.11.0` dependency. Production materialization embeds the
+original PNG and uses only `std`; it does not encode or rasterize images.
+
+The PNG-only closure contains 17 already-resolved packages, each permitting MIT
+or Apache-2.0 except Zlib-only `zlib-rs`. This native dev-dependency introduces no
+new resolved package or browser dependency. See the
+[fixture command](../models/generation.md#fixed-image-fixture).
