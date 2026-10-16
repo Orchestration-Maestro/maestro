@@ -146,21 +146,10 @@ fn maestro_guide_refreshes_supplied_account_credentials() -> TestResult {
 }
 
 /// Pure registered callback, using the public message builder and event producer.
-fn api_callback<O: 'static>(text: &'static str) -> maestro_models::StreamFunction<O> {
-    Arc::new(move |_, _, _| {
-        let message = Arc::new(std::sync::RwLock::new(
-            maestro_models::faux_assistant_message(
-                text,
-                maestro_models::FauxAssistantMessageOptions::default(),
-            ),
-        ));
-        let events = maestro_models::create_assistant_message_event_stream();
-        events.push(maestro_models::AssistantMessageEvent::Done {
-            reason: maestro_models::DoneReason::Stop,
-            message,
-        });
-        Ok(events)
-    })
+fn api_callback<O: maestro_models::StreamOptionsFamily>(
+    text: &'static str,
+) -> maestro_models::StreamFunction<O> {
+    Arc::new(GuideProvider(text))
 }
 
 /// Both callback forms share the same selected result, not a new executor.
@@ -212,7 +201,13 @@ fn maestro_guide_registration_keeps_existing_handles() -> TestResult {
         assert!(get_api_provider("guide-api").is_none());
         clear_api_providers();
         assert!(get_api_providers().is_empty());
-        let retained = (old.stream)(model, bundled::conversation()?, None)?
+        let retained = old
+            .stream
+            .call(
+                model,
+                bundled::conversation()?,
+                maestro_models::ProviderInvocation::Threaded(None, None),
+            )?
             .result()
             .await;
         assert_eq!(bundled::text_of(&retained), "old result");
@@ -277,4 +272,27 @@ async fn check_account_handles() -> TestResult {
         ["anthropic", "github-copilot", "openai-codex"]
     );
     Ok(())
+}
+
+/// Retained invocation owner for the controlled provider.
+struct GuideProvider(&'static str);
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for GuideProvider
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        let message = Arc::new(std::sync::RwLock::new(
+            maestro_models::faux_assistant_message(
+                self.0,
+                maestro_models::FauxAssistantMessageOptions::default(),
+            ),
+        ));
+        let events = maestro_models::create_assistant_message_event_stream();
+        events.push(maestro_models::AssistantMessageEvent::Done {
+            reason: maestro_models::DoneReason::Stop,
+            message,
+        });
+        Ok(events)
+    }
 }

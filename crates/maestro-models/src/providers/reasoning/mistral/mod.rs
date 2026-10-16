@@ -80,6 +80,7 @@ mod wire;
 mod request;
 
 mod stream;
+pub(crate) use stream::{dispatch, dispatch_simple};
 pub use stream::{
     stream_mistral, stream_mistral_for, stream_simple_mistral, stream_simple_mistral_for,
 };

@@ -98,7 +98,8 @@ multi_model.unregister();
 
 The second turn prints ordered start, thinking, text and done event names. The
 last three lines are `true`, `0`, `2`. Run the async example on a caller's executor;
-producers use their own timer-enabled runtime natively, or browser-local futures.
+default producers use their own timer-enabled runtime natively, or browser-local futures.
+Mode-aware registered calls use the supplied admission facility instead.
 No network credentials or server are needed.
 
 ## Behavior

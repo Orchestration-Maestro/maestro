@@ -151,36 +151,30 @@ fn settings_getter(
     })
 }
 /// Inputs retained by the controlled simple provider.
-type Invocation = (
-    Model,
-    Context,
-    SimpleStreamOptions,
-    AssistantMessageEventStream,
-);
+type Invocation = (Model, Context, AssistantMessageEventStream);
 /// Register a uniquely owned provider and retain the exact forwarded values.
-fn recording_provider(observations: Arc<Mutex<Vec<Invocation>>>) {
+fn recording_provider(
+    observations: Arc<Mutex<Vec<Invocation>>>,
+    expected: Arc<Mutex<Option<SimpleStreamOptions>>>,
+) {
     use maestro_models::{ApiProvider, register_api_provider};
-    let simple = Arc::new(
-        move |model, context, options: Option<SimpleStreamOptions>| {
-            let stream = AssistantMessageEventStream::new();
-            observations
-                .lock()
-                .unwrap()
-                .push((model, context, options.unwrap(), stream.clone()));
-            Ok(stream)
-        },
-    );
     register_api_provider(
         ApiProvider {
             api: "browser-proxy-current".into(),
-            stream: Arc::new(|_, _, _| panic!("raw dispatch")),
-            stream_simple: simple,
+            stream: Arc::new(UnexpectedRaw),
+            stream_simple: Arc::new(ProxyRecorder {
+                observations,
+                expected,
+            }),
         },
         Some("browser-proxy-current".into()),
     );
 }
 /// Assert scalar options and identity-bearing callbacks from the same invocation.
-fn forwarded_options(actual: &SimpleStreamOptions, expected: &SimpleStreamOptions) {
+fn forwarded_options<E: maestro_models::ProviderExecution>(
+    actual: &SimpleStreamOptions<E>,
+    expected: &SimpleStreamOptions,
+) {
     assert_eq!(actual.common.temperature, expected.common.temperature);
     assert_eq!(actual.common.max_tokens, expected.common.max_tokens);
     assert_eq!(actual.common.session_id, expected.common.session_id);
@@ -196,9 +190,9 @@ fn forwarded_options(actual: &SimpleStreamOptions, expected: &SimpleStreamOption
         actual.common.headers == expected.common.headers,
         "headers forwarded"
     );
-    assert!(Arc::ptr_eq(
-        actual.common.on_payload.as_ref().unwrap(),
-        expected.common.on_payload.as_ref().unwrap()
+    assert!(std::ptr::addr_eq(
+        &raw const **actual.common.on_payload.as_ref().unwrap(),
+        &raw const **expected.common.on_payload.as_ref().unwrap()
     ));
     assert!(Arc::ptr_eq(
         actual.common.fetch.as_ref().unwrap(),
@@ -233,13 +227,15 @@ fn proxy_stream_reads_current_settings_and_forwards_inputs() {
     run(async {
         let reads = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let observations = Arc::new(Mutex::new(Vec::new()));
-        recording_provider(Arc::clone(&observations));
+        let expected_options = Arc::new(Mutex::new(None));
+        recording_provider(Arc::clone(&observations), Arc::clone(&expected_options));
         let wrapper = create_stream_fn(settings_getter(Arc::clone(&reads)));
         for (index, key) in [None, Some("key"), None, Some("key"), Some(""), Some("key")]
             .into_iter()
             .enumerate()
         {
             let options = simple_options(key);
+            *expected_options.lock().unwrap() = Some(options.clone());
             let mut input = model();
             input.api = "browser-proxy-current".into();
             let returned = wrapper(
@@ -252,11 +248,11 @@ fn proxy_stream_reads_current_settings_and_forwards_inputs() {
             .unwrap();
             assert_eq!(reads.load(std::sync::atomic::Ordering::SeqCst), index + 1);
             returned.end(None);
-            let (actual_model, actual_context, actual_options, stream) =
+            let (actual_model, actual_context, stream) =
                 observations.lock().unwrap().pop().unwrap();
             assert!(stream.next().await.is_none());
             assert_eq!(actual_context, context());
-            forwarded_options(&actual_options, &options);
+            assert!(expected_options.lock().unwrap().is_none());
             let expected = match index { 3 => "https://second/?url=https%3A%2F%2Fapi.example%2Fv1%3Fx%3D1%26y%3Dtwo%20words%23part".to_owned(), 5 => "https://fourth/?url=https%3A%2F%2Fapi.example%2Fv1%3Fx%3D1%26y%3Dtwo%20words%23part".to_owned(), _ => model().base_url };
             assert_eq!(actual_model.base_url, expected);
             assert_eq!(
@@ -281,15 +277,12 @@ fn proxy_stream_does_not_dispatch_after_setting_failure() {
         let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let simple = {
             let calls = Arc::clone(&calls);
-            Arc::new(move |_, _, _| {
-                calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                Ok(AssistantMessageEventStream::new())
-            })
+            Arc::new(CountingProxy(calls))
         };
         register_api_provider(
             ApiProvider {
                 api: "browser-proxy-failure".into(),
-                stream: Arc::new(|_, _, _| panic!("raw dispatch")),
+                stream: Arc::new(UnexpectedRaw),
                 stream_simple: simple,
             },
             Some("browser-proxy-failure".into()),
@@ -318,4 +311,57 @@ fn proxy_stream_does_not_dispatch_after_setting_failure() {
         assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
         unregister_api_providers("browser-proxy-failure");
     });
+}
+
+/// Retained invocation owner for the controlled provider.
+struct UnexpectedRaw;
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for UnexpectedRaw
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        panic!("raw dispatch")
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct CountingProxy(Arc<std::sync::atomic::AtomicUsize>);
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for CountingProxy
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        Ok(AssistantMessageEventStream::new())
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct ProxyRecorder {
+    observations: Arc<Mutex<Vec<Invocation>>>,
+    expected: Arc<Mutex<Option<SimpleStreamOptions>>>,
+}
+impl<E: maestro_models::ProviderExecution>
+    maestro_models::Invoke<
+        E,
+        maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+    > for ProxyRecorder
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(
+        &self,
+        call: maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+    ) -> Self::Return {
+        let expected = self.expected.lock().unwrap().take().unwrap();
+        forwarded_options(&call.options.unwrap(), &expected);
+        let stream = AssistantMessageEventStream::new();
+        self.observations
+            .lock()
+            .unwrap()
+            .push((call.model, call.context, stream.clone()));
+        Ok(stream)
+    }
 }

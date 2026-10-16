@@ -262,7 +262,10 @@ reasons accordingly. Setup errors are distinct from terminal stream failures:
 a custom callback can fail immediately; bundled registration settles adapter
 setup failures into error streams. Direct module simple functions can return
 missing-key setup errors before creating a stream; root simple forwarding settles
-them. See [linkage](module-linkage.md).
+them. Mode-aware registered entries (`stream_for`, `stream_simple_for`,
+`complete_for`, `complete_simple_for`) require the caller's submission facility and
+retain local hooks in the selected producer. The default three-argument entries
+keep their threaded options and provider-owned default admission. See [linkage](module-linkage.md).
 
 The [failure and cancellation example](../../crates/maestro-models/tests/model_guide_examples/streams.rs),
 `maestro_guide_observes_failure_and_cancellation`, cancels only after visible text

@@ -9,6 +9,7 @@ mod host;
 mod http;
 mod request;
 mod stream;
+pub(crate) use stream::{dispatch_simple, select};
 pub use stream::{
     stream_openai_codex_responses, stream_openai_codex_responses_for,
     stream_simple_openai_codex_responses, stream_simple_openai_codex_responses_for,

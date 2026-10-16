@@ -46,7 +46,7 @@ impl StreamOptionsFamily for OpenAICodexResponsesOptions {
 }
 
 /// Select concrete future bounds before entering one shared session producer.
-fn select(
+pub(crate) fn select(
     model: Model,
     context: Context,
     invocation: ProviderInvocation<OpenAICodexResponsesOptions>,
@@ -143,7 +143,16 @@ pub fn stream_simple_openai_codex_responses_for<E: ProviderExecution>(
     options: Option<SimpleStreamOptions<E>>,
     submit: ProviderSpawner<E>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    match E::submission::<SimpleStreamOptions>(options, E::provided(submit)) {
+    dispatch_simple(model, context, E::submission(options, E::provided(submit)))
+}
+
+/// Select concrete simple preparation while preserving the original submission.
+pub(crate) fn dispatch_simple(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<SimpleStreamOptions>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    match invocation {
         ProviderInvocation::Local(options, submit) => {
             simple::<Local>(model, context, options, submit)
         }

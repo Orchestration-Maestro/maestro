@@ -3,6 +3,7 @@ use super::raw_options;
 use crate::SharedHandle;
 use crate::providers::assistant_output::{fail, initial_message};
 use crate::providers::chat::openai_completions as chat;
+use crate::providers::cloud::amazon_bedrock as bedrock;
 use crate::providers::content::google as content;
 use crate::providers::http::RequestFailure;
 use crate::providers::messages::anthropic as messages;
@@ -14,16 +15,12 @@ use crate::records::api_registry::{
     register_api_provider,
 };
 use crate::{
-    AssistantMessage, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Model,
-    ProviderExecution, ProviderSpawner, ProviderStreamOptions, SimpleStreamOptions,
+    AssistantMessage, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Invoke, Model,
+    ProviderCall, ProviderExecution, ProviderSpawner, ProviderStreamOptions, SimpleStreamOptions,
 };
 use sessions::stream_simple_openai_codex_responses as session_simple;
 use std::sync::{Arc, RwLock};
 
-/// Raw invocation of one protocol with its typed options.
-type RawStart<T> = fn(Model, Context, Option<T>) -> AssistantMessageEventStream;
-/// Root simple invocation of one protocol.
-type RawSimple = fn(Model, Context, Option<SimpleStreamOptions>) -> AssistantMessageEventStream;
 /// An already failed stream that carries `failure` as its terminal update.
 fn settled(message: AssistantMessage, failure: RequestFailure) -> AssistantMessageEventStream {
     let stream = AssistantMessageEventStream::new();
@@ -47,100 +44,144 @@ fn settle_simple<E: ProviderExecution>(
     start(model, context, options).unwrap_or_else(|error| settled(identity, error.into()))
 }
 
-/// Registered raw callback: decode the extras, then start the protocol.
-pub(crate) fn raw_callback<T: 'static>(
-    decode: fn(ProviderStreamOptions) -> Result<T, serde_json::Error>,
-    start: RawStart<T>,
-) -> ApiStreamFunction {
-    SharedHandle::new(move |model, context, options| {
-        Ok(match decode(options.unwrap_or_default()) {
-            Ok(typed) => start(model, context, Some(typed)),
-            Err(error) => settled(
-                initial_message(&model),
-                RequestFailure::new(error.to_string()),
-            ),
-        })
-    })
+/// Concrete bundled owners share one projection and their existing protocol selectors.
+macro_rules! provider {
+    ($owner:ident, $decode:path, $raw:path, $simple:expr) => {
+        /// Retained raw and simple entry points for one bundled protocol.
+        pub(crate) struct $owner;
+        impl<E: ProviderExecution> Invoke<E, ProviderCall<E, ProviderStreamOptions<E>>> for $owner {
+            type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
+            fn invoke(&self, call: ProviderCall<E, ProviderStreamOptions<E>>) -> Self::Return {
+                let ProviderCall {
+                    model,
+                    context,
+                    options,
+                    submit,
+                } = call;
+                Ok(match $decode(options.unwrap_or_default()) {
+                    Ok(typed) => $raw(model, context, E::submission(Some(typed), submit)),
+                    Err(error) => settled(
+                        initial_message(&model),
+                        RequestFailure::new(error.to_string()),
+                    ),
+                })
+            }
+        }
+        impl<E: ProviderExecution> Invoke<E, ProviderCall<E, SimpleStreamOptions<E>>> for $owner {
+            type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
+            fn invoke(&self, call: ProviderCall<E, SimpleStreamOptions<E>>) -> Self::Return {
+                Ok(settle_simple(
+                    |model, context, options| {
+                        ($simple)(model, context, E::submission(options, call.submit))
+                    },
+                    call.model,
+                    call.context,
+                    call.options,
+                ))
+            }
+        }
+    };
 }
+provider!(
+    Messages,
+    raw_options::anthropic,
+    messages::dispatch,
+    messages::dispatch_simple
+);
+provider!(
+    Chat,
+    raw_options::chat,
+    chat::dispatch,
+    chat::dispatch_simple
+);
+provider!(
+    Conversation,
+    raw_options::conversation,
+    conversation::dispatch,
+    conversation::dispatch_simple
+);
+provider!(
+    Responses,
+    raw_options::responses,
+    responses::dispatch,
+    responses::dispatch_simple
+);
+provider!(
+    CloudResponses,
+    raw_options::cloud_responses,
+    cloud::dispatch,
+    cloud::dispatch_simple
+);
+provider!(
+    Sessions,
+    raw_options::response_sessions,
+    sessions::select,
+    sessions::dispatch_simple
+);
+provider!(
+    Content,
+    raw_options::google,
+    content::dispatch,
+    content::dispatch_simple
+);
+provider!(
+    Bedrock,
+    raw_options::bedrock,
+    bedrock::dispatch,
+    |model, context, invocation| Ok(bedrock::dispatch_simple(model, context, invocation))
+);
 
-/// One bundled protocol with its raw and simple callbacks.
-fn provider<T: 'static>(
-    api: &str,
-    decode: fn(ProviderStreamOptions) -> Result<T, serde_json::Error>,
-    raw: RawStart<T>,
-    simple: RawSimple,
-) -> ApiProvider {
+/// One protocol whose raw and simple fields retain the same owner.
+fn provider<T>(api: &str, owner: SharedHandle<T>) -> ApiProvider
+where
+    T: crate::StreamCallback<ProviderStreamOptions>
+        + crate::StreamCallback<SimpleStreamOptions>
+        + 'static,
+{
     ApiProvider {
-        api: api.to_owned(),
-        stream: raw_callback(decode, raw),
-        stream_simple: SharedHandle::new(move |model, context, options| {
-            Ok(simple(model, context, options))
-        }),
+        api: api.into(),
+        stream: owner.clone(),
+        stream_simple: owner,
     }
 }
 
 /// The bundled protocols in registration order.
 pub(crate) fn built_in_providers() -> [ApiProvider; 8] {
     [
-        provider(
-            "anthropic-messages",
-            raw_options::anthropic,
-            messages::stream_anthropic,
-            stream_simple_anthropic,
-        ),
-        provider(
-            "openai-completions",
-            raw_options::chat,
-            chat::stream_openai_completions,
-            stream_simple_openai_completions,
-        ),
-        provider(
-            "mistral-conversations",
-            raw_options::conversation,
-            conversation::stream_mistral,
-            stream_simple_mistral,
-        ),
-        provider(
-            "openai-responses",
-            raw_options::responses,
-            responses::stream_openai_responses,
-            stream_simple_openai_responses,
-        ),
-        provider(
-            "azure-openai-responses",
-            raw_options::cloud_responses,
-            cloud::stream_azure_openai_responses,
-            stream_simple_azure_openai_responses,
-        ),
-        provider(
-            "openai-codex-responses",
-            raw_options::response_sessions,
-            sessions::stream_openai_codex_responses,
-            stream_simple_openai_codex_responses,
-        ),
-        provider(
-            "google-generative-ai",
-            raw_options::google,
-            content::stream_google,
-            stream_simple_google,
-        ),
-        ApiProvider {
-            api: "bedrock-converse-stream".into(),
-            stream: SharedHandle::new(|model, context, options| {
-                let callback = selected_bedrock().stream_bedrock;
-                let identity = initial_message(&model);
-                Ok(callback(model, context, options)
-                    .unwrap_or_else(|error| settled(identity, error.into())))
-            }),
-            stream_simple: SharedHandle::new(|model, context, options| {
-                let callback = selected_bedrock().stream_simple_bedrock;
-                let identity = initial_message(&model);
-                Ok(callback(model, context, options)
-                    .unwrap_or_else(|error| settled(identity, error.into())))
-            }),
-        },
+        provider("anthropic-messages", SharedHandle::new(Messages)),
+        provider("openai-completions", SharedHandle::new(Chat)),
+        provider("mistral-conversations", SharedHandle::new(Conversation)),
+        provider("openai-responses", SharedHandle::new(Responses)),
+        provider("azure-openai-responses", SharedHandle::new(CloudResponses)),
+        provider("openai-codex-responses", SharedHandle::new(Sessions)),
+        provider("google-generative-ai", SharedHandle::new(Content)),
+        provider("bedrock-converse-stream", SharedHandle::new(SelectedBedrock)),
     ]
 }
+
+/// Snapshot the replaceable cloud callbacks only when invocation begins.
+struct SelectedBedrock;
+/// Both option families use the same callback-selection and setup-error boundary.
+macro_rules! selected_bedrock {
+    ($options:ident, $field:ident) => {
+        impl<E: ProviderExecution> Invoke<E, ProviderCall<E, $options<E>>> for SelectedBedrock {
+            type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
+            fn invoke(&self, call: ProviderCall<E, $options<E>>) -> Self::Return {
+                let callback = selected_bedrock().$field;
+                let identity = initial_message(&call.model);
+                Ok(callback
+                    .call(
+                        call.model,
+                        call.context,
+                        E::submission(call.options, call.submit),
+                    )
+                    .unwrap_or_else(|error| settled(identity, error.into())))
+            }
+        }
+    };
+}
+selected_bedrock!(ProviderStreamOptions, stream_bedrock);
+selected_bedrock!(SimpleStreamOptions, stream_simple_bedrock);
 
 /// Register every bundled protocol, replacing earlier entries for the same APIs in place and
 /// leaving other registrations untouched.

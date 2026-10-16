@@ -167,7 +167,7 @@ pub fn selected(
 /// # Panics
 /// Panics if the configuration guard is poisoned.
 pub fn callback(config: &Arc<RwLock<ProviderConfigInput>>, message: &'static str) {
-    config.write().unwrap().stream_simple = Some(Arc::new(move |_, _, _| Err(diagnostic(message))));
+    config.write().unwrap().stream_simple = Some(Arc::new(FailedProvider(message)));
 }
 /// Invoke the current protocol through the raw public callback.
 /// # Panics
@@ -176,18 +176,20 @@ pub fn callback(config: &Arc<RwLock<ProviderConfigInput>>, message: &'static str
 pub fn failure(registry: &maestro_catalog::ModelRegistry, provider: &str, id: &str) -> String {
     let model = registry.find(provider, id).unwrap().read().unwrap().clone();
     let callback = maestro_models::get_api_provider(&model.api).unwrap();
-    (callback.stream)(
-        model,
-        maestro_models::Context {
-            messages: vec![],
-            system_prompt: None,
-            tools: None,
-        },
-        None,
-    )
-    .err()
-    .unwrap()
-    .message
+    callback
+        .stream
+        .call(
+            model,
+            maestro_models::Context {
+                messages: vec![],
+                system_prompt: None,
+                tools: None,
+            },
+            maestro_models::ProviderInvocation::Threaded(None, None),
+        )
+        .err()
+        .unwrap()
+        .message
 }
 /// File effects with an observable read boundary.
 pub struct CountFile(pub Arc<std::sync::atomic::AtomicUsize>);
@@ -315,4 +317,16 @@ pub fn assert_account_failure(error: &maestro_catalog::CatalogError, message: &s
     );
     assert!(root.errno.is_none());
     assert!(root.source().is_none());
+}
+
+/// Retained invocation owner for the controlled provider.
+struct FailedProvider(&'static str);
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for FailedProvider
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        Err(diagnostic(self.0))
+    }
 }

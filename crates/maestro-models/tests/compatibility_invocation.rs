@@ -14,25 +14,11 @@ mod tests {
         let expected = json!({"supportsStore":false,"sendSessionIdHeader":true,"open":{"order":["b","a","b"],"null":null}});
         let model: Model = serde_json::from_value(json!({"id":"m","name":"M","api":"compatibility-custom","provider":"custom","baseUrl":"https://fixture.invalid","reasoning":false,"input":["text"],"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0},"contextWindow":100,"maxTokens":10,"compat":expected})).unwrap();
         let observed = Arc::new(Mutex::new(Vec::<Value>::new()));
-        let raw = Arc::clone(&observed);
-        let simple = Arc::clone(&observed);
         register_api_provider(
             ApiProvider {
                 api: model.api.clone(),
-                stream: Arc::new(move |model, _, _| {
-                    let value = serde_json::to_value(model.compat).unwrap();
-                    raw.lock().unwrap().push(value);
-                    let stream = AssistantMessageEventStream::new();
-                    stream.end(None);
-                    Ok(stream)
-                }),
-                stream_simple: Arc::new(move |model, _, _| {
-                    let value = serde_json::to_value(model.compat).unwrap();
-                    simple.lock().unwrap().push(value);
-                    let stream = AssistantMessageEventStream::new();
-                    stream.end(None);
-                    Ok(stream)
-                }),
+                stream: Arc::new(ObserveCompatibility(Arc::clone(&observed))),
+                stream_simple: Arc::new(ObserveCompatibility(Arc::clone(&observed))),
             },
             Some("compatibility-observation".into()),
         );
@@ -45,5 +31,23 @@ mod tests {
         stream_simple(model, context, None).unwrap();
         unregister_api_providers("compatibility-observation");
         assert_eq!(*observed.lock().unwrap(), vec![expected.clone(), expected]);
+    }
+
+    /// Retained invocation owner for the controlled provider.
+    struct ObserveCompatibility(Arc<Mutex<Vec<Value>>>);
+    impl<E: maestro_models::ProviderExecution, O>
+        maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for ObserveCompatibility
+    {
+        type Return = Result<
+            maestro_models::AssistantMessageEventStream,
+            maestro_models::DiagnosticErrorInfo,
+        >;
+        fn invoke(&self, call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+            let value = serde_json::to_value(call.model.compat).unwrap();
+            self.0.lock().unwrap().push(value);
+            let stream = AssistantMessageEventStream::new();
+            stream.end(None);
+            Ok(stream)
+        }
     }
 }

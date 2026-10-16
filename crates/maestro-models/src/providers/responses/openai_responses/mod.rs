@@ -1,7 +1,11 @@
 //! Standard response endpoint invocation.
 
+/// Simple key resolution and typed request preparation.
+mod simple;
 pub(super) mod source;
 use maestro_json::is_truthy as enabled;
+pub(crate) use simple::dispatch_simple;
+pub use simple::{stream_simple_openai_responses, stream_simple_openai_responses_for};
 use source::{Prepared, Source};
 
 use super::openai_responses_shared::{
@@ -9,7 +13,7 @@ use super::openai_responses_shared::{
     messages::{convert_responses_messages, convert_responses_tools},
     process_responses_stream,
 };
-use crate::options::{resolve_api_key, resolve_cache_retention};
+use crate::options::resolve_cache_retention;
 use crate::providers::assistant_output::{conclude, fail, initial_message, start_producer_for};
 use crate::providers::chat::cloudflare::{is_cloudflare_provider, resolve_cloudflare_base_url};
 use crate::providers::chat::github_copilot_headers::{
@@ -24,9 +28,8 @@ use crate::providers::json_text::compact_json;
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, CacheRetention, Context,
     DiagnosticErrorInfo, Local, Model, ModelThinkingLevel, ProviderExecution, ProviderInvocation,
-    ProviderSpawner, SharedAssistantMessage, SimpleStreamOptions, StreamOptions,
-    StreamOptionsFamily, ThinkingLevel, Threaded, build_base_options_for, clamp_thinking_level,
-    get_env_api_key,
+    ProviderSpawner, SharedAssistantMessage, StreamOptions, StreamOptionsFamily, ThinkingLevel,
+    Threaded, get_env_api_key,
 };
 use futures_util::stream;
 use indexmap::IndexMap;
@@ -115,7 +118,7 @@ impl StreamOptionsFamily for OpenAIResponsesOptions {
 }
 
 /// Select concrete future erasure before starting the shared producer.
-fn dispatch(
+pub(crate) fn dispatch(
     model: Model,
     context: Context,
     invocation: ProviderInvocation<OpenAIResponsesOptions>,
@@ -181,73 +184,6 @@ fn produce<E: Producer>(
     );
     start_producer_for::<E>(&stream, &output, signal.as_ref(), task, submit);
     stream
-}
-
-/// Start a response using shared simple budgets and reasoning support.
-///
-/// # Errors
-/// Returns a missing provider key before creating a stream.
-pub fn stream_simple_openai_responses(
-    model: Model,
-    context: Context,
-    options: Option<SimpleStreamOptions>,
-) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    simple::<Threaded>(model, context, options, None)
-}
-
-/// Start a simple response request with caller-owned producer admission.
-///
-/// # Errors
-/// Returns the existing missing-key failure before creating a stream.
-pub fn stream_simple_openai_responses_for<E: ProviderExecution>(
-    model: Model,
-    context: Context,
-    options: Option<SimpleStreamOptions<E>>,
-    submit: ProviderSpawner<E>,
-) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    match E::submission::<SimpleStreamOptions>(options, E::provided(submit)) {
-        ProviderInvocation::Local(options, submit) => {
-            simple::<Local>(model, context, options, submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            simple::<Threaded>(model, context, options, submit)
-        }
-    }
-}
-
-/// Resolve shared simple options before starting the same producer.
-fn simple<E: Producer>(
-    model: Model,
-    context: Context,
-    options: Option<SimpleStreamOptions<E>>,
-    submit: E::Submission,
-) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    let key = resolve_api_key(
-        &model.provider,
-        options
-            .as_ref()
-            .and_then(|o| o.common.api_key.as_deref())
-            .map(Cow::Borrowed),
-    )
-    .ok_or_else(|| diagnostic(format!("No API key for provider: {}", model.provider)))?;
-    let common = build_base_options_for(&model, options.as_ref(), Some(&key));
-    let reasoning_effort = options
-        .as_ref()
-        .and_then(|o| o.reasoning)
-        .and_then(|level| {
-            crate::reasoning_from_thinking_level(&clamp_thinking_level(&model, level.into()))
-        });
-    drop(options);
-    Ok(produce::<E>(
-        model,
-        context,
-        Some(OpenAIResponsesOptions {
-            common,
-            reasoning_effort,
-            ..OpenAIResponsesOptions::default()
-        }),
-        submit,
-    ))
 }
 
 /// Failure text carried by the stream source or simple key boundary.

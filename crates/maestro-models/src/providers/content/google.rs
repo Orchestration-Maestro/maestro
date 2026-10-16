@@ -275,7 +275,7 @@ impl StreamOptionsFamily for GoogleOptions {
 }
 
 /// Select concrete future bounds before running one shared producer.
-fn dispatch(
+pub(crate) fn dispatch(
     model: Model,
     context: Context,
     invocation: ProviderInvocation<GoogleOptions>,
@@ -360,9 +360,7 @@ pub fn stream_simple_google(
     context: Context,
     options: Option<SimpleStreamOptions>,
 ) -> Result<crate::AssistantMessageEventStream, DiagnosticErrorInfo> {
-    let options = options.unwrap_or_default();
-    let selected = build_simple_options(&model, Some(&options))?;
-    Ok(stream_google(model, context, Some(selected)))
+    dispatch_simple(model, context, ProviderInvocation::Threaded(options, None))
 }
 
 /// Resolve simple settings using caller-owned admission.
@@ -375,14 +373,7 @@ pub fn stream_simple_google_for<E: ProviderExecution>(
     options: Option<SimpleStreamOptions<E>>,
     submit: ProviderSpawner<E>,
 ) -> Result<crate::AssistantMessageEventStream, DiagnosticErrorInfo> {
-    let selected = simple_options(&model, options.as_ref())?;
-    drop(options);
-    Ok(stream_google_for::<E>(
-        model,
-        context,
-        Some(selected),
-        submit,
-    ))
+    dispatch_simple(model, context, E::submission(options, E::provided(submit)))
 }
 
 /// Drive the same content-generation request under either hook family.
@@ -498,4 +489,35 @@ fn endpoint_default() -> Option<String> {
     {
         None
     }
+}
+
+/// Resolve simple content settings before selecting concrete producer bounds.
+pub(crate) fn dispatch_simple(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<SimpleStreamOptions>,
+) -> Result<crate::AssistantMessageEventStream, DiagnosticErrorInfo> {
+    match invocation {
+        ProviderInvocation::Local(options, submit) => {
+            simple::<Local>(model, context, options, submit)
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            simple::<Threaded>(model, context, options, submit)
+        }
+    }
+}
+/// Prepare the original simple options once for either hook family.
+fn simple<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: E::Submission,
+) -> Result<crate::AssistantMessageEventStream, DiagnosticErrorInfo> {
+    let selected = simple_options(&model, options.as_ref())?;
+    drop(options);
+    Ok(dispatch(
+        model,
+        context,
+        E::submission(Some(selected), submit),
+    ))
 }

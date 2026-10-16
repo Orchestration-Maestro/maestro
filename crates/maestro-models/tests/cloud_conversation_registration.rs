@@ -58,15 +58,15 @@ async fn explicit_routes() -> TestResult {
             bedrock::context("Hello")?,
             Some(raw.clone()),
         )?,
-        (factory.stream_bedrock)(
+        factory.stream_bedrock.call(
             bedrock::model(ENDPOINT)?,
             bedrock::context("Hello")?,
-            Some(raw.clone()),
+            maestro_models::ProviderInvocation::Threaded(Some(raw.clone()), None),
         )?,
-        (factory.stream_simple_bedrock)(
+        factory.stream_simple_bedrock.call(
             bedrock::model(ENDPOINT)?,
             bedrock::context("Hello")?,
-            Some(simple.clone()),
+            maestro_models::ProviderInvocation::Threaded(Some(simple.clone()), None),
         )?,
     ];
     for call in streams {
@@ -114,8 +114,8 @@ fn bedrock_override_setup_failures_settle() -> TestResult {
     let _registry = bundled::registry();
     let _restore = Restore;
     maestro_models::set_bedrock_provider_module(maestro_models::BedrockProviderModule {
-        stream_bedrock: std::sync::Arc::new(|_, _, _| Err(error("raw setup"))),
-        stream_simple_bedrock: std::sync::Arc::new(|_, _, _| Err(error("simple setup"))),
+        stream_bedrock: std::sync::Arc::new(CloudFailure("raw setup".into())),
+        stream_simple_bedrock: std::sync::Arc::new(CloudFailure("simple setup".into())),
     });
     block_on(false, async {
         let signal = maestro_models::Cancellation::new();
@@ -147,7 +147,7 @@ fn bedrock_override_setup_failures_settle() -> TestResult {
         }
         let mut custom =
             maestro_models::get_api_provider("bedrock-converse-stream").ok_or("provider")?;
-        custom.stream = std::sync::Arc::new(|_, _, _| Err(error("custom setup")));
+        custom.stream = std::sync::Arc::new(CloudFailure("custom setup".into()));
         maestro_models::register_api_provider(custom, None);
         assert_eq!(
             stream(bedrock::model(ENDPOINT)?, bedrock::context("Hello")?, None)
@@ -192,14 +192,18 @@ fn bedrock_raw_options_reach_their_consumers() -> TestResult {
 fn pair(tag: &str) -> maestro_models::BedrockProviderModule {
     let (raw, simple) = (format!("{tag}:raw"), format!("{tag}:simple"));
     maestro_models::BedrockProviderModule {
-        stream_bedrock: std::sync::Arc::new(move |_, _, _| Err(error(&raw))),
-        stream_simple_bedrock: std::sync::Arc::new(move |_, _, _| Err(error(&simple))),
+        stream_bedrock: std::sync::Arc::new(CloudFailure(raw)),
+        stream_simple_bedrock: std::sync::Arc::new(CloudFailure(simple)),
     }
 }
 
 /// Observe only the result of this invocation of a retained registry callback.
 async fn selected(provider: &maestro_models::ApiProvider) -> TestResult<String> {
-    let stream = (provider.stream)(bedrock::model(ENDPOINT)?, bedrock::context("Hello")?, None)?;
+    let stream = provider.stream.call(
+        bedrock::model(ENDPOINT)?,
+        bedrock::context("Hello")?,
+        maestro_models::ProviderInvocation::Threaded(None, None),
+    )?;
     let (_, message) = transport::drain(&stream).await?;
     Ok(message.error_message.ok_or("no callback marker")?)
 }
@@ -219,21 +223,24 @@ fn bedrock_override_snapshots_callbacks_without_holding_locks() -> TestResult {
         let alias = pending.clone();
         let capture = std::sync::Arc::new(String::from("running"));
         let weak = std::sync::Arc::downgrade(&capture);
-        let raw = std::sync::Arc::new(move |_, _, _| {
-            assert_eq!(capture.as_str(), "running");
-            Ok(alias.clone())
-        });
+        let raw = std::sync::Arc::new(RunningCloud { capture, alias });
         let mut running = pair("A");
         running.stream_bedrock = raw;
         let survivor = running.clone();
         maestro_models::set_bedrock_provider_module(running);
-        let invocation =
-            (retained.stream)(bedrock::model(ENDPOINT)?, bedrock::context("Hello")?, None)?;
+        let invocation = retained.stream.call(
+            bedrock::model(ENDPOINT)?,
+            bedrock::context("Hello")?,
+            maestro_models::ProviderInvocation::Threaded(None, None),
+        )?;
         maestro_models::set_bedrock_provider_module(pair("B"));
         assert_eq!(selected(&retained).await?, "B:raw");
         assert!(weak.upgrade().is_some());
-        let survivor_stream =
-            (survivor.stream_bedrock)(bedrock::model(ENDPOINT)?, bedrock::context("Hello")?, None)?;
+        let survivor_stream = survivor.stream_bedrock.call(
+            bedrock::model(ENDPOINT)?,
+            bedrock::context("Hello")?,
+            maestro_models::ProviderInvocation::Threaded(None, None),
+        )?;
         let message = std::sync::Arc::new(std::sync::RwLock::new(serde_json::from_value(json!({
             "role":"assistant", "content":[{"type":"text","text":"A-running"}], "api":"bedrock-converse-stream",
             "provider":"amazon-bedrock", "model":"meta.llama-controlled", "timestamp":1, "stopReason":"stop",
@@ -249,10 +256,7 @@ fn bedrock_override_snapshots_callbacks_without_holding_locks() -> TestResult {
         drop(survivor);
         assert!(weak.upgrade().is_none());
         let mut reentrant = pair("C");
-        reentrant.stream_bedrock = std::sync::Arc::new(|_, _, _| {
-            maestro_models::set_bedrock_provider_module(pair("D"));
-            Err(error("C:raw"))
-        });
+        reentrant.stream_bedrock = std::sync::Arc::new(ReplacingCloud);
         maestro_models::set_bedrock_provider_module(reentrant);
         assert_eq!(selected(&retained).await?, "C:raw");
         assert_eq!(selected(&retained).await?, "D:raw");
@@ -312,8 +316,11 @@ fn bedrock_override_survives_reset_and_registry_changes() -> TestResult {
         assert_eq!(registered(), order);
         let simple =
             maestro_models::get_api_provider("bedrock-converse-stream").ok_or("provider")?;
-        let result =
-            (simple.stream_simple)(bedrock::model(ENDPOINT)?, bedrock::context("Hello")?, None)?;
+        let result = simple.stream_simple.call(
+            bedrock::model(ENDPOINT)?,
+            bedrock::context("Hello")?,
+            maestro_models::ProviderInvocation::Threaded(None, None),
+        )?;
         assert_eq!(
             transport::drain(&result).await?.1.error_message.as_deref(),
             Some("B:simple")
@@ -323,26 +330,26 @@ fn bedrock_override_survives_reset_and_registry_changes() -> TestResult {
 }
 
 /// Assert that the retained effect handles reach a replacement without default decoding.
-fn assert_common(
-    actual: &StreamOptions,
+fn assert_common<E: maestro_models::ProviderExecution>(
+    actual: &StreamOptions<E>,
     expected: &StreamOptions,
 ) -> Result<(), maestro_models::DiagnosticErrorInfo> {
     assert_eq!(actual.temperature, expected.temperature);
     assert_eq!(actual.max_tokens, expected.max_tokens);
     assert_eq!(actual.session_id, expected.session_id);
-    assert!(std::sync::Arc::ptr_eq(
-        actual.on_payload.as_ref().ok_or_else(|| error("payload"))?,
-        expected
+    assert!(std::ptr::addr_eq(
+        &raw const **actual.on_payload.as_ref().ok_or_else(|| error("payload"))?,
+        &raw const **expected
             .on_payload
             .as_ref()
             .ok_or_else(|| error("payload"))?
     ));
-    assert!(std::sync::Arc::ptr_eq(
-        actual
+    assert!(std::ptr::addr_eq(
+        &raw const **actual
             .on_response
             .as_ref()
             .ok_or_else(|| error("response"))?,
-        expected
+        &raw const **expected
             .on_response
             .as_ref()
             .ok_or_else(|| error("response"))?
@@ -548,47 +555,16 @@ fn raw_override(
     shared: std::sync::Arc<std::sync::atomic::AtomicUsize>,
     expected: Value,
 ) -> maestro_models::ApiStreamFunction {
-    std::sync::Arc::new(move |model, context, options| {
-        assert_override_inputs(&model, &context)?;
-        if let Some(options) = options {
-            assert_common(&options.common, &common)?;
-            assert_eq!(
-                options.extra["future"]
-                    .as_object()
-                    .ok_or_else(|| error("nested object"))?
-                    .keys()
-                    .map(String::as_str)
-                    .collect::<Vec<_>>(),
-                ["z", "a"]
-            );
-            assert_eq!(Value::Object(options.extra), expected);
-            let value = options
-                .objects
-                .get::<std::sync::Arc<std::sync::atomic::AtomicUsize>>()
-                .ok_or_else(|| error("object"))?;
-            assert!(std::sync::Arc::ptr_eq(value, &shared));
-            value.store(7, std::sync::atomic::Ordering::SeqCst);
-            Err(error("raw present"))
-        } else {
-            Err(error("raw absent"))
-        }
+    std::sync::Arc::new(RawOverride {
+        common,
+        shared,
+        expected,
     })
 }
 
 /// Replacement simple callback observes the requested level and independent budget slots.
 fn simple_override(common: StreamOptions) -> maestro_models::ApiStreamSimpleFunction {
-    std::sync::Arc::new(move |model, context, options| {
-        assert_override_inputs(&model, &context)?;
-        if let Some(options) = options {
-            assert_common(&options.common, &common)?;
-            assert_eq!(options.reasoning, Some(maestro_models::ThinkingLevel::Low));
-            let budgets = options.thinking_budgets.ok_or_else(|| error("budgets"))?;
-            assert_eq!((budgets.low, budgets.high), (Some(1234.0), Some(4321.0)));
-            Err(error("simple present"))
-        } else {
-            Err(error("simple absent"))
-        }
-    })
+    std::sync::Arc::new(SimpleOverride { common })
 }
 
 /// Check the model and context forwarded to either replacement route.
@@ -623,5 +599,133 @@ fn open_options(scripted: &transport::Transport) -> StreamOptions {
             Box::pin(std::future::ready(Ok(())))
         })),
         ..StreamOptions::default()
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct CloudFailure(String);
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for CloudFailure
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        Err(error(&self.0))
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct RunningCloud {
+    capture: std::sync::Arc<String>,
+    alias: maestro_models::AssistantMessageEventStream,
+}
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for RunningCloud
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        assert_eq!(self.capture.as_str(), "running");
+        Ok(self.alias.clone())
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct ReplacingCloud;
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for ReplacingCloud
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        maestro_models::set_bedrock_provider_module(pair("D"));
+        Err(error("C:raw"))
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct RawOverride {
+    common: StreamOptions,
+    shared: std::sync::Arc<std::sync::atomic::AtomicUsize>,
+    expected: Value,
+}
+impl<E: maestro_models::ProviderExecution>
+    maestro_models::Invoke<
+        E,
+        maestro_models::ProviderCall<E, maestro_models::ProviderStreamOptions<E>>,
+    > for RawOverride
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(
+        &self,
+        call: maestro_models::ProviderCall<E, maestro_models::ProviderStreamOptions<E>>,
+    ) -> Self::Return {
+        let maestro_models::ProviderCall {
+            model,
+            context,
+            options,
+            ..
+        } = call;
+
+        assert_override_inputs(&model, &context)?;
+        if let Some(options) = options {
+            assert_common(&options.common, &self.common)?;
+            assert_eq!(
+                options.extra["future"]
+                    .as_object()
+                    .ok_or_else(|| error("nested object"))?
+                    .keys()
+                    .map(String::as_str)
+                    .collect::<Vec<_>>(),
+                ["z", "a"]
+            );
+            assert_eq!(Value::Object(options.extra), self.expected);
+            let value = options
+                .objects
+                .get::<std::sync::Arc<std::sync::atomic::AtomicUsize>>()
+                .ok_or_else(|| error("object"))?;
+            assert!(std::sync::Arc::ptr_eq(value, &self.shared));
+            value.store(7, std::sync::atomic::Ordering::SeqCst);
+            Err(error("raw present"))
+        } else {
+            Err(error("raw absent"))
+        }
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct SimpleOverride {
+    common: StreamOptions,
+}
+impl<E: maestro_models::ProviderExecution>
+    maestro_models::Invoke<
+        E,
+        maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+    > for SimpleOverride
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(
+        &self,
+        call: maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+    ) -> Self::Return {
+        let maestro_models::ProviderCall {
+            model,
+            context,
+            options,
+            ..
+        } = call;
+
+        assert_override_inputs(&model, &context)?;
+        if let Some(options) = options {
+            assert_common(&options.common, &self.common)?;
+            assert_eq!(options.reasoning, Some(maestro_models::ThinkingLevel::Low));
+            let budgets = options.thinking_budgets.ok_or_else(|| error("budgets"))?;
+            assert_eq!((budgets.low, budgets.high), (Some(1234.0), Some(4321.0)));
+            Err(error("simple present"))
+        } else {
+            Err(error("simple absent"))
+        }
     }
 }

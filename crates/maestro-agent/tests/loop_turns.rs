@@ -393,24 +393,14 @@ fn every_event_is_awaited() {
 /// Registered simple dispatch receives the supplied descriptor and conversation.
 #[test]
 fn default_stream_uses_registered_model_adapter() {
-    use maestro_models::{
-        ApiProvider, AssistantMessageEventStream, register_api_provider, unregister_api_providers,
-    };
+    use maestro_models::{ApiProvider, register_api_provider, unregister_api_providers};
     let observed = Arc::new(std::sync::atomic::AtomicBool::new(false));
     let called = Arc::clone(&observed);
     register_api_provider(
         ApiProvider {
             api: "loop-controlled".into(),
-            stream: Arc::new(|_, _, _| panic!("raw dispatch is not selected")),
-            stream_simple: Arc::new(move |model, context, options| {
-                assert_eq!(model.id, "fixture");
-                assert_eq!(context.messages.len(), 1);
-                assert_eq!(options.unwrap().common.temperature, Some(0.5));
-                called.store(true, std::sync::atomic::Ordering::SeqCst);
-                let stream = AssistantMessageEventStream::new();
-                stream.end(Some(assistant("registered")));
-                Ok(stream)
-            }),
+            stream: Arc::new(UnexpectedRaw),
+            stream_simple: Arc::new(LoopDispatch(called)),
         },
         Some("loop-controlled-test".into()),
     );
@@ -876,4 +866,48 @@ fn cleanup_sink(
 #[test]
 fn custom_notification_is_filtered_before_model_request() {
     run(support::corpus::filtered_notification());
+}
+
+/// Retained invocation owner for the controlled provider.
+struct LoopDispatch(Arc<std::sync::atomic::AtomicBool>);
+impl<E: maestro_models::ProviderExecution>
+    maestro_models::Invoke<
+        E,
+        maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+    > for LoopDispatch
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(
+        &self,
+        call: maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+    ) -> Self::Return {
+        let maestro_models::ProviderCall {
+            model,
+            context,
+            options,
+            ..
+        } = call;
+        let called = &self.0;
+
+        assert_eq!(model.id, "fixture");
+        assert_eq!(context.messages.len(), 1);
+        assert_eq!(options.unwrap().common.temperature, Some(0.5));
+        called.store(true, std::sync::atomic::Ordering::SeqCst);
+        let stream = maestro_models::AssistantMessageEventStream::new();
+        stream.end(Some(assistant("registered")));
+        Ok(stream)
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct UnexpectedRaw;
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for UnexpectedRaw
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        panic!("raw dispatch selected")
+    }
 }

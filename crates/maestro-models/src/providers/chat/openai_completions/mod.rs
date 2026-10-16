@@ -78,7 +78,7 @@ impl StreamOptionsFamily for OpenAICompletionsOptions {
 }
 
 /// Select concrete future erasure before starting the shared producer.
-fn dispatch(
+pub(crate) fn dispatch(
     model: Model,
     context: Context,
     invocation: ProviderInvocation<OpenAICompletionsOptions>,
@@ -169,7 +169,16 @@ pub fn stream_simple_openai_completions_for<E: ProviderExecution>(
     submit: ProviderSpawner<E>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
     // The common carrier selects the concrete family before future erasure.
-    match E::submission::<SimpleStreamOptions>(options, E::provided(submit)) {
+    dispatch_simple(model, context, E::submission(options, E::provided(submit)))
+}
+
+/// Select concrete simple preparation while preserving the original submission.
+pub(crate) fn dispatch_simple(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<SimpleStreamOptions>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    match invocation {
         ProviderInvocation::Local(options, submit) => {
             simple::<Local>(model, context, options, submit)
         }

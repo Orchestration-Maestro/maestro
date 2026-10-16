@@ -79,6 +79,9 @@ supply ID normalization; projection owns content conversion and missing results.
 
 ## Controlled registered invocation
 
+A retained owner implements `Invoke` generically for both execution families.
+The same handle can populate raw and simple fields; direct hook closures stay unchanged.
+
 ```rust
 use maestro_models::{
     SharedHandle, ApiProvider, AssistantMessage, AssistantMessageEvent, Context, DoneReason,
@@ -107,12 +110,20 @@ let producer = create_assistant_message_event_stream();
 producer.push(AssistantMessageEvent::Done {
     reason: DoneReason::Stop, message: Arc::clone(&message),
 });
-let raw = producer.clone();
-let simple = producer.clone();
+struct ControlledProvider(maestro_models::AssistantMessageEventStream);
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for ControlledProvider
+{
+    type Return = Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        Ok(self.0.clone())
+    }
+}
+let owner = SharedHandle::new(ControlledProvider(producer.clone()));
 register_api_provider(ApiProvider {
     api: "fixture".into(),
-    stream: SharedHandle::new(move |_, _, _| Ok(raw.clone())),
-    stream_simple: SharedHandle::new(move |_, _, _| Ok(simple.clone())),
+    stream: owner.clone(),
+    stream_simple: owner,
 }, Some("controlled-example".into()));
 let completion = complete(model, Context {
     system_prompt: None, messages: vec![], tools: None,

@@ -174,15 +174,9 @@ fn bedrock_surface() {
         let calls = std::rc::Rc::new(std::cell::Cell::new(0_u8));
         let seen = std::rc::Rc::clone(&calls);
         let mut module = maestro_models::bedrock_provider::bedrock_provider_module();
-        module.stream_bedrock = maestro_models::SharedHandle::new(move |_, _, _| {
-            seen.set(seen.get() + 1);
-            Err(maestro_models::DiagnosticErrorInfo {
-                name: None,
-                message: String::new(),
-                stack: None,
-                code: None,
-            })
-        });
+        let owner = maestro_models::SharedHandle::new(BrowserProvider(seen));
+        module.stream_bedrock = owner.clone();
+        module.stream_simple_bedrock = owner;
         maestro_models::set_bedrock_provider_module(module);
         assert_eq!(calls.get(), 0);
     }
@@ -276,7 +270,27 @@ browser_factory!(maestro_models::Threaded);
 fn factory_surface() {
     let calls = std::rc::Rc::new(std::cell::Cell::new(0));
     let factory: maestro_models::FauxResponseFactory =
-        std::sync::Arc::new(BrowserFactory(std::rc::Rc::clone(&calls)));
+        maestro_models::SharedHandle::new(BrowserFactory(std::rc::Rc::clone(&calls)));
     std::hint::black_box(factory);
     assert_eq!(calls.get(), 0);
+}
+
+/// Browser registered owner may capture single-threaded state in either invocation family.
+#[cfg(target_arch = "wasm32")]
+struct BrowserProvider(std::rc::Rc<std::cell::Cell<u8>>);
+#[cfg(target_arch = "wasm32")]
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for BrowserProvider
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        self.0.set(self.0.get() + 1);
+        Err(maestro_models::DiagnosticErrorInfo {
+            name: None,
+            message: String::new(),
+            stack: None,
+            code: None,
+        })
+    }
 }

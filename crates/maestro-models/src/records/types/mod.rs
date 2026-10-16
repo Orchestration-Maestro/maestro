@@ -37,15 +37,5 @@ pub use callable::{
 mod provider_execution;
 pub(crate) use provider_execution::admitted;
 pub use provider_execution::{OnPayload, OnResponse, ProviderExecution, ProviderSpawner};
-/// Adapter invocation with an owned model, conversation and unchanged options.
-#[cfg(not(target_arch = "wasm32"))]
-pub type StreamFunction<O = ProviderStreamOptions> = SharedHandle<
-    dyn Fn(Model, Context, Option<O>) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo>
-        + Send
-        + Sync,
->;
-/// Browser-local adapter invocation with unchanged options.
-#[cfg(target_arch = "wasm32")]
-pub type StreamFunction<O = ProviderStreamOptions> = SharedHandle<
-    dyn Fn(Model, Context, Option<O>) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo>,
->;
+/// Retained adapter callable in either invocation family.
+pub type StreamFunction<K = ProviderStreamOptions> = SharedHandle<dyn StreamCallback<K>>;

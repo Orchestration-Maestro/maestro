@@ -254,8 +254,8 @@ fn failure(message: &str) -> DiagnosticErrorInfo {
 fn custom(api: &str, label: &'static str) -> ApiProvider {
     ApiProvider {
         api: api.into(),
-        stream: Arc::new(move |_, _, _| Err(failure(label))),
-        stream_simple: Arc::new(move |_, _, _| Err(failure(label))),
+        stream: Arc::new(SetupFailure(label)),
+        stream_simple: Arc::new(SetupFailure(label)),
     }
 }
 
@@ -311,13 +311,15 @@ fn maestro_registration_keeps_custom_order() {
         "the built-in replaced the custom callback"
     );
     assert!(replaced.is_some_and(|handle| {
-        (handle.stream)(
-            bundled::protocol_model(&PROTOCOLS[5]).unwrap(),
-            bundled::conversation().unwrap(),
-            None,
-        )
-        .err()
-        .is_some_and(|error| error.message == "replaced")
+        handle
+            .stream
+            .call(
+                bundled::protocol_model(&PROTOCOLS[5]).unwrap(),
+                bundled::conversation().unwrap(),
+                maestro_models::ProviderInvocation::Threaded(None, None),
+            )
+            .err()
+            .is_some_and(|error| error.message == "replaced")
     }));
     reset_api_providers();
 }
@@ -335,7 +337,11 @@ fn maestro_reset_restores_builtin_adapters() -> TestResult {
     assert_eq!(registered(), bundled::registered_apis());
     assert!(get_api_provider("custom-x").is_none());
     let model = bundled::protocol_model(&PROTOCOLS[0])?;
-    let old = (retired.stream_simple)(model, bundled::conversation()?, None);
+    let old = retired.stream_simple.call(
+        model,
+        bundled::conversation()?,
+        maestro_models::ProviderInvocation::Threaded(None, None),
+    );
     assert_eq!(
         old.err().map(|error| error.message),
         Some("custom".to_owned())
@@ -426,22 +432,8 @@ fn maestro_custom_setup_errors_stay_immediate() -> TestResult {
 fn ending_provider() -> ApiProvider {
     ApiProvider {
         api: "ending-api".into(),
-        stream: Arc::new(|model, _, _| {
-            let stream = AssistantMessageEventStream::new();
-            let partial = Arc::new(std::sync::RwLock::new(
-                serde_json::from_value(json!({
-                    "role": "assistant", "content": [], "api": model.api, "provider": model.provider,
-                    "model": model.id, "stopReason": "stop", "timestamp": 1,
-                    "usage": {"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,
-                        "cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}}
-                }))
-                .map_err(|error| failure(&error.to_string()))?,
-            ));
-            stream.push(AssistantMessageEvent::Start { partial });
-            stream.end(None);
-            Ok(stream)
-        }),
-        stream_simple: Arc::new(|_, _, _| Err(failure("unused"))),
+        stream: Arc::new(EndingProvider),
+        stream_simple: Arc::new(SetupFailure("unused")),
     }
 }
 
@@ -464,13 +456,12 @@ fn maestro_explicit_end_keeps_result_pending() -> TestResult {
         };
         Ok(Arc::clone(partial))
     })?;
-    let raw_output = started.clone();
-    let simple_output = started.clone();
+    let output = Arc::new(RetainedOutput(started.clone()));
     register_api_provider(
         ApiProvider {
             api: "ending-api".into(),
-            stream: Arc::new(move |_, _, _| Ok(raw_output.clone())),
-            stream_simple: Arc::new(move |_, _, _| Ok(simple_output.clone())),
+            stream: output.clone(),
+            stream_simple: output,
         },
         None,
     );
@@ -482,8 +473,8 @@ fn maestro_explicit_end_keeps_result_pending() -> TestResult {
     register_api_provider(
         ApiProvider {
             api: "ending-api".into(),
-            stream: Arc::new(|_, _, _| Err(failure("replacement"))),
-            stream_simple: Arc::new(|_, _, _| Err(failure("replacement"))),
+            stream: Arc::new(SetupFailure("replacement")),
+            stream_simple: Arc::new(SetupFailure("replacement")),
         },
         None,
     );
@@ -1075,19 +1066,8 @@ fn recording_provider(seen: &ObjectsSeen) -> ApiProvider {
     let recorder = Arc::clone(seen);
     ApiProvider {
         api: "object-api".into(),
-        stream: Arc::new(move |_, _, options| {
-            let objects = options.map(|options| options.objects).unwrap_or_default();
-            let entry = (
-                objects.get::<u32>().copied(),
-                objects.get::<String>().cloned(),
-            );
-            recorder
-                .lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .push(entry);
-            Err(failure("recorded"))
-        }),
-        stream_simple: Arc::new(|_, _, _| Err(failure("unused"))),
+        stream: Arc::new(ObjectRecorder(recorder)),
+        stream_simple: Arc::new(SetupFailure("unused")),
     }
 }
 
@@ -1447,4 +1427,78 @@ fn simple_missing_key_keeps_each_callers_diagnostic() -> TestResult {
         "simple_missing_key_keeps_each_callers_diagnostic",
         assert_missing_key,
     )
+}
+
+/// Retained invocation owner for the controlled provider.
+struct SetupFailure(&'static str);
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for SetupFailure
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        Err(failure(self.0))
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct EndingProvider;
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for EndingProvider
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        let model = call.model;
+
+        let stream = AssistantMessageEventStream::new();
+        let partial = Arc::new(std::sync::RwLock::new(
+            serde_json::from_value(json!({
+                "role": "assistant", "content": [], "api": model.api, "provider": model.provider,
+                "model": model.id, "stopReason": "stop", "timestamp": 1,
+                "usage": {"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,
+                    "cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}}
+            }))
+            .map_err(|error| failure(&error.to_string()))?,
+        ));
+        stream.push(AssistantMessageEvent::Start { partial });
+        stream.end(None);
+        Ok(stream)
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct ObjectRecorder(ObjectsSeen);
+impl<E: maestro_models::ProviderExecution>
+    maestro_models::Invoke<
+        E,
+        maestro_models::ProviderCall<E, maestro_models::ProviderStreamOptions<E>>,
+    > for ObjectRecorder
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(
+        &self,
+        call: maestro_models::ProviderCall<E, maestro_models::ProviderStreamOptions<E>>,
+    ) -> Self::Return {
+        let options = call.options;
+
+        let objects = options.map(|options| options.objects).unwrap_or_default();
+        let entry = (
+            objects.get::<u32>().copied(),
+            objects.get::<String>().cloned(),
+        );
+        self.0
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .push(entry);
+        Err(failure("recorded"))
+    }
+}
+
+/// Keep an explicitly ended stream's original result observation across replacement.
+struct RetainedOutput(AssistantMessageEventStream);
+impl<E: maestro_models::ProviderExecution, O> maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for RetainedOutput {
+    type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
+    fn invoke(&self, _: maestro_models::ProviderCall<E, O>) -> Self::Return { Ok(self.0.clone()) }
 }

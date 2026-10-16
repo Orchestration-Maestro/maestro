@@ -574,3 +574,135 @@ fn direct_cloud_local_stream(
         )
     }
 }
+
+/// Synchronous setup owner shared by the two original option families.
+struct EagerProvider(std::sync::Arc<std::sync::Mutex<Vec<&'static str>>>);
+impl<E, O> maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for EagerProvider
+where
+    E: maestro_models::ProviderExecution,
+    O: Into<maestro_models::StreamOptionsInput<E>>,
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        use maestro_models::{
+            AssistantMessageEvent, AssistantMessageEventStream, DoneReason, StreamOptionsInput,
+        };
+        let label = match call.options.map(Into::into) {
+            None => "absent",
+            Some(StreamOptionsInput::Raw(options)) => {
+                if options.extra.is_empty() {
+                    "raw-empty"
+                } else {
+                    "raw-full"
+                }
+            }
+            Some(StreamOptionsInput::Simple(options)) => {
+                if options.reasoning.is_none() {
+                    "simple-empty"
+                } else {
+                    "simple-full"
+                }
+            }
+        };
+        self.0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .push(label);
+        if call.model.id == "failure" {
+            return Err(maestro_models::DiagnosticErrorInfo::error("setup stopped"));
+        }
+        let stream = AssistantMessageEventStream::new();
+        stream.push(AssistantMessageEvent::Done {
+            reason: DoneReason::Stop,
+            message: std::sync::Arc::new(std::sync::RwLock::new(
+                maestro_models::faux_assistant_message(
+                    label,
+                    maestro_models::FauxAssistantMessageOptions::default(),
+                ),
+            )),
+        });
+        Ok(stream)
+    }
+}
+
+#[test]
+fn dispatch_and_completion_keep_eager_error_boundaries() -> crate::TestResult {
+    use maestro_models::records::stream::{
+        complete_for, complete_simple_for, stream_for, stream_simple_for,
+    };
+    use maestro_models::{ApiProvider, Context, ProviderStreamOptions};
+    use std::sync::{Arc, Mutex};
+    let _serial = crate::bundled::registry();
+    let calls = Arc::new(Mutex::new(Vec::new()));
+    let owner = Arc::new(EagerProvider(Arc::clone(&calls)));
+    maestro_models::register_api_provider(
+        ApiProvider {
+            api: "controlled-eager".into(),
+            stream: owner.clone(),
+            stream_simple: owner,
+        },
+        Some("eager-owner".into()),
+    );
+    let model = crate::bundled::descriptor("controlled-eager", "https://fixture.invalid")?;
+    let context = Context {
+        system_prompt: None,
+        messages: vec![],
+        tools: None,
+    };
+    let local = Rc::new(|_| -> bool { panic!("synchronous callback must not submit") })
+        as maestro_models::ProviderSpawner<Local>;
+    let raw = ProviderStreamOptions::<Local>::default();
+    let simple = SimpleStreamOptions::<Local>::default();
+    let a = stream_for::<Local>(model.clone(), context.clone(), Some(raw), Rc::clone(&local))?;
+    let b = stream_simple_for::<Local>(
+        model.clone(),
+        context.clone(),
+        Some(simple),
+        Rc::clone(&local),
+    )?;
+    let c = complete_for::<Local>(model.clone(), context.clone(), None, Rc::clone(&local));
+    let d = complete_simple_for::<Local>(model.clone(), context.clone(), None, local);
+    assert_eq!(
+        *calls.lock().unwrap(),
+        ["raw-empty", "simple-empty", "absent", "absent"]
+    );
+    crate::chat::block_on(false, async {
+        assert!(a.next().await.is_some());
+        assert!(b.next().await.is_some());
+        assert!(c.await.is_ok());
+        assert!(d.await.is_ok());
+        Ok(())
+    })?;
+    eager_setup_failures(model, context, &calls)?;
+    maestro_models::unregister_api_providers("eager-owner");
+    Ok(())
+}
+
+/// Check synchronous setup rejection before driving its independent completion future.
+#[cfg(test)]
+fn eager_setup_failures(
+    mut model: Model,
+    context: maestro_models::Context,
+    calls: &std::sync::Mutex<Vec<&'static str>>,
+) -> crate::TestResult {
+    use maestro_models::{Threaded, complete_simple_for, stream_for};
+    use std::sync::Arc;
+    let threaded = Arc::new(|_| -> bool { panic!("synchronous callback must not submit") })
+        as maestro_models::ProviderSpawner<Threaded>;
+    model.id = "failure".into();
+    assert_eq!(
+        stream_for::<Threaded>(model.clone(), context.clone(), None, Arc::clone(&threaded))
+            .err()
+            .unwrap()
+            .message,
+        "setup stopped"
+    );
+    let failure = complete_simple_for::<Threaded>(model, context, None, threaded);
+    assert_eq!(calls.lock().unwrap().len(), 6);
+    crate::chat::block_on(false, async {
+        assert_eq!(failure.await.unwrap_err().message, "setup stopped");
+        Ok(())
+    })?;
+    Ok(())
+}

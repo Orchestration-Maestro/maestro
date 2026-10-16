@@ -75,7 +75,10 @@ pub use records::session_resources::{
     SessionResourceCleanup, SessionResourceCleanupError, SessionResourceRemoval,
     cleanup_session_resources, register_session_resource_cleanup,
 };
-pub use records::stream::{complete, complete_simple, stream, stream_simple};
+pub use records::stream::{
+    complete, complete_for, complete_simple, complete_simple_for, stream, stream_for,
+    stream_simple, stream_simple_for,
+};
 pub use records::typebox_helpers::{StringEnumOptions, string_enum};
 pub use records::types::*;
 

@@ -173,7 +173,16 @@ pub fn stream_anthropic_for<E: ProviderExecution>(
     options: Option<AnthropicOptions<E>>,
     submit: ProviderSpawner<E>,
 ) -> AssistantMessageEventStream {
-    match E::submission::<AnthropicOptions>(options, E::provided(submit)) {
+    dispatch(model, context, E::submission(options, E::provided(submit)))
+}
+
+/// Select concrete raw preparation without changing thinking provenance.
+pub(crate) fn dispatch(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<AnthropicOptions>,
+) -> AssistantMessageEventStream {
+    match invocation {
         ProviderInvocation::Local(options, submit) => {
             raw_start::<Local>(model, context, options, submit)
         }
@@ -227,7 +236,16 @@ pub fn stream_simple_anthropic_for<E: ProviderExecution>(
     options: Option<SimpleStreamOptions<E>>,
     submit: ProviderSpawner<E>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    match E::submission::<SimpleStreamOptions>(options, E::provided(submit)) {
+    dispatch_simple(model, context, E::submission(options, E::provided(submit)))
+}
+
+/// Select concrete simple preparation while preserving the original submission.
+pub(crate) fn dispatch_simple(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<SimpleStreamOptions>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    match invocation {
         ProviderInvocation::Local(options, submit) => {
             simple::<Local>(model, context, options, submit)
         }

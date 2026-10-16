@@ -86,7 +86,9 @@ headers are present, or the auth-header flag is true.
 
 OAuth registration forces the installed ID to the registration name. Raw and
 simple protocol calls forward to the supplied callback under `provider:<name>`;
-see [invocation records](records.md) for option carriers. Incoming OAuth model
+see [invocation records](records.md) for option carriers. The retained callable
+supports both execution families. Forwarding preserves the original raw/simple
+carrier and the caller's producer admission, without invoking its hooks. Incoming OAuth model
 transforms run after nonempty replacement when a modifier and stored OAuth
 credentials exist. Loading and dynamic registration use the same transformation
 step. Without a modifier, descriptor handles stay shared. Borrowed input elements

@@ -23,7 +23,7 @@ type FactoryResult<E> =
 pub(super) trait Producer: ProviderExecution {
     /// Box the same work without changing admission or factory execution.
     fn drive(
-        registration: Arc<Registration>,
+        registration: crate::SharedHandle<Registration>,
         stream: AssistantMessageEventStream,
         model: Arc<Model>,
         invocation: Invocation<Self>,
@@ -34,7 +34,7 @@ macro_rules! producer {
     ($mode:ty) => {
         impl Producer for $mode {
             fn drive(
-                registration: Arc<Registration>,
+                registration: crate::SharedHandle<Registration>,
                 stream: AssistantMessageEventStream,
                 model: Arc<Model>,
                 invocation: Invocation<Self>,
@@ -49,7 +49,7 @@ producer!(Threaded);
 
 /// Settle producer failures with the retained invocation identity.
 async fn run<E: ProviderExecution>(
-    registration: Arc<Registration>,
+    registration: crate::SharedHandle<Registration>,
     stream: AssistantMessageEventStream,
     model: Arc<Model>,
     invocation: Invocation<E>,
@@ -67,7 +67,7 @@ async fn run<E: ProviderExecution>(
 impl Registration {
     /// Consume a queued response synchronously, then submit its independent producer once.
     pub(super) fn invoke<E: Producer>(
-        self: &Arc<Self>,
+        self: &crate::SharedHandle<Self>,
         model: Model,
         context: Context,
         options: Option<FauxResponseOptions<E>>,
@@ -77,7 +77,7 @@ impl Registration {
         self.state.0.fetch_add(1, Ordering::AcqRel);
         let outer = AssistantMessageEventStream::new();
         let future = E::drive(
-            Arc::clone(self),
+            crate::SharedHandle::clone(self),
             outer.clone(),
             Arc::new(model),
             (context, options, step),

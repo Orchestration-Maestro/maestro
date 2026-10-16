@@ -407,15 +407,8 @@ fn maestro_wrapper_uses_registered_default_stream() {
     register_api_provider(
         ApiProvider {
             api: "raw-controlled".into(),
-            stream: Arc::new(|_, _, _| panic!("wrong dispatch")),
-            stream_simple: Arc::new(move |model, request, _| {
-                assert_eq!(model.id, "fixture");
-                assert_eq!(request.messages.len(), 1);
-                count.fetch_add(1, Ordering::SeqCst);
-                let stream = AssistantMessageEventStream::new();
-                stream.end(Some(assistant("registered")));
-                Ok(stream)
-            }),
+            stream: Arc::new(UnexpectedRaw),
+            stream_simple: Arc::new(RawDispatch(count)),
         },
         Some("raw-controlled-test".into()),
     );
@@ -884,5 +877,47 @@ fn request_adapter(requests: &Arc<Mutex<Vec<serde_json::Value>>>) -> AgentLoopOp
             requests.lock().unwrap().push(value);
             source(model, request, options, extra)
         })),
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct RawDispatch(Arc<AtomicUsize>);
+impl<E: maestro_models::ProviderExecution>
+    maestro_models::Invoke<
+        E,
+        maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+    > for RawDispatch
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(
+        &self,
+        call: maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+    ) -> Self::Return {
+        let maestro_models::ProviderCall {
+            model,
+            context: request,
+            ..
+        } = call;
+        let count = &self.0;
+
+        assert_eq!(model.id, "fixture");
+        assert_eq!(request.messages.len(), 1);
+        count.fetch_add(1, Ordering::SeqCst);
+        let stream = AssistantMessageEventStream::new();
+        stream.end(Some(assistant("registered")));
+        Ok(stream)
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct UnexpectedRaw;
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for UnexpectedRaw
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        panic!("raw dispatch selected")
     }
 }

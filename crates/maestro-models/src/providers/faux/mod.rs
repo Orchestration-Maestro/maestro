@@ -195,7 +195,7 @@ impl<T> FauxResponseCallback for T where
 {
 }
 /// One retained factory whose future follows the invocation family.
-pub type FauxResponseFactory = Arc<dyn FauxResponseCallback>;
+pub type FauxResponseFactory = crate::SharedHandle<dyn FauxResponseCallback>;
 /// One queued response or asynchronous factory.
 #[derive(Clone)]
 pub enum FauxResponseStep {
@@ -308,22 +308,12 @@ pub fn register_faux_provider(options: RegisterFauxProviderOptions) -> FauxProvi
             options.tokens_per_second,
         ),
     });
-    let raw = crate::SharedHandle::clone(&registration);
-    let simple = crate::SharedHandle::clone(&registration);
+    let callback = crate::SharedHandle::new(FauxProvider(crate::SharedHandle::clone(&registration)));
     register_api_provider(
         ApiProvider {
             api: api.clone(),
-            stream: Arc::new(move |model, context, options| {
-                raw.invoke::<Threaded>(model, context, options.map(FauxResponseOptions::Raw), None)
-            }),
-            stream_simple: Arc::new(move |model, context, options| {
-                simple.invoke::<Threaded>(
-                    model,
-                    context,
-                    options.map(FauxResponseOptions::Simple),
-                    None,
-                )
-            }),
+            stream: callback.clone(),
+            stream_simple: callback,
         },
         Some(source_id.clone()),
     );
@@ -333,5 +323,23 @@ pub fn register_faux_provider(options: RegisterFauxProviderOptions) -> FauxProvi
         state,
         registration,
         source_id,
+    }
+}
+
+/// Retained FIFO owner shared by raw and simple invocations in either family.
+struct FauxProvider(crate::SharedHandle<Registration>);
+impl<E, O> Invoke<E, crate::ProviderCall<E, O>> for FauxProvider
+where
+    E: producer::Producer,
+    O: Into<FauxResponseOptions<E>>,
+{
+    type Return = Result<crate::AssistantMessageEventStream, DiagnosticErrorInfo>;
+    fn invoke(&self, call: crate::ProviderCall<E, O>) -> Self::Return {
+        self.0.invoke::<E>(
+            call.model,
+            call.context,
+            call.options.map(Into::into),
+            call.submit,
+        )
     }
 }

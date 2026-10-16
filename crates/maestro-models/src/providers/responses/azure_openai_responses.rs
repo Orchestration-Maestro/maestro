@@ -175,7 +175,7 @@ impl StreamOptionsFamily for AzureOpenAIResponsesOptions {
 }
 
 /// Select concrete future erasure before starting the shared producer.
-fn dispatch(
+pub(crate) fn dispatch(
     model: Model,
     context: Context,
     invocation: ProviderInvocation<AzureOpenAIResponsesOptions>,
@@ -265,7 +265,16 @@ pub fn stream_simple_azure_openai_responses_for<E: ProviderExecution>(
     options: Option<SimpleStreamOptions<E>>,
     submit: ProviderSpawner<E>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    match E::submission::<SimpleStreamOptions>(options, E::provided(submit)) {
+    dispatch_simple(model, context, E::submission(options, E::provided(submit)))
+}
+
+/// Select concrete simple preparation while preserving the original submission.
+pub(crate) fn dispatch_simple(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<SimpleStreamOptions>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    match invocation {
         ProviderInvocation::Local(options, submit) => {
             simple::<Local>(model, context, options, submit)
         }

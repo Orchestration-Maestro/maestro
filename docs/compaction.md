@@ -121,11 +121,14 @@ use serde_json::json;
 use std::sync::{Arc, RwLock};
 
 # async fn example() -> Result<(), Box<dyn std::error::Error>> {
-let api = "controlled-summary-example";
-maestro_models::register_api_provider(ApiProvider {
-    api: api.into(),
-    stream: Arc::new(|_, _, _| unreachable!()),
-    stream_simple: Arc::new(|model, _, _| {
+struct ControlledSummary;
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for ControlledSummary
+{
+    type Return = Result<AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        let model = call.model;
+
         let response = AssistantMessage {
             content: serde_json::from_value(json!([{"type":"text","text":"## Goal\nContinue work"}])).unwrap(),
             api: model.api, provider: model.provider, model: model.id,
@@ -139,7 +142,13 @@ maestro_models::register_api_provider(ApiProvider {
         let stream = AssistantMessageEventStream::new();
         stream.end(Some(Arc::new(RwLock::new(response))));
         Ok(stream)
-    }),
+    }
+}
+let api = "controlled-summary-example";
+maestro_models::register_api_provider(ApiProvider {
+    api: api.into(),
+    stream: Arc::new(ControlledSummary),
+    stream_simple: Arc::new(ControlledSummary),
 }, Some(api.into()));
 let model: Model = serde_json::from_value(json!({
     "id":"controlled", "name":"Controlled", "api":api, "provider":"controlled",

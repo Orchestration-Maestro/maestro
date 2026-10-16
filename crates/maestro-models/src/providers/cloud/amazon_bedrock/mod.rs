@@ -102,7 +102,7 @@ impl StreamOptionsFamily for BedrockOptions {
 }
 
 /// Select concrete future bounds without changing the SDK request worker.
-fn dispatch(
+pub(crate) fn dispatch(
     model: Model,
     context: Context,
     invocation: ProviderInvocation<BedrockOptions>,
@@ -125,8 +125,7 @@ pub fn stream_simple_bedrock(
     context: Context,
     options: Option<SimpleStreamOptions>,
 ) -> AssistantMessageEventStream {
-    let raw = simple_options(&model, options);
-    stream_bedrock(model, context, Some(raw))
+    dispatch_simple(model, context, ProviderInvocation::Threaded(options, None))
 }
 
 /// Start simple cloud conversation using caller-owned admission.
@@ -137,8 +136,7 @@ pub fn stream_simple_bedrock_for<E: ProviderExecution>(
     options: Option<SimpleStreamOptions<E>>,
     submit: ProviderSpawner<E>,
 ) -> AssistantMessageEventStream {
-    let raw = simple_options(&model, options);
-    stream_bedrock_for::<E>(model, context, Some(raw), submit)
+    dispatch_simple(model, context, E::submission(options, E::provided(submit)))
 }
 
 /// Select raw cloud controls while retaining the hook family.
@@ -378,5 +376,23 @@ mod native {
             next = next_event(&mut events, signal).await?;
         }
         conclude(stream, output, signal)
+    }
+}
+
+/// Project simple options under the selected submission without changing SDK ownership.
+pub(crate) fn dispatch_simple(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<SimpleStreamOptions>,
+) -> AssistantMessageEventStream {
+    match invocation {
+        ProviderInvocation::Local(options, submit) => {
+            let raw = simple_options(&model, options);
+            dispatch(model, context, Local::submission(Some(raw), submit))
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            let raw = simple_options(&model, options);
+            dispatch(model, context, Threaded::submission(Some(raw), submit))
+        }
     }
 }

@@ -69,7 +69,7 @@ fn invalid_config(case: usize) -> Arc<RwLock<ProviderConfigInput>> {
     if case < 2 {
         incoming.api = (case == 1).then(String::new);
         incoming.base_url = None;
-        incoming.stream_simple = Some(Arc::new(|_, _, _| panic!("unexpected callback")));
+        incoming.stream_simple = Some(Arc::new(UnexpectedProvider));
     } else if case < 5 {
         incoming.base_url = (case == 3).then(String::new);
         incoming.api_key = None;
@@ -400,10 +400,7 @@ fn callback_failures_propagate_without_invocation_during_listing() {
     let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let observed = calls.clone();
     let config = dynamic::config(&["m"]);
-    config.write().unwrap().stream_simple = Some(Arc::new(move |_, _, _| {
-        observed.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        Err(dynamic::diagnostic("provider callback failed"))
-    }));
+    config.write().unwrap().stream_simple = Some(Arc::new(CountFailure(observed)));
     registry.register_provider("p", config).unwrap();
     let _ = registry.get_all();
     let _ = registry.get_available().unwrap();
@@ -423,10 +420,22 @@ fn callback_failures_propagate_without_invocation_during_listing() {
             messages: vec![],
             tools: None,
         };
-        let raw = (provider.stream)(model.clone(), context.clone(), None)
+        let raw = provider
+            .stream
+            .call(
+                model.clone(),
+                context.clone(),
+                maestro_models::ProviderInvocation::Threaded(None, None),
+            )
             .err()
             .unwrap();
-        let simple = (provider.stream_simple)(model, context, None)
+        let simple = provider
+            .stream_simple
+            .call(
+                model,
+                context,
+                maestro_models::ProviderInvocation::Threaded(None, None),
+            )
             .err()
             .unwrap();
         assert_eq!(raw, dynamic::diagnostic("provider callback failed"));
@@ -800,21 +809,18 @@ fn raw_and_simple_callbacks_keep_open_options_results_and_source_ownership() {
     }
     assert!(signal.is_aborted());
     assert_eq!(*calls.lock().unwrap(), ["raw", "simple", "none", "none"]);
-    let mut other = model.clone();
-    other.api = "other".into();
-    assert_eq!(
-        (handler.stream)(other, context, None)
-            .err()
-            .unwrap()
-            .message,
-        "Mismatched api: other expected openai-completions"
-    );
     check_callback_release(&mut registry, handler, model, &terminal, &weak);
 }
 /// Assert common options without displaying secret-bearing records.
-fn check_common(options: &maestro_models::StreamOptions, hook: &maestro_models::OnPayload) {
+fn check_common<E: maestro_models::ProviderExecution>(
+    options: &maestro_models::StreamOptions<E>,
+    hook: &maestro_models::OnPayload,
+) {
     assert_eq!(options.max_tokens, Some(0.0));
-    assert!(Arc::ptr_eq(options.on_payload.as_ref().unwrap(), hook));
+    assert!(std::ptr::addr_eq(
+        &raw const **options.on_payload.as_ref().unwrap(),
+        &raw const **hook
+    ));
     options.signal.as_ref().unwrap().abort();
 }
 
@@ -826,33 +832,12 @@ fn raw_callback(
     returned: maestro_models::AssistantMessageEventStream,
     observed: Arc<std::sync::Mutex<Vec<&'static str>>>,
 ) -> maestro_models::StreamFunction<StreamOptionsInput> {
-    Arc::new(move |model, context, options| {
-        let _ = &observed_owner;
-        assert_eq!(model.id, "m");
-        assert_eq!(context.system_prompt.as_deref(), Some("instruction"));
-        let kind = match options {
-            None => "none",
-            Some(StreamOptionsInput::Raw(options)) => {
-                assert_eq!(
-                    options.extra["reasoning"],
-                    serde_json::json!({"mode":"custom"})
-                );
-                assert_eq!(options.extra["custom"], serde_json::json!(["z", "a", "z"]));
-                assert!(Arc::ptr_eq(
-                    options.objects.get::<Arc<u32>>().unwrap(),
-                    &observed_object
-                ));
-                check_common(&options.common, &observed_hook);
-                "raw"
-            }
-            Some(StreamOptionsInput::Simple(options)) => {
-                assert_eq!(options.reasoning, Some(maestro_models::ThinkingLevel::High));
-                check_common(&options.common, &observed_hook);
-                "simple"
-            }
-        };
-        observed.lock().unwrap().push(kind);
-        Ok(returned.clone())
+    Arc::new(OriginalOptions {
+        observed_hook,
+        observed_object,
+        observed_owner,
+        returned,
+        observed,
     })
 }
 /// Exercise distinct option carriers and an absent outer operand.
@@ -873,19 +858,45 @@ fn invoke_option_forms(
     };
     raw.objects.insert(object);
     [
-        (handler.stream)(model.clone(), context.clone(), Some(raw)).unwrap(),
-        (handler.stream_simple)(
-            model.clone(),
-            context.clone(),
-            Some(SimpleStreamOptions {
-                common,
-                reasoning: Some(maestro_models::ThinkingLevel::High),
-                ..Default::default()
-            }),
-        )
-        .unwrap(),
-        (handler.stream)(model.clone(), context.clone(), None).unwrap(),
-        (handler.stream_simple)(model.clone(), context.clone(), None).unwrap(),
+        handler
+            .stream
+            .call(
+                model.clone(),
+                context.clone(),
+                maestro_models::ProviderInvocation::Threaded(Some(raw), None),
+            )
+            .unwrap(),
+        handler
+            .stream_simple
+            .call(
+                model.clone(),
+                context.clone(),
+                maestro_models::ProviderInvocation::Threaded(
+                    Some(SimpleStreamOptions {
+                        common,
+                        reasoning: Some(maestro_models::ThinkingLevel::High),
+                        ..Default::default()
+                    }),
+                    None,
+                ),
+            )
+            .unwrap(),
+        handler
+            .stream
+            .call(
+                model.clone(),
+                context.clone(),
+                maestro_models::ProviderInvocation::Threaded(None, None),
+            )
+            .unwrap(),
+        handler
+            .stream_simple
+            .call(
+                model.clone(),
+                context.clone(),
+                maestro_models::ProviderInvocation::Threaded(None, None),
+            )
+            .unwrap(),
     ]
 }
 
@@ -902,11 +913,33 @@ fn check_callback_release(
         tools: None,
         system_prompt: Some("instruction".into()),
     };
+    let mut other = model.clone();
+    other.api = "other".into();
+    assert_eq!(
+        handler
+            .stream
+            .call(
+                other,
+                context.clone(),
+                maestro_models::ProviderInvocation::Threaded(None, None)
+            )
+            .err()
+            .unwrap()
+            .message,
+        "Mismatched api: other expected openai-completions"
+    );
     maestro_models::unregister_api_providers("provider:p");
     assert!(maestro_models::get_api_provider("openai-completions").is_none());
     registry.unregister_provider("p").unwrap();
     assert!(weak.upgrade().is_some());
-    let result = (handler.stream)(model, context, None).unwrap();
+    let result = handler
+        .stream
+        .call(
+            model,
+            context,
+            maestro_models::ProviderInvocation::Threaded(None, None),
+        )
+        .unwrap();
     assert!(Arc::ptr_eq(
         terminal,
         &request_support::run(result.result())
@@ -1160,4 +1193,85 @@ fn chained_constructor_modifiers_preserve_first_step_alias() {
     assert!(Arc::ptr_eq(&models[0], &models[1]));
     models[0].write().unwrap().name = "chained edit".into();
     assert_eq!(models[1].read().unwrap().name, "chained edit");
+}
+
+/// Retained invocation owner for the controlled provider.
+struct UnexpectedProvider;
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for UnexpectedProvider
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        panic!("unexpected callback")
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct CountFailure(Arc<std::sync::atomic::AtomicUsize>);
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for CountFailure
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        Err(dynamic::diagnostic("provider callback failed"))
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct OriginalOptions {
+    observed_hook: maestro_models::OnPayload,
+    observed_object: Arc<u32>,
+    observed_owner: Arc<()>,
+    returned: maestro_models::AssistantMessageEventStream,
+    observed: Arc<std::sync::Mutex<Vec<&'static str>>>,
+}
+impl<E: maestro_models::ProviderExecution>
+    maestro_models::Invoke<
+        E,
+        maestro_models::ProviderCall<E, maestro_models::StreamOptionsInput<E>>,
+    > for OriginalOptions
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(
+        &self,
+        call: maestro_models::ProviderCall<E, maestro_models::StreamOptionsInput<E>>,
+    ) -> Self::Return {
+        let maestro_models::ProviderCall {
+            model,
+            context,
+            options,
+            ..
+        } = call;
+
+        let _ = &self.observed_owner;
+        assert_eq!(model.id, "m");
+        assert_eq!(context.system_prompt.as_deref(), Some("instruction"));
+        let kind = match options {
+            None => "none",
+            Some(StreamOptionsInput::Raw(options)) => {
+                assert_eq!(
+                    options.extra["reasoning"],
+                    serde_json::json!({"mode":"custom"})
+                );
+                assert_eq!(options.extra["custom"], serde_json::json!(["z", "a", "z"]));
+                assert!(Arc::ptr_eq(
+                    options.objects.get::<Arc<u32>>().unwrap(),
+                    &self.observed_object
+                ));
+                check_common(&options.common, &self.observed_hook);
+                "raw"
+            }
+            Some(StreamOptionsInput::Simple(options)) => {
+                assert_eq!(options.reasoning, Some(maestro_models::ThinkingLevel::High));
+                check_common(&options.common, &self.observed_hook);
+                "simple"
+            }
+        };
+        self.observed.lock().unwrap().push(kind);
+        Ok(self.returned.clone())
+    }
 }

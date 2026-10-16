@@ -679,17 +679,19 @@ fn removal_restores_a_callable_builtin_handler_and_keeps_old_callback_handle() {
             .find(|m| m.api == api)
             .unwrap();
         assert_callable(&restored, model);
-        let failure = (old.stream)(
-            old_model,
-            maestro_models::Context {
-                messages: vec![],
-                tools: None,
-                system_prompt: None,
-            },
-            None,
-        )
-        .err()
-        .unwrap();
+        let failure = old
+            .stream
+            .call(
+                old_model,
+                maestro_models::Context {
+                    messages: vec![],
+                    tools: None,
+                    system_prompt: None,
+                },
+                maestro_models::ProviderInvocation::Threaded(None, None),
+            )
+            .err()
+            .unwrap();
         assert_eq!(failure.message, "override");
     }
 }
@@ -710,16 +712,18 @@ fn assert_callable(restored: &maestro_models::ApiProvider, model: maestro_models
             },
             ..Default::default()
         };
-        let stream = (restored.stream)(
-            model,
-            maestro_models::Context {
-                messages: vec![],
-                tools: None,
-                system_prompt: None,
-            },
-            Some(options),
-        )
-        .unwrap();
+        let stream = restored
+            .stream
+            .call(
+                model,
+                maestro_models::Context {
+                    messages: vec![],
+                    tools: None,
+                    system_prompt: None,
+                },
+                maestro_models::ProviderInvocation::Threaded(Some(options), None),
+            )
+            .unwrap();
         let terminal = stream.result().await;
         let terminal = terminal.read().unwrap();
         assert!(matches!(

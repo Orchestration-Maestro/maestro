@@ -4,8 +4,8 @@ pub use crate::builtins::get_env_api_key;
 use super::api_registry::{ApiProvider, get_api_provider};
 use super::diagnostics::DiagnosticErrorInfo;
 use super::types::{
-    AssistantMessageEventStream, BoxFuture, Context, Model, ProviderStreamOptions,
-    SharedAssistantMessage, SimpleStreamOptions,
+    AssistantMessageEventStream, BoxFuture, Context, Model, ProviderExecution, ProviderInvocation,
+    ProviderSpawner, ProviderStreamOptions, SharedAssistantMessage, SimpleStreamOptions,
 };
 
 /// Resolve the registered provider or report the missing API.
@@ -23,7 +23,9 @@ pub fn stream(
     context: Context,
     options: Option<ProviderStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    (resolve(&model.api)?.stream)(model, context, options)
+    resolve(&model.api)?
+        .stream
+        .call(model, context, ProviderInvocation::Threaded(options, None))
 }
 /// Immediately invoke the registered simple adapter with unchanged inputs.
 ///
@@ -34,7 +36,11 @@ pub fn stream_simple(
     context: Context,
     options: Option<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    (resolve(&model.api)?.stream_simple)(model, context, options)
+    resolve(&model.api)?.stream_simple.call(
+        model,
+        context,
+        ProviderInvocation::Threaded(options, None),
+    )
 }
 /// Start raw invocation now, returning its result observation without consuming events.
 /// Setup failures are returned by the future, not by this eager function.
@@ -61,5 +67,58 @@ pub fn complete_simple(
 fn completion(
     invocation: Result<AssistantMessageEventStream, DiagnosticErrorInfo>,
 ) -> BoxFuture<Result<SharedAssistantMessage, DiagnosticErrorInfo>> {
+    Box::pin(async move { Ok(invocation?.result().await) })
+}
+
+/// Immediately invoke the raw adapter using the caller's admission and hook family.
+///
+/// # Errors
+/// Returns missing registration or adapter setup failure immediately.
+pub fn stream_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<ProviderStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    resolve(&model.api)?
+        .stream
+        .call(model, context, E::submission(options, E::provided(submit)))
+}
+/// Immediately invoke the simple adapter using the caller's admission and hook family.
+///
+/// # Errors
+/// Returns missing registration or adapter setup failure immediately.
+pub fn stream_simple_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    resolve(&model.api)?.stream_simple.call(
+        model,
+        context,
+        E::submission(options, E::provided(submit)),
+    )
+}
+/// Start raw invocation now and return an independent, thread-safe result observation.
+#[must_use]
+pub fn complete_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<ProviderStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> BoxFuture<Result<SharedAssistantMessage, DiagnosticErrorInfo>> {
+    let invocation = stream_for::<E>(model, context, options, submit);
+    Box::pin(async move { Ok(invocation?.result().await) })
+}
+/// Start simple invocation now and return an independent, thread-safe result observation.
+#[must_use]
+pub fn complete_simple_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> BoxFuture<Result<SharedAssistantMessage, DiagnosticErrorInfo>> {
+    let invocation = stream_simple_for::<E>(model, context, options, submit);
     Box::pin(async move { Ok(invocation?.result().await) })
 }
