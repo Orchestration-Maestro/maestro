@@ -30,10 +30,14 @@ requested features above describe this edge, not the whole workspace.
 Derived format data and policy retain the
 [formatting source attribution](../../THIRD-PARTY-NOTICES.md#spreadsheet-formatting-source).
 [calamine](https://docs.rs/calamine/0.36.1/calamine/) supplies native XLSX cell
-values through its streaming reader. The application reads style indices, raw
+values through its streaming reader and legacy XLS values through its owned
+range reader. The application reads style indices, raw
 error labels, dimensions and merges through the existing indexed ZIP/XML owners;
 it uses its own number-format evaluator, not the parser's display text. Legacy
-XLS reading and its style metadata are not exposed by this delivery.
+XLS reading reuses the scalar projection with General text, populated bounds,
+ordered sheets and merges. Raw style metadata, format-table effects, declared blank
+dimensions and binary formula metadata remain tracked in
+[legacy workbook metadata](https://github.com/Orchestration-Maestro/maestro/issues/1025).
 
 The parser's dependency closure uses MIT or Apache-2.0 where offered, with
 BSD-3-Clause for encoding_rs, Unicode-3.0 for unicode-ident and Zlib for zlib-rs.

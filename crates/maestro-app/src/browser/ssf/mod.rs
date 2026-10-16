@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 mod datenum;
 mod read;
 mod styles;
+mod unescapexml;
 pub use read::read;
 mod address;
 mod workbook;
@@ -15,8 +16,8 @@ pub use address::{
 pub use workbook::{WorkBook, WorkSheet, WorkbookError};
 mod format;
 mod format_cell;
-pub use format::{FormatTable, Ssf};
-pub use format_cell::{CellObject, CellValue, ExcelDataType, format_cell};
+pub use format::{FormatOptions, FormatTable, NumberFormat, Ssf};
+pub use format_cell::{CellFormatOptions, CellObject, CellValue, ExcelDataType, Xf, format_cell};
 mod chkcond;
 mod eval_fmt;
 mod general;

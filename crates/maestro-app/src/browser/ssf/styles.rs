@@ -1,6 +1,6 @@
 //! Package metadata and number-format selection.
 use super::super::docx_preview::{OpenXmlPackage, XmlParser};
-use super::{Ssf, WorkbookError};
+use super::{Ssf, WorkbookError, unescapexml::unescapexml};
 /// Package access retaining the supplied workbook name at failure boundaries.
 pub(super) struct Package<'a> {
     /// Shared indexed archive owner.
@@ -43,8 +43,8 @@ impl Package<'_> {
                 .attr(node, "numFmtId")
                 .and_then(|s| s.parse::<u32>().ok())
                 .unwrap_or(0);
-            let code = xml.attr(node, "formatCode").unwrap_or("");
-            formats.insert(id, code.to_owned());
+            let code = unescapexml(xml.attr(node, "formatCode").unwrap_or(""));
+            formats.insert(id, code.clone());
             if id == 0 {
                 continue;
             }
@@ -56,27 +56,37 @@ impl Package<'_> {
             } else {
                 id
             };
-            formats.insert(slot, code.to_owned());
-            table.insert(slot, if code == "d.m" { "d\\.m" } else { code }.to_owned());
-        }
-        Ok(xml
-            .element(xml.root(), "cellXfs")
-            .into_iter()
-            .flat_map(|p| xml.elements(p, Some("xf")))
-            .map(|node| {
-                let id = xml
-                    .attr(node, "numFmtId")
-                    .and_then(|s| s.parse().ok())
-                    .unwrap_or(0);
-                if id > 392 {
-                    (61..=392)
-                        .rev()
-                        .find(|slot| formats.get(slot) == formats.get(&id))
-                        .unwrap_or(id)
+            formats.insert(slot, code.clone());
+            table.insert(
+                slot,
+                if code == "d.m" {
+                    "d\\.m".to_owned()
                 } else {
-                    id
-                }
-            })
-            .collect())
+                    code
+                },
+            );
+        }
+        Ok(style_ids(&xml, &formats))
     }
+}
+/// Resolve extended-format references through the remapped authored format table.
+fn style_ids(xml: &XmlParser<'_>, formats: &std::collections::BTreeMap<u32, String>) -> Vec<u32> {
+    xml.element(xml.root(), "cellXfs")
+        .into_iter()
+        .flat_map(|p| xml.elements(p, Some("xf")))
+        .map(|node| {
+            let id = xml
+                .attr(node, "numFmtId")
+                .and_then(|s| s.parse().ok())
+                .unwrap_or(0);
+            if id > 392 {
+                (61..=392)
+                    .rev()
+                    .find(|slot| formats.get(slot) == formats.get(&id))
+                    .unwrap_or(id)
+            } else {
+                id
+            }
+        })
+        .collect()
 }
