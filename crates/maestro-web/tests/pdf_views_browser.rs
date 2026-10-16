@@ -627,10 +627,17 @@ pub async fn reading_frame_neighbors_keep_existing_paint() {
             support::reading_paint::observe("neighbors-error").await;
         }
     }
+    view.element = create_artifact_element("empty.pdf", "", view.host.clone()).unwrap();
     let record = record();
-    record.borrow_mut().mime_type = "text/plain".into();
     let mut overlay = AttachmentOverlay::open(record.clone(), None, view.host.clone());
+    *view.host.failure.borrow_mut() = Some("preview failure <tag> ".repeat(40));
+    view.overlay(&mut overlay, vec![]);
+    view.overlay(&mut overlay, vec![]);
+    support::reading_paint::observe("neighbors-error").await;
+    drop(overlay);
+    record.borrow_mut().mime_type = "text/plain".into();
     record.borrow_mut().content = "literal text".into();
+    let mut overlay = AttachmentOverlay::open(record, None, view.host.clone());
     view.overlay(&mut overlay, vec![]);
     support::reading_paint::observe("neighbors-text").await;
 }

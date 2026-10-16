@@ -516,6 +516,13 @@ pub fn header_clamped_viewports_keep_controls_in_current_slots() {
     header.draw(egui::vec2(300., 40.));
     let after = native_controls();
     assert_ne!(before, after);
+    let size = egui::vec2(300., 600.);
+    header.draw(size);
+    click_header(&mut header, native_controls()[0].center(), size);
+    assert_eq!(
+        header.actions,
+        [maestro_web::export_html::template::HeaderAction::ToggleThinking]
+    );
 }
 /// Observe current native control rectangles in canvas coordinates.
 fn native_controls() -> Vec<egui::Rect> {
