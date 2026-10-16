@@ -3,6 +3,7 @@ use super::{HELP, LABELS, Prepared};
 use crate::browser::attachment_content::{AttachmentUiError, ReadingRoot, browser::host_error};
 use std::io;
 use web_sys::{Document, Element};
+mod details;
 /// Create a literal element without interpreting markup.
 fn element(
     document: &Document,
@@ -50,11 +51,13 @@ pub(super) fn mount(
         append(&info, &row)?;
     }
     append(&root, &info)?;
-    let flow = element(document, "div", "", "")?;
+    let flow = element(document, "div", "maestro-session-viewer-header", "")?;
     flow.set_attribute("style", "display:flow-root")
         .map_err(|e| host_error(&e))?;
     append(&flow, &root)?;
+    let owner = details::mount(document, &flow, prepared)?;
     Ok(ReadingRoot {
+        owner,
         element: flow,
         slots,
     })
@@ -78,11 +81,19 @@ pub fn localize_header_date(timestamp: &serde_json::Value) -> io::Result<String>
         }
     };
     let date = js_sys::Date::new(&value);
-    let result = js_sys::Reflect::get(&date, &"toLocaleString".into())
-        .and_then(wasm_bindgen::JsCast::dyn_into::<js_sys::Function>)
-        .and_then(|f| f.call0(&date))
-        .map_err(|e| io::Error::other(format!("{e:?}")))?;
+    let result =
+        invoke0(&date, "toLocaleString").map_err(|e| io::Error::other(format!("{e:?}")))?;
     result
         .as_string()
         .ok_or_else(|| io::Error::other("nonstring localized date"))
+}
+
+/// Invoke an owning native object's zero-argument operation without coercion.
+fn invoke0(
+    value: &wasm_bindgen::JsValue,
+    name: &str,
+) -> Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue> {
+    js_sys::Reflect::get(value, &name.into())
+        .and_then(wasm_bindgen::JsCast::dyn_into::<js_sys::Function>)
+        .and_then(|f| f.call0(value))
 }

@@ -75,6 +75,7 @@ pub(super) fn mount(
     text.nodes = Some(nodes);
     sync(&text);
     Ok(ReadingRoot {
+        owner: None,
         element: root,
         slots: vec![],
     })

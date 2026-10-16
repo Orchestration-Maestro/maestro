@@ -24,6 +24,7 @@ pub struct Slots {
     pub clip: egui::Rect,
     pub holes: Vec<egui::Rect>,
     pub density: f32,
+    pub mode: BrandMode,
 }
 impl Slots {
     pub fn new() -> Self {
@@ -48,6 +49,7 @@ impl Slots {
             clip: egui::Rect::EVERYTHING,
             holes: vec![],
             density: 1.,
+            mode: BrandMode::Dark,
             pack: maestro_theme::load_brand_pack("brand.json", &super::Pack).unwrap(),
         }
     }
@@ -69,10 +71,12 @@ impl Slots {
                     })
                     .collect::<Vec<_>>();
                 *target.borrow_mut() = Some(ReadingRoot {
+                    owner: None,
                     element: root.clone(),
                     slots: slots.clone(),
                 });
                 Ok(ReadingRoot {
+                    owner: None,
                     element: root,
                     slots,
                 })
@@ -110,7 +114,7 @@ impl Slots {
                     context: &self.context,
                 }),
             },
-            &self.pack.presentation(BrandMode::Dark).unwrap(),
+            &self.pack.presentation(self.mode).unwrap(),
         )
     }
     pub fn layout(&self) -> Result<ReadingLayout, AttachmentUiError> {
@@ -148,3 +152,5 @@ pub fn snapshot(root: &Element) -> JsValue {
 pub fn unchanged(saved: &JsValue) {
     assert!(js(saved, include_str!("unchanged.js")).as_bool().unwrap());
 }
+
+mod disclosures;

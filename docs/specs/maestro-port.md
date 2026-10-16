@@ -223,6 +223,12 @@ endpoints the control must be enabled and its layer must own the input. Keyboard
 activation is unchanged. Unchanged content retains its native root and selection.
 The existing event-subscription owner retains scroll/resize callbacks; no second
 registry, listener runtime or painted reading-text fallback is introduced.
+A reading root may carry an opaque `owner: Option<Box<dyn std::any::Any>>`
+for mounted feature lifetimes. This owner retains feature listener guards, whose
+callbacks capture it weakly; factories never retain mounted state. Dropping a root
+attempts listener detachment through the existing subscription policy, and expired
+weak callbacks are harmless even if native removal fails. Unchanged roots retain
+expansion; successful replacements start collapsed. Passive roots carry no owner.
 Native viewport projection and inverse readback share the canvas axis transform.
 Canvas controls remain feature-owned; native text remains selectable and findable.
 Measurement stages a hidden candidate; publication replaces the retained owner

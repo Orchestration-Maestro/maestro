@@ -59,6 +59,7 @@ pub(super) fn mount(
     *sheets.nodes.borrow_mut() = nodes;
     select(sheets, 0)?;
     Ok(ReadingRoot {
+        owner: None,
         element: root,
         slots,
     })

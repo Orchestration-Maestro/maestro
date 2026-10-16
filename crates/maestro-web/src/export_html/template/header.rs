@@ -3,6 +3,7 @@ use super::SessionDocument;
 use maestro_app::is_truthy;
 use serde_json::Value;
 use std::io;
+mod details;
 /// Owned literal metadata passed to the native factory.
 #[derive(Debug, PartialEq, Eq)]
 struct Prepared {
@@ -10,8 +11,12 @@ struct Prepared {
     title: String,
     /// Values in date, models, messages, calls, tokens and cost order.
     rows: [String; 6],
+    /// Owned system prompt disclosure.
+    prompt: Option<details::Prompt>,
+    /// Ordered owned tool disclosures.
+    tools: Vec<details::Tool>,
 }
-/// Prepare only reached metadata, leaving deferred document fields unread.
+/// Prepare reached header operands without changing the raw document.
 fn prepare(
     doc: &SessionDocument,
     date: &dyn Fn(&Value) -> io::Result<String>,
@@ -46,6 +51,8 @@ fn prepare(
                 )
             ),
         ],
+        prompt: details::prompt(doc.data.get("systemPrompt").unwrap_or(&Value::Null))?,
+        tools: details::tools(doc.data.get("tools").unwrap_or(&Value::Null))?,
     })
 }
 /// Substitute only a genuinely empty display value.

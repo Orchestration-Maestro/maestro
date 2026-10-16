@@ -46,6 +46,8 @@ pub struct ReadingRoot {
     pub element: web_sys::Element,
     /// Empty native slots retaining their caller identities.
     pub slots: Vec<(egui::Id, web_sys::Element)>,
+    /// Mounted feature lifetime; factories must not retain this owner.
+    pub owner: Option<Box<dyn std::any::Any>>,
 }
 
 /// Publish a full native body through the existing two-phase transaction.

@@ -1,0 +1,3028 @@
+[
+  {
+    "name": "empty",
+    "input": {
+      "data": {
+        "entries": []
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": []
+    }
+  },
+  {
+    "name": "prompt-null",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": null
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": []
+    }
+  },
+  {
+    "name": "prompt-empty",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": ""
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": []
+    }
+  },
+  {
+    "name": "prompt-zero",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": 0
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": []
+    }
+  },
+  {
+    "name": "prompt-false",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": false
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": []
+    }
+  },
+  {
+    "name": "prompt-text",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": " ﻿ <literal> "
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": {
+        "expandable": false,
+        "heading": "System Prompt",
+        "preview": null,
+        "hint": null,
+        "full": " ﻿ <literal> "
+      },
+      "tools": []
+    }
+  },
+  {
+    "name": "prompt-number",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": 7
+      }
+    },
+    "branch": "error",
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "prompt-true",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": true
+      }
+    },
+    "branch": "error",
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "prompt-object",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": {}
+      }
+    },
+    "branch": "error",
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "prompt-array",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": []
+      }
+    },
+    "branch": "error",
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "prompt-lines-9",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9"
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": {
+        "expandable": false,
+        "heading": "System Prompt",
+        "preview": null,
+        "hint": null,
+        "full": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9"
+      },
+      "tools": []
+    }
+  },
+  {
+    "name": "prompt-lines-10",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9\nline 10"
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": {
+        "expandable": false,
+        "heading": "System Prompt",
+        "preview": null,
+        "hint": null,
+        "full": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9\nline 10"
+      },
+      "tools": []
+    }
+  },
+  {
+    "name": "prompt-lines-11",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11"
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": {
+        "expandable": true,
+        "heading": "System Prompt",
+        "preview": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9\nline 10",
+        "hint": "... (1 more lines, click to expand)",
+        "full": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11"
+      },
+      "tools": []
+    }
+  },
+  {
+    "name": "prompt-lines-12",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12"
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": {
+        "expandable": true,
+        "heading": "System Prompt",
+        "preview": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9\nline 10",
+        "hint": "... (2 more lines, click to expand)",
+        "full": "line 1\nline 2\nline 3\nline 4\n\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12"
+      },
+      "tools": []
+    }
+  },
+  {
+    "name": "prompt-trailing-newline",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": "a\na\na\na\na\na\na\na\na\na\n"
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": {
+        "expandable": true,
+        "heading": "System Prompt",
+        "preview": "a\na\na\na\na\na\na\na\na\na",
+        "hint": "... (1 more lines, click to expand)",
+        "full": "a\na\na\na\na\na\na\na\na\na\n"
+      },
+      "tools": []
+    }
+  },
+  {
+    "name": "prompt-crlf",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": "a\r\na\r\na\r\na\r\na\r\na\r\na\r\na\r\na\r\na\r\n"
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": {
+        "expandable": true,
+        "heading": "System Prompt",
+        "preview": "a\na\na\na\na\na\na\na\na\na\n",
+        "hint": "... (1 more lines, click to expand)",
+        "full": "a\na\na\na\na\na\na\na\na\na\n"
+      },
+      "tools": []
+    }
+  },
+  {
+    "name": "prompt-lone-cr",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": "a\ra\ra\ra\ra\ra\ra\ra\ra\ra\ra\ra\r"
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": {
+        "expandable": false,
+        "heading": "System Prompt",
+        "preview": null,
+        "hint": null,
+        "full": "a\na\na\na\na\na\na\na\na\na\na\na\n"
+      },
+      "tools": []
+    }
+  },
+  {
+    "name": "prompt-other-separators",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": "a b c"
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": {
+        "expandable": false,
+        "heading": "System Prompt",
+        "preview": null,
+        "hint": null,
+        "full": "a b c"
+      },
+      "tools": []
+    }
+  },
+  {
+    "name": "expansions",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": "p\np\np\np\np\np\np\np\np\np\np\n",
+        "tools": [
+          {
+            "name": "same",
+            "description": "one",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          {
+            "name": "same",
+            "description": "two",
+            "parameters": {
+              "properties": {
+                "y": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": {
+        "expandable": true,
+        "heading": "System Prompt",
+        "preview": "p\np\np\np\np\np\np\np\np\np",
+        "hint": "... (2 more lines, click to expand)",
+        "full": "p\np\np\np\np\np\np\np\np\np\np\n"
+      },
+      "tools": [
+        {
+          "name": "same",
+          "description": "one",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": null
+            }
+          ]
+        },
+        {
+          "name": "same",
+          "description": "two",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "y",
+              "type": "integer",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "tools-null",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": null
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": []
+    }
+  },
+  {
+    "name": "tools-empty",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": []
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": []
+    }
+  },
+  {
+    "name": "tools-zero",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": 0
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": []
+    }
+  },
+  {
+    "name": "tools-false",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": false
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": []
+    }
+  },
+  {
+    "name": "tools-text",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": "tools"
+      }
+    },
+    "branch": "error",
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "tools-object",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": {}
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": []
+    }
+  },
+  {
+    "name": "tools-array",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          null
+        ]
+      }
+    },
+    "branch": "error",
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "tool-parameters-missing",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc"
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "simple",
+          "description": "desc",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "tool-parameters-null",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "parameters": null
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "simple",
+          "description": "desc",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "tool-parameters-string",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "parameters": "text"
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "simple",
+          "description": "desc",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "tool-parameters-number",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "parameters": 7
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "simple",
+          "description": "desc",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "tool-parameters-false",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "parameters": false
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "simple",
+          "description": "desc",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "tool-parameters-object",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "parameters": {}
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "simple",
+          "description": "desc",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "tool-parameters-array",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "parameters": []
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "simple",
+          "description": "desc",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "tool-parameters-no-properties",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "parameters": {
+              "properties": null
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "simple",
+          "description": "desc",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "tool-parameters-empty-properties",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "simple",
+            "description": "desc",
+            "parameters": {
+              "properties": {}
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "simple",
+          "description": "desc",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "canonical-properties",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "ordered",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "2": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "10": {
+                  "type": "number"
+                },
+                "4294967294": {
+                  "type": "boolean"
+                },
+                "b": {
+                  "description": "plain <tag>"
+                },
+                "a": true,
+                "01": false,
+                "4294967295": {
+                  "type": "object"
+                },
+                "__proto__": {
+                  "type": "array"
+                }
+              },
+              "required": [
+                "2",
+                "b",
+                "absent"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "ordered",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "2",
+              "type": "string,null",
+              "required": true,
+              "description": null
+            },
+            {
+              "name": "10",
+              "type": "number",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "4294967294",
+              "type": "boolean",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "b",
+              "type": "any",
+              "required": true,
+              "description": "plain <tag>"
+            },
+            {
+              "name": "a",
+              "type": "any",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "01",
+              "type": "any",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "4294967295",
+              "type": "object",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "__proto__",
+              "type": "array",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "property-type-missing",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {}
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "type",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "any",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "property-type-null",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": null
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "type",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "any",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "property-type-empty",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "type",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "any",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "property-type-zero",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "type",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "any",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "property-type-false",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": false
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "type",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "any",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "property-type-text",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "type",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "integer",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "property-type-array",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "type",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string,null",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "property-type-array-empty",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": []
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "type",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "property-type-array-single",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "type",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": [
+                    "string"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "type",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "property-description-missing",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "description",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "description",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "property-description-null",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "description",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string",
+                  "description": null
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "description",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "property-description-empty",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "description",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string",
+                  "description": ""
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "description",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "property-description-zero",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "description",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string",
+                  "description": 0
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "description",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "property-description-false",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "description",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string",
+                  "description": false
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "description",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "property-description-text",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "description",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string",
+                  "description": " <desc> "
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "description",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": " <desc> "
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "required-undefined",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string"
+                },
+                "xx": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "required",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "xx",
+              "type": "number",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "required-null",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string"
+                },
+                "xx": {
+                  "type": "number"
+                }
+              },
+              "required": null
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "required",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "xx",
+              "type": "number",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "required-0",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string"
+                },
+                "xx": {
+                  "type": "number"
+                }
+              },
+              "required": 0
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "required",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "xx",
+              "type": "number",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "required-false",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string"
+                },
+                "xx": {
+                  "type": "number"
+                }
+              },
+              "required": false
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "required",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "xx",
+              "type": "number",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "required-\"\"",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string"
+                },
+                "xx": {
+                  "type": "number"
+                }
+              },
+              "required": ""
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "required",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "xx",
+              "type": "number",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "required-[]",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string"
+                },
+                "xx": {
+                  "type": "number"
+                }
+              },
+              "required": []
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "required",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "xx",
+              "type": "number",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "required-[\"x\"]",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string"
+                },
+                "xx": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "required",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": true,
+              "description": null
+            },
+            {
+              "name": "xx",
+              "type": "number",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "required-[\"xx\"]",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string"
+                },
+                "xx": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "xx"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "required",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "xx",
+              "type": "number",
+              "required": true,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "required-[1,\"other\"]",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "required",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "1": {
+                  "type": "string"
+                },
+                "x": {
+                  "type": "string"
+                },
+                "xx": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                1,
+                "other"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "required",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "1",
+              "type": "string",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "xx",
+              "type": "number",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "tool-name-missing",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "description": "description"
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "",
+          "description": "description",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "tool-name-null",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": null,
+            "description": "description"
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "",
+          "description": "description",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "tool-description-missing",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "tool"
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "tool",
+          "description": "",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "tool-description-null",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "tool",
+            "description": null
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "tool",
+          "description": "",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "tools-empty-string",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": ""
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": []
+    }
+  },
+  {
+    "name": "unreached-required-without-properties",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "unreached",
+            "description": "d",
+            "parameters": {
+              "properties": {},
+              "required": 7
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "unreached",
+          "description": "d",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "property-description-whitespace",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "description",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string",
+                  "description": "  "
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "description",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": false,
+              "description": "  "
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "null-schema-property",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "bad",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": null
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "error",
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "numeric-required",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "bad-required",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {}
+              },
+              "required": 7
+            }
+          }
+        ]
+      }
+    },
+    "branch": "error",
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "literal-tool-fields",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": " <name> & \"' 雪 ",
+            "description": " <description> & \n "
+          },
+          {
+            "name": "last",
+            "description": ""
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": " <name> & \"' 雪 ",
+          "description": " <description> & \n ",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        },
+        {
+          "name": "last",
+          "description": "",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "properties-missing",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {}
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "field",
+          "description": "d",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "properties-false",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": false
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "field",
+          "description": "d",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "properties-zero",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": 0
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "field",
+          "description": "d",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "properties-number",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": 7
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "field",
+          "description": "d",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "properties-true",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": true
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "field",
+          "description": "d",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "properties-empty",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": ""
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "field",
+          "description": "d",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "properties-array-empty",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": []
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "field",
+          "description": "d",
+          "expandable": false,
+          "hint": null,
+          "parameters": []
+        }
+      ]
+    }
+  },
+  {
+    "name": "properties-array",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": [
+                {},
+                true
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "field",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "0",
+              "type": "any",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "1",
+              "type": "any",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "empty-key-required",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "": {},
+                "x": {}
+              },
+              "required": [
+                ""
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "field",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "",
+              "type": "any",
+              "required": true,
+              "description": null
+            },
+            {
+              "name": "x",
+              "type": "any",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "required-exact-escaped",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "1": {},
+                "ab": {},
+                "abc": {}
+              },
+              "required": [
+                "ab",
+                1
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "field",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "1",
+              "type": "any",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "ab",
+              "type": "any",
+              "required": true,
+              "description": null
+            },
+            {
+              "name": "abc",
+              "type": "any",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "array-required-nonstrings",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {},
+                "true": {},
+                "null": {},
+                "[object Object]": {}
+              },
+              "required": [
+                true,
+                null,
+                {},
+                []
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "field",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "any",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "true",
+              "type": "any",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "null",
+              "type": "any",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "[object Object]",
+              "type": "any",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "literal-line-controls",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": "a\rb\r\nc\u0000d",
+        "tools": [
+          {
+            "name": "n\r\n<q>\u0000",
+            "description": "d\r\n<q>\u0000",
+            "parameters": {
+              "properties": {
+                "x\r\n\u0000": {
+                  "type": "a\r\n\u0000",
+                  "description": "d\r\n\u0000"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": {
+        "expandable": false,
+        "heading": "System Prompt",
+        "preview": null,
+        "hint": null,
+        "full": "a\nb\ncd"
+      },
+      "tools": [
+        {
+          "name": "n\n<q>",
+          "description": "d\n<q>",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x\n",
+              "type": "a\n",
+              "required": false,
+              "description": "d\n"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "normal-description-whitespace",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "one\ttwo\nthree four",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": [
+                    " string ",
+                    "null"
+                  ],
+                  "description": " \t\r\n\f "
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "field",
+          "description": "one\ttwo\nthree four",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": " string ,null",
+              "required": false,
+              "description": " \t\n\f "
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "prompt-error-wins-over-tools-error",
+    "input": {
+      "data": {
+        "entries": [],
+        "systemPrompt": 7,
+        "tools": [
+          null
+        ]
+      }
+    },
+    "branch": "error",
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "required-error-wins-over-null-property",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": null
+              },
+              "required": 7
+            }
+          }
+        ]
+      }
+    },
+    "branch": "error",
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "tool-name-validated-after-parameters",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": 7,
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": null
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "error",
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "raw-key-identity",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x\r\n\u0000": {},
+                "x\n": {}
+              },
+              "required": [
+                "x\r\n\u0000"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "field",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x\n",
+              "type": "any",
+              "required": true,
+              "description": null
+            },
+            {
+              "name": "x\n",
+              "type": "any",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "tools-positive-number",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": 7
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": []
+    }
+  },
+  {
+    "name": "tools-true",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": true
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": []
+    }
+  },
+  {
+    "name": "tools-positive-length-object",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": {
+          "length": 1
+        }
+      }
+    },
+    "branch": "error",
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "required-true",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {}
+              },
+              "required": true
+            }
+          }
+        ]
+      }
+    },
+    "branch": "error",
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "required-object",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {}
+              },
+              "required": {}
+            }
+          }
+        ]
+      }
+    },
+    "branch": "error",
+    "errorKind": "invalid_data"
+  },
+  {
+    "name": "boolean-schemas",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "yes": true,
+                "no": false,
+                "number": 7,
+                "text": "s",
+                "array": []
+              }
+            }
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "field",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "yes",
+              "type": "any",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "no",
+              "type": "any",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "number",
+              "type": "any",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "text",
+              "type": "any",
+              "required": false,
+              "description": null
+            },
+            {
+              "name": "array",
+              "type": "any",
+              "required": false,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "name": "ignored-schema-fields",
+    "input": {
+      "data": {
+        "entries": [],
+        "tools": [
+          {
+            "name": "field",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "x": {
+                  "type": "string",
+                  "unknown": {
+                    "deep": [
+                      1,
+                      2
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "x"
+              ],
+              "unknown": 7
+            },
+            "unknown": [
+              "retained"
+            ]
+          }
+        ]
+      }
+    },
+    "branch": "success",
+    "output": {
+      "prompt": null,
+      "tools": [
+        {
+          "name": "field",
+          "description": "d",
+          "expandable": true,
+          "hint": "[click to show parameters]",
+          "parameters": [
+            {
+              "name": "x",
+              "type": "string",
+              "required": true,
+              "description": null
+            }
+          ]
+        }
+      ]
+    }
+  }
+]
