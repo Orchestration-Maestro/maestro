@@ -153,6 +153,7 @@ impl Cell {
             w: self.w,
             f: self.f,
             array_formula: self.array_formula,
+            ..Default::default()
         }
     }
 }

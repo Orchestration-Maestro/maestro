@@ -53,8 +53,9 @@ fn cell_text(cell: Option<&mut CellObject>, ssf: &Ssf) -> String {
             .filter(|_| cell.array_formula.as_ref().is_none_or(String::is_empty))
             .map_or_else(String::new, |formula| format!("={formula}"));
     }
-    match format_cell(Some(cell), ssf) {
+    match format_cell(Some(cell), None, &super::CellFormatOptions::default(), ssf) {
         CellValue::Text(text) => text,
+        value @ CellValue::Date(_) => super::format_cell::raw_text(&value),
         CellValue::Number(n) => super::write_num::spelling(n),
         CellValue::Boolean(b) => super::general(super::GeneralValue::Boolean(b)),
         CellValue::Missing | CellValue::Null => String::new(),

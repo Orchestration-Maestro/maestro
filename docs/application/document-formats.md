@@ -110,40 +110,30 @@ needed. Scientific and engineering fields use the same selected value.
 
 ## Shared formula operands
 
-The reader recognizes formula operands without evaluating them. A1 cells are
-bounded by XFD and row 1048576. Relative axes advance by follower minus template
-position; `$` binds its own axis. Whole-column and whole-row pairs also advance,
-but bare `A` and `1` remain a name and number. Out-of-grid names such as `XFE1`
-are not partially rewritten. Fixed coordinates and zero applicable displacement
-retain their authored spelling; changed coordinates use native A1 rendering.
+The reader advances bounded A1 coordinates without evaluating formulas. Relative
+axes advance by follower minus template position; `$` binds its own axis. Fixed
+coordinates and zero applicable displacement retain their authored spelling.
+Changed coordinates retain column case. Whole-column/whole-row pairs remain
+unchanged, as do out-of-grid names such as `XFE1` and `A1048577`.
 
-Qualifiers are recognized through `!` before coordinate-shaped sheet text.
-Quoted/doubled apostrophes, external-book prefixes, 3-D and Unicode sheet names
-remain opaque. Unquoted sheet recognition stops at expression delimiters and
-quotes: writers quote names containing parentheses, so `SUM(` is a call. Other
-sheet characters such as `#` and `~` remain part of a complete qualifier.
-Deleted-sheet `#REF!A1` retains its prefix while A1 advances.
-
-Defined names, callees, strings (including doubled quotes), numerical exponents,
-booleans, errors and array constants retain their source text. Call arguments
-and parenthesized expressions need no retained stack because enclosing groups
-do not affect operand classification; only opaque arrays retain delimiter
-context. Structured
-references retain their complete balanced brackets, including nested groups and
-apostrophe-escaped special column characters. Outside qualifiers and structured
-references, `:` is an independent operator: both `A1:INDEX(A:A,10)` and
-`A1:LastCell` advance the A1 operand independently of their right-hand expression.
-An unknown unit is copied through the next expression operator, argument
-separator or group delimiter without rescanning its interior. An unterminated
-quote or bracket protects the remainder, without rejecting the workbook.
+Coordinate matching checks adjacent Unicode letters, digits, `_`, `.`, `\` and
+`?`; a directly adjacent `(` protects function names such as `LOG10`, but a space
+before `(` remains an intersection operator. Quotes with doubled escapes and
+nested brackets with apostrophe escapes are opaque; an unterminated quote or
+bracket protects the remainder. Unquoted identifier qualifiers ending in `!` are
+opaque too. Operators, errors and grouping need no grammar recognizer or stack.
 
 The operand-blind displacement defect is corrected at this single reader owner:
-coordinate-substring searching corrupts sheet/name/column identities and text,
-and misses relative whole-axis pairs and lowercase coordinates. Operand grammar
-protects opaque spans and delegates isolated coordinate arithmetic to the native
-workbook library. Formula decoding, missing-cache retention and CSV quoting stay
-separate. R1C1 conversion belongs to SpreadsheetML/SYLK readers, not this XLSX
-path; `RC`, `R1C1` and bracketed R1C1 spellings here remain opaque.
+opaque spans and Unicode-aware identifier boundaries prevent coordinate-shaped
+text from being rewritten. Lowercase references retain case when advanced;
+unquoted sheet qualifiers and `\`/`?` name boundaries stay unchanged. A colon
+qualifier `identifier:identifier!` is opaque unless immediately preceded by `!`:
+`Q1:Q3!A1` protects the sheet range while `Sheet1!A1:Sheet1!B2` advances both cells.
+The ambiguous `A1:Sheet2!B2` is read as a 3-D qualifier and protects `A1:Sheet2!`.
+Isolated coordinate arithmetic reuses the native workbook library. Formula
+decoding, missing-cache retention and CSV quoting stay separate. R1C1 conversion
+belongs to SpreadsheetML/SYLK readers, not this XLSX path; identifier boundaries
+and brackets protect XLSX `RC`, `R1C1` and bracketed spellings.
 
 ## Default CSV
 

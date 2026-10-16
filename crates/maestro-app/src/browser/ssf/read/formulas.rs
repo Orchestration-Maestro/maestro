@@ -16,7 +16,7 @@ pub(super) fn formula(
     let Some(node) = xml.element(node, "f") else {
         return Ok(None);
     };
-    let text = super::string_cell(&node.text_content())
+    let text = super::super::unescapexml::unescapexml(&node.text_content())
         .replace("\r\n", "\n")
         .replace("_xlfn.", "");
     if xml.attr(node, "t") == Some("shared") {

@@ -184,7 +184,9 @@ fn raw_value(
     date1904: bool,
 ) -> Result<Option<CellValue>, WorkbookError> {
     Ok(match kind {
-        Some("str") => Some(CellValue::Text(raw.map(super::unescapexml::unescapexml).unwrap_or_default())),
+        Some("str") => Some(CellValue::Text(
+            raw.map(super::unescapexml::unescapexml).unwrap_or_default(),
+        )),
         Some("d") => raw
             .map(|s| super::datenum::datenum(s, date1904))
             .transpose()?
@@ -238,15 +240,7 @@ fn cell(
         CellValue::Text(text) => CellValue::Text(text.replace("\r\n", "\n")),
         value => value,
     });
-    let mut cell = if matches!(value, Some(CellValue::Missing))
-        && (formulas.0.is_some() || formulas.1.is_some())
-    {
-        CellObject { t: Some(ExcelDataType::Number), ..Default::default() }
-    } else {
-        basic_cell(value, error)?
-    };
-    cell.f = formulas.0;
-    cell.array_formula = formulas.1;
+    let mut cell = basic_cell(value, error, formulas)?;
     let id = style
         .and_then(|index| format.0.get(index))
         .copied()
@@ -294,7 +288,11 @@ fn cell(
 }
 
 /// Classify owned native scalars and recover raw error labels through the shared table.
-fn basic_cell(value: Option<CellValue>, error: Option<String>) -> Option<CellObject> {
+fn basic_cell(
+    value: Option<CellValue>,
+    error: Option<String>,
+    formulas: (Option<String>, Option<String>),
+) -> Option<CellObject> {
     let (kind, value, cached) = if let Some(label) = error {
         let value = ERRORS
             .iter()
@@ -309,6 +307,9 @@ fn basic_cell(value: Option<CellValue>, error: Option<String>) -> Option<CellObj
             CellValue::Number(_) | CellValue::Date(_) => ExcelDataType::Number,
             CellValue::Text(_) => ExcelDataType::Text,
             CellValue::Boolean(_) => ExcelDataType::Boolean,
+            CellValue::Missing if formulas.0.is_some() || formulas.1.is_some() => {
+                ExcelDataType::Number
+            }
             CellValue::Missing | CellValue::Null => return None,
         };
         (kind, value, None)
@@ -317,6 +318,8 @@ fn basic_cell(value: Option<CellValue>, error: Option<String>) -> Option<CellObj
         t: Some(kind),
         v: value,
         w: cached,
+        f: formulas.0,
+        array_formula: formulas.1,
         ..Default::default()
     })
 }
@@ -373,7 +376,7 @@ fn legacy_sheet(
     let start = values.start().unwrap_or_default();
     for (row, column, value) in values.used_cells() {
         let error = value.get_error().map(ToString::to_string);
-        if let Some(mut cell) = basic_cell(native_scalar(value), error) {
+        if let Some(mut cell) = basic_cell(native_scalar(value), error, (None, None)) {
             cell.w = cell.w.or_else(|| Some(super::general(cell.v.scalar())));
             let position = CellAddress {
                 r: legacy_offset(start.0, row)?,

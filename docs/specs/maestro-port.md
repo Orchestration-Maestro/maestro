@@ -135,27 +135,23 @@ Provide the browser's named stores, metadata/indexes, settings/provider keys/cus
 Accept the established URL/File/Blob/buffer inputs and text/image/PDF/DOCX/PPTX/XLSX/XLS formats. Preserve original bytes, MIME/name/size, extraction wrappers/order/whitespace, previews, cancellation and errors. PDF attachments use hayro 0.8.0 with hayro-interpret for text and first-page preview; PDF artifacts render all pages at the defined scale with cleanup. Keep application wrappers, fit-160px preview and 1.5 artifact/overlay scales, errors and cleanup exact. PDF extraction and rasterization retain the approved native engine’s text segmentation, Type3 text, bidirectional ordering and font-rendering differences; application wrapping, page order, scales, failure categories and owned cleanup remain exact. Do not use pdf-extract. DOCX preview preserves pagination, fonts, headers, footers and notes. Spreadsheet preview preserves sheets, formatted cells, styles and tab switching. HTML/SVG/image/Markdown/text/code artifacts preserve preview/source/download and safe rendering behavior. Browser Markdown also preserves inline and display math for dollar and backslash delimiters, HTML math layout/fonts, parse-error spans and fallback text. Use katex-rs 0.3.0 beside the Markdown consumer with output="html", throwOnError=false and delimiter-specific displayMode. Ship matching KaTeX 0.18.5 CSS/fonts as hashed data through the DOM. Reuse the reference math inputs for named checks of complete expressions, inline errors and browser layout. Formulas match the reference's glyphs, layout and tooltip content. Internal markup, class names, element structure and byte or pixel identity may differ only where not user-visible. A visible difference is a defect to fix in the owning Rust implementation, not an accepted result. Fix defects in the application wrapper before landing; do not add MathML, auto-render extensions or math behavior to terminal/export paths that never invoke it. Libraries must qualify these contracts; extraction-only substitutes do not satisfy document preview.
 
 Shared XLSX formula displacement belongs solely to the application's existing
-`browser::ssf::read::formulas` module. Use a lossless operand recognizer, not
-coordinate-substring searches or maximal punctuation-delimited atoms. Recognize
-complete sheet/workbook qualifiers through `!` before classifying their operand;
-preserve quoted escapes, Unicode names, callees, structured references, literals
-and arrays verbatim. A colon outside a qualifier or structured reference is an
-independent range operator, including before a name, call or parenthesis.
-Recognize bounded A1 cells and homogeneous whole-axis pairs; bare columns and
-numbers are not references. Reuse Calamine only for isolated coordinate arithmetic,
-retaining absolute axes and byte-identical zero/fixed displacement. Call/group
-traversal needs no retained stack because enclosing groups do not affect operand
-classification; only opaque arrays retain delimiter context. Add no evaluator,
-parser API, dependency, budget or diagnostics. Unknown units are opaque through the next
-expression operator/separator/delimiter; unterminated quotes/brackets protect the
-remainder. SpreadsheetML/SYLK own R1C1 conversion; XLSX templates do not. This
-corrects operand-blind displacement without changing formula decoding, sheet-local
-indices, cached values, arrays, CSV serialization or attachment extraction.
-Resolve unquoted-sheet ambiguity at expression group delimiters and quotes:
-writers quote sheet names containing parentheses, so `SUM(` begins a call,
-not a qualifier. Other admitted sheet characters, including `#` and `~`, remain
-opaque when a complete qualifier ends at `!`; `#REF!A1` retains the deleted-sheet
-prefix while its cell advances.
+`browser::ssf::read::formulas` module. Match bounded A1 coordinates lexically,
+checking adjacent Unicode letters, digits, `_`, `.`, `\` and `?` as identifier
+boundaries; a directly following `(` protects a callee, while intervening whitespace
+remains an intersection operator. Preserve quoted strings/sheet names (including
+doubled delimiters), balanced bracket spans and unquoted identifier qualifiers
+ending in `!`. A qualifier may contain `identifier:identifier!` unless its first
+identifier immediately follows `!`; this resolves the ambiguous colon as a 3-D
+sheet qualifier, so `A1:Sheet2!B2` protects `A1:Sheet2!` too.
+Coordinates match case-insensitively and retain their column case when advanced.
+Whole-axis pairs remain unchanged. Reuse Calamine only for isolated coordinate
+arithmetic, retaining absolute axes and byte-identical zero/fixed displacement.
+Add no grammar recognizer, evaluator, parser API, dependency, budget or diagnostics.
+Unterminated quotes/brackets protect the remainder. SpreadsheetML/SYLK own R1C1
+conversion; XLSX templates do not. The single operand-blind displacement correction
+protects identities/text, Unicode boundaries, lowercase references and qualifiers;
+formula decoding, sheet-local indices, cached values, arrays, CSV serialization
+and attachment extraction keep their existing owners.
 
 Recreate DOM iframe sandboxing, injected runtime providers, postMessage bridges/routing, initialization/ready/run/cleanup lifetimes, console capture, attachments, downloads and artifact access from Rust. The browser tool intentionally executes user-supplied JavaScript in its browser sandbox; that is application behavior, not a second extension host. Keep the document-extraction tool, the JavaScript REPL tool (`javascript_repl`, with `title` and `code` parameters), and artifact commands/prompts. The calculation-result renderer remains rendering only, not an executable calculation tool. Do not use the stronger-looking native extension permission model to alter browser sandbox observations.
 
