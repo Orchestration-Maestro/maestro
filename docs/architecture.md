@@ -214,6 +214,13 @@ and literal contents are not call syntax. The scan does not expand macros,
 infer receiver types, resolve arbitrary re-exports/function values, evaluate
 compound configurations or follow unparsed fragments. These forms and sleep-based
 watchdogs remain source-review obligations.
+Optional `futures_util::poll!` invocations are also rejected in those test scopes,
+including qualified/raw paths, known imports and literal nested macro tokens.
+Pin the future and call `std::future::Future::poll` once with
+`std::task::Context::from_waker(std::task::Waker::noop())` instead; this needs no
+optional dependency feature. Macro aliases use the same file-wide scope and
+limits as timer aliases. Comments, literal contents and ordinary function calls
+are not macro invocations; no compiler expansion is performed.
 
 Clippy's protected `redundant_clone` lint rejects unnecessary copies workspace-wide.
 Hand-written documentation uses only `///` and `//!`; conventions reject block doc comments with their file and line, except in generated guest bindings at `maestro-extensions-wasm/src/bindings.rs`. Line documentation in that file is still checked for repetition; allowed block comments end the comparison run.

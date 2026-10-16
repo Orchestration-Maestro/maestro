@@ -130,21 +130,23 @@ async fn install_report_deadline_stops_waiting_at_headers_run() {
     let settings = SettingsManager::in_memory(maestro_settings::Settings::default());
     let t = Transport::new(200, String::new(), "HEADERS_PENDING");
     let mut work = report_install_telemetry("1.2.3", &settings, ORIGIN, Some(t.fetch.clone()));
-    assert!(futures_util::poll!(work.as_mut()).is_pending());
+    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
     assert_eq!(t.count(), 1);
     tokio::time::advance(std::time::Duration::from_millis(4_999)).await;
-    assert!(futures_util::poll!(work.as_mut()).is_pending());
+    assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
     assert_eq!(t.dropped.load(std::sync::atomic::Ordering::SeqCst), 0);
     tokio::time::advance(std::time::Duration::from_millis(1)).await;
-    assert!(futures_util::poll!(work.as_mut()).is_ready());
+    assert!(std::future::Future::poll(work.as_mut(), &mut context).is_ready());
     assert_eq!(t.dropped.load(std::sync::atomic::Ordering::SeqCst), 1);
-    headers_finish_without_a_body(&settings).await;
+    headers_finish_without_a_body(&settings);
 }
 /// Ready headers complete without polling a withheld body.
-async fn headers_finish_without_a_body(settings: &SettingsManager) {
+fn headers_finish_without_a_body(settings: &SettingsManager) {
     let t = Transport::new(200, String::new(), "BODY_PENDING");
     let mut work = report_install_telemetry("1.2.3", settings, ORIGIN, Some(t.fetch.clone()));
-    assert!(futures_util::poll!(work.as_mut()).is_ready());
+    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    assert!(std::future::Future::poll(work.as_mut(), &mut context).is_ready());
     assert_eq!(t.count(), 1);
     assert_eq!(t.body_polls.load(std::sync::atomic::Ordering::SeqCst), 0);
     assert_eq!(t.dropped.load(std::sync::atomic::Ordering::SeqCst), 1);
