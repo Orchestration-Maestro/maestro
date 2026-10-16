@@ -53,9 +53,10 @@ dependencies. Root `dev-compile` composes models with `browser-dev-compile`;
 rebuilding and serving; watchexec retains the native compiler graph.
 The browser watch routes first check the fixture to prepare an invocation-specific
 configuration under `target/maestro-browser/`. It retains the fixture and default
-brand roots and adds the containing directories of the selected pack and its
-resolved mark template, including external directories. Recursive directory
-watching covers repeated replacement saves and new dependencies beneath those
+brand roots and adds the containing directories of both the authored paths and
+symlink-resolved targets of the selected pack and mark template, including
+external directories. Recursive directory watching covers edits to linked targets,
+repeated replacement saves and new dependencies beneath those
 roots. If you change the template to a path outside the watched directories,
 restart the serve or watch command ([tracked follow-up](https://github.com/Orchestration-Maestro/maestro/issues/1088)).
 The native watch option replaces configured roots rather than extending them, so the configuration is prepared from the existing theme loader;

@@ -248,7 +248,7 @@ fn browser_example_development_serves_rebuilt_external_assets() {
     let listener = std::net::TcpListener::bind(("127.0.0.1", 0)).unwrap();
     let port = listener.local_addr().unwrap().port();
     drop(listener);
-    let pack = external_identity(&browser);
+    let (pack, pack_target, mark_target) = linked_identity(&browser);
     let mut command = browser.command("browser-example-dev");
     command.args([pack.to_str().unwrap(), "dark", "--port", &port.to_string()]);
     let (child, receive, thread) = start_output(command);
@@ -279,6 +279,10 @@ fn browser_example_development_serves_rebuilt_external_assets() {
             .unwrap()
             .contains("outline-style:dotted")
     );
+    edit_linked_targets(&pack_target.0, &mark_target.0, || {
+        wait_for(&receive, "✅ success");
+        get(port, wasm.file_name().unwrap().to_str().unwrap()).1
+    });
     replace_identity_twice(&browser, &pack, || {
         wait_for(&receive, "✅ success");
         get(port, wasm.file_name().unwrap().to_str().unwrap()).1
@@ -292,12 +296,16 @@ fn browser_example_development_serves_rebuilt_external_assets() {
 fn browser_compile_watch_rebuilds_external_identity() {
     use browser_support::{start_output, wait_for};
     let browser = Browser::new();
-    let pack = external_identity(&browser);
+    let (pack, pack_target, mark_target) = linked_identity(&browser);
     let mut command = browser.command("browser-dev-compile");
     command.args([pack.to_str().unwrap(), "light"]);
     let (child, receive, thread) = start_output(command);
     wait_for(&receive, "✅ success");
     let wasm = browser.path("target/maestro-browser/library/maestro-browser-author_bg.wasm");
+    edit_linked_targets(&pack_target.0, &mark_target.0, || {
+        wait_for(&receive, "✅ success");
+        fs::read(&wasm).unwrap()
+    });
     replace_identity_twice(&browser, &pack, || {
         wait_for(&receive, "✅ success");
         fs::read(&wasm).unwrap()
@@ -305,6 +313,45 @@ fn browser_compile_watch_rebuilds_external_identity() {
     drop(child);
     drop(receive);
     thread.join().unwrap();
+}
+
+/// Start with linked files whose targets are outside every authored watch root.
+fn linked_identity(browser: &Browser) -> (std::path::PathBuf, Workspace, Workspace) {
+    let pack = external_identity(browser);
+    let pack_target = Workspace::new();
+    let mark_target = Workspace::new();
+    for (authored, target) in [
+        (pack.clone(), pack_target.0.join("pack.json")),
+        (
+            browser.path("external mark.svg"),
+            mark_target.0.join("mark.svg"),
+        ),
+    ] {
+        fs::rename(&authored, &target).unwrap();
+        std::os::unix::fs::symlink(target, authored).unwrap();
+    }
+    (pack, pack_target, mark_target)
+}
+
+/// Observe edits of both startup dependencies through their resolved targets.
+fn edit_linked_targets(
+    pack_directory: &std::path::Path,
+    mark_directory: &std::path::Path,
+    mut rebuilt: impl FnMut() -> Vec<u8>,
+) {
+    let pack = pack_directory.join("pack.json");
+    let mut data: serde_json::Value = serde_json::from_slice(&fs::read(&pack).unwrap()).unwrap();
+    data["wordmark"] = "linked target wordmark".into();
+    fs::write(pack, serde_json::to_string_pretty(&data).unwrap()).unwrap();
+    eprintln!("waiting for linked pack target rebuild");
+    assert!(String::from_utf8_lossy(&rebuilt()).contains("linked target wordmark"));
+    let mark = mark_directory.join("mark.svg");
+    let svg = fs::read_to_string(&mark)
+        .unwrap()
+        .replace("<svg", "<svg data-revision=\"linked\"");
+    fs::write(mark, svg).unwrap();
+    eprintln!("waiting for linked mark target rebuild");
+    assert!(String::from_utf8_lossy(&rebuilt()).contains("data-revision=\"linked\""));
 }
 
 /// Replace directory entries as an editor does, including a newly selected dependency.

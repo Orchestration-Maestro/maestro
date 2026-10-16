@@ -73,6 +73,12 @@ fn watch_config(path: &str, template: &str) -> Result<(), Box<dyn Error>> {
             std::path::Path::new(template)
                 .parent()
                 .ok_or("missing mark directory")?,
+            fs::canonicalize(path)?
+                .parent()
+                .ok_or("missing pack target directory")?,
+            fs::canonicalize(template)?
+                .parent()
+                .ok_or("missing mark target directory")?,
         ])?;
         let config = PathBuf::from(config);
         fs::create_dir_all(config.parent().ok_or("missing watch output directory")?)?;
