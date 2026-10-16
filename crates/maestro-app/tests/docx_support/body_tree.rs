@@ -149,12 +149,15 @@ fn number(value: f64) -> Value {
     }
 }
 /// Common raw metadata uses the same presence rules in either owner.
-fn common(props: &maestro_app::browser::docx_preview::CommonProperties, out: &mut Value) {
+pub(super) fn common(
+    props: &maestro_app::browser::docx_preview::CommonProperties,
+    out: &mut Value,
+) {
     member(out, "color", props.color.as_ref(), |v| json!(v));
     member(out, "fontSize", props.font_size.as_ref(), |v| json!(v));
 }
 /// Observe every owned property, ordered styles and nullable record members.
-fn formatting(data: &Data, out: &mut Value) {
+pub(super) fn formatting(data: &Data, out: &mut Value) {
     match data {
         Data::Paragraph { properties: p } => {
             common(&p.common, out);

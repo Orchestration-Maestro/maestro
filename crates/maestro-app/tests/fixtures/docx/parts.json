@@ -1,0 +1,2665 @@
+[
+  {
+    "test": "styles_keep_order_defaults_and_repeated_ids",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"></w:styles>"
+    },
+    "outcome": "success",
+    "expected": []
+  },
+  {
+    "test": "styles_keep_order_defaults_and_repeated_ids",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"z\"/><w:docDefaults/><w:ignored><w:style styleId=\"hidden\"/></w:ignored><w:style styleId=\"a\"/><w:style styleId=\"z\"/></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "z",
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      },
+      {
+        "id": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": []
+      },
+      {
+        "id": "a",
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      },
+      {
+        "id": "z",
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": null,
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style type=\"\"></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": null,
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style type=\"paragraph\"></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": null,
+        "isDefault": null,
+        "name": null,
+        "target": "p",
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style type=\"table\"></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": null,
+        "isDefault": null,
+        "name": null,
+        "target": "table",
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style type=\"character\"></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": null,
+        "isDefault": null,
+        "name": null,
+        "target": "span",
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style type=\"numbering\"></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": null,
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style type=\"custom\"></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": null,
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style type=\"paragraph\" styleId=\"D\"></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "D",
+        "isDefault": null,
+        "name": null,
+        "target": "p",
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style type=\"paragraph\" default=\"\" styleId=\"D\"></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "D",
+        "isDefault": null,
+        "name": null,
+        "target": "p",
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style type=\"paragraph\" default=\"1\" styleId=\"D\"></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "D",
+        "isDefault": true,
+        "name": null,
+        "target": "p",
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style type=\"paragraph\" default=\"0\" styleId=\"D\"></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "D",
+        "isDefault": false,
+        "name": null,
+        "target": "p",
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style type=\"paragraph\" default=\"on\" styleId=\"D\"></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "D",
+        "isDefault": true,
+        "name": null,
+        "target": "p",
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style type=\"paragraph\" default=\"off\" styleId=\"D\"></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "D",
+        "isDefault": false,
+        "name": null,
+        "target": "p",
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style type=\"paragraph\" default=\"true\" styleId=\"D\"></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "D",
+        "isDefault": true,
+        "name": null,
+        "target": "p",
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style type=\"paragraph\" default=\"false\" styleId=\"D\"></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "D",
+        "isDefault": false,
+        "name": null,
+        "target": "p",
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style type=\"paragraph\" default=\"TRUE\" styleId=\"D\"></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "D",
+        "isDefault": null,
+        "name": null,
+        "target": "p",
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_targets_and_default_flags_keep_all_states",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style type=\"paragraph\" default=\"yes\" styleId=\"D\"></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "D",
+        "isDefault": null,
+        "name": null,
+        "target": "p",
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_metadata_keeps_open_ids_names_links_and_aliases",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"0007\" type=\"paragraph\"><w:name val=\" A&amp;B \"/><w:basedOn val=\"Base\"/><w:link val=\"Linked\"/><w:next val=\"Next\"/><w:aliases val=\"one, two,,one,\"/></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "0007",
+        "isDefault": null,
+        "name": " A&B ",
+        "target": "p",
+        "basedOn": "Base",
+        "styles": [],
+        "linked": "Linked",
+        "next": "Next",
+        "aliases": [
+          "one",
+          " two",
+          "",
+          "one",
+          ""
+        ]
+      }
+    ]
+  },
+  {
+    "test": "style_metadata_keeps_open_ids_names_links_and_aliases",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style><w:name val=\"old\"/><w:name/><w:basedOn val=\"old\"/><w:basedOn/><w:link val=\"old\"/><w:link/><w:next val=\"old\"/><w:next/></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": null,
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [],
+        "linked": null,
+        "next": null
+      }
+    ]
+  },
+  {
+    "test": "style_aliases_preserve_empty_pieces_and_fail_without_value",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"Aliases\"><w:aliases val=\"\"></w:aliases></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "Aliases",
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [],
+        "linked": null,
+        "aliases": [
+          ""
+        ]
+      }
+    ]
+  },
+  {
+    "test": "style_aliases_preserve_empty_pieces_and_fail_without_value",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"Aliases\"><w:aliases val=\",\"></w:aliases></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "Aliases",
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [],
+        "linked": null,
+        "aliases": [
+          "",
+          ""
+        ]
+      }
+    ]
+  },
+  {
+    "test": "style_aliases_preserve_empty_pieces_and_fail_without_value",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"Aliases\"><w:aliases val=\"a,b\"></w:aliases></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "Aliases",
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [],
+        "linked": null,
+        "aliases": [
+          "a",
+          "b"
+        ]
+      }
+    ]
+  },
+  {
+    "test": "style_aliases_preserve_empty_pieces_and_fail_without_value",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"Aliases\"><w:aliases val=\" a ,﻿b,c\"></w:aliases></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "Aliases",
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [],
+        "linked": null,
+        "aliases": [
+          " a ",
+          "﻿b",
+          "c"
+        ]
+      }
+    ]
+  },
+  {
+    "test": "style_aliases_preserve_empty_pieces_and_fail_without_value",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"Aliases\"><w:aliases val=\"a,,a,\"></w:aliases></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "Aliases",
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [],
+        "linked": null,
+        "aliases": [
+          "a",
+          "",
+          "a",
+          ""
+        ]
+      }
+    ]
+  },
+  {
+    "test": "style_aliases_preserve_empty_pieces_and_fail_without_value",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"Missing\"><w:aliases/></w:style></w:styles>"
+    },
+    "outcome": "error",
+    "expected": {
+      "kind": "invalid-xml-part"
+    }
+  },
+  {
+    "test": "style_aliases_preserve_empty_pieces_and_fail_without_value",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"BadFirst\"><w:aliases/><w:aliases val=\"later\"/></w:style></w:styles>"
+    },
+    "outcome": "error",
+    "expected": {
+      "kind": "invalid-xml-part"
+    }
+  },
+  {
+    "test": "style_aliases_preserve_empty_pieces_and_fail_without_value",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"BadLast\"><w:aliases val=\"earlier\"/><w:aliases/></w:style></w:styles>"
+    },
+    "outcome": "error",
+    "expected": {
+      "kind": "invalid-xml-part"
+    }
+  },
+  {
+    "test": "default_styles_select_first_nested_property_in_source_order",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:docDefaults><w:pPrDefault><w:pPr><w:jc val=\"center\"/></w:pPr><w:pPr><w:jc val=\"right\"/></w:pPr></w:pPrDefault><w:rPrDefault><w:rPr><w:b/></w:rPr></w:rPrDefault><w:pPrDefault/><w:rPrDefault><w:unknown><w:rPr><w:i/></w:rPr></w:unknown></w:rPrDefault><w:pPrDefault><w:pPr/></w:pPrDefault></w:docDefaults></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [
+          {
+            "target": "p",
+            "values": [
+              [
+                "text-align",
+                "center"
+              ]
+            ]
+          },
+          {
+            "target": "span",
+            "values": [
+              [
+                "font-weight",
+                "bold"
+              ]
+            ]
+          },
+          {
+            "target": "p",
+            "values": []
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "test": "styles_dispatch_all_property_groups_and_conditional_regions",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"All\" type=\"table\"><w:pPr><w:jc val=\"center\"/></w:pPr><w:rPr><w:b/></w:rPr><w:tblPr><w:tblW w=\"20\"/></w:tblPr><w:tcPr><w:tcW w=\"40\"/></w:tcPr><w:tblStylePr type=\"firstRow\"><w:pPr><w:i/></w:pPr><w:rPr/><w:tblPr><w:tblW w=\"60\"/></w:tblPr><w:tcPr><w:tcW w=\"80\"/></w:tcPr></w:tblStylePr><w:tblStylePr type=\"lastRow\"><w:pPr><w:i/></w:pPr><w:rPr/><w:tblPr><w:tblW w=\"60\"/></w:tblPr><w:tcPr><w:tcW w=\"80\"/></w:tcPr></w:tblStylePr><w:tblStylePr type=\"firstCol\"><w:pPr><w:i/></w:pPr><w:rPr/><w:tblPr><w:tblW w=\"60\"/></w:tblPr><w:tcPr><w:tcW w=\"80\"/></w:tcPr></w:tblStylePr><w:tblStylePr type=\"lastCol\"><w:pPr><w:i/></w:pPr><w:rPr/><w:tblPr><w:tblW w=\"60\"/></w:tblPr><w:tcPr><w:tcW w=\"80\"/></w:tcPr></w:tblStylePr><w:tblStylePr type=\"band1Vert\"><w:pPr><w:i/></w:pPr><w:rPr/><w:tblPr><w:tblW w=\"60\"/></w:tblPr><w:tcPr><w:tcW w=\"80\"/></w:tcPr></w:tblStylePr><w:tblStylePr type=\"band2Vert\"><w:pPr><w:i/></w:pPr><w:rPr/><w:tblPr><w:tblW w=\"60\"/></w:tblPr><w:tcPr><w:tcW w=\"80\"/></w:tcPr></w:tblStylePr><w:tblStylePr type=\"band1Horz\"><w:pPr><w:i/></w:pPr><w:rPr/><w:tblPr><w:tblW w=\"60\"/></w:tblPr><w:tcPr><w:tcW w=\"80\"/></w:tcPr></w:tblStylePr><w:tblStylePr type=\"band2Horz\"><w:pPr><w:i/></w:pPr><w:rPr/><w:tblPr><w:tblW w=\"60\"/></w:tblPr><w:tcPr><w:tcW w=\"80\"/></w:tcPr></w:tblStylePr><w:tblStylePr type=\"custom\"><w:pPr><w:i/></w:pPr><w:rPr/><w:tblPr><w:tblW w=\"60\"/></w:tblPr><w:tcPr><w:tcW w=\"80\"/></w:tcPr></w:tblStylePr></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "All",
+        "isDefault": null,
+        "name": null,
+        "target": "table",
+        "basedOn": null,
+        "styles": [
+          {
+            "target": "p",
+            "values": [
+              [
+                "text-align",
+                "center"
+              ]
+            ]
+          },
+          {
+            "target": "span",
+            "values": [
+              [
+                "font-weight",
+                "bold"
+              ]
+            ]
+          },
+          {
+            "target": "td",
+            "values": [
+              [
+                "width",
+                "1.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "td",
+            "values": [
+              [
+                "width",
+                "2.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "tr.first-row td p",
+            "mod": ".first-row",
+            "values": [
+              [
+                "font-style",
+                "italic"
+              ]
+            ]
+          },
+          {
+            "target": "tr.first-row td span",
+            "mod": ".first-row",
+            "values": []
+          },
+          {
+            "target": "tr.first-row td",
+            "mod": ".first-row",
+            "values": [
+              [
+                "width",
+                "3.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "tr.first-row td",
+            "mod": ".first-row",
+            "values": [
+              [
+                "width",
+                "4.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "tr.last-row td p",
+            "mod": ".last-row",
+            "values": [
+              [
+                "font-style",
+                "italic"
+              ]
+            ]
+          },
+          {
+            "target": "tr.last-row td span",
+            "mod": ".last-row",
+            "values": []
+          },
+          {
+            "target": "tr.last-row td",
+            "mod": ".last-row",
+            "values": [
+              [
+                "width",
+                "3.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "tr.last-row td",
+            "mod": ".last-row",
+            "values": [
+              [
+                "width",
+                "4.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "td.first-col p",
+            "mod": ".first-col",
+            "values": [
+              [
+                "font-style",
+                "italic"
+              ]
+            ]
+          },
+          {
+            "target": "td.first-col span",
+            "mod": ".first-col",
+            "values": []
+          },
+          {
+            "target": "td.first-col",
+            "mod": ".first-col",
+            "values": [
+              [
+                "width",
+                "3.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "td.first-col",
+            "mod": ".first-col",
+            "values": [
+              [
+                "width",
+                "4.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "td.last-col p",
+            "mod": ".last-col",
+            "values": [
+              [
+                "font-style",
+                "italic"
+              ]
+            ]
+          },
+          {
+            "target": "td.last-col span",
+            "mod": ".last-col",
+            "values": []
+          },
+          {
+            "target": "td.last-col",
+            "mod": ".last-col",
+            "values": [
+              [
+                "width",
+                "3.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "td.last-col",
+            "mod": ".last-col",
+            "values": [
+              [
+                "width",
+                "4.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "td.odd-col p",
+            "mod": ":not(.no-vband)",
+            "values": [
+              [
+                "font-style",
+                "italic"
+              ]
+            ]
+          },
+          {
+            "target": "td.odd-col span",
+            "mod": ":not(.no-vband)",
+            "values": []
+          },
+          {
+            "target": "td.odd-col",
+            "mod": ":not(.no-vband)",
+            "values": [
+              [
+                "width",
+                "3.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "td.odd-col",
+            "mod": ":not(.no-vband)",
+            "values": [
+              [
+                "width",
+                "4.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "td.even-col p",
+            "mod": ":not(.no-vband)",
+            "values": [
+              [
+                "font-style",
+                "italic"
+              ]
+            ]
+          },
+          {
+            "target": "td.even-col span",
+            "mod": ":not(.no-vband)",
+            "values": []
+          },
+          {
+            "target": "td.even-col",
+            "mod": ":not(.no-vband)",
+            "values": [
+              [
+                "width",
+                "3.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "td.even-col",
+            "mod": ":not(.no-vband)",
+            "values": [
+              [
+                "width",
+                "4.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "tr.odd-row p",
+            "mod": ":not(.no-hband)",
+            "values": [
+              [
+                "font-style",
+                "italic"
+              ]
+            ]
+          },
+          {
+            "target": "tr.odd-row span",
+            "mod": ":not(.no-hband)",
+            "values": []
+          },
+          {
+            "target": "tr.odd-row",
+            "mod": ":not(.no-hband)",
+            "values": [
+              [
+                "width",
+                "3.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "tr.odd-row",
+            "mod": ":not(.no-hband)",
+            "values": [
+              [
+                "width",
+                "4.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "tr.even-row p",
+            "mod": ":not(.no-hband)",
+            "values": [
+              [
+                "font-style",
+                "italic"
+              ]
+            ]
+          },
+          {
+            "target": "tr.even-row span",
+            "mod": ":not(.no-hband)",
+            "values": []
+          },
+          {
+            "target": "tr.even-row",
+            "mod": ":not(.no-hband)",
+            "values": [
+              [
+                "width",
+                "3.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "tr.even-row",
+            "mod": ":not(.no-hband)",
+            "values": [
+              [
+                "width",
+                "4.00pt"
+              ]
+            ]
+          }
+        ],
+        "linked": null,
+        "paragraphProps": {},
+        "runProps": {}
+      }
+    ]
+  },
+  {
+    "test": "style_properties_keep_separate_css_and_metadata_views",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"Views\" type=\"paragraph\"><w:pPr><w:keepNext/><w:numPr><w:numId val=\"0007\"/><w:ilvl val=\"2\"/></w:numPr><w:tabs><w:tab pos=\"20\" leader=\"dot\" val=\"right\"/></w:tabs><w:spacing before=\"20\" after=\"40\" line=\"360\" lineRule=\"auto\"/><w:textAlignment val=\"top\"/><w:color val=\"ABCDEF\"/><w:sz val=\"24\"/><w:pStyle val=\"Body\"/><w:rPr><w:color val=\"123456\"/></w:rPr></w:pPr><w:rPr><w:color val=\"112233\"/><w:sz val=\"28\"/><w:b/><w:rStyle val=\"not-metadata\"/><w:vertAlign val=\"superscript\"/></w:rPr></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "Views",
+        "isDefault": null,
+        "name": null,
+        "target": "p",
+        "basedOn": null,
+        "styles": [
+          {
+            "target": "p",
+            "values": [
+              [
+                "margin-top",
+                "1.00pt"
+              ],
+              [
+                "margin-bottom",
+                "2.00pt"
+              ],
+              [
+                "line-height",
+                "1.50"
+              ],
+              [
+                "vertical-align",
+                "top"
+              ],
+              [
+                "color",
+                "#ABCDEF"
+              ],
+              [
+                "min-height",
+                "12.00pt"
+              ],
+              [
+                "font-size",
+                "12.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "span",
+            "values": [
+              [
+                "color",
+                "#112233"
+              ],
+              [
+                "min-height",
+                "14.00pt"
+              ],
+              [
+                "font-size",
+                "14.00pt"
+              ],
+              [
+                "font-weight",
+                "bold"
+              ]
+            ]
+          }
+        ],
+        "linked": null,
+        "paragraphProps": {
+          "keepNext": true,
+          "numbering": {
+            "id": "0007",
+            "level": 2
+          },
+          "tabs": [
+            {
+              "position": "1.00pt",
+              "leader": "dot",
+              "style": "right"
+            }
+          ],
+          "lineSpacing": {
+            "before": "1.00pt",
+            "after": "2.00pt",
+            "line": 360,
+            "lineRule": "auto"
+          },
+          "textAlignment": "top",
+          "color": "ABCDEF",
+          "fontSize": "12.00pt",
+          "styleName": "Body",
+          "runProps": {
+            "color": "123456"
+          }
+        },
+        "runProps": {
+          "color": "112233",
+          "fontSize": "14.00pt"
+        }
+      }
+    ]
+  },
+  {
+    "test": "repeated_style_properties_replace_metadata_not_css_history",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"Repeat\"><w:pPr><w:keepNext/><w:b/></w:pPr><w:rPr><w:color val=\"ABCDEF\"/></w:rPr><w:pPr><w:keepLines val=\"false\"/><w:i/></w:pPr><w:rPr/></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "Repeat",
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [
+          {
+            "target": "p",
+            "values": [
+              [
+                "font-weight",
+                "bold"
+              ]
+            ]
+          },
+          {
+            "target": "span",
+            "values": [
+              [
+                "color",
+                "#ABCDEF"
+              ]
+            ]
+          },
+          {
+            "target": "p",
+            "values": [
+              [
+                "font-style",
+                "italic"
+              ]
+            ]
+          },
+          {
+            "target": "span",
+            "values": []
+          }
+        ],
+        "linked": null,
+        "paragraphProps": {
+          "keepLines": false
+        },
+        "runProps": {}
+      }
+    ]
+  },
+  {
+    "test": "style_width_policy_reaches_generic_and_conditional_paths",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"Widths\"><w:tblPr><w:tblW w=\"20\"/></w:tblPr><w:tcPr><w:tcW w=\"40\"/></w:tcPr><w:tblStylePr type=\"firstRow\"><w:tblPr><w:tblW w=\"60\"/></w:tblPr><w:tcPr><w:tcW w=\"80\"/></w:tcPr></w:tblStylePr></w:style></w:styles>",
+      "ignore_width": false
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "Widths",
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [
+          {
+            "target": "td",
+            "values": [
+              [
+                "width",
+                "1.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "td",
+            "values": [
+              [
+                "width",
+                "2.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "tr.first-row td",
+            "mod": ".first-row",
+            "values": [
+              [
+                "width",
+                "3.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "tr.first-row td",
+            "mod": ".first-row",
+            "values": [
+              [
+                "width",
+                "4.00pt"
+              ]
+            ]
+          }
+        ],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "style_width_policy_reaches_generic_and_conditional_paths",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"Widths\"><w:tblPr><w:tblW w=\"20\"/></w:tblPr><w:tcPr><w:tcW w=\"40\"/></w:tcPr><w:tblStylePr type=\"firstRow\"><w:tblPr><w:tblW w=\"60\"/></w:tblPr><w:tcPr><w:tcW w=\"80\"/></w:tcPr></w:tblStylePr></w:style></w:styles>",
+      "ignore_width": true
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "Widths",
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [
+          {
+            "target": "td",
+            "values": [
+              [
+                "width",
+                "1.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "td",
+            "values": []
+          },
+          {
+            "target": "tr.first-row td",
+            "mod": ".first-row",
+            "values": [
+              [
+                "width",
+                "3.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "tr.first-row td",
+            "mod": ".first-row",
+            "values": []
+          }
+        ],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "styles_use_immediate_local_names_and_first_attributes",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><q:style q:styleId=\"first\" w:styleId=\"second\" type=\"paragraph\"><q:name val=\"foreign local\"/><w:pPr><q:keepNext/><w:keepLines/><q:color val=\"ABCDEF\"/><w:color val=\"123456\"/></w:pPr><w:unknown><w:name val=\"nested\"/></w:unknown></q:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "first",
+        "isDefault": null,
+        "name": "foreign local",
+        "target": "p",
+        "basedOn": null,
+        "styles": [
+          {
+            "target": "p",
+            "values": [
+              [
+                "color",
+                "#123456"
+              ]
+            ]
+          }
+        ],
+        "linked": null,
+        "paragraphProps": {
+          "keepLines": true,
+          "color": "123456"
+        }
+      }
+    ]
+  },
+  {
+    "test": "styles_ignore_nonrendering_metadata_without_diagnostics",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"Ignored\">text<!--skip--><?x skip?><w:rsid/><w:qFormat/><w:hidden/><w:semiHidden/><w:unhideWhenUsed/><w:autoRedefine/><w:uiPriority/><w:unknown/></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "Ignored",
+        "isDefault": null,
+        "name": null,
+        "target": null,
+        "basedOn": null,
+        "styles": [],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "theme_absence_and_replacement_stay_distinct",
+    "input": {
+      "operation": "theme",
+      "xml": "<w:theme xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"></w:theme>"
+    },
+    "outcome": "error",
+    "expected": {
+      "kind": "invalid-xml-part"
+    }
+  },
+  {
+    "test": "theme_absence_and_replacement_stay_distinct",
+    "input": {
+      "operation": "theme",
+      "xml": "<w:theme xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><a:themeElements/></w:theme>"
+    },
+    "outcome": "success",
+    "expected": {}
+  },
+  {
+    "test": "theme_absence_and_replacement_stay_distinct",
+    "input": {
+      "operation": "theme",
+      "xml": "<w:theme xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><a:themeElements><a:clrScheme/><a:fontScheme/></a:themeElements></w:theme>"
+    },
+    "outcome": "success",
+    "expected": {
+      "colorScheme": {
+        "name": null,
+        "colors": []
+      },
+      "fontScheme": {
+        "name": null
+      }
+    }
+  },
+  {
+    "test": "theme_absence_and_replacement_stay_distinct",
+    "input": {
+      "operation": "theme",
+      "xml": "<w:theme xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><a:themeElements><a:clrScheme name=\"\"/><a:fontScheme name=\"\"/></a:themeElements></w:theme>"
+    },
+    "outcome": "success",
+    "expected": {
+      "colorScheme": {
+        "name": "",
+        "colors": []
+      },
+      "fontScheme": {
+        "name": ""
+      }
+    }
+  },
+  {
+    "test": "theme_absence_and_replacement_stay_distinct",
+    "input": {
+      "operation": "theme",
+      "xml": "<w:theme xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><a:themeElements><a:clrScheme name=\"first\"><a:accent1><a:srgbClr val=\"111111\"/></a:accent1></a:clrScheme><a:clrScheme name=\"last\"/><a:fontScheme name=\"first\"><a:majorFont><a:latin typeface=\"A\"/></a:majorFont></a:fontScheme><a:fontScheme name=\"last\"/></a:themeElements><a:themeElements><a:clrScheme name=\"ignored\"/></a:themeElements></w:theme>"
+    },
+    "outcome": "success",
+    "expected": {
+      "colorScheme": {
+        "name": "last",
+        "colors": []
+      },
+      "fontScheme": {
+        "name": "last"
+      }
+    }
+  },
+  {
+    "test": "theme_colors_select_srgb_before_system_fallback",
+    "input": {
+      "operation": "theme",
+      "xml": "<w:theme xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><a:themeElements><a:clrScheme name=\"Colors\"><a:dk1><a:sysClr val=\"windowText\" lastClr=\"000000\"/></a:dk1><a:lt1><a:sysClr lastClr=\"wrong\"/><a:srgbClr val=\"FFFFFF\"/></a:lt1><a:accent1><a:srgbClr/><a:sysClr lastClr=\"not-fallback\"/></a:accent1><a:accent2><a:sysClr/></a:accent2><a:accent3><a:schemeClr val=\"none\"/></a:accent3><a:accent4><a:unknown><a:srgbClr val=\"nested\"/></a:unknown></a:accent4></a:clrScheme></a:themeElements></w:theme>"
+    },
+    "outcome": "success",
+    "expected": {
+      "colorScheme": {
+        "name": "Colors",
+        "colors": [
+          [
+            "dk1",
+            "000000"
+          ],
+          [
+            "lt1",
+            "FFFFFF"
+          ],
+          [
+            "accent1",
+            null
+          ],
+          [
+            "accent2",
+            null
+          ]
+        ]
+      }
+    }
+  },
+  {
+    "test": "theme_color_order_and_last_values_are_preserved",
+    "input": {
+      "operation": "theme",
+      "xml": "<w:theme xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><a:themeElements><q:clrScheme q:name=\"first\" w:name=\"second\"><a:accent6><a:srgbClr val=\"A\"/><a:srgbClr val=\"ignored\"/></a:accent6><a:accent1><a:sysClr lastClr=\"B\"/></a:accent1><a:accent6><a:srgbClr val=\"C\"/></a:accent6></q:clrScheme></a:themeElements></w:theme>"
+    },
+    "outcome": "success",
+    "expected": {
+      "colorScheme": {
+        "name": "first",
+        "colors": [
+          [
+            "accent6",
+            "C"
+          ],
+          [
+            "accent1",
+            "B"
+          ]
+        ]
+      }
+    }
+  },
+  {
+    "test": "theme_font_groups_keep_independent_typefaces",
+    "input": {
+      "operation": "theme",
+      "xml": "<w:theme xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><a:themeElements><a:fontScheme name=\"Fonts\"><a:minorFont><a:latin typeface=\"Minor Latin\"/><a:ea typeface=\"Minor EA\"/><a:cs typeface=\"Minor CS\"/></a:minorFont><a:majorFont><a:latin typeface=\"Major Latin\"/><a:ea typeface=\"Major EA\"/><a:cs typeface=\"Major CS\"/><a:font script=\"Hant\" typeface=\"ignored\"/></a:majorFont></a:fontScheme></a:themeElements></w:theme>"
+    },
+    "outcome": "success",
+    "expected": {
+      "fontScheme": {
+        "name": "Fonts",
+        "minorFont": {
+          "latinTypeface": "Minor Latin",
+          "eaTypeface": "Minor EA",
+          "csTypeface": "Minor CS"
+        },
+        "majorFont": {
+          "latinTypeface": "Major Latin",
+          "eaTypeface": "Major EA",
+          "csTypeface": "Major CS"
+        }
+      }
+    }
+  },
+  {
+    "test": "theme_font_groups_keep_independent_typefaces",
+    "input": {
+      "operation": "theme",
+      "xml": "<w:theme xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><a:themeElements><a:fontScheme name=\"Repeat\"><a:majorFont><a:latin typeface=\"first\"/></a:majorFont><a:minorFont><a:latin typeface=\"kept\"/></a:minorFont><a:majorFont><a:latin typeface=\"last\"/><a:latin typeface=\"ignored\"/></a:majorFont><a:unknown><a:minorFont><a:latin typeface=\"hidden\"/></a:minorFont></a:unknown></a:fontScheme></a:themeElements></w:theme>"
+    },
+    "outcome": "success",
+    "expected": {
+      "fontScheme": {
+        "name": "Repeat",
+        "majorFont": {
+          "latinTypeface": "last",
+          "eaTypeface": {
+            "$undefined": true
+          },
+          "csTypeface": {
+            "$undefined": true
+          }
+        },
+        "minorFont": {
+          "latinTypeface": "kept",
+          "eaTypeface": {
+            "$undefined": true
+          },
+          "csTypeface": {
+            "$undefined": true
+          }
+        }
+      }
+    }
+  },
+  {
+    "test": "theme_font_missing_elements_differ_from_missing_attributes",
+    "input": {
+      "operation": "theme",
+      "xml": "<w:theme xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><a:themeElements><a:fontScheme><a:majorFont></a:majorFont></a:fontScheme></a:themeElements></w:theme>"
+    },
+    "outcome": "success",
+    "expected": {
+      "fontScheme": {
+        "name": null,
+        "majorFont": {
+          "latinTypeface": {
+            "$undefined": true
+          },
+          "eaTypeface": {
+            "$undefined": true
+          },
+          "csTypeface": {
+            "$undefined": true
+          }
+        }
+      }
+    }
+  },
+  {
+    "test": "theme_font_missing_elements_differ_from_missing_attributes",
+    "input": {
+      "operation": "theme",
+      "xml": "<w:theme xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><a:themeElements><a:fontScheme><a:majorFont><a:latin/></a:majorFont></a:fontScheme></a:themeElements></w:theme>"
+    },
+    "outcome": "success",
+    "expected": {
+      "fontScheme": {
+        "name": null,
+        "majorFont": {
+          "latinTypeface": null,
+          "eaTypeface": {
+            "$undefined": true
+          },
+          "csTypeface": {
+            "$undefined": true
+          }
+        }
+      }
+    }
+  },
+  {
+    "test": "theme_font_missing_elements_differ_from_missing_attributes",
+    "input": {
+      "operation": "theme",
+      "xml": "<w:theme xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><a:themeElements><a:fontScheme><a:majorFont><a:latin typeface=\"\"/><a:ea/><a:cs typeface=\" A&amp;B \"/></a:majorFont></a:fontScheme></a:themeElements></w:theme>"
+    },
+    "outcome": "success",
+    "expected": {
+      "fontScheme": {
+        "name": null,
+        "majorFont": {
+          "latinTypeface": "",
+          "eaTypeface": null,
+          "csTypeface": " A&B "
+        }
+      }
+    }
+  },
+  {
+    "test": "theme_part_matches_direct_preparation",
+    "input": {
+      "operation": "theme_part",
+      "xml": "<w:theme xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><a:themeElements><a:clrScheme name=\"part\"><a:accent2><a:srgbClr val=\"123456\"/></a:accent2></a:clrScheme><a:fontScheme><a:minorFont><a:latin typeface=\"Part Font\"/></a:minorFont></a:fontScheme></a:themeElements></w:theme>"
+    },
+    "outcome": "success",
+    "expected": {
+      "colorScheme": {
+        "name": "part",
+        "colors": [
+          [
+            "accent2",
+            "123456"
+          ]
+        ]
+      },
+      "fontScheme": {
+        "name": null,
+        "minorFont": {
+          "latinTypeface": "Part Font",
+          "eaTypeface": {
+            "$undefined": true
+          },
+          "csTypeface": {
+            "$undefined": true
+          }
+        }
+      }
+    }
+  },
+  {
+    "test": "header_contents_reuse_owned_body_parsing",
+    "input": {
+      "operation": "header",
+      "xml": "<w:hdr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:p><w:pPr><w:keepNext/><w:pStyle val=\"Body\"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>A &amp; B</w:t><w:tab/></w:r><w:r><w:t>second</w:t></w:r></w:p><w:sdt><w:sdtContent><w:p><w:r><w:t>control</w:t></w:r></w:p></w:sdtContent></w:sdt><w:unknown><w:p><w:r><w:t>hidden</w:t></w:r></w:p></w:unknown></w:hdr>"
+    },
+    "outcome": "success",
+    "expected": {
+      "type": "header",
+      "cssStyle": [],
+      "children": {
+        "roots": [
+          0,
+          6
+        ],
+        "nodes": [
+          {
+            "type": "paragraph",
+            "children": [
+              1,
+              4
+            ],
+            "cssStyle": [],
+            "keepNext": true,
+            "styleName": "Body"
+          },
+          {
+            "type": "run",
+            "children": [
+              2,
+              3
+            ],
+            "cssStyle": [
+              [
+                "font-weight",
+                "bold"
+              ]
+            ],
+            "parent": 0
+          },
+          {
+            "type": "text",
+            "text": "A & B"
+          },
+          {
+            "type": "tab"
+          },
+          {
+            "type": "run",
+            "children": [
+              5
+            ],
+            "parent": 0
+          },
+          {
+            "type": "text",
+            "text": "second"
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              7
+            ]
+          },
+          {
+            "type": "run",
+            "children": [
+              8
+            ],
+            "parent": 6
+          },
+          {
+            "type": "text",
+            "text": "control"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "test": "header_contents_reuse_owned_body_parsing",
+    "input": {
+      "operation": "header",
+      "xml": "<w:hdr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"></w:hdr>"
+    },
+    "outcome": "success",
+    "expected": {
+      "type": "header",
+      "cssStyle": [],
+      "children": {
+        "roots": [],
+        "nodes": []
+      }
+    }
+  },
+  {
+    "test": "footer_contents_reuse_owned_body_parsing",
+    "input": {
+      "operation": "footer",
+      "xml": "<w:ftr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:p><w:r><w:t>footer one</w:t></w:r></w:p><w:p><w:pPr><w:keepNext/><w:pStyle val=\"Body\"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>A &amp; B</w:t><w:tab/></w:r><w:r><w:t>second</w:t></w:r></w:p></w:ftr>"
+    },
+    "outcome": "success",
+    "expected": {
+      "type": "footer",
+      "cssStyle": [],
+      "children": {
+        "roots": [
+          0,
+          3
+        ],
+        "nodes": [
+          {
+            "type": "paragraph",
+            "children": [
+              1
+            ]
+          },
+          {
+            "type": "run",
+            "children": [
+              2
+            ],
+            "parent": 0
+          },
+          {
+            "type": "text",
+            "text": "footer one"
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              4,
+              7
+            ],
+            "cssStyle": [],
+            "keepNext": true,
+            "styleName": "Body"
+          },
+          {
+            "type": "run",
+            "children": [
+              5,
+              6
+            ],
+            "cssStyle": [
+              [
+                "font-weight",
+                "bold"
+              ]
+            ],
+            "parent": 3
+          },
+          {
+            "type": "text",
+            "text": "A & B"
+          },
+          {
+            "type": "tab"
+          },
+          {
+            "type": "run",
+            "children": [
+              8
+            ],
+            "parent": 3
+          },
+          {
+            "type": "text",
+            "text": "second"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "test": "footer_contents_reuse_owned_body_parsing",
+    "input": {
+      "operation": "footer",
+      "xml": "<w:ftr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"></w:ftr>"
+    },
+    "outcome": "success",
+    "expected": {
+      "type": "footer",
+      "cssStyle": [],
+      "children": {
+        "roots": [],
+        "nodes": []
+      }
+    }
+  },
+  {
+    "test": "header_footer_keep_shared_source_after_input_drop",
+    "input": {
+      "operation": "header",
+      "xml": "<w:hdr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><q:p><q:r><q:t>retained Ω</q:t></q:r></q:p></w:hdr>"
+    },
+    "outcome": "success",
+    "expected": {
+      "type": "header",
+      "cssStyle": [],
+      "children": {
+        "roots": [
+          0
+        ],
+        "nodes": [
+          {
+            "type": "paragraph",
+            "children": [
+              1
+            ]
+          },
+          {
+            "type": "run",
+            "children": [
+              2
+            ],
+            "parent": 0
+          },
+          {
+            "type": "text",
+            "text": "retained Ω"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "test": "header_footer_keep_shared_source_after_input_drop",
+    "input": {
+      "operation": "footer",
+      "xml": "<w:ftr xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><q:p><q:r><q:t>retained Ω</q:t></q:r></q:p></w:ftr>"
+    },
+    "outcome": "success",
+    "expected": {
+      "type": "footer",
+      "cssStyle": [],
+      "children": {
+        "roots": [
+          0
+        ],
+        "nodes": [
+          {
+            "type": "paragraph",
+            "children": [
+              1
+            ]
+          },
+          {
+            "type": "run",
+            "children": [
+              2
+            ],
+            "parent": 0
+          },
+          {
+            "type": "text",
+            "text": "retained Ω"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "test": "notes_preserve_kind_ids_types_order_and_duplicates",
+    "input": {
+      "operation": "footnotes",
+      "xml": "<w:footnotes xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:footnote id=\"2\" type=\"normal\"></w:footnote><w:footnote id=\"-1\" type=\"separator\"></w:footnote><w:footnote id=\"2\" type=\"continuationSeparator\"></w:footnote><w:footnote></w:footnote><w:footnote id=\"\" type=\"custom\"></w:footnote></w:footnotes>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "type": "footnote",
+        "id": "2",
+        "noteType": "normal",
+        "children": {
+          "roots": [],
+          "nodes": []
+        }
+      },
+      {
+        "type": "footnote",
+        "id": "-1",
+        "noteType": "separator",
+        "children": {
+          "roots": [],
+          "nodes": []
+        }
+      },
+      {
+        "type": "footnote",
+        "id": "2",
+        "noteType": "continuationSeparator",
+        "children": {
+          "roots": [],
+          "nodes": []
+        }
+      },
+      {
+        "type": "footnote",
+        "id": null,
+        "noteType": null,
+        "children": {
+          "roots": [],
+          "nodes": []
+        }
+      },
+      {
+        "type": "footnote",
+        "id": "",
+        "noteType": "custom",
+        "children": {
+          "roots": [],
+          "nodes": []
+        }
+      }
+    ]
+  },
+  {
+    "test": "note_children_select_only_the_requested_immediate_kind",
+    "input": {
+      "operation": "footnotes",
+      "xml": "<w:footnotes xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:footnote id=\"first\"></w:footnote><w:endnote id=\"wrong\"></w:endnote><w:unknown><w:footnote id=\"nested\"></w:footnote></w:unknown><q:footnote id=\"last\"/></w:footnotes>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "type": "footnote",
+        "id": "first",
+        "noteType": null,
+        "children": {
+          "roots": [],
+          "nodes": []
+        }
+      },
+      {
+        "type": "footnote",
+        "id": "last",
+        "noteType": null,
+        "children": {
+          "roots": [],
+          "nodes": []
+        }
+      }
+    ]
+  },
+  {
+    "test": "note_children_select_only_the_requested_immediate_kind",
+    "input": {
+      "operation": "footnotes",
+      "xml": "<w:footnotes xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"></w:footnotes>"
+    },
+    "outcome": "success",
+    "expected": []
+  },
+  {
+    "test": "notes_preserve_kind_ids_types_order_and_duplicates",
+    "input": {
+      "operation": "endnotes",
+      "xml": "<w:endnotes xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:endnote id=\"2\" type=\"normal\"></w:endnote><w:endnote id=\"-1\" type=\"separator\"></w:endnote><w:endnote id=\"2\" type=\"continuationSeparator\"></w:endnote><w:endnote></w:endnote><w:endnote id=\"\" type=\"custom\"></w:endnote></w:endnotes>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "type": "endnote",
+        "id": "2",
+        "noteType": "normal",
+        "children": {
+          "roots": [],
+          "nodes": []
+        }
+      },
+      {
+        "type": "endnote",
+        "id": "-1",
+        "noteType": "separator",
+        "children": {
+          "roots": [],
+          "nodes": []
+        }
+      },
+      {
+        "type": "endnote",
+        "id": "2",
+        "noteType": "continuationSeparator",
+        "children": {
+          "roots": [],
+          "nodes": []
+        }
+      },
+      {
+        "type": "endnote",
+        "id": null,
+        "noteType": null,
+        "children": {
+          "roots": [],
+          "nodes": []
+        }
+      },
+      {
+        "type": "endnote",
+        "id": "",
+        "noteType": "custom",
+        "children": {
+          "roots": [],
+          "nodes": []
+        }
+      }
+    ]
+  },
+  {
+    "test": "note_children_select_only_the_requested_immediate_kind",
+    "input": {
+      "operation": "endnotes",
+      "xml": "<w:endnotes xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:endnote id=\"first\"></w:endnote><w:footnote id=\"wrong\"></w:footnote><w:unknown><w:endnote id=\"nested\"></w:endnote></w:unknown><q:endnote id=\"last\"/></w:endnotes>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "type": "endnote",
+        "id": "first",
+        "noteType": null,
+        "children": {
+          "roots": [],
+          "nodes": []
+        }
+      },
+      {
+        "type": "endnote",
+        "id": "last",
+        "noteType": null,
+        "children": {
+          "roots": [],
+          "nodes": []
+        }
+      }
+    ]
+  },
+  {
+    "test": "note_children_select_only_the_requested_immediate_kind",
+    "input": {
+      "operation": "endnotes",
+      "xml": "<w:endnotes xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"></w:endnotes>"
+    },
+    "outcome": "success",
+    "expected": []
+  },
+  {
+    "test": "footnotes_reuse_body_metadata_and_parent_identity",
+    "input": {
+      "operation": "footnotes",
+      "xml": "<w:footnotes xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:footnote id=\"0007\"><w:p><w:pPr><w:keepNext/><w:pStyle val=\"Body\"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>A &amp; B</w:t><w:tab/></w:r><w:r><w:t>second</w:t></w:r></w:p></w:footnote><w:footnote id=\"8\"><w:p><w:r><w:t>other</w:t></w:r></w:p></w:footnote></w:footnotes>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "type": "footnote",
+        "id": "0007",
+        "noteType": null,
+        "children": {
+          "roots": [
+            0
+          ],
+          "nodes": [
+            {
+              "type": "paragraph",
+              "children": [
+                1,
+                4
+              ],
+              "cssStyle": [],
+              "keepNext": true,
+              "styleName": "Body"
+            },
+            {
+              "type": "run",
+              "children": [
+                2,
+                3
+              ],
+              "cssStyle": [
+                [
+                  "font-weight",
+                  "bold"
+                ]
+              ],
+              "parent": 0
+            },
+            {
+              "type": "text",
+              "text": "A & B"
+            },
+            {
+              "type": "tab"
+            },
+            {
+              "type": "run",
+              "children": [
+                5
+              ],
+              "parent": 0
+            },
+            {
+              "type": "text",
+              "text": "second"
+            }
+          ]
+        }
+      },
+      {
+        "type": "footnote",
+        "id": "8",
+        "noteType": null,
+        "children": {
+          "roots": [
+            0
+          ],
+          "nodes": [
+            {
+              "type": "paragraph",
+              "children": [
+                1
+              ]
+            },
+            {
+              "type": "run",
+              "children": [
+                2
+              ],
+              "parent": 0
+            },
+            {
+              "type": "text",
+              "text": "other"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "test": "endnotes_reuse_body_metadata_and_parent_identity",
+    "input": {
+      "operation": "endnotes",
+      "xml": "<w:endnotes xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:endnote id=\"10\"><w:sdt><w:sdtContent><w:p><w:pPr><w:keepNext/><w:pStyle val=\"Body\"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>A &amp; B</w:t><w:tab/></w:r><w:r><w:t>second</w:t></w:r></w:p></w:sdtContent></w:sdt></w:endnote><w:endnote id=\"11\"><w:p><w:r><w:t>second note</w:t></w:r></w:p></w:endnote></w:endnotes>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "type": "endnote",
+        "id": "10",
+        "noteType": null,
+        "children": {
+          "roots": [
+            0
+          ],
+          "nodes": [
+            {
+              "type": "paragraph",
+              "children": [
+                1,
+                4
+              ],
+              "cssStyle": [],
+              "keepNext": true,
+              "styleName": "Body"
+            },
+            {
+              "type": "run",
+              "children": [
+                2,
+                3
+              ],
+              "cssStyle": [
+                [
+                  "font-weight",
+                  "bold"
+                ]
+              ],
+              "parent": 0
+            },
+            {
+              "type": "text",
+              "text": "A & B"
+            },
+            {
+              "type": "tab"
+            },
+            {
+              "type": "run",
+              "children": [
+                5
+              ],
+              "parent": 0
+            },
+            {
+              "type": "text",
+              "text": "second"
+            }
+          ]
+        }
+      },
+      {
+        "type": "endnote",
+        "id": "11",
+        "noteType": null,
+        "children": {
+          "roots": [
+            0
+          ],
+          "nodes": [
+            {
+              "type": "paragraph",
+              "children": [
+                1
+              ]
+            },
+            {
+              "type": "run",
+              "children": [
+                2
+              ],
+              "parent": 0
+            },
+            {
+              "type": "text",
+              "text": "second note"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "test": "settings_absent_empty_and_last_groups_stay_distinct",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {}
+  },
+  {
+    "test": "settings_absent_empty_and_last_groups_stay_distinct",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop/><w:footnotePr/><w:endnotePr/><w:autoHyphenation/></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": null,
+      "footnoteProps": {
+        "defaultNoteIds": []
+      },
+      "endnoteProps": {
+        "defaultNoteIds": []
+      },
+      "autoHyphenation": null
+    }
+  },
+  {
+    "test": "settings_absent_empty_and_last_groups_stay_distinct",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop val=\"720\"/><w:defaultTabStop/><w:footnotePr><w:numFmt val=\"decimal\"/><w:footnote id=\"1\"/></w:footnotePr><w:footnotePr/><w:endnotePr><w:endnote id=\"2\"/></w:endnotePr><w:endnotePr/><w:autoHyphenation val=\"1\"/><w:autoHyphenation/></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": null,
+      "footnoteProps": {
+        "defaultNoteIds": []
+      },
+      "endnoteProps": {
+        "defaultNoteIds": []
+      },
+      "autoHyphenation": null
+    }
+  },
+  {
+    "test": "settings_tab_lengths_share_numeric_and_whitespace_rules",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop></w:defaultTabStop></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": null
+    }
+  },
+  {
+    "test": "settings_tab_lengths_share_numeric_and_whitespace_rules",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop val=\"\"></w:defaultTabStop></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": "NaNpt"
+    }
+  },
+  {
+    "test": "settings_tab_lengths_share_numeric_and_whitespace_rules",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop val=\"0\"></w:defaultTabStop></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": "0.00pt"
+    }
+  },
+  {
+    "test": "settings_tab_lengths_share_numeric_and_whitespace_rules",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop val=\"-0\"></w:defaultTabStop></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": "0.00pt"
+    }
+  },
+  {
+    "test": "settings_tab_lengths_share_numeric_and_whitespace_rules",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop val=\"-20\"></w:defaultTabStop></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": "-1.00pt"
+    }
+  },
+  {
+    "test": "settings_tab_lengths_share_numeric_and_whitespace_rules",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop val=\"1.5\"></w:defaultTabStop></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": "0.05pt"
+    }
+  },
+  {
+    "test": "settings_tab_lengths_share_numeric_and_whitespace_rules",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop val=\"+42tail\"></w:defaultTabStop></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": "2.10pt"
+    }
+  },
+  {
+    "test": "settings_tab_lengths_share_numeric_and_whitespace_rules",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop val=\"0x20\"></w:defaultTabStop></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": "1.60pt"
+    }
+  },
+  {
+    "test": "settings_tab_lengths_share_numeric_and_whitespace_rules",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop val=\"12px\"></w:defaultTabStop></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": "12px"
+    }
+  },
+  {
+    "test": "settings_tab_lengths_share_numeric_and_whitespace_rules",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop val=\"1.25pt\"></w:defaultTabStop></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": "1.25pt"
+    }
+  },
+  {
+    "test": "settings_tab_lengths_share_numeric_and_whitespace_rules",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop val=\"33%\"></w:defaultTabStop></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": "33%"
+    }
+  },
+  {
+    "test": "settings_tab_lengths_share_numeric_and_whitespace_rules",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop val=\"﻿20\"></w:defaultTabStop></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": "1.00pt"
+    }
+  },
+  {
+    "test": "settings_tab_lengths_share_numeric_and_whitespace_rules",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop val=\"20\"></w:defaultTabStop></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": "NaNpt"
+    }
+  },
+  {
+    "test": "settings_tab_lengths_share_numeric_and_whitespace_rules",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop val=\"junk\"></w:defaultTabStop></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": "NaNpt"
+    }
+  },
+  {
+    "test": "settings_hyphenation_uses_exact_nullable_boolean_tokens",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:autoHyphenation></w:autoHyphenation></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "autoHyphenation": null
+    }
+  },
+  {
+    "test": "settings_hyphenation_uses_exact_nullable_boolean_tokens",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:autoHyphenation val=\"\"></w:autoHyphenation></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "autoHyphenation": null
+    }
+  },
+  {
+    "test": "settings_hyphenation_uses_exact_nullable_boolean_tokens",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:autoHyphenation val=\"1\"></w:autoHyphenation></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "autoHyphenation": true
+    }
+  },
+  {
+    "test": "settings_hyphenation_uses_exact_nullable_boolean_tokens",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:autoHyphenation val=\"0\"></w:autoHyphenation></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "autoHyphenation": false
+    }
+  },
+  {
+    "test": "settings_hyphenation_uses_exact_nullable_boolean_tokens",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:autoHyphenation val=\"on\"></w:autoHyphenation></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "autoHyphenation": true
+    }
+  },
+  {
+    "test": "settings_hyphenation_uses_exact_nullable_boolean_tokens",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:autoHyphenation val=\"off\"></w:autoHyphenation></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "autoHyphenation": false
+    }
+  },
+  {
+    "test": "settings_hyphenation_uses_exact_nullable_boolean_tokens",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:autoHyphenation val=\"true\"></w:autoHyphenation></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "autoHyphenation": true
+    }
+  },
+  {
+    "test": "settings_hyphenation_uses_exact_nullable_boolean_tokens",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:autoHyphenation val=\"false\"></w:autoHyphenation></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "autoHyphenation": false
+    }
+  },
+  {
+    "test": "settings_hyphenation_uses_exact_nullable_boolean_tokens",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:autoHyphenation val=\"TRUE\"></w:autoHyphenation></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "autoHyphenation": null
+    }
+  },
+  {
+    "test": "settings_hyphenation_uses_exact_nullable_boolean_tokens",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:autoHyphenation val=\"yes\"></w:autoHyphenation></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "autoHyphenation": null
+    }
+  },
+  {
+    "test": "settings_hyphenation_uses_exact_nullable_boolean_tokens",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:autoHyphenation val=\" true \"></w:autoHyphenation></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "autoHyphenation": null
+    }
+  },
+  {
+    "test": "note_settings_keep_format_and_nullable_default_ids",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:footnotePr><w:numFmt val=\"decimal\"/><w:footnote id=\"-1\"/><w:endnote id=\"0\"/><w:footnote/><w:footnote id=\"\"/><w:footnote id=\"-1\"/><w:unknown><w:footnote id=\"nested\"/></w:unknown><w:numFmt/></w:footnotePr><w:endnotePr><w:numFmt val=\"lowerRoman\"/><w:endnote id=\"9\"/></w:endnotePr></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "footnoteProps": {
+        "defaultNoteIds": [
+          "-1",
+          "0",
+          null,
+          "",
+          "-1"
+        ],
+        "nummeringFormat": null
+      },
+      "endnoteProps": {
+        "defaultNoteIds": [
+          "9"
+        ],
+        "nummeringFormat": "lowerRoman"
+      }
+    }
+  },
+  {
+    "test": "note_settings_keep_format_and_nullable_default_ids",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:footnotePr><w:numFmt val=\" first \"/><w:numFmt val=\"last\"/></w:footnotePr></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "footnoteProps": {
+        "defaultNoteIds": [],
+        "nummeringFormat": "last"
+      }
+    }
+  },
+  {
+    "test": "settings_use_immediate_local_names_without_mixing_notes",
+    "input": {
+      "operation": "settings",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><q:defaultTabStop q:val=\"20\" w:val=\"40\"/><w:unknown><w:defaultTabStop val=\"999\"/><w:autoHyphenation val=\"true\"/></w:unknown><w:footnotePr><q:footnote id=\"3\"/><w:numFmt val=\"upperRoman\"/></w:footnotePr><q:endnotePr><w:endnote id=\"7\"/></q:endnotePr></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": "1.00pt",
+      "footnoteProps": {
+        "defaultNoteIds": [
+          "3"
+        ],
+        "nummeringFormat": "upperRoman"
+      },
+      "endnoteProps": {
+        "defaultNoteIds": [
+          "7"
+        ]
+      }
+    }
+  },
+  {
+    "test": "settings_part_matches_direct_preparation",
+    "input": {
+      "operation": "settings_part",
+      "xml": "<w:settings xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:defaultTabStop val=\"1440\"/><w:footnotePr><w:footnote id=\"4\"/></w:footnotePr><w:autoHyphenation val=\"false\"/></w:settings>"
+    },
+    "outcome": "success",
+    "expected": {
+      "defaultTabStop": "72.00pt",
+      "footnoteProps": {
+        "defaultNoteIds": [
+          "4"
+        ]
+      },
+      "autoHyphenation": false
+    }
+  },
+  {
+    "test": "part_results_outlive_package_and_xml_inputs",
+    "input": {
+      "operation": "styles_part",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:style styleId=\"Owned\" type=\"character\"><w:name val=\"retained\"/><w:rPr><w:b/></w:rPr></w:style></w:styles>"
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "Owned",
+        "isDefault": null,
+        "name": "retained",
+        "target": "span",
+        "basedOn": null,
+        "styles": [
+          {
+            "target": "span",
+            "values": [
+              [
+                "font-weight",
+                "bold"
+              ]
+            ]
+          }
+        ],
+        "linked": null,
+        "runProps": {}
+      }
+    ]
+  },
+  {
+    "test": "borrowed_framing_matches_existing_public_body_routes",
+    "input": {
+      "operation": "body",
+      "xml": "<w:body xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:q=\"urn:other\"><w:p><w:pPr><w:keepNext/><w:pStyle val=\"Body\"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>A &amp; B</w:t><w:tab/></w:r><w:r><w:t>second</w:t></w:r></w:p></w:body>"
+    },
+    "outcome": "success",
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1,
+            4
+          ],
+          "cssStyle": [],
+          "keepNext": true,
+          "styleName": "Body"
+        },
+        {
+          "type": "run",
+          "children": [
+            2,
+            3
+          ],
+          "cssStyle": [
+            [
+              "font-weight",
+              "bold"
+            ]
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "A & B"
+        },
+        {
+          "type": "tab"
+        },
+        {
+          "type": "run",
+          "children": [
+            5
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "second"
+        }
+      ]
+    }
+  }
+]
