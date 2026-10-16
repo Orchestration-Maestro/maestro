@@ -47,6 +47,9 @@ pub struct WriteToolOptions {
     pub operations: Option<Arc<dyn WriteOperations>>,
 }
 
+/// One factory body with concrete callback ownership.
+macro_rules! factories {
+ ($ptr:ident, [$($bound:tt)*]) => {
 /// Build the `write` tool definition.
 ///
 /// The path is resolved against `cwd` when the tool is called, before any asynchronous
@@ -80,7 +83,7 @@ pub fn create_write_tool_definition<C: 'static>(
         render_shell: None,
         prepare_arguments: None,
         execution_mode: None,
-        execute: Arc::new(move |_id, input, signal, _update, _context| {
+        execute: $ptr::new(move |_id, input, signal, _update, _context| {
             let absolute_path = match resolve_to_cwd(&input.path, &cwd) {
                 Ok(path) => path,
                 Err(error) => return Box::pin(std::future::ready(Err(diagnostic(&error)))),
@@ -101,4 +104,21 @@ pub fn create_write_tool_definition<C: 'static>(
 #[must_use]
 pub fn create_write_tool(cwd: String, options: WriteToolOptions) -> AgentTool {
     wrap_tool_definition(create_write_tool_definition::<()>(cwd, options), None)
+}
+
+ };
+}
+factories!(Arc, [+ Send]);
+/// Caller-local factories over the same file operations.
+pub mod local {
+    use super::{
+        Arc, NativeWriteOperations, Tool, WriteToolInput, WriteToolOptions, diagnostic, dirname,
+        json, render, resolve_to_cwd, with_file_mutation_queue, write_file,
+    };
+    use crate::tool_definition_wrapper::local::wrap_tool_definition;
+    use crate::types::local::ToolDefinition;
+    use std::rc::Rc;
+    /// Caller-local executable tool.
+    type AgentTool = maestro_agent::AgentToolRecord<maestro_models::Local>;
+    factories!(Rc, []);
 }

@@ -1,0 +1,22 @@
+{
+  "cases": [
+    {
+      "test": "local_process_sink_keeps_descriptor_delivery",
+      "id": "native",
+      "input": {},
+      "expected": {
+        "seen": [
+          [
+            "stdout",
+            "one"
+          ],
+          [
+            "stderr",
+            "two"
+          ]
+        ],
+        "code": 0
+      }
+    }
+  ]
+}

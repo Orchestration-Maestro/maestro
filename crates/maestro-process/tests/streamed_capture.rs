@@ -202,3 +202,112 @@ fn streamed_wait_tags_streams_without_reordering() {
         assert_eq!(child.id(),None);
     });
 }
+
+#[test]
+fn local_process_sink_keeps_descriptor_delivery() {
+    use maestro_process::child_process::{OutputStream, wait_for_child_process_with_sink};
+    use std::{cell::RefCell, io::Write, rc::Rc};
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Fixture {
+        cases: Vec<Case>,
+    }
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Case {
+        test: String,
+        id: String,
+        input: serde_json::Value,
+        expected: Expected,
+    }
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Expected {
+        seen: Vec<(String, String)>,
+        code: i32,
+    }
+    let fixture: Fixture =
+        serde_json::from_str(include_str!("fixtures/local-output-sink.json")).unwrap();
+    assert_eq!(fixture.cases.len(), 1);
+    let case = &fixture.cases[0];
+    assert_eq!(case.test, "local_process_sink_keeps_descriptor_delivery");
+    assert_eq!(case.id, "native");
+    assert_eq!(case.input, serde_json::json!({}));
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+        let mut command = tokio::process::Command::new("python3");
+        command.args(["-c", &format!("import socket,os\ns=socket.create_connection(('127.0.0.1',{port}))\nos.write(1,b'one')\nassert s.recv(1)==b'x'\nos.write(2,b'two')")]);
+        let mut child = CapturedChild::spawn(&mut command).unwrap();
+        let (mut socket, _) = listener.accept().unwrap();
+        let seen = Rc::new(RefCell::new(Vec::new()));
+        let mut sink = |stream, bytes: &[u8]| {
+            seen.borrow_mut().push((match stream { OutputStream::Stdout => "stdout", OutputStream::Stderr => "stderr" }.to_owned(), String::from_utf8(bytes.to_vec()).unwrap()));
+            if stream == OutputStream::Stdout {
+                assert_eq!(seen.borrow()[0], case.expected.seen[0]);
+                socket.write_all(b"x").unwrap();
+            }
+        };
+        let output = wait_for_child_process_with_sink(&mut child, WaitOptions::default(), std::future::pending(), &mut sink).await.unwrap();
+        assert_eq!(*seen.borrow(), case.expected.seen);
+        assert_eq!(output.status.code(), Some(case.expected.code));
+        assert!(output.stdout.is_empty() && output.stderr.is_empty());
+        assert_eq!(child.take_output(), (vec![], vec![]));
+        assert_eq!(child.id(), None);
+    });
+}
+
+#[test]
+fn default_waiter_keeps_send_and_none_inference() {
+    fn send(_: &impl Send) {}
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .unwrap()
+        .block_on(async {
+            for observed in [false, true] {
+                let mut command = tokio::process::Command::new("/bin/sh");
+                command.args(["-c", "printf output"]);
+                let mut child = CapturedChild::spawn(&mut command).unwrap();
+                let mut bytes = Vec::new();
+                let mut sink = |_, data: &[u8]| bytes.extend_from_slice(data);
+                let output = if observed {
+                    let future = wait_for_child_process(
+                        &mut child,
+                        WaitOptions::default(),
+                        std::future::pending(),
+                        Some(&mut sink),
+                    );
+                    send(&future);
+                    future.await.unwrap()
+                } else {
+                    let future = wait_for_child_process(
+                        &mut child,
+                        WaitOptions::default(),
+                        std::future::pending(),
+                        None,
+                    );
+                    send(&future);
+                    future.await.unwrap()
+                };
+                assert!(output.status.success());
+                assert!(output.stderr.is_empty());
+                assert_eq!(
+                    output.stdout,
+                    if observed {
+                        b"".to_vec()
+                    } else {
+                        b"output".to_vec()
+                    }
+                );
+                assert_eq!(
+                    bytes,
+                    if observed {
+                        b"output".to_vec()
+                    } else {
+                        b"".to_vec()
+                    }
+                );
+            }
+        });
+}

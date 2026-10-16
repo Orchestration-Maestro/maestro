@@ -27,6 +27,7 @@ mod edit_render_support;
 mod edit_rendering;
 mod edit_snapshot_matching;
 mod edit_support;
+mod execution_affinity;
 mod exif_orientation_behavior;
 mod factory_support;
 mod find_execution;

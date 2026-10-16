@@ -4,7 +4,7 @@
 
 mod configuration;
 mod corpus;
-mod execution;
+pub(crate) mod execution;
 mod rendering;
 pub use corpus::{check_metadata, check_order, check_preparation, check_routes};
 pub use execution::check_corrections;

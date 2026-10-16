@@ -1,14 +1,16 @@
 //! Agent shell records and factories.
 
-use super::{BashOperations, create_local_bash_operations};
+use super::{BashExecution, BashOperations, create_local_bash_operations};
 use crate::{
     ToolDefinition, TruncationResult, tool_definition_wrapper::wrap_tool_definition,
     utils::shell::ShellEnv,
 };
 use maestro_agent::{AgentTool, AgentToolResult};
-use maestro_models::{DiagnosticErrorInfo, Tool};
+use maestro_models::Tool;
+use maestro_models::{Local, Threaded};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::rc::Rc;
 use std::sync::Arc;
 
 /// Arguments of an agent shell call.
@@ -43,31 +45,44 @@ pub struct BashSpawnContext {
 }
 
 /// Replaces command operands or fails before execution starts.
-pub type BashSpawnHook =
-    Arc<dyn Fn(BashSpawnContext) -> Result<BashSpawnContext, DiagnosticErrorInfo> + Send + Sync>;
+pub type BashSpawnHook<E = Threaded> =
+    <E as maestro_models::Execution>::Shared<<E as BashExecution>::SpawnHook>;
 
 /// Selects the shell operation and command preparation.
-#[derive(Default)]
-pub struct BashToolOptions {
+pub struct BashToolOptionsRecord<E: BashExecution = Threaded> {
     /// Supplied operation; otherwise uses the local shell.
-    pub operations: Option<Arc<dyn BashOperations>>,
+    pub operations: Option<Arc<dyn BashOperations<E>>>,
     /// Nonempty literal prefix, followed by one newline.
     pub command_prefix: Option<String>,
     /// Explicit executable for local operations only.
     pub shell_path: Option<String>,
     /// Operand replacement after prefix insertion.
-    pub spawn_hook: Option<BashSpawnHook>,
+    pub spawn_hook: Option<BashSpawnHook<E>>,
 }
+impl<E: BashExecution> Default for BashToolOptionsRecord<E> {
+    fn default() -> Self {
+        Self {
+            operations: None,
+            command_prefix: None,
+            shell_path: None,
+            spawn_hook: None,
+        }
+    }
+}
+/// Default thread-safe shell configuration.
+pub type BashToolOptions = BashToolOptionsRecord<Threaded>;
 
+/// One factory body for each concrete callable family.
+macro_rules! factories { ($ptr:ident, $run:path) => {
 /// Build the native shell definition with call/result renderers and shared timing state.
 ///
-/// The caller context is unused; [`super::BashRenderState`] owns row refresh teardown.
+/// The caller context is unused; [`crate::process::bash::BashRenderState`] owns row refresh teardown.
 #[must_use]
 pub fn create_bash_tool_definition<C: 'static>(
     cwd: String,
     bin_dir: String,
     options: BashToolOptions,
-) -> ToolDefinition<C, BashToolInput, BashToolDetails, super::BashRenderState> {
+) -> ToolDefinition<C, BashToolInput, BashToolDetails, crate::process::bash::BashRenderState> {
     let operations = options
         .operations
         .unwrap_or_else(|| create_local_bash_operations(bin_dir.clone(), options.shell_path));
@@ -86,7 +101,7 @@ pub fn create_bash_tool_definition<C: 'static>(
         render_shell: None,
         prepare_arguments: None,
         execution_mode: None,
-        execute: Arc::new(move |_, input, signal, update, _| {
+        execute: $ptr::new(move |_, input, signal, update, _| {
             let command = match options.command_prefix.as_deref().filter(|prefix| !prefix.is_empty()) {
                 Some(prefix) => format!("{prefix}\n{}", input.command),
                 None => input.command,
@@ -100,10 +115,10 @@ pub fn create_bash_tool_definition<C: 'static>(
             } else { context };
             if let Some(update) = &update { update(AgentToolResult { content: Vec::new(), details: None, terminate: None }); }
             let operations = Arc::clone(&operations);
-            Box::pin(super::execute::run(operations, context, input.timeout, signal, update))
+            Box::pin($run(operations, context, input.timeout, signal, update))
         }),
-        render_call: Some(std::rc::Rc::new(super::render::render_call)),
-        render_result: Some(crate::ToolRenderResult::Raw(std::rc::Rc::new(super::render::render_result))),
+        render_call: Some(std::rc::Rc::new(crate::process::bash::render::render_call)),
+        render_result: Some(crate::ToolRenderResult::Raw(std::rc::Rc::new(crate::process::bash::render::render_result))),
     }
 }
 
@@ -114,4 +129,24 @@ pub fn create_bash_tool(cwd: String, bin_dir: String, options: BashToolOptions) 
         create_bash_tool_definition::<()>(cwd, bin_dir, options),
         None,
     )
+}
+
+}; }
+factories!(Arc, super::execute::run);
+/// Caller-local shell definitions and executables.
+pub mod local {
+    use super::{
+        AgentToolResult, Arc, BashSpawnContext, BashToolDetails, BashToolInput,
+        BashToolOptionsRecord, Local, Rc, Tool, json,
+    };
+    use crate::process::bash::local::create_local_bash_operations;
+    use crate::tool_definition_wrapper::local::wrap_tool_definition;
+    use crate::types::local::ToolDefinition;
+    /// Caller-local command preparation callback.
+    pub type BashSpawnHook = super::BashSpawnHook<Local>;
+    /// Caller-local shell configuration.
+    pub type BashToolOptions = BashToolOptionsRecord<Local>;
+    /// Caller-local executable tool.
+    type AgentTool = maestro_agent::AgentToolRecord<Local>;
+    factories!(Rc, crate::process::bash::execute::local::run);
 }

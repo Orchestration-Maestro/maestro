@@ -53,6 +53,9 @@ pub struct EditToolOptions {
     pub operations: Option<Arc<dyn EditOperations>>,
 }
 
+/// One factory body with concrete callback ownership.
+macro_rules! factories {
+ ($ptr:ident, [$($bound:tt)*]) => {
 /// Build an edit definition with argument preparation and retained preview renderers.
 ///
 /// Empty lists fail before path resolution. Successful resolution enters the
@@ -92,9 +95,9 @@ pub fn create_edit_tool_definition<C: 'static>(
             "Keep edits[].oldText as small as possible while still being unique in the file. Do not pad with large unchanged regions.".into(),
         ]),
         render_shell: Some(ToolRenderShell::SelfRendered),
-        prepare_arguments: Some(Arc::new(|args| Ok(prepare::prepare_edit_arguments(args)))),
+        prepare_arguments: Some($ptr::new(|args| Ok(prepare::prepare_edit_arguments(args)))),
         execution_mode: None,
-        execute: Arc::new(move |_id, input, signal, _update, _context| {
+        execute: $ptr::new(move |_id, input, signal, _update, _context| {
             if input.edits.is_empty() {
                 return Box::pin(std::future::ready(Err(failure("edits must contain at least one replacement"))));
             }
@@ -115,4 +118,22 @@ pub fn create_edit_tool_definition<C: 'static>(
 #[must_use]
 pub fn create_edit_tool(cwd: String, options: EditToolOptions) -> AgentTool {
     wrap_tool_definition(create_edit_tool_definition::<()>(cwd, options), None)
+}
+
+ };
+}
+factories!(Arc, [+ Send]);
+/// Caller-local factories over the same file operations.
+pub mod local {
+    use super::{
+        Arc, EditRenderState, EditToolDetails, EditToolInput, EditToolOptions,
+        NativeEditOperations, Tool, ToolRenderShell, diagnostic, edit_file, failure, json, prepare,
+        render, resolve_to_cwd, with_file_mutation_queue,
+    };
+    use crate::tool_definition_wrapper::local::wrap_tool_definition;
+    use crate::types::local::ToolDefinition;
+    use std::rc::Rc;
+    /// Caller-local executable tool.
+    type AgentTool = maestro_agent::AgentToolRecord<maestro_models::Local>;
+    factories!(Rc, []);
 }

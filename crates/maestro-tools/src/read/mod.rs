@@ -72,13 +72,16 @@ impl ReadContext for () {
     }
 }
 
+/// One factory body with concrete callback ownership.
+macro_rules! factories {
+ ($ptr:ident, [$($bound:tt)*]) => {
 /// Build the `read` tool definition.
 ///
 /// The path is resolved against `cwd` when the tool is called, before any
 /// asynchronous work, so the returned future is unaffected by later working
 /// directory changes.
 #[must_use]
-pub fn create_read_tool_definition<C: ReadContext + Send + 'static>(
+pub fn create_read_tool_definition<C: ReadContext + 'static $($bound)*>(
     cwd: String,
     options: ReadToolOptions,
 ) -> ToolDefinition<C, ReadToolInput, ReadToolDetails> {
@@ -115,7 +118,7 @@ pub fn create_read_tool_definition<C: ReadContext + Send + 'static>(
         render_shell: None,
         prepare_arguments: None,
         execution_mode: None,
-        execute: Arc::new(move |_id, input, signal, _update, context| {
+        execute: $ptr::new(move |_id, input, signal, _update, context| {
             match resolve_read_path(&input.path, &cwd) {
                 Ok(path) => {
                     let reader = Arc::clone(&reader);
@@ -133,4 +136,22 @@ pub fn create_read_tool_definition<C: ReadContext + Send + 'static>(
 #[must_use]
 pub fn create_read_tool(cwd: String, options: ReadToolOptions) -> AgentTool {
     wrap_tool_definition(create_read_tool_definition::<()>(cwd, options), None)
+}
+
+ };
+}
+factories!(Arc, [+ Send]);
+/// Caller-local factories over the same file operations.
+pub mod local {
+    use super::{
+        Arc, DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, NativeReadOperations, ReadContext,
+        ReadToolDetails, ReadToolInput, ReadToolOptions, Reader, Tool, diagnostic, json, render,
+        resolve_read_path,
+    };
+    use crate::tool_definition_wrapper::local::wrap_tool_definition;
+    use crate::types::local::ToolDefinition;
+    use std::rc::Rc;
+    /// Caller-local executable tool.
+    type AgentTool = maestro_agent::AgentToolRecord<maestro_models::Local>;
+    factories!(Rc, []);
 }

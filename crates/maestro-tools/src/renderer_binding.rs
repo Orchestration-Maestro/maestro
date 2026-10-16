@@ -1,7 +1,7 @@
 //! Renderer-only projections without retaining executable definitions.
 use crate::{
-    ToolDefinition, ToolRenderCall, ToolRenderContext, ToolRenderResult, ToolRenderResultCallback,
-    ToolRenderShell, ToolRendererState,
+    ToolDefinitionRecord, ToolExecution, ToolRenderCall, ToolRenderContext, ToolRenderResult,
+    ToolRenderResultCallback, ToolRenderShell, ToolRendererState,
 };
 use maestro_models::DiagnosticErrorInfo;
 use serde::de::DeserializeOwned;
@@ -30,7 +30,9 @@ fn context<'a, S: Default + 'static>(
 impl ToolRendererBinding {
     /// Clone custom renderers, decoding only details required by typed callbacks.
     #[must_use]
-    pub fn from_definition<C, P, D, S>(definition: &ToolDefinition<C, P, D, S>) -> Self
+    pub fn from_definition<C, P, D, S, E: ToolExecution>(
+        definition: &ToolDefinitionRecord<C, P, D, S, E>,
+    ) -> Self
     where
         D: DeserializeOwned + 'static,
         S: Default + 'static,
@@ -54,8 +56,8 @@ impl ToolRendererBinding {
         Self::new(definition, result)
     }
     /// Clone factory raw callbacks without requiring a decoder for execution details.
-    pub(crate) fn from_raw<C, P, D, S: Default + 'static>(
-        definition: &ToolDefinition<C, P, D, S>,
+    pub(crate) fn from_raw<C, P, D, S: Default + 'static, E: ToolExecution>(
+        definition: &ToolDefinitionRecord<C, P, D, S, E>,
     ) -> Result<Self, DiagnosticErrorInfo> {
         let result = match &definition.render_result {
             Some(ToolRenderResult::Typed(_)) => {
@@ -81,8 +83,8 @@ impl ToolRendererBinding {
         Ok(Self::new(definition, result))
     }
     /// Share call projection between native and custom result representations.
-    fn new<C, P, D, S: Default + 'static>(
-        definition: &ToolDefinition<C, P, D, S>,
+    fn new<C, P, D, S: Default + 'static, E: ToolExecution>(
+        definition: &ToolDefinitionRecord<C, P, D, S, E>,
         render_result: Option<ToolRenderResultCallback<Value, ToolRendererState>>,
     ) -> Self {
         Self {

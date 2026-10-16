@@ -34,33 +34,40 @@ pub use crate::write::{
     create_write_tool_definition,
 };
 
-use crate::{BashRenderState, EditRenderState, ReadContext, ToolDefinition, ToolsManager};
+use crate::process::bash::{BashExecution, BashToolOptionsRecord};
+use crate::types::{ToolDefinitionRecord, ToolExecution};
+use crate::{BashRenderState, EditRenderState, ReadContext, ToolsManager};
 use indexmap::IndexMap;
 use maestro_models::DiagnosticErrorInfo;
+use maestro_models::{Local, Threaded};
+use serde_json::Value;
 use std::{fmt, str::FromStr, sync::Arc};
 
 /// An executable tool, including caller-defined names.
 pub type Tool = maestro_agent::AgentTool;
 
+/// Default thread-safe selected definition.
+pub type ToolDef<C = ()> = ToolDefRecord<C, Threaded>;
+
 /// A selected definition retaining its concrete arguments, details and render state.
-pub enum ToolDef<C = ()> {
+pub enum ToolDefRecord<C = (), E: ToolExecution = Threaded> {
     /// The read definition.
-    Read(ToolDefinition<C, ReadToolInput, ReadToolDetails>),
+    Read(ToolDefinitionRecord<C, ReadToolInput, ReadToolDetails, Value, E>),
     /// The bash definition.
-    Bash(ToolDefinition<C, BashToolInput, BashToolDetails, BashRenderState>),
+    Bash(ToolDefinitionRecord<C, BashToolInput, BashToolDetails, BashRenderState, E>),
     /// The edit definition.
-    Edit(ToolDefinition<C, EditToolInput, EditToolDetails, EditRenderState>),
+    Edit(ToolDefinitionRecord<C, EditToolInput, EditToolDetails, EditRenderState, E>),
     /// The write definition.
-    Write(ToolDefinition<C, WriteToolInput, ()>),
+    Write(ToolDefinitionRecord<C, WriteToolInput, (), Value, E>),
     /// The grep definition.
-    Grep(ToolDefinition<C, GrepToolInput, GrepToolDetails>),
+    Grep(ToolDefinitionRecord<C, GrepToolInput, GrepToolDetails, Value, E>),
     /// The find definition.
-    Find(ToolDefinition<C, FindToolInput, FindToolDetails>),
+    Find(ToolDefinitionRecord<C, FindToolInput, FindToolDetails, Value, E>),
     /// The ls definition.
-    Ls(ToolDefinition<C, LsToolInput, LsToolDetails>),
+    Ls(ToolDefinitionRecord<C, LsToolInput, LsToolDetails, Value, E>),
 }
 
-impl<C> ToolDef<C> {
+impl<C, E: ToolExecution> ToolDefRecord<C, E> {
     /// Project factory renderers without decoding their execution records.
     ///
     /// # Errors
@@ -142,12 +149,11 @@ pub const ALL_TOOL_NAMES: [ToolName; 7] = [
 ];
 
 /// Individual tool configuration; each member keeps its own default.
-#[derive(Default)]
-pub struct ToolsOptions {
+pub struct ToolsOptionsRecord<E: BashExecution = Threaded> {
     /// Configuration passed only to read.
     pub read: ReadToolOptions,
     /// Configuration passed only to bash.
-    pub bash: BashToolOptions,
+    pub bash: BashToolOptionsRecord<E>,
     /// Configuration passed only to write.
     pub write: WriteToolOptions,
     /// Configuration passed only to edit.
@@ -160,11 +166,29 @@ pub struct ToolsOptions {
     pub ls: LsToolOptions,
 }
 
+impl<E: BashExecution> Default for ToolsOptionsRecord<E> {
+    fn default() -> Self {
+        Self {
+            read: ReadToolOptions::default(),
+            bash: BashToolOptionsRecord::default(),
+            write: WriteToolOptions::default(),
+            edit: EditToolOptions::default(),
+            grep: GrepToolOptions::default(),
+            find: FindToolOptions::default(),
+            ls: LsToolOptions::default(),
+        }
+    }
+}
+/// Default thread-safe built-in configuration.
+pub type ToolsOptions = ToolsOptionsRecord<Threaded>;
+
+/// One selector and preset implementation for both concrete factory families.
+macro_rules! factories { ([$($bound:tt)*]) => {
 /// Select one built-in definition with its own options.
 ///
 /// # Errors
 /// Returns `Unknown tool name: <name>` for any other spelling.
-pub fn create_tool_definition<C: ReadContext + Send + 'static>(
+pub fn create_tool_definition<C: ReadContext + 'static $($bound)*>(
     tool_name: &str,
     cwd: String,
     options: ToolsOptions,
@@ -192,7 +216,7 @@ pub fn create_tool_definition<C: ReadContext + Send + 'static>(
 
 /// Construct read, bash, edit, write in that order.
 #[must_use]
-pub fn create_coding_tool_definitions<C: ReadContext + Send + 'static>(
+pub fn create_coding_tool_definitions<C: ReadContext + 'static $($bound)*>(
     cwd: String,
     options: ToolsOptions,
     bin_dir: String,
@@ -213,7 +237,7 @@ pub fn create_coding_tool_definitions<C: ReadContext + Send + 'static>(
 
 /// Construct read, grep, find, ls in that order.
 #[must_use]
-pub fn create_read_only_tool_definitions<C: ReadContext + Send + 'static>(
+pub fn create_read_only_tool_definitions<C: ReadContext + 'static $($bound)*>(
     cwd: String,
     options: ToolsOptions,
     bin_dir: String,
@@ -238,7 +262,7 @@ pub fn create_read_only_tool_definitions<C: ReadContext + Send + 'static>(
 
 /// Construct read, bash, edit, write, grep, find, ls in that order.
 #[must_use]
-pub fn create_all_tool_definitions<C: ReadContext + Send + 'static>(
+pub fn create_all_tool_definitions<C: ReadContext + 'static $($bound)*>(
     cwd: String,
     options: ToolsOptions,
     bin_dir: String,
@@ -373,4 +397,28 @@ pub fn create_all_tools(
         ),
         (ToolName::Ls, create_ls_tool(cwd, options.ls)),
     ])
+}
+
+}; }
+factories!([+ Send]);
+/// Caller-local selectors and ordered built-in presets.
+pub mod local {
+    use super::{
+        Arc, DiagnosticErrorInfo, IndexMap, Local, ReadContext, ToolDefRecord, ToolName,
+        ToolsManager, ToolsOptionsRecord,
+    };
+    pub use crate::{
+        edit::local::*,
+        process::bash::local::*,
+        read::local::*,
+        search::{find::local::*, grep::local::*, ls::local::*},
+        write::local::*,
+    };
+    /// Caller-local selected definition with unchanged typed variants.
+    pub type ToolDef<C = ()> = ToolDefRecord<C, Local>;
+    /// Caller-local built-in configuration.
+    pub type ToolsOptions = ToolsOptionsRecord<Local>;
+    /// Caller-local executable agent tool.
+    pub type Tool = maestro_agent::AgentToolRecord<Local>;
+    factories!([]);
 }
