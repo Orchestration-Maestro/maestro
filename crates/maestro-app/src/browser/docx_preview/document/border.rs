@@ -3,7 +3,7 @@ use super::super::{XmlElement, XmlParser};
 use super::common::LengthUsage;
 
 /// Raw border attributes with converted dimensions.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Border {
     /// Open border type spelling.
     pub r#type: Option<String>,
@@ -19,7 +19,7 @@ pub struct Border {
     pub shadow: Option<bool>,
 }
 /// Encountered physical page-border sides.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Borders {
     /// Last left border.
     pub left: Option<Border>,

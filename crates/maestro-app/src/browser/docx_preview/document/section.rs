@@ -4,7 +4,7 @@ use super::border::{Borders, parse_borders};
 use super::common::LengthUsage;
 
 /// Page dimensions and open orientation spelling.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct PageSize {
     /// Converted page width.
     pub width: Option<String>,
@@ -14,7 +14,7 @@ pub struct PageSize {
     pub orientation: Option<String>,
 }
 /// Page margins and header/footer offsets.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct PageMargins {
     /// Converted left margin.
     pub left: Option<String>,
@@ -32,7 +32,7 @@ pub struct PageMargins {
     pub gutter: Option<String>,
 }
 /// One column's dimensions.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Column {
     /// Converted column width.
     pub width: Option<String>,
@@ -40,7 +40,7 @@ pub struct Column {
     pub space: Option<String>,
 }
 /// Column layout attributes and ordered explicit columns.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Columns {
     /// Numeric column count.
     pub number_of_columns: Option<f64>,
@@ -54,7 +54,7 @@ pub struct Columns {
     pub columns: Vec<Column>,
 }
 /// Page-number attributes.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct PageNumber {
     /// Raw chapter separator.
     pub chap_sep: Option<String>,
@@ -66,7 +66,7 @@ pub struct PageNumber {
     pub start: Option<f64>,
 }
 /// Raw relationship reference to a footer or header.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct FooterHeaderReference {
     /// Relationship identifier.
     pub id: Option<String>,
@@ -74,7 +74,7 @@ pub struct FooterHeaderReference {
     pub r#type: Option<String>,
 }
 /// Encountered section groups with owned attribute values.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct SectionProperties {
     /// Last encountered page dimensions.
     pub page_size: Option<PageSize>,

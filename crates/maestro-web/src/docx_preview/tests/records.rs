@@ -86,6 +86,7 @@ fn paragraph(value: Value) -> ParagraphProperties {
     };
     let result = ParagraphProperties {
         common: common(&mut object),
+        section_props: None,
         css_style: take(&mut object, "cssStyle"),
         tabs: take::<Vec<Value>>(&mut object, "tabs").map(|v| v.into_iter().map(tab).collect()),
         numbering: take(&mut object, "numbering").map(numbering),
