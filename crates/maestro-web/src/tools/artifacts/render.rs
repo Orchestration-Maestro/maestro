@@ -98,11 +98,15 @@ impl ArtifactsPanel {
         let width_id = self.id.with("controls-width");
         let spacing = points(view.presentation.spacing["xs"]);
         let minimum = GHOST_SIZE.x + spacing + crate::components::download_button::SIZE.x;
-        let width = ui
-            .ctx()
-            .data_mut(|data| data.get_temp::<(Option<String>, f32)>(width_id))
-            .filter(|(name, _)| name.as_deref() == active)
-            .map_or(minimum, |(_, measured)| measured.max(minimum));
+        let width = ui.ctx().data_mut(|data| {
+            let (name, measured) =
+                data.get_temp_mut_or::<(Option<String>, f32)>(width_id, (None, minimum));
+            if name.as_deref() == active {
+                measured.max(minimum)
+            } else {
+                minimum
+            }
+        });
         let controls_left = (header.right() - width).max(header.left());
         let mut tab_ui = ui.new_child(
             egui::UiBuilder::new()

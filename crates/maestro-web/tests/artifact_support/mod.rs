@@ -117,8 +117,6 @@ pub struct Frame {
     pub mode: maestro_theme::BrandMode,
     /// Supplied language operations.
     pub i18n: maestro_web::I18n,
-    /// Viewport dimensions supplied to the next frame.
-    pub size: egui::Vec2,
 }
 impl Default for Frame {
     fn default() -> Self {

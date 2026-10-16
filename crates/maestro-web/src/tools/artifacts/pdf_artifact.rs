@@ -26,6 +26,10 @@ pub struct PdfArtifact {
     error: error::Error,
     /// Retained repaint context, never borrowed drawing inputs.
     context: Option<egui::Context>,
+    /// Whether the retained body is currently shown.
+    visible: bool,
+    /// Foreground layer containing the retained body.
+    modal: Option<egui::Id>,
 }
 impl PdfArtifact {
     /// Start with empty fields using the supplied native host.
@@ -41,6 +45,8 @@ impl PdfArtifact {
             failure: None,
             error: error::Error::default(),
             context: None,
+            visible: true,
+            modal: None,
         }
     }
     /// Wake the last header or body context after an owned edit.
@@ -69,6 +75,16 @@ impl PdfArtifact {
     }
 }
 impl ArtifactElement for PdfArtifact {
+    fn set_visibility(
+        &mut self,
+        visible: bool,
+        modal: Option<egui::Id>,
+    ) -> Result<(), AttachmentUiError> {
+        self.host.set_retained_visibility(self.id, visible, modal)?;
+        self.visible = visible;
+        self.modal = modal;
+        Ok(())
+    }
     fn filename(&self) -> &str {
         &self.filename
     }
@@ -111,12 +127,15 @@ impl ArtifactElement for PdfArtifact {
         view: ArtifactView<'_>,
     ) -> Result<(), AttachmentUiError> {
         self.context = Some(ui.ctx().clone());
+        if !self.visible {
+            return Ok(());
+        }
         self.prepare(ui);
         if let Some(message) = &self.failure {
             self.error.present(
                 self.host.as_ref(),
                 ui,
-                (self.id, None, true),
+                (self.id, self.modal, true),
                 (
                     [
                         view.i18n.text("Error loading PDF")?,
@@ -132,7 +151,7 @@ impl ArtifactElement for PdfArtifact {
             self.pdf.present(
                 self.host.as_ref(),
                 ui,
-                (self.id, rect, None, true),
+                (self.id, rect, self.modal, true),
                 view.presentation,
             )?;
         }

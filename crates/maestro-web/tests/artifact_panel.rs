@@ -434,7 +434,7 @@ fn artifact_panel_updates_reuse_views_and_original_downloads() {
     assert!(
         harness
             .panel
-            .get_or_create_artifact_element("a.pdf", "AAEC")
+            .get_or_create_artifact_element("a.docx", "AAEC")
             .is_err()
     );
     assert_eq!(harness.host.retained.borrow().len(), 1);
@@ -770,7 +770,7 @@ fn artifact_panel_failures_preserve_owners_and_retry() {
     assert!(
         harness
             .panel
-            .get_or_create_artifact_element("a.pdf", "Yg==")
+            .get_or_create_artifact_element("a.docx", "Yg==")
             .is_err()
     );
     assert_eq!(harness.host.retained.borrow().len(), 1);

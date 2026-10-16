@@ -42,6 +42,8 @@ pub struct Host {
     pub admissions: RefCell<Vec<Rc<ReadingContent>>>,
     /// Published identities and geometry under controlled transaction policy.
     pub published: RefCell<HashMap<egui::Id, (Rc<ReadingContent>, egui::Rect)>>,
+    /// Containing modal submitted with the latest native publication.
+    pub publication_modals: RefCell<HashMap<egui::Id, Option<egui::Id>>>,
     /// Candidate factories not yet published.
     pending: RefCell<HashMap<egui::Id, Rc<ReadingContent>>>,
     /// Native natural height supplied by this host.
@@ -113,6 +115,9 @@ impl AttachmentHost for Host {
                 self.published
                     .borrow_mut()
                     .insert(s.id, (candidate, s.rect));
+                self.publication_modals
+                    .borrow_mut()
+                    .insert(s.id, reading.modal);
             }
         }
         Ok(())
