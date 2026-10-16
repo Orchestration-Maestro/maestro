@@ -1,11 +1,13 @@
 #![doc = include_str!("../../../../../docs/models/faux.md")]
 /// Owned content, message and model constructors.
 mod builders;
+/// Family-correct producer admission and scripted execution.
+mod producer;
 use crate::{
-    ApiProvider, AssistantContent, AssistantMessage, AssistantMessageEventStream, Context,
-    DiagnosticErrorInfo, Execution, Invoke, Local, Model, ModelCost, ModelInput, ProviderExecution,
-    ProviderResponse, RegistryCapture, StopReason, StreamOptionsInput, TextContent,
-    ThinkingContent, Threaded, ToolCall, register_api_provider, unregister_api_providers,
+    ApiProvider, AssistantContent, AssistantMessage, Context, DiagnosticErrorInfo, Execution,
+    Invoke, Local, Model, ModelCost, ModelInput, ProviderExecution, RegistryCapture, StopReason,
+    StreamOptionsInput, TextContent, ThinkingContent, Threaded, ToolCall, register_api_provider,
+    unregister_api_providers,
 };
 pub use builders::{faux_assistant_message, faux_text, faux_thinking, faux_tool_call};
 
@@ -272,155 +274,6 @@ impl FauxProviderRegistration {
         unregister_api_providers(&self.source_id);
     }
 }
-impl Registration {
-    /// Consume a queued response synchronously and prepare its independent producer.
-    fn invocation(
-        self: &crate::SharedHandle<Self>,
-        model: Model,
-        context: Context,
-        options: Option<FauxResponseOptions>,
-    ) -> (AssistantMessageEventStream, crate::BoxFuture<()>) {
-        let step = lock(&self.pending).responses.pop_front();
-        self.state.0.fetch_add(1, Ordering::AcqRel);
-        let outer = AssistantMessageEventStream::new();
-        let producer = outer.clone();
-        let registration = crate::SharedHandle::clone(self);
-        let model = Arc::new(model);
-        let future = Box::pin(async move {
-            if let Err(error) = registration
-                .produce(producer.clone(), &model, (context, options, step))
-                .await
-            {
-                streaming::terminal(&producer, registration.error(&model, error.message));
-            }
-        });
-        (outer, future)
-    }
-    /// Launch the native producer while preserving setup failure.
-    #[cfg(not(target_arch = "wasm32"))]
-    fn invoke(
-        self: &crate::SharedHandle<Self>,
-        model: Model,
-        context: Context,
-        options: Option<FauxResponseOptions>,
-    ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-        let (outer, future) = self.invocation(model, context, options);
-        streaming::spawn(future)?;
-        Ok(outer)
-    }
-    /// Launch the browser-local producer.
-    #[cfg(target_arch = "wasm32")]
-    fn invoke(
-        self: &crate::SharedHandle<Self>,
-        model: Model,
-        context: Context,
-        options: Option<FauxResponseOptions>,
-    ) -> AssistantMessageEventStream {
-        let (outer, future) = self.invocation(model, context, options);
-        streaming::spawn(future);
-        outer
-    }
-    /// Retain raw and simple callbacks over this registration.
-    fn provider(self: &crate::SharedHandle<Self>) -> ApiProvider {
-        let raw = crate::SharedHandle::clone(self);
-        let simple = crate::SharedHandle::clone(self);
-        ApiProvider {
-            api: self.api.clone(),
-            stream: crate::SharedHandle::new(move |model, context, options| {
-                #[cfg(not(target_arch = "wasm32"))]
-                {
-                    raw.invoke(model, context, options.map(FauxResponseOptions::Raw))
-                }
-                #[cfg(target_arch = "wasm32")]
-                {
-                    Ok(raw.invoke(model, context, options.map(FauxResponseOptions::Raw)))
-                }
-            }),
-            stream_simple: crate::SharedHandle::new(move |model, context, options| {
-                #[cfg(not(target_arch = "wasm32"))]
-                {
-                    simple.invoke(model, context, options.map(FauxResponseOptions::Simple))
-                }
-                #[cfg(target_arch = "wasm32")]
-                {
-                    Ok(simple.invoke(model, context, options.map(FauxResponseOptions::Simple)))
-                }
-            }),
-        }
-    }
-    /// Construct a zero-usage failure with invocation identity.
-    fn error(&self, model: &Model, text: String) -> AssistantMessage {
-        let mut message = faux_assistant_message(
-            Vec::new(),
-            FauxAssistantMessageOptions {
-                stop_reason: Some(StopReason::Error),
-                error_message: Some(text),
-                ..Default::default()
-            },
-        );
-        message.api.clone_from(&self.api);
-        message.provider.clone_from(&self.provider);
-        message.model.clone_from(&model.id);
-        message
-    }
-    /// Await response metadata, resolve the script and publish its events.
-    async fn produce(
-        &self,
-        outer: AssistantMessageEventStream,
-        model: &Arc<Model>,
-        invocation: (
-            Context,
-            Option<FauxResponseOptions>,
-            Option<FauxResponseStep>,
-        ),
-    ) -> Result<(), DiagnosticErrorInfo> {
-        let (context, options, step) = invocation;
-        let common = options.as_ref().map(FauxResponseOptions::common);
-        if let Some(hook) = common.and_then(|options| options.on_response.as_ref()) {
-            hook(
-                ProviderResponse {
-                    status: 200.0,
-                    headers: std::collections::BTreeMap::default(),
-                },
-                Arc::clone(model),
-            )
-            .await?;
-        }
-        let exhausted = step.is_none();
-        let mut message = match step {
-            Some(FauxResponseStep::Message(message)) => *message,
-            Some(FauxResponseStep::Factory(factory)) => {
-                Invoke::<Threaded, _>::invoke(
-                    factory.as_ref(),
-                    FauxResponseInput {
-                        context: context.clone(),
-                        options: options.clone(),
-                        state: self.state.clone(),
-                        model: Model::clone(model),
-                    },
-                )
-                .await?
-            }
-            None => self.error(model, "No more faux responses queued".into()),
-        };
-        message.api.clone_from(&self.api);
-        message.provider.clone_from(&self.provider);
-        message.model.clone_from(&model.id);
-        usage::estimate(&mut message, &context, common, &self.pending)?;
-        if exhausted {
-            streaming::terminal(&outer, message);
-        } else {
-            streaming::deliver(
-                &outer,
-                message,
-                &self.pacing,
-                common.and_then(|value| value.signal.as_ref()),
-            )
-            .await?;
-        }
-        Ok(())
-    }
-}
 /// Register an opt-in provider with an initially empty response queue.
 #[must_use]
 pub fn register_faux_provider(options: RegisterFauxProviderOptions) -> FauxProviderRegistration {
@@ -455,7 +308,25 @@ pub fn register_faux_provider(options: RegisterFauxProviderOptions) -> FauxProvi
             options.tokens_per_second,
         ),
     });
-    register_api_provider(registration.provider(), Some(source_id.clone()));
+    let raw = crate::SharedHandle::clone(&registration);
+    let simple = crate::SharedHandle::clone(&registration);
+    register_api_provider(
+        ApiProvider {
+            api: api.clone(),
+            stream: Arc::new(move |model, context, options| {
+                raw.invoke::<Threaded>(model, context, options.map(FauxResponseOptions::Raw), None)
+            }),
+            stream_simple: Arc::new(move |model, context, options| {
+                simple.invoke::<Threaded>(
+                    model,
+                    context,
+                    options.map(FauxResponseOptions::Simple),
+                    None,
+                )
+            }),
+        },
+        Some(source_id.clone()),
+    );
     FauxProviderRegistration {
         api,
         models,

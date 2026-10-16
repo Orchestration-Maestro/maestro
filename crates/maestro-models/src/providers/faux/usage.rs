@@ -1,7 +1,7 @@
 use super::{Pending, lock};
 use crate::{
     AssistantContent, AssistantMessage, CacheRetention, Context, DiagnosticErrorInfo, Message,
-    StreamOptions, UserBlock, UserContent,
+    ProviderExecution, StreamOptions, UserBlock, UserContent,
 };
 use std::{borrow::Cow, sync::Mutex};
 
@@ -76,10 +76,10 @@ fn serialize_context(context: &Context) -> Result<String, DiagnosticErrorInfo> {
     Ok(parts.join("\n\n"))
 }
 /// Estimate prompt/output usage and partition enabled session caching.
-pub(super) fn estimate(
+pub(super) fn estimate<E: ProviderExecution>(
     message: &mut AssistantMessage,
     context: &Context,
-    options: Option<&StreamOptions>,
+    options: Option<&StreamOptions<E>>,
     pending: &Mutex<Pending>,
 ) -> Result<(), DiagnosticErrorInfo> {
     let prompt = serialize_context(context)?;
