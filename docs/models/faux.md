@@ -107,7 +107,8 @@ No network credentials or server are needed.
   requests. Exhaustion returns `No more faux responses queued` with estimated
   prompt usage. Factory or response-hook failures instead carry the supplied
   error text and zero usage. The response hook receives status 200 and empty
-  headers before factory resolution, even on exhaustion; payload hooks are unused.
+  headers before factory resolution, even on exhaustion. The simulator does not call
+  payload hooks; a factory may call the original hooks it receives.
 - `set_responses` replaces the remaining queue; `append_responses` adds to it.
   Neither resets count or cache. `state.call_count()` is live across async
   factories. Factories receive owned context, raw/simple options and selected model.
@@ -136,6 +137,37 @@ No network credentials or server are needed.
   of done. Dropping event/result observers does not stop production.
 - Use one scripted flow per registration. Register separate providers for
   independent concurrent flows; caches are registration-local and session-local.
+
+## Asynchronous factory definitions
+
+`FauxResponseFactory` retains a named owner implementing `Invoke` for both
+`FauxResponseInput<Local>` and `FauxResponseInput<Threaded>`. Its selected future
+uses that family's `Execution::Future`. Native owners remain `Send + Sync` even
+when accepting local request values. `FauxResponseOptions<E>` aliases
+`StreamOptionsInput<E>`: raw and simple variants keep their original fields.
+Callback definitions previously supplied as four-argument closures migrate to one
+generic response body with two concrete future-erasure declarations. See the
+[executable factory examples](../agent/api.md#messages-and-conversion).
+
+### `scripted_factory_requires_both_families`
+
+A factory implementing only the threaded invocation cannot be queued:
+
+```compile_fail,E0277
+use maestro_models::{
+    AssistantMessage, BoxFuture, DiagnosticErrorInfo, FauxResponseFactory,
+    FauxResponseInput, Invoke, Threaded,
+};
+use std::sync::Arc;
+struct ThreadedOnly;
+impl Invoke<Threaded, FauxResponseInput<Threaded>> for ThreadedOnly {
+    type Return = BoxFuture<Result<AssistantMessage, DiagnosticErrorInfo>>;
+    fn invoke(&self, _: FauxResponseInput<Threaded>) -> Self::Return {
+        Box::pin(async { Err(DiagnosticErrorInfo::error("factory stopped")) })
+    }
+}
+let factory: FauxResponseFactory = Arc::new(ThreadedOnly);
+```
 
 ## Corrected boundaries and native representation
 

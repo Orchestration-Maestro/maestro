@@ -113,13 +113,10 @@ async fn maestro_stream_abort_clears_runtime_state_case() {
     let agent = agent_for(faux.get_model(None).unwrap(), vec![]);
     let aborting = Arc::clone(&agent);
     let slow = "one two three four five six seven eight nine ten eleven twelve";
-    faux.set_responses(vec![FauxResponseStep::Factory(Arc::new(
-        move |_, _, _, _| {
-            aborting.abort();
-            let message = faux_assistant_message(slow, FauxAssistantMessageOptions::default());
-            Box::pin(std::future::ready(Ok(message)))
-        },
-    ))]);
+    faux.set_responses(vec![FauxResponseStep::Factory(Arc::new(AbortingFactory {
+        agent: aborting,
+        text: slow,
+    }))]);
     agent
         .prompt(support::owned::input("Count slowly from 1 to 20."))
         .await
@@ -180,25 +177,7 @@ fn maestro_second_turn_receives_prior_context() {
 async fn maestro_second_turn_receives_prior_context_case() {
     let mut registered = Registered::default();
     let faux = registered.add(RegisterFauxProviderOptions::default());
-    let remembers = FauxResponseStep::Factory(Arc::new(|context, _, _, _| {
-        let alice = context.messages.iter().any(|message| match message {
-            maestro_models::Message::User(user) => match &user.content {
-                UserContent::Text(text) => text.contains("Alice"),
-                UserContent::Blocks(blocks) => blocks
-                    .iter()
-                    .filter_map(block_text)
-                    .any(|text| text.contains("Alice")),
-            },
-            _ => false,
-        });
-        let answer = if alice {
-            "Your name is Alice."
-        } else {
-            "I do not know your name."
-        };
-        let message = faux_assistant_message(answer, FauxAssistantMessageOptions::default());
-        Box::pin(std::future::ready(Ok(message)))
-    }));
+    let remembers = FauxResponseStep::Factory(Arc::new(RememberingFactory));
     faux.set_responses(vec![say("Nice to meet you, Alice."), remembers]);
     let agent = agent_for(faux.get_model(None).unwrap(), vec![]);
     agent
@@ -407,3 +386,62 @@ fn maestro_calculator_fixture_returns_known_results_and_errors() {
     });
     assert_eq!(run, (None, true, true));
 }
+
+/// Abort at the existing request boundary before publishing the scripted response.
+struct AbortingFactory {
+    agent: Arc<maestro_agent::Agent>,
+    text: &'static str,
+}
+impl AbortingFactory {
+    /// Preserve the same abort and response in either invocation family.
+    fn respond<E: maestro_models::ProviderExecution>(
+        &self,
+        _: maestro_models::FauxResponseInput<E>,
+    ) -> impl std::future::Future<
+        Output = Result<maestro_models::AssistantMessage, maestro_models::DiagnosticErrorInfo>,
+    >
+    + 'static
+    + use<E> {
+        self.agent.abort();
+        std::future::ready(Ok(faux_assistant_message(
+            self.text,
+            FauxAssistantMessageOptions::default(),
+        )))
+    }
+}
+support::scripted::factory!(AbortingFactory, |owner: &AbortingFactory, input| owner
+    .respond(input));
+
+/// Select the answer from the original request history.
+struct RememberingFactory;
+impl RememberingFactory {
+    /// Inspect the original user entries without converting invocation options.
+    fn respond<E: maestro_models::ProviderExecution>(
+        input: &maestro_models::FauxResponseInput<E>,
+    ) -> impl std::future::Future<
+        Output = Result<maestro_models::AssistantMessage, maestro_models::DiagnosticErrorInfo>,
+    >
+    + 'static
+    + use<E> {
+        let alice = input.context.messages.iter().any(|message| match message {
+            maestro_models::Message::User(user) => match &user.content {
+                UserContent::Text(text) => text.contains("Alice"),
+                UserContent::Blocks(blocks) => blocks
+                    .iter()
+                    .filter_map(block_text)
+                    .any(|text| text.contains("Alice")),
+            },
+            _ => false,
+        });
+        let answer = if alice {
+            "Your name is Alice."
+        } else {
+            "I do not know your name."
+        };
+        let message = faux_assistant_message(answer, FauxAssistantMessageOptions::default());
+        std::future::ready(Ok(message))
+    }
+}
+support::scripted::factory!(RememberingFactory, |_: &RememberingFactory, input| {
+    RememberingFactory::respond(&input)
+});

@@ -167,6 +167,7 @@ pub struct SimpleStreamOptions<E: ProviderExecution = Threaded> {
 }
 
 /// Original options supplied to a dynamic callback, without conversion between forms.
+#[derive(Clone)]
 pub enum StreamOptionsInput<E: ProviderExecution = Threaded> {
     /// Open provider-specific options.
     Raw(ProviderStreamOptions<E>),
@@ -174,6 +175,15 @@ pub enum StreamOptionsInput<E: ProviderExecution = Threaded> {
     Simple(SimpleStreamOptions<E>),
 }
 
+impl<E: ProviderExecution> StreamOptionsInput<E> {
+    /// Borrow the common settings without reconstructing the original variant.
+    pub(crate) fn common(&self) -> &StreamOptions<E> {
+        match self {
+            Self::Raw(value) => &value.common,
+            Self::Simple(value) => &value.common,
+        }
+    }
+}
 impl<E: ProviderExecution> From<ProviderStreamOptions<E>> for StreamOptionsInput<E> {
     fn from(options: ProviderStreamOptions<E>) -> Self {
         Self::Raw(options)

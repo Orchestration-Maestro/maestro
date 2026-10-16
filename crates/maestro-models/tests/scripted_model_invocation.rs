@@ -3,6 +3,24 @@
 mod tests {
     use maestro_models::*;
 
+    /// Erase only the future representation of the same generic response body.
+    macro_rules! factory {
+        ($owner:ty, $erase:expr) => {
+            factory!($owner, Local, $erase);
+            factory!($owner, Threaded, $erase);
+        };
+        ($owner:ty, $mode:ty, $erase:expr) => {
+            impl Invoke<$mode, FauxResponseInput<$mode>> for $owner {
+                type Return = <$mode as Execution>::Future<
+                    'static,
+                    Result<AssistantMessage, DiagnosticErrorInfo>,
+                >;
+                fn invoke(&self, input: FauxResponseInput<$mode>) -> Self::Return {
+                    Box::pin(($erase)(self, input))
+                }
+            }
+        };
+    }
     #[test]
     /// Exercise builders combine content through the public invocation boundary.
     fn maestro_builders_combine_content() {
@@ -605,15 +623,10 @@ mod tests {
         let (entered_tx, entered_rx) = std::sync::mpsc::channel();
         let (release_tx, release_rx) = tokio::sync::oneshot::channel();
         let release = std::sync::Mutex::new(Some(release_rx));
-        let step = FauxResponseStep::Factory(std::sync::Arc::new(move |_, _, _, _| {
-            let release = release.lock().unwrap().take().unwrap();
-            let entered = entered_tx.clone();
-            let message = message.clone();
-            Box::pin(async move {
-                entered.send(()).unwrap();
-                release.await.unwrap();
-                Ok(message)
-            })
+        let step = FauxResponseStep::Factory(std::sync::Arc::new(GatedFactory {
+            release,
+            entered: entered_tx,
+            message,
         }));
         (step, entered_rx, release_tx)
     }
@@ -1096,12 +1109,7 @@ mod tests {
         assert!(registration.get_model(Some("missing")).is_none());
         for id in ["fast", "deep"] {
             registration.append_responses(vec![FauxResponseStep::Factory(std::sync::Arc::new(
-                |_, _, _, model| {
-                    Box::pin(std::future::ready(Ok(faux_assistant_message(
-                        format!("{}:{}", model.id, model.reasoning),
-                        FauxAssistantMessageOptions::default(),
-                    ))))
-                },
+                SelectedModelFactory,
             ))]);
             let result = wait(complete(
                 registration.get_model(Some(id)).unwrap().clone(),
@@ -1130,19 +1138,9 @@ mod tests {
         let (release_tx, release_rx) = tokio::sync::oneshot::channel();
         let release = std::sync::Arc::new(std::sync::Mutex::new(Some(release_rx)));
         registration.set_responses(vec![
-            FauxResponseStep::Factory(std::sync::Arc::new(move |context, options, state, _| {
-                let release = release.lock().unwrap().take().unwrap();
-                let entered = entered_tx.clone();
-                Box::pin(async move {
-                    assert_eq!(context.messages.len(), 1);
-                    assert!(options.is_none());
-                    entered.send(()).unwrap();
-                    release.await.unwrap();
-                    Ok(faux_assistant_message(
-                        state.call_count().to_string(),
-                        FauxAssistantMessageOptions::default(),
-                    ))
-                })
+            FauxResponseStep::Factory(std::sync::Arc::new(LiveStateFactory {
+                release,
+                entered: entered_tx,
             })),
             scripted("second"),
         ]);
@@ -1162,13 +1160,171 @@ mod tests {
         registration.unregister();
     }
 
+    /// Scripted response owner for `GatedFactory`.
+    struct GatedFactory {
+        release: std::sync::Mutex<Option<tokio::sync::oneshot::Receiver<()>>>,
+        entered: std::sync::mpsc::Sender<()>,
+        message: AssistantMessage,
+    }
+    impl GatedFactory {
+        /// Execute the same response body for either invocation family.
+        fn respond<E: ProviderExecution>(
+            &self,
+            _: FauxResponseInput<E>,
+        ) -> impl std::future::Future<Output = Result<AssistantMessage, DiagnosticErrorInfo>>
+        + 'static
+        + use<E> {
+            let release = self.release.lock().unwrap().take().unwrap();
+            let entered = self.entered.clone();
+            let message = self.message.clone();
+            async move {
+                entered.send(()).unwrap();
+                release.await.unwrap();
+                Ok(message)
+            }
+        }
+    }
+    factory!(GatedFactory, |owner: &GatedFactory, input| owner
+        .respond(input));
+    /// Scripted response owner for `SelectedModelFactory`.
+    struct SelectedModelFactory;
+    impl SelectedModelFactory {
+        /// Execute the same response body for either invocation family.
+        fn respond<E: ProviderExecution>(
+            input: &FauxResponseInput<E>,
+        ) -> impl std::future::Future<Output = Result<AssistantMessage, DiagnosticErrorInfo>>
+        + 'static
+        + use<E> {
+            std::future::ready(Ok(faux_assistant_message(
+                format!("{}:{}", input.model.id, input.model.reasoning),
+                FauxAssistantMessageOptions::default(),
+            )))
+        }
+    }
+    factory!(SelectedModelFactory, |_: &SelectedModelFactory, input| {
+        SelectedModelFactory::respond(&input)
+    });
+    /// Scripted response owner for `LiveStateFactory`.
+    struct LiveStateFactory {
+        release: std::sync::Arc<std::sync::Mutex<Option<tokio::sync::oneshot::Receiver<()>>>>,
+        entered: std::sync::mpsc::Sender<()>,
+    }
+    impl LiveStateFactory {
+        /// Execute the same response body for either invocation family.
+        fn respond<E: ProviderExecution>(
+            &self,
+            input: FauxResponseInput<E>,
+        ) -> impl std::future::Future<Output = Result<AssistantMessage, DiagnosticErrorInfo>>
+        + 'static
+        + use<E> {
+            let release = self.release.lock().unwrap().take().unwrap();
+            let entered = self.entered.clone();
+            async move {
+                assert_eq!(input.context.messages.len(), 1);
+                assert!(input.options.is_none());
+                entered.send(()).unwrap();
+                release.await.unwrap();
+                Ok(faux_assistant_message(
+                    input.state.call_count().to_string(),
+                    FauxAssistantMessageOptions::default(),
+                ))
+            }
+        }
+    }
+    factory!(LiveStateFactory, |owner: &LiveStateFactory, input| owner
+        .respond(input));
+    /// Scripted response owner for `CountingFactory`.
+    struct CountingFactory(std::sync::Arc<std::sync::atomic::AtomicUsize>);
+    impl CountingFactory {
+        /// Execute the same response body for either invocation family.
+        fn respond<E: ProviderExecution>(
+            &self,
+            _: FauxResponseInput<E>,
+        ) -> impl std::future::Future<Output = Result<AssistantMessage, DiagnosticErrorInfo>>
+        + 'static
+        + use<E> {
+            self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            std::future::ready(Ok(faux_assistant_message(
+                "abcdef",
+                FauxAssistantMessageOptions::default(),
+            )))
+        }
+    }
+    factory!(CountingFactory, |owner: &CountingFactory, input| owner
+        .respond(input));
+    /// Scripted response owner for `ForwardedOptionsFactory`.
+    struct ForwardedOptionsFactory;
+    impl ForwardedOptionsFactory {
+        /// Execute the same response body for either invocation family.
+        fn respond<E: ProviderExecution>(
+            input: FauxResponseInput<E>,
+        ) -> impl std::future::Future<Output = Result<AssistantMessage, DiagnosticErrorInfo>>
+        + 'static
+        + use<E> {
+            std::future::ready(Ok(check_forwarded_options(input.options)))
+        }
+    }
+    factory!(
+        ForwardedOptionsFactory,
+        |_: &ForwardedOptionsFactory, input| ForwardedOptionsFactory::respond(input)
+    );
+    /// Scripted response owner for `OrderedFactory`.
+    struct OrderedFactory(std::sync::Arc<std::sync::Mutex<Vec<&'static str>>>);
+    impl OrderedFactory {
+        /// Execute the same response body for either invocation family.
+        fn respond<E: ProviderExecution>(
+            &self,
+            _: FauxResponseInput<E>,
+        ) -> impl std::future::Future<Output = Result<AssistantMessage, DiagnosticErrorInfo>>
+        + 'static
+        + use<E> {
+            self.0.lock().unwrap().push("factory");
+            std::future::ready(Ok(faux_assistant_message(
+                "ok",
+                FauxAssistantMessageOptions::default(),
+            )))
+        }
+    }
+    factory!(OrderedFactory, |owner: &OrderedFactory, input| owner
+        .respond(input));
+    /// Scripted response owner for `TimedFactory`.
+    struct TimedFactory;
+    impl TimedFactory {
+        /// Execute the same response body for either invocation family.
+        fn respond<E: ProviderExecution>(
+            _: FauxResponseInput<E>,
+        ) -> impl std::future::Future<Output = Result<AssistantMessage, DiagnosticErrorInfo>>
+        + 'static
+        + use<E> {
+            timed_message()
+        }
+    }
+    factory!(TimedFactory, |_: &TimedFactory, input| {
+        TimedFactory::respond(input)
+    });
+    /// Factory failure supplied by the caller, not a simulator setup failure.
+    struct FailingFactory;
+    impl FailingFactory {
+        /// Return the original caller failure.
+        fn respond<E: ProviderExecution>(
+            _: FauxResponseInput<E>,
+        ) -> impl std::future::Future<Output = Result<AssistantMessage, DiagnosticErrorInfo>>
+        + 'static
+        + use<E> {
+            std::future::ready(Err(failure("boom")))
+        }
+    }
+    factory!(FailingFactory, |_: &FailingFactory, input| {
+        FailingFactory::respond(input)
+    });
+
     #[test]
     /// Exercise factory failure is terminal through the public invocation boundary.
     fn maestro_factory_failure_is_terminal() {
         let _serial = crate::bundled::registry();
         let registration = fixed(None);
         registration.set_responses(vec![FauxResponseStep::Factory(std::sync::Arc::new(
-            |_, _, _, _| Box::pin(async { Err(failure("boom")) }),
+            FailingFactory,
         ))]);
         let stream = stream(model(&registration), context("hi"), None).unwrap();
         let observed = wait(async {
@@ -1199,15 +1355,7 @@ mod tests {
         let factory_called = called.clone();
         let hook_called = called.clone();
         registration.set_responses(vec![FauxResponseStep::Factory(std::sync::Arc::new(
-            move |_, _, _, _| {
-                factory_called.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                Box::pin(async {
-                    Ok(faux_assistant_message(
-                        "abcdef",
-                        FauxAssistantMessageOptions::default(),
-                    ))
-                })
-            },
+            CountingFactory(factory_called),
         ))]);
         let options = Some(ProviderStreamOptions {
             common: StreamOptions::<maestro_models::Threaded> {
@@ -1448,7 +1596,9 @@ mod tests {
     }
 
     /// Exercise check forwarded options through the public invocation boundary.
-    fn check_forwarded_options(options: Option<FauxResponseOptions>) -> AssistantMessage {
+    fn check_forwarded_options<E: ProviderExecution>(
+        options: Option<FauxResponseOptions<E>>,
+    ) -> AssistantMessage {
         let text = match options {
             None => "absent",
             Some(FauxResponseOptions::Raw(value)) if value.extra.is_empty() => "defaults",
@@ -1474,9 +1624,7 @@ mod tests {
     fn maestro_raw_and_simple_options_reach_factory() {
         let _serial = crate::bundled::registry();
         let registration = fixed(None);
-        let factory: FauxResponseFactory = std::sync::Arc::new(|_, options, _, _| {
-            Box::pin(std::future::ready(Ok(check_forwarded_options(options))))
-        });
+        let factory: FauxResponseFactory = std::sync::Arc::new(ForwardedOptionsFactory);
         registration.set_responses(
             (0..4)
                 .map(|_| FauxResponseStep::Factory(factory.clone()))
@@ -1595,15 +1743,7 @@ mod tests {
         let (entered_tx, entered_rx) = std::sync::mpsc::channel();
         let hook_order = order.clone();
         registration.set_responses(vec![FauxResponseStep::Factory(std::sync::Arc::new(
-            move |_, _, _, _| {
-                factory_order.lock().unwrap().push("factory");
-                Box::pin(async {
-                    Ok(faux_assistant_message(
-                        "ok",
-                        FauxAssistantMessageOptions::default(),
-                    ))
-                })
-            },
+            OrderedFactory(factory_order),
         ))]);
         let options = Some(ProviderStreamOptions {
             common: StreamOptions::<maestro_models::Threaded> {
@@ -1675,7 +1815,7 @@ mod tests {
         for caller_runtime in [false, true] {
             let registration = fixed(Some(50.0));
             registration.set_responses(vec![FauxResponseStep::Factory(std::sync::Arc::new(
-                |_, _, _, _| Box::pin(timed_message()),
+                TimedFactory,
             ))]);
             let options = Some(ProviderStreamOptions {
                 common: StreamOptions::<maestro_models::Threaded> {

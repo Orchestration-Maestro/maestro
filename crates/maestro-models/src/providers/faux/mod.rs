@@ -2,10 +2,10 @@
 /// Owned content, message and model constructors.
 mod builders;
 use crate::{
-    ApiProvider, AssistantContent, AssistantMessage, AssistantMessageEventStream, BoxFuture,
-    Context, DiagnosticErrorInfo, Model, ModelCost, ModelInput, ProviderResponse,
-    ProviderStreamOptions, SimpleStreamOptions, StopReason, StreamOptions, TextContent,
-    ThinkingContent, ToolCall, register_api_provider, unregister_api_providers,
+    ApiProvider, AssistantContent, AssistantMessage, AssistantMessageEventStream, Context,
+    DiagnosticErrorInfo, Execution, Invoke, Local, Model, ModelCost, ModelInput, ProviderExecution,
+    ProviderResponse, RegistryCapture, StopReason, StreamOptionsInput, TextContent,
+    ThinkingContent, Threaded, ToolCall, register_api_provider, unregister_api_providers,
 };
 pub use builders::{faux_assistant_message, faux_text, faux_thinking, faux_tool_call};
 
@@ -132,22 +132,18 @@ pub struct RegisterFauxProviderOptions {
     /// Chunk range overrides.
     pub token_size: Option<FauxTokenSize>,
 }
-/// Complete invocation options received by a response factory.
-#[derive(Clone)]
-pub enum FauxResponseOptions {
-    /// Raw invocation options, including extra fields.
-    Raw(ProviderStreamOptions),
-    /// Simple invocation options, including reasoning budgets.
-    Simple(SimpleStreamOptions),
-}
-impl FauxResponseOptions {
-    /// Borrow common settings without discarding variant-specific options.
-    fn common(&self) -> &StreamOptions {
-        match self {
-            Self::Raw(value) => &value.common,
-            Self::Simple(value) => &value.common,
-        }
-    }
+/// Complete original invocation options received by a response factory.
+pub type FauxResponseOptions<E = Threaded> = StreamOptionsInput<E>;
+/// Original invocation values retained by an asynchronous response factory.
+pub struct FauxResponseInput<E: ProviderExecution> {
+    /// Conversation supplied to this request.
+    pub context: Context,
+    /// Absent or supplied original raw/simple options.
+    pub options: Option<FauxResponseOptions<E>>,
+    /// Live registration state.
+    pub state: FauxProviderState,
+    /// Selected model descriptor.
+    pub model: Model,
 }
 /// Live registration call count shared with factories.
 #[derive(Clone)]
@@ -159,28 +155,45 @@ impl FauxProviderState {
         self.0.load(Ordering::Acquire)
     }
 }
-/// Native asynchronous response factory.
-#[cfg(not(target_arch = "wasm32"))]
-pub type FauxResponseFactory = Arc<
-    dyn Fn(
-            Context,
-            Option<FauxResponseOptions>,
-            FauxProviderState,
-            Model,
-        ) -> BoxFuture<Result<AssistantMessage, DiagnosticErrorInfo>>
-        + Send
-        + Sync,
->;
-/// Browser-local asynchronous response factory.
-#[cfg(target_arch = "wasm32")]
-pub type FauxResponseFactory = Arc<
-    dyn Fn(
-        Context,
-        Option<FauxResponseOptions>,
-        FauxProviderState,
-        Model,
-    ) -> BoxFuture<Result<AssistantMessage, DiagnosticErrorInfo>>,
->;
+/// Retained asynchronous factory callable with either request family.
+pub trait FauxResponseCallback:
+    Invoke<
+        Local,
+        FauxResponseInput<Local>,
+        Return = <Local as Execution>::Future<
+            'static,
+            Result<AssistantMessage, DiagnosticErrorInfo>,
+        >,
+    > + Invoke<
+        Threaded,
+        FauxResponseInput<Threaded>,
+        Return = <Threaded as Execution>::Future<
+            'static,
+            Result<AssistantMessage, DiagnosticErrorInfo>,
+        >,
+    > + RegistryCapture
+{
+}
+impl<T> FauxResponseCallback for T where
+    T: Invoke<
+            Local,
+            FauxResponseInput<Local>,
+            Return = <Local as Execution>::Future<
+                'static,
+                Result<AssistantMessage, DiagnosticErrorInfo>,
+            >,
+        > + Invoke<
+            Threaded,
+            FauxResponseInput<Threaded>,
+            Return = <Threaded as Execution>::Future<
+                'static,
+                Result<AssistantMessage, DiagnosticErrorInfo>,
+            >,
+        > + RegistryCapture
+{
+}
+/// One retained factory whose future follows the invocation family.
+pub type FauxResponseFactory = Arc<dyn FauxResponseCallback>;
 /// One queued response or asynchronous factory.
 #[derive(Clone)]
 pub enum FauxResponseStep {
@@ -377,11 +390,14 @@ impl Registration {
         let mut message = match step {
             Some(FauxResponseStep::Message(message)) => *message,
             Some(FauxResponseStep::Factory(factory)) => {
-                factory(
-                    context.clone(),
-                    options.clone(),
-                    self.state.clone(),
-                    Model::clone(model),
+                Invoke::<Threaded, _>::invoke(
+                    factory.as_ref(),
+                    FauxResponseInput {
+                        context: context.clone(),
+                        options: options.clone(),
+                        state: self.state.clone(),
+                        model: Model::clone(model),
+                    },
                 )
                 .await?
             }
