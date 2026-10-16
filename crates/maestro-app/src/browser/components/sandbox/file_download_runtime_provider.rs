@@ -17,7 +17,7 @@ type FileCollection<V> = Arc<RwLock<Vec<DownloadableFile<V>>>>;
 /// Collects returned files without triggering a host download.
 pub struct FileDownloadRuntimeProvider<V: RuntimeProviderValue = serde_json::Value> {
     /// Replaceable slot retaining the current caller-visible collection.
-    files: Arc<RwLock<FileCollection<V>>>,
+    files: RwLock<FileCollection<V>>,
 }
 impl<V: RuntimeProviderValue> Default for FileDownloadRuntimeProvider<V> {
     fn default() -> Self {
@@ -29,7 +29,7 @@ impl<V: RuntimeProviderValue> FileDownloadRuntimeProvider<V> {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            files: Arc::default(),
+            files: RwLock::default(),
         }
     }
     /// Retain the live collection, including caller edits.
@@ -52,6 +52,28 @@ impl<V: RuntimeProviderValue> FileDownloadRuntimeProvider<V> {
         );
         drop(old);
     }
+    /// Collect and acknowledge immediately, leaving only settlement to the future.
+    fn collect_message(
+        &self,
+        message: &V,
+        respond: &SandboxRespond<V>,
+    ) -> Result<(), DiagnosticErrorInfo> {
+        if message.message_type()?.as_deref() == Some("file-returned") {
+            let file = message.project_download()?;
+            let files = Arc::clone(
+                &self
+                    .files
+                    .read()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner),
+            );
+            files
+                .write()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .push(file);
+            respond(V::success_response()?)?;
+        }
+        Ok(())
+    }
 }
 impl<V: RuntimeProviderValue> SandboxRuntimeProvider<V> for FileDownloadRuntimeProvider<V> {
     fn handle_message(
@@ -59,24 +81,9 @@ impl<V: RuntimeProviderValue> SandboxRuntimeProvider<V> for FileDownloadRuntimeP
         message: V,
         respond: SandboxRespond<V>,
     ) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {
-        let slot = Arc::clone(&self.files);
-        Box::pin(async move {
-            if message.message_type()?.as_deref() == Some("file-returned") {
-                let file = message.project_download()?;
-                let files = Arc::clone(
-                    &slot
-                        .read()
-                        .unwrap_or_else(std::sync::PoisonError::into_inner),
-                );
-                files
-                    .write()
-                    .unwrap_or_else(std::sync::PoisonError::into_inner)
-                    .push(file);
-                respond(V::success_response()?)?;
-            }
-            Ok(())
-        })
+        Box::pin(std::future::ready(self.collect_message(&message, &respond)))
     }
+
     fn get_data(&self) -> Result<IndexMap<String, V>, DiagnosticErrorInfo> {
         Ok(IndexMap::new())
     }

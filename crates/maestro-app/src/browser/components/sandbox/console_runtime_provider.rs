@@ -65,8 +65,8 @@ struct ConsoleState<V: SandboxValue> {
 }
 /// Captures console messages without formatting their payloads.
 pub struct ConsoleRuntimeProvider<V: RuntimeProviderValue = serde_json::Value> {
-    /// One retained state slot shared by message futures.
-    state: Arc<RwLock<ConsoleState<V>>>,
+    /// One retained state slot shared by callers.
+    state: RwLock<ConsoleState<V>>,
 }
 impl<V: RuntimeProviderValue> Default for ConsoleRuntimeProvider<V> {
     fn default() -> Self {
@@ -78,11 +78,11 @@ impl<V: RuntimeProviderValue> ConsoleRuntimeProvider<V> {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            state: Arc::new(RwLock::new(ConsoleState {
+            state: RwLock::new(ConsoleState {
                 logs: Arc::default(),
                 completed: false,
                 error: None,
-            })),
+            }),
         }
     }
     /// Retain the current live collection, including caller edits.
@@ -128,6 +128,44 @@ impl<V: RuntimeProviderValue> ConsoleRuntimeProvider<V> {
         );
         drop(old);
     }
+    /// Perform the synchronous message effects before returning their ready result.
+    fn collect_message(
+        &self,
+        message: &V,
+        respond: &SandboxRespond<V>,
+    ) -> Result<(), DiagnosticErrorInfo> {
+        let tag = message.message_type()?;
+        match tag.as_deref() {
+            Some("console") => {
+                let entry = message.project_console()?;
+                let logs = Arc::clone(
+                    &self
+                        .state
+                        .read()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .logs,
+                );
+                logs.write()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
+                    .push(entry);
+                respond(V::success_response()?)?;
+            }
+            Some("execution-complete" | "execution-error") => {
+                let error = (tag.as_deref() == Some("execution-error"))
+                    .then(|| message.project_completion_error())
+                    .transpose()?
+                    .map(Arc::new);
+                let mut state = self
+                    .state
+                    .write()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                state.completed = true;
+                state.error = error;
+            }
+            _ => {}
+        }
+        Ok(())
+    }
 }
 impl<V: RuntimeProviderValue> SandboxRuntimeProvider<V> for ConsoleRuntimeProvider<V> {
     fn handle_message(
@@ -135,39 +173,9 @@ impl<V: RuntimeProviderValue> SandboxRuntimeProvider<V> for ConsoleRuntimeProvid
         message: V,
         respond: SandboxRespond<V>,
     ) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {
-        let state = Arc::clone(&self.state);
-        Box::pin(async move {
-            let tag = message.message_type()?;
-            match tag.as_deref() {
-                Some("console") => {
-                    let entry = message.project_console()?;
-                    let logs = Arc::clone(
-                        &state
-                            .read()
-                            .unwrap_or_else(std::sync::PoisonError::into_inner)
-                            .logs,
-                    );
-                    logs.write()
-                        .unwrap_or_else(std::sync::PoisonError::into_inner)
-                        .push(entry);
-                    respond(V::success_response()?)?;
-                }
-                Some("execution-complete" | "execution-error") => {
-                    let error = (tag.as_deref() == Some("execution-error"))
-                        .then(|| message.project_completion_error())
-                        .transpose()?
-                        .map(Arc::new);
-                    let mut state = state
-                        .write()
-                        .unwrap_or_else(std::sync::PoisonError::into_inner);
-                    state.completed = true;
-                    state.error = error;
-                }
-                _ => {}
-            }
-            Ok(())
-        })
+        Box::pin(std::future::ready(self.collect_message(&message, &respond)))
     }
+
     fn get_data(&self) -> Result<IndexMap<String, V>, DiagnosticErrorInfo> {
         Ok(IndexMap::new())
     }

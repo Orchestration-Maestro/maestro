@@ -252,7 +252,6 @@ fn download_collections_keep_aliases_and_reset_identity() {
 
 #[test]
 fn provider_response_failure_keeps_prior_collection() {
-    use maestro_models::DiagnosticErrorInfo;
     let console = Arc::new(ConsoleRuntimeProvider::new());
     let files = Arc::new(FileDownloadRuntimeProvider::new());
     for (provider, message) in [
@@ -265,16 +264,7 @@ fn provider_response_failure_keeps_prior_collection() {
             json!({"type":"file-returned", "content":"kept"}),
         ),
     ] {
-        let failure = DiagnosticErrorInfo {
-            name: Some("ReplyFailure".into()),
-            message: "controlled failure".into(),
-            stack: Some("original stack".into()),
-            code: None,
-        };
-        let expected = failure.clone();
-        let error = run(provider.handle_message(message, Arc::new(move |_| Err(failure.clone()))))
-            .unwrap_err();
-        assert_eq!(error, expected);
+        assert_immediate_failure(provider, message);
     }
     assert_eq!(console.get_logs().read().unwrap()[0].text, "kept");
     assert_eq!(files.get_files().read().unwrap()[0].content, "kept");
@@ -723,4 +713,30 @@ fn assert_host_events(
     );
     assert_eq!(events[7], json!({"replies":[]}));
     assert_eq!(events[8], json!({"replies":[{"success":true}]}));
+}
+
+/// Observe the reply before polling and preserve the original failure fields.
+fn assert_immediate_failure(provider: &dyn SandboxRuntimeProvider, message: Value) {
+    let failure = DiagnosticErrorInfo {
+        name: Some("ReplyFailure".into()),
+        message: "controlled failure".into(),
+        stack: Some("original stack".into()),
+        code: None,
+    };
+    let expected = failure.clone();
+    let replied = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let observed = Arc::clone(&replied);
+    let pending = provider.handle_message(
+        message,
+        Arc::new(move |_| {
+            observed.store(true, std::sync::atomic::Ordering::SeqCst);
+            Err(failure.clone())
+        }),
+    );
+    assert!(
+        replied.load(std::sync::atomic::Ordering::SeqCst),
+        "reply must occur before returning the future"
+    );
+    let error = run(pending).unwrap_err();
+    assert_eq!(error, expected);
 }

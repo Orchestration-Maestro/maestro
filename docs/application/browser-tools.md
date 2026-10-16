@@ -100,8 +100,9 @@ assert!(console.get_data()?.is_empty());
 
 Log and file getters return live shared collections, allowing callers to retain
 and edit them. Reset replaces the collection: previous aliases keep their entries.
-Collection precedes acknowledgement, so a response failure does not undo it;
-response callbacks run without internal guards. Host fields remain unformatted
+Collection and replies run when `handle_message` is called; its returned future
+carries their result. Collection precedes acknowledgement, so a response failure
+does not undo it; response callbacks run without internal guards. Host fields remain unformatted
 values. JSON preserves missing versus null arguments; browser values retain
 native handles, including binary data and undefined fields.
 
