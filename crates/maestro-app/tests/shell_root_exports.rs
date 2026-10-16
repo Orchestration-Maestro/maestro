@@ -161,8 +161,8 @@ fn renderer_bindings_are_available_from_application_root() {
     let _: Option<ToolDefinition> = None;
     let _: Option<ToolRenderCall<ToolRendererState>> = binding.render_call;
     let _: Option<ToolRenderResult<serde_json::Value, ToolRendererState>> = None;
-    let _: Option<ToolRenderResultCallback<serde_json::Value, ToolRendererState>> =
-        binding.render_result;
+    let _: Option<maestro_app::ToolRenderResultBinding> = binding.render_result;
+    let _: Option<ToolRenderResultCallback<serde_json::Value, ToolRendererState>> = None;
     let _: Option<ToolRenderContext<'_, ToolRendererState>> = None;
     let _: Option<ToolRenderEnvironment> = None;
     let _: Option<ToolRenderPhase> = None;

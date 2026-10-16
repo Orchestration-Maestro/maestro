@@ -171,3 +171,8 @@ const FIXTURE_GROUPS: &[&str] = &[
     "tool_row_outer_children_keep_shared_edits",
     "tool_row_invalidation_reads_live_theme",
 ];
+
+#[test]
+fn typed_result_bindings_prepare_each_rebuild() {
+    tool_row_support::ownership::typed_rebuilds();
+}

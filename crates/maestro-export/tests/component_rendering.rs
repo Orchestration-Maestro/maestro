@@ -56,9 +56,9 @@ fn typed_definitions_keep_custom_state_and_details() {
     let states = Rc::new(RefCell::new(Vec::new()));
     let tool = typed_definition(&states);
     let theme = component_support::theme();
-    let tool = Rc::new(tool);
+    let tool = maestro_tools::ToolRendererBinding::from_definition(&tool);
     let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
-        get_tool_definition: |_: &str| Ok(Some(Rc::clone(&tool))),
+        get_tool_definition: |_: &str| Ok(Some(tool.clone())),
         theme: &theme,
         cwd: "/work",
         width: None,
@@ -194,7 +194,11 @@ fn assert_nested_failure(padded: bool, failing_phase: usize) {
     let tool = Rc::new(tool);
     let theme = component_support::theme();
     let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
-        get_tool_definition: |_: &str| Ok(Some(Rc::clone(&tool))),
+        get_tool_definition: |_: &str| {
+            Ok(Some(maestro_tools::ToolRendererBinding::from_definition(
+                &tool,
+            )))
+        },
         theme: &theme,
         cwd: "/work",
         width: None,
@@ -274,7 +278,11 @@ fn export_typed_details_decode_once_and_share_both_phases() {
     let tool = Rc::new(tool);
     let theme = component_support::theme();
     let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
-        get_tool_definition: |_: &str| Ok(Some(Rc::clone(&tool))),
+        get_tool_definition: |_: &str| {
+            Ok(Some(maestro_tools::ToolRendererBinding::from_definition(
+                &tool,
+            )))
+        },
         theme: &theme,
         cwd: "/work",
         width: None,
@@ -323,7 +331,11 @@ fn export_raw_details_do_not_decode_typed_records() {
         maestro_tools::ReadToolOptions::default(),
     ));
     let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
-        get_tool_definition: |_: &str| Ok(Some(Rc::clone(&tool))),
+        get_tool_definition: |_: &str| {
+            Ok(Some(maestro_tools::ToolRendererBinding::from_definition(
+                &tool,
+            )))
+        },
         theme: &theme,
         cwd: "/work",
         width: Some(100),
@@ -363,7 +375,11 @@ fn export_wrapped_native_edit_keeps_shared_row_state() {
     let tool = Rc::new(tool);
     let (theme, environment) = native_environment();
     let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
-        get_tool_definition: |_: &str| Ok(Some(Rc::clone(&tool))),
+        get_tool_definition: |_: &str| {
+            Ok(Some(maestro_tools::ToolRendererBinding::from_definition(
+                &tool,
+            )))
+        },
         theme: &theme,
         cwd: "/work",
         width: Some(80),
@@ -511,4 +527,456 @@ fn native_palette(color: u8) -> Rc<maestro_theme::Theme> {
         )
         .unwrap(),
     )
+}
+
+#[test]
+fn export_mixed_bindings_require_only_selected_decoder() {
+    use component_support::bindings::{native_environment, registry};
+    use maestro_export::{ToolHtmlRendererDeps, create_tool_html_renderer};
+    let (theme, environment) = native_environment();
+    let bindings = registry();
+    let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
+        get_tool_definition: |name: &str| Ok(bindings.get(name).cloned()),
+        theme: &theme,
+        cwd: "/work",
+        width: Some(80),
+        environment,
+    });
+    check_native_registry(&renderer);
+    check_custom_registry(&renderer);
+}
+
+fn check_native_registry(renderer: &dyn maestro_export::ToolHtmlRenderer) {
+    use component_support::bindings::{corpus, output};
+    use maestro_export::ToolHtmlResultInput;
+    for case in corpus().native {
+        assert_eq!(
+            case.test,
+            "export_mixed_bindings_require_only_selected_decoder"
+        );
+        let input = case.input;
+        let call = renderer
+            .render_call(&input.name, &input.name, Some(&input.args))
+            .unwrap()
+            .unwrap();
+        let result = renderer
+            .render_result(
+                &input.name,
+                &input.name,
+                ToolHtmlResultInput {
+                    content: Some(&input.content),
+                    details: Some(&input.details),
+                    is_error: false,
+                },
+            )
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            serde_json::json!({"call":call,"result":output(result)}),
+            case.expected
+        );
+    }
+}
+
+fn check_custom_registry(renderer: &dyn maestro_export::ToolHtmlRenderer) {
+    use maestro_export::ToolHtmlResultInput;
+    for (name, details, expected) in [
+        (
+            "custom_text",
+            serde_json::json!({"label":"detail"}),
+            "custom_text:detail:true",
+        ),
+        (
+            "custom_count",
+            serde_json::json!({"value":42}),
+            "custom_count:42:true",
+        ),
+    ] {
+        let result = renderer
+            .render_result(
+                name,
+                name,
+                ToolHtmlResultInput {
+                    content: None,
+                    details: Some(&details),
+                    is_error: false,
+                },
+            )
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            result.expanded.unwrap(),
+            format!("<div class=\"ansi-line\">{expected}</div>")
+        );
+    }
+    let raw = renderer
+        .render_result(
+            "raw",
+            "raw",
+            ToolHtmlResultInput {
+                content: None,
+                details: Some(&serde_json::json!({"not":"typed"})),
+                is_error: false,
+            },
+        )
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        raw.expanded.as_deref(),
+        Some("<div class=\"ansi-line\">raw</div>")
+    );
+}
+
+#[test]
+fn export_raw_bindings_borrow_details_in_both_phases() {
+    use component_support::bindings::{corpus, output};
+    use maestro_export::{
+        ToolHtmlRenderer, ToolHtmlRendererDeps, ToolHtmlResultInput, create_tool_html_renderer,
+    };
+    use maestro_tools::ToolRendererBinding;
+    use serde_json::json;
+    for case in corpus().mixed.into_iter().take(7) {
+        assert_eq!(
+            case.test,
+            "export_raw_bindings_borrow_details_in_both_phases"
+        );
+        let input = case.input;
+        for typed_constructor in [false, true] {
+            let events = Rc::new(RefCell::new(Vec::new()));
+            let tool = raw_observer(
+                input.details.as_ref().map(std::ptr::from_ref),
+                events.clone(),
+            );
+            let binding = if typed_constructor {
+                ToolRendererBinding::from_definition(&tool)
+            } else {
+                ToolRendererBinding::from_raw(&tool).unwrap()
+            };
+            let theme = component_support::theme();
+            let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
+                get_tool_definition: |_: &str| Ok(Some(binding.clone())),
+                theme: &theme,
+                cwd: "/work",
+                width: None,
+                environment: component_support::environment(),
+            });
+            renderer
+                .render_call("id", "custom", Some(&json!({"tag":input.case})))
+                .unwrap();
+            let content = serde_json::to_value(&input.content).unwrap();
+            let result = renderer
+                .render_result(
+                    "id",
+                    "custom",
+                    ToolHtmlResultInput {
+                        content: Some(&content),
+                        details: input.details.as_ref(),
+                        is_error: true,
+                    },
+                )
+                .unwrap()
+                .unwrap();
+            assert_eq!(
+                json!({"output":output(result),"events":*events.borrow()}),
+                case.expected
+            );
+        }
+    }
+}
+
+#[test]
+fn export_prepared_results_survive_reentry_and_live_lookup() {
+    use component_support::bindings::{corpus, output};
+    use maestro_export::ToolHtmlResultInput;
+    use serde_json::json;
+    let case = corpus().mixed.remove(7);
+    assert_eq!(
+        case.test,
+        "export_prepared_results_survive_reentry_and_live_lookup"
+    );
+    assert_eq!(case.input.case, "same-id-reentry");
+    let (renderer, events) = reentrant_renderer(case.input.inner_details.clone().unwrap());
+    renderer
+        .render_call("id", "outer", Some(&json!({"version":"first"})))
+        .unwrap();
+    let result = renderer
+        .render_result(
+            "id",
+            "outer",
+            ToolHtmlResultInput {
+                content: None,
+                details: case.input.outer_details.as_ref(),
+                is_error: false,
+            },
+        )
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        json!({"output":output(result),"events":*events.borrow()}),
+        case.expected
+    );
+    let result = renderer
+        .render_result(
+            "id",
+            "outer",
+            ToolHtmlResultInput {
+                content: None,
+                details: None,
+                is_error: false,
+            },
+        )
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        result.expanded.as_deref(),
+        Some("<div class=\"ansi-line\">replacement</div>")
+    );
+    assert_eq!(
+        events.borrow().last().unwrap(),
+        &json!({"lookup":"outer","version":"replacement"})
+    );
+}
+
+#[test]
+fn export_binding_changes_keep_native_state_per_call() {
+    use component_support::bindings::{corpus, native_environment};
+    use maestro_export::{ToolHtmlRendererDeps, create_tool_html_renderer};
+    use maestro_tools::{ToolRenderResult, ToolRendererBinding};
+    let case = corpus().mixed.remove(8);
+    assert_eq!(
+        case.test,
+        "export_binding_changes_keep_native_state_per_call"
+    );
+    assert_eq!(case.input.case, "native-edit-replaced");
+    let native = maestro_tools::create_edit_tool_definition::<()>(
+        "/work".into(),
+        maestro_tools::EditToolOptions::default(),
+    );
+    let native_binding = ToolRendererBinding::from_raw(&native).unwrap();
+    let ToolRenderResult::Raw(callback) = native.render_result.unwrap() else {
+        panic!("raw callback")
+    };
+    let states = Rc::new(RefCell::new(Vec::new()));
+    let custom = edit_result_wrapper(callback, &states);
+    let result_only = std::cell::Cell::new(false);
+    let (theme, environment) = native_environment();
+    let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
+        get_tool_definition: |_: &str| {
+            Ok(Some(if result_only.get() {
+                custom.clone()
+            } else {
+                native_binding.clone()
+            }))
+        },
+        theme: &theme,
+        cwd: "/work",
+        width: Some(80),
+        environment,
+    });
+    check_edit_replacement(&renderer, &result_only, &case, &states);
+}
+
+fn raw_observer(
+    details: Option<*const serde_json::Value>,
+    observed: Rc<RefCell<Vec<serde_json::Value>>>,
+) -> maestro_tools::ToolDefinition<(), (), component_support::bindings::NeverDecode, u32> {
+    use component_support::bindings::{NeverDecode, presence};
+    use maestro_tools::ToolRenderResult;
+    use serde_json::json;
+    let content_ptr = RefCell::new(None);
+    let prior_state = RefCell::new(None);
+    let mut tool = component_support::definition::<(), (), NeverDecode, u32>();
+    tool.render_call = Some(Rc::new(|_, _, row| {
+        *row.state.borrow_mut() += 1;
+        Ok(Rc::new(Line("call custom".into())))
+    }));
+    tool.render_result = Some(ToolRenderResult::Raw(Rc::new(
+        move |result, options, _, row| {
+            let ptr = result.content.as_ptr();
+            let previous = content_ptr.borrow_mut().replace(ptr);
+            let previous_state = prior_state.borrow_mut().replace(Rc::clone(&row.state));
+            observed.borrow_mut().push(json!({
+                "name":"custom", "expanded":options.expanded,
+                "details":presence(result.details),
+                "same_details":result.details.map(std::ptr::from_ref)==details,
+                "same_content":previous.is_none_or(|previous| previous==ptr),
+                "same_state":previous_state.is_none_or(|state| Rc::ptr_eq(&state, &row.state)),
+                "args":presence(row.args), "is_error":result.is_error.unwrap(),
+                "count":*row.state.borrow(), "content":result.content,
+            }));
+            Ok(Rc::new(Line(
+                if options.expanded {
+                    "expanded"
+                } else {
+                    "collapsed"
+                }
+                .into(),
+            )))
+        },
+    )));
+    tool
+}
+
+fn reentrant_renderer(
+    inner: serde_json::Value,
+) -> (Rc<dyn maestro_export::ToolHtmlRenderer>, ExportEvents) {
+    use maestro_export::{ToolHtmlRenderer, ToolHtmlRendererDeps, create_tool_html_renderer};
+    use maestro_tools::{ToolRenderResult, ToolRendererBinding};
+    use serde_json::json;
+    // Static callbacks retain a weak renderer whose dependencies must outlive them.
+    let theme = Box::leak(Box::new(component_support::theme()));
+    let events = Rc::new(RefCell::new(Vec::new()));
+    let slot = RendererSlot::default();
+    let version = Rc::new(std::cell::Cell::new(false));
+    let binding = reentrant_binding(&events, &slot, &version, inner);
+    let mut replacement = component_support::definition::<(), (), serde_json::Value, bool>();
+    replacement.render_result = Some(ToolRenderResult::Raw(Rc::new(|_, _, _, _| {
+        Ok(Rc::new(Line("replacement".into())))
+    })));
+    let replacement = ToolRendererBinding::from_raw(&replacement).unwrap();
+    let lookups = events.clone();
+    let renderer: Rc<dyn ToolHtmlRenderer> = Rc::new(create_tool_html_renderer(
+        ToolHtmlRendererDeps {
+            get_tool_definition: move |name: &str| {
+                lookups.borrow_mut().push(json!({"lookup":name,"version":if version.get() { "replacement" } else { "first" }}));
+                Ok(Some(if name == "outer" && version.get() {
+                    replacement.clone()
+                } else {
+                    binding.clone()
+                }))
+            },
+            theme,
+            cwd: "/work",
+            width: None,
+            environment: component_support::environment(),
+        },
+    ));
+    *slot.borrow_mut() = Some(Rc::downgrade(&renderer));
+    (renderer, events)
+}
+
+type ExportEvents = Rc<RefCell<Vec<serde_json::Value>>>;
+type RendererSlot = Rc<RefCell<Option<std::rc::Weak<dyn maestro_export::ToolHtmlRenderer>>>>;
+fn reentrant_binding(
+    events: &ExportEvents,
+    slot: &RendererSlot,
+    version: &Rc<std::cell::Cell<bool>>,
+    inner: serde_json::Value,
+) -> maestro_tools::ToolRendererBinding {
+    use maestro_export::ToolHtmlResultInput;
+    use maestro_tools::{ToolRenderResult, ToolRendererBinding};
+    use serde_json::json;
+    let mut tool = component_support::definition::<(), (), Details, u32>();
+    let seen = events.clone();
+    tool.render_call = Some(Rc::new(move |args, _, _| {
+        seen.borrow_mut().push(json!({"slot":"call","args":args}));
+        Ok(Rc::new(Line(format!(
+            "call {}",
+            args.unwrap()["version"].as_str().unwrap()
+        ))))
+    }));
+    let seen = events.clone();
+    let nested = Rc::new(std::cell::Cell::new(false));
+    let current = version.clone();
+    let handle = slot.clone();
+
+    tool.render_result = Some(ToolRenderResult::Typed(Rc::new(
+        move |result, options, _, row| {
+            let label = &result.details.unwrap().label;
+            let last = row
+                .last_component
+                .as_ref()
+                .map(|component| component.render(80).join("\n"));
+            seen.borrow_mut().push(json!({"slot":"result","expanded":options.expanded,"details":{"label":label},"args":row.args,"last":last}));
+            if !options.expanded && !nested.replace(true) {
+                current.set(true);
+                let renderer = handle.borrow().as_ref().unwrap().upgrade().unwrap();
+                renderer
+                    .render_call("id", "different", Some(&json!({"version":"replacement"})))
+                    .unwrap();
+                renderer
+                    .render_result(
+                        "id",
+                        "inner",
+                        ToolHtmlResultInput {
+                            content: None,
+                            details: Some(&inner),
+                            is_error: false,
+                        },
+                    )
+                    .unwrap()
+                    .unwrap();
+            }
+            Ok(Rc::new(Line(format!("{label}:{}", options.expanded))))
+        },
+    )));
+    ToolRendererBinding::from_definition(&tool)
+}
+
+fn edit_result_wrapper(
+    callback: maestro_tools::ToolRenderResultCallback<
+        serde_json::Value,
+        maestro_tools::EditRenderState,
+    >,
+    states: &Rc<RefCell<Vec<Rc<RefCell<maestro_tools::EditRenderState>>>>>,
+) -> maestro_tools::ToolRendererBinding {
+    use maestro_tools::{ToolRenderResult, ToolRendererBinding};
+    let seen = states.clone();
+    let mut custom =
+        component_support::definition::<String, bool, serde_json::Value, Vec<String>>();
+    custom.render_result = Some(ToolRenderResult::Raw(Rc::new(
+        move |result, options, theme, row| {
+            row.state.borrow_mut().push("result".into());
+            let state = row
+                .renderer_state()
+                .unwrap()
+                .state::<maestro_tools::EditRenderState>();
+            seen.borrow_mut().push(state.clone());
+            callback(result, options, theme, &row.with_state(state))
+        },
+    )));
+    ToolRendererBinding::from_raw(&custom).unwrap()
+}
+
+fn check_edit_replacement(
+    renderer: &dyn maestro_export::ToolHtmlRenderer,
+    result_only: &std::cell::Cell<bool>,
+    case: &component_support::bindings::Case<component_support::bindings::Mixed>,
+    states: &Rc<RefCell<Vec<Rc<RefCell<maestro_tools::EditRenderState>>>>>,
+) {
+    use component_support::bindings::output;
+    use maestro_export::ToolHtmlResultInput;
+    use serde_json::json;
+    let call = renderer
+        .render_call("first", "edit", case.input.args.as_ref())
+        .unwrap()
+        .unwrap();
+    result_only.set(true);
+    let result = renderer
+        .render_result(
+            "first",
+            "edit",
+            ToolHtmlResultInput {
+                content: None,
+                details: case.input.details.as_ref(),
+                is_error: false,
+            },
+        )
+        .unwrap()
+        .unwrap();
+    result_only.set(false);
+    let settled = renderer
+        .render_call("first", "edit", case.input.args.as_ref())
+        .unwrap()
+        .unwrap();
+    let other = renderer
+        .render_call("second", "edit", case.input.args.as_ref())
+        .unwrap()
+        .unwrap();
+    let states = states.borrow();
+    assert_eq!(states.len(), 2);
+    assert_eq!(
+        json!({"call":call,"result":output(result),"settled":settled,"other":other,"same_state":Rc::ptr_eq(&states[0], &states[1])}),
+        case.expected
+    );
 }

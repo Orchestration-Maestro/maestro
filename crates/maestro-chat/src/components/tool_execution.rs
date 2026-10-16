@@ -355,8 +355,12 @@ impl Row {
                 is_partial: context.phase.is_partial,
             };
             let theme = self.theme()?;
-            let rendered =
-                callback.and_then(|f| f(&result.borrowed(), options, &theme, &context).ok());
+            let rendered = callback.and_then(|f| {
+                f.prepare(result.borrowed())
+                    .ok()?
+                    .render(options, &theme, &context)
+                    .ok()
+            });
             let old = self.output.replace(rendered.clone());
             drop(old);
             let child = match rendered {

@@ -668,7 +668,9 @@ fn standard_renderer_integrates_with_document_export() {
     let tool = Rc::new(tool);
     for available in [true, false] {
         let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
-            get_tool_definition: |_: &str| Ok(available.then(|| Rc::clone(&tool))),
+            get_tool_definition: |_: &str| {
+                Ok(available.then(|| maestro_tools::ToolRendererBinding::from_definition(&tool)))
+            },
             theme: &theme,
             cwd: "/work",
             width: None,
@@ -699,4 +701,38 @@ fn standard_renderer_integrates_with_document_export() {
             assert!(decoded.get("renderedTools").is_none());
         }
     }
+}
+
+#[test]
+fn mixed_bindings_populate_document_custom_html() {
+    use component_support::bindings::{corpus, native_environment, registry};
+    let case = corpus().documents.remove(0);
+    assert_eq!(case.test, "mixed_bindings_populate_document_custom_html");
+    let (theme, environment) = native_environment();
+    let bindings = registry();
+    let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
+        get_tool_definition: |name: &str| Ok(bindings.get(name).cloned()),
+        theme: &theme,
+        cwd: "/work",
+        width: Some(80),
+        environment,
+    });
+    let view = View {
+        data: json!({"header":null,"leafId":null,"entries":case.input.entries}),
+        ..View::default()
+    };
+    let operations = Operations::default();
+    export_session_to_html(
+        &view,
+        None,
+        Some(ExportOptions {
+            tool_renderer: Some(&renderer),
+            ..ExportOptions::default()
+        }),
+        &operations,
+    )
+    .unwrap();
+    let decoded: Value = serde_json::from_str(&payload(&html(&operations))).unwrap();
+    assert_eq!(decoded["renderedTools"], case.expected);
+    assert_eq!(decoded["entries"], view.data["entries"]);
 }

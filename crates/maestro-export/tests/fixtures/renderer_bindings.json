@@ -1,0 +1,1012 @@
+{
+  "mixed": [
+    {
+      "test": "export_raw_bindings_borrow_details_in_both_phases",
+      "input": {
+        "case": "missing",
+        "content": [
+          {
+            "type": "text",
+            "text": "second"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ]
+      },
+      "expected": {
+        "output": {
+          "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+          "expanded": "<div class=\"ansi-line\">expanded</div>"
+        },
+        "events": [
+          {
+            "name": "custom",
+            "expanded": false,
+            "details": {
+              "presence": "missing"
+            },
+            "same_details": true,
+            "same_content": true,
+            "same_state": true,
+            "args": {
+              "presence": "present",
+              "value": {
+                "tag": "missing"
+              }
+            },
+            "is_error": true,
+            "count": 1,
+            "content": [
+              {
+                "type": "text",
+                "text": "second"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              },
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          },
+          {
+            "name": "custom",
+            "expanded": true,
+            "details": {
+              "presence": "missing"
+            },
+            "same_details": true,
+            "same_content": true,
+            "same_state": true,
+            "args": {
+              "presence": "present",
+              "value": {
+                "tag": "missing"
+              }
+            },
+            "is_error": true,
+            "count": 1,
+            "content": [
+              {
+                "type": "text",
+                "text": "second"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              },
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "test": "export_raw_bindings_borrow_details_in_both_phases",
+      "input": {
+        "case": "null",
+        "content": [
+          {
+            "type": "text",
+            "text": "second"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "details": null
+      },
+      "expected": {
+        "output": {
+          "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+          "expanded": "<div class=\"ansi-line\">expanded</div>"
+        },
+        "events": [
+          {
+            "name": "custom",
+            "expanded": false,
+            "details": {
+              "presence": "present",
+              "value": null
+            },
+            "same_details": true,
+            "same_content": true,
+            "same_state": true,
+            "args": {
+              "presence": "present",
+              "value": {
+                "tag": "null"
+              }
+            },
+            "is_error": true,
+            "count": 1,
+            "content": [
+              {
+                "type": "text",
+                "text": "second"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              },
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          },
+          {
+            "name": "custom",
+            "expanded": true,
+            "details": {
+              "presence": "present",
+              "value": null
+            },
+            "same_details": true,
+            "same_content": true,
+            "same_state": true,
+            "args": {
+              "presence": "present",
+              "value": {
+                "tag": "null"
+              }
+            },
+            "is_error": true,
+            "count": 1,
+            "content": [
+              {
+                "type": "text",
+                "text": "second"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              },
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "test": "export_raw_bindings_borrow_details_in_both_phases",
+      "input": {
+        "case": "string",
+        "content": [
+          {
+            "type": "text",
+            "text": "second"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "details": "plain"
+      },
+      "expected": {
+        "output": {
+          "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+          "expanded": "<div class=\"ansi-line\">expanded</div>"
+        },
+        "events": [
+          {
+            "name": "custom",
+            "expanded": false,
+            "details": {
+              "presence": "present",
+              "value": "plain"
+            },
+            "same_details": true,
+            "same_content": true,
+            "same_state": true,
+            "args": {
+              "presence": "present",
+              "value": {
+                "tag": "string"
+              }
+            },
+            "is_error": true,
+            "count": 1,
+            "content": [
+              {
+                "type": "text",
+                "text": "second"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              },
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          },
+          {
+            "name": "custom",
+            "expanded": true,
+            "details": {
+              "presence": "present",
+              "value": "plain"
+            },
+            "same_details": true,
+            "same_content": true,
+            "same_state": true,
+            "args": {
+              "presence": "present",
+              "value": {
+                "tag": "string"
+              }
+            },
+            "is_error": true,
+            "count": 1,
+            "content": [
+              {
+                "type": "text",
+                "text": "second"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              },
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "test": "export_raw_bindings_borrow_details_in_both_phases",
+      "input": {
+        "case": "number",
+        "content": [
+          {
+            "type": "text",
+            "text": "second"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "details": 1.25
+      },
+      "expected": {
+        "output": {
+          "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+          "expanded": "<div class=\"ansi-line\">expanded</div>"
+        },
+        "events": [
+          {
+            "name": "custom",
+            "expanded": false,
+            "details": {
+              "presence": "present",
+              "value": 1.25
+            },
+            "same_details": true,
+            "same_content": true,
+            "same_state": true,
+            "args": {
+              "presence": "present",
+              "value": {
+                "tag": "number"
+              }
+            },
+            "is_error": true,
+            "count": 1,
+            "content": [
+              {
+                "type": "text",
+                "text": "second"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              },
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          },
+          {
+            "name": "custom",
+            "expanded": true,
+            "details": {
+              "presence": "present",
+              "value": 1.25
+            },
+            "same_details": true,
+            "same_content": true,
+            "same_state": true,
+            "args": {
+              "presence": "present",
+              "value": {
+                "tag": "number"
+              }
+            },
+            "is_error": true,
+            "count": 1,
+            "content": [
+              {
+                "type": "text",
+                "text": "second"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              },
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "test": "export_raw_bindings_borrow_details_in_both_phases",
+      "input": {
+        "case": "boolean",
+        "content": [
+          {
+            "type": "text",
+            "text": "second"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "details": false
+      },
+      "expected": {
+        "output": {
+          "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+          "expanded": "<div class=\"ansi-line\">expanded</div>"
+        },
+        "events": [
+          {
+            "name": "custom",
+            "expanded": false,
+            "details": {
+              "presence": "present",
+              "value": false
+            },
+            "same_details": true,
+            "same_content": true,
+            "same_state": true,
+            "args": {
+              "presence": "present",
+              "value": {
+                "tag": "boolean"
+              }
+            },
+            "is_error": true,
+            "count": 1,
+            "content": [
+              {
+                "type": "text",
+                "text": "second"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              },
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          },
+          {
+            "name": "custom",
+            "expanded": true,
+            "details": {
+              "presence": "present",
+              "value": false
+            },
+            "same_details": true,
+            "same_content": true,
+            "same_state": true,
+            "args": {
+              "presence": "present",
+              "value": {
+                "tag": "boolean"
+              }
+            },
+            "is_error": true,
+            "count": 1,
+            "content": [
+              {
+                "type": "text",
+                "text": "second"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              },
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "test": "export_raw_bindings_borrow_details_in_both_phases",
+      "input": {
+        "case": "object",
+        "content": [
+          {
+            "type": "text",
+            "text": "second"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "details": {
+          "label": "owned",
+          "extra": {
+            "ignored": true
+          }
+        }
+      },
+      "expected": {
+        "output": {
+          "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+          "expanded": "<div class=\"ansi-line\">expanded</div>"
+        },
+        "events": [
+          {
+            "name": "custom",
+            "expanded": false,
+            "details": {
+              "presence": "present",
+              "value": {
+                "label": "owned",
+                "extra": {
+                  "ignored": true
+                }
+              }
+            },
+            "same_details": true,
+            "same_content": true,
+            "same_state": true,
+            "args": {
+              "presence": "present",
+              "value": {
+                "tag": "object"
+              }
+            },
+            "is_error": true,
+            "count": 1,
+            "content": [
+              {
+                "type": "text",
+                "text": "second"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              },
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          },
+          {
+            "name": "custom",
+            "expanded": true,
+            "details": {
+              "presence": "present",
+              "value": {
+                "label": "owned",
+                "extra": {
+                  "ignored": true
+                }
+              }
+            },
+            "same_details": true,
+            "same_content": true,
+            "same_state": true,
+            "args": {
+              "presence": "present",
+              "value": {
+                "tag": "object"
+              }
+            },
+            "is_error": true,
+            "count": 1,
+            "content": [
+              {
+                "type": "text",
+                "text": "second"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              },
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "test": "export_raw_bindings_borrow_details_in_both_phases",
+      "input": {
+        "case": "array",
+        "content": [
+          {
+            "type": "text",
+            "text": "second"
+          },
+          {
+            "type": "image",
+            "data": "AA==",
+            "mimeType": "image/png"
+          },
+          {
+            "type": "text",
+            "text": "first"
+          }
+        ],
+        "details": [
+          "first",
+          "second"
+        ]
+      },
+      "expected": {
+        "output": {
+          "collapsed": "<div class=\"ansi-line\">collapsed</div>",
+          "expanded": "<div class=\"ansi-line\">expanded</div>"
+        },
+        "events": [
+          {
+            "name": "custom",
+            "expanded": false,
+            "details": {
+              "presence": "present",
+              "value": [
+                "first",
+                "second"
+              ]
+            },
+            "same_details": true,
+            "same_content": true,
+            "same_state": true,
+            "args": {
+              "presence": "present",
+              "value": {
+                "tag": "array"
+              }
+            },
+            "is_error": true,
+            "count": 1,
+            "content": [
+              {
+                "type": "text",
+                "text": "second"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              },
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          },
+          {
+            "name": "custom",
+            "expanded": true,
+            "details": {
+              "presence": "present",
+              "value": [
+                "first",
+                "second"
+              ]
+            },
+            "same_details": true,
+            "same_content": true,
+            "same_state": true,
+            "args": {
+              "presence": "present",
+              "value": {
+                "tag": "array"
+              }
+            },
+            "is_error": true,
+            "count": 1,
+            "content": [
+              {
+                "type": "text",
+                "text": "second"
+              },
+              {
+                "type": "image",
+                "data": "AA==",
+                "mimeType": "image/png"
+              },
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "test": "export_prepared_results_survive_reentry_and_live_lookup",
+      "input": {
+        "case": "same-id-reentry",
+        "outer_details": {
+          "label": "outer"
+        },
+        "inner_details": {
+          "label": "inner"
+        }
+      },
+      "expected": {
+        "output": {
+          "collapsed": "<div class=\"ansi-line\">outer:false</div>",
+          "expanded": "<div class=\"ansi-line\">outer:true</div>"
+        },
+        "events": [
+          {
+            "lookup": "outer",
+            "version": "first"
+          },
+          {
+            "slot": "call",
+            "args": {
+              "version": "first"
+            }
+          },
+          {
+            "lookup": "outer",
+            "version": "first"
+          },
+          {
+            "slot": "result",
+            "expanded": false,
+            "details": {
+              "label": "outer"
+            },
+            "args": {
+              "version": "first"
+            },
+            "last": null
+          },
+          {
+            "lookup": "different",
+            "version": "replacement"
+          },
+          {
+            "slot": "call",
+            "args": {
+              "version": "replacement"
+            }
+          },
+          {
+            "lookup": "inner",
+            "version": "replacement"
+          },
+          {
+            "slot": "result",
+            "expanded": false,
+            "details": {
+              "label": "inner"
+            },
+            "args": {
+              "version": "replacement"
+            },
+            "last": null
+          },
+          {
+            "slot": "result",
+            "expanded": true,
+            "details": {
+              "label": "inner"
+            },
+            "args": {
+              "version": "replacement"
+            },
+            "last": "inner:false"
+          },
+          {
+            "slot": "result",
+            "expanded": true,
+            "details": {
+              "label": "outer"
+            },
+            "args": {
+              "version": "replacement"
+            },
+            "last": "outer:false"
+          }
+        ]
+      }
+    },
+    {
+      "test": "export_binding_changes_keep_native_state_per_call",
+      "input": {
+        "case": "native-edit-replaced",
+        "args": {
+          "path": "notes.txt"
+        },
+        "details": {
+          "diff": "+1 persisted",
+          "firstChangedLine": 1
+        }
+      },
+      "expected": {
+        "call": "<div class=\"ansi-line\"><span style=\"background-color:#ff00ff\">                                                                                </span></div><div class=\"ansi-line\"><span style=\"background-color:#ff00ff\"> </span><span style=\"color:#800000;background-color:#ff00ff\"></span><span style=\"color:#800000;background-color:#ff00ff;font-weight:bold\">edit</span><span style=\"color:#800000;background-color:#ff00ff\"></span><span style=\"background-color:#ff00ff\"> </span><span style=\"color:#808000;background-color:#ff00ff\">notes.txt</span><span style=\"background-color:#ff00ff\">                                                                 </span></div><div class=\"ansi-line\"><span style=\"background-color:#ff00ff\">                                                                                </span></div>",
+        "result": {
+          "expanded": ""
+        },
+        "settled": "<div class=\"ansi-line\"><span style=\"background-color:#00ffff\">                                                                                </span></div><div class=\"ansi-line\"><span style=\"background-color:#00ffff\"> </span><span style=\"color:#800000;background-color:#00ffff\"></span><span style=\"color:#800000;background-color:#00ffff;font-weight:bold\">edit</span><span style=\"color:#800000;background-color:#00ffff\"></span><span style=\"background-color:#00ffff\"> </span><span style=\"color:#808000;background-color:#00ffff\">notes.txt</span><span style=\"background-color:#00ffff\">                                                                 </span></div><div class=\"ansi-line\"><span style=\"background-color:#00ffff\">                                                                                </span></div><div class=\"ansi-line\"><span style=\"background-color:#00ffff\"> </span><span style=\"color:#ffff00;background-color:#00ffff\">+1 persisted</span><span style=\"background-color:#00ffff\">                                                                   </span></div><div class=\"ansi-line\"><span style=\"background-color:#00ffff\">                                                                                </span></div>",
+        "other": "<div class=\"ansi-line\"><span style=\"background-color:#ff00ff\">                                                                                </span></div><div class=\"ansi-line\"><span style=\"background-color:#ff00ff\"> </span><span style=\"color:#800000;background-color:#ff00ff\"></span><span style=\"color:#800000;background-color:#ff00ff;font-weight:bold\">edit</span><span style=\"color:#800000;background-color:#ff00ff\"></span><span style=\"background-color:#ff00ff\"> </span><span style=\"color:#808000;background-color:#ff00ff\">notes.txt</span><span style=\"background-color:#ff00ff\">                                                                 </span></div><div class=\"ansi-line\"><span style=\"background-color:#ff00ff\">                                                                                </span></div>",
+        "same_state": true
+      }
+    }
+  ],
+  "native": [
+    {
+      "test": "export_mixed_bindings_require_only_selected_decoder",
+      "input": {
+        "name": "grep",
+        "args": {
+          "pattern": "needle",
+          "path": "notes.txt"
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "one\ntwo"
+          }
+        ],
+        "details": {
+          "matchLimitReached": 2
+        }
+      },
+      "expected": {
+        "call": "<div class=\"ansi-line\"><span style=\"color:#800000\"></span><span style=\"color:#800000;font-weight:bold\">grep</span><span style=\"color:#800000\"></span> <span style=\"color:#808000\">/needle/</span><span style=\"color:#008000\"> in notes.txt</span>                                                      </div>",
+        "result": {
+          "expanded": "<div class=\"ansi-line\"><span style=\"color:#008000\">one</span>                                                                             </div><div class=\"ansi-line\"><span style=\"color:#008000\">two</span>                                                                             </div><div class=\"ansi-line\"><span style=\"color:#800080\">[Truncated: 2 matches limit]</span>                                                    </div>"
+        }
+      }
+    },
+    {
+      "test": "export_mixed_bindings_require_only_selected_decoder",
+      "input": {
+        "name": "find",
+        "args": {
+          "path": "."
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "one\ntwo"
+          }
+        ],
+        "details": {
+          "resultLimitReached": 2
+        }
+      },
+      "expected": {
+        "call": "<div class=\"ansi-line\"><span style=\"color:#800000\"></span><span style=\"color:#800000;font-weight:bold\">find</span><span style=\"color:#800000\"></span> <span style=\"color:#808000\"></span><span style=\"color:#008000\"> in .</span>                                                                      </div>",
+        "result": {
+          "expanded": "<div class=\"ansi-line\"><span style=\"color:#008000\">one</span>                                                                             </div><div class=\"ansi-line\"><span style=\"color:#008000\">two</span>                                                                             </div><div class=\"ansi-line\"><span style=\"color:#800080\">[Truncated: 2 results limit]</span>                                                    </div>"
+        }
+      }
+    },
+    {
+      "test": "export_mixed_bindings_require_only_selected_decoder",
+      "input": {
+        "name": "ls",
+        "args": {
+          "path": "."
+        },
+        "content": [
+          {
+            "type": "text",
+            "text": "one\ntwo"
+          }
+        ],
+        "details": {
+          "entryLimitReached": 2
+        }
+      },
+      "expected": {
+        "call": "<div class=\"ansi-line\"><span style=\"color:#800000\"></span><span style=\"color:#800000;font-weight:bold\">ls</span><span style=\"color:#800000\"></span> <span style=\"color:#808000\">.</span>                                                                            </div>",
+        "result": {
+          "expanded": "<div class=\"ansi-line\"><span style=\"color:#008000\">one</span>                                                                             </div><div class=\"ansi-line\"><span style=\"color:#008000\">two</span>                                                                             </div><div class=\"ansi-line\"><span style=\"color:#800080\">[Truncated: 2 entries limit]</span>                                                    </div>"
+        }
+      }
+    }
+  ],
+  "documents": [
+    {
+      "test": "mixed_bindings_populate_document_custom_html",
+      "input": {
+        "entries": [
+          {
+            "type": "message",
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "grep-id",
+                  "name": "grep",
+                  "arguments": {
+                    "pattern": "needle",
+                    "path": "notes.txt"
+                  }
+                },
+                {
+                  "type": "toolCall",
+                  "id": "text-id",
+                  "name": "custom_text",
+                  "arguments": {
+                    "label": "first"
+                  }
+                },
+                {
+                  "type": "toolCall",
+                  "id": "count-id",
+                  "name": "custom_count",
+                  "arguments": {
+                    "value": 7
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "type": "message",
+            "message": {
+              "role": "toolResult",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "one\ntwo"
+                }
+              ],
+              "isError": false,
+              "toolCallId": "count-id",
+              "toolName": "custom_count",
+              "details": {
+                "value": 42
+              }
+            }
+          },
+          {
+            "type": "message",
+            "message": {
+              "role": "toolResult",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "one\ntwo"
+                }
+              ],
+              "isError": false,
+              "toolCallId": "grep-id",
+              "toolName": "grep",
+              "details": {
+                "matchLimitReached": 2
+              }
+            }
+          },
+          {
+            "type": "message",
+            "message": {
+              "role": "toolResult",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "one\ntwo"
+                }
+              ],
+              "isError": false,
+              "toolCallId": "text-id",
+              "toolName": "custom_text",
+              "details": {
+                "label": "detail"
+              }
+            }
+          }
+        ]
+      },
+      "expected": {
+        "grep-id": {
+          "callHtml": "<div class=\"ansi-line\"><span style=\"color:#800000\"></span><span style=\"color:#800000;font-weight:bold\">grep</span><span style=\"color:#800000\"></span> <span style=\"color:#808000\">/needle/</span><span style=\"color:#008000\"> in notes.txt</span>                                                      </div>",
+          "resultHtmlExpanded": "<div class=\"ansi-line\"><span style=\"color:#008000\">one</span>                                                                             </div><div class=\"ansi-line\"><span style=\"color:#008000\">two</span>                                                                             </div><div class=\"ansi-line\"><span style=\"color:#800080\">[Truncated: 2 matches limit]</span>                                                    </div>"
+        },
+        "text-id": {
+          "callHtml": "<div class=\"ansi-line\">custom_text:call</div>",
+          "resultHtmlCollapsed": "<div class=\"ansi-line\">custom_text:detail:false</div>",
+          "resultHtmlExpanded": "<div class=\"ansi-line\">custom_text:detail:true</div>"
+        },
+        "count-id": {
+          "callHtml": "<div class=\"ansi-line\">custom_count:call</div>",
+          "resultHtmlCollapsed": "<div class=\"ansi-line\">custom_count:42:false</div>",
+          "resultHtmlExpanded": "<div class=\"ansi-line\">custom_count:42:true</div>"
+        }
+      }
+    }
+  ]
+}

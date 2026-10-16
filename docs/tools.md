@@ -84,6 +84,20 @@ select a native state handle, release the map borrow and use `with_state` to
 delegate. This preserves the row's arguments, host effects and previous component.
 The application root re-exports these renderer types for frontends.
 
+`ToolRenderResultBinding` separates preparation from invocation. Call `prepare`
+with the borrowed persisted result, then call the returned
+`PreparedToolRenderResult::render` with fresh options and context for each phase.
+Typed details are decoded once per prepared operation; raw details and content
+stay borrowed. Preparation retains the callback, not the executable definition
+or a row context. `invoke_raw` delegates to the same preparation owner for a
+single render. A later operation prepares its own details again.
+
+`ToolRendererBinding::from_raw` also projects custom definitions whose result
+slot is raw without requiring a decoder for their execution details. It rejects
+a typed slot; use `from_definition` for that case. A direct raw callback can be
+converted into `ToolRenderResultBinding` with `Into::into`.
+
+
 ## Caller-local construction
 
 Root factory names and explicit `::<C>` calls keep their thread-safe defaults.

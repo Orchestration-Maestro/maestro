@@ -6,14 +6,14 @@ use crate::{
 use maestro_models::{DiagnosticErrorInfo, UserBlock};
 use maestro_theme::Theme;
 use maestro_tools::{
-    ToolDefinition, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult,
-    ToolRenderResultCallback, ToolRenderResultOptions, ToolRendererState,
+    PreparedToolRenderResult, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase,
+    ToolRenderResultOptions, ToolRendererBinding, ToolRendererState,
     output::render_utils::ToolRenderResultLike,
 };
 use maestro_tui::tui::ComponentHandle;
-use serde::{Deserialize, de::DeserializeOwned};
+use serde::Deserialize;
 use serde_json::Value;
-use std::{cell::RefCell, collections::HashMap, error::Error, marker::PhantomData, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, error::Error, rc::Rc};
 
 /// Supplied tool lookup and display context.
 pub struct ToolHtmlRendererDeps<'a, F> {
@@ -28,36 +28,27 @@ pub struct ToolHtmlRendererDeps<'a, F> {
     /// Existing rendering host effects.
     pub environment: Rc<ToolRenderEnvironment>,
 }
-/// Executable types retained without owning their values.
-type ExecutableTypes<C, P, D, S> = PhantomData<fn() -> (C, P, D, S)>;
-
 /// Retained row arguments, state and independent component slots.
-struct StandardRenderer<'a, C, P, D, S, F> {
+struct StandardRenderer<'a, F> {
     /// Borrowed construction inputs.
     deps: ToolHtmlRendererDeps<'a, F>,
     /// Arguments retained before lookup, including absence.
     args: RefCell<HashMap<String, Rc<Value>>>,
     /// Shared mutable state per call ID.
-    states: RefCell<HashMap<String, ToolRendererState>>,
+    states: RefCell<HashMap<String, Rc<RefCell<ToolRendererState>>>>,
     /// Previous call components.
     calls: RefCell<HashMap<String, ComponentHandle>>,
     /// Previous result components.
     results: RefCell<HashMap<String, ComponentHandle>>,
-    /// Lookup's executable and details types.
-    types: ExecutableTypes<C, P, D, S>,
 }
 /// Build the standard adapter, retaining state and components independently per call ID.
 ///
 /// Ordinary lookup, callback, component and typed-input failures return absence.
-pub fn create_tool_html_renderer<'a, C, P, D, S, F>(
+pub fn create_tool_html_renderer<'a, F>(
     deps: ToolHtmlRendererDeps<'a, F>,
 ) -> impl ToolHtmlRenderer + 'a
 where
-    C: 'a,
-    P: 'a,
-    D: DeserializeOwned + 'a,
-    S: Default + 'static,
-    F: Fn(&str) -> Result<Option<Rc<ToolDefinition<C, P, D, S>>>, DiagnosticErrorInfo> + 'a,
+    F: Fn(&str) -> Result<Option<ToolRendererBinding>, DiagnosticErrorInfo> + 'a,
 {
     StandardRenderer {
         deps,
@@ -65,15 +56,14 @@ where
         states: RefCell::default(),
         calls: RefCell::default(),
         results: RefCell::default(),
-        types: PhantomData,
     }
 }
-impl<C, P, D, S: Default + 'static, F> StandardRenderer<'_, C, P, D, S, F> {
+impl<F> StandardRenderer<'_, F> {
     /// Retain the row owner in the invoking frame, outside the ID table's borrow.
-    fn state(&self, id: &str) -> ToolRendererState {
+    fn state(&self, id: &str) -> Rc<RefCell<ToolRendererState>> {
         let existing = self.states.borrow().get(id).cloned();
         existing.unwrap_or_else(|| {
-            let state = ToolRendererState::default();
+            let state = Rc::new(RefCell::new(ToolRendererState::default()));
             self.states
                 .borrow_mut()
                 .insert(id.to_owned(), state.clone());
@@ -85,11 +75,11 @@ impl<C, P, D, S: Default + 'static, F> StandardRenderer<'_, C, P, D, S, F> {
         &self,
         id: &str,
         args: Option<&'a Value>,
-        owner: &'a ToolRendererState,
+        owners: (&Rc<RefCell<ToolRendererState>>, &'a ToolRendererState),
         flags: (Option<bool>, bool),
-    ) -> ToolRenderContext<'a, S> {
+    ) -> ToolRenderContext<'a, ToolRendererState> {
         let (result, expanded) = flags;
-        let state = owner.state::<S>();
+        let (state, owner) = owners;
         let slots = if result.is_some() {
             &self.results
         } else {
@@ -102,7 +92,7 @@ impl<C, P, D, S: Default + 'static, F> StandardRenderer<'_, C, P, D, S, F> {
             invalidate: Rc::new(|| {}),
             environment: Rc::clone(&self.deps.environment),
             last_component,
-            state,
+            state: Rc::clone(state),
             renderer_state: Some(owner),
             cwd: self.deps.cwd.to_owned(),
             phase: ToolRenderPhase {
@@ -139,48 +129,52 @@ impl<C, P, D, S: Default + 'static, F> StandardRenderer<'_, C, P, D, S, F> {
         }))
     }
     /// Invoke and render one result phase, observing live retained arguments and slots.
-    fn result_phase<T>(
+    fn result_phase(
         &self,
         id: &str,
-        callback: &ToolRenderResultCallback<T, S>,
-        result: &ToolRenderResultLike<'_, T>,
-        expanded: bool,
+        prepared: &PreparedToolRenderResult<'_>,
+        flags: (bool, bool),
     ) -> Option<String> {
+        let (is_error, expanded) = flags;
         let retained = self.args.borrow().get(id).cloned();
         let owner = self.state(id);
-        let row = self.context(id, retained.as_deref(), &owner, (result.is_error, expanded));
-        let component = callback(
-            result,
-            ToolRenderResultOptions {
-                expanded,
-                is_partial: false,
-            },
-            self.deps.theme,
-            &row,
-        )
-        .ok()?;
+        let inner = owner.borrow().clone();
+        let row = self.context(
+            id,
+            retained.as_deref(),
+            (&owner, &inner),
+            (Some(is_error), expanded),
+        );
+        let component = prepared
+            .render(
+                ToolRenderResultOptions {
+                    expanded,
+                    is_partial: false,
+                },
+                self.deps.theme,
+                &row,
+            )
+            .ok()?;
         self.render(id, &component, true).ok()
     }
     /// Render both phases with one borrowed details instance.
-    fn result_phases<T>(
+    fn result_phases(
         &self,
         id: &str,
-        callback: &ToolRenderResultCallback<T, S>,
-        result: &ToolRenderResultLike<'_, T>,
+        prepared: &PreparedToolRenderResult<'_>,
+        is_error: bool,
     ) -> Option<ToolHtmlResult> {
-        let collapsed = self.result_phase(id, callback, result, false)?;
-        let expanded = self.result_phase(id, callback, result, true)?;
+        let collapsed = self.result_phase(id, prepared, (is_error, false))?;
+        let expanded = self.result_phase(id, prepared, (is_error, true))?;
         Some(ToolHtmlResult {
             collapsed: (!collapsed.is_empty() && collapsed != expanded).then_some(collapsed),
             expanded: Some(expanded),
         })
     }
 }
-impl<C, P, D, S, F> ToolHtmlRenderer for StandardRenderer<'_, C, P, D, S, F>
+impl<F> ToolHtmlRenderer for StandardRenderer<'_, F>
 where
-    D: DeserializeOwned,
-    S: Default + 'static,
-    F: Fn(&str) -> Result<Option<Rc<ToolDefinition<C, P, D, S>>>, DiagnosticErrorInfo>,
+    F: Fn(&str) -> Result<Option<ToolRendererBinding>, DiagnosticErrorInfo>,
 {
     fn render_call(
         &self,
@@ -203,7 +197,8 @@ where
             let callback = tool.render_call.as_ref()?;
             let retained = self.args.borrow().get(id).cloned();
             let owner = self.state(id);
-            let context = self.context(id, retained.as_deref(), &owner, (None, false));
+            let inner = owner.borrow().clone();
+            let context = self.context(id, retained.as_deref(), (&owner, &inner), (None, false));
             let component = callback(args, self.deps.theme, &context).ok()?;
             self.render(id, &component, false).ok()
         })();
@@ -224,31 +219,15 @@ where
                 .transpose()
                 .ok()?
                 .unwrap_or_default();
-            match callback {
-                ToolRenderResult::Typed(callback) => {
-                    let details = input.details.map(D::deserialize).transpose().ok()?;
-                    self.result_phases(
-                        id,
-                        callback,
-                        &ToolRenderResultLike {
-                            content: &content,
-                            details: details.as_ref(),
-                            terminate: None,
-                            is_error: Some(input.is_error),
-                        },
-                    )
-                }
-                ToolRenderResult::Raw(callback) => self.result_phases(
-                    id,
-                    callback,
-                    &ToolRenderResultLike {
-                        content: &content,
-                        details: input.details,
-                        terminate: None,
-                        is_error: Some(input.is_error),
-                    },
-                ),
-            }
+            let prepared = callback
+                .prepare(ToolRenderResultLike {
+                    content: &content,
+                    details: input.details,
+                    terminate: None,
+                    is_error: Some(input.is_error),
+                })
+                .ok()?;
+            self.result_phases(id, &prepared, input.is_error)
         })();
         Ok(output)
     }

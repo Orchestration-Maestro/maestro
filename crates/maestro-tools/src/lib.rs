@@ -57,8 +57,9 @@ pub mod tool_definition_wrapper;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod tools;
 pub mod types;
-pub use renderer_binding::ToolRendererBinding;
+pub use renderer_binding::{ToolRenderResultBinding, ToolRendererBinding};
 pub use renderer_state::ToolRendererState;
+pub use result_renderer::PreparedToolRenderResult;
 #[cfg(not(target_arch = "wasm32"))]
 pub use tools::{
     ALL_TOOL_NAMES, Tool, ToolDef, ToolDefRecord, ToolName, ToolsOptions, ToolsOptionsRecord,

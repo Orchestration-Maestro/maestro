@@ -18,6 +18,45 @@ pub type ToolRenderResultCallback<D, S> = Rc<
     ) -> Result<ComponentHandle, DiagnosticErrorInfo>,
 >;
 
+/// An operation-local renderer accepting fresh context for each phase.
+pub(crate) type PreparedRender<'a, S> = dyn Fn(
+        ToolRenderResultOptions,
+        &Theme,
+        &ToolRenderContext<'_, S>,
+    ) -> Result<ComponentHandle, DiagnosticErrorInfo>
+    + 'a;
+
+/// Retained result data shared across repeated rendering phases.
+pub struct PreparedToolRenderResult<'a, S = crate::ToolRendererState> {
+    /// Owns decoded details or borrows the original raw result.
+    pub(crate) render: Box<PreparedRender<'a, S>>,
+}
+impl<'a, S: 'a> PreparedToolRenderResult<'a, S> {
+    /// Render with the supplied current options and row context.
+    ///
+    /// # Errors
+    /// Returns the original callback diagnostic.
+    pub fn render(
+        &self,
+        options: ToolRenderResultOptions,
+        theme: &Theme,
+        context: &ToolRenderContext<'_, S>,
+    ) -> Result<ComponentHandle, DiagnosticErrorInfo> {
+        (self.render)(options, theme, context)
+    }
+    /// Retain a raw callback without copying its borrowed inputs.
+    pub(crate) fn raw(
+        callback: ToolRenderResultCallback<Value, S>,
+        result: ToolRenderResultLike<'a, Value>,
+    ) -> Self {
+        Self {
+            render: Box::new(move |options, theme, context| {
+                callback(&result, options, theme, context)
+            }),
+        }
+    }
+}
+
 /// One result slot, retaining custom typed callbacks or borrowed JSON selection.
 pub enum ToolRenderResult<D, S> {
     /// A caller-defined details contract.
@@ -82,21 +121,51 @@ impl<D, S> ToolRenderResult<D, S> {
         F: FnOnce(&Value) -> Result<D, DiagnosticErrorInfo>,
     {
         let (result, options) = input;
+        self.prepare_raw(
+            ToolRenderResultLike {
+                content: result.content,
+                details: result.details,
+                terminate: result.terminate,
+                is_error: result.is_error,
+            },
+            decode,
+        )?
+        .render(options, theme, context)
+    }
+    /// Decode present typed details once, retaining them for repeated rendering.
+    ///
+    /// # Errors
+    /// Returns the original conversion diagnostic without invoking the callback.
+    pub fn prepare_raw<'a, F>(
+        &self,
+        result: ToolRenderResultLike<'a, Value>,
+        decode: F,
+    ) -> Result<PreparedToolRenderResult<'a, S>, DiagnosticErrorInfo>
+    where
+        D: 'a,
+        S: 'a,
+        F: FnOnce(&Value) -> Result<D, DiagnosticErrorInfo>,
+    {
         match self {
-            Self::Raw(callback) => callback(result, options, theme, context),
+            Self::Raw(callback) => Ok(PreparedToolRenderResult::raw(Rc::clone(callback), result)),
             Self::Typed(callback) => {
                 let details = result.details.map(decode).transpose()?;
-                callback(
-                    &ToolRenderResultLike {
-                        content: result.content,
-                        details: details.as_ref(),
-                        terminate: result.terminate,
-                        is_error: result.is_error,
-                    },
-                    options,
-                    theme,
-                    context,
-                )
+                let callback = Rc::clone(callback);
+                Ok(PreparedToolRenderResult {
+                    render: Box::new(move |options, theme, context| {
+                        callback(
+                            &ToolRenderResultLike {
+                                content: result.content,
+                                details: details.as_ref(),
+                                terminate: result.terminate,
+                                is_error: result.is_error,
+                            },
+                            options,
+                            theme,
+                            context,
+                        )
+                    }),
+                })
             }
         }
     }
