@@ -5,6 +5,10 @@ toolchain and the development tools in `mise.toml` and `mise.lock`.
 
 ## Setup and build
 
+The pinned toolchain includes `llvm-tools-preview` for the tooling tests' profile
+counter checks. When using another toolchain, install it with
+`rustup component add llvm-tools-preview --toolchain <toolchain>` before testing.
+
 ```sh
 git clone https://github.com/Orchestration-Maestro/maestro.git
 cd maestro
