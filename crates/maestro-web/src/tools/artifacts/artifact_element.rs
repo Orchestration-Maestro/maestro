@@ -18,6 +18,14 @@ pub trait ArtifactElement {
     fn content(&self) -> &str;
     /// Replace the original content.
     fn set_content(&mut self, content: String);
+    /// Change retained visibility and containing modal without releasing the view.
+    /// # Errors
+    /// Returns native retained-policy failures.
+    fn set_visibility(
+        &mut self,
+        visible: bool,
+        modal: Option<egui::Id>,
+    ) -> Result<(), AttachmentUiError>;
     /// Draw independent header controls.
     /// # Errors
     /// Returns localization, decoding or platform failures.

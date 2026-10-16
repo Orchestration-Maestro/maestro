@@ -254,6 +254,8 @@ struct View {
 /// Presentation operations and explicitly controlled clock.
 #[derive(Default)]
 struct Host {
+    /// Weak observer avoids owning its caller.
+    selection_probe: Mutex<Option<std::sync::Weak<ArtifactsPanel>>>,
     /// Recorded clock.
     clock: Mutex<i64>,
     /// Recorded events.
@@ -317,6 +319,20 @@ impl ArtifactPresentation for Host {
     }
     fn show_artifact(&self, filename: &str) {
         self.events.lock().unwrap().push(json!(["show", filename]));
+        let panel = self
+            .selection_probe
+            .lock()
+            .unwrap()
+            .as_ref()
+            .and_then(std::sync::Weak::upgrade);
+        if let Some(panel) = panel {
+            assert!(panel.state.try_write().is_ok());
+            assert!(panel.artifacts().try_write().is_ok());
+            self.events
+                .lock()
+                .unwrap()
+                .push(json!(["before", panel.active_filename()]));
+        }
     }
     fn remove_artifact_element(&self, filename: &str) {
         if self.views.lock().unwrap().shift_remove(filename).is_some() {
@@ -371,6 +387,19 @@ impl ArtifactPresentation for Host {
     }
     fn request_update(&self) {
         self.events.lock().unwrap().push(json!(["request_update"]));
+        let panel = self
+            .selection_probe
+            .lock()
+            .unwrap()
+            .as_ref()
+            .and_then(std::sync::Weak::upgrade);
+        if let Some(panel) = panel {
+            assert!(panel.state.try_write().is_ok());
+            self.events
+                .lock()
+                .unwrap()
+                .push(json!(["after", panel.active_filename()]));
+        }
     }
     fn on_artifacts_change(&self) {
         if self
@@ -1106,5 +1135,87 @@ fn artifact_local_and_threaded_tools_share_command_policy() {
     assert_eq!(
         *local_host.events.lock().unwrap(),
         *threaded_host.events.lock().unwrap()
+    );
+}
+
+/// Cloned callers and tool deletion share the same literal selection slot.
+#[test]
+fn artifact_selection_shares_the_command_slot() {
+    run(async {
+        let panel = ArtifactsPanel::new(Arc::new(Host::default()));
+        assert_eq!(panel.active_filename(), None);
+        let alias = panel.clone();
+        for name in ["unknown", ""] {
+            alias.show_artifact(name);
+            assert_eq!(panel.active_filename().as_deref(), Some(name));
+        }
+        let tool = panel.tool();
+        for name in ["z.zip", "a.zip", "m.zip"] {
+            call(
+                &tool,
+                json!({"command":"create","filename":name,"content":"YQ=="}),
+            )
+            .await;
+            assert_eq!(panel.active_filename().as_deref(), Some(name));
+        }
+        alias.show_artifact("a.zip");
+        call(&tool, json!({"command":"delete","filename":"a.zip"})).await;
+        assert_eq!(panel.active_filename().as_deref(), Some("z.zip"));
+        call(&tool, json!({"command":"delete","filename":"m.zip"})).await;
+        assert_eq!(panel.active_filename().as_deref(), Some("z.zip"));
+        call(&tool, json!({"command":"delete","filename":"z.zip"})).await;
+        assert_eq!(panel.active_filename(), None);
+    });
+}
+
+/// Tab selection avoids the host-open notification and unknown open is inert.
+#[test]
+fn artifact_tab_selection_skips_host_open() {
+    run(async {
+        let host = Arc::new(Host::default());
+        let panel = ArtifactsPanel::new(host.clone());
+        call(
+            &panel.tool(),
+            json!({"command":"create","filename":"a.zip","content":"YQ=="}),
+        )
+        .await;
+        host.events.lock().unwrap().clear();
+        panel.show_artifact("a.zip");
+        assert_eq!(panel.active_filename().as_deref(), Some("a.zip"));
+        assert_eq!(
+            *host.events.lock().unwrap(),
+            [json!(["show", "a.zip"]), json!(["request_update"])]
+        );
+        host.events.lock().unwrap().clear();
+        panel.open_artifact("missing");
+        assert_eq!(panel.active_filename().as_deref(), Some("a.zip"));
+        assert!(host.events.lock().unwrap().is_empty());
+        panel.open_artifact("a.zip");
+        assert_eq!(
+            *host.events.lock().unwrap(),
+            [
+                json!(["show", "a.zip"]),
+                json!(["request_update"]),
+                json!(["open"])
+            ]
+        );
+    });
+}
+
+/// Presentation observes preassignment and repaint observes completed selection.
+#[test]
+fn artifact_selection_callbacks_release_state_guards() {
+    let host = Arc::new(Host::default());
+    let panel = Arc::new(ArtifactsPanel::new(host.clone()));
+    *host.selection_probe.lock().unwrap() = Some(Arc::downgrade(&panel));
+    panel.show_artifact("literal");
+    assert_eq!(
+        *host.events.lock().unwrap(),
+        [
+            json!(["show", "literal"]),
+            json!(["before", null]),
+            json!(["request_update"]),
+            json!(["after", "literal"])
+        ]
     );
 }

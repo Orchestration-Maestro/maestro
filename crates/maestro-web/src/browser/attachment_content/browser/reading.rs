@@ -232,7 +232,8 @@ impl BrowserAttachmentHost {
             return Ok(());
         };
 
-        let mut style = self.reading_style(s, p)?;
+        let style = self.reading_style(s, p)?;
+        let retained = surface.retained;
         let same = surface
             .reading
             .as_ref()
@@ -254,10 +255,21 @@ impl BrowserAttachmentHost {
             return Ok(());
         }
         let top = self.overlays.borrow().last().copied();
-        style.push_str(super::super::visibility_style(s.id, placement.modal, top));
-        reading.publish(&target.wrapper, &style)?;
-        target.style = style;
+        let previous = std::mem::replace(&mut target.style, style);
+        let previous_modal = target.modal;
         target.modal = placement.modal;
+        target.retained = retained;
+        let projected = target.projected_style(s.id, top);
+        let result = target
+            .reading
+            .as_ref()
+            .ok_or_else(|| AttachmentUiError::Host("Missing reading owner".into()))?
+            .publish(&target.wrapper, &projected);
+        if let Err(error) = result {
+            target.style = previous;
+            target.modal = previous_modal;
+            return Err(error);
+        }
         if let Some(candidate) = surface.pending.take() {
             *surface = *candidate;
         }

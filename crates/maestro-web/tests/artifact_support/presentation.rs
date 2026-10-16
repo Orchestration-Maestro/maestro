@@ -10,7 +10,9 @@ use std::{
 /// Actual retained generic view; no application command policy lives here.
 pub struct Presentation {
     /// Actual native effect host.
-    pub host: Rc<super::super::session_header_support::Host>,
+    pub host: Rc<dyn maestro_web::browser::attachment_content::AttachmentHost>,
+    /// Optional real multi-view owner, with no application backedge.
+    pub panel: Option<Rc<maestro_web::ArtifactsPanel>>,
     /// Retained real artifact view.
     pub view: RefCell<Option<Box<dyn ArtifactElement>>>,
     /// Factory creation count.
@@ -20,11 +22,31 @@ pub struct Presentation {
     /// Mutation notifications.
     pub changed: Cell<usize>,
 }
+impl Presentation {
+    /// Retain native effects for the existing single-view composition.
+    #[must_use]
+    pub fn new(host: Rc<dyn maestro_web::browser::attachment_content::AttachmentHost>) -> Self {
+        Self {
+            host,
+            panel: None,
+            view: RefCell::default(),
+            created: Cell::default(),
+            opened: Cell::default(),
+            changed: Cell::default(),
+        }
+    }
+}
 impl ArtifactPresentation for Presentation {
     fn now(&self) -> chrono::DateTime<chrono::Utc> {
         chrono::DateTime::from_timestamp_millis(0).unwrap()
     }
     fn get_or_create_artifact_element(&self, filename: &str, content: &str, _: Artifacts) {
+        if let Some(panel) = &self.panel {
+            panel
+                .get_or_create_artifact_element(filename, content)
+                .unwrap();
+            return;
+        }
         let mut view = self.view.borrow_mut().take();
         if let Some(view) = &mut view {
             view.set_content(content.into());
@@ -34,8 +56,16 @@ impl ArtifactPresentation for Presentation {
         }
         *self.view.borrow_mut() = view;
     }
-    fn show_artifact(&self, _: &str) {}
-    fn remove_artifact_element(&self, _: &str) {
+    fn show_artifact(&self, filename: &str) {
+        if let Some(panel) = &self.panel {
+            panel.show_artifact(filename).unwrap();
+        }
+    }
+    fn remove_artifact_element(&self, filename: &str) {
+        if let Some(panel) = &self.panel {
+            panel.remove_artifact_element(filename);
+            return;
+        }
         let view = self.view.borrow_mut().take();
         drop(view);
     }

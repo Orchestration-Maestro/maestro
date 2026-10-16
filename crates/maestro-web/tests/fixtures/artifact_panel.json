@@ -1,0 +1,1652 @@
+{
+  "render": [
+    {
+      "input": {
+        "entries": [],
+        "active": null,
+        "collapsed": false,
+        "overlay": false,
+        "language": "en"
+      },
+      "output": {
+        "hidden": true,
+        "tabs": [],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": false,
+        "active": null,
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [],
+        "active": null,
+        "collapsed": false,
+        "overlay": true,
+        "language": "en"
+      },
+      "output": {
+        "hidden": true,
+        "tabs": [],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": false,
+        "active": null,
+        "inline_border": false
+      }
+    },
+    {
+      "input": {
+        "entries": [],
+        "active": null,
+        "collapsed": true,
+        "overlay": false,
+        "language": "en"
+      },
+      "output": {
+        "hidden": true,
+        "tabs": [],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": false,
+        "active": null,
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [],
+        "active": null,
+        "collapsed": true,
+        "overlay": true,
+        "language": "en"
+      },
+      "output": {
+        "hidden": true,
+        "tabs": [],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": false,
+        "active": null,
+        "inline_border": false
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ]
+        ],
+        "active": "a.zip",
+        "collapsed": false,
+        "overlay": false,
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": true
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "a.zip",
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ]
+        ],
+        "active": "a.zip",
+        "collapsed": false,
+        "overlay": true,
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": true
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "a.zip",
+        "inline_border": false
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ]
+        ],
+        "active": "a.zip",
+        "collapsed": true,
+        "overlay": false,
+        "language": "en"
+      },
+      "output": {
+        "hidden": true,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": true
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "a.zip",
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ]
+        ],
+        "active": "a.zip",
+        "collapsed": true,
+        "overlay": true,
+        "language": "en"
+      },
+      "output": {
+        "hidden": true,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": true
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "a.zip",
+        "inline_border": false
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ],
+          [
+            "2.zip",
+            "2.zip"
+          ],
+          [
+            "",
+            ""
+          ],
+          [
+            "literal\"[x].zip",
+            "literal\"[x].zip"
+          ],
+          [
+            "snow 雪.zip",
+            "snow 雪.zip"
+          ],
+          [
+            "line\nbreak.zip",
+            "line\nbreak.zip"
+          ],
+          [
+            "  spaced.zip  ",
+            "  spaced.zip  "
+          ]
+        ],
+        "active": null,
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": false
+          },
+          {
+            "filename": "2.zip",
+            "text": "2.zip",
+            "active": false
+          },
+          {
+            "filename": "",
+            "text": "",
+            "active": false
+          },
+          {
+            "filename": "literal\"[x].zip",
+            "text": "literal\"[x].zip",
+            "active": false
+          },
+          {
+            "filename": "snow 雪.zip",
+            "text": "snow 雪.zip",
+            "active": false
+          },
+          {
+            "filename": "line\nbreak.zip",
+            "text": "line\nbreak.zip",
+            "active": false
+          },
+          {
+            "filename": "  spaced.zip  ",
+            "text": "  spaced.zip  ",
+            "active": false
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": false,
+        "active": null,
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ],
+          [
+            "2.zip",
+            "2.zip"
+          ],
+          [
+            "",
+            ""
+          ],
+          [
+            "literal\"[x].zip",
+            "literal\"[x].zip"
+          ],
+          [
+            "snow 雪.zip",
+            "snow 雪.zip"
+          ],
+          [
+            "line\nbreak.zip",
+            "line\nbreak.zip"
+          ],
+          [
+            "  spaced.zip  ",
+            "  spaced.zip  "
+          ]
+        ],
+        "active": "absent.zip",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": false
+          },
+          {
+            "filename": "2.zip",
+            "text": "2.zip",
+            "active": false
+          },
+          {
+            "filename": "",
+            "text": "",
+            "active": false
+          },
+          {
+            "filename": "literal\"[x].zip",
+            "text": "literal\"[x].zip",
+            "active": false
+          },
+          {
+            "filename": "snow 雪.zip",
+            "text": "snow 雪.zip",
+            "active": false
+          },
+          {
+            "filename": "line\nbreak.zip",
+            "text": "line\nbreak.zip",
+            "active": false
+          },
+          {
+            "filename": "  spaced.zip  ",
+            "text": "  spaced.zip  ",
+            "active": false
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": false,
+        "active": "absent.zip",
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ],
+          [
+            "2.zip",
+            "2.zip"
+          ],
+          [
+            "",
+            ""
+          ],
+          [
+            "literal\"[x].zip",
+            "literal\"[x].zip"
+          ],
+          [
+            "snow 雪.zip",
+            "snow 雪.zip"
+          ],
+          [
+            "line\nbreak.zip",
+            "line\nbreak.zip"
+          ],
+          [
+            "  spaced.zip  ",
+            "  spaced.zip  "
+          ]
+        ],
+        "active": "",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": false
+          },
+          {
+            "filename": "2.zip",
+            "text": "2.zip",
+            "active": false
+          },
+          {
+            "filename": "",
+            "text": "",
+            "active": true
+          },
+          {
+            "filename": "literal\"[x].zip",
+            "text": "literal\"[x].zip",
+            "active": false
+          },
+          {
+            "filename": "snow 雪.zip",
+            "text": "snow 雪.zip",
+            "active": false
+          },
+          {
+            "filename": "line\nbreak.zip",
+            "text": "line\nbreak.zip",
+            "active": false
+          },
+          {
+            "filename": "  spaced.zip  ",
+            "text": "  spaced.zip  ",
+            "active": false
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": false,
+        "active": "",
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ],
+          [
+            "2.zip",
+            "2.zip"
+          ],
+          [
+            "",
+            ""
+          ],
+          [
+            "literal\"[x].zip",
+            "literal\"[x].zip"
+          ],
+          [
+            "snow 雪.zip",
+            "snow 雪.zip"
+          ],
+          [
+            "line\nbreak.zip",
+            "line\nbreak.zip"
+          ],
+          [
+            "  spaced.zip  ",
+            "  spaced.zip  "
+          ]
+        ],
+        "active": "literal\"[x].zip",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": false
+          },
+          {
+            "filename": "2.zip",
+            "text": "2.zip",
+            "active": false
+          },
+          {
+            "filename": "",
+            "text": "",
+            "active": false
+          },
+          {
+            "filename": "literal\"[x].zip",
+            "text": "literal\"[x].zip",
+            "active": true
+          },
+          {
+            "filename": "snow 雪.zip",
+            "text": "snow 雪.zip",
+            "active": false
+          },
+          {
+            "filename": "line\nbreak.zip",
+            "text": "line\nbreak.zip",
+            "active": false
+          },
+          {
+            "filename": "  spaced.zip  ",
+            "text": "  spaced.zip  ",
+            "active": false
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "literal\"[x].zip",
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ],
+          [
+            "2.zip",
+            "2.zip"
+          ],
+          [
+            "",
+            ""
+          ],
+          [
+            "literal\"[x].zip",
+            "literal\"[x].zip"
+          ],
+          [
+            "snow 雪.zip",
+            "snow 雪.zip"
+          ],
+          [
+            "line\nbreak.zip",
+            "line\nbreak.zip"
+          ],
+          [
+            "  spaced.zip  ",
+            "  spaced.zip  "
+          ]
+        ],
+        "active": "snow 雪.zip",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": false
+          },
+          {
+            "filename": "2.zip",
+            "text": "2.zip",
+            "active": false
+          },
+          {
+            "filename": "",
+            "text": "",
+            "active": false
+          },
+          {
+            "filename": "literal\"[x].zip",
+            "text": "literal\"[x].zip",
+            "active": false
+          },
+          {
+            "filename": "snow 雪.zip",
+            "text": "snow 雪.zip",
+            "active": true
+          },
+          {
+            "filename": "line\nbreak.zip",
+            "text": "line\nbreak.zip",
+            "active": false
+          },
+          {
+            "filename": "  spaced.zip  ",
+            "text": "  spaced.zip  ",
+            "active": false
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "snow 雪.zip",
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ],
+          [
+            "2.zip",
+            "2.zip"
+          ],
+          [
+            "",
+            ""
+          ],
+          [
+            "literal\"[x].zip",
+            "literal\"[x].zip"
+          ],
+          [
+            "snow 雪.zip",
+            "snow 雪.zip"
+          ],
+          [
+            "line\nbreak.zip",
+            "line\nbreak.zip"
+          ],
+          [
+            "  spaced.zip  ",
+            "  spaced.zip  "
+          ]
+        ],
+        "active": "line\nbreak.zip",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": false
+          },
+          {
+            "filename": "2.zip",
+            "text": "2.zip",
+            "active": false
+          },
+          {
+            "filename": "",
+            "text": "",
+            "active": false
+          },
+          {
+            "filename": "literal\"[x].zip",
+            "text": "literal\"[x].zip",
+            "active": false
+          },
+          {
+            "filename": "snow 雪.zip",
+            "text": "snow 雪.zip",
+            "active": false
+          },
+          {
+            "filename": "line\nbreak.zip",
+            "text": "line\nbreak.zip",
+            "active": true
+          },
+          {
+            "filename": "  spaced.zip  ",
+            "text": "  spaced.zip  ",
+            "active": false
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "line\nbreak.zip",
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ],
+          [
+            "2.zip",
+            "2.zip"
+          ],
+          [
+            "",
+            ""
+          ],
+          [
+            "literal\"[x].zip",
+            "literal\"[x].zip"
+          ],
+          [
+            "snow 雪.zip",
+            "snow 雪.zip"
+          ],
+          [
+            "line\nbreak.zip",
+            "line\nbreak.zip"
+          ],
+          [
+            "  spaced.zip  ",
+            "  spaced.zip  "
+          ]
+        ],
+        "active": "  spaced.zip  ",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": false
+          },
+          {
+            "filename": "2.zip",
+            "text": "2.zip",
+            "active": false
+          },
+          {
+            "filename": "",
+            "text": "",
+            "active": false
+          },
+          {
+            "filename": "literal\"[x].zip",
+            "text": "literal\"[x].zip",
+            "active": false
+          },
+          {
+            "filename": "snow 雪.zip",
+            "text": "snow 雪.zip",
+            "active": false
+          },
+          {
+            "filename": "line\nbreak.zip",
+            "text": "line\nbreak.zip",
+            "active": false
+          },
+          {
+            "filename": "  spaced.zip  ",
+            "text": "  spaced.zip  ",
+            "active": true
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "  spaced.zip  ",
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ],
+          [
+            "2.zip",
+            "2.zip"
+          ],
+          [
+            "",
+            ""
+          ],
+          [
+            "literal\"[x].zip",
+            "literal\"[x].zip"
+          ],
+          [
+            "snow 雪.zip",
+            "snow 雪.zip"
+          ],
+          [
+            "line\nbreak.zip",
+            "line\nbreak.zip"
+          ],
+          [
+            "  spaced.zip  ",
+            "  spaced.zip  "
+          ]
+        ],
+        "active": "2.zip",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": false
+          },
+          {
+            "filename": "2.zip",
+            "text": "2.zip",
+            "active": true
+          },
+          {
+            "filename": "",
+            "text": "",
+            "active": false
+          },
+          {
+            "filename": "literal\"[x].zip",
+            "text": "literal\"[x].zip",
+            "active": false
+          },
+          {
+            "filename": "snow 雪.zip",
+            "text": "snow 雪.zip",
+            "active": false
+          },
+          {
+            "filename": "line\nbreak.zip",
+            "text": "line\nbreak.zip",
+            "active": false
+          },
+          {
+            "filename": "  spaced.zip  ",
+            "text": "  spaced.zip  ",
+            "active": false
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "2.zip",
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ]
+        ],
+        "active": "z.zip",
+        "language": "de"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": true
+          }
+        ],
+        "headerText": [
+          "Artefakte schließen"
+        ],
+        "headerRendered": true,
+        "active": "z.zip",
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ]
+        ],
+        "active": "z.zip",
+        "operation": "missing-view",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": true
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": false,
+        "active": "z.zip",
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "same.zip"
+          ],
+          [
+            "a.zip",
+            "same.zip"
+          ]
+        ],
+        "active": "same.zip",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "same.zip",
+            "text": "same.zip",
+            "active": true
+          },
+          {
+            "filename": "same.zip",
+            "text": "same.zip",
+            "active": true
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": false,
+        "active": "same.zip",
+        "inline_border": true
+      }
+    }
+  ],
+  "operations": [
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ]
+        ],
+        "active": "z.zip",
+        "close": false,
+        "operation": "tab",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": true
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "a.zip",
+        "visible": [
+          "a.zip"
+        ],
+        "opened": 0,
+        "closed": 0,
+        "scrolls": [
+          {
+            "filename": "a.zip",
+            "options": {
+              "behavior": "smooth",
+              "block": "nearest",
+              "inline": "center"
+            }
+          }
+        ],
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ]
+        ],
+        "active": "z.zip",
+        "close": false,
+        "operation": "open-existing",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": true
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "a.zip",
+        "visible": [
+          "a.zip"
+        ],
+        "opened": 1,
+        "closed": 0,
+        "scrolls": [
+          {
+            "filename": "a.zip",
+            "options": {
+              "behavior": "smooth",
+              "block": "nearest",
+              "inline": "center"
+            }
+          }
+        ],
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ]
+        ],
+        "active": "z.zip",
+        "close": false,
+        "operation": "open-missing",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": true
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": false
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "z.zip",
+        "visible": [
+          "z.zip"
+        ],
+        "opened": 0,
+        "closed": 0,
+        "scrolls": [],
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ]
+        ],
+        "active": "z.zip",
+        "close": true,
+        "operation": "close-handler",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": true
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": false
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "z.zip",
+        "visible": [
+          "z.zip"
+        ],
+        "opened": 0,
+        "closed": 1,
+        "scrolls": [],
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ]
+        ],
+        "active": "z.zip",
+        "close": false,
+        "operation": "close-absent",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": true
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": false
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "z.zip",
+        "visible": [
+          "z.zip"
+        ],
+        "opened": 0,
+        "closed": 0,
+        "scrolls": [],
+        "inline_border": true
+      }
+    }
+  ],
+  "reconnect": [
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ]
+        ],
+        "active": null,
+        "operation": "reconnect",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": true
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": false
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "z.zip",
+        "visible": [
+          "z.zip"
+        ],
+        "opened": 0,
+        "closed": 0,
+        "scrolls": [],
+        "sameRoots": true,
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ]
+        ],
+        "active": "a.zip",
+        "operation": "reconnect",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": true
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "a.zip",
+        "visible": [
+          "a.zip"
+        ],
+        "opened": 0,
+        "closed": 0,
+        "scrolls": [],
+        "sameRoots": true,
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ]
+        ],
+        "active": "absent.zip",
+        "operation": "reconnect",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": false
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": false,
+        "active": "absent.zip",
+        "visible": [],
+        "opened": 0,
+        "closed": 0,
+        "scrolls": [],
+        "sameRoots": true,
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "z.zip",
+            "z.zip"
+          ],
+          [
+            "a.zip",
+            "a.zip"
+          ]
+        ],
+        "active": "",
+        "operation": "reconnect",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": true
+          },
+          {
+            "filename": "a.zip",
+            "text": "a.zip",
+            "active": false
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "z.zip",
+        "visible": [
+          "z.zip"
+        ],
+        "opened": 0,
+        "closed": 0,
+        "scrolls": [],
+        "sameRoots": true,
+        "inline_border": true
+      }
+    },
+    {
+      "input": {
+        "entries": [
+          [
+            "key.zip",
+            "shown.zip"
+          ],
+          [
+            "z.zip",
+            "z.zip"
+          ]
+        ],
+        "active": null,
+        "operation": "reconnect",
+        "language": "en"
+      },
+      "output": {
+        "hidden": false,
+        "tabs": [
+          {
+            "filename": "shown.zip",
+            "text": "shown.zip",
+            "active": false
+          },
+          {
+            "filename": "z.zip",
+            "text": "z.zip",
+            "active": false
+          }
+        ],
+        "headerText": [
+          "Close artifacts"
+        ],
+        "headerRendered": true,
+        "active": "key.zip",
+        "visible": [
+          "key.zip"
+        ],
+        "opened": 0,
+        "closed": 0,
+        "scrolls": [],
+        "sameRoots": true,
+        "inline_border": true
+      }
+    }
+  ],
+  "literal_scroll": [
+    {
+      "input": {
+        "filename": "z.zip"
+      },
+      "output": {
+        "active": "z.zip",
+        "visible": [
+          "z.zip"
+        ],
+        "scroll": [
+          {
+            "filename": "z.zip",
+            "options": {
+              "behavior": "smooth",
+              "block": "nearest",
+              "inline": "center"
+            }
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "input": {
+        "filename": "literal\"[x].zip"
+      },
+      "output": {
+        "active": "literal\"[x].zip",
+        "visible": [
+          "literal\"[x].zip"
+        ],
+        "scroll": [
+          {
+            "filename": "literal\"[x].zip",
+            "options": {
+              "behavior": "smooth",
+              "block": "nearest",
+              "inline": "center"
+            }
+          }
+        ],
+        "error": null
+      }
+    },
+    {
+      "input": {
+        "filename": "snow 雪.zip"
+      },
+      "output": {
+        "active": "snow 雪.zip",
+        "visible": [
+          "snow 雪.zip"
+        ],
+        "scroll": [
+          {
+            "filename": "snow 雪.zip",
+            "options": {
+              "behavior": "smooth",
+              "block": "nearest",
+              "inline": "center"
+            }
+          }
+        ],
+        "error": null
+      }
+    }
+  ],
+  "shell_shadow": [
+    {
+      "input": {
+        "dark": false
+      },
+      "output": {
+        "layers": [
+          {
+            "offset": [
+              0,
+              1
+            ],
+            "blur": 3,
+            "spread": 0,
+            "opacity": 0.1
+          },
+          {
+            "offset": [
+              0,
+              8
+            ],
+            "blur": 10,
+            "spread": -1,
+            "opacity": 0.1
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "dark": true
+      },
+      "output": {
+        "layers": [
+          {
+            "offset": [
+              0,
+              1
+            ],
+            "blur": 3,
+            "spread": 0,
+            "opacity": 0.1
+          },
+          {
+            "offset": [
+              0,
+              8
+            ],
+            "blur": 10,
+            "spread": -1,
+            "opacity": 0.1
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -24,6 +24,14 @@ pub enum Failure {
 /// Actual content handles submitted by the public caller.
 #[derive(Default)]
 pub struct Host {
+    /// Retained view policies, independent from publication.
+    pub retained: RefCell<HashMap<egui::Id, (bool, Option<egui::Id>)>>,
+    /// Current containing modal identities.
+    pub overlays: RefCell<Vec<egui::Id>>,
+    /// Callback at the retained-policy boundary, invoked without a host borrow.
+    pub on_visibility: RefCell<Option<Rc<dyn Fn()>>>,
+    /// Controlled retained-policy failure.
+    pub fail_visibility: Cell<bool>,
     /// Original byte downloads at the reached platform boundary.
     pub downloads: RefCell<Vec<(String, String, Vec<u8>)>>,
     /// Reached platform failure, independent of decoding.
@@ -142,9 +150,33 @@ impl AttachmentHost for Host {
         self.events.borrow_mut().push(Event::Remove(id));
         self.published.borrow_mut().remove(&id);
         self.pending.borrow_mut().remove(&id);
+        self.retained.borrow_mut().remove(&id);
     }
-    fn set_overlay(&self, _: egui::Id, _: bool) -> Result<(), AttachmentUiError> {
-        unreachable!()
+    fn set_retained_visibility(
+        &self,
+        id: egui::Id,
+        visible: bool,
+        modal: Option<egui::Id>,
+    ) -> Result<(), AttachmentUiError> {
+        self.retained.borrow_mut().insert(id, (visible, modal));
+        let callback = self.on_visibility.borrow().clone();
+        if let Some(callback) = callback {
+            callback();
+        }
+        if self.fail_visibility.get() {
+            Err(AttachmentUiError::BorrowConflict)
+        } else {
+            Ok(())
+        }
+    }
+    fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentUiError> {
+        let mut overlays = self.overlays.borrow_mut();
+        if !visible {
+            overlays.retain(|i| *i != id);
+        } else if !overlays.contains(&id) {
+            overlays.push(id);
+        }
+        Ok(())
     }
     fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
         unreachable!()

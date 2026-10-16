@@ -76,6 +76,14 @@ impl AttachmentHost for DefaultHost {
         self.presentations.set(self.presentations.get() + 1);
         Ok(())
     }
+    fn set_retained_visibility(
+        &self,
+        _: egui::Id,
+        _: bool,
+        _: Option<egui::Id>,
+    ) -> Result<(), AttachmentUiError> {
+        Ok(())
+    }
     fn set_overlay(&self, _: egui::Id, _: bool) -> Result<(), AttachmentUiError> {
         Ok(())
     }

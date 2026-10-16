@@ -165,7 +165,16 @@ pub trait AttachmentHost {
         surface: AttachmentSurface<'_>,
         presentation: &BrandPresentation<'_>,
     ) -> Result<(), AttachmentUiError>;
-    /// Change modal ownership, preserving hidden surfaces.
+    /// Record retained visibility independently from content publication.
+    /// # Errors
+    /// Returns platform failures without releasing the retained surface.
+    fn set_retained_visibility(
+        &self,
+        id: egui::Id,
+        visible: bool,
+        modal: Option<egui::Id>,
+    ) -> Result<(), AttachmentUiError>;
+    /// Change modal admission, releasing ordinary modal-owned children on close.
     /// # Errors
     /// Returns platform failures.
     fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentUiError>;

@@ -1,11 +1,229 @@
-//! Artifact view construction using application-owned filename policy.
+//! Retained artifact panels using application-owned filename policy.
 pub mod artifact_element;
 pub mod generic_artifact;
 pub mod pdf_artifact;
 use crate::browser::attachment_content::{AttachmentHost, AttachmentUiError};
 use artifact_element::ArtifactElement;
+use artifact_element::ArtifactView;
+use maestro_app::browser::tools::artifacts::ArtifactPresentation;
 use maestro_app::browser::tools::artifacts::{FileType, get_file_type};
-use std::rc::Rc;
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
+mod render;
+/// Owned view handle shared across drawing and reentrant callbacks.
+type Element = Rc<RefCell<Option<Box<dyn ArtifactElement>>>>;
+/// Temporarily own a view so callbacks run without a live slot borrow.
+struct TakenElement<'a> {
+    /// Original slot, which may have been detached from the panel during a callback.
+    slot: &'a Element,
+    /// View restored even when a host callback unwinds.
+    value: Option<Box<dyn ArtifactElement>>,
+}
+impl Drop for TakenElement<'_> {
+    fn drop(&mut self) {
+        let previous = self.slot.replace(self.value.take());
+        drop(previous);
+    }
+}
+/// Run a view operation with exclusive ownership, returning conflicts on reentry.
+fn with_element(
+    slot: &Element,
+    operation: impl FnOnce(&mut dyn ArtifactElement) -> Result<(), AttachmentUiError>,
+) -> Result<(), AttachmentUiError> {
+    let value = slot
+        .try_borrow_mut()
+        .map_err(|_| AttachmentUiError::BorrowConflict)?
+        .take()
+        .ok_or(AttachmentUiError::BorrowConflict)?;
+    let mut taken = TakenElement {
+        slot,
+        value: Some(value),
+    };
+    operation(
+        taken
+            .value
+            .as_deref_mut()
+            .ok_or(AttachmentUiError::BorrowConflict)?,
+    )
+}
+/// Retained views and layout using the application's single selected-file slot.
+pub struct ArtifactsPanel {
+    /// Native effect owner.
+    host: Rc<dyn AttachmentHost>,
+    /// Per-instance layout and modal identity.
+    id: egui::Id,
+    /// Installed views keyed by literal filename.
+    elements: RefCell<indexmap::IndexMap<String, Element>>,
+    /// Whether the panel is attached to its caller's surface.
+    connected: Cell<bool>,
+    /// Requested collapsed property.
+    collapsed: Cell<bool>,
+    /// Requested full-screen property.
+    overlay: Cell<bool>,
+    /// Owned optional notification.
+    on_close: RefCell<Option<Rc<dyn Fn()>>>,
+    /// Last owned repaint target.
+    context: RefCell<Option<egui::Context>>,
+    /// One-shot literal tab-scroll intent, not selected state.
+    scroll: RefCell<Option<String>>,
+}
+impl ArtifactsPanel {
+    /// Create a disconnected, expanded inline panel with no views.
+    #[must_use]
+    pub fn new(host: Rc<dyn AttachmentHost>) -> Self {
+        Self {
+            host,
+            id: crate::browser::attachment_content::identity(),
+            elements: RefCell::default(),
+            connected: Cell::new(false),
+            collapsed: Cell::new(false),
+            overlay: Cell::new(false),
+            on_close: RefCell::default(),
+            context: RefCell::default(),
+            scroll: RefCell::default(),
+        }
+    }
+    /// Read the collapsed property.
+    #[must_use]
+    pub fn collapsed(&self) -> bool {
+        self.collapsed.get()
+    }
+    /// Change the collapsed property and request repaint.
+    pub fn set_collapsed(&self, collapsed: bool) {
+        self.collapsed.set(collapsed);
+        self.repaint();
+    }
+    /// Read the full-screen property.
+    #[must_use]
+    pub fn overlay(&self) -> bool {
+        self.overlay.get()
+    }
+    /// Change the full-screen property and request repaint.
+    pub fn set_overlay(&self, overlay: bool) {
+        self.overlay.set(overlay);
+        self.repaint();
+    }
+    /// Replace the optional close notification without changing panel state.
+    pub fn set_on_close(&self, on_close: Option<Rc<dyn Fn()>>) {
+        let previous = self.on_close.replace(on_close);
+        drop(previous);
+        self.repaint();
+    }
+    /// Wake the owned context outside its container borrow.
+    fn repaint(&self) {
+        let context = self.context.borrow().clone();
+        if let Some(context) = context {
+            context.request_repaint();
+        }
+    }
+    /// Capture owned handles before calling view or host operations.
+    fn elements(&self) -> Vec<(String, Element)> {
+        self.elements
+            .borrow()
+            .iter()
+            .map(|(name, element)| (name.clone(), Rc::clone(element)))
+            .collect()
+    }
+    /// Find a view without borrowing the map through view operations.
+    fn element(&self, filename: &str) -> Option<Element> {
+        self.elements.borrow().get(filename).cloned()
+    }
+    /// Create an installed view or update its original content in place.
+    /// # Errors
+    /// Returns factory, retained-visibility or incompatible view-borrow failures.
+    pub fn get_or_create_artifact_element(
+        &self,
+        filename: &str,
+        content: &str,
+    ) -> Result<(), AttachmentUiError> {
+        if let Some(element) = self.element(filename) {
+            with_element(&element, |element| {
+                element.set_content(content.into());
+                Ok(())
+            })?;
+        } else {
+            let mut element = create_artifact_element(filename, content, Rc::clone(&self.host))?;
+            element.set_visibility(false, None)?;
+            self.elements
+                .borrow_mut()
+                .insert(filename.into(), Rc::new(RefCell::new(Some(element))));
+        }
+        self.repaint();
+        Ok(())
+    }
+    /// Apply literal view selection and request scrolling after the next draw.
+    /// # Errors
+    /// Returns retained-visibility or incompatible view-borrow failures.
+    pub fn show_artifact(&self, filename: &str) -> Result<(), AttachmentUiError> {
+        self.visibility(Some(filename), self.connected.get() && !self.collapsed())?;
+        *self.scroll.borrow_mut() = Some(filename.into());
+        self.repaint();
+        Ok(())
+    }
+    /// Release only the named view; the application decides selection fallback.
+    pub fn remove_artifact_element(&self, filename: &str) {
+        let removed = self.elements.borrow_mut().shift_remove(filename);
+        drop(removed);
+        self.repaint();
+    }
+    /// Restore retained views, defaulting only absent or empty selection to the first key.
+    /// # Errors
+    /// Returns retained-visibility or incompatible view-borrow failures.
+    pub fn connected_callback<P>(
+        &self,
+        caller: &maestro_app::browser::tools::artifacts::ArtifactsPanel<P>,
+    ) -> Result<(), AttachmentUiError>
+    where
+        P: Clone + std::ops::Deref,
+        P::Target: ArtifactPresentation,
+    {
+        self.connected.set(true);
+        if caller.active_filename().is_none_or(|name| name.is_empty()) {
+            let first = caller
+                .artifacts()
+                .read()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .keys()
+                .next()
+                .cloned();
+            if let Some(first) = first {
+                let scroll = self.scroll.borrow_mut().take();
+                caller.show_artifact(&first);
+                *self.scroll.borrow_mut() = scroll;
+            }
+        }
+        self.visibility(caller.active_filename().as_deref(), !self.collapsed())?;
+        self.repaint();
+        Ok(())
+    }
+    /// Hide native content without disposing views or their roots.
+    /// # Errors
+    /// Returns retained-visibility or incompatible view-borrow failures.
+    pub fn disconnected_callback(&self) -> Result<(), AttachmentUiError> {
+        self.connected.set(false);
+        self.visibility(None, false)?;
+        self.repaint();
+        Ok(())
+    }
+    /// Reconcile all retained policies before changing containing modal admission.
+    fn visibility(&self, active: Option<&str>, shown: bool) -> Result<(), AttachmentUiError> {
+        let modal = (shown && self.overlay()).then_some(self.id);
+        for (name, element) in self.elements() {
+            with_element(&element, |element| {
+                element.set_visibility(shown && active == Some(name.as_str()), modal)
+            })?;
+        }
+        self.host.set_overlay(self.id, modal.is_some())
+    }
+}
+impl Drop for ArtifactsPanel {
+    fn drop(&mut self) {
+        self.elements.get_mut().clear();
+        let _ = self.host.set_overlay(self.id, false);
+    }
+}
 /// Construct the installed view without disguising recognized specialized files.
 /// # Errors
 /// Returns a presentation error when the selected specialized view is unavailable.

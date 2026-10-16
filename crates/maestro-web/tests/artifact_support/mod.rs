@@ -109,6 +109,8 @@ pub fn corpus() -> Corpus {
 pub struct Frame {
     /// Retained drawing context.
     pub context: egui::Context,
+    /// Logical drawing viewport.
+    pub size: egui::Vec2,
     /// Supplied brand pack.
     pub pack: maestro_theme::BrandPack,
     /// Selected presentation mode.
@@ -198,3 +200,42 @@ impl Frame {
 }
 
 pub mod presentation;
+
+impl Frame {
+    /// Draw a panel with the actual application caller and supplied pointer events.
+    /// # Errors
+    /// Propagates the reached panel failure.
+    /// # Panics
+    /// Panics for an invalid controlled pack.
+    pub fn draw_panel(
+        &self,
+        panel: &maestro_web::ArtifactsPanel,
+        caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
+        events: Vec<egui::Event>,
+    ) -> Result<egui::FullOutput, maestro_web::browser::attachment_content::AttachmentUiError> {
+        let presentation = self.pack.presentation(self.mode).unwrap();
+        let mut result = Ok(());
+        let mut output = self.context.run_ui(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, self.size)),
+                events,
+                ..Default::default()
+            },
+            |ui| {
+                result = panel.render(
+                    ui,
+                    caller,
+                    ArtifactView {
+                        i18n: &self.i18n,
+                        presentation: &presentation,
+                    },
+                );
+            },
+        );
+        output.textures_delta.clear();
+        result.map(|()| output)
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod panel;

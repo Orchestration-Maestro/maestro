@@ -41,6 +41,14 @@ impl AttachmentHost for Host {
     fn remove(&self, id: egui::Id) {
         self.removed.borrow_mut().push(id);
     }
+    fn set_retained_visibility(
+        &self,
+        _: egui::Id,
+        _: bool,
+        _: Option<egui::Id>,
+    ) -> Result<(), AttachmentUiError> {
+        Ok(())
+    }
     fn set_overlay(&self, _: egui::Id, _: bool) -> Result<(), AttachmentUiError> {
         Ok(())
     }

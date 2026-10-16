@@ -52,3 +52,6 @@ pub use maestro_app::browser::components::sandbox::{
 };
 pub mod tools;
 pub use tools::artifacts::artifact_element::ArtifactElement;
+
+/// Retained tabbed artifact views using the application-selected filename.
+pub use tools::artifacts::ArtifactsPanel;

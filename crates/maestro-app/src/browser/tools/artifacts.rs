@@ -218,16 +218,21 @@ where
     pub fn artifacts(&self) -> Artifacts {
         Arc::clone(&read(&self.state).artifacts)
     }
+    /// Observe the shared selected filename, including unknown or empty names.
+    #[must_use]
+    pub fn active_filename(&self) -> Option<String> {
+        read(&self.state).active.clone()
+    }
     /// Select an existing file and request that the host open the panel.
     pub fn open_artifact(&self, filename: &str) {
         let exists = read(&self.artifacts()).contains_key(filename);
         if exists {
-            self.show(filename);
+            self.show_artifact(filename);
             self.presentation.on_open();
         }
     }
     /// Select a filename without holding the state guard through host operations.
-    fn show(&self, filename: &str) {
+    pub fn show_artifact(&self, filename: &str) {
         self.presentation.show_artifact(filename);
         write(&self.state).active = Some(filename.into());
         self.presentation.request_update();
@@ -293,7 +298,7 @@ where
             self.artifacts(),
         );
         if !options.silent {
-            self.show(&params.filename);
+            self.show_artifact(&params.filename);
             self.presentation.on_artifacts_change();
             self.presentation.request_update();
         }
@@ -333,7 +338,7 @@ where
                 self.presentation.request_update();
             }
         }
-        self.show(&params.filename);
+        self.show_artifact(&params.filename);
         let result = if update {
             format!("Updated file {}", params.filename)
         } else {
@@ -397,7 +402,7 @@ where
         if active {
             let next = read(&self.artifacts()).keys().next().cloned();
             if let Some(next) = next {
-                self.show(&next);
+                self.show_artifact(&next);
             } else {
                 write(&self.state).active = None;
                 self.presentation.request_update();

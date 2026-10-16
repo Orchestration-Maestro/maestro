@@ -38,8 +38,22 @@ struct DomSurface {
     reading: Option<reading::NativeReading>,
     /// Detached replacement retained until successful publication.
     pending: Option<Box<DomSurface>>,
+    /// Independent retained policy, including before first publication.
+    retained: Option<(bool, Option<egui::Id>)>,
     /// Containing modal identity, distinct from the field identity.
     modal: Option<egui::Id>,
+}
+impl DomSurface {
+    /// Project the current independent policy once onto base placement.
+    fn projected_style(&self, id: egui::Id, top: Option<egui::Id>) -> String {
+        let suffix = match self.retained {
+            Some((false, _)) => "visibility:hidden;pointer-events:none;",
+            policy => {
+                super::visibility_style(id, policy.map_or(self.modal, |(_, modal)| modal), top)
+            }
+        };
+        format!("{}{suffix}", self.style)
+    }
 }
 impl Drop for DomSurface {
     fn drop(&mut self) {
@@ -108,6 +122,7 @@ impl BrowserAttachmentHost {
             reading: None,
             pending: None,
             modal: None,
+            retained: None,
         })
     }
     /// Map canvas points to viewport CSS pixels without resizing for clipping.
@@ -144,11 +159,18 @@ impl BrowserAttachmentHost {
         previous: Option<egui::Id>,
     ) -> Result<(), AttachmentUiError> {
         let top = self.overlays.borrow().last().copied();
-        let surfaces = self.surfaces.borrow();
-        for id in super::style_targets(surfaces.keys().copied(), placed, previous, top) {
-            let Some(s) = surfaces.get(&id) else { continue };
-            let style = format!("{}{}", s.style, super::visibility_style(id, s.modal, top));
-            s.wrapper
+        let updates: Vec<_> = {
+            let surfaces = self.surfaces.borrow();
+            super::style_targets(surfaces.keys().copied(), placed, previous, top)
+                .filter_map(|id| {
+                    surfaces
+                        .get(&id)
+                        .map(|s| (s.wrapper.clone(), s.projected_style(id, top)))
+                })
+                .collect()
+        };
+        for (wrapper, style) in updates {
+            wrapper
                 .set_attribute("style", &style)
                 .map_err(|error| host_error(&error))?;
         }
@@ -264,6 +286,22 @@ impl AttachmentHost for BrowserAttachmentHost {
         drop(displaced);
         result?;
         self.visibility(Some(s.id), self.overlays.borrow().last().copied())
+    }
+    fn set_retained_visibility(
+        &self,
+        id: egui::Id,
+        visible: bool,
+        modal: Option<egui::Id>,
+    ) -> Result<(), AttachmentUiError> {
+        if !self.surfaces.borrow().contains_key(&id) {
+            let surface = self.create("div")?;
+            let replaced = self.surfaces.borrow_mut().insert(id, surface);
+            drop(replaced);
+        }
+        if let Some(surface) = self.surfaces.borrow_mut().get_mut(&id) {
+            surface.retained = Some((visible, modal));
+        }
+        self.visibility(Some(id), self.overlays.borrow().last().copied())
     }
     fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentUiError> {
         let previous = self.overlays.borrow().last().copied();
