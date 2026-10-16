@@ -27,7 +27,8 @@ Document, Node, Element, SvgElement, HtmlElement, HtmlAnchorElement, Blob,
 BlobPropertyBag, Url, MediaQueryList, HtmlCanvasElement, DomRect, DomException,
 DomStringList, IdbDatabase, IdbFactory, IdbIndex, IdbIndexParameters, IdbObjectStore,
 IdbObjectStoreParameters, IdbOpenDbRequest, IdbRequest, IdbTransaction,
-IdbTransactionMode, HtmlInputElement, Event, EventTarget and KeyboardEvent.
+IdbTransactionMode, IdbKeyRange, IdbCursor, IdbCursorWithValue, IdbCursorDirection,
+StorageManager, StorageEstimate, HtmlInputElement, Event, EventTarget and KeyboardEvent.
 Storage and reload errors remain fallible. Legacy locale access uses the platform property
 adapter only on the fallback branch. The real library is built for WebAssembly,
 not replaced with a test-only host.

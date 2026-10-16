@@ -8,9 +8,10 @@ and the storage traits.
 `maestro_web` also exports the backend signature types `IndexDirection`,
 `TransactionMode`, `StorageOperation` and `QuotaInfo`.
 Backend implementations are supplied by the caller, not constructed by stores.
-The WebAssembly SDK also provides concrete native-value get/set/delete through
-[the browser database adapter](../browser/storage.md). Its complete application
-trait adaptation follows in [#1062](https://github.com/Orchestration-Maestro/maestro/issues/1062).
+The WebAssembly SDK supplies a complete application-trait implementation through
+[the browser database adapter](../browser/storage.md), alongside unrestricted
+native-value operations and retained multi-store transactions. The adapter's JSON
+face follows browser JSON representation; raw callers retain native types.
 
 The settings, provider-key and custom-provider stores have out-of-line key schemas named `settings`,
 `provider-keys` or `custom-providers`. `Store::new` owns a supplied schema;
