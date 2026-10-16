@@ -3,7 +3,8 @@
 `maestro-models` invokes model protocols through replaceable callbacks. It owns
 request preparation, streaming and account primitives, not an agent loop, tool
 executor or credential store. Examples below are offline Rust tests using the
-same public operations as applications.
+same public operations as applications. For topic navigation and current inputs,
+see [Current model behavior](../release_behavior/changelog.md).
 
 ## Installation and offline quick start
 
@@ -209,8 +210,9 @@ Projection is model-sensitive: replay compatibility checks provider, API **and
 model ID**. Compatible thinking can retain signatures; foreign ordinary thinking
 becomes unsigned plain text, not guaranteed tagged text. Blank foreign thinking
 is omitted under the authored-whitespace rule: U+FEFF is blank, U+0085 is not.
-User/tool images can become the exact placeholder
-`(image omitted: model does not support images)` for nonvision models.
+For nonvision models, user images can become
+`(image omitted: model does not support images)`; tool images can become
+`(tool image omitted: model does not support images)`.
 
 `transform_messages` borrows stored messages and returns an owned request view.
 Adapter wire conversion can further regroup content and normalize tool IDs.
@@ -274,8 +276,9 @@ HTTP transport reads race cancellation. Do not assume identical body ownership.
 Payload hooks receive and return the selected `PayloadHookInput`. Its JSON can
 be kept, edited or replaced; only public content generation consumes the edited
 signal. Content generation does not use the response hook; cloud conversations
-invoke it after the first known service event. Other policies remain adapter
-owned. Read [hook contracts](../records.md), the [content-generation exceptions](content-generation.md),
+invoke it after the first known service event or successful end of stream,
+including empty or unknown-only streams. A failure before either prevents the
+hook from running. Other policies remain adapter owned. Read [hook contracts](../records.md), the [content-generation exceptions](content-generation.md),
 [cloud SDK configuration](cloud-conversations.md) and
 [response-session callback/retry policy](response-sessions.md), rather than
 assuming a universal callback boundary.
