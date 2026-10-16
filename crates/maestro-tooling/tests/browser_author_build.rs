@@ -17,7 +17,11 @@ fn browser_clean_preserves_authored_inputs() {
     fs::create_dir_all(example.parent().unwrap()).unwrap();
     fs::write(library.join("generated"), "generated").unwrap();
     fs::write(&example, "retained").unwrap();
+    let preparation = browser.path("target/maestro-browser/.author/library/inputs/retained");
+    fs::create_dir_all(preparation.parent().unwrap()).unwrap();
+    fs::write(&preparation, "prepared inputs").unwrap();
     let inputs = [
+        preparation,
         browser.fixture("src/main.rs"),
         browser.fixture("Cargo.lock"),
         browser.path("assets/brand/brand.json"),
@@ -435,7 +439,10 @@ fn browser_example_build_uses_shared_inputs() {
         .map(|line| line.split("|--dist|").next().unwrap())
         .collect();
     assert_eq!(commands.len(), 2);
-    assert_eq!(commands[0], commands[1]);
+    assert_eq!(
+        commands[0],
+        commands[1].replace("|example-build|", "|library-build|")
+    );
 }
 
 #[test]
@@ -511,9 +518,13 @@ fn browser_example_clean_preserves_shared_assets() {
         )
         .unwrap();
     }
+    let preparation = browser.path("target/maestro-browser/.author/example/inputs/retained");
+    fs::create_dir_all(preparation.parent().unwrap()).unwrap();
+    fs::write(&preparation, "prepared inputs").unwrap();
     for _ in 0..2 {
         success(&browser.run("browser-example-clean"));
     }
+    assert_eq!(fs::read_to_string(preparation).unwrap(), "prepared inputs");
     assert!(!browser.path("target/maestro-browser/example").exists());
     assert!(
         browser
@@ -676,8 +687,6 @@ fn browser_assets_follow_relative_selected_identity() {
         ("assets/brand/brand.json", "Barlow"),
         ("assets/brand/packs/signal.json", "Space Grotesk"),
     ] {
-        let data: serde_json::Value =
-            serde_json::from_slice(&fs::read(browser.path(pack)).unwrap()).unwrap();
         for mode in ["dark", "light"] {
             success(
                 &browser
@@ -687,25 +696,7 @@ fn browser_assets_follow_relative_selected_identity() {
                     .output()
                     .unwrap(),
             );
-            let wasm = fs::read_dir(browser.path("target/maestro-browser/library"))
-                .unwrap()
-                .map(|file| file.unwrap().path())
-                .find(|file| file.extension().is_some_and(|ext| ext == "wasm"))
-                .unwrap();
-            let bytes = fs::read(wasm).unwrap();
-            let text = String::from_utf8_lossy(&bytes);
-            for (role, key) in data["modes"][mode]["colors"].as_object().unwrap() {
-                let color = data["palette"][key.as_str().unwrap()].as_str().unwrap();
-                assert!(
-                    text.contains(&format!("--maestro-color-{role}:{color};")),
-                    "{pack} {mode} {role}"
-                );
-            }
-            assert!(text.contains(&format!("--maestro-font-body:\"{body}\"")));
-            assert!(text.contains("--maestro-type-body-size:16px"));
-            assert!(text.contains("--maestro-font-mono:\"JetBrains Mono\""));
-            assert!(text.contains("<svg"));
-            assert!(!text.contains("{{wordmark}}") && !text.contains("var(--mark-star)"));
+            assert_identity_wasm(&browser, "library", pack, mode, body);
         }
     }
     for path in [
@@ -721,6 +712,26 @@ fn browser_assets_follow_relative_selected_identity() {
     let pack = browser.path("assets/brand/brand.json");
     fs::write(pack, "{ malformed pack").unwrap();
     assert!(!browser.run("browser-library-build").status.success());
+}
+
+/// Observe every selected presentation role in the final consuming wasm artifact.
+fn assert_identity_wasm(browser: &Browser, route: &str, pack: &str, mode: &str, body: &str) {
+    let data: serde_json::Value =
+        serde_json::from_slice(&fs::read(browser.path(pack)).unwrap()).unwrap();
+    let bytes = browser_support::wasm(browser, route);
+    let text = String::from_utf8_lossy(&bytes);
+    for (role, key) in data["modes"][mode]["colors"].as_object().unwrap() {
+        let color = data["palette"][key.as_str().unwrap()].as_str().unwrap();
+        assert!(
+            text.contains(&format!("--maestro-color-{role}:{color};")),
+            "{pack} {mode} {role}"
+        );
+    }
+    assert!(text.contains(&format!("--maestro-font-body:\"{body}\"")));
+    assert!(text.contains("--maestro-type-body-size:16px"));
+    assert!(text.contains("--maestro-font-mono:\"JetBrains Mono\""));
+    assert!(text.contains("<svg"));
+    assert!(!text.contains("{{wordmark}}") && !text.contains("var(--mark-star)"));
 }
 
 #[test]
@@ -952,6 +963,34 @@ fn browser_recipes_preserve_literal_paths_and_failures() {
     assert_eq!(workspace.log().lines().count(), 1);
     fs::remove_file(workspace.0.join("log")).unwrap();
     check_root_browser_selection(&workspace);
+    check_real_author_literals();
+}
+
+/// Exercise literal selected paths and native options through the actual bundler.
+fn check_real_author_literals() {
+    let browser = Browser::new();
+    let pack = browser.path("assets/brand/pack's 東京.json");
+    let mut value: serde_json::Value =
+        serde_json::from_slice(&fs::read(browser.path("assets/brand/brand.json")).unwrap())
+            .unwrap();
+    value["wordmark"] = "literal selected identity".into();
+    fs::write(&pack, serde_json::to_vec_pretty(&value).unwrap()).unwrap();
+    success(
+        &browser
+            .command("browser-library-build")
+            .arg(&pack)
+            .args(["light", "--public-url", "/a space/"])
+            .output()
+            .unwrap(),
+    );
+    assert!(
+        browser_support::wasm(&browser, "library")
+            .windows(b"literal selected identity".len())
+            .any(|part| part == b"literal selected identity")
+    );
+    let html =
+        fs::read_to_string(browser.path("target/maestro-browser/library/index.html")).unwrap();
+    assert!(html.contains("/a space/"), "{html}");
 }
 
 /// Keep full and compile-only root selections on their distinct browser operations.
@@ -1163,24 +1202,14 @@ fn browser_author_metadata_adapter_keeps_literals_and_status() {
 #[test]
 fn browser_author_preparation_is_route_local() {
     let browser = Browser::new();
-    browser.workspace_sources();
-    let result = maestro_tooling::run(
-        &[
-            "browser-author",
-            "example-check",
-            "assets/brand/brand.json",
-            "dark",
-        ]
-        .map(Into::into),
-        std::path::Path::new(env!("CARGO")),
-        &browser.workspace.0,
-    );
-    assert_eq!(result.unwrap(), std::process::ExitCode::SUCCESS);
+    success(&browser.run("browser-example-check"));
     let config = browser.path("target/maestro-browser/.author/example/Trunk.json");
     let value: serde_json::Value = serde_json::from_slice(&fs::read(config).unwrap()).unwrap();
     assert_eq!(
-        value["build"]["target"],
-        browser.fixture("index.html").to_str().unwrap()
+        std::path::Path::new(value["build"]["target"].as_str().unwrap())
+            .canonicalize()
+            .unwrap(),
+        browser.fixture("index.html").canonicalize().unwrap()
     );
     assert!(!browser.path("target/maestro-browser/example").exists());
     assert!(
@@ -1217,10 +1246,18 @@ fn browser_author_preparation_is_route_local() {
             "index.html"
         };
         assert_eq!(
-            value["build"]["target"],
-            browser.fixture(target).to_str().unwrap()
+            std::path::Path::new(value["build"]["target"].as_str().unwrap())
+                .canonicalize()
+                .unwrap(),
+            browser.fixture(target).canonicalize().unwrap()
         );
-        assert!(browser_support::wasm(&browser, route).len() > 8);
+        assert_identity_wasm(
+            &browser,
+            route,
+            "assets/brand/packs/signal.json",
+            mode,
+            "Space Grotesk",
+        );
     }
 }
 
@@ -1309,6 +1346,17 @@ fn browser_author_included_files_rebuild_without_source_changes() {
     let source = fs::read(browser.fixture("src/main.rs")).unwrap();
     success(&browser.run("browser-library-build"));
     let before = browser_support::wasm(&browser, "library");
+    success(
+        &browser
+            .command("browser-example-check")
+            .args(["assets/brand/brand.json", "unknown-mode"])
+            .output()
+            .unwrap(),
+    );
+    assert_eq!(
+        fs::read(browser.path("target/maestro-browser/.author/library/inputs/brand.css")).unwrap(),
+        fs::read(browser.path("target/maestro-browser/.author/example/inputs/brand.css")).unwrap()
+    );
     let pack = browser.path("assets/brand/brand.json");
     let mut value: serde_json::Value = serde_json::from_slice(&fs::read(&pack).unwrap()).unwrap();
     value["wordmark"] = "included-input-marker".into();

@@ -147,9 +147,12 @@ not a new `maestro-web` runtime dependency. It uses eframe `=0.36.2` (MIT), defa
 off, with `glow` and `web_screen_reader`; wasm-bindgen `=0.2.129`,
 wasm-bindgen-futures `=0.4.79` and web-sys `=0.3.106` (MIT OR Apache-2.0).
 Web-sys selects Window, Document, Element and HtmlCanvasElement, with inherited
-Node/HtmlElement support. Native build preparation reuses `maestro-theme` and
-already-locked serde_json `=1.0.151` (MIT) for generated watch configuration;
+Node/HtmlElement support. Native preparation invokes the existing `maestro-theme`
+export example as a separate locked root build; tooling reuses already-locked
+serde_json `=1.0.151` (MIT) for generated configuration. The fixture has no native
+path or build-dependency edge;
 no egui default fonts enter its wasm graph. The shared whole
 font assets have OFL-1.1 notices and are registered explicitly by the fixture.
 Native tooling tests reuse egui `=0.36.2` with defaults off for actual glyph
 rendering, not a font parser or subsetting dependency.
+
