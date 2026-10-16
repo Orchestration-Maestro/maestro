@@ -86,7 +86,8 @@ Actual button dimensions size identified native slots. One live readback supplie
 publication holes, full canvas paint geometry and clipped interaction rectangles.
 A pointer press owns an action only inside its current positive visible slot
 intersection. Release activates that same action only inside its then-current
-visible intersection, including after a slot moves; keyboard activation is unchanged.
+visible intersection, including after a slot moves. Both endpoints require an
+enabled control on the toolkit's input-owning layer; keyboard activation is unchanged.
 The viewport is bounded by available height, including zero, without a second
 canvas scroller or painted reading text. A transparent flow container includes
 the panel's trailing spacing once without extending its background.

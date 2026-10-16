@@ -182,7 +182,8 @@ failed publication, attempting every restoration and preserving the original err
 Publication applies the same sizes and staged offsets before committing the root.
 Canvas paint retains full control geometry through the final clip. Pointer activation
 requires a press inside the control's current positive visible intersection and a
-release inside that same control's then-current visible intersection. Keyboard
+release inside that same control's then-current visible intersection. At both
+endpoints the control must be enabled and its layer must own the input. Keyboard
 activation is unchanged. Unchanged content retains its native root and selection.
 The existing event-subscription owner retains scroll/resize callbacks; no second
 registry, listener runtime or painted reading-text fallback is introduced.

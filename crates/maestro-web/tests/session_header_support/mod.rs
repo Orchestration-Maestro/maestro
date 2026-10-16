@@ -270,6 +270,18 @@ impl<'a> Canvas<'a> {
         Vec<maestro_web::export_html::template::HeaderAction>,
         egui::FullOutput,
     ) {
+        self.frame_with(events, true, |_| {})
+    }
+    /// Draw the caller's enabled state and real foreground surfaces in the same context.
+    pub fn frame_with(
+        &mut self,
+        events: Vec<egui::Event>,
+        enabled: bool,
+        mut foreground: impl FnMut(&egui::Context),
+    ) -> (
+        Vec<maestro_web::export_html::template::HeaderAction>,
+        egui::FullOutput,
+    ) {
         let mut actions = Vec::new();
         let mut output = self.context.run_ui(
             egui::RawInput {
@@ -281,6 +293,9 @@ impl<'a> Canvas<'a> {
                 ..Default::default()
             },
             |ui| {
+                if !enabled {
+                    ui.disable();
+                }
                 actions = maestro_web::export_html::template::render_header(
                     ui,
                     &self.document,
@@ -291,6 +306,7 @@ impl<'a> Canvas<'a> {
                     },
                 )
                 .unwrap();
+                foreground(ui.ctx());
             },
         );
         output.textures_delta.clear();

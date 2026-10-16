@@ -97,21 +97,23 @@ impl Placement<'_> {
             if !visible.is_positive() {
                 continue;
             }
-            visible_slots.push((*action, visible));
             let mut child = ui.new_child(egui::UiBuilder::new().id_salt(id).max_rect(*full));
             child.set_clip_rect(visible);
             let response = child.put(*full, button(label)).on_hover_text(*tooltip);
+            if response.enabled() {
+                visible_slots.push((*action, visible, response.layer_id));
+            }
             if response.clicked() && !response.clicked_by(egui::PointerButton::Primary) {
                 actions.push(*action);
             }
         }
-        ui.input(|input| {
-            actions.extend(pointer_actions(
-                &input.events,
-                &mut self.state.pressed,
-                &visible_slots,
-            ));
-        });
+        let events = ui.input(|input| input.events.clone());
+        actions.extend(pointer_actions(
+            &events,
+            &mut self.state.pressed,
+            &visible_slots,
+            ui.ctx(),
+        ));
         actions
     }
 }
@@ -119,7 +121,8 @@ impl Placement<'_> {
 fn pointer_actions(
     events: &[egui::Event],
     pressed: &mut Option<HeaderAction>,
-    visible_canvas_slots: &[(HeaderAction, egui::Rect)],
+    visible_canvas_slots: &[(HeaderAction, egui::Rect, egui::LayerId)],
+    context: &egui::Context,
 ) -> Vec<HeaderAction> {
     let mut actions = Vec::new();
     for event in events {
@@ -132,8 +135,12 @@ fn pointer_actions(
         {
             let hit = visible_canvas_slots
                 .iter()
-                .find(|(_, rect)| rect.contains(*canvas_points))
-                .map(|(action, _)| *action);
+                // Completed clicks use stale geometry; keep only toolkit layer admission.
+                .find(|(_, rect, layer)| {
+                    rect.contains(*canvas_points)
+                        && context.layer_id_at(*canvas_points) == Some(*layer)
+                })
+                .map(|(action, _, _)| *action);
             if *down {
                 *pressed = hit;
             } else if let Some(owner) = pressed.take()
