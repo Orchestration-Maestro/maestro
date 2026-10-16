@@ -7,3 +7,5 @@ pub mod input;
 pub mod sandbox;
 
 pub(crate) mod download_button;
+/// Retained sandbox loading and document preparation.
+pub mod sandboxed_iframe;

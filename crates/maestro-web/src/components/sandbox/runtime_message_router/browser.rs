@@ -111,6 +111,34 @@ impl RuntimeMessageRouter {
         }
         Ok(())
     }
+    /// Deliver a bootstrap failure only from the actual currently registered frame.
+    pub(crate) fn sandbox_error(
+        &self,
+        sandbox_id: &str,
+        event: &MessageEvent,
+    ) -> Result<JsValue, JsValue> {
+        let id = JsValue::from_str(sandbox_id);
+        let Some(context) = admitted(&self.state, &id, event) else {
+            return Ok(JsValue::UNDEFINED);
+        };
+        let data = event.data();
+        let error = Object::new();
+        Reflect::set(
+            &error,
+            &"message".into(),
+            &Reflect::get(&data, &"error".into())?,
+        )?;
+        Reflect::set(
+            &error,
+            &"stack".into(),
+            &Reflect::get(&data, &"stack".into())?,
+        )?;
+        let message = Object::new();
+        Reflect::set(&message, &"sandboxId".into(), &id)?;
+        Reflect::set(&message, &"type".into(), &"execution-error".into())?;
+        Reflect::set(&message, &"error".into(), &error)?;
+        window_delivery(context, message.into(), id)
+    }
     /// Retain failed removals for retry before releasing their callbacks.
     fn detach(&self) -> Result<(), JsValue> {
         if let Some(listener) = self.window.borrow().as_ref() {
@@ -170,14 +198,21 @@ fn window_message(weak: &Weak<State>, event: &MessageEvent) -> Result<JsValue, J
     };
     let message = event.data();
     let id = sandbox_id(&message)?;
-    let context = state.window_context(
+    let Some(context) = admitted(&state, &id, event) else {
+        return Ok(JsValue::UNDEFINED);
+    };
+    window_delivery(context, message, id)
+}
+/// Reuse the registered-source policy for both native messages and bootstrap failures.
+fn admitted(state: &State, id: &JsValue, event: &MessageEvent) -> Option<Sandbox> {
+    state.window_context(
         id.as_string().as_deref(),
         event.source().map(JsValue::from).as_ref(),
         |frame| frame.content_window().map(JsValue::from),
-    );
-    let Some(context) = context else {
-        return Ok(JsValue::UNDEFINED);
-    };
+    )
+}
+/// Build normal window replies for an already-admitted captured context.
+fn window_delivery(context: Sandbox, message: JsValue, id: JsValue) -> Result<JsValue, JsValue> {
     let slot = context.frame.clone();
     let message_id = Reflect::get(&message, &"messageId".into())?;
     let respond = Box::new(move |response: BrowserSandboxValue| {

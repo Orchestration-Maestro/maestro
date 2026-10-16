@@ -58,5 +58,7 @@ pub use maestro_app::browser::components::sandbox::{
 pub mod tools;
 pub use tools::artifacts::artifact_element::ArtifactElement;
 
+#[cfg(target_arch = "wasm32")]
+pub use components::sandboxed_iframe::SandboxIframe;
 /// Retained tabbed artifact views using the application-selected filename.
 pub use tools::artifacts::ArtifactsPanel;
