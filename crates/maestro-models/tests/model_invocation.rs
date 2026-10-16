@@ -174,42 +174,24 @@ mod tests {
     }
 
     fn assert_retained_provider(retained: &maestro_models::records::api_registry::ApiProvider) {
-        assert_eq!(
-            ready(
-                retained
-                    .stream
-                    .call(
-                        model("2"),
-                        context(),
-                        maestro_models::ProviderInvocation::Threaded(None, None)
-                    )
-                    .unwrap()
-                    .result()
-            )
-            .read()
-            .unwrap()
-            .timestamp
-            .to_bits(),
-            20.0_f64.to_bits()
-        );
-        assert_eq!(
-            ready(
-                retained
-                    .stream_simple
-                    .call(
-                        model("2"),
-                        context(),
-                        maestro_models::ProviderInvocation::Threaded(None, None)
-                    )
-                    .unwrap()
-                    .result()
-            )
-            .read()
-            .unwrap()
-            .timestamp
-            .to_bits(),
-            21.0_f64.to_bits()
-        );
+        assert_retained_families(&retained.stream, 20.0);
+        assert_retained_families(&retained.stream_simple, 21.0);
+    }
+
+    /// Source removal retains both raw/simple handles in either invocation family.
+    fn assert_retained_families<K: maestro_models::StreamOptionsFamily>(
+        callback: &maestro_models::StreamFunction<K>,
+        expected: f64,
+    ) {
+        let spawn: maestro_models::ProviderSpawner<maestro_models::Local> =
+            std::rc::Rc::new(|_| panic!("synchronous retained callback must not submit"));
+        for invocation in [
+            maestro_models::ProviderInvocation::Local(None, spawn),
+            maestro_models::ProviderInvocation::Threaded(None, None),
+        ] {
+            let stream = callback.call(model("2"), context(), invocation).unwrap();
+            assert_timestamp(&stream, expected);
+        }
     }
 
     #[test]
