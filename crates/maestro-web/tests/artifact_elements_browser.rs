@@ -96,7 +96,7 @@ fn js(code: &str) -> JsValue {
 }
 /// Literal hostile filenames and localized guidance remain native selectable text.
 #[wasm_bindgen]
-pub fn generic_guidance_is_literal_selectable_and_localized() {
+pub async fn generic_guidance_is_literal_selectable_and_localized() {
     let mut view = View::new();
     view.element
         .set_filename(" <script>雪 & \"quotes\"</script>.zip".into());
@@ -120,6 +120,7 @@ pub fn generic_guidance_is_literal_selectable_and_localized() {
     );
     assert!(js("(()=>{const r=document.createRange();r.selectNodeContents(document.querySelector('.maestro-generic-artifact p'));getSelection().removeAllRanges();getSelection().addRange(r);return getSelection().toString().includes('Preview not available');})()").as_bool().unwrap());
     assert!(js("(()=>{const r=document.querySelector('.maestro-generic-artifact').getBoundingClientRect();const s=document.querySelector('.maestro-generic-artifact svg').getBoundingClientRect();return r.width>0 && r.height>0 && s.width===64 && s.height===64;})()").as_bool().unwrap());
+    support::reading_paint::observe("neighbors-generic").await;
     let translations = view.i18n.get_translations();
     for (key, value) in [
         ("Download", "Télécharger"),

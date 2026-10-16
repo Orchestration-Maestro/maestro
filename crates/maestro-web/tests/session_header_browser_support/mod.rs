@@ -20,9 +20,16 @@ pub struct Slots {
     pub root: Rc<RefCell<Option<ReadingRoot>>>,
     pub context: egui::Context,
     pub pack: maestro_theme::BrandPack,
+    pub origin: egui::Pos2,
+    pub clip: egui::Rect,
+    pub holes: Vec<egui::Rect>,
+    pub density: f32,
 }
 impl Slots {
     pub fn new() -> Self {
+        std::panic::set_hook(Box::new(|info| {
+            web_sys::console::error_1(&info.to_string().into())
+        }));
         let document = web_sys::window().unwrap().document().unwrap();
         let canvas = document
             .get_element_by_id("canvas")
@@ -37,6 +44,10 @@ impl Slots {
             id: egui::Id::new("native-slots"),
             root,
             context: egui::Context::default(),
+            origin: egui::pos2(12., 18.),
+            clip: egui::Rect::EVERYTHING,
+            holes: vec![],
+            density: 1.,
             pack: maestro_theme::load_brand_pack("brand.json", &super::Pack).unwrap(),
         }
     }
@@ -74,6 +85,9 @@ impl Slots {
     pub fn wrapper(&self) -> Element {
         self.root().parent_element().unwrap()
     }
+    pub fn frame(&self) -> Element {
+        self.wrapper().parent_element().unwrap()
+    }
     pub fn place(
         &self,
         phase: ReadingPhase,
@@ -83,11 +97,11 @@ impl Slots {
         self.host.present(
             AttachmentSurface {
                 id: self.id,
-                rect: egui::Rect::from_min_size(egui::pos2(12., 18.), size),
-                clip_rect: egui::Rect::EVERYTHING,
-                pixels_per_point: 1.,
+                rect: egui::Rect::from_min_size(self.origin, size),
+                clip_rect: self.clip,
+                pixels_per_point: self.density,
                 opacity: 1.,
-                occluders: vec![],
+                occluders: self.holes.clone(),
                 content: AttachmentContent::Reading(ReadingPlacement {
                     content: Rc::clone(&self.content),
                     phase,

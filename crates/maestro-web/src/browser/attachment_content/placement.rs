@@ -18,6 +18,25 @@ pub(super) fn clip_path(
     } else {
         surface.rect
     };
+    paint_clip_path(surface, paint_rect, css_pixels_per_point)
+}
+
+/// Clip reading decoration to finite canvas/ancestor bounds, not its viewport.
+pub(super) fn frame_clip_path(surface: &AttachmentSurface<'_>, drawable: egui::Rect) -> String {
+    let extent = if surface.rect.is_positive() {
+        drawable
+    } else {
+        egui::Rect::NOTHING
+    };
+    paint_clip_path(surface, extent, (1., 1.))
+}
+
+/// Serialize the one outer extent and disjoint control holes in local CSS pixels.
+fn paint_clip_path(
+    surface: &AttachmentSurface<'_>,
+    paint_rect: egui::Rect,
+    css_pixels_per_point: (f64, f64),
+) -> String {
     let mut path = String::new();
     for rect in std::iter::once(surface.clip_rect.intersect(paint_rect)).chain(
         surface
@@ -33,6 +52,10 @@ pub(super) fn clip_path(
         let right = f64::from(rect.right() - surface.rect.left()) * css_pixels_per_point.0;
         let bottom = f64::from(rect.bottom() - surface.rect.top()) * css_pixels_per_point.1;
         let _ = write!(path, "M{left} {top}H{right}V{bottom}H{left}Z");
+    }
+    if path.is_empty() {
+        // Empty CSS paths are invalid; a zero-area path keeps native clipping active.
+        path.push_str("M0 0H0V0H0Z");
     }
     format!("path(evenodd,\"{path}\")")
 }
