@@ -626,12 +626,91 @@ where
     }
 }
 
+/// Setup failure is immediate for streams and eager but independently observed for completions.
+macro_rules! eager_failure_operations {
+    ($model:ident, $context:ident, $calls:ident, $mode:ty, $shape:ident,
+     $raw:path, $simple:path, $complete:path, $complete_simple:path $(, $spawn:ident)?) => {{
+        let mut failure = $model.clone();
+        failure.id = "failure".into();
+        let (raw, simple, expected) = eager_options::<$mode>($shape);
+        let before = $calls.lock().unwrap().len();
+        assert_eq!($raw(failure.clone(), $context.clone(), raw.clone() $(, $spawn.clone())?).err().unwrap().message, "setup stopped");
+        assert_eq!($simple(failure.clone(), $context.clone(), simple.clone() $(, $spawn.clone())?).err().unwrap().message, "setup stopped");
+        let c = $complete(failure.clone(), $context.clone(), raw $(, $spawn.clone())?);
+        let d = $complete_simple(failure, $context.clone(), simple $(, $spawn.clone())?);
+        assert_eq!(&$calls.lock().unwrap()[before..], &expected);
+        crate::chat::block_on(false, async {
+            assert_eq!(c.await.unwrap_err().message, "setup stopped");
+            assert_eq!(d.await.unwrap_err().message, "setup stopped");
+            Ok(())
+        })?;
+    }};
+}
+
+/// Run each original option shape through all four eager public operations.
+macro_rules! eager_operations {
+    ($model:ident, $context:ident, $calls:ident, $mode:ty,
+     $raw:path, $simple:path, $complete:path, $complete_simple:path $(, $spawn:ident)?) => {{
+        for shape in 0..3 {
+            let (raw, simple, expected) = eager_options::<$mode>(shape);
+            let before = $calls.lock().unwrap().len();
+            let a = $raw($model.clone(), $context.clone(), raw.clone() $(, $spawn.clone())?)?;
+            let b = $simple($model.clone(), $context.clone(), simple.clone() $(, $spawn.clone())?)?;
+            let c = $complete($model.clone(), $context.clone(), raw $(, $spawn.clone())?);
+            let d = $complete_simple($model.clone(), $context.clone(), simple $(, $spawn.clone())?);
+            assert_eq!(&$calls.lock().unwrap()[before..], &expected);
+            crate::chat::block_on(false, async {
+                for (message, label) in [a.result().await, b.result().await, c.await?, d.await?].into_iter().zip(expected) {
+                    let content = &message.read().unwrap().content;
+                    assert_eq!(*content, [maestro_models::AssistantContent::Text(maestro_models::faux_text(label))]);
+                }
+                assert!(matches!(a.next().await, Some(maestro_models::AssistantMessageEvent::Done { .. })));
+                assert!(matches!(b.next().await, Some(maestro_models::AssistantMessageEvent::Done { .. })));
+                assert!(a.next().await.is_none());
+                assert!(b.next().await.is_none());
+                Ok(())
+            })?;
+            eager_failure_operations!($model, $context, $calls, $mode, shape, $raw, $simple, $complete, $complete_simple $(, $spawn)?);
+        }
+    }};
+}
+
+/// Absent, supplied-empty and supplied-full original options, with independent expected labels.
+#[cfg(test)]
+fn eager_options<E: maestro_models::ProviderExecution>(
+    shape: u8,
+) -> (
+    Option<maestro_models::ProviderStreamOptions<E>>,
+    Option<SimpleStreamOptions<E>>,
+    [&'static str; 4],
+) {
+    match shape {
+        0 => (None, None, ["absent"; 4]),
+        1 => (
+            Some(maestro_models::ProviderStreamOptions::default()),
+            Some(SimpleStreamOptions::default()),
+            ["raw-empty", "simple-empty", "raw-empty", "simple-empty"],
+        ),
+        2 => (
+            Some(maestro_models::ProviderStreamOptions {
+                extra: [("custom".into(), serde_json::json!(17))]
+                    .into_iter()
+                    .collect(),
+                ..Default::default()
+            }),
+            Some(SimpleStreamOptions {
+                reasoning: Some(maestro_models::ThinkingLevel::High),
+                ..Default::default()
+            }),
+            ["raw-full", "simple-full", "raw-full", "simple-full"],
+        ),
+        _ => unreachable!("only recorded option shapes are used"),
+    }
+}
+
 #[test]
 fn dispatch_and_completion_keep_eager_error_boundaries() -> crate::TestResult {
-    use maestro_models::records::stream::{
-        complete_for, complete_simple_for, stream_for, stream_simple_for,
-    };
-    use maestro_models::{ApiProvider, Context, ProviderStreamOptions};
+    use maestro_models::{ApiProvider, Context};
     use std::sync::{Arc, Mutex};
     let _serial = crate::bundled::registry();
     let calls = Arc::new(Mutex::new(Vec::new()));
@@ -650,60 +729,76 @@ fn dispatch_and_completion_keep_eager_error_boundaries() -> crate::TestResult {
         messages: vec![],
         tools: None,
     };
-    let local = Rc::new(|_| -> bool { panic!("synchronous callback must not submit") })
-        as maestro_models::ProviderSpawner<Local>;
-    let raw = ProviderStreamOptions::<Local>::default();
-    let simple = SimpleStreamOptions::<Local>::default();
-    let a = stream_for::<Local>(model.clone(), context.clone(), Some(raw), Rc::clone(&local))?;
-    let b = stream_simple_for::<Local>(
-        model.clone(),
-        context.clone(),
-        Some(simple),
-        Rc::clone(&local),
-    )?;
-    let c = complete_for::<Local>(model.clone(), context.clone(), None, Rc::clone(&local));
-    let d = complete_simple_for::<Local>(model.clone(), context.clone(), None, local);
-    assert_eq!(
-        *calls.lock().unwrap(),
-        ["raw-empty", "simple-empty", "absent", "absent"]
-    );
-    crate::chat::block_on(false, async {
-        assert!(a.next().await.is_some());
-        assert!(b.next().await.is_some());
-        assert!(c.await.is_ok());
-        assert!(d.await.is_ok());
-        Ok(())
-    })?;
-    eager_setup_failures(model, context, &calls)?;
+    eager_local(&model, &context, &calls)?;
+    eager_threaded(&model, &context, &calls)?;
+    eager_default(&model, &context, &calls)?;
     maestro_models::unregister_api_providers("eager-owner");
     Ok(())
 }
 
-/// Check synchronous setup rejection before driving its independent completion future.
+/// Exercise local eager success and setup failure with each original option shape.
 #[cfg(test)]
-fn eager_setup_failures(
-    mut model: Model,
-    context: maestro_models::Context,
+fn eager_local(
+    model: &Model,
+    context: &maestro_models::Context,
     calls: &std::sync::Mutex<Vec<&'static str>>,
 ) -> crate::TestResult {
-    use maestro_models::{Threaded, complete_simple_for, stream_for};
-    use std::sync::Arc;
-    let threaded = Arc::new(|_| -> bool { panic!("synchronous callback must not submit") })
-        as maestro_models::ProviderSpawner<Threaded>;
-    model.id = "failure".into();
-    assert_eq!(
-        stream_for::<Threaded>(model.clone(), context.clone(), None, Arc::clone(&threaded))
-            .err()
-            .unwrap()
-            .message,
-        "setup stopped"
+    let local: maestro_models::ProviderSpawner<Local> =
+        Rc::new(|_| panic!("synchronous callback must not submit"));
+    eager_operations!(
+        model,
+        context,
+        calls,
+        Local,
+        maestro_models::stream_for::<Local>,
+        maestro_models::stream_simple_for::<Local>,
+        maestro_models::complete_for::<Local>,
+        maestro_models::complete_simple_for::<Local>,
+        local
     );
-    let failure = complete_simple_for::<Threaded>(model, context, None, threaded);
-    assert_eq!(calls.lock().unwrap().len(), 6);
-    crate::chat::block_on(false, async {
-        assert_eq!(failure.await.unwrap_err().message, "setup stopped");
-        Ok(())
-    })?;
+    Ok(())
+}
+
+/// Exercise threaded eager success and setup failure with each original option shape.
+#[cfg(test)]
+fn eager_threaded(
+    model: &Model,
+    context: &maestro_models::Context,
+    calls: &std::sync::Mutex<Vec<&'static str>>,
+) -> crate::TestResult {
+    let threaded: maestro_models::ProviderSpawner<maestro_models::Threaded> =
+        std::sync::Arc::new(|_| panic!("synchronous callback must not submit"));
+    eager_operations!(
+        model,
+        context,
+        calls,
+        maestro_models::Threaded,
+        maestro_models::stream_for::<maestro_models::Threaded>,
+        maestro_models::stream_simple_for::<maestro_models::Threaded>,
+        maestro_models::complete_for::<maestro_models::Threaded>,
+        maestro_models::complete_simple_for::<maestro_models::Threaded>,
+        threaded
+    );
+    Ok(())
+}
+
+/// Exercise default eager success and setup failure with each original option shape.
+#[cfg(test)]
+fn eager_default(
+    model: &Model,
+    context: &maestro_models::Context,
+    calls: &std::sync::Mutex<Vec<&'static str>>,
+) -> crate::TestResult {
+    eager_operations!(
+        model,
+        context,
+        calls,
+        maestro_models::Threaded,
+        maestro_models::stream,
+        maestro_models::stream_simple,
+        maestro_models::complete,
+        maestro_models::complete_simple
+    );
     Ok(())
 }
 

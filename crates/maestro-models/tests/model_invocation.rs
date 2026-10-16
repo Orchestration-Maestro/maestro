@@ -296,12 +296,67 @@ mod tests {
             assert_eq!(failure.message, "Mismatched api: wrong expected expected");
             assert_eq!(failure.name.as_deref(), Some("Error"));
         }
+        assert_local_wrong_models(&provider);
+        assert_threaded_wrong_models(&provider);
         assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
         clear_api_providers();
     }
 
+    /// Guard rejection precedes local callback and task admission.
+    fn assert_local_wrong_models(provider: &maestro_models::ApiProvider) {
+        let spawn: maestro_models::ProviderSpawner<maestro_models::Local> =
+            std::rc::Rc::new(|_| panic!("mismatch must not submit local work"));
+        for failure in [
+            provider.stream.call(
+                model("wrong"),
+                context(),
+                maestro_models::ProviderInvocation::Local(None, spawn.clone()),
+            ),
+            provider.stream_simple.call(
+                model("wrong"),
+                context(),
+                maestro_models::ProviderInvocation::Local(None, spawn),
+            ),
+        ] {
+            assert_mismatch(failure);
+        }
+    }
+    /// Supplied threaded admission is inert when the model API is wrong.
+    fn assert_threaded_wrong_models(provider: &maestro_models::ApiProvider) {
+        let spawn: maestro_models::ProviderSpawner<maestro_models::Threaded> =
+            Arc::new(|_| panic!("mismatch must not submit threaded work"));
+        for failure in [
+            provider.stream.call(
+                model("wrong"),
+                context(),
+                maestro_models::ProviderInvocation::Threaded(None, Some(spawn.clone())),
+            ),
+            provider.stream_simple.call(
+                model("wrong"),
+                context(),
+                maestro_models::ProviderInvocation::Threaded(None, Some(spawn)),
+            ),
+        ] {
+            assert_mismatch(failure);
+        }
+    }
+    /// Check exact checked-callback failure without observing a stream.
+    fn assert_mismatch(
+        result: Result<maestro_models::AssistantMessageEventStream, DiagnosticErrorInfo>,
+    ) {
+        let failure = result.err().unwrap();
+        assert_eq!(failure.message, "Mismatched api: wrong expected expected");
+        assert_eq!(failure.name.as_deref(), Some("Error"));
+    }
+
     fn assert_missing_api() {
         use maestro_models::records::stream::*;
+        assert_missing_api_for::<maestro_models::Local>(std::rc::Rc::new(|_| {
+            panic!("missing API must not submit")
+        }));
+        assert_missing_api_for::<maestro_models::Threaded>(Arc::new(|_| {
+            panic!("missing API must not submit")
+        }));
         for failure in [
             stream(model("missing"), context(), None).err().unwrap(),
             stream_simple(model("missing"), context(), None)
@@ -309,6 +364,31 @@ mod tests {
                 .unwrap(),
             ready(complete(model("missing"), context(), None)).unwrap_err(),
             ready(complete_simple(model("missing"), context(), None)).unwrap_err(),
+        ] {
+            assert_eq!(
+                failure.message,
+                "No API provider registered for api: missing"
+            );
+            assert_eq!(failure.name.as_deref(), Some("Error"));
+        }
+    }
+
+    /// All mode-aware lookup failures retain their ordinary synchronous/eager boundary.
+    fn assert_missing_api_for<E: maestro_models::ProviderExecution>(
+        spawn: maestro_models::ProviderSpawner<E>,
+    ) {
+        use maestro_models::{complete_for, complete_simple_for, stream_for, stream_simple_for};
+        let raw = complete_for::<E>(model("missing"), context(), None, spawn.clone());
+        let simple = complete_simple_for::<E>(model("missing"), context(), None, spawn.clone());
+        for failure in [
+            stream_for::<E>(model("missing"), context(), None, spawn.clone())
+                .err()
+                .unwrap(),
+            stream_simple_for::<E>(model("missing"), context(), None, spawn)
+                .err()
+                .unwrap(),
+            ready(raw).unwrap_err(),
+            ready(simple).unwrap_err(),
         ] {
             assert_eq!(
                 failure.message,
@@ -362,7 +442,45 @@ mod tests {
         assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 4);
         assert_eq!(ready(raw).unwrap_err(), failure);
         assert_eq!(ready(simple).unwrap_err(), failure);
+        assert_setup_failure_for::<maestro_models::Local>(
+            std::rc::Rc::new(|_| panic!("setup failure must not submit")),
+            &failure,
+            &calls,
+        );
+        assert_setup_failure_for::<maestro_models::Threaded>(
+            Arc::new(|_| panic!("setup failure must not submit")),
+            &failure,
+            &calls,
+        );
         clear_api_providers();
+        assert_missing_api();
+    }
+
+    /// Setup errors preserve the original diagnostic and call immediately in both families.
+    fn assert_setup_failure_for<E: maestro_models::ProviderExecution>(
+        spawn: maestro_models::ProviderSpawner<E>,
+        failure: &DiagnosticErrorInfo,
+        calls: &std::sync::atomic::AtomicUsize,
+    ) {
+        use maestro_models::{complete_for, complete_simple_for, stream_for, stream_simple_for};
+        let before = calls.load(std::sync::atomic::Ordering::SeqCst);
+        assert_eq!(
+            &stream_for::<E>(model("failure"), context(), None, spawn.clone())
+                .err()
+                .unwrap(),
+            failure
+        );
+        assert_eq!(
+            &stream_simple_for::<E>(model("failure"), context(), None, spawn.clone())
+                .err()
+                .unwrap(),
+            failure
+        );
+        let raw = complete_for::<E>(model("failure"), context(), None, spawn.clone());
+        let simple = complete_simple_for::<E>(model("failure"), context(), None, spawn);
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), before + 4);
+        assert_eq!(&ready(raw).unwrap_err(), failure);
+        assert_eq!(&ready(simple).unwrap_err(), failure);
     }
 
     fn common_options() -> maestro_models::records::types::StreamOptions {
