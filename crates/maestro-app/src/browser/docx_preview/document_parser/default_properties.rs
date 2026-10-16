@@ -19,6 +19,8 @@ pub struct DefaultPropertiesOptions<'handler, 'doc, 'input: 'doc> {
 }
 /// Update supplied ordered styles from immediate property children.
 /// The optional child map receives table borders and cell margins.
+/// Table indentation retains paragraph fields, then applies present widths through the dxa margin reader
+/// or nil zero; percentage and automatic widths leave those fields unchanged.
 pub fn parse_default_properties<'doc, 'input: 'doc>(
     xml: &'doc XmlParser<'input>,
     element: XmlElement<'doc, 'input>,
@@ -72,7 +74,21 @@ impl<'doc, 'input: 'doc> PropertyContext<'doc, 'input> {
         match child.local_name() {
             "trHeight" => self.parse_tr_height(child, style),
             "spacing" if self.parent == "pPr" => self.parse_spacing(child, style),
-            "ind" | "tblInd" => self.parse_indentation(child, style),
+            "ind" => self.parse_indentation(child, style),
+            "tblInd" => {
+                self.parse_indentation(child, style);
+                if self.xml.attr(child, "w").is_none() {
+                    return;
+                }
+                let value = match self.xml.attr(child, "type") {
+                    Some("pct" | "auto") => None,
+                    Some("nil") => Some("0.00pt".into()),
+                    _ => super::values::value_of_margin(self.xml, child),
+                };
+                if let Some(value) = value {
+                    style.insert("margin-inline-start".into(), Some(value));
+                }
+            }
             "rFonts" => self.parse_font(child, style),
             "u" => self.parse_underline(child, style),
             "sz" => {

@@ -25,7 +25,10 @@ PDF, Word, PowerPoint and spreadsheet recognition precedes image/text handling.
 PowerPoint recognition uses the exact presentation MIME or a case-insensitive
 `.pptx` suffix. Earlier PDF/Word recognition wins; presentation recognition
 precedes spreadsheet recognition. Word and spreadsheets still return
-`AttachmentError::Unsupported`. Transport/body errors retain the original
+`AttachmentError::Unsupported`. The separate
+[Word property preparation](document-formats.md#word-default-properties-and-conditional-table-styles)
+reads table layout and indentation without rendering or extracting attachments.
+Transport/body errors retain the original
 `FetchError`, while rejected response status has its own `HttpStatus` variant.
 
 PDF recognition uses exact `application/pdf` or a case-insensitive `.pdf` suffix,

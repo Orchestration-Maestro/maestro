@@ -1,0 +1,113 @@
+[
+  {
+    "test": "named_table_styles_share_attribute_contracts",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"urn:w\"><w:style type=\"table\" styleId=\"Measured\"><w:tblPr><w:tblLayout type=\"fixed\"/><w:tblInd w=\"732\" type=\"dxa\"/></w:tblPr><w:tblStylePr type=\"firstRow\"><w:tblPr><w:tblLayout type=\"autofit\"/><w:tblInd w=\"0\" type=\"dxa\"/></w:tblPr><w:tcPr><w:tcW type=\"dxa\" w=\"400\"/></w:tcPr></w:tblStylePr></w:style></w:styles>",
+      "ignore_width": false
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "Measured",
+        "isDefault": null,
+        "name": null,
+        "target": "table",
+        "basedOn": null,
+        "styles": [
+          {
+            "target": "td",
+            "values": [
+              [
+                "table-layout",
+                "fixed"
+              ],
+              [
+                "margin-inline-start",
+                "36.60pt"
+              ]
+            ]
+          },
+          {
+            "target": "tr.first-row td",
+            "mod": ".first-row",
+            "values": [
+              [
+                "table-layout",
+                "auto"
+              ],
+              [
+                "margin-inline-start",
+                "0.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "tr.first-row td",
+            "mod": ".first-row",
+            "values": [
+              [
+                "width",
+                "20.00pt"
+              ]
+            ]
+          }
+        ],
+        "linked": null
+      }
+    ]
+  },
+  {
+    "test": "named_table_styles_share_attribute_contracts",
+    "input": {
+      "operation": "styles",
+      "xml": "<w:styles xmlns:w=\"urn:w\"><w:style type=\"table\" styleId=\"Measured\"><w:tblPr><w:tblLayout type=\"fixed\"/><w:tblInd w=\"732\" type=\"dxa\"/></w:tblPr><w:tblStylePr type=\"firstRow\"><w:tblPr><w:tblLayout type=\"autofit\"/><w:tblInd w=\"0\" type=\"dxa\"/></w:tblPr><w:tcPr><w:tcW type=\"dxa\" w=\"400\"/></w:tcPr></w:tblStylePr></w:style></w:styles>",
+      "ignore_width": true
+    },
+    "outcome": "success",
+    "expected": [
+      {
+        "id": "Measured",
+        "isDefault": null,
+        "name": null,
+        "target": "table",
+        "basedOn": null,
+        "styles": [
+          {
+            "target": "td",
+            "values": [
+              [
+                "table-layout",
+                "fixed"
+              ],
+              [
+                "margin-inline-start",
+                "36.60pt"
+              ]
+            ]
+          },
+          {
+            "target": "tr.first-row td",
+            "mod": ".first-row",
+            "values": [
+              [
+                "table-layout",
+                "auto"
+              ],
+              [
+                "margin-inline-start",
+                "0.00pt"
+              ]
+            ]
+          },
+          {
+            "target": "tr.first-row td",
+            "mod": ".first-row",
+            "values": []
+          }
+        ],
+        "linked": null
+      }
+    ]
+  }
+]

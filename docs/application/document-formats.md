@@ -164,6 +164,14 @@ row height and table layout. The optional child map receives table borders and
 cell margins; paragraph and cell borders stay in the main map. Replacements keep
 their original key positions, including nullable values.
 
+Table layout selects `type` before the legacy `val` fallback; only exact `fixed`
+selects fixed layout, and a present empty type does not fall back. Table indentation
+retains paragraph fields, then a present `w` replaces only `margin-inline-start`:
+`nil` writes `0.00pt`, `pct`/`auto` leave the paragraph result unchanged, and other
+or absent types use the shared dxa margin conversion. Missing `w` makes no extra
+assignment. These table properties stay in the main map regardless of cell-width
+suppression.
+
 `DefaultPropertiesOptions` defaults to no width suppression and no interceptor.
 Its `ignore_width` suppresses cell widths only. The borrowed synchronous handler
 sees and may mutate the main map before each child's dispatch; returning true
