@@ -12,25 +12,28 @@ export function decode(value) {
 }
 export function finish() { document.querySelectorAll('[data-sandbox-test]').forEach(node => node.remove()); }
 const stripComments = text => text.split('\n').filter(line => !line.trimStart().startsWith('//')).join('\n');
+function inlineScripts(html) {
+    return [...new DOMParser().parseFromString(html,'text/html').querySelectorAll('script')].map(script=>script.textContent);
+}
 export async function observe_document(name, html, output) {
-    const scripts = [...new DOMParser().parseFromString(html,'text/html').querySelectorAll('script')].map(script=>[null,script.textContent]);
+    const scripts = inlineScripts(html);
     equal(html.slice(0,html.indexOf('<style>')), output.prefix, name + ' prefix');
     equal(stripComments(html.slice(html.indexOf('</script>') + 9)), stripComments(output.suffix), name + ' suffix');
     equal(scripts.length, output.script_count, name + ' scripts');
     equal(html.includes('window.sendRuntimeMessage'), output.bridge, name + ' bridge');
     equal(html.includes("document.addEventListener('click'"), output.navigation, name + ' navigation');
-    let parseError = false; try { new Function(scripts[0][1]); } catch { parseError = true; }
+    let parseError = false; try { new Function(scripts[0]); } catch { parseError = true; }
     equal(parseError, output.script_parse_error, name + ' program parse');
     const frame = await realm();
     try {
         const win = frame.contentWindow;
-        win.eval(scripts[0][1]);
+        win.eval(scripts[0]);
         if (name === 'id_literal</script>tail') equal(win.sandboxId, 'literal</script>tail', name);
         if (name.startsWith('id_quote')) equal(win.sandboxId, 'quote"\\雪\n', name);
         if (name === 'runtime_closing_script') equal(win.literal, '</script>', name);
         if (name === 'invalid_key') equal(win['hyphen-name'], 1, name);
         if (name === 'numeric_keys') {
-            const supplied = {}; new Function('window','document',scripts[0][1])(supplied, {addEventListener(){}});
+            const supplied = {}; new Function('window','document',scripts[0])(supplied, {addEventListener(){}});
             equal([supplied['1'], supplied['2'], supplied.a], ['one','two',3], name + ' generated values');
             equal(Object.keys(supplied).filter(k => ['1','2','a'].includes(k)), ['1','2','a'], name + ' canonical order');
             equal([win['1'],win['2'],win.a], [undefined,undefined,3], name + ' native Window indexed setters');
@@ -45,7 +48,7 @@ export async function observe_document(name, html, output) {
             win.__completionCallbacks = [async ok => completions.push(['callback',ok])];
             win.complete = async (...args) => completions.push(args);
             win.console.error = (...args) => logs.push(args.map(String));
-            await win.eval(scripts[1][1]);
+            await win.eval(scripts[1]);
             const projected = JSON.parse(JSON.stringify(completions));
             if (name.startsWith('repl_error')) { assert(projected.at(-1)[0].stack.length > 0, name + ' native stack'); projected.at(-1)[0].stack = '<native stack>'; }
             equal(projected, output.completions, name + ' completions'); equal(logs, output.logs, name + ' diagnostics');
@@ -65,7 +68,7 @@ export async function standalone(html) {
         const docAdd = win.document.addEventListener, winAdd = win.addEventListener;
         win.document.addEventListener = function(type,...rest) { registered.push(['document',type]); return docAdd.call(this,type,...rest); };
         win.addEventListener = function(type,...rest) { registered.push(['window',type]); return winAdd.call(this,type,...rest); };
-        win.eval([...html.matchAll(/<script>([\s\S]*?)<\/script>/gi)][0][1]);
+        win.eval(inlineScripts(html)[0]);
         equal(win.localHelper(), 'offline', 'standalone helper'); equal(registered, [], 'finite synchronous registration set');
         equal(typeof win.sendRuntimeMessage, 'undefined', 'no online bridge');
         equal(typeof win.complete, 'undefined', 'no implicit console');
@@ -85,8 +88,8 @@ export async function callbacks(html, inputText, expectedText) {
         }, async ok => events.push(['second',ok])];
         win.console.error = message => events.push(['diagnostic',message]);
         win.complete = async (error,value) => { if(error) assert(error.stack.length > 0,'native stack'); events.push(['complete',error ? error.message : null,value ?? null]); };
-        const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
-        const operation = win.eval(scripts[1][1]);
+        const scripts = inlineScripts(html);
+        const operation = win.eval(scripts[1]);
         if (input.callbacks === 'gated') { await ready; equal(events,[['first',true],['second',true]],'completion still pending'); release(); }
         await operation; equal(events,expected.events,'ordered completion observations');
     } finally { frame.remove(); }
@@ -99,7 +102,7 @@ export async function navigation(html, inputText, expectedText) {
     try {
         const win = frame.contentWindow, doc = win.document;
         const base = doc.createElement('base'); base.href = 'https://example.org/a'; doc.head.append(base);
-        win.eval([...html.matchAll(/<script>([\s\S]*?)<\/script>/gi)][0][1]);
+        win.eval(inlineScripts(html)[0]);
         let target;
         if(input.kind === 'form') { target = doc.createElement('form'); target.action = input.href; }
         else if(input.kind === 'nonlink') target = doc.createElement('span');
