@@ -195,8 +195,8 @@ fn browser_build_emits_wasm_and_prepared_assets() {
 fn browser_development_runs_build_and_example() {
     let workspace = Workspace::new();
     success(&workspace.run("browser-dev"));
-    assert!(workspace.log().starts_with("cargo check|"));
-    assert!(workspace.log().contains("trunk serve|"));
+    assert!(workspace.log().contains("|browser-author|serve|"));
+    assert!(!workspace.log().contains("|browser-author|watch|"));
     assert!(!workspace.log().contains("clear"));
 }
 
@@ -205,9 +205,8 @@ fn browser_compile_watch_starts_no_server() {
     let workspace = Workspace::new();
     success(&workspace.run("browser-dev-compile"));
     let log = workspace.log();
-    assert!(log.starts_with("cargo check|"));
-    assert!(log.contains("trunk watch|"));
-    assert_eq!(log.lines().count(), 2);
+    assert!(log.contains("|browser-author|watch|"));
+    assert!(!log.contains("|browser-author|serve|"));
     assert!(!log.contains("serve") && !log.contains("clear"));
 }
 
@@ -241,7 +240,8 @@ fn browser_checks_reject_invalid_sources() {
         assert!(!browser.run("browser-check").status.success());
         fs::write(path, original).unwrap();
     }
-    assert!(!browser.path("target/maestro-browser").exists());
+    assert!(!browser.path("target/maestro-browser/library").exists());
+    assert!(!browser.path("target/maestro-browser/example").exists());
 }
 
 #[test]
@@ -492,10 +492,12 @@ fn browser_preview_serves_without_author_tools() {
 fn browser_example_check_emits_no_distribution() {
     let browser = Browser::new();
     success(&browser.run("browser-example-check"));
-    assert!(!browser.path("target/maestro-browser").exists());
+    assert!(!browser.path("target/maestro-browser/library").exists());
+    assert!(!browser.path("target/maestro-browser/example").exists());
     fs::write(browser.fixture("src/main.rs"), "fn main() { missing(); }").unwrap();
     assert!(!browser.run("browser-example-check").status.success());
-    assert!(!browser.path("target/maestro-browser").exists());
+    assert!(!browser.path("target/maestro-browser/library").exists());
+    assert!(!browser.path("target/maestro-browser/example").exists());
 }
 
 #[test]
@@ -870,7 +872,7 @@ fn browser_ignores_only_generated_outputs() {
         ("Cargo.toml", false),
         ("index.html", false),
         ("debug.html", false),
-        ("Trunk.toml", false),
+        ("Trunk.json", false),
         ("assets/app.css", false),
         ("package.json.in", false),
     ] {
@@ -913,29 +915,35 @@ fn browser_recipes_preserve_literal_paths_and_failures() {
     success(
         &workspace
             .command("browser-library-build")
-            .env("MAESTRO_BRAND_RESULT", workspace.0.join("brand-result"))
             .args(["pack's 東京 path", "light", "--public-url", "/a space/"])
             .output()
             .unwrap(),
     );
-    assert_eq!(
-        fs::read_to_string(workspace.0.join("brand-result")).unwrap(),
-        format!("{}/pack's 東京 path\nlight", workspace.0.display())
-    );
     let log = workspace.log();
-    assert!(log.contains("|--public-url|/a space/"));
-    assert!(!log.contains("|pack's 東京 path|light"));
+    assert!(
+        log.contains("|browser-author|library-build|pack's 東京 path|light|--public-url|/a space/")
+    );
     fs::remove_file(workspace.0.join("log")).unwrap();
     success(&workspace.run("browser-build"));
     let log = workspace.log();
     assert_eq!(log.lines().count(), 2);
-    assert!(log.lines().next().unwrap().ends_with("/library"));
-    assert!(log.lines().nth(1).unwrap().ends_with("/example"));
+    assert!(
+        log.lines()
+            .next()
+            .unwrap()
+            .contains("|browser-author|library-build|")
+    );
+    assert!(
+        log.lines()
+            .nth(1)
+            .unwrap()
+            .contains("|browser-author|example-build|")
+    );
     fs::remove_file(workspace.0.join("log")).unwrap();
     assert!(
         !workspace
             .command("browser-build")
-            .env("MAESTRO_FAIL", "build")
+            .env("MAESTRO_FAIL_ARG", "library-build")
             .output()
             .unwrap()
             .status
@@ -943,14 +951,24 @@ fn browser_recipes_preserve_literal_paths_and_failures() {
     );
     assert_eq!(workspace.log().lines().count(), 1);
     fs::remove_file(workspace.0.join("log")).unwrap();
+    check_root_browser_selection(&workspace);
+}
+
+/// Keep full and compile-only root selections on their distinct browser operations.
+fn check_root_browser_selection(workspace: &Workspace) {
     success(&workspace.run("dev"));
     let log = workspace.log();
-    assert!(log.contains("watch|build|--workspace|--locked") && log.contains("trunk serve|"));
+    assert!(
+        log.contains("watch|build|--workspace|--locked") && log.contains("|browser-author|serve|")
+    );
     fs::remove_file(workspace.0.join("log")).unwrap();
     success(&workspace.run("dev-compile"));
     let log = workspace.log();
-    assert!(log.contains("watch|build|-p|maestro-models|--locked") && log.contains("trunk watch|"));
-    assert!(!log.contains("trunk serve|"));
+    assert!(
+        log.contains("watch|build|-p|maestro-models|--locked")
+            && log.contains("|browser-author|watch|")
+    );
+    assert!(!log.contains("|browser-author|serve|"));
 }
 
 /// Install only the preview executable, recipe runner and shell on its PATH.
@@ -1043,14 +1061,14 @@ fn layout_sign(ui: &egui::Ui, text: &str, family: &str) -> std::sync::Arc<egui::
 fn check_command_failures(workspace: &Workspace) {
     for (recipe, phase) in [
         ("browser-clean", "clean"),
-        ("browser-library-build", "build"),
+        ("browser-library-build", "library-build"),
         ("browser-dev", "serve"),
         ("browser-dev-compile", "watch"),
-        ("browser-check", "fmt"),
+        ("browser-check", "check"),
         ("browser-example-clean", "clean"),
-        ("browser-example-build", "build"),
+        ("browser-example-build", "example-build"),
         ("browser-example-dev", "serve"),
-        ("browser-example-check", "check"),
+        ("browser-example-check", "example-check"),
         ("browser-example-preview", "--index"),
     ] {
         let mut command = workspace.command(recipe);
@@ -1059,8 +1077,10 @@ fn check_command_failures(workspace: &Workspace) {
                 "MAESTRO_FAIL",
                 workspace.0.join("target/maestro-browser/example"),
             );
-        } else {
+        } else if recipe.ends_with("clean") {
             command.env("MAESTRO_FAIL", phase);
+        } else {
+            command.env("MAESTRO_FAIL_ARG", phase);
         }
         let output = command.output().unwrap();
         assert_eq!(
@@ -1094,4 +1114,371 @@ fn preview_failures(browser: &Browser) {
             .status
             .success()
     );
+}
+
+#[test]
+fn browser_author_metadata_adapter_keeps_literals_and_status() {
+    use std::{ffi::OsString, os::unix::fs::PermissionsExt};
+    let workspace = Workspace::new();
+    let script = workspace.0.join("cargo-probe");
+    fs::write(
+        &script,
+        "#!/bin/sh\nprintf '%s\\n' \"$@\"\nprintf 'native diagnostic' >&2\nexit 17\n",
+    )
+    .unwrap();
+    fs::set_permissions(&script, fs::Permissions::from_mode(0o700)).unwrap();
+    for args in [
+        vec![
+            "metadata",
+            "--manifest-path",
+            "path with ' and 東京/Cargo.toml",
+        ],
+        vec!["metadata", "--locked", "--format-version", "1"],
+        vec!["build", "--release"],
+    ] {
+        let output = std::process::Command::new(env!("CARGO_BIN_EXE_browser-cargo-locked"))
+            .args(&args)
+            .env("MAESTRO_BROWSER_CARGO", &script)
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(17));
+        let mut expected = args.join("\n") + "\n";
+        if args[0] == "metadata" && !args.contains(&"--locked") {
+            expected.push_str("--locked\n");
+        }
+        assert_eq!(output.stdout, expected.as_bytes());
+        assert_eq!(output.stderr, b"native diagnostic");
+    }
+    let args: Vec<OsString> = ["browser-author", "cargo", "metadata"]
+        .map(OsString::from)
+        .to_vec();
+    let before: Vec<_> = std::env::vars_os().collect();
+    assert_eq!(
+        maestro_tooling::run(&args, &script, &workspace.0).unwrap(),
+        std::process::ExitCode::from(17)
+    );
+    assert_eq!(std::env::vars_os().collect::<Vec<_>>(), before);
+}
+
+#[test]
+fn browser_author_preparation_is_route_local() {
+    let browser = Browser::new();
+    browser.workspace_sources();
+    let result = maestro_tooling::run(
+        &[
+            "browser-author",
+            "example-check",
+            "assets/brand/brand.json",
+            "dark",
+        ]
+        .map(Into::into),
+        std::path::Path::new(env!("CARGO")),
+        &browser.workspace.0,
+    );
+    assert_eq!(result.unwrap(), std::process::ExitCode::SUCCESS);
+    let config = browser.path("target/maestro-browser/.author/example/Trunk.json");
+    let value: serde_json::Value = serde_json::from_slice(&fs::read(config).unwrap()).unwrap();
+    assert_eq!(
+        value["build"]["target"],
+        browser.fixture("index.html").to_str().unwrap()
+    );
+    assert!(!browser.path("target/maestro-browser/example").exists());
+    assert!(
+        browser
+            .path("target/maestro-browser/.author/example/inputs/wordmark.txt")
+            .is_file()
+    );
+    let mut retained = Vec::new();
+    for (recipe, route, mode) in [
+        ("browser-library-build", "library", "dark"),
+        ("browser-example-build", "example", "light"),
+        ("browser-debug-build", "debug", "dark"),
+    ] {
+        success(
+            &browser
+                .command(recipe)
+                .args(["assets/brand/packs/signal.json", mode])
+                .output()
+                .unwrap(),
+        );
+        let directory = browser.path(&format!("target/maestro-browser/.author/{route}"));
+        retained.push((
+            directory.join("inputs/text.txt"),
+            fs::read(directory.join("inputs/text.txt")).unwrap(),
+        ));
+        for (path, bytes) in &retained {
+            assert_eq!(&fs::read(path).unwrap(), bytes);
+        }
+        let value: serde_json::Value =
+            serde_json::from_slice(&fs::read(directory.join("Trunk.json")).unwrap()).unwrap();
+        let target = if route == "debug" {
+            "debug.html"
+        } else {
+            "index.html"
+        };
+        assert_eq!(
+            value["build"]["target"],
+            browser.fixture(target).to_str().unwrap()
+        );
+        assert!(browser_support::wasm(&browser, route).len() > 8);
+    }
+}
+
+#[test]
+fn browser_author_check_preserves_adjacent_locks() {
+    let browser = Browser::new();
+    let before = browser_support::authored(&browser);
+    success(&browser.run("browser-example-check"));
+    assert_eq!(browser_support::authored(&browser), before);
+    for path in [browser.fixture("Cargo.lock"), browser.path("Cargo.lock")] {
+        let original = fs::read(&path).unwrap();
+        fs::write(&path, "version = 4\n").unwrap();
+        let damaged = browser_support::authored(&browser);
+        assert!(!browser.run("browser-example-check").status.success());
+        assert_eq!(browser_support::authored(&browser), damaged);
+        fs::write(path, original).unwrap();
+        success(&browser.run("browser-example-check"));
+    }
+    success(&browser.run("browser-check"));
+    assert_eq!(browser_support::authored(&browser), before);
+    for route in ["library", "example", "debug"] {
+        assert!(
+            !browser
+                .path(&format!("target/maestro-browser/{route}"))
+                .exists()
+        );
+    }
+}
+
+#[test]
+fn browser_author_trunk_rejects_stale_lock_without_writes() {
+    use browser_support::start_output;
+    let browser = Browser::new();
+    let lock = browser.fixture("Cargo.lock");
+    let original = fs::read(&lock).unwrap();
+    for recipe in [
+        "browser-library-build",
+        "browser-example-build",
+        "browser-debug-build",
+        "browser-dev",
+        "browser-dev-compile",
+    ] {
+        fs::write(&lock, "version = 4\n").unwrap();
+        let before = browser_support::authored(&browser);
+        if ["browser-dev", "browser-dev-compile"].contains(&recipe) {
+            let mut command = browser.command(recipe);
+            if recipe == "browser-dev" {
+                command.args([
+                    browser.path("assets/brand/brand.json").to_str().unwrap(),
+                    "dark",
+                    "--port",
+                    "0",
+                ]);
+            }
+            let (child, receive, thread) = start_output(command);
+            let transcript = browser_support::rejected_pipeline(&receive);
+            assert!(transcript.contains("--locked"), "{transcript}");
+            drop(child);
+            thread.join().unwrap();
+        } else {
+            let failed = browser.run(recipe);
+            assert!(!failed.status.success());
+            let text = format!(
+                "{}{}",
+                String::from_utf8_lossy(&failed.stdout),
+                String::from_utf8_lossy(&failed.stderr)
+            );
+            assert!(text.contains("--locked"), "{text}");
+        }
+        assert_eq!(browser_support::authored(&browser), before);
+        for route in ["library", "example", "debug"] {
+            assert!(
+                !browser
+                    .path(&format!("target/maestro-browser/{route}/index.html"))
+                    .is_file()
+            );
+        }
+        fs::write(&lock, &original).unwrap();
+    }
+    success(&browser.run("browser-library-build"));
+}
+
+#[test]
+fn browser_author_included_files_rebuild_without_source_changes() {
+    let browser = Browser::new();
+    let source = fs::read(browser.fixture("src/main.rs")).unwrap();
+    success(&browser.run("browser-library-build"));
+    let before = browser_support::wasm(&browser, "library");
+    let pack = browser.path("assets/brand/brand.json");
+    let mut value: serde_json::Value = serde_json::from_slice(&fs::read(&pack).unwrap()).unwrap();
+    value["wordmark"] = "included-input-marker".into();
+    fs::write(pack, serde_json::to_vec_pretty(&value).unwrap()).unwrap();
+    success(&browser.run("browser-library-build"));
+    let bytes = browser_support::wasm(&browser, "library");
+    assert!(
+        bytes
+            .windows(b"included-input-marker".len())
+            .any(|part| part == b"included-input-marker")
+    );
+    assert!(
+        !before
+            .windows(b"included-input-marker".len())
+            .any(|part| part == b"included-input-marker")
+    );
+    assert_eq!(fs::read(browser.fixture("src/main.rs")).unwrap(), source);
+}
+
+#[test]
+fn browser_author_projection_failure_prevents_dependent_build() {
+    let browser = Browser::new();
+    for path in [
+        browser.path("assets/brand/brand.json"),
+        browser.path("assets/brand/mark.svg"),
+    ] {
+        let original = fs::read(&path).unwrap();
+        fs::remove_file(&path).unwrap();
+        let failed = browser.run("browser-library-build");
+        assert!(!failed.status.success());
+        assert!(!String::from_utf8_lossy(&failed.stdout).contains("starting build"));
+        assert!(!browser.path("target/maestro-browser/library").exists());
+        fs::write(path, original).unwrap();
+    }
+    let pack = browser.path("assets/brand/brand.json");
+    let original = fs::read(&pack).unwrap();
+    fs::write(&pack, "not JSON").unwrap();
+    assert!(!browser.run("browser-library-build").status.success());
+    fs::write(pack, original).unwrap();
+    let directory = browser.path("target/maestro-browser/.author/library/inputs");
+    if directory.exists() {
+        fs::remove_dir_all(&directory).unwrap();
+    }
+    fs::write(&directory, "occupied").unwrap();
+    assert!(!browser.run("browser-library-build").status.success());
+    fs::remove_file(directory).unwrap();
+    success(&browser.run("browser-library-build"));
+}
+
+#[test]
+fn browser_author_unrelated_workspace_bump_keeps_fixture_lock() {
+    let browser = Browser::new();
+    let manifest = fs::read(browser.fixture("Cargo.toml")).unwrap();
+    let lock = fs::read(browser.fixture("Cargo.lock")).unwrap();
+    let unifier = browser.path("crates/maestro-dependencies");
+    let original = fs::canonicalize(&unifier).unwrap();
+    fs::remove_file(&unifier).unwrap();
+    assert!(
+        std::process::Command::new("cp")
+            .args(["-a"])
+            .arg(original)
+            .arg(&unifier)
+            .status()
+            .unwrap()
+            .success()
+    );
+    let path = unifier.join("Cargo.toml");
+    let text = fs::read_to_string(&path).unwrap();
+    assert!(text.contains("base64 = { version = \"0.23.1\" }"));
+    fs::write(
+        path,
+        text.replace("base64 = { version = \"0.23.1\" }\n", ""),
+    )
+    .unwrap();
+    success(
+        &toolchain_support::command(env!("CARGO"))
+            .current_dir(&browser.workspace.0)
+            .args(["metadata", "--offline", "--format-version", "1"])
+            .output()
+            .unwrap(),
+    );
+    success(
+        &toolchain_support::command(env!("CARGO"))
+            .current_dir(&browser.workspace.0)
+            .args(["metadata", "--locked", "--offline", "--format-version", "1"])
+            .output()
+            .unwrap(),
+    );
+    success(&browser.run("browser-example-check"));
+    success(&browser.run("browser-library-build"));
+    assert_eq!(fs::read(browser.fixture("Cargo.toml")).unwrap(), manifest);
+    assert_eq!(fs::read(browser.fixture("Cargo.lock")).unwrap(), lock);
+    assert_fixture_independent(&browser);
+}
+
+/// Qualify the actual resolved graph, not only the manifest spelling.
+fn assert_fixture_independent(browser: &Browser) {
+    let metadata = toolchain_support::command(env!("CARGO"))
+        .args([
+            "metadata",
+            "--locked",
+            "--offline",
+            "--format-version",
+            "1",
+            "--manifest-path",
+        ])
+        .arg(browser.fixture("Cargo.toml"))
+        .output()
+        .unwrap();
+    success(&metadata);
+    let value: serde_json::Value = serde_json::from_slice(&metadata.stdout).unwrap();
+    let local: Vec<_> = value["packages"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|package| package["source"].is_null())
+        .collect();
+    assert_eq!(local.len(), 1);
+    assert_eq!(local[0]["name"], "maestro-browser-author");
+}
+
+#[test]
+fn browser_author_bootstraps_from_empty_build_state() {
+    let browser = Browser::new();
+    let (home, target) = browser_support::cold_sources(&browser);
+    let before = browser_support::authored(&browser);
+    let command = |recipe: &str| {
+        let mut command = browser.command(recipe);
+        command
+            .env("CARGO_HOME", &home)
+            .env("CARGO_TARGET_DIR", &target)
+            .env("CARGO_NET_OFFLINE", "true");
+        command
+    };
+    success(&command("browser-library-build").output().unwrap());
+    let first = browser_support::wasm(&browser, "library");
+    assert_eq!(&first[..8], b"\0asm\x01\0\0\0");
+    let output = browser.path("target/maestro-browser/library");
+    for extension in ["js", "ts", "css", "html"] {
+        assert!(fs::read_dir(&output).unwrap().any(|file| {
+            file.unwrap()
+                .path()
+                .extension()
+                .is_some_and(|ext| ext == extension)
+        }));
+    }
+    assert_eq!(browser_support::authored(&browser), before);
+    let pack = browser.path("assets/brand/brand.json");
+    let original_pack = fs::read(&pack).unwrap();
+    let mut value: serde_json::Value = serde_json::from_slice(&original_pack).unwrap();
+    value["wordmark"] = "cold-included-rebuild".into();
+    fs::write(&pack, serde_json::to_vec_pretty(&value).unwrap()).unwrap();
+    success(&command("browser-library-build").output().unwrap());
+    assert!(
+        browser_support::wasm(&browser, "library")
+            .windows(b"cold-included-rebuild".len())
+            .any(|part| part == b"cold-included-rebuild")
+    );
+    fs::write(pack, original_pack).unwrap();
+    let source = browser.fixture("src/main.rs");
+    let original = fs::read(&source).unwrap();
+    fs::write(&source, "fn main() { missing(); }").unwrap();
+    assert!(
+        !command("browser-library-build")
+            .output()
+            .unwrap()
+            .status
+            .success()
+    );
+    fs::write(source, original).unwrap();
+    success(&command("browser-library-build").output().unwrap());
+    assert_eq!(browser_support::authored(&browser), before);
 }

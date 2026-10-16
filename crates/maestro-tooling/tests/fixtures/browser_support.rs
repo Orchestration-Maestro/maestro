@@ -38,12 +38,11 @@ impl Browser {
             [
                 "Cargo.toml",
                 "Cargo.lock",
-                "Trunk.toml",
+                "Trunk.json",
                 ".gitignore",
                 "index.html",
                 "debug.html",
                 "package.json.in",
-                "build.rs",
                 "src",
                 "assets",
             ]
@@ -61,17 +60,11 @@ impl Browser {
                     .success()
             );
         }
-        let manifest = workspace.0.join(FIXTURE).join("Cargo.toml");
-        let text = fs::read_to_string(&manifest).unwrap().replace(
-            "../../../../maestro-theme",
-            source.join("crates/maestro-theme").to_str().unwrap(),
-        );
-        fs::write(manifest, text).unwrap();
         let browser = Self {
             workspace,
             _build_lock: lock,
         };
-        browser.generate_lockfile();
+        browser.workspace_sources();
         browser
     }
 
@@ -123,6 +116,9 @@ pub fn success(output: &Output) {
 
 impl Browser {
     pub fn workspace_sources(&self) {
+        if self.path("Cargo.toml").exists() {
+            return;
+        }
         let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
         for name in [
             "Cargo.toml",
@@ -240,4 +236,94 @@ pub fn measure(path: &Path) -> (u64, u64) {
         fs::metadata(path).unwrap().len(),
         u64::try_from(output.stdout.len()).unwrap(),
     )
+}
+
+/// Capture authored inputs without including generated outputs or build caches.
+pub fn authored(browser: &Browser) -> std::collections::BTreeMap<PathBuf, Vec<u8>> {
+    let mut result = std::collections::BTreeMap::new();
+    for path in [
+        browser.path("Cargo.toml"),
+        browser.path("Cargo.lock"),
+        browser.path("assets"),
+        browser.path(FIXTURE),
+    ] {
+        collect(&path, &mut result);
+    }
+    let home = std::env::var_os("CARGO_HOME").map_or_else(
+        || PathBuf::from(std::env::var_os("HOME").unwrap()).join(".cargo"),
+        PathBuf::from,
+    );
+    for file in ["config", "config.toml"] {
+        if home.join(file).is_file() {
+            collect(&home.join(file), &mut result);
+        }
+    }
+    result
+}
+
+/// Observe final fixture bytes, not compiler configuration.
+pub fn wasm(browser: &Browser, route: &str) -> Vec<u8> {
+    let path = fs::read_dir(browser.path(&format!("target/maestro-browser/{route}")))
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .find(|path| path.extension().is_some_and(|ext| ext == "wasm"))
+        .unwrap();
+    fs::read(path).unwrap()
+}
+
+/// Collect file bytes while excluding native output directories.
+fn collect(path: &Path, result: &mut std::collections::BTreeMap<PathBuf, Vec<u8>>) {
+    if path.is_dir() {
+        for entry in fs::read_dir(path).unwrap() {
+            let path = entry.unwrap().path();
+            if !["target", "dist", ".trunk"]
+                .iter()
+                .any(|name| path.ends_with(name))
+            {
+                collect(&path, result);
+            }
+        }
+    } else {
+        result.insert(path.to_path_buf(), fs::read(path).unwrap());
+    }
+}
+
+/// Stage complete locked sources and create initially empty cold compilation directories.
+pub fn cold_sources(browser: &Browser) -> (PathBuf, PathBuf) {
+    let sources = browser.path("local-sources");
+    let staged = super::toolchain_support::command(env!("CARGO"))
+        .current_dir(&browser.workspace.0)
+        .args(["vendor", "--locked", "--offline", "--sync"])
+        .arg(browser.fixture("Cargo.toml"))
+        .arg(&sources)
+        .output()
+        .unwrap();
+    success(&staged);
+    let home = browser.path("cold-home");
+    let target = browser.path("cold-target");
+    fs::create_dir(&home).unwrap();
+    fs::create_dir(&target).unwrap();
+    assert_eq!(fs::read_dir(&home).unwrap().count(), 0);
+    assert_eq!(fs::read_dir(&target).unwrap().count(), 0);
+    fs::write(
+        home.join("config.toml"),
+        format!(
+            "{}\n[net]\noffline = true\n",
+            String::from_utf8(staged.stdout).unwrap()
+        ),
+    )
+    .unwrap();
+    (home, target)
+}
+
+/// Wait for the native rejected pipeline, which may leave its watcher running.
+pub fn rejected_pipeline(receive: &std::sync::mpsc::Receiver<String>) -> String {
+    let mut transcript = String::new();
+    loop {
+        let line = receive.recv().expect(&transcript);
+        transcript.push_str(&line);
+        if line.contains("error from build pipeline") {
+            return transcript;
+        }
+    }
 }
