@@ -120,3 +120,29 @@ behavior and full source equivalence; browser builds check adapter signatures.
 Real iframe events, native values and download effects remain qualified by
 [browser smoke checks](https://github.com/Orchestration-Maestro/maestro/issues/825).
 See [sandbox messaging](../browser/sandbox.md) for transport ownership.
+
+## Measuring prompt tokens
+
+The native developer example measures the read-write artifact, read-only artifact
+and attachment runtime descriptions, followed by the JavaScript REPL and artifact
+tool descriptions with empty runtime-provider lists:
+
+```sh
+CARGO_BUILD_JOBS=3 ~/.local/bin/capped cargo run -p maestro-app --locked --example count_prompt_tokens
+```
+
+Set `ANTHROPIC_API_KEY` in the environment through your usual secret-management
+mechanism; do not put credentials in shell history. An absent or empty key fails
+before making requests. **This opt-in command contacts a provider-authenticated
+live service and may incur provider charges.** Tests use controlled responses
+and a local HTTP server, never this live endpoint.
+
+The example sends each complete description sequentially to
+`https://api.anthropic.com/v1/messages/count_tokens` using model
+`claude-3-5-sonnet-20241022`. It reports the returned numbers, not a local token
+estimate, using the process locale for grouping and decimal presentation.
+Individual transport, HTTP, body or decoding failures are attributed to their
+prompt on standard error; later requests continue and only successful counts
+contribute to the total. A report with five failed requests still completes
+successfully with total zero. Provider credentials and model availability remain
+requirements of the live service.

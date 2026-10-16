@@ -1,0 +1,519 @@
+[
+  {
+    "input": {
+      "name": "missing_key",
+      "apiKey": null,
+      "locale": "en_US.UTF-8",
+      "replies": [],
+      "expectedFailures": 0
+    },
+    "output": {
+      "stdout": [],
+      "stderr": [
+        [
+          "Error: ANTHROPIC_API_KEY environment variable not set"
+        ]
+      ],
+      "exit": 1
+    }
+  },
+  {
+    "input": {
+      "name": "empty_key",
+      "apiKey": "",
+      "locale": "en_US.UTF-8",
+      "replies": [],
+      "expectedFailures": 0
+    },
+    "output": {
+      "stdout": [],
+      "stderr": [
+        [
+          "Error: ANTHROPIC_API_KEY environment variable not set"
+        ]
+      ],
+      "exit": 1
+    }
+  },
+  {
+    "input": {
+      "name": "grouped_counts",
+      "apiKey": "controlled",
+      "locale": "en_US.UTF-8",
+      "replies": [
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":0}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":999}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":1000}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":1234567}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":42}"
+        }
+      ],
+      "expectedFailures": 0
+    },
+    "output": {
+      "stdout": [
+        "Counting tokens in prompts...\n\n",
+        "ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW: 0 tokens\n",
+        "ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO: 999 tokens\n",
+        "ATTACHMENTS_RUNTIME_DESCRIPTION: 1,000 tokens\n",
+        "JAVASCRIPT_REPL_TOOL_DESCRIPTION (without runtime providers): 1,234,567 tokens\n",
+        "ARTIFACTS_TOOL_DESCRIPTION (without runtime providers): 42 tokens\n",
+        "\nTotal: 1,236,608 tokens\n"
+      ],
+      "stderr": [],
+      "requests": [
+        {
+          "url": "https://api.anthropic.com/v1/messages/count_tokens",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json",
+            "x-api-key": "controlled",
+            "anthropic-version": "2023-06-01"
+          },
+          "body": "{\"model\":\"claude-3-5-sonnet-20241022\",\"messages\":[{\"role\":\"user\",\"content\":\"\\n### Artifacts Storage\\n\\nCreate, read, update, and delete files in artifacts storage.\\n\\n#### When to Use\\n- Store intermediate results between tool calls\\n- Save generated files (images, CSVs, processed data) for user to view and download\\n\\n#### Do NOT Use For\\n- Content you author directly, like summaries of content you read (use artifacts tool instead)\\n\\n#### Functions\\n- listArtifacts() - List all artifact filenames, returns Promise<string[]>\\n- getArtifact(filename) - Read artifact content, returns Promise<string | object>. JSON files auto-parse to objects, binary files return base64 string\\n- createOrUpdateArtifact(filename, content, mimeType?) - Create or update artifact, returns Promise<void>. JSON files auto-stringify objects, binary requires base64 string with mimeType\\n- deleteArtifact(filename) - Delete artifact, returns Promise<void>\\n\\n#### Example\\nJSON workflow:\\n```javascript\\n// Fetch and save\\nconst response = await fetch('https://api.example.com/products');\\nconst products = await response.json();\\nawait createOrUpdateArtifact('products.json', products);\\n\\n// Later: read and filter\\nconst all = await getArtifact('products.json');\\nconst cheap = all.filter(p => p.price < 100);\\nawait createOrUpdateArtifact('cheap.json', cheap);\\n```\\n\\nBinary file (image):\\n```javascript\\nconst canvas = document.createElement('canvas');\\ncanvas.width = 800; canvas.height = 600;\\nconst ctx = canvas.getContext('2d');\\nctx.fillStyle = 'blue';\\nctx.fillRect(0, 0, 800, 600);\\n// Remove data:image/png;base64, prefix\\nconst base64 = canvas.toDataURL().split(',')[1];\\nawait createOrUpdateArtifact('chart.png', base64, 'image/png');\\n```\\n\"}]}"
+        },
+        {
+          "url": "https://api.anthropic.com/v1/messages/count_tokens",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json",
+            "x-api-key": "controlled",
+            "anthropic-version": "2023-06-01"
+          },
+          "body": "{\"model\":\"claude-3-5-sonnet-20241022\",\"messages\":[{\"role\":\"user\",\"content\":\"\\n### Artifacts Storage\\n\\nRead files from artifacts storage.\\n\\n#### When to Use\\n- Read artifacts created by REPL or artifacts tool\\n- Access data from other HTML artifacts\\n- Load configuration or data files\\n\\n#### Do NOT Use For\\n- Creating new artifacts (not available in HTML artifacts)\\n- Modifying artifacts (read-only access)\\n\\n#### Functions\\n- listArtifacts() - List all artifact filenames, returns Promise<string[]>\\n- getArtifact(filename) - Read artifact content, returns Promise<string | object>. JSON files auto-parse to objects, binary files return base64 string\\n\\n#### Example\\nJSON data:\\n```javascript\\nconst products = await getArtifact('products.json');\\nconst html = products.map(p => `<div>${p.name}: $${p.price}</div>`).join('');\\ndocument.body.innerHTML = html;\\n```\\n\\nBinary image:\\n```javascript\\nconst base64 = await getArtifact('chart.png');\\nconst img = document.createElement('img');\\nimg.src = 'data:image/png;base64,' + base64;\\ndocument.body.appendChild(img);\\n```\\n\"}]}"
+        },
+        {
+          "url": "https://api.anthropic.com/v1/messages/count_tokens",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json",
+            "x-api-key": "controlled",
+            "anthropic-version": "2023-06-01"
+          },
+          "body": "{\"model\":\"claude-3-5-sonnet-20241022\",\"messages\":[{\"role\":\"user\",\"content\":\"\\n### User Attachments\\n\\nRead files the user uploaded to the conversation.\\n\\n#### When to Use\\n- Process user-uploaded files (CSV, JSON, Excel, images, PDFs)\\n\\n#### Functions\\n- listAttachments() - List all attachments, returns array of {id, fileName, mimeType, size}\\n- readTextAttachment(id) - Read attachment as text, returns string\\n- readBinaryAttachment(id) - Read attachment as binary data, returns Uint8Array\\n\\n#### Example\\nCSV file:\\n```javascript\\nconst files = listAttachments();\\nconst csvFile = files.find(f => f.fileName.endsWith('.csv'));\\nconst csvData = readTextAttachment(csvFile.id);\\nconst rows = csvData.split('\\\\n').map(row => row.split(','));\\n```\\n\\nExcel file:\\n```javascript\\nconst XLSX = await import('https://esm.run/xlsx');\\nconst files = listAttachments();\\nconst xlsxFile = files.find(f => f.fileName.endsWith('.xlsx'));\\nconst bytes = readBinaryAttachment(xlsxFile.id);\\nconst workbook = XLSX.read(bytes);\\nconst data = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);\\n```\\n\"}]}"
+        },
+        {
+          "url": "https://api.anthropic.com/v1/messages/count_tokens",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json",
+            "x-api-key": "controlled",
+            "anthropic-version": "2023-06-01"
+          },
+          "body": "{\"model\":\"claude-3-5-sonnet-20241022\",\"messages\":[{\"role\":\"user\",\"content\":\"# JavaScript REPL\\n\\n## Purpose\\nExecute JavaScript code in a sandboxed browser environment with full Web APIs.\\n\\n## When to Use\\n- Quick calculations or data transformations\\n- Testing JavaScript code snippets in isolation\\n- Processing data with libraries (XLSX, CSV, etc.)\\n- Creating artifacts from data\\n\\n## Environment\\n- ES2023+ JavaScript (async/await, optional chaining, nullish coalescing, etc.)\\n- All browser APIs: DOM, Canvas, WebGL, Fetch, Web Workers, WebSockets, Crypto, etc.\\n- Import any npm package: await import('https://esm.run/package-name')\\n\\n## Common Libraries\\n- XLSX: const XLSX = await import('https://esm.run/xlsx');\\n- CSV: const Papa = (await import('https://esm.run/papaparse')).default;\\n- Chart.js: const Chart = (await import('https://esm.run/chart.js/auto')).default;\\n- Three.js: const THREE = await import('https://esm.run/three');\\n\\n## Persistence between tool calls\\n- Objects stored on global scope do not persist between calls.\\n- Use artifacts as a key-value JSON object store:\\n  - Use createOrUpdateArtifact(filename, content) to persist data between calls. JSON objects are auto-stringified.\\n  - Use listArtifacts() and getArtifact(filename) to read persisted data. JSON files are auto-parsed to objects.\\n  - Prefer to use a single artifact throughout the session to store intermediate data (e.g. 'data.json').\\n\\n## Input\\n- You have access to the user's attachments via listAttachments(), readTextAttachment(id), and readBinaryAttachment(id)\\n- You have access to previously created artifacts via listArtifacts() and getArtifact(filename)\\n\\n## Output\\n- All console.log() calls are captured for you to inspect. The user does not see these logs.\\n- Create artifacts for file results (images, JSON, CSV, etc.) which persiste throughout the\\n  session and are accessible to you and the user.\\n\\n## Example\\nconst data = [10, 20, 15, 25];\\nconst sum = data.reduce((a, b) => a + b, 0);\\nconst avg = sum / data.length;\\nconsole.log('Sum:', sum, 'Average:', avg);\\n\\n## Important Notes\\n- Graphics: Use fixed dimensions (800x600), NOT window.innerWidth/Height\\n- Chart.js: Set options: { responsive: false, animation: false }\\n- Three.js: renderer.setSize(800, 600) with matching aspect ratio\\n\\n## Helper Functions (Automatically Available)\\n\\nThese functions are injected into the execution environment and available globally:\\n\\n\\n\"}]}"
+        },
+        {
+          "url": "https://api.anthropic.com/v1/messages/count_tokens",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json",
+            "x-api-key": "controlled",
+            "anthropic-version": "2023-06-01"
+          },
+          "body": "{\"model\":\"claude-3-5-sonnet-20241022\",\"messages\":[{\"role\":\"user\",\"content\":\"# Artifacts\\n\\nCreate and manage persistent files that live alongside the conversation.\\n\\n## When to Use - Artifacts Tool vs REPL\\n\\n**Use artifacts tool when YOU are the author:**\\n- Writing research summaries, analysis, ideas, documentation\\n- Creating markdown notes for user to read\\n- Building HTML applications/visualizations that present data\\n- Creating HTML artifacts that render charts from programmatically generated data\\n\\n**Use repl + artifact storage functions when CODE processes data:**\\n- Scraping workflows that extract and store data\\n- Processing CSV/Excel files programmatically\\n- Data transformation pipelines\\n- Binary file generation requiring libraries (PDF, DOCX)\\n\\n**Pattern: REPL generates data → Artifacts tool creates HTML that visualizes it**\\nExample: repl scrapes products → stores products.json → you author dashboard.html that reads products.json and renders Chart.js visualizations\\n\\n## Input\\n- { command: \\\"create\\\", filename: \\\"notes.md\\\", content: \\\"...\\\" } - Create new file\\n- { command: \\\"update\\\", filename: \\\"notes.md\\\", old_str: \\\"...\\\", new_str: \\\"...\\\" } - Update part of file (PREFERRED)\\n- { command: \\\"rewrite\\\", filename: \\\"notes.md\\\", content: \\\"...\\\" } - Replace entire file (LAST RESORT)\\n- { command: \\\"get\\\", filename: \\\"data.json\\\" } - Retrieve file content\\n- { command: \\\"delete\\\", filename: \\\"old.csv\\\" } - Delete file\\n- { command: \\\"logs\\\", filename: \\\"app.html\\\" } - Get console logs from HTML artifact\\n\\n## Returns\\nDepends on action:\\n- create/update/rewrite/delete: Success status or error\\n- get: File content\\n- logs: Console logs and errors\\n\\n## Supported File Types\\n✅ Text-based files you author: .md, .txt, .html, .js, .css, .json, .csv, .svg\\n❌ Binary files requiring libraries (use repl): .pdf, .docx\\n\\n## Critical - Prefer Update Over Rewrite\\n❌ NEVER: get entire file + rewrite to change small sections\\n✅ ALWAYS: update for targeted edits (token efficient)\\n✅ Ask: Can I describe the change as old_str → new_str? Use update.\\n\\n---\\n\\n## HTML Artifacts\\n\\nInteractive HTML applications that can visualize data from other artifacts.\\n\\n### Data Access\\n- Can read artifacts created by repl and user attachments\\n- Use to build dashboards, visualizations, interactive tools\\n- See Helper Functions section below for available functions\\n\\n### Requirements\\n- Self-contained single file\\n- Import ES modules from esm.sh: <script type=\\\"module\\\">import X from 'https://esm.sh/pkg';</script>\\n- Use Tailwind CDN: <script src=\\\"https://cdn.tailwindcss.com\\\"></script>\\n- Can embed images from any domain: <img src=\\\"https://example.com/image.jpg\\\">\\n- MUST set background color explicitly (avoid transparent)\\n- Inline CSS or Tailwind utility classes\\n- No localStorage/sessionStorage\\n\\n### Styling\\n- Use Tailwind utility classes for clean, functional designs\\n- Ensure responsive layout (iframe may be resized)\\n- Avoid purple gradients, AI aesthetic clichés, and emojis\\n\\n### Helper Functions (Automatically Available)\\n\\nThese functions are injected into HTML artifact sandbox:\\n\\n\\n\"}]}"
+        }
+      ],
+      "phases": [
+        "request:0",
+        "json:0",
+        "settled:0",
+        "request:1",
+        "json:1",
+        "settled:1",
+        "request:2",
+        "json:2",
+        "settled:2",
+        "request:3",
+        "json:3",
+        "settled:3",
+        "request:4",
+        "json:4",
+        "settled:4"
+      ],
+      "exit": 0
+    }
+  },
+  {
+    "input": {
+      "name": "nonempty_zero_key",
+      "apiKey": "0",
+      "locale": "en_US.UTF-8",
+      "replies": [
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":1}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":2}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":3}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":4}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":5}"
+        }
+      ],
+      "expectedFailures": 0
+    },
+    "output": {
+      "stdout": [
+        "Counting tokens in prompts...\n\n",
+        "ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW: 1 tokens\n",
+        "ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO: 2 tokens\n",
+        "ATTACHMENTS_RUNTIME_DESCRIPTION: 3 tokens\n",
+        "JAVASCRIPT_REPL_TOOL_DESCRIPTION (without runtime providers): 4 tokens\n",
+        "ARTIFACTS_TOOL_DESCRIPTION (without runtime providers): 5 tokens\n",
+        "\nTotal: 15 tokens\n"
+      ],
+      "stderr": [],
+      "exit": 0
+    }
+  },
+  {
+    "input": {
+      "name": "nonempty_whitespace_key",
+      "apiKey": " ",
+      "locale": "en_US.UTF-8",
+      "replies": [
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":0}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":0}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":0}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":0}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":0}"
+        }
+      ],
+      "expectedFailures": 0
+    },
+    "output": {
+      "stdout": [
+        "Counting tokens in prompts...\n\n",
+        "ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW: 0 tokens\n",
+        "ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO: 0 tokens\n",
+        "ATTACHMENTS_RUNTIME_DESCRIPTION: 0 tokens\n",
+        "JAVASCRIPT_REPL_TOOL_DESCRIPTION (without runtime providers): 0 tokens\n",
+        "ARTIFACTS_TOOL_DESCRIPTION (without runtime providers): 0 tokens\n",
+        "\nTotal: 0 tokens\n"
+      ],
+      "stderr": [],
+      "exit": 0
+    }
+  },
+  {
+    "input": {
+      "name": "status_boundaries",
+      "apiKey": "controlled",
+      "locale": "en_US.UTF-8",
+      "replies": [
+        {
+          "status": 201,
+          "body": "{\"input_tokens\":101}"
+        },
+        {
+          "status": 299,
+          "body": "{\"input_tokens\":202}"
+        },
+        {
+          "status": 300,
+          "body": ""
+        },
+        {
+          "status": 429,
+          "body": "rate limited\n"
+        },
+        {
+          "status": 500,
+          "body": "{\"error\":\"upstream\"}"
+        }
+      ],
+      "expectedFailures": 3
+    },
+    "output": {
+      "stdout": [
+        "Counting tokens in prompts...\n\n",
+        "ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW: 101 tokens\n",
+        "ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO: 202 tokens\n",
+        "\nTotal: 303 tokens\n"
+      ],
+      "stderr": [
+        [
+          "Error counting tokens for ATTACHMENTS_RUNTIME_DESCRIPTION:"
+        ],
+        [
+          "Error counting tokens for JAVASCRIPT_REPL_TOOL_DESCRIPTION (without runtime providers):"
+        ],
+        [
+          "Error counting tokens for ARTIFACTS_TOOL_DESCRIPTION (without runtime providers):"
+        ]
+      ],
+      "exit": 0
+    }
+  },
+  {
+    "input": {
+      "name": "malformed_and_body_failures",
+      "apiKey": "controlled",
+      "locale": "en_US.UTF-8",
+      "replies": [
+        {
+          "status": 200,
+          "body": "{"
+        },
+        {
+          "status": 200,
+          "body": "﻿{\"input_tokens\":1000}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":7,\"unused\":{\"nested\":[1,2]}}"
+        },
+        {
+          "status": 200,
+          "bodyError": "body unavailable"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":0}"
+        }
+      ],
+      "expectedFailures": 2
+    },
+    "output": {
+      "stdout": [
+        "Counting tokens in prompts...\n\n",
+        "ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO: 1,000 tokens\n",
+        "ATTACHMENTS_RUNTIME_DESCRIPTION: 7 tokens\n",
+        "ARTIFACTS_TOOL_DESCRIPTION (without runtime providers): 0 tokens\n",
+        "\nTotal: 1,007 tokens\n"
+      ],
+      "stderr": [
+        [
+          "Error counting tokens for ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW:"
+        ],
+        [
+          "Error counting tokens for JAVASCRIPT_REPL_TOOL_DESCRIPTION (without runtime providers):"
+        ]
+      ],
+      "exit": 0
+    }
+  },
+  {
+    "input": {
+      "name": "transport_failure",
+      "apiKey": "controlled",
+      "locale": "en_US.UTF-8",
+      "replies": [
+        {
+          "transportError": "connection refused"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":1}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":2}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":3}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":4}"
+        }
+      ],
+      "expectedFailures": 1
+    },
+    "output": {
+      "stdout": [
+        "Counting tokens in prompts...\n\n",
+        "ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO: 1 tokens\n",
+        "ATTACHMENTS_RUNTIME_DESCRIPTION: 2 tokens\n",
+        "JAVASCRIPT_REPL_TOOL_DESCRIPTION (without runtime providers): 3 tokens\n",
+        "ARTIFACTS_TOOL_DESCRIPTION (without runtime providers): 4 tokens\n",
+        "\nTotal: 10 tokens\n"
+      ],
+      "stderr": [
+        [
+          "Error counting tokens for ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW:"
+        ]
+      ],
+      "exit": 0
+    }
+  },
+  {
+    "input": {
+      "name": "all_failed",
+      "apiKey": "controlled",
+      "locale": "en_US.UTF-8",
+      "replies": [
+        {
+          "status": 401,
+          "body": "denied"
+        },
+        {
+          "status": 401,
+          "body": "denied"
+        },
+        {
+          "status": 401,
+          "body": "denied"
+        },
+        {
+          "status": 401,
+          "body": "denied"
+        },
+        {
+          "status": 401,
+          "body": "denied"
+        }
+      ],
+      "expectedFailures": 5
+    },
+    "output": {
+      "stdout": [
+        "Counting tokens in prompts...\n\n",
+        "\nTotal: 0 tokens\n"
+      ],
+      "stderr": [
+        [
+          "Error counting tokens for ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW:"
+        ],
+        [
+          "Error counting tokens for ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO:"
+        ],
+        [
+          "Error counting tokens for ATTACHMENTS_RUNTIME_DESCRIPTION:"
+        ],
+        [
+          "Error counting tokens for JAVASCRIPT_REPL_TOOL_DESCRIPTION (without runtime providers):"
+        ],
+        [
+          "Error counting tokens for ARTIFACTS_TOOL_DESCRIPTION (without runtime providers):"
+        ]
+      ],
+      "exit": 0
+    }
+  },
+  {
+    "input": {
+      "name": "german_counts",
+      "apiKey": "controlled",
+      "locale": "de_DE.UTF-8",
+      "replies": [
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":0}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":999}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":1000}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":1234567}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":42}"
+        }
+      ],
+      "expectedFailures": 0
+    },
+    "output": {
+      "stdout": [
+        "Counting tokens in prompts...\n\n",
+        "ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW: 0 tokens\n",
+        "ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO: 999 tokens\n",
+        "ATTACHMENTS_RUNTIME_DESCRIPTION: 1.000 tokens\n",
+        "JAVASCRIPT_REPL_TOOL_DESCRIPTION (without runtime providers): 1.234.567 tokens\n",
+        "ARTIFACTS_TOOL_DESCRIPTION (without runtime providers): 42 tokens\n",
+        "\nTotal: 1.236.608 tokens\n"
+      ],
+      "stderr": [],
+      "exit": 0
+    }
+  },
+  {
+    "input": {
+      "name": "numeric_format_boundaries",
+      "apiKey": "controlled",
+      "locale": "en_US.UTF-8",
+      "replies": [
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":-0}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":0.0005}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":-0.0005}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":1.2345}"
+        },
+        {
+          "status": 200,
+          "body": "{\"input_tokens\":-1.2345}"
+        }
+      ],
+      "expectedFailures": 0
+    },
+    "output": {
+      "stdout": [
+        "Counting tokens in prompts...\n\n",
+        "ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RW: -0 tokens\n",
+        "ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO: 0.001 tokens\n",
+        "ATTACHMENTS_RUNTIME_DESCRIPTION: -0.001 tokens\n",
+        "JAVASCRIPT_REPL_TOOL_DESCRIPTION (without runtime providers): 1.235 tokens\n",
+        "ARTIFACTS_TOOL_DESCRIPTION (without runtime providers): -1.235 tokens\n",
+        "\nTotal: 0 tokens\n"
+      ],
+      "stderr": [],
+      "exit": 0
+    }
+  }
+]
