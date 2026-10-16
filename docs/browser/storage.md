@@ -68,12 +68,13 @@ missing usage/quota independently default to zero. Percent is `(usage / quota) *
 100`, or zero when quota is zero. Unsupported persistence returns false; supported
 requests return the browser's grant decision. Promise rejections remain errors.
 
-The JSON trait face uses platform JSON parse/stringify: native negative zero
-becomes zero, nonfinite numbers become null, Date becomes its JSON string, and
-ordinary Blob/buffer objects use their standard JSON object representation.
-Cycles, `BigInt` and present values whose JSON representation is undefined fail;
-missing raw reads stay `None`. Callers needing native types, numbers or identity
-use the raw face. Application serialization policy itself is unchanged.
+The JSON trait face reads null, booleans, finite numbers (including negative
+zero), strings, arrays and plain objects without stringification. Nonfinite
+numbers, cycles, functions, undefined, symbols, `BigInt` and non-plain objects
+are errors rather than stand-ins. Missing raw reads stay `None`. Writes still
+serialize application JSON and use platform JSON parsing, which preserves
+negative zero. Callers needing native types or identity use the raw face.
+Application serialization policy itself is unchanged.
 
 ```no_run
 # #[cfg(target_arch = "wasm32")]

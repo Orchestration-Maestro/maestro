@@ -1,24 +1,71 @@
 //! JSON application faces share native operations and retained transactions.
 //!
-//! Native reads use the browser JSON representation: negative zero becomes zero,
-//! nonfinite numbers become null, dates become strings and ordinary blobs/buffers
-//! become objects. Cycles, BigInt and undefined JSON output are errors. Raw callers
-//! retain unrestricted structured-clone values and never enter this conversion.
+//! Reads preserve JSON values, including negative zero. Values outside that
+//! domain are errors. Raw callers retain unrestricted structured-clone values
+//! and never enter this conversion.
 use super::{IndexedDBStorageBackend, IndexedDBStorageTransaction, browser_error};
 use maestro_app::browser::storage::{IndexDirection, QuotaInfo, StorageOperation, TransactionMode};
 use serde_json::Value;
 use std::{future::Future, io, pin::Pin};
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{JsCast, JsValue};
 
 /// Borrowed application future without a Send requirement.
 type StorageFuture<'a, T> = Pin<Box<dyn Future<Output = io::Result<T>> + 'a>>;
-/// Convert a present native value through the platform's JSON representation.
+/// Convert a present JSON value without stringification or numeric normalization.
 fn decode_json(value: &JsValue) -> io::Result<Value> {
-    let text = js_sys::JSON::stringify(value)
-        .map_err(|error| browser_error(&error))?
-        .as_string()
-        .ok_or(io::ErrorKind::InvalidData)?;
-    serde_json::from_str(&text).map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
+    decode_value(value, &mut Vec::new())
+}
+/// Walk JSON values, rejecting cycles only along the current ancestry path.
+fn decode_value(value: &JsValue, ancestors: &mut Vec<JsValue>) -> io::Result<Value> {
+    if value.is_null() {
+        return Ok(Value::Null);
+    }
+    if let Some(value) = value.as_bool() {
+        return Ok(Value::Bool(value));
+    }
+    if let Some(value) = value.as_f64() {
+        return super::super::json_number(value);
+    }
+    if let Some(value) = value.as_string() {
+        return Ok(Value::String(value));
+    }
+    if !value.is_object()
+        || ancestors
+            .iter()
+            .any(|ancestor| js_sys::Object::is(ancestor, value))
+    {
+        return Err(io::ErrorKind::InvalidData.into());
+    }
+    ancestors.push(value.clone());
+    let result = decode_container(value, ancestors);
+    ancestors.pop();
+    result
+}
+/// Read arrays or enumerable string members of plain objects without coercion.
+fn decode_container(value: &JsValue, ancestors: &mut Vec<JsValue>) -> io::Result<Value> {
+    if js_sys::Array::is_array(value) {
+        return js_sys::Array::from(value)
+            .iter()
+            .map(|value| decode_value(&value, ancestors))
+            .collect::<io::Result<Vec<_>>>()
+            .map(Value::Array);
+    }
+    let object: &js_sys::Object = value.unchecked_ref();
+    let prototype = js_sys::Object::get_prototype_of(object);
+    let plain_prototype = js_sys::Object::get_prototype_of(&js_sys::Object::new());
+    if !prototype.is_null() && !js_sys::Object::is(&prototype, &plain_prototype) {
+        return Err(io::ErrorKind::InvalidData.into());
+    }
+    js_sys::Object::keys(object)
+        .iter()
+        .map(|key| {
+            let name = key.as_string().ok_or(io::ErrorKind::InvalidData)?;
+            let member =
+                js_sys::Reflect::get(value, &key).map_err(|error| browser_error(&error))?;
+            Ok((name, decode_value(&member, ancestors)?))
+        })
+        .collect::<io::Result<serde_json::Map<_, _>>>()
+        .map(Value::Object)
 }
 /// Parse an application JSON value without a handwritten native-value codec.
 fn encode_json(value: &Value) -> io::Result<JsValue> {

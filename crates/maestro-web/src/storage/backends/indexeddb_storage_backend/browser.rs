@@ -337,10 +337,7 @@ impl IndexedDBStorageBackend {
         direction: IndexDirection,
     ) -> io::Result<Vec<JsValue>> {
         let store = self.store(store_name, IdbTransactionMode::Readonly).await?;
-        let direction = match cursor_direction(direction) {
-            "prev" => web_sys::IdbCursorDirection::Prev,
-            _ => web_sys::IdbCursorDirection::Next,
-        };
+        let direction = cursor_direction(direction);
         let request = store
             .index(index_name)
             .and_then(|index| index.open_cursor_with_range_and_direction(&JsValue::NULL, direction))

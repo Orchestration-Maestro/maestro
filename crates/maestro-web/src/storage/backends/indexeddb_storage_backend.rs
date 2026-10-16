@@ -69,11 +69,31 @@ fn prefix_bounds(prefix: Option<&str>) -> Option<(&str, String)> {
 
 /// Select non-unique native cursor traversal.
 #[cfg(any(target_arch = "wasm32", test))]
-fn cursor_direction(direction: maestro_app::browser::storage::IndexDirection) -> &'static str {
+fn cursor_direction(
+    direction: maestro_app::browser::storage::IndexDirection,
+) -> web_sys::IdbCursorDirection {
     match direction {
-        maestro_app::browser::storage::IndexDirection::Asc => "next",
-        maestro_app::browser::storage::IndexDirection::Desc => "prev",
+        maestro_app::browser::storage::IndexDirection::Asc => web_sys::IdbCursorDirection::Next,
+        maestro_app::browser::storage::IndexDirection::Desc => web_sys::IdbCursorDirection::Prev,
     }
+}
+
+/// Preserve finite native numbers, including the sign bit of zero.
+#[cfg(any(target_arch = "wasm32", test))]
+fn json_number(value: f64) -> std::io::Result<serde_json::Value> {
+    use num_traits::ToPrimitive;
+    // Integral JSON values must remain readable by typed application stores.
+    if value.fract() == 0.0 && !(value == 0.0 && value.is_sign_negative()) {
+        if let Some(integer) = value.to_i64() {
+            return Ok(integer.into());
+        }
+        if let Some(integer) = value.to_u64() {
+            return Ok(integer.into());
+        }
+    }
+    serde_json::Number::from_f64(value)
+        .map(serde_json::Value::Number)
+        .ok_or_else(|| std::io::ErrorKind::InvalidData.into())
 }
 
 /// Preserve independent estimate fallbacks and division-before-scaling order.

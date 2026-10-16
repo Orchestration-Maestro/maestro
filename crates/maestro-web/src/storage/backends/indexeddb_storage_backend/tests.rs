@@ -241,6 +241,11 @@ fn index_direction_selects_native_cursor_order() {
             "desc" => IndexDirection::Desc,
             _ => panic!("unknown direction"),
         };
+        let expected = match expected.as_str() {
+            "next" => web_sys::IdbCursorDirection::Next,
+            "prev" => web_sys::IdbCursorDirection::Prev,
+            _ => panic!("unknown recorded direction"),
+        };
         assert_eq!(cursor_direction(direction), expected, "{id}");
     }
 }
@@ -282,4 +287,31 @@ fn quota_values_default_independently() {
 #[test]
 fn quota_percent_keeps_division_before_scaling() {
     check_quota("quota_percent_keeps_division_before_scaling");
+}
+
+#[test]
+fn json_number_preserves_negative_zero_sign_bit() {
+    let value = json_number(-0.0).unwrap();
+    assert_eq!(value.as_f64().unwrap().to_bits(), (-0.0_f64).to_bits());
+    assert_eq!(json_number(1.25).unwrap().as_f64(), Some(1.25));
+}
+
+#[test]
+fn json_number_keeps_integral_settings_deserializable() {
+    for value in [-17_i64, 0, 17] {
+        let number = json_number(num_traits::cast(value).unwrap()).unwrap();
+        assert_eq!(serde_json::from_value::<i64>(number).unwrap(), value);
+    }
+    let number = json_number(9_223_372_036_854_775_808.0).unwrap();
+    assert_eq!(serde_json::from_value::<u64>(number).unwrap(), 1_u64 << 63);
+}
+
+#[test]
+fn json_number_rejects_nonfinite_values_without_stand_ins() {
+    for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        assert_eq!(
+            json_number(value).unwrap_err().kind(),
+            std::io::ErrorKind::InvalidData
+        );
+    }
 }
