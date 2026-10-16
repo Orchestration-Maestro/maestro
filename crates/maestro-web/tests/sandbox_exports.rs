@@ -82,3 +82,35 @@ fn raw_sandbox_values_reach_provider_and_consumer_contracts() {
     let _: BoxFuture<Result<(), DiagnosticErrorInfo>> = Provider.handle_message(raw.clone(), reply);
     let _: BoxFuture<Result<(), DiagnosticErrorInfo>> = Consumer.handle_message(raw);
 }
+
+#[test]
+fn concrete_providers_keep_native_browser_handles() {
+    use maestro_web::{
+        AttachmentsRuntimeProvider, ConsoleLog, ConsoleRuntimeProvider, DownloadableFile,
+        FileDownloadRuntimeProvider,
+    };
+    let console = Arc::new(ConsoleRuntimeProvider::<BrowserSandboxValue>::new());
+    let files = Arc::new(FileDownloadRuntimeProvider::<BrowserSandboxValue>::new());
+    let attachments = Arc::new(AttachmentsRuntimeProvider::<BrowserSandboxValue>::new(
+        Arc::default(),
+    ));
+    let raw = BrowserSandboxValue(js_sys::Uint8Array::new_with_length(3).into());
+    let _: ConsoleLog<BrowserSandboxValue> = ConsoleLog {
+        r#type:
+            maestro_app::browser::components::sandbox::console_runtime_provider::ConsoleLogType::Log,
+        text: raw.clone(),
+        args: Some(raw.clone()),
+    };
+    let _: DownloadableFile<BrowserSandboxValue> = DownloadableFile {
+        file_name: BrowserSandboxValue(JsValue::UNDEFINED),
+        content: raw,
+        mime_type: BrowserSandboxValue(JsValue::NULL),
+    };
+    let router = RuntimeMessageRouter::default();
+    let _ = router.register_sandbox(
+        "concrete".into(),
+        Rc::new(RefCell::new(vec![console, attachments, files])),
+        vec![],
+    );
+    let _ = router.unregister_sandbox("concrete");
+}

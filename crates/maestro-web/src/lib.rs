@@ -44,3 +44,9 @@ pub use components::sandbox::runtime_message_bridge::RuntimeMessageBridge;
 
 #[cfg(target_arch = "wasm32")]
 pub use components::sandbox::runtime_message_router::RUNTIME_MESSAGE_ROUTER;
+
+pub use maestro_app::browser::components::sandbox::{
+    attachments_runtime_provider::AttachmentsRuntimeProvider,
+    console_runtime_provider::{ConsoleLog, ConsoleRuntimeProvider},
+    file_download_runtime_provider::{DownloadableFile, FileDownloadRuntimeProvider},
+};

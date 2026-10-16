@@ -62,10 +62,21 @@ Clones share that value: callbacks do not JSON-round-trip it. Its application
 formatter uses native two-space JSON display for objects/arrays/null and native
 string conversion otherwise, preserving serializer failures.
 
+## Concrete providers
+
+The browser SDK exports the application-owned
+[console, attachment and returned-file providers](../application/browser-tools.md#sandbox-runtime-providers).
+Instantiate them with `BrowserSandboxValue` for native handle retention, then
+register them in the router's provider collection. Their complete injected
+functions supply console forwarding/completion flushing, attachment reads and
+online/offline file returns. The host providers install no listeners or timers;
+the injected document owns those browser effects. Native collection aliases stay
+live until reset replaces the current collection.
+
 ## Qualification boundary
 
 Native tests exercise the shared registry, admission decision, live dispatch,
 retained frame slots and exact injected source. WebAssembly builds and compile
 witnesses check binding and SDK signatures. They do not certify actual browser
 listener effects, window identity, extension transport or native formatting;
-those remain tracked in [browser qualification](https://github.com/Orchestration-Maestro/maestro/issues/825).
+provider helper effects and those transport observations remain tracked in [browser qualification](https://github.com/Orchestration-Maestro/maestro/issues/825).
