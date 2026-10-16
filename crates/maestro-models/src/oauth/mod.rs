@@ -60,23 +60,10 @@ thread_local! {
         std::cell::RefCell::new(builtin_providers());
 }
 
-/// Perform map operations without invoking provider methods or retiring values.
-fn with_providers<T>(
-    operation: impl FnOnce(&mut IndexMap<OAuthProviderId, OAuthProviderHandle>) -> T,
-) -> T {
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        operation(
-            &mut PROVIDERS
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-        )
-    }
-    #[cfg(target_arch = "wasm32")]
-    {
-        PROVIDERS.with(|providers| operation(&mut providers.borrow_mut()))
-    }
-}
+crate::records::platform_store_accessor!(
+    /// Perform map operations without invoking provider methods or retiring values.
+    with_providers, PROVIDERS, IndexMap<OAuthProviderId, OAuthProviderHandle>
+);
 
 /// Look up an exact literal provider identifier.
 #[must_use]

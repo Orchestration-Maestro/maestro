@@ -10,6 +10,9 @@ check. Replacing a protocol preserves its position but replaces its source owner
 source removal affects only registrations still owned by that source. Retained
 handles remain usable after replacement, removal or clear.
 
+Protocol registration, account membership, session cleanup and cloud callback
+selection retain separate owners on each target.
+
 The registry already holds the bundled protocols; see [bundled protocol linkage](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/module-linkage.md)
 for registration, reset, the root entry points and the raw extras they accept.
 

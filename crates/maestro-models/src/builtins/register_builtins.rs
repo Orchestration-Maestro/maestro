@@ -249,21 +249,10 @@ thread_local! {
     static BEDROCK: std::cell::RefCell<Option<BedrockProviderModule>> = const { std::cell::RefCell::new(None) };
 }
 
-/// Access the selected slot only to snapshot or replace callback handles.
-fn with_bedrock<T>(operation: impl FnOnce(&mut Option<BedrockProviderModule>) -> T) -> T {
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        operation(
-            &mut BEDROCK
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-        )
-    }
-    #[cfg(target_arch = "wasm32")]
-    {
-        BEDROCK.with_borrow_mut(operation)
-    }
-}
+crate::records::platform_store_accessor!(
+    /// Access the selected slot only to snapshot or replace callback handles.
+    with_bedrock, BEDROCK, Option<BedrockProviderModule>
+);
 
 /// Select the current pair, releasing the slot before invocation.
 fn selected_bedrock() -> BedrockProviderModule {

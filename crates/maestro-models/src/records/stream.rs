@@ -44,8 +44,7 @@ pub fn complete(
     context: Context,
     options: Option<ProviderStreamOptions>,
 ) -> BoxFuture<Result<SharedAssistantMessage, DiagnosticErrorInfo>> {
-    let invocation = stream(model, context, options);
-    Box::pin(async move { Ok(invocation?.result().await) })
+    completion(stream(model, context, options))
 }
 /// Start simple invocation now, returning its independent result observation.
 /// Setup failures are returned by the future, not by this eager function.
@@ -55,6 +54,12 @@ pub fn complete_simple(
     context: Context,
     options: Option<SimpleStreamOptions>,
 ) -> BoxFuture<Result<SharedAssistantMessage, DiagnosticErrorInfo>> {
-    let invocation = stream_simple(model, context, options);
+    completion(stream_simple(model, context, options))
+}
+
+/// Observe an already-started invocation without consuming its events.
+fn completion(
+    invocation: Result<AssistantMessageEventStream, DiagnosticErrorInfo>,
+) -> BoxFuture<Result<SharedAssistantMessage, DiagnosticErrorInfo>> {
     Box::pin(async move { Ok(invocation?.result().await) })
 }

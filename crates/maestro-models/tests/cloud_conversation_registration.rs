@@ -26,6 +26,7 @@ fn bedrock_generic_routes_reach_the_default_pair() -> TestResult {
         );
     }
     block_on(false, async {
+        explicit_routes().await?;
         maestro_models::set_bedrock_provider_module(pair("replacement"));
         maestro_models::set_bedrock_provider_module(
             maestro_models::bedrock_provider::bedrock_provider_module(),

@@ -32,21 +32,10 @@ thread_local! {
 /// Browser-thread cleanup registrations.
 static RESOURCES: std::cell::RefCell<Resources> = std::cell::RefCell::new(Resources::default()); }
 
-/// Access native shared or browser-local cleanup registrations.
-fn with_resources<T>(operation: impl FnOnce(&mut Resources) -> T) -> T {
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        operation(
-            &mut RESOURCES
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-        )
-    }
-    #[cfg(target_arch = "wasm32")]
-    {
-        RESOURCES.with_borrow_mut(operation)
-    }
-}
+crate::records::platform_store_accessor!(
+    /// Access native shared or browser-local cleanup registrations.
+    with_resources, RESOURCES, Resources
+);
 
 /// Explicit removal by callback identity; dropping this handle does not unsubscribe.
 pub struct SessionResourceRemoval {

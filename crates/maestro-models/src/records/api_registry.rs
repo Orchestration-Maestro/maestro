@@ -34,21 +34,10 @@ static REGISTRY: std::sync::LazyLock<std::sync::Mutex<IndexMap<String, Registrat
 thread_local! {
 /// Browser-thread API registrations in insertion order.
 static REGISTRY: std::cell::RefCell<IndexMap<String, Registration>> = std::cell::RefCell::new(seeded()); }
-/// Access the native shared or browser-local registration map.
-fn with_registry<T>(operation: impl FnOnce(&mut IndexMap<String, Registration>) -> T) -> T {
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        operation(
-            &mut REGISTRY
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-        )
-    }
-    #[cfg(target_arch = "wasm32")]
-    {
-        REGISTRY.with_borrow_mut(operation)
-    }
-}
+crate::records::platform_store_accessor!(
+    /// Access the native shared or browser-local registration map.
+    with_registry, REGISTRY, IndexMap<String, Registration>
+);
 /// Wrap a stream callback with an API-identity check.
 fn checked<O: 'static>(api: String, callback: StreamFunction<O>) -> StreamFunction<O> {
     Arc::new(move |model, context, options| {

@@ -422,11 +422,9 @@ fn maestro_custom_setup_errors_stay_immediate() -> TestResult {
     Ok(())
 }
 
-#[test]
-fn maestro_explicit_end_keeps_result_pending() -> TestResult {
-    let _registry = bundled::registry();
-    reset_api_providers();
-    let provider = ApiProvider {
+/// A controlled stream that ends without publishing its result.
+fn ending_provider() -> ApiProvider {
+    ApiProvider {
         api: "ending-api".into(),
         stream: Arc::new(|model, _, _| {
             let stream = AssistantMessageEventStream::new();
@@ -444,17 +442,55 @@ fn maestro_explicit_end_keeps_result_pending() -> TestResult {
             Ok(stream)
         }),
         stream_simple: Arc::new(|_, _, _| Err(failure("unused"))),
-    };
-    register_api_provider(provider, None);
+    }
+}
+
+#[test]
+fn maestro_explicit_end_keeps_result_pending() -> TestResult {
+    let _registry = bundled::registry();
+    reset_api_providers();
+    register_api_provider(ending_provider(), None);
     let model = bundled::descriptor("ending-api", "https://controlled.invalid")?;
-    let started = stream(model, bundled::conversation()?, None)?;
-    block_on(false, async {
+    let started = stream(model.clone(), bundled::conversation()?, None)?;
+    let original = block_on(false, async {
         let events = bundled::drain(&started).await;
         assert!(matches!(
             events.as_slice(),
             [AssistantMessageEvent::Start { .. }]
         ));
         assert!(futures_util::FutureExt::now_or_never(started.result()).is_none());
+        let AssistantMessageEvent::Start { partial } = &events[0] else {
+            return Err("missing partial".into());
+        };
+        Ok(Arc::clone(partial))
+    })?;
+    let raw_output = started.clone();
+    let simple_output = started.clone();
+    register_api_provider(
+        ApiProvider {
+            api: "ending-api".into(),
+            stream: Arc::new(move |_, _, _| Ok(raw_output.clone())),
+            stream_simple: Arc::new(move |_, _, _| Ok(simple_output.clone())),
+        },
+        None,
+    );
+    let mut raw = complete(model.clone(), bundled::conversation()?, None);
+    let mut simple = complete_simple(model, bundled::conversation()?, None);
+    let mut cx = std::task::Context::from_waker(std::task::Waker::noop());
+    assert!(raw.as_mut().poll(&mut cx).is_pending());
+    assert!(simple.as_mut().poll(&mut cx).is_pending());
+    register_api_provider(
+        ApiProvider {
+            api: "ending-api".into(),
+            stream: Arc::new(|_, _, _| Err(failure("replacement"))),
+            stream_simple: Arc::new(|_, _, _| Err(failure("replacement"))),
+        },
+        None,
+    );
+    started.end(Some(Arc::clone(&original)));
+    block_on(false, async {
+        assert!(Arc::ptr_eq(&raw.await?, &original));
+        assert!(Arc::ptr_eq(&simple.await?, &original));
         Ok(())
     })?;
     reset_api_providers();
@@ -1057,6 +1093,8 @@ fn recording_provider(seen: &ObjectsSeen) -> ApiProvider {
 
 #[test]
 fn maestro_provider_objects_keep_typed_aliases() -> TestResult {
+    fn assert_send_sync<T: Send + Sync>() {}
+    assert_send_sync::<maestro_models::ProviderObjects>();
     let drops = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let mut objects = maestro_models::ProviderObjects::default();
     objects.insert(7_u32);
