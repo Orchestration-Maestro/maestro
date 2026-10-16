@@ -115,11 +115,14 @@ pub struct Frame {
     pub mode: maestro_theme::BrandMode,
     /// Supplied language operations.
     pub i18n: maestro_web::I18n,
+    /// Viewport dimensions supplied to the next frame.
+    pub size: egui::Vec2,
 }
 impl Default for Frame {
     fn default() -> Self {
         Self {
             context: egui::Context::default(),
+            size: egui::vec2(400., 300.),
             pack: super::session_header_support::pack(),
             mode: maestro_theme::BrandMode::Dark,
             i18n: maestro_web::I18n::new(std::rc::Rc::new(super::support::Host::default()))
@@ -143,10 +146,7 @@ impl Frame {
         let mut result = Ok(());
         let mut output = self.context.run_ui(
             egui::RawInput {
-                screen_rect: Some(egui::Rect::from_min_size(
-                    egui::Pos2::ZERO,
-                    egui::vec2(400., 300.),
-                )),
+                screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, self.size)),
                 events,
                 ..Default::default()
             },
