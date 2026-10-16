@@ -107,10 +107,11 @@ needed. Scientific and engineering fields use the same selected value.
 
 `maestro_app::browser::docx_preview::WordDocument::load` opens supplied archive
 bytes. It checks recognized XML parts before returning, including property and
-comment parts; missing parts and unknown relationship types are tolerated. This
-is package loading, not text extraction, semantic document parsing or rendering.
+comment parts; missing parts and unknown relationship types are tolerated. It
+also prepares [metadata and comments](#word-metadata-and-comments) eagerly. This
+is not complete document parsing, text extraction or rendering.
 
-Parts retain decoded XML and ordered relationships. Relationship lookup borrows
+Parts retain decoded XML, ordered relationships and one optional typed `PartData`. Relationship lookup borrows
 stored parts. Missing part relationships fall back to root relationships while
 retaining the supplied part folder; an empty list does not fall back. External
 relationship paths retain their resolved absolute URLs. Resource lookup reads
@@ -125,6 +126,37 @@ standalone XML parsing takes this policy explicitly.
 The same namespace exposes boolean and length conversion for property parsers.
 See the [document-format library inventory](../libraries/document-formats.md)
 for the native archive, XML and URL implementations.
+
+## Word metadata and comments
+
+`CorePropsPart`, `ExtendedPropsPart` and `CustomPropsPart` prepare owned property
+records through `parse_xml`. Core properties select title, description, subject,
+creator, keywords, language, last modifier and revision. Extended properties
+select template, application, company, application version and page, word,
+character, line and paragraph counts. Text stays raw; selected numbers use
+integer-prefix conversion, including NaN and negative zero. An empty core
+revision does not erase an earlier value; an empty extended count becomes NaN.
+
+Custom properties preserve source order, nullable names/format IDs, authored
+qualified value-element names and descendant text without scalar conversion.
+Preparation selects the first element, ignoring preceding whitespace, comments,
+processing instructions and CDATA. A property with no value element fails.
+Selection and decoding follow the [XML reader](#word-package-reader).
+
+`CommentsPart` reuses the [owned body parser](#owned-word-element-tree) for each
+comment's content, retaining raw author, initials, date and identifier.
+`CommentsExtendedPart` retains paragraph/parent links and nullable exact-token
+completion flags. Both expose source-order lists and last-key-wins maps sharing
+`Arc<RwLock<_>>` records. Missing IDs use the key `null`; numeric keys enumerate
+first in ascending order. Editing a record does not update its snapshot lookup
+key, and external handles survive removal or document release.
+
+`WordDocument::load` prepares these records even without rendering. It admits
+relationships first, XML second and semantic data third, before traversing that
+part's descendants. Semantic failures return `DocxError::Xml` with the part path;
+no partial document is returned. The four named property/comment accessors borrow
+the latest designated data. Custom properties are available through `parts()`
+and `PartData::CustomProps`; unsupported semantic kinds retain `data: None`.
 
 ## Owned Word element tree
 
@@ -157,8 +189,9 @@ existing section. Package-level section composition, pagination, inheritance and
 rendering remain separate work.
 
 Recognized foreign branches retain shared complete XML source with selected byte
-ranges, preserving ancestor namespaces. Tables, links, smart tags and comments
-remain uninterpreted here.
+ranges, preserving ancestor namespaces. Tables, links and smart tags remain
+uninterpreted here. Comment references and range markers retain typed nullable
+identifiers in inline order; comment rendering remains separate work.
 
 Bookmarks retain nullable identifiers, names and independent column numbers in
 source order. Drawings retain inline/anchored wrapper geometry, wrapping and image

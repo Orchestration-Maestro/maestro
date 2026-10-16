@@ -57,6 +57,14 @@ impl<'doc, 'input: 'doc> XmlElement<'doc, 'input> {
     pub fn local_name(&self) -> &'doc str {
         self.node.tag_name().name()
     }
+    /// Read the authored qualified name from the admitted opening tag.
+    pub(crate) fn qualified_name(&self) -> &'input str {
+        let source = &self.node.document().input_text()[self.node.range().start + 1..];
+        source
+            .split([' ', '\t', '\r', '\n', '/', '>'])
+            .next()
+            .unwrap_or_default()
+    }
     /// Return the resolved nonempty namespace URI.
     #[must_use]
     pub fn namespace(&self) -> Option<&'doc str> {

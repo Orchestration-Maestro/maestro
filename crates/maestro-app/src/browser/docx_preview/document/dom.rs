@@ -302,6 +302,12 @@ pub enum OpenXmlElementData {
         /// Last matching property group.
         props: Option<super::super::MathProperties>,
     },
+    /// Inline comment reference.
+    CommentReference(super::super::WmlCommentReference),
+    /// Comment range opening marker.
+    CommentRangeStart(super::super::WmlCommentRangeStart),
+    /// Comment range closing marker.
+    CommentRangeEnd(super::super::WmlCommentRangeEnd),
     /// Unparsed content.
     Unparsed {
         /// Known eventual document kind.
@@ -331,6 +337,9 @@ impl OpenXmlElement {
     #[must_use]
     pub fn dom_type(&self) -> DomType {
         match self.data {
+            OpenXmlElementData::CommentReference(_) => DomType::CommentReference,
+            OpenXmlElementData::CommentRangeStart(_) => DomType::CommentRangeStart,
+            OpenXmlElementData::CommentRangeEnd(_) => DomType::CommentRangeEnd,
             OpenXmlElementData::Unparsed { kind, .. } => kind,
             OpenXmlElementData::Image { .. } => DomType::Image,
             OpenXmlElementData::VmlPicture => DomType::VmlPicture,

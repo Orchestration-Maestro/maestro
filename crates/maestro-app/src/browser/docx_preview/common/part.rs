@@ -70,7 +70,7 @@ impl PartKind {
     }
 }
 
-/// Retained XML and relationships; semantic interpretation belongs to consumers.
+/// Retained XML, relationships and prepared semantic data.
 #[derive(Debug)]
 pub struct Part {
     /// Resolved relationship-path cache key.
@@ -81,4 +81,50 @@ pub struct Part {
     pub rels: Option<Vec<Relationship>>,
     /// Lossily decoded source XML, before declaration handling.
     pub xml: String,
+    /// Prepared semantic data for implemented part kinds.
+    pub data: Option<PartData>,
+}
+
+/// Single retained semantic representation on a cached package part.
+#[derive(Debug)]
+pub enum PartData {
+    /// Core document properties.
+    CoreProps(Box<super::super::CorePropsPart>),
+    /// Extended application properties.
+    ExtendedProps(Box<super::super::ExtendedPropsPart>),
+    /// Raw custom property values.
+    CustomProps(Box<super::super::CustomPropsPart>),
+    /// Shared comments with owned body arenas.
+    Comments(Box<super::super::CommentsPart>),
+    /// Shared extended comment links.
+    CommentsExtended(Box<super::super::CommentsExtendedPart>),
+}
+impl PartData {
+    /// Prepare supported semantic data from already admitted XML.
+    pub(crate) fn parse_xml(
+        kind: PartKind,
+        xml: &super::super::XmlParser<'_>,
+    ) -> Result<Option<Self>, super::super::DocxError> {
+        use super::super::{
+            CommentsExtendedPart, CommentsPart, CorePropsPart, CustomPropsPart, ExtendedPropsPart,
+            OwnedXmlElement,
+        };
+        let root = xml.root();
+        Ok(Some(match kind {
+            PartKind::CoreProps => Self::CoreProps(Box::new(CorePropsPart::parse_xml(xml, root))),
+            PartKind::ExtendedProps => {
+                Self::ExtendedProps(Box::new(ExtendedPropsPart::parse_xml(xml, root)))
+            }
+            PartKind::CustomProps => {
+                Self::CustomProps(Box::new(CustomPropsPart::parse_xml(xml, root)?))
+            }
+            PartKind::Comments => Self::Comments(Box::new(CommentsPart::parse_xml(
+                &OwnedXmlElement::new(root),
+            )?)),
+            PartKind::CommentsExtended => {
+                Self::CommentsExtended(Box::new(CommentsExtendedPart::parse_xml(xml, root)))
+            }
+            _ => return Ok(None),
+        }))
+    }
 }

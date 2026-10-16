@@ -1,0 +1,744 @@
+[
+  {
+    "test": "document_prepares_metadata_and_comments_without_rendering",
+    "input": {
+      "operation": "package",
+      "file": "metadata-packages/00.docx"
+    },
+    "expected": {
+      "parts": [
+        {
+          "path": "docProps/app.xml",
+          "kind": "ExtendedPropsPart",
+          "data": {
+            "pages": 3
+          }
+        },
+        {
+          "path": "docProps/core.xml",
+          "kind": "CorePropsPart",
+          "data": {
+            "title": "from package",
+            "revision": 2
+          }
+        },
+        {
+          "path": "docProps/custom.xml",
+          "kind": "CustomPropsPart",
+          "data": [
+            {
+              "formatId": "{fmt}",
+              "name": "Named",
+              "type": "vt:lpwstr",
+              "value": "custom"
+            }
+          ]
+        },
+        {
+          "path": "word/comments.xml",
+          "kind": "CommentsPart",
+          "data": {
+            "comments": [
+              {
+                "cssStyle": [],
+                "type": "comment",
+                "id": "7",
+                "author": "Author",
+                "initials": "AU",
+                "date": "2024-01-02T03:04:05Z",
+                "children": {
+                  "roots": [
+                    0
+                  ],
+                  "nodes": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        1,
+                        4
+                      ],
+                      "cssStyle": [],
+                      "styleName": "CommentText",
+                      "keepNext": true
+                    },
+                    {
+                      "type": "run",
+                      "children": [
+                        2,
+                        3
+                      ],
+                      "cssStyle": [
+                        [
+                          "font-weight",
+                          "bold"
+                        ]
+                      ],
+                      "parent": 0
+                    },
+                    {
+                      "type": "text",
+                      "text": "A & B"
+                    },
+                    {
+                      "type": "tab"
+                    },
+                    {
+                      "type": "run",
+                      "children": [
+                        5
+                      ],
+                      "parent": 0
+                    },
+                    {
+                      "type": "text",
+                      "text": "second"
+                    }
+                  ]
+                }
+              }
+            ],
+            "lookup": [
+              {
+                "key": "7",
+                "index": 0
+              }
+            ]
+          }
+        },
+        {
+          "path": "word/commentsExtended.xml",
+          "kind": "CommentsExtendedPart",
+          "data": {
+            "comments": [
+              {
+                "paraId": "A",
+                "paraIdParent": null,
+                "done": true
+              }
+            ],
+            "lookup": [
+              {
+                "key": "A",
+                "index": 0
+              }
+            ]
+          }
+        }
+      ],
+      "selected": {
+        "corePropsPart": "docProps/core.xml",
+        "extendedPropsPart": "docProps/app.xml",
+        "commentsPart": "word/comments.xml",
+        "commentsExtendedPart": "word/commentsExtended.xml"
+      }
+    }
+  },
+  {
+    "test": "document_prepares_custom_values_after_nonvalue_nodes",
+    "input": {
+      "operation": "package",
+      "file": "metadata-packages/01.docx"
+    },
+    "expected": {
+      "parts": [
+        {
+          "path": "docProps/app.xml",
+          "kind": "ExtendedPropsPart",
+          "data": {
+            "pages": 3
+          }
+        },
+        {
+          "path": "docProps/core.xml",
+          "kind": "CorePropsPart",
+          "data": {
+            "title": "from package",
+            "revision": 2
+          }
+        },
+        {
+          "path": "docProps/custom.xml",
+          "kind": "CustomPropsPart",
+          "data": [
+            {
+              "formatId": "{fmt}",
+              "name": "Named",
+              "type": "vt:lpwstr",
+              "value": "real package value"
+            }
+          ]
+        },
+        {
+          "path": "word/comments.xml",
+          "kind": "CommentsPart",
+          "data": {
+            "comments": [
+              {
+                "cssStyle": [],
+                "type": "comment",
+                "id": "7",
+                "author": "Author",
+                "initials": "AU",
+                "date": "2024-01-02T03:04:05Z",
+                "children": {
+                  "roots": [
+                    0
+                  ],
+                  "nodes": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        1,
+                        4
+                      ],
+                      "cssStyle": [],
+                      "styleName": "CommentText",
+                      "keepNext": true
+                    },
+                    {
+                      "type": "run",
+                      "children": [
+                        2,
+                        3
+                      ],
+                      "cssStyle": [
+                        [
+                          "font-weight",
+                          "bold"
+                        ]
+                      ],
+                      "parent": 0
+                    },
+                    {
+                      "type": "text",
+                      "text": "A & B"
+                    },
+                    {
+                      "type": "tab"
+                    },
+                    {
+                      "type": "run",
+                      "children": [
+                        5
+                      ],
+                      "parent": 0
+                    },
+                    {
+                      "type": "text",
+                      "text": "second"
+                    }
+                  ]
+                }
+              }
+            ],
+            "lookup": [
+              {
+                "key": "7",
+                "index": 0
+              }
+            ]
+          }
+        },
+        {
+          "path": "word/commentsExtended.xml",
+          "kind": "CommentsExtendedPart",
+          "data": {
+            "comments": [
+              {
+                "paraId": "A",
+                "paraIdParent": null,
+                "done": true
+              }
+            ],
+            "lookup": [
+              {
+                "key": "A",
+                "index": 0
+              }
+            ]
+          }
+        }
+      ],
+      "selected": {
+        "corePropsPart": "docProps/core.xml",
+        "extendedPropsPart": "docProps/app.xml",
+        "commentsPart": "word/comments.xml",
+        "commentsExtendedPart": "word/commentsExtended.xml"
+      }
+    }
+  },
+  {
+    "test": "document_prepared_parts_follow_cached_relationship_identity",
+    "input": {
+      "operation": "package_alias",
+      "file": "metadata-packages/02.docx"
+    },
+    "expected": {
+      "parts": [
+        {
+          "path": "docProps/app.xml",
+          "kind": "ExtendedPropsPart",
+          "data": {
+            "pages": 3
+          }
+        },
+        {
+          "path": "docProps/core.xml",
+          "kind": "CorePropsPart",
+          "data": {
+            "title": "from package",
+            "revision": 2
+          }
+        },
+        {
+          "path": "docProps/custom.xml",
+          "kind": "CustomPropsPart",
+          "data": [
+            {
+              "formatId": "{fmt}",
+              "name": "Named",
+              "type": "vt:lpwstr",
+              "value": "custom"
+            }
+          ]
+        },
+        {
+          "path": "word/comments.xml",
+          "kind": "CommentsPart",
+          "data": {
+            "comments": [
+              {
+                "cssStyle": [],
+                "type": "comment",
+                "id": "7",
+                "author": "Author",
+                "initials": "AU",
+                "date": "2024-01-02T03:04:05Z",
+                "children": {
+                  "roots": [
+                    0
+                  ],
+                  "nodes": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        1,
+                        4
+                      ],
+                      "cssStyle": [],
+                      "styleName": "CommentText",
+                      "keepNext": true
+                    },
+                    {
+                      "type": "run",
+                      "children": [
+                        2,
+                        3
+                      ],
+                      "cssStyle": [
+                        [
+                          "font-weight",
+                          "bold"
+                        ]
+                      ],
+                      "parent": 0
+                    },
+                    {
+                      "type": "text",
+                      "text": "A & B"
+                    },
+                    {
+                      "type": "tab"
+                    },
+                    {
+                      "type": "run",
+                      "children": [
+                        5
+                      ],
+                      "parent": 0
+                    },
+                    {
+                      "type": "text",
+                      "text": "second"
+                    }
+                  ]
+                }
+              }
+            ],
+            "lookup": [
+              {
+                "key": "7",
+                "index": 0
+              }
+            ]
+          }
+        },
+        {
+          "path": "word/commentsExtended.xml",
+          "kind": "CommentsExtendedPart",
+          "data": {
+            "comments": [
+              {
+                "paraId": "A",
+                "paraIdParent": null,
+                "done": true
+              }
+            ],
+            "lookup": [
+              {
+                "key": "A",
+                "index": 0
+              }
+            ]
+          }
+        }
+      ],
+      "selected": {
+        "corePropsPart": "docProps/core.xml",
+        "extendedPropsPart": "docProps/app.xml",
+        "commentsPart": "word/comments.xml",
+        "commentsExtendedPart": "word/commentsExtended.xml"
+      },
+      "same_part": true
+    }
+  },
+  {
+    "test": "document_named_metadata_slots_select_last_loaded_kind",
+    "input": {
+      "operation": "package",
+      "file": "metadata-packages/03.docx"
+    },
+    "expected": {
+      "parts": [
+        {
+          "path": "docProps/app.xml",
+          "kind": "ExtendedPropsPart",
+          "data": {
+            "pages": 3
+          }
+        },
+        {
+          "path": "docProps/core.xml",
+          "kind": "CorePropsPart",
+          "data": {
+            "title": "from package",
+            "revision": 2
+          }
+        },
+        {
+          "path": "docProps/custom.xml",
+          "kind": "CustomPropsPart",
+          "data": [
+            {
+              "formatId": "{fmt}",
+              "name": "Named",
+              "type": "vt:lpwstr",
+              "value": "custom"
+            }
+          ]
+        },
+        {
+          "path": "word/comments.xml",
+          "kind": "CommentsPart",
+          "data": {
+            "comments": [
+              {
+                "cssStyle": [],
+                "type": "comment",
+                "id": "7",
+                "author": "Author",
+                "initials": "AU",
+                "date": "2024-01-02T03:04:05Z",
+                "children": {
+                  "roots": [
+                    0
+                  ],
+                  "nodes": [
+                    {
+                      "type": "paragraph",
+                      "children": [
+                        1,
+                        4
+                      ],
+                      "cssStyle": [],
+                      "styleName": "CommentText",
+                      "keepNext": true
+                    },
+                    {
+                      "type": "run",
+                      "children": [
+                        2,
+                        3
+                      ],
+                      "cssStyle": [
+                        [
+                          "font-weight",
+                          "bold"
+                        ]
+                      ],
+                      "parent": 0
+                    },
+                    {
+                      "type": "text",
+                      "text": "A & B"
+                    },
+                    {
+                      "type": "tab"
+                    },
+                    {
+                      "type": "run",
+                      "children": [
+                        5
+                      ],
+                      "parent": 0
+                    },
+                    {
+                      "type": "text",
+                      "text": "second"
+                    }
+                  ]
+                }
+              }
+            ],
+            "lookup": [
+              {
+                "key": "7",
+                "index": 0
+              }
+            ]
+          }
+        },
+        {
+          "path": "word/commentsExtended.xml",
+          "kind": "CommentsExtendedPart",
+          "data": {
+            "comments": [
+              {
+                "paraId": "A",
+                "paraIdParent": null,
+                "done": true
+              }
+            ],
+            "lookup": [
+              {
+                "key": "A",
+                "index": 0
+              }
+            ]
+          }
+        },
+        {
+          "path": "word/otherCore.xml",
+          "kind": "CorePropsPart",
+          "data": {
+            "title": "last core"
+          }
+        },
+        {
+          "path": "word/otherApp.xml",
+          "kind": "ExtendedPropsPart",
+          "data": {
+            "company": "last app"
+          }
+        },
+        {
+          "path": "word/otherComments.xml",
+          "kind": "CommentsPart",
+          "data": {
+            "comments": [
+              {
+                "cssStyle": [],
+                "type": "comment",
+                "id": "99",
+                "author": "last comment",
+                "initials": null,
+                "date": null,
+                "children": {
+                  "roots": [],
+                  "nodes": []
+                }
+              }
+            ],
+            "lookup": [
+              {
+                "key": "99",
+                "index": 0
+              }
+            ]
+          }
+        },
+        {
+          "path": "word/otherExtended.xml",
+          "kind": "CommentsExtendedPart",
+          "data": {
+            "comments": [
+              {
+                "paraId": "last",
+                "paraIdParent": null,
+                "done": null
+              }
+            ],
+            "lookup": [
+              {
+                "key": "last",
+                "index": 0
+              }
+            ]
+          }
+        }
+      ],
+      "selected": {
+        "corePropsPart": "word/otherCore.xml",
+        "extendedPropsPart": "word/otherApp.xml",
+        "commentsPart": "word/otherComments.xml",
+        "commentsExtendedPart": "word/otherExtended.xml"
+      }
+    }
+  },
+  {
+    "test": "document_semantic_failures_are_eager",
+    "input": {
+      "operation": "package",
+      "file": "metadata-packages/04.docx"
+    },
+    "expected": {
+      "kind": "invalid-xml-part",
+      "path": "docProps/custom.xml"
+    }
+  },
+  {
+    "test": "document_semantic_failures_are_eager",
+    "input": {
+      "operation": "package",
+      "file": "metadata-packages/05.docx"
+    },
+    "expected": {
+      "kind": "invalid-xml-part",
+      "path": "word/comments.xml"
+    }
+  },
+  {
+    "test": "document_semantic_failure_precedes_related_part_failure",
+    "input": {
+      "operation": "package",
+      "file": "metadata-packages/06.docx"
+    },
+    "expected": {
+      "kind": "invalid-xml-part",
+      "path": "word/custom.xml"
+    }
+  },
+  {
+    "test": "document_admission_failure_precedes_semantic_preparation",
+    "input": {
+      "operation": "package",
+      "file": "metadata-packages/07.docx"
+    },
+    "expected": {
+      "kind": "invalid-xml-part",
+      "path": "docProps/_rels/custom.xml.rels"
+    }
+  },
+  {
+    "test": "document_admission_failure_precedes_semantic_preparation",
+    "input": {
+      "operation": "package",
+      "file": "metadata-packages/08.docx"
+    },
+    "expected": {
+      "kind": "invalid-xml-part",
+      "path": "docProps/custom.xml"
+    }
+  },
+  {
+    "test": "document_missing_semantic_parts_stay_absent",
+    "input": {
+      "operation": "package",
+      "file": "metadata-packages/09.docx"
+    },
+    "expected": {
+      "parts": [],
+      "selected": {
+        "corePropsPart": null,
+        "extendedPropsPart": null,
+        "commentsPart": null,
+        "commentsExtendedPart": null
+      }
+    }
+  },
+  {
+    "test": "document_missing_semantic_parts_stay_absent",
+    "input": {
+      "operation": "package",
+      "file": "metadata-packages/10.docx"
+    },
+    "expected": {
+      "parts": [],
+      "selected": {
+        "corePropsPart": null,
+        "extendedPropsPart": null,
+        "commentsPart": null,
+        "commentsExtendedPart": null
+      }
+    }
+  },
+  {
+    "test": "package_comment_handles_survive_document_release",
+    "input": {
+      "operation": "package_release",
+      "file": "metadata-packages/11.docx"
+    },
+    "expected": {
+      "author": "Author",
+      "children": {
+        "roots": [
+          0
+        ],
+        "nodes": [
+          {
+            "type": "paragraph",
+            "children": [
+              1,
+              4
+            ],
+            "cssStyle": [],
+            "styleName": "CommentText",
+            "keepNext": true
+          },
+          {
+            "type": "run",
+            "children": [
+              2,
+              3
+            ],
+            "cssStyle": [
+              [
+                "font-weight",
+                "bold"
+              ]
+            ],
+            "parent": 0
+          },
+          {
+            "type": "text",
+            "text": "A & B"
+          },
+          {
+            "type": "tab"
+          },
+          {
+            "type": "run",
+            "children": [
+              5
+            ],
+            "parent": 0
+          },
+          {
+            "type": "text",
+            "text": "second"
+          }
+        ]
+      }
+    }
+  }
+]

@@ -1,0 +1,650 @@
+[
+  {
+    "test": "core_fields_preserve_text_and_absence",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"></coreProperties>"
+    },
+    "expected": {}
+  },
+  {
+    "test": "core_fields_preserve_text_and_absence",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><title> A &amp; B <![CDATA[<x>]]><q:x>tail</q:x></title><description/><subject>subject</subject><creator>author</creator><keywords>a,b</keywords><language>fr</language><lastModifiedBy>editor</lastModifiedBy><revision>4</revision><created>not-selected</created><modified>not-selected</modified></coreProperties>"
+    },
+    "expected": {
+      "title": " A & B <x>tail",
+      "description": "",
+      "subject": "subject",
+      "creator": "author",
+      "keywords": "a,b",
+      "language": "fr",
+      "lastModifiedBy": "editor",
+      "revision": 4
+    }
+  },
+  {
+    "test": "core_revisions_keep_empty_updates_and_numeric_prefixes",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><revision></revision></coreProperties>"
+    },
+    "expected": {}
+  },
+  {
+    "test": "core_revisions_keep_empty_updates_and_numeric_prefixes",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><revision> </revision></coreProperties>"
+    },
+    "expected": {
+      "revision": {
+        "$number": "NaN"
+      }
+    }
+  },
+  {
+    "test": "core_revisions_keep_empty_updates_and_numeric_prefixes",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><revision>0</revision></coreProperties>"
+    },
+    "expected": {
+      "revision": 0
+    }
+  },
+  {
+    "test": "core_revisions_keep_empty_updates_and_numeric_prefixes",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><revision>-0</revision></coreProperties>"
+    },
+    "expected": {
+      "revision": {
+        "$number": "-0"
+      }
+    }
+  },
+  {
+    "test": "core_revisions_keep_empty_updates_and_numeric_prefixes",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><revision>+42tail</revision></coreProperties>"
+    },
+    "expected": {
+      "revision": 42
+    }
+  },
+  {
+    "test": "core_revisions_keep_empty_updates_and_numeric_prefixes",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><revision>12.75</revision></coreProperties>"
+    },
+    "expected": {
+      "revision": 12
+    }
+  },
+  {
+    "test": "core_revisions_keep_empty_updates_and_numeric_prefixes",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><revision>0x10</revision></coreProperties>"
+    },
+    "expected": {
+      "revision": 16
+    }
+  },
+  {
+    "test": "core_revisions_keep_empty_updates_and_numeric_prefixes",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><revision>-0X10</revision></coreProperties>"
+    },
+    "expected": {
+      "revision": -16
+    }
+  },
+  {
+    "test": "core_revisions_keep_empty_updates_and_numeric_prefixes",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><revision>0b11</revision></coreProperties>"
+    },
+    "expected": {
+      "revision": 0
+    }
+  },
+  {
+    "test": "core_revisions_keep_empty_updates_and_numeric_prefixes",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><revision>1e2</revision></coreProperties>"
+    },
+    "expected": {
+      "revision": 1
+    }
+  },
+  {
+    "test": "core_revisions_keep_empty_updates_and_numeric_prefixes",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><revision>junk</revision></coreProperties>"
+    },
+    "expected": {
+      "revision": {
+        "$number": "NaN"
+      }
+    }
+  },
+  {
+    "test": "core_revisions_keep_empty_updates_and_numeric_prefixes",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><revision>﻿17</revision></coreProperties>"
+    },
+    "expected": {
+      "revision": 17
+    }
+  },
+  {
+    "test": "core_revisions_keep_empty_updates_and_numeric_prefixes",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><revision>17</revision></coreProperties>"
+    },
+    "expected": {
+      "revision": {
+        "$number": "NaN"
+      }
+    }
+  },
+  {
+    "test": "core_revisions_keep_empty_updates_and_numeric_prefixes",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><revision>8</revision><revision/><revision></revision></coreProperties>"
+    },
+    "expected": {
+      "revision": 8
+    }
+  },
+  {
+    "test": "core_revisions_keep_empty_updates_and_numeric_prefixes",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><revision>8</revision><revision> </revision></coreProperties>"
+    },
+    "expected": {
+      "revision": {
+        "$number": "NaN"
+      }
+    }
+  },
+  {
+    "test": "metadata_selection_uses_immediate_local_names",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\">text<!--skip--><?keep value?><q:title>foreign</q:title><Title>wrong-case</Title><q:outer><title>hidden</title></q:outer><title>last</title></coreProperties>"
+    },
+    "expected": {
+      "title": "last"
+    }
+  },
+  {
+    "test": "metadata_selection_uses_immediate_local_names",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><q:Pages>3</q:Pages><pages>wrong-case</pages><q:outer><Pages>99</Pages></q:outer></Properties>"
+    },
+    "expected": {
+      "pages": 3
+    }
+  },
+  {
+    "test": "metadata_duplicates_replace_only_encountered_values",
+    "input": {
+      "operation": "core",
+      "xml": "<coreProperties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><title>first</title><subject>kept</subject><title/><revision>3</revision><revision/></coreProperties>"
+    },
+    "expected": {
+      "title": "",
+      "subject": "kept",
+      "revision": 3
+    }
+  },
+  {
+    "test": "metadata_duplicates_replace_only_encountered_values",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><Company>first</Company><Pages>5</Pages><Company/><Pages/><Words>7</Words></Properties>"
+    },
+    "expected": {
+      "company": "",
+      "pages": {
+        "$number": "NaN"
+      },
+      "words": 7
+    }
+  },
+  {
+    "test": "extended_fields_preserve_text_and_absence",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"></Properties>"
+    },
+    "expected": {}
+  },
+  {
+    "test": "extended_fields_preserve_text_and_absence",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><Template> A&amp;B </Template><Pages>1</Pages><Words>2</Words><Characters>3</Characters><Application>application</Application><Lines>4</Lines><Paragraphs>5</Paragraphs><Company>company</Company><AppVersion>1.02</AppVersion><TotalTime>999</TotalTime><Unknown>not-selected</Unknown></Properties>"
+    },
+    "expected": {
+      "template": " A&B ",
+      "pages": 1,
+      "words": 2,
+      "characters": 3,
+      "application": "application",
+      "lines": 4,
+      "paragraphs": 5,
+      "company": "company",
+      "appVersion": "1.02"
+    }
+  },
+  {
+    "test": "extended_counters_keep_prefix_nan_and_negative_zero",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><Pages></Pages><Words></Words><Characters></Characters><Lines></Lines><Paragraphs></Paragraphs></Properties>"
+    },
+    "expected": {
+      "pages": {
+        "$number": "NaN"
+      },
+      "words": {
+        "$number": "NaN"
+      },
+      "characters": {
+        "$number": "NaN"
+      },
+      "lines": {
+        "$number": "NaN"
+      },
+      "paragraphs": {
+        "$number": "NaN"
+      }
+    }
+  },
+  {
+    "test": "extended_counters_keep_prefix_nan_and_negative_zero",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><Pages> </Pages><Words> </Words><Characters> </Characters><Lines> </Lines><Paragraphs> </Paragraphs></Properties>"
+    },
+    "expected": {
+      "pages": {
+        "$number": "NaN"
+      },
+      "words": {
+        "$number": "NaN"
+      },
+      "characters": {
+        "$number": "NaN"
+      },
+      "lines": {
+        "$number": "NaN"
+      },
+      "paragraphs": {
+        "$number": "NaN"
+      }
+    }
+  },
+  {
+    "test": "extended_counters_keep_prefix_nan_and_negative_zero",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><Pages>0</Pages><Words>0</Words><Characters>0</Characters><Lines>0</Lines><Paragraphs>0</Paragraphs></Properties>"
+    },
+    "expected": {
+      "pages": 0,
+      "words": 0,
+      "characters": 0,
+      "lines": 0,
+      "paragraphs": 0
+    }
+  },
+  {
+    "test": "extended_counters_keep_prefix_nan_and_negative_zero",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><Pages>-0</Pages><Words>-0</Words><Characters>-0</Characters><Lines>-0</Lines><Paragraphs>-0</Paragraphs></Properties>"
+    },
+    "expected": {
+      "pages": {
+        "$number": "-0"
+      },
+      "words": {
+        "$number": "-0"
+      },
+      "characters": {
+        "$number": "-0"
+      },
+      "lines": {
+        "$number": "-0"
+      },
+      "paragraphs": {
+        "$number": "-0"
+      }
+    }
+  },
+  {
+    "test": "extended_counters_keep_prefix_nan_and_negative_zero",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><Pages>+42tail</Pages><Words>+42tail</Words><Characters>+42tail</Characters><Lines>+42tail</Lines><Paragraphs>+42tail</Paragraphs></Properties>"
+    },
+    "expected": {
+      "pages": 42,
+      "words": 42,
+      "characters": 42,
+      "lines": 42,
+      "paragraphs": 42
+    }
+  },
+  {
+    "test": "extended_counters_keep_prefix_nan_and_negative_zero",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><Pages>12.75</Pages><Words>12.75</Words><Characters>12.75</Characters><Lines>12.75</Lines><Paragraphs>12.75</Paragraphs></Properties>"
+    },
+    "expected": {
+      "pages": 12,
+      "words": 12,
+      "characters": 12,
+      "lines": 12,
+      "paragraphs": 12
+    }
+  },
+  {
+    "test": "extended_counters_keep_prefix_nan_and_negative_zero",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><Pages>0x10</Pages><Words>0x10</Words><Characters>0x10</Characters><Lines>0x10</Lines><Paragraphs>0x10</Paragraphs></Properties>"
+    },
+    "expected": {
+      "pages": 16,
+      "words": 16,
+      "characters": 16,
+      "lines": 16,
+      "paragraphs": 16
+    }
+  },
+  {
+    "test": "extended_counters_keep_prefix_nan_and_negative_zero",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><Pages>-0X10</Pages><Words>-0X10</Words><Characters>-0X10</Characters><Lines>-0X10</Lines><Paragraphs>-0X10</Paragraphs></Properties>"
+    },
+    "expected": {
+      "pages": -16,
+      "words": -16,
+      "characters": -16,
+      "lines": -16,
+      "paragraphs": -16
+    }
+  },
+  {
+    "test": "extended_counters_keep_prefix_nan_and_negative_zero",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><Pages>0b11</Pages><Words>0b11</Words><Characters>0b11</Characters><Lines>0b11</Lines><Paragraphs>0b11</Paragraphs></Properties>"
+    },
+    "expected": {
+      "pages": 0,
+      "words": 0,
+      "characters": 0,
+      "lines": 0,
+      "paragraphs": 0
+    }
+  },
+  {
+    "test": "extended_counters_keep_prefix_nan_and_negative_zero",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><Pages>1e2</Pages><Words>1e2</Words><Characters>1e2</Characters><Lines>1e2</Lines><Paragraphs>1e2</Paragraphs></Properties>"
+    },
+    "expected": {
+      "pages": 1,
+      "words": 1,
+      "characters": 1,
+      "lines": 1,
+      "paragraphs": 1
+    }
+  },
+  {
+    "test": "extended_counters_keep_prefix_nan_and_negative_zero",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><Pages>junk</Pages><Words>junk</Words><Characters>junk</Characters><Lines>junk</Lines><Paragraphs>junk</Paragraphs></Properties>"
+    },
+    "expected": {
+      "pages": {
+        "$number": "NaN"
+      },
+      "words": {
+        "$number": "NaN"
+      },
+      "characters": {
+        "$number": "NaN"
+      },
+      "lines": {
+        "$number": "NaN"
+      },
+      "paragraphs": {
+        "$number": "NaN"
+      }
+    }
+  },
+  {
+    "test": "extended_counters_keep_prefix_nan_and_negative_zero",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><Pages>﻿17</Pages><Words>﻿17</Words><Characters>﻿17</Characters><Lines>﻿17</Lines><Paragraphs>﻿17</Paragraphs></Properties>"
+    },
+    "expected": {
+      "pages": 17,
+      "words": 17,
+      "characters": 17,
+      "lines": 17,
+      "paragraphs": 17
+    }
+  },
+  {
+    "test": "extended_counters_keep_prefix_nan_and_negative_zero",
+    "input": {
+      "operation": "extended",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><Pages>17</Pages><Words>17</Words><Characters>17</Characters><Lines>17</Lines><Paragraphs>17</Paragraphs></Properties>"
+    },
+    "expected": {
+      "pages": {
+        "$number": "NaN"
+      },
+      "words": {
+        "$number": "NaN"
+      },
+      "characters": {
+        "$number": "NaN"
+      },
+      "lines": {
+        "$number": "NaN"
+      },
+      "paragraphs": {
+        "$number": "NaN"
+      }
+    }
+  },
+  {
+    "test": "custom_values_keep_names_qualified_types_and_source_order",
+    "input": {
+      "operation": "custom",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"></Properties>"
+    },
+    "expected": []
+  },
+  {
+    "test": "custom_values_keep_names_qualified_types_and_source_order",
+    "input": {
+      "operation": "custom",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><property fmtid=\"F2\" name=\"second\"><vt:lpwstr>A &amp; B<q:child>tail</q:child></vt:lpwstr></property><property fmtid=\"F1\" name=\"first\"><vt:i4>-02</vt:i4></property><property fmtid=\"F3\" name=\"second\"><vt:bool>true</vt:bool></property></Properties>"
+    },
+    "expected": [
+      {
+        "formatId": "F2",
+        "name": "second",
+        "type": "vt:lpwstr",
+        "value": "A & Btail"
+      },
+      {
+        "formatId": "F1",
+        "name": "first",
+        "type": "vt:i4",
+        "value": "-02"
+      },
+      {
+        "formatId": "F3",
+        "name": "second",
+        "type": "vt:bool",
+        "value": "true"
+      }
+    ]
+  },
+  {
+    "test": "custom_values_keep_names_qualified_types_and_source_order",
+    "input": {
+      "operation": "custom",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><property><vt:lpwstr/><vt:i4>ignored second element</vt:i4></property><q:outer><property fmtid=\"{fmt}\" name=\"Named\"><vt:i4>hidden</vt:i4></property></q:outer><q:property q:fmtid=\"first\" fmtid=\"second\" q:name=\"A\" name=\"B\"><q:open> raw </q:open></q:property></Properties>"
+    },
+    "expected": [
+      {
+        "formatId": null,
+        "name": null,
+        "type": "vt:lpwstr",
+        "value": ""
+      },
+      {
+        "formatId": "first",
+        "name": "A",
+        "type": "q:open",
+        "value": " raw "
+      }
+    ]
+  },
+  {
+    "test": "custom_values_keep_names_qualified_types_and_source_order",
+    "input": {
+      "operation": "custom",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><property fmtid=\"\" name=\"\"><unprefixed>raw</unprefixed></property></Properties>"
+    },
+    "expected": [
+      {
+        "formatId": "",
+        "name": "",
+        "type": "unprefixed",
+        "value": "raw"
+      }
+    ]
+  },
+  {
+    "test": "custom_values_skip_nonvalue_nodes",
+    "input": {
+      "operation": "custom",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><property fmtid=\"{fmt}\" name=\"Named\"> \n <vt:lpwstr>real value</vt:lpwstr></property></Properties>"
+    },
+    "expected": [
+      {
+        "formatId": "{fmt}",
+        "name": "Named",
+        "type": "vt:lpwstr",
+        "value": "real value"
+      }
+    ]
+  },
+  {
+    "test": "custom_values_skip_nonvalue_nodes",
+    "input": {
+      "operation": "custom",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><property fmtid=\"{fmt}\" name=\"Named\"><!--saved property--><vt:lpwstr>real value</vt:lpwstr></property></Properties>"
+    },
+    "expected": [
+      {
+        "formatId": "{fmt}",
+        "name": "Named",
+        "type": "vt:lpwstr",
+        "value": "real value"
+      }
+    ]
+  },
+  {
+    "test": "custom_values_skip_nonvalue_nodes",
+    "input": {
+      "operation": "custom",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><property fmtid=\"{fmt}\" name=\"Named\"><?saved value?><vt:lpwstr>real value</vt:lpwstr></property></Properties>"
+    },
+    "expected": [
+      {
+        "formatId": "{fmt}",
+        "name": "Named",
+        "type": "vt:lpwstr",
+        "value": "real value"
+      }
+    ]
+  },
+  {
+    "test": "custom_values_skip_nonvalue_nodes",
+    "input": {
+      "operation": "custom",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><property fmtid=\"{fmt}\" name=\"Named\"><![CDATA[not a value element]]><vt:lpwstr>real value</vt:lpwstr></property></Properties>"
+    },
+    "expected": [
+      {
+        "formatId": "{fmt}",
+        "name": "Named",
+        "type": "vt:lpwstr",
+        "value": "real value"
+      }
+    ]
+  },
+  {
+    "test": "custom_missing_value_returns_xml_failure",
+    "input": {
+      "operation": "custom",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><property fmtid=\"{fmt}\" name=\"Named\"></property></Properties>"
+    },
+    "expected": {
+      "kind": "invalid-xml-part"
+    }
+  },
+  {
+    "test": "custom_missing_value_returns_xml_failure",
+    "input": {
+      "operation": "custom",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><property fmtid=\"{fmt}\" name=\"Named\"> \n </property></Properties>"
+    },
+    "expected": {
+      "kind": "invalid-xml-part"
+    }
+  },
+  {
+    "test": "custom_missing_value_returns_xml_failure",
+    "input": {
+      "operation": "custom",
+      "xml": "<Properties xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><property fmtid=\"{fmt}\" name=\"Named\"><!--no value--></property></Properties>"
+    },
+    "expected": {
+      "kind": "invalid-xml-part"
+    }
+  }
+]

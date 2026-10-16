@@ -154,14 +154,22 @@ impl<'input> DocumentParser<'_, 'input> {
                 "bookmarkEnd" => children.push(self.push(
                     super::document::bookmarks::parse_bookmark_end(self.xml, child),
                 )),
+                "commentRangeStart" => children.push(self.push(Data::CommentRangeStart(
+                    super::WmlCommentRangeStart {
+                        id: self.attr(child, "id"),
+                    },
+                ))),
+                "commentRangeEnd" => {
+                    children.push(self.push(Data::CommentRangeEnd(super::WmlCommentRangeEnd {
+                        id: self.attr(child, "id"),
+                    })));
+                }
                 "oMath" | "oMathPara" => children.push(self.math(child)?),
                 "ins" | "del" => children.push(self.change(child)?),
                 name => {
                     let kind = match name {
                         "hyperlink" => DomType::Hyperlink,
                         "smartTag" => DomType::SmartTag,
-                        "commentRangeStart" => DomType::CommentRangeStart,
-                        "commentRangeEnd" => DomType::CommentRangeEnd,
                         _ => continue,
                     };
                     children.push(self.retain(child, kind));
@@ -286,10 +294,9 @@ impl<'input> DocumentParser<'_, 'input> {
             "fldSimple" | "fldChar" => self.field(child),
             "noBreakHyphen" => Data::NoBreakHyphen,
             "tab" => Data::Tab,
-            "commentReference" => Data::Unparsed {
-                kind: DomType::CommentReference,
-                element: self.input.slice(child),
-            },
+            "commentReference" => Data::CommentReference(super::WmlCommentReference {
+                id: self.attr(child, "id"),
+            }),
             "sym" => Data::Symbol {
                 font: self
                     .xml
@@ -370,3 +377,5 @@ mod drawing;
 
 mod math;
 pub use math::MathProperties;
+
+pub(super) mod comments;
