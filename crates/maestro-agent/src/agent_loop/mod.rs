@@ -165,6 +165,15 @@ fn failure(message: impl Into<String>) -> DiagnosticErrorInfo {
 /// Thread-safe default representation of the `AgentLoopOptions` record.
 pub type AgentLoopOptions = AgentLoopOptionsRecord<Threaded>;
 /// Awaited local invocation with admission required only for registered dispatch.
+///
+/// Registered local calls cannot omit their task facility:
+///
+/// ```compile_fail
+/// use maestro_agent::agent_loop::LocalAgentLoopOptions;
+/// fn local_registered_dispatch_requires_submission() {
+///     let _options = LocalAgentLoopOptions::RegisteredDispatch { signal: None };
+/// }
+/// ```
 pub enum LocalAgentLoopOptions {
     /// Invoke the registered model through the caller's task facility.
     RegisteredDispatch {
