@@ -138,6 +138,7 @@ fn frame(
     operands: (&Host, &serde_json::Value, &[u8]),
 ) {
     let (host, input, selected) = operands;
+    let mut glyphs = [egui::Rect::NOTHING; 2];
     let mut output = context.run_ui(
         egui::RawInput {
             events,
@@ -158,15 +159,20 @@ fn frame(
             )
             .unwrap();
             assert_eq!(ui.min_rect().right_bottom() - start, egui::vec2(36., 32.));
+            glyphs[0] =
+                egui::Rect::from_min_size(start + egui::vec2(10., 8.), egui::vec2(16., 16.));
             let old = attachment_content::ghost(ui, view.presentation, "Download").unwrap();
             assert_eq!(old.rect.size(), egui::vec2(32., 32.));
+            glyphs[1] = egui::Rect::from_center_size(old.rect.center(), egui::vec2(16., 16.));
         },
     );
+    output.textures_delta.clear();
     for event in &output.platform_output.events {
         assert_eq!(event.widget_info().label.as_deref(), Some("Download"));
     }
-    assert!(output.shapes.iter().any(|shape| matches!(&shape.shape, egui::Shape::Mesh(mesh) if mesh.calc_bounds().size() == egui::vec2(16., 16.))));
-    output.textures_delta.clear();
+    for bounds in glyphs {
+        assert!(output.shapes.iter().any(|shape| matches!(&shape.shape, egui::Shape::Mesh(mesh) if mesh.calc_bounds() == bounds)), "missing glyph at {bounds:?}");
+    }
 }
 
 /// Keyboard focus traversal and pointer press/release activation.

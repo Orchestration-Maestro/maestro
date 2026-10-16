@@ -168,6 +168,12 @@ pub fn generic_reading_root_survives_field_edits() {
     assert!(js("savedRoot===document.querySelector('.maestro-generic-artifact') && getSelection().toString()===first.textContent && wrapper.scrollTop===savedScroll").as_bool().unwrap());
     view.element.set_filename("owned <name>.zip".into());
     view.draw(vec![]);
+    assert_eq!(
+        js("savedRoot.querySelector('div > div').textContent")
+            .as_string()
+            .unwrap(),
+        "owned <name>.zip"
+    );
     assert!(
         js("getSelection().toString()===first.textContent && wrapper.scrollTop===savedScroll")
             .as_bool()

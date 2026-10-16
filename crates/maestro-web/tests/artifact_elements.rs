@@ -51,6 +51,10 @@ fn generic_content_edits_keep_filename_and_original_content() {
     let frame = Frame::default();
     frame.draw(&mut view, false, vec![]).unwrap();
     let content = host.published.borrow().values().next().unwrap().0.clone();
+    for _ in 0..2 {
+        frame.draw(&mut view, false, vec![]).unwrap();
+    }
+    assert!(!frame.context.has_requested_repaint());
     view.set_content(String::from("Zm8="));
     assert!(frame.context.has_requested_repaint());
     frame.draw(&mut view, false, vec![]).unwrap();
@@ -142,7 +146,7 @@ fn generic_download_failure_keeps_the_native_body() {
 fn generic_reading_failures_keep_published_identity() {
     let host = Rc::new(Host::default());
     let mut view = create_artifact_element("a.zip", "", host.clone()).unwrap();
-    let frame = Frame::default();
+    let mut frame = Frame::default();
     host.failure.set(Some(Failure::Measure));
     assert!(frame.draw(view.as_mut(), false, vec![]).is_err());
     assert!(host.published.borrow().is_empty());
@@ -155,12 +159,21 @@ fn generic_reading_failures_keep_published_identity() {
         .map(|(id, pair)| (*id, pair.clone()))
         .next()
         .unwrap();
+    frame.size = egui::vec2(520., 360.);
     host.failure.set(Some(Failure::Publish));
     assert!(frame.draw(view.as_mut(), false, vec![]).is_err());
     assert_eq!(host.published.borrow()[&id].1, rect);
     assert!(Rc::ptr_eq(&host.published.borrow()[&id].0, &content));
     host.failure.set(None);
     frame.draw(view.as_mut(), false, vec![]).unwrap();
+    let new_rect = host.published.borrow()[&id].1;
+    assert_eq!(
+        (rect.size(), new_rect),
+        (
+            egui::vec2(400., 300.),
+            egui::Rect::from_min_size(rect.min, frame.size)
+        )
+    );
     assert!(Rc::ptr_eq(&host.published.borrow()[&id].0, &content));
     drop(view);
     assert!(host.published.borrow().is_empty());
