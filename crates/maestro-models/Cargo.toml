@@ -81,3 +81,8 @@ windows-version = "=0.100.0"
 [[test]]
 name = "integration"
 path = "tests/integration.rs"
+
+[[example]]
+name = "bedrock_browser_witness"
+path = "tests/support/bedrock_browser.rs"
+crate-type = ["cdylib"]

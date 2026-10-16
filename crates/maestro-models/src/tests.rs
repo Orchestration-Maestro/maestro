@@ -4,3 +4,5 @@
 pub mod loopback;
 #[path = "../tests/support/socks.rs"]
 pub mod socks;
+#[path = "../tests/support/tls.rs"]
+pub mod tls;

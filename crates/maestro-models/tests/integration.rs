@@ -36,6 +36,9 @@ mod bedrock_routes;
 )]
 #[path = "support/bedrock_rows.rs"]
 mod bedrock_rows;
+#[cfg(target_os = "linux")]
+#[path = "support/bedrock_tls_routes.rs"]
+mod bedrock_tls_routes;
 mod browser_build;
 #[allow(
     dead_code,
@@ -84,6 +87,7 @@ mod cloud_conversation_conversion;
 mod cloud_conversation_hook_content;
 mod cloud_conversation_reduction;
 mod cloud_conversation_registration;
+mod cloud_conversation_runtime;
 mod cloud_conversation_streams;
 mod cloud_conversation_unknown_unions;
 mod cloud_model_routes;
@@ -217,6 +221,8 @@ mod simple_model_options;
 mod socks;
 mod streamed_arguments;
 mod subscription_accounts;
+#[path = "support/tls.rs"]
+mod tls;
 #[path = "tool_images.rs"]
 mod tool_images;
 #[allow(

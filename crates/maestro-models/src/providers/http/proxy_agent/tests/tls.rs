@@ -1,13 +1,11 @@
 //! Shared TLS trust, server name and origin header witnesses.
 
 use super::run;
-use crate::tests::{loopback, socks};
+use crate::tests::{
+    loopback, socks,
+    tls::{CERT, server_config},
+};
 use std::sync::Arc;
-
-/// DER test certificate consumed by both trust and server configuration.
-const CERT: &[u8] = include_bytes!("../../../../../tests/fixtures/socks-tls/cert.der");
-/// Test-only server key.
-const KEY: &[u8] = include_bytes!("../../../../../tests/fixtures/socks-tls/key.der");
 
 /// One controlled issuer without weakening name or chain verification.
 fn trusted() -> rustls::ClientConfig {
@@ -23,23 +21,6 @@ fn trusted() -> rustls::ClientConfig {
         .with_no_client_auth();
     config.alpn_protocols = vec![b"http/1.1".to_vec()];
     config
-}
-
-/// Real TLS server using the same named certificate.
-fn server_config() -> Arc<rustls::ServerConfig> {
-    let mut config = rustls::ServerConfig::builder_with_provider(Arc::new(
-        rustls::crypto::aws_lc_rs::default_provider(),
-    ))
-    .with_safe_default_protocol_versions()
-    .unwrap()
-    .with_no_client_auth()
-    .with_single_cert(
-        vec![rustls::pki_types::CertificateDer::from(CERT.to_vec())],
-        rustls::pki_types::PrivatePkcs8KeyDer::from(KEY.to_vec()).into(),
-    )
-    .unwrap();
-    config.alpn_protocols = vec![b"http/1.1".to_vec()];
-    Arc::new(config)
 }
 
 /// Observation of a completed encrypted request.
@@ -87,7 +68,7 @@ fn secure_peer(
 /// Complete a real TLS request through either sender with one supplied trust configuration.
 pub(super) async fn secure_exchange(proxied: bool, credentials: &str) -> Observed {
     let (sent, received) = std::sync::mpsc::channel();
-    let config = server_config();
+    let config = server_config(&[b"http/1.1"]).unwrap();
     let authenticate = !credentials.is_empty();
     let authenticate = proxied.then_some(authenticate);
     let server = loopback::start_routed(Arc::new(move |socket| {
@@ -152,7 +133,7 @@ fn socks_tls_rejects_wrong_name_and_unknown_issuer() {
     run(async {
         for trust in [false, true] {
             let (sent, received) = std::sync::mpsc::channel();
-            let config = server_config();
+            let config = server_config(&[b"http/1.1"]).unwrap();
             let server = loopback::start_routed(Arc::new(move |mut socket| {
                 use std::io::Read;
                 socks::negotiate(&mut socket, false)?;
