@@ -3,97 +3,13 @@
 #[path = "artifact_support/presentation.rs"]
 mod presentation;
 pub mod support;
-use maestro_app::browser::tools::artifacts::LocalArtifactsPanel;
 use maestro_theme::BrandMode;
-use maestro_web::{
-    ArtifactsPanel, I18n,
-    browser::attachment_content::{AttachmentHost, BrowserAttachmentHost},
-    tools::artifacts::artifact_element::ArtifactView,
-};
+use maestro_web::browser::attachment_content::AttachmentHost;
 use std::{cell::RefCell, rc::Rc};
-use wasm_bindgen::{JsCast as _, prelude::*};
-/// Actual application caller, retained panel and document-scoped native host.
-struct Panel {
-    /// Existing document-scoped native registry.
-    host: Rc<BrowserAttachmentHost>,
-    /// Retained production panel.
-    panel: Rc<ArtifactsPanel>,
-    /// Single application selection owner.
-    caller: LocalArtifactsPanel,
-    /// Owned toolkit frame state.
-    context: egui::Context,
-    /// Caller-supplied brand pack.
-    pack: maestro_theme::BrandPack,
-    /// Live caller localization.
-    i18n: I18n,
-}
-impl Panel {
-    /// Bind the runner's existing canvas and the existing local presentation harness.
-    fn new() -> Self {
-        std::panic::set_hook(Box::new(|info| {
-            web_sys::console::error_1(&info.to_string().into())
-        }));
-        let document = web_sys::window().unwrap().document().unwrap();
-        let canvas = document
-            .get_element_by_id("canvas")
-            .unwrap()
-            .dyn_into()
-            .unwrap();
-        let host = Rc::new(BrowserAttachmentHost::new(canvas).unwrap());
-        let panel = Rc::new(ArtifactsPanel::new(host.clone()));
-        let mut presentation = presentation::Presentation::new(host.clone());
-        presentation.panel = Some(panel.clone());
-        let caller = LocalArtifactsPanel::new_local(Rc::new(presentation));
-        panel.connected_callback(&caller).unwrap();
-        Self {
-            host,
-            panel,
-            caller,
-            context: egui::Context::default(),
-            pack: maestro_theme::load_brand_pack("brand.json", &support::brand::Pack).unwrap(),
-            i18n: I18n::new(Rc::new(support::Host::default())).unwrap(),
-        }
-    }
-    /// Create through the actual tool, not a replacement artifact map.
-    fn create(&self, name: &str) {
-        presentation::ready((self.caller.tool().execute)(
-            "call".into(),
-            serde_json::json!({"command":"create","filename":name,"content":"AAEC"}),
-            None,
-            None,
-        ))
-        .unwrap();
-        self.draw(vec![]);
-    }
-    /// Draw the real public panel with the current application selection.
-    fn draw(&self, events: Vec<egui::Event>) -> egui::FullOutput {
-        let presentation = self.pack.presentation(BrandMode::Dark).unwrap();
-        let mut output = self.context.run_ui(
-            egui::RawInput {
-                screen_rect: Some(egui::Rect::from_min_size(
-                    egui::Pos2::ZERO,
-                    egui::vec2(400., 300.),
-                )),
-                events,
-                ..Default::default()
-            },
-            |ui| {
-                self.panel
-                    .render(
-                        ui,
-                        &self.caller,
-                        ArtifactView {
-                            i18n: &self.i18n,
-                            presentation: &presentation,
-                        },
-                    )
-                    .unwrap();
-            },
-        );
-        output.textures_delta.clear();
-        output
-    }
-}
+use wasm_bindgen::prelude::*;
+
+mod panel_browser_support;
+use panel_browser_support::Panel;
 /// Execute observation-only native DOM operations in the runner's actual document.
 fn js(code: &str) -> JsValue {
     js_sys::eval(code).unwrap()
@@ -140,7 +56,7 @@ pub fn artifact_panel_browser_pdf_overlay_return_keeps_root_and_scroll() {
 #[wasm_bindgen]
 pub fn artifact_panel_browser_switches_keep_native_roots() {
     let view = Panel::new();
-    view.create("a.md.zip");
+    view.create("a.md.zip", "AAEC");
     presentation::ready((view.caller.tool().execute)(
         "call".into(),
         serde_json::json!({"command":"rewrite","filename":"a.md.zip","content":"AAEC//79"}),
@@ -148,7 +64,7 @@ pub fn artifact_panel_browser_switches_keep_native_roots() {
         None,
     ))
     .unwrap();
-    view.create("b.zip");
+    view.create("b.zip", "AAEC");
     js(
         "globalThis.roots=[...document.querySelectorAll('.maestro-generic-artifact')];globalThis.a=roots[0];globalThis.b=roots[1];globalThis.wa=a.parentElement;globalThis.wb=b.parentElement;a.style.minHeight='900px';b.style.minHeight='900px';wa.scrollTop=23.5;wb.scrollTop=41.5;globalThis.sa=wa.scrollTop;globalThis.sb=wb.scrollTop;globalThis.selected=a.querySelector('p span');const range=document.createRange();range.selectNodeContents(selected);getSelection().removeAllRanges();getSelection().addRange(range);",
     );
@@ -207,7 +123,7 @@ pub fn artifact_panel_browser_hidden_state_survives_all_writers() {
     check("getComputedStyle(ordinary).visibility==='hidden'");
     view.host.set_retained_visibility(id, true, None).unwrap();
     check("getComputedStyle(ordinary).visibility==='visible'");
-    view.create("a.zip");
+    view.create("a.zip", "AAEC");
     js(
         "globalThis.a=document.querySelector('.maestro-generic-artifact');globalThis.wa=a.parentElement;",
     );
@@ -362,8 +278,8 @@ fn reading(
 #[wasm_bindgen]
 pub fn artifact_panel_browser_disconnect_keeps_selection_and_scroll() {
     let view = Panel::new();
-    view.create("a.zip");
-    view.create("b.zip");
+    view.create("a.zip", "AAEC");
+    view.create("b.zip", "AAEC");
     view.caller.show_artifact("a.zip");
     view.draw(vec![]);
     js(
@@ -403,7 +319,7 @@ pub fn artifact_panel_browser_disconnect_keeps_selection_and_scroll() {
 pub fn artifact_panel_browser_attachment_modal_still_releases_children() {
     use maestro_web::browser::attachment_content::ReadingPhase::{Measure, Publish};
     let view = Panel::new();
-    view.create("a.zip");
+    view.create("a.zip", "AAEC");
     view.panel.set_overlay(true);
     view.draw(vec![]);
     js("globalThis.a=document.querySelector('.maestro-generic-artifact');");
@@ -488,7 +404,7 @@ fn draw_attachment(
 #[wasm_bindgen]
 pub fn artifact_panel_browser_body_leaves_shell_dividers_visible() {
     let view = Panel::new();
-    view.create("a.zip");
+    view.create("a.zip", "AAEC");
     for overlay in [false, true] {
         view.panel.set_overlay(overlay);
         view.draw(vec![]);

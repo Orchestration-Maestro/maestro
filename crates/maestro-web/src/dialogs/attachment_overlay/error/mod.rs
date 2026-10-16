@@ -51,3 +51,18 @@ impl Error {
 }
 #[cfg(target_arch = "wasm32")]
 mod browser;
+
+/// Preserve literal diagnostics, using the fallback only for absence.
+pub(super) fn failure_detail(message: Option<&str>, fallback: String) -> String {
+    message
+        .filter(|s| !s.is_empty())
+        .map_or(fallback, str::to_owned)
+}
+/// Select a localized document fallback without changing host-error policy.
+pub(crate) fn detail<F: ?Sized>(
+    message: &str,
+    i: &crate::I18n<F>,
+    fallback: &str,
+) -> Result<String, AttachmentUiError> {
+    Ok(failure_detail(Some(message), i.text(fallback)?))
+}

@@ -1,5 +1,6 @@
 //! Retained artifact panels using application-owned filename policy.
 pub mod artifact_element;
+pub mod excel_artifact;
 pub mod generic_artifact;
 pub mod pdf_artifact;
 use crate::browser::attachment_content::{AttachmentHost, AttachmentUiError};
@@ -233,6 +234,7 @@ pub fn create_artifact_element(
     host: Rc<dyn AttachmentHost>,
 ) -> Result<Box<dyn ArtifactElement>, AttachmentUiError> {
     let mut element: Box<dyn ArtifactElement> = match get_file_type(filename) {
+        FileType::Excel => Box::new(excel_artifact::ExcelArtifact::new(host)),
         FileType::Pdf => Box::new(pdf_artifact::PdfArtifact::new(host)),
         FileType::Generic => Box::new(generic_artifact::GenericArtifact::new(host)),
         _ => {

@@ -9,6 +9,7 @@ use maestro_theme::BrandPresentation;
 use std::{cell::RefCell, rc::Rc};
 mod content;
 pub(crate) mod error;
+pub(crate) mod excel;
 pub(crate) mod pdf;
 /// A separately owned attachment overlay.
 pub struct AttachmentOverlay {
@@ -26,6 +27,8 @@ pub struct AttachmentOverlay {
     error: Option<String>,
     /// Owned progressive document and native pages.
     pdf: pdf::Pdf,
+    /// Owned spreadsheet tables and selected sheet.
+    excel: excel::Excel,
     /// Native error panel, independent of the failure latch.
     error_view: error::Error,
     /// Last rendered file operands.
@@ -51,6 +54,7 @@ impl AttachmentOverlay {
             extracted: false,
             error: None,
             pdf: pdf::Pdf::default(),
+            excel: excel::Excel::default(),
             error_view: error::Error::default(),
             previous: None,
             changed: true,
@@ -125,6 +129,7 @@ impl AttachmentOverlay {
         self.error = None;
         self.previous = None;
         self.pdf.reset(false);
+        self.excel.reset(false);
         if let Some(callback) = self.on_close.take() {
             callback();
         }

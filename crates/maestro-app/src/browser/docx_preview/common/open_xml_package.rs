@@ -98,6 +98,21 @@ impl OpenXmlPackage {
         &self,
         path: Option<&str>,
     ) -> Result<Option<Vec<Relationship>>, DocxError> {
+        self.read_relationships(path, false)
+    }
+    /// Read spreadsheet targets without normalizing literal URL whitespace.
+    pub(crate) fn literal_relationships(
+        &self,
+        path: &str,
+    ) -> Result<Option<Vec<Relationship>>, DocxError> {
+        self.read_relationships(Some(path), true)
+    }
+    /// Decode relationships with an explicit target whitespace policy.
+    fn read_relationships(
+        &self,
+        path: Option<&str>,
+        literal: bool,
+    ) -> Result<Option<Vec<Relationship>>, DocxError> {
         let path = path.map_or_else(
             || "_rels/.rels".into(),
             |path| {
@@ -111,13 +126,19 @@ impl OpenXmlPackage {
         let xml = self.parse(&text, &path)?;
         Ok(Some(
             xml.elements(xml.root(), None)
-                .map(|node| Relationship {
-                    id: xml.attr(node, "Id").map(str::to_owned),
-                    r#type: xml.attr(node, "Type").map(str::to_owned),
-                    target: xml.attr(node, "Target").map(str::to_owned),
-                    target_mode: xml.attr(node, "TargetMode").map(str::to_owned),
+                .map(|node| {
+                    Ok(Relationship {
+                        id: xml.attr(node, "Id").map(str::to_owned),
+                        r#type: xml.attr(node, "Type").map(str::to_owned),
+                        target: if literal {
+                            xml.literal_attr(node, "Target")?
+                        } else {
+                            xml.attr(node, "Target").map(str::to_owned)
+                        },
+                        target_mode: xml.attr(node, "TargetMode").map(str::to_owned),
+                    })
                 })
-                .collect(),
+                .collect::<Result<_, DocxError>>()?,
         ))
     }
 }

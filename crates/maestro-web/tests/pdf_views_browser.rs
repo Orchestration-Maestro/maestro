@@ -2,15 +2,10 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 pub mod support;
 use maestro_web::{
-    ArtifactElement, AttachmentOverlay, I18n,
-    browser::attachment_content::*,
-    tools::artifacts::{artifact_element::ArtifactView, create_artifact_element},
+    AttachmentOverlay, browser::attachment_content::*, tools::artifacts::create_artifact_element,
 };
-use std::{
-    cell::{Cell, RefCell},
-    rc::Rc,
-};
-use wasm_bindgen::{JsCast as _, prelude::*};
+use std::{cell::RefCell, rc::Rc};
+use wasm_bindgen::prelude::*;
 /// Evaluate document observations without shipping test bindings.
 fn js(code: &str) -> JsValue {
     js_sys::eval(code).unwrap()
@@ -28,232 +23,8 @@ fn encoded(multi: bool) -> String {
     use base64::Engine as _;
     base64::engine::general_purpose::STANDARD.encode(bytes(multi))
 }
-/// Real host with a one-shot error at the public presentation boundary.
-struct Host {
-    /// Real native platform owner.
-    native: BrowserAttachmentHost,
-    /// One-shot failure at the same presentation boundary as predecessor tests.
-    failure: RefCell<Option<String>>,
-    /// Controlled save failure.
-    fail_download: Cell<bool>,
-    /// Original record handles reaching save.
-    downloads: RefCell<Vec<Rc<RefCell<maestro_web::Attachment>>>>,
-}
-impl Host {
-    /// Bind the actual canvas document and retain per-test state.
-    fn new() -> Self {
-        std::panic::set_hook(Box::new(|info| {
-            web_sys::console::error_1(&info.to_string().into())
-        }));
-        let canvas = web_sys::window()
-            .unwrap()
-            .document()
-            .unwrap()
-            .get_element_by_id("canvas")
-            .unwrap()
-            .dyn_into()
-            .unwrap();
-        Self {
-            native: BrowserAttachmentHost::new(canvas).unwrap(),
-            failure: RefCell::default(),
-            fail_download: Cell::new(false),
-            downloads: RefCell::default(),
-        }
-    }
-}
-impl AttachmentHost for Host {
-    fn present(
-        &self,
-        s: AttachmentSurface<'_>,
-        p: &maestro_theme::BrandPresentation<'_>,
-    ) -> Result<(), AttachmentUiError> {
-        if let Some(message) = self.failure.borrow_mut().take() {
-            return Err(AttachmentUiError::Presentation(message));
-        }
-        self.native.present(s, p)
-    }
-    fn reading_layout(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentUiError> {
-        self.native.reading_layout(id)
-    }
-    fn remove(&self, id: egui::Id) {
-        self.native.remove(id);
-    }
-    fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentUiError> {
-        self.native.set_overlay(id, visible)
-    }
-    fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
-        self.native.hover_capable()
-    }
-    fn take_escape(&self) -> bool {
-        self.native.take_escape()
-    }
-    fn timer(
-        &self,
-        ms: i32,
-        repeat: bool,
-        callback: Rc<dyn Fn()>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
-        self.native.timer(ms, repeat, callback)
-    }
-    fn spawn_local(&self, f: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
-        self.native.spawn_local(f);
-    }
-    fn download(&self, a: Rc<RefCell<maestro_web::Attachment>>) -> Result<(), AttachmentUiError> {
-        self.downloads.borrow_mut().push(a.clone());
-        if self.fail_download.get() {
-            return Err(AttachmentUiError::Host("save failure".into()));
-        }
-        self.native.download(a)
-    }
-    fn download_bytes(&self, b: &[u8], n: &str, m: &str) -> Result<(), AttachmentUiError> {
-        self.native.download_bytes(b, n, m)
-    }
-}
-/// Caller-owned native view retained across explicit input frames.
-struct View {
-    /// Real artifact view.
-    element: Box<dyn ArtifactElement>,
-    /// Real platform adapter with controlled failures.
-    host: Rc<Host>,
-    /// Explicit input-frame owner.
-    context: egui::Context,
-    /// Supplied caller pack.
-    pack: maestro_theme::BrandPack,
-    /// Supplied caller mode.
-    mode: maestro_theme::BrandMode,
-    /// Live caller dictionary.
-    i18n: I18n,
-    /// Body viewport in canvas points.
-    size: egui::Vec2,
-    /// Physical density for projection.
-    density: f32,
-}
-impl View {
-    /// Bind the actual canvas document and retain per-test state.
-    fn new() -> Self {
-        let host = Rc::new(Host::new());
-        Self {
-            element: create_artifact_element("current.pdf", &encoded(true), host.clone()).unwrap(),
-            host,
-            context: egui::Context::default(),
-            pack: maestro_theme::load_brand_pack("brand.json", &support::brand::Pack).unwrap(),
-            mode: maestro_theme::BrandMode::Dark,
-            size: egui::vec2(400., 300.),
-            density: 1.,
-            i18n: I18n::new(Rc::new(support::Host::default())).unwrap(),
-        }
-    }
-    /// Drive one public body or header input frame.
-    fn draw(&mut self, header: bool, events: Vec<egui::Event>) {
-        let p = self.pack.presentation(self.mode).unwrap();
-        let mut input = egui::RawInput {
-            screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, self.size)),
-            events,
-            ..Default::default()
-        };
-        input
-            .viewports
-            .get_mut(&egui::ViewportId::ROOT)
-            .unwrap()
-            .native_pixels_per_point = Some(self.density);
-        let mut output = self.context.run_ui(input, |ui| {
-            let v = ArtifactView {
-                i18n: &self.i18n,
-                presentation: &p,
-            };
-            if header {
-                self.element.get_header_buttons(ui, v).unwrap();
-            } else {
-                self.element.render(ui, v).unwrap();
-            }
-        });
-        output.textures_delta.clear();
-    }
-    /// Draw the public overlay and retain its actual control positions.
-    fn overlay(&self, overlay: &mut AttachmentOverlay, events: Vec<egui::Event>) {
-        self.try_overlay(overlay, events).unwrap();
-    }
-    /// Preserve a reached failure without skipping end-of-frame cleanup.
-    fn try_overlay(
-        &self,
-        overlay: &mut AttachmentOverlay,
-        events: Vec<egui::Event>,
-    ) -> Result<bool, AttachmentUiError> {
-        self.context.begin_pass(egui::RawInput {
-            screen_rect: Some(egui::Rect::from_min_size(
-                egui::Pos2::ZERO,
-                egui::vec2(800., 600.),
-            )),
-            events,
-            ..Default::default()
-        });
-        let result = overlay.render(
-            &self.context,
-            &self.i18n,
-            &self.pack.presentation(self.mode).unwrap(),
-        );
-        let mut out = self.context.end_pass();
-        out.textures_delta.clear();
-        // Save actual control positions from the painter, never native text echoes.
-        let labels: Vec<_> = out
-            .shapes
-            .iter()
-            .filter_map(|s| {
-                if let egui::Shape::Text(t) = &s.shape {
-                    Some((
-                        t.galley.job.text.clone(),
-                        t.pos.x,
-                        t.pos.y,
-                        t.galley.size().x,
-                        t.galley.size().y,
-                    ))
-                } else {
-                    None
-                }
-            })
-            .collect();
-        js_sys::Reflect::set(
-            &js_sys::global(),
-            &"labels".into(),
-            &js_sys::JSON::parse(&serde_json::to_string(&labels).unwrap()).unwrap(),
-        )
-        .unwrap();
-        result
-    }
-    /// Click the canvas-owned mode at its painted label.
-    fn toggle(&self, overlay: &mut AttachmentOverlay, label: &str) {
-        let position = js(&format!(
-            "(()=>{{const l=labels.find(l=>l[0]==={});return [l[1]+l[3]/2,l[2]+l[4]/2]}})()",
-            serde_json::to_string(label).unwrap()
-        ));
-        let array = js_sys::Array::from(&position);
-        self.overlay(
-            overlay,
-            click(egui::pos2(
-                num_traits::cast(array.get(0).as_f64().unwrap()).unwrap(),
-                num_traits::cast(array.get(1).as_f64().unwrap()).unwrap(),
-            )),
-        );
-    }
-}
-/// A complete pointer activation.
-fn click(pos: egui::Pos2) -> Vec<egui::Event> {
-    vec![
-        egui::Event::PointerMoved(pos),
-        egui::Event::PointerButton {
-            pos,
-            button: egui::PointerButton::Primary,
-            pressed: true,
-            modifiers: egui::Modifiers::NONE,
-        },
-        egui::Event::PointerButton {
-            pos,
-            button: egui::PointerButton::Primary,
-            pressed: false,
-            modifiers: egui::Modifiers::NONE,
-        },
-    ]
-}
+mod reading_browser_support;
+use reading_browser_support::{View, click};
 /// Original aliased PDF attachment.
 fn record() -> Rc<RefCell<maestro_web::Attachment>> {
     Rc::new(RefCell::new(maestro_web::Attachment {
@@ -278,7 +49,7 @@ fn check(code: &str) {
 /// All native pages retain original order, raster dimensions and bounded geometry.
 #[wasm_bindgen]
 pub fn pdf_native_pages_keep_order_geometry_and_separators() {
-    let mut view = View::new();
+    let mut view = View::new("current.pdf", &encoded(true));
     for count in 1..=3 {
         view.draw(false, vec![]);
         assert_eq!(
@@ -332,7 +103,7 @@ pub fn pdf_native_pages_keep_order_geometry_and_separators() {
 /// Artifact separators keep the source's collapsed page margins.
 #[wasm_bindgen]
 pub fn pdf_artifact_native_page_gap_follows_source_spacing() {
-    let mut view = View::new();
+    let mut view = View::new("current.pdf", &encoded(true));
     for _ in 0..3 {
         view.draw(false, vec![]);
     }
@@ -344,7 +115,7 @@ pub fn pdf_artifact_native_page_gap_follows_source_spacing() {
 /// Overlay separators keep the source's collapsed page margins.
 #[wasm_bindgen]
 pub fn pdf_overlay_native_page_gap_follows_source_spacing() {
-    let view = View::new();
+    let view = View::new("current.pdf", &encoded(true));
     let mut overlay = AttachmentOverlay::open(record(), None, view.host.clone());
     for _ in 0..4 {
         view.overlay(&mut overlay, vec![]);
@@ -357,7 +128,7 @@ pub fn pdf_overlay_native_page_gap_follows_source_spacing() {
 /// The native overlay viewport owns panel chrome independently of the artifact.
 #[wasm_bindgen]
 pub fn pdf_overlay_native_viewport_keeps_panel_and_border() {
-    let mut view = View::new();
+    let mut view = View::new("current.pdf", &encoded(true));
     for pack in ["brand.json", "signal.json"] {
         view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
         for mode in [
@@ -411,7 +182,7 @@ pub fn pdf_overlay_native_viewport_keeps_panel_and_border() {
 /// Equal-content edits preserve completed pages and the reader's position.
 #[wasm_bindgen]
 pub fn pdf_same_content_rewrite_retains_pages_and_scroll() {
-    let mut view = View::new();
+    let mut view = View::new("current.pdf", &encoded(true));
     view.draw(false, vec![]);
     js("globalThis.firstPage=document.querySelector('.maestro-pdf img')");
     view.element.set_content(encoded(true));
@@ -433,7 +204,7 @@ pub fn pdf_same_content_rewrite_retains_pages_and_scroll() {
 /// Caller brand properties govern chrome and localized selectable error text.
 #[wasm_bindgen]
 pub fn pdf_native_modes_and_error_text_follow_brand_and_localization() {
-    let mut view = View::new();
+    let mut view = View::new("current.pdf", &encoded(true));
     for pack in ["brand.json", "signal.json"] {
         view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
         for mode in [
@@ -494,7 +265,7 @@ pub fn pdf_native_modes_and_error_text_follow_brand_and_localization() {
 /// Edits cancel partial documents; the real header saves only current bytes.
 #[wasm_bindgen]
 pub fn pdf_native_replacement_and_download_use_current_document() {
-    let mut view = View::new();
+    let mut view = View::new("current.pdf", &encoded(true));
     view.draw(false, vec![]);
     js("globalThis.oldPage=document.querySelector('.maestro-pdf img')");
     view.element.set_content(encoded(false));
@@ -538,7 +309,7 @@ pub fn pdf_native_replacement_and_download_use_current_document() {
 /// Existing overlay failure triggers and details survive the native-text move.
 #[wasm_bindgen]
 pub fn overlay_native_errors_preserve_existing_behaviour() {
-    let view = View::new();
+    let view = View::new("current.pdf", &encoded(true));
     let record = record();
     *view.host.failure.borrow_mut() = Some("preview failure".into());
     let mut overlay = AttachmentOverlay::open(record.clone(), None, view.host.clone());
@@ -585,7 +356,7 @@ pub fn overlay_native_errors_preserve_existing_behaviour() {
 /// Non-reading transitions release old roots, including same-tag previews.
 #[wasm_bindgen]
 pub fn reading_content_switches_release_old_native_roots() {
-    let view = View::new();
+    let view = View::new("current.pdf", &encoded(true));
     let record = record();
     // Warm up the overlay controls without consuming a PDF frame.
     record.borrow_mut().mime_type = "text/plain".into();

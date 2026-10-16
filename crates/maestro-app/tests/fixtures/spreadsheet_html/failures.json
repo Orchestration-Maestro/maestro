@@ -1,0 +1,10 @@
+[
+  {
+    "file": "truncated.xlsx",
+    "expected": "error"
+  },
+  {
+    "file": "zero-sheets.xlsx",
+    "expected": "load_error"
+  }
+]

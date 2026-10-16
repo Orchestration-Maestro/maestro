@@ -1,8 +1,8 @@
 # Spreadsheet values and workbooks
 
 The application library exposes `maestro_app::browser::ssf` for scalar spreadsheet
-formatting and in-memory XLSX/XLS reading. These operations do not render a workbook
-preview or write files.
+formatting, in-memory XLSX/XLS reading and HTML table projection. These operations
+prepare owned data and markup; they do not mount a native preview or write files.
 
 - `init_table` overwrites built-in format IDs in the supplied table, retains other
   entries and returns that table. `default_map` and `default_str` independently
@@ -267,3 +267,24 @@ mount a preview. [Numbering and element styling](https://github.com/Orchestratio
 [element and page construction](https://github.com/Orchestration-Maestro/maestro/issues/782)
 and [complete preview composition](https://github.com/Orchestration-Maestro/maestro/issues/784)
 remain separate consumers of these retained styles.
+
+## Worksheet tables
+
+`sheet_to_html(&mut worksheet, id, &ssf)` returns a table fragment over the declared
+range. It preserves absolute cell addresses, first-match merge order, spans and
+formatted caches. Missing/null scalars have empty display content. Generated `h`
+markup precedes escaped formatted text; fallback formatting uses the existing
+formatter without caching error labels. Nonfinite numeric cells use temporary
+error projections without changing the stored cell.
+
+Modern reading retains generated rich/plain string markup in `CellObject::h` and
+literal hyperlink targets in `CellObject::l`. `Hyperlink::target` preserves source
+spelling, including embedded tabs/newlines; URL parsing at the table writer rejects
+executable schemes while keeping ordinary links unchanged. Rich literal text and
+identifier/format attributes are escaped at their writing boundary. Explicit XML
+off-values leave rich flags disabled.
+
+`CellObject::z` stores an optional raw number-format string for explicitly supplied
+cells. Default workbook reading leaves it absent. General typed format options
+remain separate from this projection. Full standalone format dispatch and legacy
+reading remain in [#1046](https://github.com/Orchestration-Maestro/maestro/issues/1046).

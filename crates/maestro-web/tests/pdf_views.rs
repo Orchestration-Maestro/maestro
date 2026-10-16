@@ -15,9 +15,7 @@ fn pdf_factory_installs_only_the_pdf_specialization() {
         let view = create_artifact_element(name, "", host.clone()).unwrap();
         assert_eq!(view.filename(), name);
     }
-    for name in [
-        "a.html", "a.svg", "a.md", "a.png", "a.docx", "a.xls", "a.txt",
-    ] {
+    for name in ["a.html", "a.svg", "a.md", "a.png", "a.docx", "a.txt"] {
         assert!(create_artifact_element(name, "", host.clone()).is_err());
     }
 }

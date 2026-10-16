@@ -62,7 +62,10 @@ impl AttachmentHost for Host {
         &self,
         _: egui::Id,
     ) -> Result<maestro_web::browser::attachment_content::ReadingLayout, AttachmentUiError> {
-        unreachable!("this suite does not create reading content")
+        Ok(ReadingLayout {
+            height: 0.,
+            controls: vec![],
+        })
     }
     fn present(
         &self,
@@ -390,5 +393,17 @@ impl Frame {
     #[must_use]
     pub fn selected(&self, labels: &[String], fill: egui::Color32) -> Vec<usize> {
         labels.iter().enumerate().filter_map(|(index,label)|{let center=self.label(label).center();self.shapes.iter().any(|s|matches!(&s.shape,Shape::Rect(rect) if rect.rect.contains(center)&&rect.fill==fill)).then_some(index)}).collect()
+    }
+}
+
+/// Observe native admission without echoing document text into canvas shapes.
+/// # Panics
+/// Panics if the last observed publication is absent or is not native reading content.
+pub fn reading_factory(
+    host: &Host,
+) -> Rc<maestro_web::browser::attachment_content::ReadingContent> {
+    match &host.surfaces.borrow().last().unwrap().content {
+        Content::Reading(factory, _) => factory.clone(),
+        _ => panic!("expected native reading content"),
     }
 }

@@ -1,0 +1,93 @@
+//! Native selectable table nodes and empty canvas-control slots.
+use super::Sheets;
+use crate::browser::attachment_content::{AttachmentUiError, ReadingRoot, browser::host_error};
+use web_sys::{Document, Element};
+/// Create one feature-owned element in the supplied canvas document.
+fn create(document: &Document, tag: &str, class: &str) -> Result<Element, AttachmentUiError> {
+    let node = document.create_element(tag).map_err(|e| host_error(&e))?;
+    node.set_attribute("class", class)
+        .map_err(|e| host_error(&e))?;
+    Ok(node)
+}
+/// Mount every sheet once; only native visibility changes on tab selection.
+pub(super) fn mount(
+    document: &Document,
+    sheets: &Sheets,
+    surface: (egui::Id, egui::Rect, Option<egui::Id>, bool),
+) -> Result<ReadingRoot, AttachmentUiError> {
+    let root = create(
+        document,
+        "section",
+        if surface.3 {
+            "maestro-excel maestro-excel-artifact"
+        } else {
+            "maestro-excel"
+        },
+    )?;
+    let style = create(document, "style", "")?;
+    style.set_text_content(Some(include_str!("../excel.css")));
+    root.append_child(&style).map_err(|e| host_error(&e))?;
+    let multi = sheets.values.len() > 1;
+    let mut slots = Vec::new();
+    if multi {
+        let strip = create(document, "div", "maestro-excel-tabs")?;
+        for (index, _) in sheets.values.iter().enumerate() {
+            let slot = create(document, "span", "maestro-excel-tab")?;
+            strip.append_child(&slot).map_err(|e| host_error(&e))?;
+            slots.push((surface.0.with(index), slot));
+        }
+        root.append_child(&strip).map_err(|e| host_error(&e))?;
+    }
+    let mut nodes = Vec::new();
+    for (_, html) in &sheets.values {
+        let body = create(
+            document,
+            "div",
+            if multi {
+                "maestro-excel-sheet"
+            } else {
+                "maestro-excel-single"
+            },
+        )?;
+        body.set_inner_html(html);
+        root.append_child(&body).map_err(|e| host_error(&e))?;
+        nodes.push(body);
+    }
+    root.set_attribute("style", &format!("height:{}px;", sheets.height.get()))
+        .map_err(|e| host_error(&e))?;
+    *sheets.root.borrow_mut() = Some(root.clone());
+    *sheets.nodes.borrow_mut() = nodes;
+    select(sheets, 0)?;
+    Ok(ReadingRoot {
+        element: root,
+        slots,
+    })
+}
+/// Hide rather than rebuild bodies, preserving native selection and both offsets.
+pub(super) fn select(sheets: &Sheets, selected: usize) -> Result<(), AttachmentUiError> {
+    for (index, node) in sheets.nodes.borrow().iter().enumerate() {
+        let value = if index == selected {
+            "display:block;"
+        } else {
+            "display:none;"
+        };
+        if node.get_attribute("style").as_deref() != Some(value) {
+            node.set_attribute("style", value)
+                .map_err(|e| host_error(&e))?;
+        }
+    }
+    Ok(())
+}
+
+/// Keep inner scrolling bounded while the registry measures natural root geometry.
+pub(super) fn bound(sheets: &Sheets, height: f32) -> Result<(), AttachmentUiError> {
+    if sheets.height.get() == height {
+        return Ok(());
+    }
+    sheets.height.set(height);
+    if let Some(root) = sheets.root.borrow().as_ref() {
+        root.set_attribute("style", &format!("height:{height}px;"))
+            .map_err(|e| host_error(&e))?;
+    }
+    Ok(())
+}

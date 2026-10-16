@@ -15,9 +15,7 @@ fn generic_factory_never_replaces_recognized_views() {
     let view = create_artifact_element("a.md.zip", "Zg==", host.clone()).unwrap();
     assert_eq!(view.filename(), "a.md.zip");
     assert_eq!(view.content(), "Zg==");
-    for name in [
-        "a.html", "a.svg", "a.md", "a.png", "a.docx", "a.xls", "a.txt",
-    ] {
+    for name in ["a.html", "a.svg", "a.md", "a.png", "a.docx", "a.txt"] {
         assert!(create_artifact_element(name, "", host.clone()).is_err());
     }
 }

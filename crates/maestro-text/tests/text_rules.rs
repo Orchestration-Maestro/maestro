@@ -166,3 +166,38 @@ fn html_decimal_padded_preserves_other_escape_modes() {
     assert_eq!(escape("'", EscapeMode::HtmlHex), "&#x27;");
     assert_eq!(escape("'", EscapeMode::Xml), "&apos;");
 }
+
+#[test]
+fn spreadsheet_html_mode_keeps_entities_controls_and_old_modes() {
+    use maestro_text::markup::{EscapeMode, escape, escape_into};
+    let mut output = String::from("prefix:");
+    escape_into(
+        "&<>\"'\n\r\t\0\u{1f}雪",
+        &mut output,
+        EscapeMode::SpreadsheetHtml,
+    );
+    assert_eq!(
+        output,
+        "prefix:&amp;&lt;&gt;&quot;&apos;<br/>&#x000d;&#x0009;&#x0000;&#x001f;雪"
+    );
+    for code in 0..32u32 {
+        let text = char::from_u32(code).unwrap().to_string();
+        assert_eq!(
+            escape(&text, EscapeMode::SpreadsheetHtml),
+            if code == 10 {
+                "<br/>".into()
+            } else {
+                format!("&#x{code:04x};")
+            }
+        );
+    }
+    for (mode, expected) in [
+        (EscapeMode::Xml, "&apos;\t\n\r"),
+        (EscapeMode::XmlAttribute, "&apos;&#9;&#10;&#13;"),
+        (EscapeMode::HtmlDecimal, "&#39;\t\n\r"),
+        (EscapeMode::HtmlDecimalPadded, "&#039;\t\n\r"),
+        (EscapeMode::HtmlHex, "&#x27;\t\n\r"),
+    ] {
+        assert_eq!(escape("'\t\n\r", mode), expected);
+    }
+}

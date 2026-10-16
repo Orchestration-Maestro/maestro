@@ -108,49 +108,16 @@ impl Placement<'_> {
             }
         }
         let events = ui.input(|input| input.events.clone());
-        actions.extend(pointer_actions(
-            &events,
-            &mut self.state.pressed,
-            &visible_slots,
-            ui.ctx(),
-        ));
+        actions.extend(
+            crate::browser::attachment_content::reading::controls::pointer_actions(
+                &events,
+                &mut self.state.pressed,
+                &visible_slots,
+                ui.ctx(),
+            ),
+        );
         actions
     }
-}
-/// Own both ends of primary gestures in canvas points, not native CSS pixels.
-fn pointer_actions(
-    events: &[egui::Event],
-    pressed: &mut Option<HeaderAction>,
-    visible_canvas_slots: &[(HeaderAction, egui::Rect, egui::LayerId)],
-    context: &egui::Context,
-) -> Vec<HeaderAction> {
-    let mut actions = Vec::new();
-    for event in events {
-        if let egui::Event::PointerButton {
-            pos: canvas_points,
-            button: egui::PointerButton::Primary,
-            pressed: down,
-            ..
-        } = event
-        {
-            let hit = visible_canvas_slots
-                .iter()
-                // Completed clicks use stale geometry; keep only toolkit layer admission.
-                .find(|(_, rect, layer)| {
-                    rect.contains(*canvas_points)
-                        && context.layer_id_at(*canvas_points) == Some(*layer)
-                })
-                .map(|(action, _, _)| *action);
-            if *down {
-                *pressed = hit;
-            } else if let Some(owner) = pressed.take()
-                && hit == Some(owner)
-            {
-                actions.push(owner);
-            }
-        }
-    }
-    actions
 }
 /// Use the same existing button for sizing and painting.
 fn button(label: &str) -> egui::Button<'_> {

@@ -27,7 +27,9 @@ stable sorting and comparator lifetime.
 - **Markup.** `markup::escape` and `markup::escape_into` replace `&`, `<`, `>` and `"`
   in one pass and never rescan emitted entities. `EscapeMode` picks the apostrophe
   spelling: `Xml` writes `&apos;`, `HtmlDecimal` and `HtmlHex` write numeric references; `HtmlDecimalPadded`
-  writes `&#039;` for literal HTML export.
+  writes `&#039;` for literal HTML export. `XmlAttribute` retains XML attribute
+  tabs/newlines as character references. `SpreadsheetHtml` uses named apostrophes,
+  LF break tags and four-digit lowercase hexadecimal references for other C0 controls.
 - **CSS strings.** `css::string` quotes text, escapes quotation marks and backslashes,
   replaces NUL with U+FFFD and hex-escapes C0 controls, DEL and `<`. Brand font
   stacks and invalid document font names share it. `css::escape_control` supplies

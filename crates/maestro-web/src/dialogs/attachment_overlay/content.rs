@@ -50,13 +50,17 @@ impl AttachmentOverlay {
         }
         let (kind, name, source, text, reload) = self.content_data()?;
         self.changed = false;
-        if reload {
+        if reload || kind != FileType::Pdf || self.extracted {
             self.pdf.reset(false);
         }
-        if kind == FileType::Pdf && !self.extracted {
-            return self.pdf_body(ui, i, p, reload);
+        if reload || kind != FileType::Excel || self.extracted {
+            self.excel.reset(false);
         }
-        self.pdf.reset(false);
+        match (kind, self.extracted) {
+            (FileType::Excel, false) => return self.excel_body(ui, i, p, reload),
+            (FileType::Pdf, false) => return self.pdf_body(ui, i, p, reload),
+            _ => {}
+        }
         let text = if kind != FileType::Image
             && (self.extracted || matches!(kind, FileType::Text | FileType::Pptx))
         {
@@ -182,6 +186,52 @@ impl AttachmentOverlay {
             Err(AttachmentUiError::Presentation(message)) => {
                 if !message.is_empty() {
                     self.pdf.reset(false);
+                }
+                self.error = Some(message);
+                ui.ctx().request_repaint();
+                Ok(rect)
+            }
+            other => other.map(|()| rect),
+        }
+    }
+    /// Prepare raw attachment bytes once and retain all native sheet bodies.
+    fn excel_body<F: ?Sized>(
+        &mut self,
+        ui: &mut egui::Ui,
+        i: &I18n<F>,
+        p: &BrandPresentation<'_>,
+        reload: bool,
+    ) -> Result<egui::Rect, AttachmentUiError> {
+        if reload {
+            let content = self
+                .attachment
+                .try_borrow()
+                .map_err(|_| AttachmentUiError::BorrowConflict)?
+                .content
+                .clone();
+            let result = crate::utils::base64::decode(&content)
+                .map_err(|e| e.to_string())
+                .and_then(|bytes| self.excel.open(&bytes));
+            if let Err(message) = result {
+                self.error = Some(super::error::detail(
+                    &message,
+                    i,
+                    "Failed to load spreadsheet",
+                )?);
+                ui.ctx().request_repaint();
+                return Ok(ui.available_rect_before_wrap());
+            }
+        }
+        let rect = ui.available_rect_before_wrap();
+        match self.excel.present(
+            self.host.as_ref(),
+            ui,
+            (self.id, rect, Some(self.id), false),
+            p,
+        ) {
+            Err(AttachmentUiError::Presentation(message)) => {
+                if !message.is_empty() {
+                    self.excel.reset(false);
                 }
                 self.error = Some(message);
                 ui.ctx().request_repaint();
