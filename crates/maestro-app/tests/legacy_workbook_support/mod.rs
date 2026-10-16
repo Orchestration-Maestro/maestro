@@ -121,14 +121,7 @@ struct Sequence {
     general_text: String,
 }
 
-pub fn bytes(file: &str) -> Vec<u8> {
-    std::fs::read(
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("tests/fixtures/workbooks")
-            .join(file),
-    )
-    .unwrap()
-}
+pub use crate::workbook_fixture::bytes;
 
 pub fn run(ids: &[&str]) {
     let cases: Vec<Case> =

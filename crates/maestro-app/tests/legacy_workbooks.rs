@@ -1,6 +1,25 @@
 //! Legacy workbook formatting through the public owned reader.
 #![cfg(test)]
 mod legacy_workbook_support;
+mod workbook_fixture;
+
+#[test]
+fn legacy_producer_date_format_repairs_display_and_tables() {
+    use maestro_app::browser::ssf::{self, CellValue, Ssf};
+    let file = "legacy-producer-date.xls";
+    assert!(
+        native(file)
+            .number_formats()
+            .contains(&(60, "d.m".to_owned()))
+    );
+    let mut ssf = Ssf::default();
+    let book = ssf::read(&legacy_workbook_support::bytes(file), file, &mut ssf).unwrap();
+    let cell = &book.sheets["Data"].cells["A1"];
+    assert_eq!(cell.v, CellValue::Number(44927.0));
+    assert_eq!(cell.w.as_deref(), Some("1.1"));
+    assert_eq!(book.ssf[&60], "d\\.m");
+    assert_eq!(ssf.get_table().read().unwrap()[&60], "d\\.m");
+}
 
 #[test]
 fn legacy_builtins_use_shared_format_engine() {

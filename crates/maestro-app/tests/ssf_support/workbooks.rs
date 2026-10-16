@@ -2,14 +2,7 @@
 use maestro_app::browser::ssf::{self, CellFormatOptions, CellValue, Ssf};
 use serde_json::{Value, json};
 
-pub(super) fn bytes(file: &str) -> Vec<u8> {
-    std::fs::read(
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("tests/fixtures/workbooks")
-            .join(file),
-    )
-    .unwrap()
-}
+use crate::workbook_fixture::bytes;
 
 pub(super) fn observe(args: &Value) -> Value {
     let file = args["file"].as_str().unwrap();

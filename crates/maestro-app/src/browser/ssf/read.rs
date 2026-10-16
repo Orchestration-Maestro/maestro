@@ -9,7 +9,7 @@ use calamine::{DataType, Reader, Xls, Xlsx, XlsxError};
 use indexmap::IndexMap;
 use std::{collections::BTreeMap, io::Cursor};
 /// Read supplied XLSX or compound-file XLS bytes into owned sheets with formatted cell text.
-/// Legacy sheets include declared blank bounds and load raw formats into the live table.
+/// Legacy sheets include declared blank bounds and load repaired formats into the live table.
 ///
 /// # Errors
 /// Returns contextual archive, missing-part, XML, native-reader or address failures.
@@ -352,7 +352,7 @@ fn read_legacy(data: &[u8], name: &str, ssf: &Ssf) -> Result<WorkBook, WorkbookE
     let mut native = Xls::new(Cursor::new(data))
         .map_err(|error| WorkbookError::Reader(format!("{name}: {error}")))?;
     for (id, code) in native.number_formats() {
-        let _ = ssf.load(code, Some(u32::from(*id)));
+        let _ = ssf.load(super::styles::repair_format(code), Some(u32::from(*id)));
     }
     let date1904 = native.has_1904_epoch();
     let mut sheets = IndexMap::new();

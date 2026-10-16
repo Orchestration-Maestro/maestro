@@ -1,5 +1,6 @@
 //! File-backed public workbook projections.
 #![cfg(test)]
+mod workbook_fixture;
 use maestro_app::browser::ssf::{
     self, CellFormatOptions, CellValue, ExcelDataType, Ssf, WorkbookError,
 };

@@ -57,6 +57,8 @@ hole in 0..392; a full range replaces391. `load_table` copies slots through391,
 including empty codes, and leaves the same-owner table unchanged.
 `Ssf::get_table` returns a shared mutable format table. Reading XLSX replaces
 the current table slot without changing earlier handles; XLS retains that slot.
+Both readers repair the producer date code `d.m` to `d\.m` before loading it;
+direct `Ssf::load` calls preserve the supplied code.
 `WorkBook::ssf` is a detached snapshot. `WorkBook` preserves sheet order and the date epoch; each
 `WorkSheet` retains ordered populated cells, its range and merged regions.
 In XLSX, blank sheets retain declared rectangular ranges; empty singleton defaults

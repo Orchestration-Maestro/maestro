@@ -57,17 +57,14 @@ impl Package<'_> {
                 id
             };
             formats.insert(slot, code.clone());
-            table.insert(
-                slot,
-                if code == "d.m" {
-                    "d\\.m".to_owned()
-                } else {
-                    code
-                },
-            );
+            table.insert(slot, repair_format(&code).to_owned());
         }
         Ok(style_ids(&xml, &formats))
     }
+}
+/// Repair the ambiguous date separator emitted by spreadsheet producers.
+pub(super) fn repair_format(code: &str) -> &str {
+    if code == "d.m" { "d\\.m" } else { code }
 }
 /// Resolve extended-format references through the remapped authored format table.
 fn style_ids(xml: &XmlParser<'_>, formats: &std::collections::BTreeMap<u32, String>) -> Vec<u32> {

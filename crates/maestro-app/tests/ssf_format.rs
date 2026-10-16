@@ -1,5 +1,6 @@
 //! Public spreadsheet state and coordinate behavior.
 #![cfg(test)]
+mod workbook_fixture;
 use maestro_app::browser::ssf::{
     CellFormatOptions, CellObject, CellValue, ExcelDataType, Ssf, format_cell,
 };
