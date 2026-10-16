@@ -706,3 +706,123 @@ fn eager_setup_failures(
     })?;
     Ok(())
 }
+
+#[test]
+fn registered_scripted_submission_keeps_local_hooks() -> crate::TestResult {
+    use maestro_models::{ProviderInvocation, ProviderStreamOptions, RegisterFauxProviderOptions};
+    let _serial = crate::bundled::registry();
+    crate::chat::block_on(
+        false,
+        tokio::task::LocalSet::new().run_until(async {
+            let registration =
+                maestro_models::register_faux_provider(RegisterFauxProviderOptions::default());
+            let model = registration.get_model(None).unwrap().clone();
+            let context = crate::bundled::conversation()?;
+            queue_scripted_pair(&registration);
+            let retained = maestro_models::get_api_provider(&registration.api).unwrap();
+            registration.unregister();
+            let tasks = Rc::new(std::cell::RefCell::new(Vec::new()));
+            let admissions = Rc::new(Cell::new(0));
+            let observed = Rc::new(Cell::new(0));
+            let common = scripted_local_observer(Rc::clone(&observed));
+            let local = retained.stream.call(
+                model.clone(),
+                context.clone(),
+                ProviderInvocation::Local(
+                    Some(ProviderStreamOptions {
+                        common,
+                        ..Default::default()
+                    }),
+                    local_submission(Rc::clone(&tasks), Rc::clone(&admissions)),
+                ),
+            )?;
+            assert_eq!(admissions.get(), 1);
+            assert_eq!(observed.get(), 0);
+            assert_eq!(
+                (
+                    registration.state.call_count(),
+                    registration.get_pending_response_count()
+                ),
+                (1, 1)
+            );
+            let (_, first) = crate::transport::drain(&local).await?;
+            for task in tasks.take() {
+                task.await?;
+            }
+            assert_eq!(observed.get(), 2);
+            assert_eq!(
+                first.content,
+                [maestro_models::AssistantContent::Text(
+                    maestro_models::faux_text("local")
+                )]
+            );
+            retained_scripted_threaded(&retained, model, context, &registration).await?;
+            assert_eq!(admissions.get(), 1);
+            Ok(())
+        }),
+    )
+}
+
+/// Count both sides of a suspended response hook on its caller-local state.
+#[cfg(test)]
+fn scripted_local_observer(hook_calls: Rc<Cell<usize>>) -> StreamOptions<Local> {
+    StreamOptions::<Local> {
+        on_response: Some(Rc::new(move |_, _| {
+            hook_calls.set(hook_calls.get() + 1);
+            let hook_calls = Rc::clone(&hook_calls);
+            Box::pin(async move {
+                tokio::task::yield_now().await;
+                hook_calls.set(hook_calls.get() + 1);
+                Ok(())
+            })
+        })),
+        ..Default::default()
+    }
+}
+
+/// A retained simple handle consumes the next response through its original native default.
+#[cfg(test)]
+async fn retained_scripted_threaded(
+    retained: &maestro_models::ApiProvider,
+    model: Model,
+    context: maestro_models::Context,
+    registration: &maestro_models::FauxProviderRegistration,
+) -> crate::TestResult {
+    use maestro_models::ProviderInvocation;
+    let threaded =
+        retained
+            .stream_simple
+            .call(model, context, ProviderInvocation::Threaded(None, None))?;
+    assert_eq!(
+        (
+            registration.state.call_count(),
+            registration.get_pending_response_count()
+        ),
+        (2, 0)
+    );
+    let (_, second) = crate::transport::drain(&threaded).await?;
+    assert_eq!(
+        second.content,
+        [maestro_models::AssistantContent::Text(
+            maestro_models::faux_text("threaded")
+        )]
+    );
+    Ok(())
+}
+
+/// Supply two distinguishable responses to the shared retained FIFO.
+#[cfg(test)]
+fn queue_scripted_pair(registration: &maestro_models::FauxProviderRegistration) {
+    use maestro_models::FauxResponseStep;
+    registration.set_responses(
+        ["local", "threaded"]
+            .into_iter()
+            .map(|text| {
+                FauxResponseStep::Message(Box::new(maestro_models::faux_assistant_message(
+                    text,
+                    maestro_models::FauxAssistantMessageOptions::default(),
+                )))
+            })
+            .collect(),
+    );
+}
