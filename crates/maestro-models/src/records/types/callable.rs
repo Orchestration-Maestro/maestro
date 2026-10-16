@@ -12,6 +12,21 @@ pub trait Invoke<E: ProviderExecution, I> {
     fn invoke(&self, input: I) -> Self::Return;
 }
 /// Native registry owners remain thread-safe even when handling local arguments.
+///
+/// ```compile_fail
+/// use maestro_models::*;
+/// use std::{cell::Cell, rc::Rc, sync::Arc};
+/// struct LocalOwner(Rc<Cell<usize>>);
+/// impl<E: ProviderExecution, O> Invoke<E, ProviderCall<E, O>> for LocalOwner {
+///     type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
+///     fn invoke(&self, _: ProviderCall<E, O>) -> Self::Return {
+///         Ok(AssistantMessageEventStream::new())
+///     }
+/// }
+/// fn native_registration_rejects_local_capture() {
+///     let _: ApiStreamFunction = Arc::new(LocalOwner(Rc::new(Cell::new(0))));
+/// }
+/// ```
 #[cfg(not(target_arch = "wasm32"))]
 pub trait RegistryCapture: Send + Sync {}
 #[cfg(not(target_arch = "wasm32"))]
@@ -60,6 +75,23 @@ pub enum ProviderInvocation<K: StreamOptionsFamily> {
 /// Provider setup result, independent of the selected execution family.
 type Output = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
 /// Retained provider owner callable in either execution family.
+///
+/// A registered owner must support both request families.
+///
+/// ```compile_fail
+/// use maestro_models::*;
+/// use std::sync::Arc;
+/// struct ThreadedOnly;
+/// impl Invoke<Threaded, ProviderCall<Threaded, ProviderStreamOptions>> for ThreadedOnly {
+///     type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
+///     fn invoke(&self, _: ProviderCall<Threaded, ProviderStreamOptions>) -> Self::Return {
+///         Ok(AssistantMessageEventStream::new())
+///     }
+/// }
+/// fn registered_callback_requires_both_families() {
+///     let _: ApiStreamFunction = Arc::new(ThreadedOnly);
+/// }
+/// ```
 pub trait StreamCallback<K: StreamOptionsFamily>:
     Invoke<Local, ProviderCall<Local, K::Options<Local>>, Return = Output>
     + Invoke<Threaded, ProviderCall<Threaded, K::Options<Threaded>>, Return = Output>

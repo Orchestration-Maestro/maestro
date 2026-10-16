@@ -3,12 +3,14 @@
 use maestro_models::{
     Local, Model, OnPayload, OnResponse, SimpleStreamOptions, StreamOptions, build_base_options_for,
 };
-use std::{cell::Cell, rc::Rc};
+use std::{cell::Cell, rc::Rc, sync::Arc};
 
+mod bundled_cases;
 mod corpus;
 mod dispatch_corpus;
 mod registered;
 mod registry_corpus;
+mod response_policies;
 mod scripted;
 
 #[test]
@@ -393,46 +395,69 @@ fn direct_simple_local_stream(
     }
 }
 
-/// Local hooks retain their original phase log across real suspension.
-fn local_common_options(
-    phases: Rc<std::cell::RefCell<Vec<&'static str>>>,
-    fetch: maestro_models::Fetch,
-) -> StreamOptions<Local> {
-    use serde_json::json;
-    let payload_phases = Rc::clone(&phases);
-    let response_phases = phases;
-    StreamOptions {
-        api_key: Some("fixture-key".into()),
-        fetch: Some(fetch),
-        on_payload: Some(Rc::new(move |mut input, _| {
-            let phases = Rc::clone(&payload_phases);
-            Box::pin(async move {
-                phases.borrow_mut().push("payload-before");
-                tokio::task::yield_now().await;
-                phases.borrow_mut().push("payload-after");
-                if let Some(config) = input.payload.get_mut("inferenceConfig") {
-                    config["temperature"] = json!(0.25);
-                } else if let Some(config) = input.payload.get_mut("config") {
-                    config["temperature"] = json!(0.25);
-                } else {
-                    input.payload["temperature"] = json!(0.25);
-                }
-                Ok(input)
-            })
-        })),
-        on_response: Some(Rc::new(move |response, _| {
-            let phases = Rc::clone(&response_phases);
-            Box::pin(async move {
-                assert_eq!(response.status.to_bits(), 200.0_f64.to_bits());
-                phases.borrow_mut().push("response-before");
-                tokio::task::yield_now().await;
-                phases.borrow_mut().push("response-after");
-                Ok(())
-            })
-        })),
-        ..Default::default()
-    }
+/// Caller-local hook observations survive suspension without requiring thread safety.
+type LocalPhases = Rc<std::cell::RefCell<Vec<&'static str>>>;
+/// Threaded observations retain the same phase order through the existing producer.
+type ThreadedPhases = std::sync::Arc<std::sync::Mutex<Vec<&'static str>>>;
+/// Record a local hook observation without retaining a borrow across user work.
+#[cfg(test)]
+fn local_phase(phases: &LocalPhases, phase: &'static str) {
+    phases.borrow_mut().push(phase);
 }
+/// Record a threaded hook observation without retaining a guard across user work.
+#[cfg(test)]
+fn threaded_phase(phases: &ThreadedPhases, phase: &'static str) {
+    phases.lock().unwrap().push(phase);
+}
+/// One hook body, with only concrete pointer/log erasures differing by family.
+macro_rules! common_options {
+    ($name:ident, $mode:ty, $pointer:ident, $log:ty, $push:ident) => {
+        /// Payload selection and response observation both cross real suspension.
+        #[cfg(test)]
+        fn $name(phases: $log, fetch: maestro_models::Fetch) -> StreamOptions<$mode> {
+            let payload_phases = phases.clone();
+            StreamOptions {
+                api_key: Some("fixture-key".into()),
+                fetch: Some(fetch),
+                on_payload: Some($pointer::new(move |mut input, _| {
+                    let phases = payload_phases.clone();
+                    Box::pin(async move {
+                        $push(&phases, "payload-before");
+                        tokio::task::yield_now().await;
+                        $push(&phases, "payload-after");
+                        if let Some(config) = input.payload.get_mut("inferenceConfig") {
+                            config["temperature"] = serde_json::json!(0.25);
+                        } else if let Some(config) = input.payload.get_mut("config") {
+                            config["temperature"] = serde_json::json!(0.25);
+                        } else {
+                            input.payload["temperature"] = serde_json::json!(0.25);
+                        }
+                        Ok(input)
+                    })
+                })),
+                on_response: Some($pointer::new(move |response, _| {
+                    let phases = phases.clone();
+                    Box::pin(async move {
+                        assert_eq!(response.status.to_bits(), 200.0_f64.to_bits());
+                        $push(&phases, "response-before");
+                        tokio::task::yield_now().await;
+                        $push(&phases, "response-after");
+                        Ok(())
+                    })
+                })),
+                ..Default::default()
+            }
+        }
+    };
+}
+common_options!(local_common_options, Local, Rc, LocalPhases, local_phase);
+common_options!(
+    threaded_common_options,
+    maestro_models::Threaded,
+    Arc,
+    ThreadedPhases,
+    threaded_phase
+);
 
 #[test]
 fn chat_local_simple_entries_keep_setup_and_admission_errors() -> crate::TestResult {
@@ -935,4 +960,16 @@ fn queue_scripted_pair(registration: &maestro_models::FauxProviderRegistration) 
             })
             .collect(),
     );
+}
+
+/// Retain each admitted threaded task using the same test admission owner.
+#[cfg(test)]
+fn threaded_submission(
+    tasks: Arc<std::sync::Mutex<Vec<tokio::task::JoinHandle<()>>>>,
+) -> maestro_models::ProviderSpawner<maestro_models::Threaded> {
+    Arc::new(move |task| {
+        let task = tokio::spawn(task);
+        tasks.lock().unwrap().push(task);
+        true
+    })
 }

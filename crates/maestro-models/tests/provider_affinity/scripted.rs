@@ -210,12 +210,7 @@ async fn run_threaded(
     input: &CallbackInput,
 ) -> Result<(Vec<String>, AssistantMessage), Box<dyn std::error::Error>> {
     let tasks = Arc::new(Mutex::new(Vec::new()));
-    let retained = tasks.clone();
-    let spawn: ProviderSpawner<Threaded> = Arc::new(move |task| {
-        let task = tokio::spawn(task);
-        retained.lock().unwrap().push(task);
-        true
-    });
+    let spawn = super::threaded_submission(tasks.clone());
     let common = threaded_hooks(trace.clone(), input.outcome.clone());
     let stream = invoke::<Threaded>(
         registration,

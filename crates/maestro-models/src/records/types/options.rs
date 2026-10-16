@@ -58,6 +58,20 @@ pub struct ProviderResponse {
     pub headers: std::collections::BTreeMap<String, String>,
 }
 /// Carry common invocation settings, cooperative cancellation and hooks unchanged.
+///
+/// ```
+/// use maestro_models::StreamOptions;
+/// use std::sync::Arc;
+/// fn sdk_defaults_keep_hook_closures() {
+///     let options: StreamOptions = StreamOptions {
+///         on_payload: Some(Arc::new(|input, _| Box::pin(async move { Ok(input) }))),
+///         on_response: Some(Arc::new(|_, _| Box::pin(async { Ok(()) }))),
+///         ..Default::default()
+///     };
+///     assert!(options.on_payload.is_some() && options.on_response.is_some());
+/// }
+/// sdk_defaults_keep_hook_closures();
+/// ```
 #[derive(Clone, Default)]
 pub struct StreamOptions<E: ProviderExecution = Threaded> {
     /// Temperature.

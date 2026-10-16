@@ -300,12 +300,7 @@ async fn run_threaded(
     common: StreamOptions,
 ) -> Result<(Vec<String>, AssistantMessage), Box<dyn std::error::Error>> {
     let tasks = Arc::new(Mutex::new(Vec::new()));
-    let retained = tasks.clone();
-    let spawn: ProviderSpawner<Threaded> = Arc::new(move |task| {
-        let task = tokio::spawn(task);
-        retained.lock().unwrap().push(task);
-        true
-    });
+    let spawn = super::threaded_submission(tasks.clone());
     let context = crate::bundled::conversation()?;
     let stream = if input.form == "raw" {
         stream_for::<Threaded>(

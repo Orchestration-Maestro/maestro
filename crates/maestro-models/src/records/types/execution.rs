@@ -8,6 +8,15 @@ use std::{
     rc::{Rc, Weak as LocalWeak},
 };
 /// Caller-local owning pointers and futures.
+///
+/// A local future cannot be transferred to a thread-safe SDK slot.
+///
+/// ```compile_fail
+/// use maestro_models::{BoxFuture, Execution, Local};
+/// fn local_future_is_not_thread_safe(local: <Local as Execution>::Future<'static, ()>) {
+///     let _: BoxFuture<()> = local;
+/// }
+/// ```
 #[derive(Clone, Copy, Default)]
 pub struct Local;
 /// Existing SDK representation, thread-safe on native targets.
