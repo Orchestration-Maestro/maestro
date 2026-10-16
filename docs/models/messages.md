@@ -65,7 +65,8 @@ The endpoint is the model's base URL with `/v1/messages` appended (the base `htt
 when the model's is empty); a trailing slash on the base is not doubled.
 
 Headers are layered case-insensitively: protocol defaults and selected credentials/betas,
-model headers, account dynamic headers when applicable, then caller headers. The body encoding
+model headers, account dynamic headers when applicable, then caller headers. The shared HTTP layer keeps each normalized name's first
+insertion position and last value. The body encoding
 sets `content-type: application/json` last. For nongateway requests, a nonempty `x-api-key` or
 `authorization` after edge trimming is required; validation runs after `on_payload` and before
 sending. Gateway requests retain this exemption only while at least one default authentication
@@ -136,8 +137,8 @@ led by `(see attached image)` when it has no text block.
 
 ## Cache
 
-Retention is the explicit option, otherwise `long` when `MAESTRO_CACHE_RETENTION` is exactly
-`long`, otherwise `short`. `none` sends no cache markers. Otherwise a marker goes on the system
+Retention follows the shared [options policy](../model-options.md#cache-retention).
+`none` sends no cache markers. Otherwise a marker goes on the system
 prompt, on the last tool and on the last block of the final message when that message is the
 user's; it never goes back past a final assistant message. With `long` retention the marker
 carries a one-hour lifetime unless the model's compatibility turns long retention off; the

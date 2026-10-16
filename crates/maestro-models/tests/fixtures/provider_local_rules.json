@@ -1,0 +1,1296 @@
+[
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": null,
+      "environment": null
+    },
+    "expected": "short"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": null,
+      "environment": ""
+    },
+    "expected": "short"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": null,
+      "environment": "long"
+    },
+    "expected": "long"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": null,
+      "environment": "LONG"
+    },
+    "expected": "short"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": null,
+      "environment": " long"
+    },
+    "expected": "short"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": null,
+      "environment": "long "
+    },
+    "expected": "short"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": null,
+      "environment": "short"
+    },
+    "expected": "short"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "none",
+      "environment": null
+    },
+    "expected": "none"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "none",
+      "environment": ""
+    },
+    "expected": "none"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "none",
+      "environment": "long"
+    },
+    "expected": "none"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "none",
+      "environment": "LONG"
+    },
+    "expected": "none"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "none",
+      "environment": " long"
+    },
+    "expected": "none"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "none",
+      "environment": "long "
+    },
+    "expected": "none"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "none",
+      "environment": "short"
+    },
+    "expected": "none"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "short",
+      "environment": null
+    },
+    "expected": "short"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "short",
+      "environment": ""
+    },
+    "expected": "short"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "short",
+      "environment": "long"
+    },
+    "expected": "short"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "short",
+      "environment": "LONG"
+    },
+    "expected": "short"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "short",
+      "environment": " long"
+    },
+    "expected": "short"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "short",
+      "environment": "long "
+    },
+    "expected": "short"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "short",
+      "environment": "short"
+    },
+    "expected": "short"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "long",
+      "environment": null
+    },
+    "expected": "long"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "long",
+      "environment": ""
+    },
+    "expected": "long"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "long",
+      "environment": "long"
+    },
+    "expected": "long"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "long",
+      "environment": "LONG"
+    },
+    "expected": "long"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "long",
+      "environment": " long"
+    },
+    "expected": "long"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "long",
+      "environment": "long "
+    },
+    "expected": "long"
+  },
+  {
+    "kind": "retention",
+    "input": {
+      "explicit": "long",
+      "environment": "short"
+    },
+    "expected": "long"
+  },
+  {
+    "kind": "thinking_conversion",
+    "input": {
+      "level": "off"
+    },
+    "expected": {
+      "present": false
+    }
+  },
+  {
+    "kind": "thinking_conversion",
+    "input": {
+      "level": "minimal"
+    },
+    "expected": {
+      "present": true,
+      "value": "minimal"
+    }
+  },
+  {
+    "kind": "thinking_conversion",
+    "input": {
+      "level": "low"
+    },
+    "expected": {
+      "present": true,
+      "value": "low"
+    }
+  },
+  {
+    "kind": "thinking_conversion",
+    "input": {
+      "level": "medium"
+    },
+    "expected": {
+      "present": true,
+      "value": "medium"
+    }
+  },
+  {
+    "kind": "thinking_conversion",
+    "input": {
+      "level": "high"
+    },
+    "expected": {
+      "present": true,
+      "value": "high"
+    }
+  },
+  {
+    "kind": "thinking_conversion",
+    "input": {
+      "level": "xhigh"
+    },
+    "expected": {
+      "present": true,
+      "value": "xhigh"
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": false
+      },
+      "level": null
+    },
+    "expected": {
+      "present": false
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": false
+      },
+      "level": "minimal"
+    },
+    "expected": {
+      "present": false
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": false
+      },
+      "level": "low"
+    },
+    "expected": {
+      "present": false
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": false
+      },
+      "level": "high"
+    },
+    "expected": {
+      "present": false
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": false
+      },
+      "level": "xhigh"
+    },
+    "expected": {
+      "present": false
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true
+      },
+      "level": null
+    },
+    "expected": {
+      "present": false
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true
+      },
+      "level": "minimal"
+    },
+    "expected": {
+      "present": true,
+      "value": "minimal"
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true
+      },
+      "level": "low"
+    },
+    "expected": {
+      "present": true,
+      "value": "low"
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true
+      },
+      "level": "high"
+    },
+    "expected": {
+      "present": true,
+      "value": "high"
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true
+      },
+      "level": "xhigh"
+    },
+    "expected": {
+      "present": true,
+      "value": "high"
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "xhigh": "max"
+        }
+      },
+      "level": null
+    },
+    "expected": {
+      "present": false
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "xhigh": "max"
+        }
+      },
+      "level": "minimal"
+    },
+    "expected": {
+      "present": true,
+      "value": "minimal"
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "xhigh": "max"
+        }
+      },
+      "level": "low"
+    },
+    "expected": {
+      "present": true,
+      "value": "low"
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "xhigh": "max"
+        }
+      },
+      "level": "high"
+    },
+    "expected": {
+      "present": true,
+      "value": "high"
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "xhigh": "max"
+        }
+      },
+      "level": "xhigh"
+    },
+    "expected": {
+      "present": true,
+      "value": "xhigh"
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "minimal": null,
+          "low": null,
+          "high": null
+        }
+      },
+      "level": null
+    },
+    "expected": {
+      "present": false
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "minimal": null,
+          "low": null,
+          "high": null
+        }
+      },
+      "level": "minimal"
+    },
+    "expected": {
+      "present": true,
+      "value": "medium"
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "minimal": null,
+          "low": null,
+          "high": null
+        }
+      },
+      "level": "low"
+    },
+    "expected": {
+      "present": true,
+      "value": "medium"
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "minimal": null,
+          "low": null,
+          "high": null
+        }
+      },
+      "level": "high"
+    },
+    "expected": {
+      "present": true,
+      "value": "medium"
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "minimal": null,
+          "low": null,
+          "high": null
+        }
+      },
+      "level": "xhigh"
+    },
+    "expected": {
+      "present": true,
+      "value": "medium"
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": null,
+          "medium": null,
+          "high": null,
+          "xhigh": null
+        }
+      },
+      "level": null
+    },
+    "expected": {
+      "present": false
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": null,
+          "medium": null,
+          "high": null,
+          "xhigh": null
+        }
+      },
+      "level": "minimal"
+    },
+    "expected": {
+      "present": false
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": null,
+          "medium": null,
+          "high": null,
+          "xhigh": null
+        }
+      },
+      "level": "low"
+    },
+    "expected": {
+      "present": false
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": null,
+          "medium": null,
+          "high": null,
+          "xhigh": null
+        }
+      },
+      "level": "high"
+    },
+    "expected": {
+      "present": false
+    }
+  },
+  {
+    "kind": "thinking_clamp",
+    "input": {
+      "model": {
+        "reasoning": true,
+        "thinkingLevelMap": {
+          "off": null,
+          "minimal": null,
+          "low": null,
+          "medium": null,
+          "high": null,
+          "xhigh": null
+        }
+      },
+      "level": "xhigh"
+    },
+    "expected": {
+      "present": false
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": ""
+    },
+    "expected": {
+      "value": {},
+      "keys": [],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": " \t\r\n﻿ "
+    },
+    "expected": {
+      "value": {},
+      "keys": [],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "﻿{\"a\":1"
+    },
+    "expected": {
+      "value": {
+        "a": 1
+      },
+      "keys": [
+        "a"
+      ],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "{\"a\":1"
+    },
+    "expected": {
+      "value": {},
+      "keys": [],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "{}"
+    },
+    "expected": {
+      "value": {},
+      "keys": [],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "{\"a\":1}"
+    },
+    "expected": {
+      "value": {
+        "a": 1
+      },
+      "keys": [
+        "a"
+      ],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "{\"a\":1"
+    },
+    "expected": {
+      "value": {
+        "a": 1
+      },
+      "keys": [
+        "a"
+      ],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "{\"s\":\"a"
+    },
+    "expected": {
+      "value": {
+        "s": "a"
+      },
+      "keys": [
+        "s"
+      ],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "{\"s\":\"a\n\"}"
+    },
+    "expected": {
+      "value": {
+        "s": "a\n"
+      },
+      "keys": [
+        "s"
+      ],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "{\"s\":\"a\\H\"}"
+    },
+    "expected": {
+      "value": {
+        "s": "a\\H"
+      },
+      "keys": [
+        "s"
+      ],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "{\"a\":1,\"b\":2,\"\\u0061\":3}"
+    },
+    "expected": {
+      "value": {
+        "a": 3,
+        "b": 2
+      },
+      "keys": [
+        "a",
+        "b"
+      ],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "{\"10\":1,\"2\":2,\"z\":-0,\"a\":true}"
+    },
+    "expected": {
+      "value": {
+        "2": 2,
+        "10": 1,
+        "z": 0,
+        "a": true
+      },
+      "keys": [
+        "2",
+        "10",
+        "z",
+        "a"
+      ],
+      "negativeZeroMembers": [
+        "z"
+      ]
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "not JSON"
+    },
+    "expected": {
+      "value": {},
+      "keys": [],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "[]"
+    },
+    "expected": {
+      "value": {},
+      "keys": [],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "[1]"
+    },
+    "expected": {
+      "value": {},
+      "keys": [],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "null"
+    },
+    "expected": {
+      "value": {},
+      "keys": [],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "false"
+    },
+    "expected": {
+      "value": {},
+      "keys": [],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "0"
+    },
+    "expected": {
+      "value": {},
+      "keys": [],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "-0"
+    },
+    "expected": {
+      "value": {},
+      "keys": [],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "1"
+    },
+    "expected": {
+      "value": {},
+      "keys": [],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "arguments",
+    "input": {
+      "text": "\"text\""
+    },
+    "expected": {
+      "value": {},
+      "keys": [],
+      "negativeZeroMembers": []
+    }
+  },
+  {
+    "kind": "usage",
+    "input": {
+      "raw": null
+    },
+    "expected": {
+      "number": 0,
+      "negativeZero": false
+    }
+  },
+  {
+    "kind": "usage",
+    "input": {
+      "raw": "null"
+    },
+    "expected": {
+      "number": 0,
+      "negativeZero": false
+    }
+  },
+  {
+    "kind": "usage",
+    "input": {
+      "raw": "0"
+    },
+    "expected": {
+      "number": 0,
+      "negativeZero": false
+    }
+  },
+  {
+    "kind": "usage",
+    "input": {
+      "raw": "-0"
+    },
+    "expected": {
+      "number": 0,
+      "negativeZero": false
+    }
+  },
+  {
+    "kind": "usage",
+    "input": {
+      "raw": "1"
+    },
+    "expected": {
+      "number": 1,
+      "negativeZero": false
+    }
+  },
+  {
+    "kind": "usage",
+    "input": {
+      "raw": "-1"
+    },
+    "expected": {
+      "number": -1,
+      "negativeZero": false
+    }
+  },
+  {
+    "kind": "usage",
+    "input": {
+      "raw": "0.5"
+    },
+    "expected": {
+      "number": 0.5,
+      "negativeZero": false
+    }
+  },
+  {
+    "kind": "usage",
+    "input": {
+      "raw": "9007199254740993"
+    },
+    "expected": {
+      "number": 9007199254740992,
+      "negativeZero": false
+    }
+  },
+  {
+    "kind": "usage",
+    "input": {
+      "raw": "1e400"
+    },
+    "expected": {
+      "number": "Infinity",
+      "negativeZero": false
+    }
+  },
+  {
+    "kind": "id_units",
+    "input": {
+      "id": ""
+    },
+    "expected": {
+      "replacement": "",
+      "forty": "",
+      "sixtyFour": ""
+    }
+  },
+  {
+    "kind": "id_units",
+    "input": {
+      "id": "Ab9_-"
+    },
+    "expected": {
+      "replacement": "Ab9_-",
+      "forty": "Ab9_-",
+      "sixtyFour": "Ab9_-"
+    }
+  },
+  {
+    "kind": "id_units",
+    "input": {
+      "id": "a.+/=é中🙂"
+    },
+    "expected": {
+      "replacement": "a________",
+      "forty": "a________",
+      "sixtyFour": "a________"
+    }
+  },
+  {
+    "kind": "id_units",
+    "input": {
+      "id": "a|item"
+    },
+    "expected": {
+      "replacement": "a_item",
+      "forty": "a_item",
+      "sixtyFour": "a_item"
+    }
+  },
+  {
+    "kind": "id_units",
+    "input": {
+      "id": "a🙂|item"
+    },
+    "expected": {
+      "replacement": "a___item",
+      "forty": "a___item",
+      "sixtyFour": "a___item"
+    }
+  },
+  {
+    "kind": "id_units",
+    "input": {
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa🙂|item"
+    },
+    "expected": {
+      "replacement": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa___item",
+      "forty": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_",
+      "sixtyFour": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa___item"
+    }
+  },
+  {
+    "kind": "id_units",
+    "input": {
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaax|item"
+    },
+    "expected": {
+      "replacement": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaax_item",
+      "forty": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sixtyFour": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaax_item"
+    }
+  },
+  {
+    "kind": "id_units",
+    "input": {
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa🙂"
+    },
+    "expected": {
+      "replacement": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa__",
+      "forty": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sixtyFour": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa_"
+    }
+  },
+  {
+    "kind": "id_units",
+    "input": {
+      "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaax"
+    },
+    "expected": {
+      "replacement": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaax",
+      "forty": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sixtyFour": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  },
+  {
+    "kind": "id_units",
+    "input": {
+      "id": "tail___"
+    },
+    "expected": {
+      "replacement": "tail___",
+      "forty": "tail___",
+      "sixtyFour": "tail___"
+    }
+  },
+  {
+    "kind": "id_units",
+    "input": {
+      "id": "a|item🙂___|ignored"
+    },
+    "expected": {
+      "replacement": "a_item______ignored",
+      "forty": "a_item______ignored",
+      "sixtyFour": "a_item______ignored"
+    }
+  },
+  {
+    "kind": "headers",
+    "input": {
+      "layers": [
+        {
+          "X-Z": "z",
+          "X-A": "first"
+        },
+        {
+          "x-a": "last",
+          "X-B": "b"
+        }
+      ]
+    },
+    "expected": {
+      "entries": [
+        [
+          "x-z",
+          "z"
+        ],
+        [
+          "x-a",
+          "last"
+        ],
+        [
+          "x-b",
+          "b"
+        ]
+      ]
+    }
+  },
+  {
+    "kind": "headers",
+    "input": {
+      "layers": [
+        {
+          "X-Probe": "first",
+          "x-probe": "second"
+        },
+        {
+          "X-Probe": "third"
+        }
+      ]
+    },
+    "expected": {
+      "entries": [
+        [
+          "x-probe",
+          "third"
+        ]
+      ]
+    }
+  },
+  {
+    "kind": "headers",
+    "input": {
+      "layers": [
+        {
+          "X-Probe": "first"
+        },
+        {
+          "x-probe": "third"
+        }
+      ]
+    },
+    "expected": {
+      "entries": [
+        [
+          "x-probe",
+          "third"
+        ]
+      ]
+    }
+  },
+  {
+    "kind": "headers",
+    "input": {
+      "layers": [
+        {
+          "x-probe": "first"
+        },
+        {
+          "x-probe": "third"
+        }
+      ]
+    },
+    "expected": {
+      "entries": [
+        [
+          "x-probe",
+          "third"
+        ]
+      ]
+    }
+  },
+  {
+    "kind": "headers",
+    "input": {
+      "layers": [
+        {},
+        {
+          "X-Probe": ""
+        }
+      ]
+    },
+    "expected": {
+      "entries": [
+        [
+          "x-probe",
+          ""
+        ]
+      ]
+    }
+  },
+  {
+    "kind": "headers",
+    "input": {
+      "layers": [
+        {
+          "x-probe": "bad\nvalue"
+        },
+        {
+          "x-probe": "valid"
+        }
+      ]
+    },
+    "expected": {
+      "entries": [
+        [
+          "x-probe",
+          "valid"
+        ]
+      ]
+    }
+  }
+]

@@ -7,6 +7,7 @@ use serde_json::Value;
 
 use super::compat::{OpenAICompletionsCapability as Capability, ResolvedOpenAICompletionsCompat};
 use crate::arguments::json_parse::whitespace;
+use crate::projection::IMAGE_PLACEHOLDER;
 use crate::providers::json_text::{compact_object, is_truthy, json_value, raw_json};
 use crate::{
     AssistantContent, AssistantMessage, Context, DiagnosticErrorInfo, JsonObject, Message, Model,
@@ -168,8 +169,6 @@ pub enum ChatCompletionMessageParam {
 
 /// Text sent between tool results and the next user message when an endpoint requires it.
 const BRIDGE_TEXT: &str = "I have processed the tool results.";
-/// Placeholder for a tool result without text.
-const IMAGE_PLACEHOLDER: &str = "(see attached image)";
 /// Lead-in for images lifted out of tool results.
 const IMAGE_INTRODUCTION: &str = "Attached image(s) from tool result:";
 /// Longest tool-call identifier the protocol accepts, in UTF-16 units.
@@ -249,13 +248,7 @@ fn bridge() -> ChatCompletionMessageParam {
 /// except that the `openai` provider limits it to 40 units at a character boundary.
 fn normalize_tool_call_id(id: &str, provider: &str) -> String {
     if let Some((call_id, _)) = id.split_once('|') {
-        return call_id
-            .chars()
-            .flat_map(|character| {
-                let kept = character.is_ascii_alphanumeric() || matches!(character, '_' | '-');
-                let units = if kept { 1 } else { character.len_utf16() };
-                std::iter::repeat_n(if kept { character } else { '_' }, units)
-            })
+        return crate::projection::tool_call_id_characters(call_id)
             .take(ID_LIMIT)
             .collect();
     }

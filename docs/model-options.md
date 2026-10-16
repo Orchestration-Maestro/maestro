@@ -1,6 +1,6 @@
 # Model option helpers
 
-`maestro-models` exports four pure helpers without catalog lookup, environment
+`maestro-models` exports five pure helpers without catalog lookup, environment
 credential resolution, provider invocation or hook execution.
 
 - `build_base_options` copies the 14 common invocation fields, retaining callback
@@ -9,6 +9,9 @@ credential resolution, provider invocation or hook execution.
   including zero or negative values, remain unchanged. A separately supplied
   nonempty key overrides the option key; empty or absent keys fall back without
   trimming. Reasoning settings and thinking budgets are not common output fields.
+- `reasoning_from_thinking_level` borrows an already-selected model thinking level:
+  Off becomes absent; minimal through extra-high retain their level. Model support
+  clamping remains with the caller.
 - `clamp_reasoning` maps extra-high to high, retaining every other level and absence.
 - `adjust_max_tokens_for_thinking` selects budgets of 1,024 (minimal), 2,048 (low),
   8,192 (medium) or 16,384 (high and extra-high). Custom slots override individually,
@@ -18,6 +21,14 @@ credential resolution, provider invocation or hook execution.
   output tokens, never below zero. There is no unconditional output reserve,
   rounding or input validation. A NaN sum or model limit produces a NaN combined limit.
 - `is_context_overflow` classifies a borrowed assistant response as described below.
+
+## Cache retention
+
+Provider request builders share the options owner's retention resolution: an explicit
+`None`, `Short` or `Long` wins; otherwise only the exact environment value
+`MAESTRO_CACHE_RETENTION=long` selects long retention. An absent, empty, differently
+cased or whitespace-padded value selects short. Each provider keeps its own markers,
+affinity and compatibility policy.
 
 ## Three context-overflow signals
 

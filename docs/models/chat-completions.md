@@ -49,7 +49,8 @@ that is set but blank sends an empty header), the model's headers, the dynamic h
 (`session_id`, `x-client-request-id`, `x-session-affinity`) carrying a nonempty session
 identifier when the model's compatibility enables them and caching is on,
 then the caller's headers. Names are
-sent in lowercase.
+sent in lowercase. The shared HTTP layer preserves each normalized name's first
+insertion position and last value; validation remains at the HTTP send seam.
 
 A header value is text whose characters each name one byte. Tab, line feed, carriage
 return and space are removed from both ends of every value of the final request, and a
@@ -95,8 +96,8 @@ map's `off` name (effort `none` when the map has no entry, nothing when it is `n
 `openai` sends the map's `off` name when it has one, again only where the endpoint accepts
 `reasoning_effort`.
 
-Cache retention is the explicit option, otherwise `long` when
-`MAESTRO_CACHE_RETENTION` is exactly `long`, otherwise `short`. `none` suppresses
+Cache retention follows the shared [options policy](../model-options.md#cache-retention).
+`none` suppresses
 prompt-cache and affinity fields. Cache markers, where the compatibility selects the
 `anthropic` style (by default the `openrouter` provider with a model whose ID starts with
 `anthropic/`), go on the first instruction, the last tool and the last conversation text;

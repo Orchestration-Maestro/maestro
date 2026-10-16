@@ -2,7 +2,7 @@
 
 ## Streamed arguments
 
-`maestro-models` provides four shared parsing and sanitizing operations for
+`maestro-models` provides five shared parsing and sanitizing operations for
 model-supplied JSON.
 
 `repair_json(&str) -> String` escapes raw controls and invalid backslashes only
@@ -40,6 +40,10 @@ Full argument materialization accepts at most 127 nested arrays or objects.
 Deeper values fail strict parsing and yield `{}` during streaming, rather than a
 truncated container prefix. The bound counts consumed containers, not sibling
 width, quoted delimiters or unconsumed trailing text.
+
+`parsed_arguments(&str) -> JsonObject` delegates to `parse_streaming_json` and
+keeps only an object result; every other root becomes an empty object. It is
+available at the crate root, `arguments` and `arguments::json_parse` paths.
 
 `sanitize_surrogates(&[u16]) -> String` preserves BMP text and valid UTF-16 pairs,
 removing unmatched surrogate units. Ordinary Rust strings need no cleanup.

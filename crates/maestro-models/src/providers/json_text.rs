@@ -9,7 +9,9 @@ use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use serde_json::value::RawValue;
 
-use crate::{JsonObject, parse_streaming_json};
+use crate::JsonObject;
+
+pub(crate) use crate::arguments::parsed_arguments;
 
 pub use maestro_json::compact_json;
 pub(crate) use maestro_json::{BorrowedJson, array_index, compact_members, compact_object};
@@ -89,15 +91,6 @@ where
     T: DeserializeOwned,
 {
     try_object_record(<&RawValue>::deserialize(deserializer)?).map_err(D::Error::custom)
-}
-
-/// Parse streamed argument text into the object of a tool call; any other value becomes empty.
-#[must_use]
-pub fn parsed_arguments(partial: &str) -> JsonObject {
-    match parse_streaming_json(Some(partial)) {
-        Value::Object(arguments) => arguments,
-        _ => JsonObject::new(),
-    }
 }
 
 /// A reported count where an absent or zero report means zero; negative zero becomes zero.

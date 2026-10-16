@@ -2,11 +2,11 @@
 
 use std::collections::HashSet;
 use std::hash::BuildHasher;
-use std::iter::repeat_n;
 
 use serde_json::{Map, Value, json};
 
 use super::{ConvertResponsesMessagesOptions, ConvertResponsesToolsOptions, native};
+use crate::projection::IMAGE_PLACEHOLDER;
 use crate::providers::json_text::{compact_object, json_value, member, raw_json, raw_number};
 use crate::{
     AssistantContent, AssistantMessage, Context, DiagnosticErrorInfo, Message, Model, ModelInput,
@@ -14,8 +14,6 @@ use crate::{
     short_hash, transform_messages,
 };
 
-/// Output of a tool result that has no text.
-const IMAGE_PLACEHOLDER: &str = "(see attached image)";
 /// Longest identity part and message identifier, in UTF-16 units.
 const ID_LIMIT: usize = 64;
 
@@ -89,13 +87,7 @@ pub(crate) fn convert_responses_tools(
 /// Limit an identifier part to `[A-Za-z0-9_-]`, one `_` per UTF-16 unit replaced, at most 64
 /// units, without trailing underscores.
 fn normalize_id_part(part: &str) -> String {
-    let limited: String = part
-        .chars()
-        .flat_map(|character| {
-            let kept = character.is_ascii_alphanumeric() || matches!(character, '_' | '-');
-            let units = if kept { 1 } else { character.len_utf16() };
-            repeat_n(if kept { character } else { '_' }, units)
-        })
+    let limited: String = crate::projection::tool_call_id_characters(part)
         .take(ID_LIMIT)
         .collect();
     limited.trim_end_matches('_').to_owned()

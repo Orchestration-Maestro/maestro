@@ -16,18 +16,17 @@ use super::payload::{
     ToolParam,
 };
 use crate::arguments::json_parse::whitespace;
+use crate::options::resolve_cache_retention;
 use crate::providers::chat::cloudflare::{is_cloudflare_provider, resolve_cloudflare_base_url};
 use crate::providers::chat::github_copilot_headers::{
     build_copilot_dynamic_headers, has_copilot_vision_input,
 };
-use crate::providers::http::RequestFailure;
+use crate::providers::http::{RequestFailure, copied, layer};
 use crate::{
     CacheControlFormat, CacheRetention, Context, MaxTokensField, Message, Model,
     ModelThinkingLevel, ThinkingFormat, ThinkingLevel, get_env_api_key,
 };
 
-/// Environment variable that selects long cache retention when set to `long`.
-const CACHE_RETENTION_VARIABLE: &str = "MAESTRO_CACHE_RETENTION";
 /// Account scope headers and the environment variables that default them.
 const SCOPE_HEADERS: [(&str, &str); 2] = [
     ("openai-organization", "OPENAI_ORG_ID"),
@@ -342,26 +341,6 @@ impl<'a> Invocation<'a> {
     }
 }
 
-/// Insert headers under lowercase names; a later insertion replaces an earlier one.
-pub(crate) fn layer(
-    layered: &mut IndexMap<String, String>,
-    source: impl IntoIterator<Item = (String, String)>,
-) {
-    for (mut name, value) in source {
-        name.make_ascii_lowercase();
-        layered.insert(name, value);
-    }
-}
-
-/// Copy the entries of a header layer that the model or caller owns.
-pub(crate) fn copied(
-    source: &IndexMap<String, String>,
-) -> impl Iterator<Item = (String, String)> + '_ {
-    source
-        .iter()
-        .map(|(name, value)| (name.clone(), value.clone()))
-}
-
 /// Organization and project headers set from the environment, trimmed of script whitespace; a
 /// variable that is set but blank sends an empty header.
 pub(crate) fn scope_headers() -> impl Iterator<Item = (String, String)> {
@@ -434,16 +413,5 @@ fn mark_content(content: &mut ChatCompletionContent, marker: &OpenAICompatCacheC
             })
             .map(|text| text.cache_control = Some(marker.clone()))
             .is_some(),
-    }
-}
-
-/// Resolve an explicit retention choice before the environment default.
-pub(crate) fn resolve_cache_retention(explicit: Option<CacheRetention>) -> CacheRetention {
-    match explicit {
-        Some(retention) => retention,
-        None if std::env::var(CACHE_RETENTION_VARIABLE).is_ok_and(|value| value == "long") => {
-            CacheRetention::Long
-        }
-        None => CacheRetention::Short,
     }
 }

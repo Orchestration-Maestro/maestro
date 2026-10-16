@@ -20,12 +20,12 @@ use crate::providers::http::{HttpRequest, HttpResponse, RequestFailure, endpoint
 use crate::providers::json_text::compact_json;
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Cancellation, Context, DiagnosticErrorInfo,
-    Model, ModelThinkingLevel, ProviderResponse, SharedAssistantMessage, SimpleStreamOptions,
-    StopReason, StreamOptions, ThinkingLevel, ToolChoice, build_base_options, clamp_thinking_level,
+    Model, ProviderResponse, SharedAssistantMessage, SimpleStreamOptions, StopReason,
+    StreamOptions, ThinkingLevel, ToolChoice, build_base_options, clamp_thinking_level,
 };
 use events::Reducer;
 use request::{ENDPOINT_PATH, Invocation};
-pub(crate) use request::{copied, layer, level_name, resolve_cache_retention, scope_headers};
+pub(crate) use request::{level_name, scope_headers};
 use sse::consume;
 
 /// Text of the failure that ends an aborted invocation.
@@ -96,13 +96,8 @@ pub fn stream_simple_openai_completions(
     let reasoning_effort = options
         .as_ref()
         .and_then(|options| options.reasoning)
-        .and_then(|level| match clamp_thinking_level(&model, level.into()) {
-            ModelThinkingLevel::Off => None,
-            ModelThinkingLevel::Minimal => Some(ThinkingLevel::Minimal),
-            ModelThinkingLevel::Low => Some(ThinkingLevel::Low),
-            ModelThinkingLevel::Medium => Some(ThinkingLevel::Medium),
-            ModelThinkingLevel::High => Some(ThinkingLevel::High),
-            ModelThinkingLevel::Xhigh => Some(ThinkingLevel::Xhigh),
+        .and_then(|level| {
+            crate::reasoning_from_thinking_level(&clamp_thinking_level(&model, level.into()))
         });
     let tool_choice = options.and_then(|options| options.tool_choice);
     Ok(stream_openai_completions(

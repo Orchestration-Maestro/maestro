@@ -2,7 +2,8 @@
 use std::borrow::Cow;
 
 use crate::{
-    Model, SimpleStreamOptions, StreamOptions, ThinkingBudgets, ThinkingLevel, get_env_api_key,
+    CacheRetention, Model, ModelThinkingLevel, SimpleStreamOptions, StreamOptions, ThinkingBudgets,
+    ThinkingLevel, get_env_api_key,
 };
 
 /// Keep a nonempty supplied key as written, otherwise look the provider's key up in the environment.
@@ -100,5 +101,32 @@ pub fn adjust_max_tokens_for_thinking(
     AdjustedMaxTokens {
         max_tokens,
         thinking_budget,
+    }
+}
+
+/// Convert an already-selected thinking level without choosing a model or clamping support.
+#[must_use]
+pub fn reasoning_from_thinking_level(level: &ModelThinkingLevel) -> Option<ThinkingLevel> {
+    match level {
+        ModelThinkingLevel::Off => None,
+        ModelThinkingLevel::Minimal => Some(ThinkingLevel::Minimal),
+        ModelThinkingLevel::Low => Some(ThinkingLevel::Low),
+        ModelThinkingLevel::Medium => Some(ThinkingLevel::Medium),
+        ModelThinkingLevel::High => Some(ThinkingLevel::High),
+        ModelThinkingLevel::Xhigh => Some(ThinkingLevel::Xhigh),
+    }
+}
+
+/// Environment variable that selects long cache retention when set to `long`.
+const CACHE_RETENTION_VARIABLE: &str = "MAESTRO_CACHE_RETENTION";
+
+/// Resolve an explicit retention choice before the environment default.
+pub(crate) fn resolve_cache_retention(explicit: Option<CacheRetention>) -> CacheRetention {
+    match explicit {
+        Some(retention) => retention,
+        None if std::env::var(CACHE_RETENTION_VARIABLE).is_ok_and(|value| value == "long") => {
+            CacheRetention::Long
+        }
+        None => CacheRetention::Short,
     }
 }

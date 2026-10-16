@@ -6,6 +6,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::arguments::json_parse::whitespace;
+use crate::projection::IMAGE_PLACEHOLDER;
 use crate::projection::normalize_tool_call_id;
 use crate::{
     AssistantContent, AssistantMessage, Context, DiagnosticErrorInfo, ImageContent, JsonObject,
@@ -32,8 +33,6 @@ pub(crate) use request::{
 };
 pub use stream::process_google_stream;
 
-/// Placeholder response text for a tool result that holds only images.
-const IMAGE_PLACEHOLDER: &str = "(see attached image)";
 /// Schema members that describe the schema itself rather than the described value.
 const SCHEMA_METADATA_KEYS: [&str; 8] = [
     "$schema",

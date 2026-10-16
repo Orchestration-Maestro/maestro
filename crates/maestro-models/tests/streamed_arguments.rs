@@ -558,3 +558,38 @@ fn maestro_rejects_unrepresentable_argument_member_names() {
         );
     }
 }
+
+/// Both public paths retain object order and signed zero at the object-only seam.
+#[test]
+fn parsed_arguments_preserves_object_fallback_and_public_path() {
+    let rows: Vec<serde_json::Value> =
+        serde_json::from_str(include_str!("fixtures/provider_local_rules.json")).unwrap();
+    for row in rows.iter().filter(|row| row["kind"] == "arguments") {
+        let input = row["input"]["text"].as_str().unwrap();
+        for parse in [
+            maestro_models::parsed_arguments,
+            maestro_models::arguments::parsed_arguments,
+        ] {
+            let actual = parse(input);
+            assert_numeric_value(
+                &serde_json::Value::Object(actual.clone()),
+                &row["expected"]["value"],
+            );
+            let keys: Vec<_> = actual.keys().collect();
+            assert_eq!(serde_json::to_value(keys).unwrap(), row["expected"]["keys"]);
+            let negative_zero: Vec<_> = actual
+                .iter()
+                .filter_map(|(key, value)| {
+                    value
+                        .as_f64()
+                        .filter(|n| *n == 0.0 && n.is_sign_negative())
+                        .map(|_| key)
+                })
+                .collect();
+            assert_eq!(
+                serde_json::to_value(negative_zero).unwrap(),
+                row["expected"]["negativeZeroMembers"]
+            );
+        }
+    }
+}

@@ -6,20 +6,25 @@ use crate::{
     ToolResultMessage, UserBlock, UserContent,
 };
 
+/// Output of a tool result whose conversion selects image-only text.
+pub(crate) const IMAGE_PLACEHOLDER: &str = "(see attached image)";
+
 /// Longest tool-call identifier a destination protocol accepts, in characters.
 const ID_LIMIT: usize = 64;
 
 /// Every character outside `[A-Za-z0-9_-]` becomes one `_` per UTF-16 unit, and the result is
 /// limited to 64 characters.
 pub(crate) fn normalize_tool_call_id(id: &str) -> String {
-    id.chars()
-        .flat_map(|character| {
-            let kept = character.is_ascii_alphanumeric() || matches!(character, '_' | '-');
-            let units = if kept { 1 } else { character.len_utf16() };
-            std::iter::repeat_n(if kept { character } else { '_' }, units)
-        })
-        .take(ID_LIMIT)
-        .collect()
+    tool_call_id_characters(id).take(ID_LIMIT).collect()
+}
+
+/// Preserve ASCII identifier characters and replace every other UTF-16 unit with `_`.
+pub(crate) fn tool_call_id_characters(id: &str) -> impl Iterator<Item = char> + '_ {
+    id.chars().flat_map(|character| {
+        let kept = character.is_ascii_alphanumeric() || matches!(character, '_' | '-');
+        let units = if kept { 1 } else { character.len_utf16() };
+        std::iter::repeat_n(if kept { character } else { '_' }, units)
+    })
 }
 
 /// Optional caller normalization of tool-call identifiers across models.
@@ -391,5 +396,35 @@ fn flush_missing(result: &mut Vec<Message>, projection: &Projection<'_>) {
             is_error: true,
             timestamp: timestamp_now(),
         }));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    /// Replacement operates on UTF-16 units before caller-specific limits.
+    #[test]
+    fn tool_id_replacement_preserves_utf16_units() {
+        let rows: Vec<serde_json::Value> = serde_json::from_str(include_str!(
+            "../../tests/fixtures/provider_local_rules.json"
+        ))
+        .unwrap();
+        for row in rows.iter().filter(|row| row["kind"] == "id_units") {
+            let id = row["input"]["id"].as_str().unwrap();
+            let expected = &row["expected"];
+            assert_eq!(
+                super::tool_call_id_characters(id).collect::<String>(),
+                expected["replacement"].as_str().unwrap()
+            );
+            assert_eq!(
+                super::tool_call_id_characters(id)
+                    .take(40)
+                    .collect::<String>(),
+                expected["forty"].as_str().unwrap()
+            );
+            assert_eq!(
+                super::normalize_tool_call_id(id),
+                expected["sixtyFour"].as_str().unwrap()
+            );
+        }
     }
 }

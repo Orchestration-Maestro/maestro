@@ -10,11 +10,11 @@ use super::wire::{
     MessageStart, OpenedBlock, Position, StartedMessage, ToolUse, Usage,
 };
 use crate::providers::http::RequestFailure;
-use crate::providers::json_text::json_value;
+use crate::providers::json_text::{json_value, or_zero};
 use crate::{
     AssistantContent, AssistantMessage, AssistantMessageEvent, AssistantMessageEventStream,
     JsonObject, Model, SharedAssistantMessage, StopReason, TextContent, ThinkingContent, Tool,
-    ToolCall, calculate_cost, parse_streaming_json,
+    ToolCall, calculate_cost, parsed_arguments,
 };
 
 /// Text of a redacted reasoning block.
@@ -116,10 +116,10 @@ impl<'a> Reducer<'a> {
         self.update(|message| message.response_id = id);
         let usage = reported_usage(usage.as_deref())?;
         self.update(|message| {
-            message.usage.input = reported(usage.input);
-            message.usage.output = reported(usage.output);
-            message.usage.cache_read = reported(usage.cache_read);
-            message.usage.cache_write = reported(usage.cache_write);
+            message.usage.input = or_zero(usage.input);
+            message.usage.output = or_zero(usage.output);
+            message.usage.cache_read = or_zero(usage.cache_read);
+            message.usage.cache_write = or_zero(usage.cache_write);
             self.total_usage(message);
         });
         Ok(())
@@ -250,7 +250,7 @@ impl<'a> Reducer<'a> {
             (BlockDelta::ArgumentFragment(fragment), Kind::Tool(partial)) => {
                 let buffer = partial.get_or_insert_with(String::new);
                 buffer.push_str(&fragment);
-                let arguments = streamed_arguments(buffer);
+                let arguments = parsed_arguments(buffer);
                 self.append_arguments(position, fragment, arguments);
             }
             _ => {}
@@ -318,7 +318,7 @@ impl<'a> Reducer<'a> {
         };
         slot.open = false;
         let tool_arguments = match &slot.kind {
-            Kind::Tool(Some(partial)) => Some(streamed_arguments(partial)),
+            Kind::Tool(Some(partial)) => Some(parsed_arguments(partial)),
             _ => None,
         };
         let ended = self.update(|message| {
@@ -368,11 +368,6 @@ fn thinking_start(content_index: usize, partial: SharedAssistantMessage) -> Assi
     }
 }
 
-/// A reported count where a missing, null or zero report means zero.
-fn reported(count: Option<f64>) -> f64 {
-    count.filter(|count| *count != 0.0).unwrap_or(0.0)
-}
-
 /// Build a reasoning block.
 fn thinking(text: String, signature: Option<String>, redacted: Option<bool>) -> AssistantContent {
     AssistantContent::Thinking(ThinkingContent {
@@ -405,14 +400,6 @@ fn tool_call(call: ToolUse, name: String) -> AssistantContent {
 /// Decode the usage an event reports where a reduction reads it.
 fn reported_usage(raw: Option<&RawValue>) -> Result<Usage, RequestFailure> {
     Usage::read(raw).map_err(|cause| RequestFailure::new(cause.to_string()))
-}
-
-/// Parse streamed argument text into an object; anything else becomes empty.
-fn streamed_arguments(partial: &str) -> JsonObject {
-    match parse_streaming_json(Some(partial)) {
-        Value::Object(arguments) => arguments,
-        _ => JsonObject::new(),
-    }
 }
 
 /// The outcome a stop reason names.
