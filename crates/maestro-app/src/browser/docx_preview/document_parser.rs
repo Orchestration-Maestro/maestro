@@ -1,27 +1,27 @@
 //! Word body framing and selected CSS property parsing.
 use super::{
     DocxError, DomType, OpenXmlElement, OpenXmlElementBase, OpenXmlElementData as Data,
-    OpenXmlElementTree, OwnedXmlElement, UnparsedKind, XmlElement, XmlParser, parse_xml_string,
+    OpenXmlElementTree, OwnedXmlElement, XmlElement, XmlParser, parse_xml_string,
 };
 
 /// Parse the immediate body elements of an owned XML selection.
 ///
 /// # Errors
-/// Returns the existing XML admission error if the source cannot be parsed.
+/// Returns an XML error for invalid input or missing required picture structure.
 pub fn parse_body_elements(input: &OwnedXmlElement) -> Result<OpenXmlElementTree, DocxError> {
     parse(input, Framing::Body)
 }
 /// Parse a paragraph with distinct run and parent identities.
 ///
 /// # Errors
-/// Returns the existing XML admission error if the source cannot be parsed.
+/// Returns an XML error for invalid input or missing required picture structure.
 pub fn parse_paragraph(input: &OwnedXmlElement) -> Result<OpenXmlElementTree, DocxError> {
     parse(input, Framing::Paragraph)
 }
 /// Parse one run, retaining ordered inline content.
 ///
 /// # Errors
-/// Returns the existing XML admission error if the source cannot be parsed.
+/// Returns an XML error for invalid input or missing required picture structure.
 pub fn parse_run(input: &OwnedXmlElement) -> Result<OpenXmlElementTree, DocxError> {
     parse(input, Framing::Run)
 }
@@ -39,7 +39,7 @@ pub(super) enum Framing {
 fn parse(input: &OwnedXmlElement, framing: Framing) -> Result<OpenXmlElementTree, DocxError> {
     let xml = parse_xml_string(input.source(), false)?;
     let selected = xml.selected(input)?;
-    Ok(parse_selected(&xml, selected, input, framing))
+    parse_selected(&xml, selected, input, framing)
 }
 /// Construct one arena from an already admitted selection.
 pub(super) fn parse_selected<'doc, 'input: 'doc>(
@@ -47,31 +47,31 @@ pub(super) fn parse_selected<'doc, 'input: 'doc>(
     element: XmlElement<'doc, 'input>,
     input: &'doc OwnedXmlElement,
     framing: Framing,
-) -> OpenXmlElementTree {
+) -> Result<OpenXmlElementTree, DocxError> {
     let mut parser = DocumentParser {
         xml,
         input,
         tree: OpenXmlElementTree::default(),
     };
     parser.tree.roots = match framing {
-        Framing::Body => parser.body(element),
-        Framing::Paragraph => vec![parser.paragraph(element)],
-        Framing::Run => vec![parser.run(element, None)],
+        Framing::Body => parser.body(element)?,
+        Framing::Paragraph => vec![parser.paragraph(element)?],
+        Framing::Run => vec![parser.run(element, None)?],
     };
-    parser.tree
+    Ok(parser.tree)
 }
 /// One parse's borrowed XML view and owned result arena.
-struct DocumentParser<'doc, 'input> {
+pub(super) struct DocumentParser<'doc, 'input> {
     /// Reparsed complete XML input.
-    xml: &'doc XmlParser<'input>,
+    pub(super) xml: &'doc XmlParser<'input>,
     /// Shared source for retained child selections.
     input: &'doc OwnedXmlElement,
     /// Output arena under construction.
-    tree: OpenXmlElementTree,
+    pub(super) tree: OpenXmlElementTree,
 }
 impl<'input> DocumentParser<'_, 'input> {
     /// Allocate one node and return its arena position.
-    fn push(&mut self, data: Data) -> usize {
+    pub(super) fn push(&mut self, data: Data) -> usize {
         let id = self.tree.nodes.len();
         self.tree.nodes.push(OpenXmlElement {
             base: OpenXmlElementBase::default(),
@@ -80,23 +80,27 @@ impl<'input> DocumentParser<'_, 'input> {
         id
     }
     /// Keep a foreign branch with its shared source selection.
-    fn retain(&mut self, element: XmlElement<'_, 'input>, kind: UnparsedKind) -> usize {
+    fn retain(&mut self, element: XmlElement<'_, 'input>, kind: DomType) -> usize {
         self.push(Data::Unparsed {
             kind,
             element: self.input.slice(element),
         })
     }
     /// Parse immediate body children.
-    fn body(&mut self, element: XmlElement<'_, 'input>) -> Vec<usize> {
+    pub(super) fn body(
+        &mut self,
+        element: XmlElement<'_, 'input>,
+    ) -> Result<Vec<usize>, DocxError> {
         let mut children = Vec::new();
         for child in self.xml.elements(element, None) {
             match child.local_name() {
-                "p" => children.push(self.paragraph(child)),
-                "tbl" => children.push(self.retain(child, UnparsedKind::Element(DomType::Table))),
+                "p" => children.push(self.paragraph(child)?),
+                "tbl" => children.push(self.retain(child, DomType::Table)),
                 "sdt" => children.extend(
                     self.xml
                         .element(child, "sdtContent")
                         .map(|c| self.body(c))
+                        .transpose()?
                         .unwrap_or_default(),
                 ),
                 "altChunk" => children.push(self.push(Data::AltChunk {
@@ -105,25 +109,29 @@ impl<'input> DocumentParser<'_, 'input> {
                 _ => {}
             }
         }
-        children
+        Ok(children)
     }
     /// Build a paragraph whose run parents keep this arena identity.
-    fn paragraph(&mut self, element: XmlElement<'_, 'input>) -> usize {
+    fn paragraph(&mut self, element: XmlElement<'_, 'input>) -> Result<usize, DocxError> {
         let id = self.push(Data::Paragraph {
             properties: Box::default(),
         });
-        self.tree.nodes[id].base.children = self.paragraph_children(element, id);
-        id
+        self.tree.nodes[id].base.children = self.paragraph_children(element, id)?;
+        Ok(id)
     }
     /// Recognize paragraph children using the supplied parent identity.
-    fn paragraph_children(&mut self, element: XmlElement<'_, 'input>, parent: usize) -> Vec<usize> {
+    fn paragraph_children(
+        &mut self,
+        element: XmlElement<'_, 'input>,
+        parent: usize,
+    ) -> Result<Vec<usize>, DocxError> {
         let mut children = Vec::new();
         for child in self.xml.elements(element, None) {
             match child.local_name() {
-                "r" => children.push(self.run(child, Some(parent))),
+                "r" => children.push(self.run(child, Some(parent))?),
                 "fldSimple" => {
                     let field = self.push(self.field(child));
-                    self.tree.nodes[field].base.children = self.paragraph_children(child, field);
+                    self.tree.nodes[field].base.children = self.paragraph_children(child, field)?;
                     children.push(field);
                 }
                 "pPr" => {
@@ -137,30 +145,34 @@ impl<'input> DocumentParser<'_, 'input> {
                     self.xml
                         .element(child, "sdtContent")
                         .map(|c| self.hidden_children(c))
+                        .transpose()?
                         .unwrap_or_default(),
                 ),
-                "ins" | "del" => children.push(self.change(child)),
+                "bookmarkStart" => children.push(self.push(
+                    super::document::bookmarks::parse_bookmark_start(self.xml, child),
+                )),
+                "bookmarkEnd" => children.push(self.push(
+                    super::document::bookmarks::parse_bookmark_end(self.xml, child),
+                )),
+                "oMath" | "oMathPara" => children.push(self.math(child)?),
+                "ins" | "del" => children.push(self.change(child)?),
                 name => {
                     let kind = match name {
                         "hyperlink" => DomType::Hyperlink,
                         "smartTag" => DomType::SmartTag,
-                        "bookmarkStart" => DomType::BookmarkStart,
-                        "bookmarkEnd" => DomType::BookmarkEnd,
                         "commentRangeStart" => DomType::CommentRangeStart,
                         "commentRangeEnd" => DomType::CommentRangeEnd,
-                        "oMath" => DomType::MmlMath,
-                        "oMathPara" => DomType::MmlMathParagraph,
                         _ => continue,
                     };
-                    children.push(self.retain(child, UnparsedKind::Element(kind)));
+                    children.push(self.retain(child, kind));
                 }
             }
         }
-        children
+        Ok(children)
     }
     /// Build a change wrapper while retaining its hidden paragraph parents.
-    fn change(&mut self, element: XmlElement<'_, 'input>) -> usize {
-        let children = self.hidden_children(element);
+    fn change(&mut self, element: XmlElement<'_, 'input>) -> Result<usize, DocxError> {
+        let children = self.hidden_children(element)?;
         let data = if element.local_name() == "ins" {
             Data::Inserted
         } else {
@@ -168,15 +180,18 @@ impl<'input> DocumentParser<'_, 'input> {
         };
         let id = self.push(data);
         self.tree.nodes[id].base.children = children;
-        id
+        Ok(id)
     }
     /// Retain a hidden paragraph identity while flattening its child positions.
-    fn hidden_children(&mut self, element: XmlElement<'_, 'input>) -> Vec<usize> {
-        let id = self.paragraph(element);
-        self.tree.nodes[id].base.children.clone()
+    fn hidden_children(
+        &mut self,
+        element: XmlElement<'_, 'input>,
+    ) -> Result<Vec<usize>, DocxError> {
+        let id = self.paragraph(element)?;
+        Ok(self.tree.nodes[id].base.children.clone())
     }
     /// Copy one nullable decoded attribute into its payload.
-    fn attr(&self, element: XmlElement<'_, 'input>, name: &str) -> Option<String> {
+    pub(super) fn attr(&self, element: XmlElement<'_, 'input>, name: &str) -> Option<String> {
         self.xml.attr(element, name).map(str::to_owned)
     }
     /// Read shared field flags with the kind-specific open metadata.
@@ -208,29 +223,56 @@ impl<'input> DocumentParser<'_, 'input> {
         }
     }
     /// Build a run and its ordered inline text.
-    fn run(&mut self, element: XmlElement<'_, 'input>, parent: Option<usize>) -> usize {
+    fn run(
+        &mut self,
+        element: XmlElement<'_, 'input>,
+        parent: Option<usize>,
+    ) -> Result<usize, DocxError> {
         let id = self.push(Data::Run {
+            r#type: DomType::Run,
             field_run: false,
             properties: super::RunProperties::default(),
         });
         self.tree.nodes[id].base.parent = parent;
         for child in self.xml.elements(element, None) {
-            if child.local_name() == "rPr" {
-                properties::parse_run_properties(self.xml, child, &mut self.tree.nodes[id].data);
-                continue;
+            if let Some(child) = Self::alternate_content(self.xml, child) {
+                self.run_element(child, id)?;
             }
-            let Some(data) = self.run_child(child) else {
-                continue;
-            };
-            if matches!(data, Data::ComplexField { .. } | Data::Instruction { .. })
-                && let Data::Run { field_run, .. } = &mut self.tree.nodes[id].data
-            {
-                *field_run = true;
-            }
-            let child = self.push(data);
-            self.tree.nodes[id].base.children.push(child);
         }
-        id
+        Ok(id)
+    }
+    /// Select only the first fallback element when an alternate wrapper is encountered.
+    fn alternate_content<'doc>(
+        xml: &'doc XmlParser<'input>,
+        child: XmlElement<'doc, 'input>,
+    ) -> Option<XmlElement<'doc, 'input>> {
+        if child.local_name() == "AlternateContent" {
+            xml.element(child, "Fallback")
+                .and_then(|fallback| xml.elements(fallback, None).next())
+        } else {
+            Some(child)
+        }
+    }
+    /// Append one inline element or update the owning run properties.
+    fn run_element(&mut self, child: XmlElement<'_, 'input>, id: usize) -> Result<(), DocxError> {
+        let node = match child.local_name() {
+            "rPr" => {
+                properties::parse_run_properties(self.xml, child, &mut self.tree.nodes[id].data);
+                None
+            }
+            "pict" => Some(self.vml_picture(child)?),
+            "drawing" => self.drawing(child)?,
+            _ => self.run_child(child).map(|data| {
+                if matches!(data, Data::ComplexField { .. } | Data::Instruction { .. })
+                    && let Data::Run { field_run, .. } = &mut self.tree.nodes[id].data
+                {
+                    *field_run = true;
+                }
+                self.push(data)
+            }),
+        };
+        self.tree.nodes[id].base.children.extend(node);
+        Ok(())
     }
     /// Construct one recognized inline payload.
     fn run_child(&self, child: XmlElement<'_, 'input>) -> Option<Data> {
@@ -244,7 +286,10 @@ impl<'input> DocumentParser<'_, 'input> {
             "fldSimple" | "fldChar" => self.field(child),
             "noBreakHyphen" => Data::NoBreakHyphen,
             "tab" => Data::Tab,
-            "AlternateContent" | "commentReference" | "drawing" | "pict" => self.raw_run(child),
+            "commentReference" => Data::Unparsed {
+                kind: DomType::CommentReference,
+                element: self.input.slice(child),
+            },
             "sym" => Data::Symbol {
                 font: self
                     .xml
@@ -274,20 +319,6 @@ impl<'input> DocumentParser<'_, 'input> {
             },
             _ => return None,
         })
-    }
-
-    /// Retain an inline foreign branch without selecting alternate content.
-    fn raw_run(&self, child: XmlElement<'_, 'input>) -> Data {
-        let kind = match child.local_name() {
-            "commentReference" => UnparsedKind::Element(DomType::CommentReference),
-            "drawing" => UnparsedKind::Element(DomType::Drawing),
-            "pict" => UnparsedKind::Element(DomType::VmlPicture),
-            _ => UnparsedKind::AlternateContent,
-        };
-        Data::Unparsed {
-            kind,
-            element: self.input.slice(child),
-        }
     }
 }
 
@@ -334,3 +365,8 @@ pub use table_style::{TableStyle, parse_table_style};
 
 mod properties;
 pub(super) mod styles;
+
+mod drawing;
+
+mod math;
+pub use math::MathProperties;

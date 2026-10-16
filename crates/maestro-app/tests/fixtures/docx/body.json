@@ -2664,45 +2664,6 @@
         },
         {
           "context": "paragraph",
-          "name": "bookmarkStart",
-          "kind": "bookmarkStart",
-          "xml": {
-            "local_name": "bookmarkStart",
-            "namespace": "urn:w",
-            "attributes": [
-              {
-                "local_name": "id",
-                "namespace": "urn:w",
-                "value": "0"
-              },
-              {
-                "local_name": "name",
-                "namespace": "urn:w",
-                "value": "name"
-              }
-            ],
-            "children": []
-          }
-        },
-        {
-          "context": "paragraph",
-          "name": "bookmarkEnd",
-          "kind": "bookmarkEnd",
-          "xml": {
-            "local_name": "bookmarkEnd",
-            "namespace": "urn:w",
-            "attributes": [
-              {
-                "local_name": "id",
-                "namespace": "urn:w",
-                "value": "0"
-              }
-            ],
-            "children": []
-          }
-        },
-        {
-          "context": "paragraph",
           "name": "commentRangeStart",
           "kind": "commentRangeStart",
           "xml": {
@@ -2734,28 +2695,6 @@
             ],
             "children": []
           }
-        },
-        {
-          "context": "paragraph",
-          "name": "oMath",
-          "kind": "mmlMath",
-          "xml": {
-            "local_name": "oMath",
-            "namespace": "urn:w",
-            "attributes": [],
-            "children": []
-          }
-        },
-        {
-          "context": "paragraph",
-          "name": "oMathPara",
-          "kind": "mmlMathParagraph",
-          "xml": {
-            "local_name": "oMathPara",
-            "namespace": "urn:w",
-            "attributes": [],
-            "children": []
-          }
         }
       ]
     }
@@ -2783,99 +2722,6 @@
               }
             ],
             "children": []
-          }
-        },
-        {
-          "context": "run",
-          "name": "drawing",
-          "kind": "drawing",
-          "xml": {
-            "local_name": "drawing",
-            "namespace": "urn:w",
-            "attributes": [],
-            "children": [
-              {
-                "local_name": "inline",
-                "namespace": "urn:a",
-                "attributes": [],
-                "children": []
-              }
-            ]
-          }
-        },
-        {
-          "context": "run",
-          "name": "pict",
-          "kind": "vmlPicture",
-          "xml": {
-            "local_name": "pict",
-            "namespace": "urn:w",
-            "attributes": [],
-            "children": [
-              {
-                "local_name": "rect",
-                "namespace": "urn:v",
-                "attributes": [],
-                "children": []
-              }
-            ]
-          }
-        }
-      ]
-    }
-  },
-  {
-    "test": "alternate_content_is_retained_for_drawing_parser",
-    "input": {
-      "operation": "run",
-      "xml": "<w:r xmlns:w=\"urn:w\" xmlns:mc=\"urn:mc\"><mc:AlternateContent><mc:Choice Requires=\"w\"><w:t>choice</w:t></mc:Choice><mc:Fallback><w:tab/></mc:Fallback></mc:AlternateContent></w:r>"
-    },
-    "expected": {
-      "foreign_slots": [
-        {
-          "context": "run",
-          "name": "AlternateContent",
-          "kind": null,
-          "xml": {
-            "local_name": "AlternateContent",
-            "namespace": "urn:mc",
-            "attributes": [],
-            "children": [
-              {
-                "local_name": "Choice",
-                "namespace": "urn:mc",
-                "attributes": [
-                  {
-                    "local_name": "Requires",
-                    "namespace": null,
-                    "value": "w"
-                  }
-                ],
-                "children": [
-                  {
-                    "local_name": "t",
-                    "namespace": "urn:w",
-                    "attributes": [],
-                    "children": [
-                      "choice"
-                    ]
-                  }
-                ]
-              },
-              {
-                "local_name": "Fallback",
-                "namespace": "urn:mc",
-                "attributes": [],
-                "children": [
-                  {
-                    "local_name": "tab",
-                    "namespace": "urn:w",
-                    "attributes": [],
-                    "children": []
-                  }
-                ]
-              }
-            ]
           }
         }
       ]

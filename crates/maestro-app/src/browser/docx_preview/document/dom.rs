@@ -55,8 +55,60 @@ pub enum DomType {
     MmlMathParagraph,
     /// `CommentReference` element.
     CommentReference,
+    /// Embedded picture element.
+    Image,
+    /// `MmlFraction` element.
+    MmlFraction,
+    /// `MmlFunction` element.
+    MmlFunction,
+    /// `MmlFunctionName` element.
+    MmlFunctionName,
+    /// `MmlNumerator` element.
+    MmlNumerator,
+    /// `MmlDenominator` element.
+    MmlDenominator,
+    /// `MmlRadical` element.
+    MmlRadical,
+    /// `MmlBase` element.
+    MmlBase,
+    /// `MmlDegree` element.
+    MmlDegree,
+    /// `MmlSuperscript` element.
+    MmlSuperscript,
+    /// `MmlSubscript` element.
+    MmlSubscript,
+    /// `MmlPreSubSuper` element.
+    MmlPreSubSuper,
+    /// `MmlSubArgument` element.
+    MmlSubArgument,
+    /// `MmlSuperArgument` element.
+    MmlSuperArgument,
+    /// `MmlNary` element.
+    MmlNary,
+    /// `MmlDelimiter` element.
+    MmlDelimiter,
+    /// `MmlRun` element.
+    MmlRun,
+    /// `MmlEquationArray` element.
+    MmlEquationArray,
+    /// `MmlLimit` element.
+    MmlLimit,
+    /// `MmlLimitLower` element.
+    MmlLimitLower,
+    /// `MmlMatrix` element.
+    MmlMatrix,
+    /// `MmlMatrixRow` element.
+    MmlMatrixRow,
+    /// `MmlBox` element.
+    MmlBox,
+    /// `MmlBar` element.
+    MmlBar,
+    /// `MmlGroupChar` element.
+    MmlGroupChar,
     /// Drawing element.
     Drawing,
+    /// VML shape element.
+    VmlElement,
     /// `VmlPicture` element.
     VmlPicture,
 }
@@ -91,18 +143,36 @@ impl DomType {
             Self::MmlMath => "mmlMath",
             Self::MmlMathParagraph => "mmlMathParagraph",
             Self::CommentReference => "commentReference",
+            Self::Image => "image",
+            Self::MmlFraction => "mmlFraction",
+            Self::MmlFunction => "mmlFunction",
+            Self::MmlFunctionName => "mmlFunctionName",
+            Self::MmlNumerator => "mmlNumerator",
+            Self::MmlDenominator => "mmlDenominator",
+            Self::MmlRadical => "mmlRadical",
+            Self::MmlBase => "mmlBase",
+            Self::MmlDegree => "mmlDegree",
+            Self::MmlSuperscript => "mmlSuperscript",
+            Self::MmlSubscript => "mmlSubscript",
+            Self::MmlPreSubSuper => "mmlPreSubSuper",
+            Self::MmlSubArgument => "mmlSubArgument",
+            Self::MmlSuperArgument => "mmlSuperArgument",
+            Self::MmlNary => "mmlNary",
+            Self::MmlDelimiter => "mmlDelimiter",
+            Self::MmlRun => "mmlRun",
+            Self::MmlEquationArray => "mmlEquationArray",
+            Self::MmlLimit => "mmlLimit",
+            Self::MmlLimitLower => "mmlLimitLower",
+            Self::MmlMatrix => "mmlMatrix",
+            Self::MmlMatrixRow => "mmlMatrixRow",
+            Self::MmlBox => "mmlBox",
+            Self::MmlBar => "mmlBar",
+            Self::MmlGroupChar => "mmlGroupChar",
             Self::Drawing => "drawing",
+            Self::VmlElement => "vmlElement",
             Self::VmlPicture => "vmlPicture",
         }
     }
-}
-/// Raw branch awaiting its semantic parser.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum UnparsedKind {
-    /// Recognized eventual document element kind.
-    Element(DomType),
-    /// Unselected alternate-content XML wrapper.
-    AlternateContent,
 }
 /// Typed document payload.
 #[derive(Debug)]
@@ -114,6 +184,8 @@ pub enum OpenXmlElementData {
     },
     /// Run content.
     Run {
+        /// Run or math-run kind assigned by its producer.
+        r#type: DomType,
         /// Whether instructions or complex field markers were encountered.
         field_run: bool,
         /// Completed run properties.
@@ -187,10 +259,53 @@ pub enum OpenXmlElementData {
         /// Nullable relationship identifier.
         id: Option<String>,
     },
+    /// Drawing wrapper with ordered CSS values.
+    Drawing {
+        /// Converted wrapper styles.
+        css_style: indexmap::IndexMap<String, Option<String>>,
+    },
+    /// Picture relationship and geometry.
+    Image {
+        /// Nullable relationship identifier.
+        src: Option<String>,
+        /// Ordered converted geometry.
+        css_style: indexmap::IndexMap<String, Option<String>>,
+        /// Crop sides in left, top, right, bottom order.
+        src_rect: Option<[f64; 4]>,
+        /// Unnormalized degrees.
+        rotation: Option<f64>,
+    },
+    /// VML picture container.
+    VmlPicture,
+    /// Completed VML shape.
+    VmlElement(super::super::VmlElement),
+    /// Bookmark start marker.
+    BookmarkStart {
+        /// Nullable identifier.
+        id: Option<String>,
+        /// Nullable authored name.
+        name: Option<String>,
+        /// Nullable first column.
+        col_first: Option<f64>,
+        /// Nullable last column.
+        col_last: Option<f64>,
+    },
+    /// Bookmark end marker.
+    BookmarkEnd {
+        /// Nullable identifier.
+        id: Option<String>,
+    },
+    /// Recursive typed equation element.
+    Math {
+        /// Selected equation kind.
+        r#type: DomType,
+        /// Last matching property group.
+        props: Option<super::super::MathProperties>,
+    },
     /// Unparsed content.
     Unparsed {
-        /// Eventual kind or unselected wrapper.
-        kind: UnparsedKind,
+        /// Known eventual document kind.
+        kind: DomType,
         /// Shared complete XML source and selected range.
         element: OwnedXmlElement,
     },
@@ -214,32 +329,33 @@ pub struct OpenXmlElement {
 impl OpenXmlElement {
     /// Return the completed or eventual document kind.
     #[must_use]
-    pub fn dom_type(&self) -> Option<DomType> {
+    pub fn dom_type(&self) -> DomType {
         match self.data {
-            OpenXmlElementData::Unparsed {
-                kind: UnparsedKind::AlternateContent,
-                ..
-            } => None,
-            OpenXmlElementData::Unparsed {
-                kind: UnparsedKind::Element(kind),
-                ..
-            } => Some(kind),
-            OpenXmlElementData::Paragraph { .. } => Some(DomType::Paragraph),
-            OpenXmlElementData::Run { .. } => Some(DomType::Run),
-            OpenXmlElementData::Text { .. } => Some(DomType::Text),
-            OpenXmlElementData::DeletedText { .. } => Some(DomType::DeletedText),
-            OpenXmlElementData::Instruction { .. } => Some(DomType::Instruction),
-            OpenXmlElementData::Break { .. } => Some(DomType::Break),
-            OpenXmlElementData::NoBreakHyphen => Some(DomType::NoBreakHyphen),
-            OpenXmlElementData::Tab => Some(DomType::Tab),
-            OpenXmlElementData::Symbol { .. } => Some(DomType::Symbol),
-            OpenXmlElementData::FootnoteReference { .. } => Some(DomType::FootnoteReference),
-            OpenXmlElementData::EndnoteReference { .. } => Some(DomType::EndnoteReference),
-            OpenXmlElementData::SimpleField { .. } => Some(DomType::SimpleField),
-            OpenXmlElementData::ComplexField { .. } => Some(DomType::ComplexField),
-            OpenXmlElementData::Inserted => Some(DomType::Inserted),
-            OpenXmlElementData::Deleted => Some(DomType::Deleted),
-            OpenXmlElementData::AltChunk { .. } => Some(DomType::AltChunk),
+            OpenXmlElementData::Unparsed { kind, .. } => kind,
+            OpenXmlElementData::Image { .. } => DomType::Image,
+            OpenXmlElementData::VmlPicture => DomType::VmlPicture,
+            OpenXmlElementData::VmlElement(_) => DomType::VmlElement,
+            OpenXmlElementData::Drawing { .. } => DomType::Drawing,
+            OpenXmlElementData::Paragraph { .. } => DomType::Paragraph,
+            OpenXmlElementData::Run { r#type, .. } | OpenXmlElementData::Math { r#type, .. } => {
+                r#type
+            }
+            OpenXmlElementData::BookmarkStart { .. } => DomType::BookmarkStart,
+            OpenXmlElementData::BookmarkEnd { .. } => DomType::BookmarkEnd,
+            OpenXmlElementData::Text { .. } => DomType::Text,
+            OpenXmlElementData::DeletedText { .. } => DomType::DeletedText,
+            OpenXmlElementData::Instruction { .. } => DomType::Instruction,
+            OpenXmlElementData::Break { .. } => DomType::Break,
+            OpenXmlElementData::NoBreakHyphen => DomType::NoBreakHyphen,
+            OpenXmlElementData::Tab => DomType::Tab,
+            OpenXmlElementData::Symbol { .. } => DomType::Symbol,
+            OpenXmlElementData::FootnoteReference { .. } => DomType::FootnoteReference,
+            OpenXmlElementData::EndnoteReference { .. } => DomType::EndnoteReference,
+            OpenXmlElementData::SimpleField { .. } => DomType::SimpleField,
+            OpenXmlElementData::ComplexField { .. } => DomType::ComplexField,
+            OpenXmlElementData::Inserted => DomType::Inserted,
+            OpenXmlElementData::Deleted => DomType::Deleted,
+            OpenXmlElementData::AltChunk { .. } => DomType::AltChunk,
         }
     }
 }
