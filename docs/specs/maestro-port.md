@@ -180,8 +180,10 @@ frame → viewport → feature root. The outer frame owns position, size, separa
 transform, opacity and external clipping; it never scrolls. Its paint extent is
 the ancestor clip intersected with finite drawable canvas bounds, minus control
 occluders, without intersection with its own rectangle. A zero-size viewport is empty.
-The retained host-created viewport owns an explicit border-box clip and is the only
-scrolling element. Feature styles own decoration: the PDF overlay's background and
+The retained host-created viewport owns an explicit border-box clip and is the
+only host-created scroller; the frame never scrolls. Content-owned scrollers,
+such as individual spreadsheet sheet containers, remain with their feature.
+Feature styles own decoration: the PDF overlay's background and
 border stay on the viewport, its outer shadow stays on the frame, and page-local
 shadows stay on pages. Other reading features gain no frame shadow.
 Measurement uses bounded hidden auto-height frame/viewport placement, reads natural

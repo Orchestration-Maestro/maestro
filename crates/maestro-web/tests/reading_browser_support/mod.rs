@@ -186,7 +186,11 @@ impl View {
             events,
             ..Default::default()
         };
-        input.viewports.get_mut(&egui::ViewportId::ROOT).unwrap().native_pixels_per_point = Some(self.density);
+        input
+            .viewports
+            .get_mut(&egui::ViewportId::ROOT)
+            .unwrap()
+            .native_pixels_per_point = Some(self.density);
         self.context.begin_pass(input);
         let result = overlay.render(
             &self.context,

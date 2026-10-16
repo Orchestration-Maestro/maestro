@@ -4,8 +4,8 @@ pub mod support;
 use maestro_web::{
     AttachmentOverlay, browser::attachment_content::*, tools::artifacts::create_artifact_element,
 };
-use std::{cell::RefCell, rc::Rc};
 use num_traits::ToPrimitive as _;
+use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
 /// Evaluate document observations without shipping test bindings.
 fn js(code: &str) -> JsValue {

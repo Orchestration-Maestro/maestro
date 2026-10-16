@@ -106,7 +106,9 @@ are valid. Failed measurement/publication discards the candidate and retains the
 previous root, native selection, scroll and placement without remounting it.
 The host retains a fixed frame, its host-created scrolling viewport and the feature
 root beneath that viewport. The frame owns placement and external clipping; the
-viewport explicitly clips its own border box. The feature stylesheet owns decoration,
+viewport explicitly clips its own border box. It is the only host-created scroller;
+the frame never scrolls. Feature-owned scrollers, including individual spreadsheet
+sheets, keep their own scroll state. The feature stylesheet owns decoration,
 not the growing root. One shared transaction restores exact optional
 frame/viewport/slot style attributes and fractional viewport scroll positions on both
 axes after measurement or failed publication.

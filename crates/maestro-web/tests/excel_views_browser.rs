@@ -103,7 +103,8 @@ pub fn excel_native_tables_paint_formatted_text_merges_and_links() {
     );
     {
         use maestro_app::browser::ssf::{
-            CellAddress, CellObject, CellValue, ExcelDataType, Range, Ssf, WorkSheet, sheet_to_html,
+            CellAddress, CellObject, CellValue, ExcelDataType, NumberFormat, Range, Ssf, WorkSheet,
+            sheet_to_html,
         };
         let mut sheet = WorkSheet {
             cells: [(
@@ -113,8 +114,9 @@ pub fn excel_native_tables_paint_formatted_text_merges_and_links() {
                     v: CellValue::Number(12.),
                     w: Some("12".into()),
                     h: None,
-                    z: Some("0 \"quoted\" 雪".into()),
+                    z: Some(NumberFormat::Code("0 \"quoted\" 雪".into())),
                     l: None,
+                    xf: None,
                 },
             )]
             .into_iter()
