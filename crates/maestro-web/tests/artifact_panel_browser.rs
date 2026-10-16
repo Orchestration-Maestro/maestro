@@ -134,7 +134,7 @@ pub fn artifact_panel_browser_switches_keep_native_roots() {
             egui::Shape::Mesh(mesh) => Some(mesh.calc_bounds().center()),
             _ => None,
         })
-        .nth(1)
+        .next()
         .unwrap();
     view.draw(vec![
         egui::Event::PointerMoved(pos),
@@ -448,4 +448,53 @@ fn draw_attachment(
         },
     );
     output.textures_delta.clear();
+}
+
+/// Opaque native content cannot cover either canvas shell divider.
+#[wasm_bindgen]
+pub fn artifact_panel_browser_body_leaves_shell_dividers_visible() {
+    let view = Panel::new();
+    view.create("a.zip");
+    for overlay in [false, true] {
+        view.panel.set_overlay(overlay);
+        view.draw(vec![]);
+        let output = view.draw(vec![]);
+        let document = web_sys::window().unwrap().document().unwrap();
+        let root = document
+            .query_selector(".maestro-generic-artifact")
+            .unwrap()
+            .unwrap();
+        let rect = root.parent_element().unwrap().get_bounding_client_rect();
+        let boundaries: Vec<_> = output
+            .shapes
+            .iter()
+            .filter_map(|shape| match &shape.shape {
+                egui::Shape::LineSegment { points, stroke }
+                    if stroke.width.to_bits() == 1_f32.to_bits() =>
+                {
+                    Some(*points)
+                }
+                _ => None,
+            })
+            .collect();
+        assert_eq!(boundaries.len(), if overlay { 1 } else { 2 });
+        for line in boundaries {
+            let point = line[0].lerp(line[1], 0.5);
+            // Native rectangles share the canvas's origin in this runner.
+            let hit = document.element_from_point(point.x, point.y).unwrap();
+            assert_eq!(
+                hit.tag_name(),
+                "CANVAS",
+                "divider covered by native body at {point:?}; body {rect:?}"
+            );
+        }
+        assert!(rect.width() > 0. && rect.height() > 0.);
+        let body = document
+            .element_from_point(
+                num_traits::cast(rect.x() + 10.).unwrap(),
+                num_traits::cast(rect.y() + 10.).unwrap(),
+            )
+            .unwrap();
+        assert_ne!(body.tag_name(), "CANVAS");
+    }
 }

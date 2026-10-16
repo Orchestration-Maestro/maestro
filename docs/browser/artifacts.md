@@ -50,9 +50,15 @@ panel.render(ui, &caller, view)?;
 The embedding presentation delegates its view upsert, show and removal callbacks
 to this panel. The library does not install a production presentation adapter.
 Tabs use record filenames in insertion order; clicking one calls the application's
-`show_artifact`, not its host-open notification. The selected installed view
+`show_artifact`, not its host-open notification. Tab labels collapse HTML spaces,
+tabs and line breaks into a single line; selection and downloads keep the original
+filename. Horizontal padding also keeps an empty label clickable. Keyboard traversal
+visits tabs, selected-view header controls, then close, with controls right-aligned.
+The selected installed view
 supplies the original-byte download header. A close activation calls the optional
-notification without changing selection or disposing views.
+notification without changing selection or disposing views. Header controls run
+once per toolkit render pass, which can run more than once in one presentation
+when layout needs another pass.
 
 `set_collapsed` and `set_overlay` request repaint. Rendering reconciles native
 visibility. Empty, collapsed and disconnected panels paint no shell; selected
@@ -67,7 +73,8 @@ selection and scroll. Remove a file or drop its final view owner to release its
 surface. Ordinary attachment-modal closure still releases its modal-owned
 children; retained panel placement does not change that ownership rule.
 
-Inline layout has a left border. Overlay uses viewport geometry and toolkit modal
+Inline layout reserves a left border outside the native body. Both layouts reserve
+the tab-bar divider outside that body. Overlay uses viewport geometry and toolkit modal
 input admission with transparent backdrop paint. **The full-viewport dimmed and
 blurred backdrop is not yet composed**; [#1145](https://github.com/Orchestration-Maestro/maestro/issues/1145)
 owns it. The target dims and blurs the underlying application, while the panel's

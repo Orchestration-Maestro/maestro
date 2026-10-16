@@ -125,7 +125,15 @@ fn assert_render(
     );
     let presentation = harness.frame.pack.presentation(harness.frame.mode).unwrap();
     for (span, tab) in spans.iter().zip(&expected.tabs) {
-        assert_eq!(span.galley.job.text, tab.filename);
+        assert!(
+            harness
+                .caller
+                .artifacts()
+                .read()
+                .unwrap()
+                .values()
+                .any(|record| record.read().unwrap().filename == tab.filename)
+        );
         let role = if tab.active { "accent" } else { "muted" };
         let color = span.override_text_color.unwrap_or(span.fallback_color);
         assert_eq!(
@@ -179,7 +187,7 @@ fn artifact_panel_active_header_comes_from_selected_view() {
     }
 }
 
-/// Actual icon geometry, in drawing order, identifies canvas controls.
+/// Actual icon geometry identifies close (zero) and download (one) controls.
 fn control(output: &egui::FullOutput, index: usize) -> egui::Pos2 {
     output
         .shapes
@@ -188,7 +196,7 @@ fn control(output: &egui::FullOutput, index: usize) -> egui::Pos2 {
             egui::Shape::Mesh(mesh) => Some(mesh.calc_bounds().center()),
             _ => None,
         })
-        .nth(index)
+        .nth(1 - index)
         .unwrap()
 }
 
@@ -819,7 +827,14 @@ fn assert_shadows(
     layers: &[artifact_support::panel::Shadow],
 ) {
     let presentation = harness.frame.pack.presentation(harness.frame.mode).unwrap();
-    let bounds = harness.host.published.borrow().values().next().unwrap().1;
+    let body = harness.host.published.borrow().values().next().unwrap().1;
+    let bounds = egui::Rect::from_min_max(
+        egui::pos2(
+            body.left() - if harness.panel.overlay() { 0. } else { 1. },
+            body.top() - 41.,
+        ),
+        body.max,
+    );
     assert_eq!(bounds.bottom().to_bits(), 300_f32.to_bits());
     let shadows: Vec<_> = output
         .shapes
@@ -842,7 +857,7 @@ fn assert_shadows(
         );
         assert_eq!(
             actual.rect.top().to_bits(),
-            (bounds.top() - 40. - expected.spread + expected.offset[1]).to_bits()
+            (bounds.top() - expected.spread + expected.offset[1]).to_bits()
         );
         assert_eq!(
             actual.fill.a(),
@@ -939,4 +954,159 @@ fn artifact_panel_callback_removal_does_not_resurrect_view() {
     harness.draw().unwrap();
     assert_eq!(harness.host.published.borrow().len(), 1);
     assert!(!harness.host.published.borrow().contains_key(&original));
+}
+
+/// Visible labels retain horizontal padding, including a clickable empty filename.
+#[test]
+fn artifact_panel_tabs_preserve_padding_and_empty_hit_area() {
+    let harness = Harness::new(&Input {
+        entries: vec![
+            ("a.zip".into(), "a.zip".into()),
+            ("b.zip".into(), "b.zip".into()),
+            (String::new(), String::new()),
+        ],
+        active: Some("a.zip".into()),
+        ..Default::default()
+    });
+    harness.draw().unwrap();
+    let output = harness.draw().unwrap();
+    let a = tab(&output, "a.zip");
+    let b = tab(&output, "b.zip");
+    let padding: f32 = num_traits::cast(
+        harness
+            .frame
+            .pack
+            .presentation(harness.frame.mode)
+            .unwrap()
+            .spacing["md"],
+    )
+    .unwrap();
+    assert!((b.left() - a.right() - 2. * padding).abs() < 1.);
+    harness.click(egui::pos2(b.right() + 2. * padding, b.center().y));
+    assert_eq!(harness.caller.active_filename().as_deref(), Some(""));
+}
+
+/// CSS whitespace presentation stays on one row without changing selection identity.
+#[test]
+fn artifact_panel_filename_whitespace_is_single_row_and_literal_selection() {
+    let name = " \tline\r\n  break\x0c.zip  ";
+    let mut harness = Harness::new(&Input {
+        entries: vec![
+            (name.into(), name.into()),
+            ("line break .zip".into(), "line break .zip".into()),
+            ("a\u{a0} b.zip".into(), "a\u{a0} b.zip".into()),
+        ],
+        active: Some("line break .zip".into()),
+        ..Default::default()
+    });
+    harness.frame.size = egui::vec2(1000., 300.);
+    harness.draw().unwrap();
+    let output = harness.draw().unwrap();
+    let spans = text(&output);
+    assert!(spans.iter().all(|span| span.galley.rows.len() == 1));
+    assert_eq!(spans[0].galley.size(), spans[1].galley.size());
+    assert_eq!(spans[0].galley.job.text, "line break .zip");
+    assert_eq!(spans[2].galley.job.text, "a\u{a0} b.zip");
+    harness.click(egui::Rect::from_min_size(spans[0].pos, spans[0].galley.size()).center());
+    assert_eq!(harness.caller.active_filename().as_deref(), Some(name));
+    let output = harness.draw().unwrap();
+    harness.click(control(&output, 1));
+    assert_eq!(harness.host.downloads.borrow().last().unwrap().0, name);
+}
+
+/// Tab traversal follows visible source order, ending at the right-aligned close.
+#[test]
+fn artifact_panel_keyboard_traverses_tabs_header_then_close() {
+    for max_passes in [1, 2] {
+        let harness = Harness::new(&Input {
+            entries: vec![
+                ("a.zip".into(), "a.zip".into()),
+                ("b.zip".into(), "b.zip".into()),
+            ],
+            active: Some("a.zip".into()),
+            ..Default::default()
+        });
+        harness
+            .frame
+            .context
+            .options_mut(|options| options.max_passes = max_passes.try_into().unwrap());
+        let output = harness.draw().unwrap();
+        let download = control(&output, 1);
+        let close = control(&output, 0);
+        if max_passes == 2 {
+            assert!((close.x - (harness.frame.size.x - 16.)).abs() < 1.);
+        }
+        assert!(download.x < close.x);
+        for index in 0..4 {
+            let mut current = harness.draw().unwrap();
+            for pressed in [true, false] {
+                current = harness
+                    .frame
+                    .draw_panel(
+                        &harness.panel,
+                        &harness.caller,
+                        vec![egui::Event::Key {
+                            key: egui::Key::Tab,
+                            physical_key: None,
+                            pressed,
+                            repeat: false,
+                            modifiers: egui::Modifiers::NONE,
+                        }],
+                    )
+                    .unwrap();
+            }
+            let point = match index {
+                0 => tab(&current, "a.zip").center(),
+                1 => tab(&current, "b.zip").center(),
+                2 => control(&current, 1),
+                _ => control(&current, 0),
+            };
+            let id = harness.frame.context.memory(egui::Memory::focused).unwrap();
+            let response = harness.frame.context.read_response(id).unwrap();
+            assert!(
+                response.rect.contains(point),
+                "expected focus at {point:?}, got {:?}",
+                response.rect
+            );
+        }
+    }
+}
+
+/// Header evaluation follows toolkit passes, without a separate measuring call.
+#[test]
+fn artifact_panel_header_runs_once_per_pass_and_width_cache_is_local() {
+    let mut harness = Harness::new(&Input {
+        entries: vec![("a.zip".into(), "a.zip".into())],
+        active: Some("a.zip".into()),
+        ..Default::default()
+    });
+    let language = Rc::new(support::Host::default());
+    harness.frame.i18n = maestro_web::I18n::new(language.clone()).unwrap();
+    harness
+        .frame
+        .i18n
+        .get_translations()
+        .borrow_mut()
+        .get_mut("en")
+        .unwrap()
+        .borrow_mut()
+        .shift_remove("Download");
+    for changed in [true, false] {
+        language.diagnostics.borrow_mut().clear();
+        let before = harness.frame.context.cumulative_pass_nr();
+        let output = harness.draw().unwrap();
+        let passes = harness.frame.context.cumulative_pass_nr() - before;
+        assert_eq!(language.diagnostics.borrow().len() as u64, passes);
+        assert_eq!(passes, if changed { 2 } else { 1 });
+        assert!((control(&output, 0).x - (harness.frame.size.x - 16.)).abs() < 1.);
+    }
+    let mut other = Harness::new(&Input {
+        entries: vec![("b.zip".into(), "b.zip".into())],
+        ..Default::default()
+    });
+    other.frame.context = harness.frame.context.clone();
+    other.draw().unwrap();
+    let before = harness.frame.context.cumulative_pass_nr();
+    harness.draw().unwrap();
+    assert_eq!(harness.frame.context.cumulative_pass_nr() - before, 1);
 }

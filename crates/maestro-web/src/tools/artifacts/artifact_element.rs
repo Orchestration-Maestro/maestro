@@ -26,7 +26,8 @@ pub trait ArtifactElement {
         visible: bool,
         modal: Option<egui::Id>,
     ) -> Result<(), AttachmentUiError>;
-    /// Draw independent header controls.
+    /// Draw independent header controls once per toolkit render pass.
+    /// Layout may require multiple passes within one presentation.
     /// # Errors
     /// Returns localization, decoding or platform failures.
     fn get_header_buttons(

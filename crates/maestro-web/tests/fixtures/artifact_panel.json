@@ -306,12 +306,12 @@
           },
           {
             "filename": "line\nbreak.zip",
-            "text": "line\nbreak.zip",
+            "text": "line break.zip",
             "active": false
           },
           {
             "filename": "  spaced.zip  ",
-            "text": "  spaced.zip  ",
+            "text": "spaced.zip",
             "active": false
           }
         ],
@@ -397,12 +397,12 @@
           },
           {
             "filename": "line\nbreak.zip",
-            "text": "line\nbreak.zip",
+            "text": "line break.zip",
             "active": false
           },
           {
             "filename": "  spaced.zip  ",
-            "text": "  spaced.zip  ",
+            "text": "spaced.zip",
             "active": false
           }
         ],
@@ -488,12 +488,12 @@
           },
           {
             "filename": "line\nbreak.zip",
-            "text": "line\nbreak.zip",
+            "text": "line break.zip",
             "active": false
           },
           {
             "filename": "  spaced.zip  ",
-            "text": "  spaced.zip  ",
+            "text": "spaced.zip",
             "active": false
           }
         ],
@@ -579,12 +579,12 @@
           },
           {
             "filename": "line\nbreak.zip",
-            "text": "line\nbreak.zip",
+            "text": "line break.zip",
             "active": false
           },
           {
             "filename": "  spaced.zip  ",
-            "text": "  spaced.zip  ",
+            "text": "spaced.zip",
             "active": false
           }
         ],
@@ -670,12 +670,12 @@
           },
           {
             "filename": "line\nbreak.zip",
-            "text": "line\nbreak.zip",
+            "text": "line break.zip",
             "active": false
           },
           {
             "filename": "  spaced.zip  ",
-            "text": "  spaced.zip  ",
+            "text": "spaced.zip",
             "active": false
           }
         ],
@@ -761,12 +761,12 @@
           },
           {
             "filename": "line\nbreak.zip",
-            "text": "line\nbreak.zip",
+            "text": "line break.zip",
             "active": true
           },
           {
             "filename": "  spaced.zip  ",
-            "text": "  spaced.zip  ",
+            "text": "spaced.zip",
             "active": false
           }
         ],
@@ -852,12 +852,12 @@
           },
           {
             "filename": "line\nbreak.zip",
-            "text": "line\nbreak.zip",
+            "text": "line break.zip",
             "active": false
           },
           {
             "filename": "  spaced.zip  ",
-            "text": "  spaced.zip  ",
+            "text": "spaced.zip",
             "active": true
           }
         ],
@@ -943,12 +943,12 @@
           },
           {
             "filename": "line\nbreak.zip",
-            "text": "line\nbreak.zip",
+            "text": "line break.zip",
             "active": false
           },
           {
             "filename": "  spaced.zip  ",
-            "text": "  spaced.zip  ",
+            "text": "spaced.zip",
             "active": false
           }
         ],

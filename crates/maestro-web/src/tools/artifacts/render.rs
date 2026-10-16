@@ -90,35 +90,41 @@ impl ArtifactsPanel {
         style(ui, view.presentation)?;
         let bounds = ui.available_rect_before_wrap();
         self.background(ui, bounds, view)?;
-        let header = egui::Rect::from_min_size(bounds.min, egui::vec2(bounds.width(), 40.));
-        let mut bar = ui.new_child(
-            egui::UiBuilder::new()
-                .max_rect(header)
-                .layout(egui::Layout::right_to_left(egui::Align::Center)),
+        let content_left = bounds.left() + if self.overlay() { 0. } else { 1. };
+        let header = egui::Rect::from_min_max(
+            egui::pos2(content_left, bounds.top()),
+            egui::pos2(bounds.right(), bounds.top() + 40.),
         );
-        bar.spacing_mut().item_spacing.x = points(view.presentation.spacing["xs"]);
-        let close = ghost(&mut bar, view.presentation, "X")?;
-        let title = view.i18n.text("Close artifacts")?;
-        close.widget_info(|| {
-            egui::WidgetInfo::labeled(egui::WidgetType::Button, bar.is_enabled(), &title)
-        });
-        let close = close.on_hover_text(title);
-        self.header(&mut bar, active, view)?;
-        let tab_bounds = bar.available_rect_before_wrap();
-        let mut tab_ui = bar.new_child(
+        let width_id = self.id.with("controls-width");
+        let width = ui
+            .ctx()
+            .data_mut(|data| data.get_temp::<f32>(width_id))
+            .unwrap_or(32.);
+        let controls_left = (header.right() - width).max(header.left());
+        let mut tab_ui = ui.new_child(
             egui::UiBuilder::new()
-                .max_rect(tab_bounds)
+                .max_rect(header.with_max_x(controls_left))
                 .layout(egui::Layout::left_to_right(egui::Align::Center)),
         );
         let clicked = tabs(self, &mut tab_ui, names, active, view)?;
+        let close = self.controls(ui, header.with_min_x(controls_left), active, view)?;
+        let measured = close.rect.right() - controls_left;
+        if (measured - width).abs() > 0.5 {
+            ui.ctx()
+                .data_mut(|data| data.insert_temp(width_id, measured));
+            ui.ctx()
+                .request_discard("artifact header controls changed width");
+        }
         ui.painter().hline(
             header.x_range(),
-            header.bottom(),
+            header.bottom() + 0.5,
             egui::Stroke::new(1., color(view.presentation, "border")?),
         );
         if let Some(element) = active.and_then(|name| self.element(name)) {
-            let rect =
-                egui::Rect::from_min_max(egui::pos2(bounds.left(), header.bottom()), bounds.max);
+            let rect = egui::Rect::from_min_max(
+                egui::pos2(content_left, header.bottom() + 1.),
+                bounds.max,
+            );
             let mut body = ui.new_child(egui::UiBuilder::new().max_rect(rect));
             body.set_clip_rect(rect.intersect(ui.clip_rect()));
             with_element(&element, |element| element.render(&mut body, view))?;
@@ -131,6 +137,28 @@ impl ArtifactsPanel {
             }
         }
         Ok(clicked)
+    }
+    /// Draw caller controls once per toolkit pass, followed by the close control.
+    fn controls(
+        &self,
+        ui: &mut egui::Ui,
+        rect: egui::Rect,
+        active: Option<&str>,
+        view: ArtifactView<'_>,
+    ) -> Result<egui::Response, AttachmentUiError> {
+        let mut bar = ui.new_child(
+            egui::UiBuilder::new()
+                .max_rect(rect)
+                .layout(egui::Layout::left_to_right(egui::Align::Center)),
+        );
+        bar.spacing_mut().item_spacing.x = points(view.presentation.spacing["xs"]);
+        self.header(&mut bar, active, view)?;
+        let close = ghost(&mut bar, view.presentation, "X")?;
+        let title = view.i18n.text("Close artifacts")?;
+        close.widget_info(|| {
+            egui::WidgetInfo::labeled(egui::WidgetType::Button, bar.is_enabled(), &title)
+        });
+        Ok(close.on_hover_text(title))
     }
     /// Draw opaque panel paint and two visible shadow casters, never a backdrop.
     fn background(
@@ -154,8 +182,11 @@ impl ArtifactsPanel {
         ui.painter()
             .rect_filled(rect, 0., color(view.presentation, "background")?);
         if !self.overlay() {
-            ui.painter()
-                .vline(rect.left(), rect.y_range(), egui::Stroke::new(1., border));
+            ui.painter().vline(
+                rect.left() + 0.5,
+                rect.y_range(),
+                egui::Stroke::new(1., border),
+            );
         }
         Ok(())
     }
@@ -208,11 +239,18 @@ fn tab_button(
             points(view.presentation.spacing["md"]),
             points(view.presentation.spacing["sm"]),
         );
-        let label = egui::RichText::new(name)
+        let display = name
+            .split([' ', '\t', '\n', '\r', '\u{c}'])
+            .filter(|part| !part.is_empty())
+            .collect::<Vec<_>>()
+            .join(" ");
+        let label = egui::RichText::new(display)
             .monospace()
             .size(egui::TextStyle::Small.resolve(ui.style()).size);
         let button = egui::Button::new(label)
-            .frame(false)
+            .frame(true)
+            .fill(egui::Color32::TRANSPARENT)
+            .stroke(egui::Stroke::NONE)
             .min_size(egui::vec2(0., 40.))
             .wrap_mode(egui::TextWrapMode::Extend);
         let response = ui.add(button);
