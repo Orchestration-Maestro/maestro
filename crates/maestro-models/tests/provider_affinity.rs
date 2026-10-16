@@ -5,16 +5,15 @@ use maestro_models::{
 };
 use std::{cell::Cell, rc::Rc};
 
+mod corpus;
+mod dispatch_corpus;
+mod registered;
+mod registry_corpus;
+mod scripted;
+
 #[test]
 fn base_options_share_hooks_without_calling_them() {
-    let model: Model = serde_json::from_value(serde_json::json!({
-        "id": "controlled", "name": "Controlled", "api": "controlled",
-        "provider": "controlled", "baseUrl": "https://fixture.invalid",
-        "reasoning": false, "input": ["text"],
-        "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0},
-        "contextWindow": 100, "maxTokens": 40000
-    }))
-    .unwrap();
+    let model = crate::chat::model(&serde_json::json!({"maxTokens":40000})).unwrap();
     let calls = Rc::new(Cell::new(0));
     let payload_calls = Rc::clone(&calls);
     let payload: OnPayload<Local> = Rc::new(move |input, _| {
@@ -26,9 +25,14 @@ fn base_options_share_hooks_without_calling_them() {
         response_calls.set(response_calls.get() + 1);
         Box::pin(async { Ok(()) })
     });
-    for (with_payload, with_response) in
-        [(false, false), (true, false), (false, true), (true, true)]
+    for row in corpus::load()
+        .registered
+        .rows
+        .into_iter()
+        .filter(|row| row.input.get("payload").is_some())
     {
+        let input: corpus::HookInput = serde_json::from_value(row.input).unwrap();
+        let (with_payload, with_response) = (input.payload, input.response);
         let options = SimpleStreamOptions::<Local> {
             common: StreamOptions {
                 on_payload: with_payload.then(|| Rc::clone(&payload)),
@@ -41,6 +45,17 @@ fn base_options_share_hooks_without_calling_them() {
         let prepared = build_base_options_for(&model, Some(&options), Some("selected"));
         assert_eq!(prepared.on_payload.is_some(), with_payload);
         assert_eq!(prepared.on_response.is_some(), with_response);
+        assert_eq!(
+            serde_json::json!({
+                "payloadIdentity": prepared.on_payload.as_ref().zip(options.common.on_payload.as_ref())
+                    .is_none_or(|(actual, original)| Rc::ptr_eq(actual, original)),
+                "responseIdentity": prepared.on_response.as_ref().zip(options.common.on_response.as_ref())
+                    .is_none_or(|(actual, original)| Rc::ptr_eq(actual, original)),
+            }),
+            row.expected,
+            "{}",
+            row.name
+        );
         if let Some(actual) = prepared.on_payload {
             assert!(Rc::ptr_eq(&actual, &payload));
         }
