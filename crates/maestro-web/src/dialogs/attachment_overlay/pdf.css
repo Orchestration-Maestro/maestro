@@ -3,10 +3,13 @@
   min-height: 100%;
   width: 100%;
   color: var(--maestro-color-text);
+}
+.maestro-pdf-artifact {
+  padding: 16px;
   background: var(--maestro-color-background);
 }
-.maestro-pdf-artifact { padding: 16px; }
-.maestro-pdf:not(.maestro-pdf-artifact) {
+div:has(> .maestro-pdf:not(.maestro-pdf-artifact)) {
+  box-sizing: border-box;
   background: var(--maestro-color-panel);
   border: 1px solid var(--maestro-color-border);
   box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--maestro-color-text) 10%, transparent),

@@ -23,8 +23,9 @@ Only PDF, Word and spreadsheet attachments with nonempty extracted text have a
 preview/text toggle. Whitespace-only text is present. PDF previews render ordered
 opaque pages through the application PDF adapter, one page per repaint frame.
 The native reading wrapper scrolls, bounds overlay pages to 1000 points and keeps
-completed page nodes across ordinary repaints. The PDF viewport owns its panel
-background, outer border and shadow separately from artifact padding/background.
+completed page nodes across ordinary repaints. The bounded scrolling PDF wrapper
+owns its panel background, outer border and shadow; the frame stays at the visible
+viewport edges while pages scroll. Artifact padding/background remain separate.
 Selecting text, replacing content or closing cancels unfinished page work.
 Word and spreadsheet renderers remain in
 [#797](https://github.com/Orchestration-Maestro/maestro/issues/797) and

@@ -366,11 +366,39 @@ pub fn pdf_overlay_native_viewport_keeps_panel_and_border() {
         ] {
             view.mode = mode;
             let mut overlay = AttachmentOverlay::open(record(), None, view.host.clone());
-            for _ in 0..2 {
+            for _ in 0..4 {
                 view.overlay(&mut overlay, vec![]);
             }
             check(
-                "(()=>{const r=document.querySelector('.maestro-pdf:not(.maestro-pdf-artifact)'),s=getComputedStyle(r),p=document.createElement('div');r.append(p);p.style.background='var(--maestro-color-panel)';p.style.border='1px solid var(--maestro-color-border)';const c=getComputedStyle(p);const ok=s.backgroundColor===c.backgroundColor&&s.borderTopColor===c.borderTopColor&&Math.abs(parseFloat(s.borderTopWidth)-1)<0.5&&s.borderTopStyle==='solid'&&s.boxShadow!=='none';p.remove();return ok})()",
+                r"(()=>{
+                    const content=document.querySelector('.maestro-pdf:not(.maestro-pdf-artifact)');
+                    const viewport=content.parentElement, style=getComputedStyle(viewport);
+                    const bounds=viewport.getBoundingClientRect();
+                    const page=content.querySelector('img'), before=page.getBoundingClientRect();
+                    const probe=document.createElement('div');
+                    viewport.append(probe);
+                    probe.style.background='var(--maestro-color-panel)';
+                    probe.style.border='1px solid var(--maestro-color-border)';
+                    const expected=getComputedStyle(probe);
+                    const framed=style.backgroundColor===expected.backgroundColor
+                        && ['Top','Right','Bottom','Left'].every(edge=>
+                            style['border'+edge+'Color']===expected.borderTopColor
+                            && Math.abs(parseFloat(style['border'+edge+'Width'])-1)<0.5
+                            && style['border'+edge+'Style']==='solid')
+                        && style.boxShadow!=='none';
+                    probe.remove();
+                    if(!framed) throw Error('bounded viewport has no panel frame');
+                    if(style.overflowY!=='auto' || bounds.height<=0 || bounds.bottom>800
+                        || bounds.top<0 || content.getBoundingClientRect().height<=bounds.height)
+                        throw Error('fixture must overflow a visible bounded viewport');
+                    viewport.scrollTop=80;
+                    const after=viewport.getBoundingClientRect(), moved=page.getBoundingClientRect();
+                    return viewport.scrollTop>0
+                        && Math.abs(before.top-moved.top-viewport.scrollTop)<0.5
+                        && ['top','right','bottom','left'].every(edge=>Math.abs(bounds[edge]-after[edge])<0.5)
+                        && getComputedStyle(viewport).borderBottomStyle==='solid'
+                        && getComputedStyle(content).borderTopWidth==='0px';
+                })()",
             );
             drop(overlay);
             view.draw(false, vec![]);
