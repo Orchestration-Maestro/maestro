@@ -1,5 +1,8 @@
 //! Native startup conversions, ordered notices and host-owned warning presentation.
 
+#[cfg(test)]
+mod tests;
+
 use maestro_json::{canonical_entries, pretty_object};
 use maestro_path::join;
 use maestro_session::session_manager::get_default_session_dir;
@@ -215,26 +218,47 @@ fn canonical_entry_path(path: &Path) -> io::Result<PathBuf> {
         .join(path.file_name().unwrap_or_default()))
 }
 
-/// Publish a re-anchored link with native replacement, retaining the source on failure.
+/// Remove an entry without following directory links on Windows.
+fn remove_link_entry(path: &Path) -> io::Result<()> {
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::FileTypeExt;
+        if fs::symlink_metadata(path)?.file_type().is_symlink_dir() {
+            return fs::remove_dir(path);
+        }
+    }
+    fs::remove_file(path)
+}
+
+/// Re-anchor a link, or rename it unchanged when Windows denies link privilege.
 fn publish_link(path: &Path, target: &Path, referent: &Path) -> io::Result<()> {
     let mut temporary = path.as_os_str().to_os_string();
     temporary.push(".migrating");
     let temporary = PathBuf::from(temporary);
     #[cfg(unix)]
-    symlink(referent, &temporary)?;
+    let created = symlink(referent, &temporary);
     #[cfg(windows)]
-    if referent.is_dir() {
-        symlink_dir(referent, &temporary)?;
+    let created = if referent.is_dir() {
+        symlink_dir(referent, &temporary)
     } else {
-        symlink_file(referent, &temporary)?;
+        symlink_file(referent, &temporary)
+    };
+    // Windows reports missing symbolic-link privilege as ERROR_PRIVILEGE_NOT_HELD.
+    #[cfg(windows)]
+    if created
+        .as_ref()
+        .is_err_and(|error| error.raw_os_error() == Some(1314))
+    {
+        return fs::rename(path, target);
     }
+    created?;
     let result = fs::rename(&temporary, target);
     if result.is_err() {
-        let _ = fs::remove_file(temporary);
+        let _ = remove_link_entry(&temporary);
     }
     result?;
     if path != target {
-        fs::remove_file(path)?;
+        remove_link_entry(path)?;
     }
     Ok(())
 }
@@ -401,7 +425,7 @@ fn migrate_tools_to_bin(output: &mut MigrationOutput<'_>) -> io::Result<()> {
         }
         if entry.target.exists() {
             if canonical_entry_path(&entry.target).is_ok_and(|target| target != entry.path) {
-                let _ = fs::remove_file(&entry.path);
+                let _ = remove_link_entry(&entry.path);
             }
         } else {
             moves.push(entry);

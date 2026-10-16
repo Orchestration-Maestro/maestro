@@ -58,6 +58,9 @@ first-line session header with a nonempty string cwd selects the existing
 is relocated using its native basename; transcript bytes are not rewritten.
 The scan captures headers and final link referents before moving any entry.
 Relative links are re-anchored because relocation changes their resolution base.
+If Windows denies replacement-link creation for lack of symbolic-link privilege,
+the original link is renamed unchanged instead; a relative link then keeps its
+original text, which may resolve differently. Other creation failures retain the source.
 Absolute links are renamed first. After relative links are published, their final
 identities are checked against the captured referent's new location after a successful
 move, or its original location otherwise. An absolute link retains its original entry
@@ -84,7 +87,8 @@ The supplied cwd selects project configuration, independently of the process cwd
 Managed binaries `fd`, `rg`, `fd.exe`, `rg.exe` move from `tools/` to `bin/` through
 the session relocation owner. Links capture final referents before moves, including
 referents below moved directories. Readable destination collisions remove only old
-non-directory entries; two spellings of the same entry are not unlinked. Distinct
+files or links (including Windows directory links), without following links;
+two spellings of the same entry are not unlinked. Distinct
 hardlinked entries still receive cleanup. Dangling sources are skipped and dangling
 destinations are replaceable. Binary-directory creation errors propagate; individual
 rename/delete failures are tolerated. The binary staging name appends `.migrating`
