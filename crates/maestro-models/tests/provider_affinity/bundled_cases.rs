@@ -16,6 +16,14 @@ enum Observation {
     /// Drop the event observer before driving the retained result.
     Dropped,
 }
+/// Both exported routes must send the same request through the same producer.
+#[derive(Clone, Copy)]
+enum Entry {
+    /// Checked dynamic registry entry.
+    Registered,
+    /// Protocol-specific mode-aware SDK entry.
+    Direct,
+}
 /// Eight delivered protocols, including the native SDK route.
 const PROTOCOLS: [&str; 8] = [
     "openai-completions",
@@ -47,16 +55,26 @@ fn bundled_registered_requests_keep_local_payload_hooks() -> crate::TestResult {
         tokio::task::LocalSet::new().run_until(async {
             for protocol in PROTOCOLS {
                 for simple in [false, true] {
-                    local(protocol, simple, Observation::Drain).await?;
-                    threaded(protocol, simple, Observation::Drain).await?;
+                    let local_body =
+                        local(protocol, simple, Observation::Drain, Entry::Registered).await?;
+                    let direct_body =
+                        local(protocol, simple, Observation::Drain, Entry::Direct).await?;
+                    let threaded_body =
+                        threaded(protocol, simple, Observation::Drain, Entry::Registered).await?;
+                    let threaded_direct =
+                        threaded(protocol, simple, Observation::Drain, Entry::Direct).await?;
+                    assert_eq!(local_body, direct_body, "{protocol}");
+                    assert_eq!(threaded_body, threaded_direct, "{protocol}");
+                    super::controls::cancel(protocol, simple).await?;
                 }
             }
+            super::controls::injected_client().await?;
             Ok(())
         }),
     )
 }
 /// Keep the cloud SDK's envelope and all other protocol fixtures at their owning seams.
-fn transport(protocol: &str) -> crate::TestResult<crate::transport::Transport> {
+pub(super) fn transport(protocol: &str) -> crate::TestResult<crate::transport::Transport> {
     if protocol == "bedrock-converse-stream" {
         return Ok(crate::bedrock::serve(vec![
             crate::bedrock::event("messageStart", &serde_json::json!({"role":"assistant"}))?,
@@ -79,6 +97,35 @@ fn authenticate<E: ProviderExecution>(
     common.headers = Some([("x-controlled".into(), "retained".into())].into());
     common
 }
+/// Select a public entry without duplicating any protocol production.
+fn invoke<E: ProviderExecution>(
+    protocol: &str,
+    simple: bool,
+    common: StreamOptions<E>,
+    spawn: ProviderSpawner<E>,
+    entry: Entry,
+) -> crate::TestResult<AssistantMessageEventStream> {
+    if matches!(entry, Entry::Registered) {
+        return registered::<E>(protocol, simple, common, E::provided(spawn));
+    }
+    let model = target(protocol)?;
+    let context = crate::bundled::conversation()?;
+    Ok(if protocol == "bedrock-converse-stream" {
+        super::direct_cloud_stream::<E>(simple, model, context, common, spawn)
+    } else if simple {
+        super::direct_simple_stream::<E>(protocol, model, context, Some(common), spawn)
+    } else {
+        super::direct_stream::<E>(protocol, model, context, Some(common), spawn)
+    })
+}
+/// The two routes receive the same real protocol descriptor.
+fn target(protocol: &str) -> crate::TestResult<Model> {
+    if protocol == "bedrock-converse-stream" {
+        crate::bedrock::model("https://bedrock-runtime.us-east-1.amazonaws.com")
+    } else {
+        crate::bundled::descriptor(protocol, "https://fixture.invalid")
+    }
+}
 /// Checked registered raw/simple calls share one builtin callback owner.
 pub(super) fn registered<E: ProviderExecution>(
     protocol: &str,
@@ -86,11 +133,7 @@ pub(super) fn registered<E: ProviderExecution>(
     common: StreamOptions<E>,
     submit: E::Submission,
 ) -> crate::TestResult<AssistantMessageEventStream> {
-    let model = if protocol == "bedrock-converse-stream" {
-        crate::bedrock::model("https://bedrock-runtime.us-east-1.amazonaws.com")?
-    } else {
-        crate::bundled::descriptor(protocol, "https://fixture.invalid")?
-    };
+    let model = target(protocol)?;
     let context = crate::bundled::conversation()?;
     let provider = get_api_provider(protocol).unwrap();
     Ok(if simple {
@@ -120,7 +163,12 @@ pub(super) fn registered<E: ProviderExecution>(
     })
 }
 /// Local admission is mandatory and its non-Send producer is joined before exact counts.
-async fn local(protocol: &str, simple: bool, observation: Observation) -> crate::TestResult {
+async fn local(
+    protocol: &str,
+    simple: bool,
+    observation: Observation,
+    entry: Entry,
+) -> crate::TestResult<Vec<u8>> {
     let transport = transport(protocol)?;
     let phases = Rc::new(RefCell::new(Vec::new()));
     let tasks = Rc::new(RefCell::new(Vec::new()));
@@ -130,7 +178,7 @@ async fn local(protocol: &str, simple: bool, observation: Observation) -> crate:
         super::local_common_options(phases.clone(), transport.fetch.clone()),
     );
     let spawn = super::local_submission(tasks.clone(), admissions.clone());
-    let stream = registered::<Local>(protocol, simple, common, Local::provided(spawn))?;
+    let stream = invoke::<Local>(protocol, simple, common, spawn, entry)?;
     assert_eq!(admissions.get(), 1);
     assert!(phases.borrow().is_empty());
     let (events, result) = observe(stream, observation).await?;
@@ -146,7 +194,12 @@ async fn local(protocol: &str, simple: bool, observation: Observation) -> crate:
     )
 }
 /// Supplied threaded admission never falls through to the provider's ambient default.
-async fn threaded(protocol: &str, simple: bool, observation: Observation) -> crate::TestResult {
+async fn threaded(
+    protocol: &str,
+    simple: bool,
+    observation: Observation,
+    entry: Entry,
+) -> crate::TestResult<Vec<u8>> {
     let transport = transport(protocol)?;
     let phases = Arc::new(Mutex::new(Vec::new()));
     let tasks = Arc::new(Mutex::new(Vec::new()));
@@ -155,7 +208,7 @@ async fn threaded(protocol: &str, simple: bool, observation: Observation) -> cra
         super::threaded_common_options(phases.clone(), transport.fetch.clone()),
     );
     let spawn = super::threaded_submission(tasks.clone());
-    let stream = registered::<Threaded>(protocol, simple, common, Threaded::provided(spawn))?;
+    let stream = invoke::<Threaded>(protocol, simple, common, spawn, entry)?;
     assert_eq!(tasks.lock().unwrap().len(), 1);
     assert!(phases.lock().unwrap().is_empty());
     let (events, result) = observe(stream, observation).await?;
@@ -178,7 +231,7 @@ fn check(
     phases: &[&str],
     events: Option<&[String]>,
     result: &AssistantMessage,
-) -> crate::TestResult {
+) -> crate::TestResult<Vec<u8>> {
     assert_eq!(result.error_message, None, "{protocol}");
     assert_eq!(result.stop_reason, StopReason::Stop);
     if let Some(events) = events {
@@ -197,16 +250,16 @@ fn check(
     };
     assert_eq!(phases, expected, "{protocol}");
     let (_, body) = transport.first_request()?;
-    let body: serde_json::Value = serde_json::from_slice(&body)?;
+    let value: serde_json::Value = serde_json::from_slice(&body)?;
     if protocol == "bedrock-converse-stream" {
         assert_eq!(
-            body["inferenceConfig"]["temperature"],
+            value["inferenceConfig"]["temperature"],
             serde_json::json!(0.25)
         );
     } else {
-        super::assert_sent_temperature(protocol, &body);
+        super::assert_sent_temperature(protocol, &value);
     }
-    Ok(())
+    Ok(body)
 }
 
 /// Dropping stream observation never revokes already-admitted production.
@@ -254,8 +307,8 @@ fn default_submission_preserves_protocol_runtime_policy() -> crate::TestResult {
             check_default_scripted(&second).await?;
             for protocol in PROTOCOLS {
                 for simple in [false, true] {
-                    local(protocol, simple, Observation::Dropped).await?;
-                    threaded(protocol, simple, Observation::Dropped).await?;
+                    local(protocol, simple, Observation::Dropped, Entry::Registered).await?;
+                    threaded(protocol, simple, Observation::Dropped, Entry::Registered).await?;
                 }
             }
             Ok(())

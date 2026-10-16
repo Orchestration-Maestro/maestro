@@ -3,7 +3,7 @@
 #[path = "progress.rs"]
 mod progress;
 #[path = "socket.rs"]
-mod socket;
+pub(crate) mod socket;
 #[path = "../socket_server.rs"]
 mod socket_server;
 

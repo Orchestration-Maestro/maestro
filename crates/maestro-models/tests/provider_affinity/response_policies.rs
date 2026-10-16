@@ -135,6 +135,7 @@ fn bundled_response_policies_survive_local_submission() -> crate::TestResult {
             cases("openai-responses", true, 200).await?;
             cases("azure-openai-responses", true, 200).await?;
             cases("openai-codex-responses", false, 503).await?;
+            super::session_transport::exercise().await?;
             Ok(())
         }),
     )

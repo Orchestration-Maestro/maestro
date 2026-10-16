@@ -6,6 +6,7 @@ use maestro_models::{
 use std::{cell::Cell, rc::Rc, sync::Arc};
 
 mod bundled_cases;
+mod controls;
 mod corpus;
 mod dispatch_corpus;
 #[path = "support/original_options.rs"]
@@ -14,6 +15,7 @@ mod registered;
 mod registry_corpus;
 mod response_policies;
 mod scripted;
+mod session_transport;
 
 #[test]
 fn raw_simple_and_catalog_keep_original_option_families() -> crate::TestResult {
@@ -214,7 +216,6 @@ fn direct_response(protocol: &str) -> crate::transport::Attempt {
 /// Drive each invocation to completion before checking its closed phase transcript.
 async fn direct_local_case(protocol: &str, simple: bool) -> crate::TestResult {
     use crate::{chat, transport};
-    use maestro_models::ProviderCall;
     use serde_json::json;
     use std::cell::RefCell;
     let transport = transport::transport(vec![direct_response(protocol)]);
@@ -222,22 +223,19 @@ async fn direct_local_case(protocol: &str, simple: bool) -> crate::TestResult {
     let tasks = Rc::new(RefCell::new(Vec::new()));
     let admissions = Rc::new(Cell::new(0));
     let spawn = local_submission(Rc::clone(&tasks), Rc::clone(&admissions));
-    let input = ProviderCall {
-        model: chat::model(&json!({"api": protocol}))?,
-        context: chat::context(
-            &json!({"messages": [{"role":"user", "content":"controlled", "timestamp":0}]}),
-        )?,
-        options: Some(local_direct_options(
-            protocol,
-            Rc::clone(&phases),
-            transport.fetch.clone(),
-        )),
-        submit: spawn,
-    };
+    let model = chat::model(&json!({"api": protocol}))?;
+    let context = chat::context(
+        &json!({"messages": [{"role":"user", "content":"controlled", "timestamp":0}]}),
+    )?;
+    let options = Some(local_direct_options(
+        protocol,
+        Rc::clone(&phases),
+        transport.fetch.clone(),
+    ));
     let stream = if simple {
-        direct_simple_local_stream(protocol, input)
+        direct_simple_stream::<Local>(protocol, model, context, options, spawn)
     } else {
-        direct_local_stream(protocol, input)
+        direct_stream::<Local>(protocol, model, context, options, spawn)
     };
     assert_eq!(admissions.get(), 1);
     assert!(phases.borrow().is_empty());
@@ -293,133 +291,130 @@ fn local_submission(
 }
 
 /// Use the public raw direct entry for each protocol.
-fn direct_local_stream(
+fn direct_stream<E: maestro_models::ProviderExecution>(
     protocol: &str,
-    input: maestro_models::ProviderCall<Local, StreamOptions<Local>>,
+    model: Model,
+    context: maestro_models::Context,
+    options: Option<StreamOptions<E>>,
+    spawn: maestro_models::ProviderSpawner<E>,
 ) -> maestro_models::AssistantMessageEventStream {
     use maestro_models::*;
     if matches!(
         protocol,
         "openai-responses" | "azure-openai-responses" | "openai-codex-responses"
     ) {
-        return direct_response_local_stream(protocol, input);
+        return direct_response_stream(protocol, model, context, options, spawn);
     }
-    let common = input.options.unwrap_or_default();
+    let common = options.unwrap_or_default();
     match protocol {
-        "google-generative-ai" => stream_google_for::<Local>(
-            input.model,
-            input.context,
+        "google-generative-ai" => stream_google_for::<E>(
+            model,
+            context,
             Some(GoogleOptions {
                 common,
                 ..Default::default()
             }),
-            input.submit,
+            spawn,
         ),
-        "mistral-conversations" => stream_mistral_for::<Local>(
-            input.model,
-            input.context,
+        "mistral-conversations" => stream_mistral_for::<E>(
+            model,
+            context,
             Some(MistralOptions {
                 common,
                 ..Default::default()
             }),
-            input.submit,
+            spawn,
         ),
-        "anthropic-messages" => stream_anthropic_for::<Local>(
-            input.model,
-            input.context,
+        "anthropic-messages" => stream_anthropic_for::<E>(
+            model,
+            context,
             Some(AnthropicOptions {
                 common,
                 ..Default::default()
             }),
-            input.submit,
+            spawn,
         ),
-        _ => stream_openai_completions_for::<Local>(
-            input.model,
-            input.context,
+        _ => stream_openai_completions_for::<E>(
+            model,
+            context,
             Some(OpenAICompletionsOptions {
                 common,
                 ..Default::default()
             }),
-            input.submit,
+            spawn,
         ),
     }
 }
 
 /// Use the direct response-family exports with the same local settings.
-fn direct_response_local_stream(
+fn direct_response_stream<E: maestro_models::ProviderExecution>(
     protocol: &str,
-    input: maestro_models::ProviderCall<Local, StreamOptions<Local>>,
+    model: Model,
+    context: maestro_models::Context,
+    options: Option<StreamOptions<E>>,
+    spawn: maestro_models::ProviderSpawner<E>,
 ) -> maestro_models::AssistantMessageEventStream {
     use maestro_models::*;
-    let common = input.options.unwrap_or_default();
+    let common = options.unwrap_or_default();
     match protocol {
-        "openai-responses" => stream_openai_responses_for::<Local>(
-            input.model,
-            input.context,
+        "openai-responses" => stream_openai_responses_for::<E>(
+            model,
+            context,
             Some(OpenAIResponsesOptions {
                 common,
                 ..Default::default()
             }),
-            input.submit,
+            spawn,
         ),
-        "openai-codex-responses" => stream_openai_codex_responses_for::<Local>(
-            input.model,
-            input.context,
+        "openai-codex-responses" => stream_openai_codex_responses_for::<E>(
+            model,
+            context,
             Some(OpenAICodexResponsesOptions {
                 common,
                 ..Default::default()
             }),
-            input.submit,
+            spawn,
         ),
-        "azure-openai-responses" => stream_azure_openai_responses_for::<Local>(
-            input.model,
-            input.context,
+        "azure-openai-responses" => stream_azure_openai_responses_for::<E>(
+            model,
+            context,
             Some(AzureOpenAIResponsesOptions {
                 common,
                 ..Default::default()
             }),
-            input.submit,
+            spawn,
         ),
         _ => unreachable!("response protocol selected above"),
     }
 }
 
 /// Root simple entries preserve their settled-stream boundary in either family.
-fn direct_simple_local_stream(
+fn direct_simple_stream<E: maestro_models::ProviderExecution>(
     protocol: &str,
-    input: maestro_models::ProviderCall<Local, StreamOptions<Local>>,
+    model: Model,
+    context: maestro_models::Context,
+    options: Option<StreamOptions<E>>,
+    spawn: maestro_models::ProviderSpawner<E>,
 ) -> maestro_models::AssistantMessageEventStream {
     use maestro_models::*;
-    let ProviderCall {
-        model,
-        context,
-        options,
-        submit,
-    } = input;
     let options = options.map(|common| SimpleStreamOptions {
         common,
         ..Default::default()
     });
     match protocol {
-        "google-generative-ai" => {
-            stream_simple_google_for::<Local>(model, context, options, submit)
-        }
+        "google-generative-ai" => stream_simple_google_for::<E>(model, context, options, spawn),
         "openai-codex-responses" => {
-            stream_simple_openai_codex_responses_for::<Local>(model, context, options, submit)
+            stream_simple_openai_codex_responses_for::<E>(model, context, options, spawn)
         }
-        "mistral-conversations" => {
-            stream_simple_mistral_for::<Local>(model, context, options, submit)
-        }
-        "anthropic-messages" => {
-            stream_simple_anthropic_for::<Local>(model, context, options, submit)
-        }
+        "mistral-conversations" => stream_simple_mistral_for::<E>(model, context, options, spawn),
+        "anthropic-messages" => stream_simple_anthropic_for::<E>(model, context, options, spawn),
         "openai-responses" => {
-            stream_simple_openai_responses_for::<Local>(model, context, options, submit)
+            stream_simple_openai_responses_for::<E>(model, context, options, spawn)
         }
         "azure-openai-responses" => {
-            stream_simple_azure_openai_responses_for::<Local>(model, context, options, submit)
+            stream_simple_azure_openai_responses_for::<E>(model, context, options, spawn)
         }
-        _ => stream_simple_openai_completions_for::<Local>(model, context, options, submit),
+        _ => stream_simple_openai_completions_for::<E>(model, context, options, spawn),
     }
 }
 
@@ -570,15 +565,7 @@ async fn direct_cloud_local_case(simple: bool) -> crate::TestResult {
     let model = bedrock::model("https://bedrock-runtime.us-east-1.amazonaws.com")?;
     let context = bedrock::context("controlled")?;
     let common = local_common_options(Rc::clone(&phases), transport.fetch.clone());
-    let stream = direct_cloud_local_stream(
-        simple,
-        maestro_models::ProviderCall {
-            model,
-            context,
-            options: Some(common),
-            submit: spawn,
-        },
-    );
+    let stream = direct_cloud_stream::<Local>(simple, model, context, common, spawn);
     assert_eq!(admissions.get(), 1);
     assert!(phases.borrow().is_empty());
     let (events, result) = transport::drain(&stream).await?;
@@ -604,23 +591,19 @@ async fn direct_cloud_local_case(simple: bool) -> crate::TestResult {
 
 /// Use the existing raw and simple cloud entry points with the same supplied admission.
 #[cfg(not(target_arch = "wasm32"))]
-fn direct_cloud_local_stream(
+fn direct_cloud_stream<E: maestro_models::ProviderExecution>(
     simple: bool,
-    call: maestro_models::ProviderCall<Local, StreamOptions<Local>>,
+    model: Model,
+    context: maestro_models::Context,
+    common: StreamOptions<E>,
+    spawn: maestro_models::ProviderSpawner<E>,
 ) -> maestro_models::AssistantMessageEventStream {
     use maestro_models::providers::cloud::amazon_bedrock::{
         stream_bedrock_for, stream_simple_bedrock_for,
     };
     use maestro_models::{BedrockOptions, SimpleStreamOptions};
-    let maestro_models::ProviderCall {
-        model,
-        context,
-        options,
-        submit: spawn,
-    } = call;
-    let common = options.unwrap_or_default();
     if simple {
-        stream_simple_bedrock_for::<Local>(
+        stream_simple_bedrock_for::<E>(
             model,
             context,
             Some(SimpleStreamOptions {
@@ -630,7 +613,7 @@ fn direct_cloud_local_stream(
             spawn,
         )
     } else {
-        stream_bedrock_for::<Local>(
+        stream_bedrock_for::<E>(
             model,
             context,
             Some(BedrockOptions {
