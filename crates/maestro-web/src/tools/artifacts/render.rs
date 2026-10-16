@@ -208,7 +208,10 @@ fn tab_button(
             points(view.presentation.spacing["md"]),
             points(view.presentation.spacing["sm"]),
         );
-        let button = egui::Button::new(egui::RichText::new(name).monospace().small())
+        let label = egui::RichText::new(name)
+            .monospace()
+            .size(egui::TextStyle::Small.resolve(ui.style()).size);
+        let button = egui::Button::new(label)
             .frame(false)
             .min_size(egui::vec2(0., 40.))
             .wrap_mode(egui::TextWrapMode::Extend);

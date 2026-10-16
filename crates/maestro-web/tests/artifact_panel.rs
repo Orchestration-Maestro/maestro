@@ -605,7 +605,10 @@ fn artifact_panel_colors_follow_caller_packs() {
     for file in ["brand.json", "packs/signal.json"] {
         for case in corpus().shell_shadow {
             let mut harness = Harness::new(&Input {
-                entries: vec![("a.zip".into(), "a.zip".into())],
+                entries: vec![
+                    ("a.zip".into(), "a.zip".into()),
+                    ("b.zip".into(), "b.zip".into()),
+                ],
                 active: Some("a.zip".into()),
                 ..Default::default()
             });
@@ -627,9 +630,82 @@ fn artifact_panel_colors_follow_caller_packs() {
                 let output = harness.draw().unwrap();
                 assert_eq!(harness.host.css.borrow().last(), Some(&css));
                 assert_shadows(&harness, &output, &case.output.layers);
+                assert_tab_interaction_colors(&harness, &output);
             }
         }
     }
+}
+
+/// Observe inactive hover text and the focused tab outline through actual input.
+fn assert_tab_interaction_colors(harness: &Harness, output: &egui::FullOutput) {
+    let presentation = harness.frame.pack.presentation(harness.frame.mode).unwrap();
+    let pos = tab(output, "b.zip").center();
+    let output = harness
+        .frame
+        .draw_panel(
+            &harness.panel,
+            &harness.caller,
+            vec![egui::Event::PointerMoved(pos)],
+        )
+        .unwrap();
+    let span = text(&output)
+        .into_iter()
+        .find(|span| span.galley.job.text == "b.zip")
+        .unwrap();
+    assert_eq!(
+        span.override_text_color.unwrap_or(span.fallback_color),
+        egui::Color32::from_hex(presentation.colors["text"]).unwrap()
+    );
+    assert!(matches!(
+        span.galley.job.sections[0].format.font_id.family,
+        egui::FontFamily::Monospace
+    ));
+    let accent = egui::Color32::from_hex(presentation.colors["accent"]).unwrap();
+    assert_tab_focus(harness, pos, accent);
+    assert_eq!(harness.caller.active_filename().as_deref(), Some("a.zip"));
+}
+
+/// Traverse the four real shell controls and observe the inactive tab's focus ring.
+fn assert_tab_focus(harness: &Harness, pos: egui::Pos2, accent: egui::Color32) {
+    let mut focused = false;
+    for _ in 0..4 {
+        harness
+            .frame
+            .draw_panel(
+                &harness.panel,
+                &harness.caller,
+                vec![
+                    egui::Event::PointerGone,
+                    egui::Event::Key {
+                        key: egui::Key::Tab,
+                        physical_key: None,
+                        pressed: true,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
+                    },
+                ],
+            )
+            .unwrap();
+        let output = harness
+            .frame
+            .draw_panel(
+                &harness.panel,
+                &harness.caller,
+                vec![egui::Event::Key {
+                    key: egui::Key::Tab,
+                    physical_key: None,
+                    pressed: false,
+                    repeat: false,
+                    modifiers: egui::Modifiers::NONE,
+                }],
+            )
+            .unwrap();
+        focused |= output.shapes.iter().any(|shape| {
+            matches!(&shape.shape,
+            egui::Shape::Rect(rect) if rect.rect.contains(pos) && rect.stroke.color == accent)
+        });
+    }
+    assert!(focused);
 }
 
 /// Failed publication and hide preserve the surviving owner for a later retry.
