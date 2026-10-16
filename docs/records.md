@@ -25,8 +25,9 @@ Other bundled adapters supply no hook signal and ignore the returned signal.
 Response hooks receive status and headers under the owning adapter's policy:
 [content generation](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/content-generation.md)
 does not use the hook; [cloud conversations](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/cloud-conversations.md)
-wait for the first known service event. Other adapter policies are documented on
-their focused pages. Both hooks receive the invocation's model, shared and read-only.
+wait for the first known service event or successful end of stream, including
+empty or unknown-only streams. A failure before either prevents the hook from
+running. Other adapter policies are documented on their focused pages. Both hooks receive the invocation's model, shared and read-only.
 
 Dynamic catalog callbacks accept `StreamOptionsInput::Raw(ProviderStreamOptions)`
 or `StreamOptionsInput::Simple(SimpleStreamOptions)`. The carrier retains the
