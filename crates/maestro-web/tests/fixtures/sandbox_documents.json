@@ -1,0 +1,1237 @@
+[
+  {
+    "name": "head",
+    "input": {
+      "id": "fixture-id",
+      "code": "<!DOCTYPE html><html><head data-x=\"1\"><title>title</title></head><body>body</body></html>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": []
+    },
+    "output": {
+      "prefix": "<!DOCTYPE html><html><head data-x=\"1\">",
+      "suffix": "<title>title</title></head><body>body</body></html>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "mixed",
+    "input": {
+      "id": "fixture-id",
+      "code": "雪<HeAd >x</HeAd>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": []
+    },
+    "output": {
+      "prefix": "雪<HeAd >",
+      "suffix": "x</HeAd>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "html",
+    "input": {
+      "id": "fixture-id",
+      "code": "<!doctype html><HTML lang=\"en\"><body>x</body></HTML>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": []
+    },
+    "output": {
+      "prefix": "<!doctype html><HTML lang=\"en\">",
+      "suffix": "<body>x</body></HTML>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "fragment",
+    "input": {
+      "id": "fixture-id",
+      "code": "<main>fragment</main>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": []
+    },
+    "output": {
+      "prefix": "",
+      "suffix": "<main>fragment</main>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "empty",
+    "input": {
+      "id": "fixture-id",
+      "code": "",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": []
+    },
+    "output": {
+      "prefix": "",
+      "suffix": "",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "lexical_prefix",
+    "input": {
+      "id": "fixture-id",
+      "code": "<header>literal header</header>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": []
+    },
+    "output": {
+      "prefix": "<header>",
+      "suffix": "literal header</header>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "multiple",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head>x</head><head>y</head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": []
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "x</head><head>y</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "unterminated",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": []
+    },
+    "output": {
+      "prefix": "",
+      "suffix": "<head",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "repl_plain",
+    "input": {
+      "id": "fixture-id",
+      "code": "return 7;",
+      "options": null,
+      "providers": []
+    },
+    "output": {
+      "prefix": "<!DOCTYPE html>\n<html>\n<head>\n\t",
+      "suffix": "\n</head>\n<body>\n\t<script type=\"module\">\n\t\t(async () => {\n\t\t\ttry {\n\t\t\t\t// Wrap user code in async function to capture return value\n\t\t\t\tconst userCodeFunc = async () => {\n\t\t\t\t\treturn 7;\n\t\t\t\t};\n\n\t\t\t\tconst returnValue = await userCodeFunc();\n\n\t\t\t\t// Call completion callbacks before complete()\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(true)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete(null, returnValue);\n\t\t\t} catch (error) {\n\n\t\t\t\t// Call completion callbacks before complete() (error path)\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(false)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete({\n\t\t\t\t\tmessage: error?.message || String(error),\n\t\t\t\t\tstack: error?.stack || new Error().stack\n\t\t\t\t});\n\t\t\t}\n\t\t})();\n\t</script>\n</body>\n</html>",
+      "script_count": 2,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false,
+      "completions": [
+        [
+          "callback",
+          true
+        ],
+        [
+          null,
+          7
+        ]
+      ],
+      "logs": []
+    }
+  },
+  {
+    "name": "repl_html_literal",
+    "input": {
+      "id": "fixture-id",
+      "code": "return \"<html><head>x</head></html>\";",
+      "options": null,
+      "providers": []
+    },
+    "output": {
+      "prefix": "<!DOCTYPE html>\n<html>\n<head>\n\t",
+      "suffix": "\n</head>\n<body>\n\t<script type=\"module\">\n\t\t(async () => {\n\t\t\ttry {\n\t\t\t\t// Wrap user code in async function to capture return value\n\t\t\t\tconst userCodeFunc = async () => {\n\t\t\t\t\treturn \"<html><head>x</head></html>\";\n\t\t\t\t};\n\n\t\t\t\tconst returnValue = await userCodeFunc();\n\n\t\t\t\t// Call completion callbacks before complete()\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(true)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete(null, returnValue);\n\t\t\t} catch (error) {\n\n\t\t\t\t// Call completion callbacks before complete() (error path)\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(false)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete({\n\t\t\t\t\tmessage: error?.message || String(error),\n\t\t\t\t\tstack: error?.stack || new Error().stack\n\t\t\t\t});\n\t\t\t}\n\t\t})();\n\t</script>\n</body>\n</html>",
+      "script_count": 2,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false,
+      "completions": [
+        [
+          "callback",
+          true
+        ],
+        [
+          null,
+          "<html><head>x</head></html>"
+        ]
+      ],
+      "logs": []
+    }
+  },
+  {
+    "name": "repl_closing_script",
+    "input": {
+      "id": "fixture-id",
+      "code": "return \"</ScRiPt> & 雪\";",
+      "options": null,
+      "providers": []
+    },
+    "output": {
+      "prefix": "<!DOCTYPE html>\n<html>\n<head>\n\t",
+      "suffix": "\n</head>\n<body>\n\t<script type=\"module\">\n\t\t(async () => {\n\t\t\ttry {\n\t\t\t\t// Wrap user code in async function to capture return value\n\t\t\t\tconst userCodeFunc = async () => {\n\t\t\t\t\treturn \"<\\/ScRiPt> & 雪\";\n\t\t\t\t};\n\n\t\t\t\tconst returnValue = await userCodeFunc();\n\n\t\t\t\t// Call completion callbacks before complete()\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(true)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete(null, returnValue);\n\t\t\t} catch (error) {\n\n\t\t\t\t// Call completion callbacks before complete() (error path)\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(false)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete({\n\t\t\t\t\tmessage: error?.message || String(error),\n\t\t\t\t\tstack: error?.stack || new Error().stack\n\t\t\t\t});\n\t\t\t}\n\t\t})();\n\t</script>\n</body>\n</html>",
+      "script_count": 2,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false,
+      "completions": [
+        [
+          "callback",
+          true
+        ],
+        [
+          null,
+          "</ScRiPt> & 雪"
+        ]
+      ],
+      "logs": []
+    }
+  },
+  {
+    "name": "repl_error",
+    "input": {
+      "id": "fixture-id",
+      "code": "throw new Error(\"fixture failure\");",
+      "options": null,
+      "providers": []
+    },
+    "output": {
+      "prefix": "<!DOCTYPE html>\n<html>\n<head>\n\t",
+      "suffix": "\n</head>\n<body>\n\t<script type=\"module\">\n\t\t(async () => {\n\t\t\ttry {\n\t\t\t\t// Wrap user code in async function to capture return value\n\t\t\t\tconst userCodeFunc = async () => {\n\t\t\t\t\tthrow new Error(\"fixture failure\");\n\t\t\t\t};\n\n\t\t\t\tconst returnValue = await userCodeFunc();\n\n\t\t\t\t// Call completion callbacks before complete()\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(true)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete(null, returnValue);\n\t\t\t} catch (error) {\n\n\t\t\t\t// Call completion callbacks before complete() (error path)\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(false)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete({\n\t\t\t\t\tmessage: error?.message || String(error),\n\t\t\t\t\tstack: error?.stack || new Error().stack\n\t\t\t\t});\n\t\t\t}\n\t\t})();\n\t</script>\n</body>\n</html>",
+      "script_count": 2,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false,
+      "completions": [
+        [
+          "callback",
+          false
+        ],
+        [
+          {
+            "message": "fixture failure",
+            "stack": "<native stack>"
+          }
+        ]
+      ],
+      "logs": []
+    }
+  },
+  {
+    "name": "repl_error_string",
+    "input": {
+      "id": "fixture-id",
+      "code": "throw \"string failure\";",
+      "options": null,
+      "providers": []
+    },
+    "output": {
+      "prefix": "<!DOCTYPE html>\n<html>\n<head>\n\t",
+      "suffix": "\n</head>\n<body>\n\t<script type=\"module\">\n\t\t(async () => {\n\t\t\ttry {\n\t\t\t\t// Wrap user code in async function to capture return value\n\t\t\t\tconst userCodeFunc = async () => {\n\t\t\t\t\tthrow \"string failure\";\n\t\t\t\t};\n\n\t\t\t\tconst returnValue = await userCodeFunc();\n\n\t\t\t\t// Call completion callbacks before complete()\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(true)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete(null, returnValue);\n\t\t\t} catch (error) {\n\n\t\t\t\t// Call completion callbacks before complete() (error path)\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(false)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete({\n\t\t\t\t\tmessage: error?.message || String(error),\n\t\t\t\t\tstack: error?.stack || new Error().stack\n\t\t\t\t});\n\t\t\t}\n\t\t})();\n\t</script>\n</body>\n</html>",
+      "script_count": 2,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false,
+      "completions": [
+        [
+          "callback",
+          false
+        ],
+        [
+          {
+            "message": "string failure",
+            "stack": "<native stack>"
+          }
+        ]
+      ],
+      "logs": []
+    }
+  },
+  {
+    "name": "repl_multiple_terminators",
+    "input": {
+      "id": "fixture-id",
+      "code": "return \"</script></ScRiPt>雪\";",
+      "options": null,
+      "providers": []
+    },
+    "output": {
+      "prefix": "<!DOCTYPE html>\n<html>\n<head>\n\t",
+      "suffix": "\n</head>\n<body>\n\t<script type=\"module\">\n\t\t(async () => {\n\t\t\ttry {\n\t\t\t\t// Wrap user code in async function to capture return value\n\t\t\t\tconst userCodeFunc = async () => {\n\t\t\t\t\treturn \"<\\/script><\\/ScRiPt>雪\";\n\t\t\t\t};\n\n\t\t\t\tconst returnValue = await userCodeFunc();\n\n\t\t\t\t// Call completion callbacks before complete()\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(true)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete(null, returnValue);\n\t\t\t} catch (error) {\n\n\t\t\t\t// Call completion callbacks before complete() (error path)\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(false)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete({\n\t\t\t\t\tmessage: error?.message || String(error),\n\t\t\t\t\tstack: error?.stack || new Error().stack\n\t\t\t\t});\n\t\t\t}\n\t\t})();\n\t</script>\n</body>\n</html>",
+      "script_count": 2,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false,
+      "completions": [
+        [
+          "callback",
+          true
+        ],
+        [
+          null,
+          "</script></ScRiPt>雪"
+        ]
+      ],
+      "logs": []
+    }
+  },
+  {
+    "name": "repl_empty",
+    "input": {
+      "id": "fixture-id",
+      "code": "",
+      "options": null,
+      "providers": []
+    },
+    "output": {
+      "prefix": "<!DOCTYPE html>\n<html>\n<head>\n\t",
+      "suffix": "\n</head>\n<body>\n\t<script type=\"module\">\n\t\t(async () => {\n\t\t\ttry {\n\t\t\t\t// Wrap user code in async function to capture return value\n\t\t\t\tconst userCodeFunc = async () => {\n\t\t\t\t\t\n\t\t\t\t};\n\n\t\t\t\tconst returnValue = await userCodeFunc();\n\n\t\t\t\t// Call completion callbacks before complete()\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(true)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete(null, returnValue);\n\t\t\t} catch (error) {\n\n\t\t\t\t// Call completion callbacks before complete() (error path)\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(false)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete({\n\t\t\t\t\tmessage: error?.message || String(error),\n\t\t\t\t\tstack: error?.stack || new Error().stack\n\t\t\t\t});\n\t\t\t}\n\t\t})();\n\t</script>\n</body>\n</html>",
+      "script_count": 2,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false,
+      "completions": [
+        [
+          "callback",
+          true
+        ],
+        [
+          null,
+          null
+        ]
+      ],
+      "logs": []
+    }
+  },
+  {
+    "name": "options_{\"isHtmlArtifact\":true,\"isStandalone\":true}",
+    "input": {
+      "id": "fixture-id",
+      "code": "return 7;",
+      "options": {
+        "isHtmlArtifact": true,
+        "isStandalone": true
+      },
+      "providers": []
+    },
+    "output": {
+      "prefix": "",
+      "suffix": "return 7;",
+      "script_count": 1,
+      "bridge": false,
+      "navigation": false,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "options_{\"isHtmlArtifact\":false,\"isStandalone\":true}",
+    "input": {
+      "id": "fixture-id",
+      "code": "return 7;",
+      "options": {
+        "isHtmlArtifact": false,
+        "isStandalone": true
+      },
+      "providers": []
+    },
+    "output": {
+      "prefix": "<!DOCTYPE html>\n<html>\n<head>\n\t",
+      "suffix": "\n</head>\n<body>\n\t<script type=\"module\">\n\t\t(async () => {\n\t\t\ttry {\n\t\t\t\t// Wrap user code in async function to capture return value\n\t\t\t\tconst userCodeFunc = async () => {\n\t\t\t\t\treturn 7;\n\t\t\t\t};\n\n\t\t\t\tconst returnValue = await userCodeFunc();\n\n\t\t\t\t// Call completion callbacks before complete()\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(true)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete(null, returnValue);\n\t\t\t} catch (error) {\n\n\t\t\t\t// Call completion callbacks before complete() (error path)\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(false)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete({\n\t\t\t\t\tmessage: error?.message || String(error),\n\t\t\t\t\tstack: error?.stack || new Error().stack\n\t\t\t\t});\n\t\t\t}\n\t\t})();\n\t</script>\n</body>\n</html>",
+      "script_count": 2,
+      "bridge": false,
+      "navigation": false,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "options_{\"isHtmlArtifact\":false,\"isStandalone\":false}",
+    "input": {
+      "id": "fixture-id",
+      "code": "return 7;",
+      "options": {
+        "isHtmlArtifact": false,
+        "isStandalone": false
+      },
+      "providers": []
+    },
+    "output": {
+      "prefix": "<!DOCTYPE html>\n<html>\n<head>\n\t",
+      "suffix": "\n</head>\n<body>\n\t<script type=\"module\">\n\t\t(async () => {\n\t\t\ttry {\n\t\t\t\t// Wrap user code in async function to capture return value\n\t\t\t\tconst userCodeFunc = async () => {\n\t\t\t\t\treturn 7;\n\t\t\t\t};\n\n\t\t\t\tconst returnValue = await userCodeFunc();\n\n\t\t\t\t// Call completion callbacks before complete()\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(true)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete(null, returnValue);\n\t\t\t} catch (error) {\n\n\t\t\t\t// Call completion callbacks before complete() (error path)\n\t\t\t\tif (window.__completionCallbacks && window.__completionCallbacks.length > 0) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tawait Promise.all(window.__completionCallbacks.map(cb => cb(false)));\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\tconsole.error('Completion callback error:', e);\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\tawait window.complete({\n\t\t\t\t\tmessage: error?.message || String(error),\n\t\t\t\t\tstack: error?.stack || new Error().stack\n\t\t\t\t});\n\t\t\t}\n\t\t})();\n\t</script>\n</body>\n</html>",
+      "script_count": 2,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "id_quote\"\\雪\n",
+    "input": {
+      "id": "quote\"\\雪\n",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": []
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "id_literal</script>tail",
+    "input": {
+      "id": "literal</script>tail",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": []
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "value_null",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {
+            "value": null
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        }
+      ]
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "value_string",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {
+            "value": "</ScRiPt>雪"
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        }
+      ]
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "value_number",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {
+            "value": {
+              "$number": "-0"
+            }
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        }
+      ]
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "value_nonfinite",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {
+            "value": {
+              "$number": "Infinity"
+            }
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        }
+      ]
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "value_boolean",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {
+            "value": true
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        }
+      ]
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "value_object",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {
+            "value": {
+              "1": "one",
+              "2": "two",
+              "b": 1,
+              "a": 2
+            }
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        }
+      ]
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "value_array",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {
+            "value": [
+              null,
+              "x",
+              2
+            ]
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        }
+      ]
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "value_date",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {
+            "value": {
+              "$date": "2020-01-02T03:04:05.000Z"
+            }
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        }
+      ]
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "value_typed_array",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {
+            "value": {
+              "$bytes": [
+                1,
+                255
+              ]
+            }
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        }
+      ]
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "value_undefined",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {
+            "value": {
+              "$undefined": true
+            }
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        }
+      ]
+    },
+    "output": {
+      "error_category": "TypeError"
+    }
+  },
+  {
+    "name": "value_bigint",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {
+            "value": {
+              "$bigint": "3"
+            }
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        }
+      ]
+    },
+    "output": {
+      "error_category": "TypeError"
+    }
+  },
+  {
+    "name": "invalid_key",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {
+            "hyphen-name": 1
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        }
+      ]
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "numeric_keys",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {
+            "1": "one",
+            "2": "two",
+            "a": 3
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        }
+      ]
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "value_cycle",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {
+            "value": {
+              "self": {
+                "$cycle": true
+              }
+            }
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        }
+      ]
+    },
+    "output": {
+      "error_category": "TypeError"
+    }
+  },
+  {
+    "name": "merge_order",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {
+            "a": 1,
+            "b": "old"
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        },
+        {
+          "data": {
+            "b": "new",
+            "c": 3
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        }
+      ]
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "provider_id_override",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {
+            "sandboxId": "provider override"
+          },
+          "runtime": "function supplied(id) { window.calls = (window.calls || []).concat(id); }"
+        }
+      ]
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "runtime_closing_script",
+    "input": {
+      "id": "fixture-id",
+      "code": "<head></head>",
+      "options": {
+        "isHtmlArtifact": true
+      },
+      "providers": [
+        {
+          "data": {},
+          "runtime": "function supplied(id) { window.literal = \"</script>\"; }"
+        }
+      ]
+    },
+    "output": {
+      "prefix": "<head>",
+      "suffix": "</head>",
+      "script_count": 1,
+      "bridge": true,
+      "navigation": true,
+      "script_parse_error": false
+    }
+  },
+  {
+    "name": "provider_failure_data",
+    "input": {
+      "provider_failure": "data"
+    },
+    "output": {
+      "error_category": "Error"
+    }
+  },
+  {
+    "name": "provider_failure_runtime",
+    "input": {
+      "provider_failure": "runtime"
+    },
+    "output": {
+      "error_category": "Error"
+    }
+  },
+  {
+    "name": "callbacks_success_none",
+    "input": {
+      "outcome": "success",
+      "callbacks": "none"
+    },
+    "output": {
+      "events": [
+        [
+          "complete",
+          null,
+          9
+        ]
+      ]
+    }
+  },
+  {
+    "name": "callbacks_success_ordered",
+    "input": {
+      "outcome": "success",
+      "callbacks": "ordered"
+    },
+    "output": {
+      "events": [
+        [
+          "first",
+          true
+        ],
+        [
+          "second",
+          true
+        ],
+        [
+          "complete",
+          null,
+          9
+        ]
+      ]
+    }
+  },
+  {
+    "name": "callbacks_success_reject",
+    "input": {
+      "outcome": "success",
+      "callbacks": "reject"
+    },
+    "output": {
+      "events": [
+        [
+          "first",
+          true
+        ],
+        [
+          "second",
+          true
+        ],
+        [
+          "diagnostic",
+          "Completion callback error:"
+        ],
+        [
+          "complete",
+          null,
+          9
+        ]
+      ]
+    }
+  },
+  {
+    "name": "callbacks_failure_none",
+    "input": {
+      "outcome": "failure",
+      "callbacks": "none"
+    },
+    "output": {
+      "events": [
+        [
+          "complete",
+          "user failure",
+          null
+        ]
+      ]
+    }
+  },
+  {
+    "name": "callbacks_failure_ordered",
+    "input": {
+      "outcome": "failure",
+      "callbacks": "ordered"
+    },
+    "output": {
+      "events": [
+        [
+          "first",
+          false
+        ],
+        [
+          "second",
+          false
+        ],
+        [
+          "complete",
+          "user failure",
+          null
+        ]
+      ]
+    }
+  },
+  {
+    "name": "callbacks_failure_reject",
+    "input": {
+      "outcome": "failure",
+      "callbacks": "reject"
+    },
+    "output": {
+      "events": [
+        [
+          "first",
+          false
+        ],
+        [
+          "second",
+          false
+        ],
+        [
+          "diagnostic",
+          "Completion callback error:"
+        ],
+        [
+          "complete",
+          "user failure",
+          null
+        ]
+      ]
+    }
+  },
+  {
+    "name": "callbacks_wait_for_all",
+    "input": {
+      "outcome": "success",
+      "callbacks": "gated"
+    },
+    "output": {
+      "events": [
+        [
+          "first",
+          true
+        ],
+        [
+          "second",
+          true
+        ],
+        [
+          "settled",
+          true
+        ],
+        [
+          "complete",
+          null,
+          9
+        ]
+      ]
+    }
+  },
+  {
+    "name": "navigation_http",
+    "input": {
+      "kind": "http",
+      "href": "http://example.org/a"
+    },
+    "output": {
+      "events": [
+        [
+          "prevent"
+        ],
+        [
+          "stop"
+        ],
+        [
+          "post",
+          {
+            "type": "open-external-url",
+            "url": "http://example.org/a"
+          },
+          "*"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "navigation_https",
+    "input": {
+      "kind": "https",
+      "href": "https://example.org/b"
+    },
+    "output": {
+      "events": [
+        [
+          "prevent"
+        ],
+        [
+          "stop"
+        ],
+        [
+          "post",
+          {
+            "type": "open-external-url",
+            "url": "https://example.org/b"
+          },
+          "*"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "navigation_ftp",
+    "input": {
+      "kind": "ftp",
+      "href": "ftp://example.org/c"
+    },
+    "output": {
+      "events": []
+    }
+  },
+  {
+    "name": "navigation_javascript",
+    "input": {
+      "kind": "javascript",
+      "href": "javascript:void(0)"
+    },
+    "output": {
+      "events": []
+    }
+  },
+  {
+    "name": "navigation_empty",
+    "input": {
+      "kind": "empty",
+      "href": ""
+    },
+    "output": {
+      "events": []
+    }
+  },
+  {
+    "name": "navigation_resolved_hash",
+    "input": {
+      "kind": "resolved_hash",
+      "href": "https://example.org/a#part"
+    },
+    "output": {
+      "events": [
+        [
+          "prevent"
+        ],
+        [
+          "stop"
+        ],
+        [
+          "post",
+          {
+            "type": "open-external-url",
+            "url": "https://example.org/a#part"
+          },
+          "*"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "navigation_nonlink",
+    "input": {
+      "kind": "nonlink",
+      "href": null
+    },
+    "output": {
+      "events": []
+    }
+  },
+  {
+    "name": "navigation_form",
+    "input": {
+      "kind": "form",
+      "href": "https://example.org/post"
+    },
+    "output": {
+      "events": [
+        [
+          "prevent"
+        ],
+        [
+          "stop"
+        ],
+        [
+          "post",
+          {
+            "type": "open-external-url",
+            "url": "https://example.org/post"
+          },
+          "*"
+        ]
+      ]
+    }
+  }
+]

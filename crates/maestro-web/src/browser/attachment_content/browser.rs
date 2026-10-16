@@ -5,7 +5,6 @@ use super::{
 use crate::Attachment;
 use maestro_theme::BrandPresentation;
 use std::collections::HashMap;
-use std::fmt::Write as _;
 use std::{cell::RefCell, rc::Rc};
 use web_sys::{Document, Element, HtmlCanvasElement};
 mod reading;
@@ -256,9 +255,7 @@ impl AttachmentHost for BrowserAttachmentHost {
                 surface.tag = tag;
             }
             surface.style = self.placement(&s)?;
-            for (key, value) in p.css_properties() {
-                let _ = write!(surface.style, "{key}:{value};");
-            }
+            crate::browser::append_brand_properties(&mut surface.style, p);
             if tag == "img" {
                 surface.style.push_str(
                     "pointer-events:none;display:flex;align-items:center;justify-content:center;",

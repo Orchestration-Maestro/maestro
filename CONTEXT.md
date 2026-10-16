@@ -187,3 +187,5 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 
 - **Browser input:** The retained `maestro-web::Input` field, with native browser editing and event/ref handles; distinct from the terminal toolkit `Input`.
 - **Reading content:** A feature-owned native text factory admitted by the existing browser attachment-surface registry; the shared host retains a fixed placement frame, one host-created clipped scrolling viewport and the feature root, measures natural height and frame-local canvas-control slots, restores optional styles and fractional viewport scroll transactionally, and retains unchanged roots. See [owned reading content](docs/browser/attachments.md#owned-reading-content).
+
+- **Browser SandboxIframe:** The retained HTML-loading adapter in `maestro-web`, distinct from hidden JavaScript execution. It owns the displayed native frame and one message subscription, with explicit retryable removal; preparation can produce standalone documents. See [sandbox loading](docs/browser/sandbox.md#retained-html-loading).

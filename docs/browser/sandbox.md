@@ -1,8 +1,40 @@
-# Sandbox runtime messaging
+# Sandbox loading and runtime messaging
 
 The browser sandbox modules provide `RuntimeMessageRouter`, `MessageConsumer`
 and `RuntimeMessageBridge`. The crate root exports `RuntimeMessageBridge` and,
 on WebAssembly, the browser-local `RUNTIME_MESSAGE_ROUTER` singleton.
+
+## Retained HTML loading
+
+On WebAssembly, `maestro_web::SandboxIframe` retains a caller-supplied native
+parent. `load_content` replaces its previous frame and registration, prepends a
+fresh console provider and binds the frame before appending it. Frames allow
+scripts and modals, without same-origin access. A live `sandbox_url_provider`
+selects URL loading; otherwise the document uses srcdoc. Only the current
+frame's readiness sends the prepared document, once. Its bootstrap error reaches
+the same registered providers and consumers as ordinary runtime errors.
+
+`remove` detaches the adapter's single message subscription, unregisters its
+current sandbox and removes the frame. It is repeatable; failed native detachment
+returns a diagnostic and retains resources for another removal attempt. Drop
+attempts the same cleanup. Removing one adapter leaves other registered sandboxes
+active. Failed loads return their first diagnostic and attempt this cleanup too.
+The subscription uses the existing native event owner, not a separate teardown
+mechanism.
+
+`prepare_html_document` does not mount or register a frame or add a console
+provider. Its module's `PrepareHtmlOptions` selects authored-HTML insertion or an
+asynchronous JavaScript wrapper. Standalone documents retain supplied provider
+helpers and data without parent messaging or navigation interception. Provider
+data uses native compact JSON serialization; unsupported values fail rather than
+becoming successful null assignments. Inline script escaping preserves literal
+spelling. Quoted global keys produce valid programs; native Window indexed
+properties still ignore numeric assignments, as they do for any browser script.
+
+Native HTML parsing accepts recovered markup. Explicit validation errors appear
+as literal preformatted text, with the selected brand pack's background, text,
+error, panel and monospace roles; authored sandbox content keeps its own styling.
+Loading is distinct from [hidden JavaScript execution](https://github.com/Orchestration-Maestro/maestro/issues/815).
 
 ## Injected bridge
 
@@ -75,8 +107,10 @@ live until reset replaces the current collection.
 
 ## Qualification boundary
 
-Native tests exercise the shared registry, admission decision, live dispatch,
-retained frame slots and exact injected source. WebAssembly builds and compile
-witnesses check binding and SDK signatures. They do not certify actual browser
-listener effects, window identity, extension transport or native formatting;
-provider helper effects and those transport observations remain tracked in [browser qualification](https://github.com/Orchestration-Maestro/maestro/issues/825).
+Native tests exercise document envelopes and shared routing. The browser-executed
+loading witnesses cover native listener removal, current-window admission,
+ready/error settlement, preparation/runtime values, literal validation documents
+and controlled host failures in Chromium. The tabs capability is controlled in
+those tests, not an extension-platform certification. Broader browser/device
+qualification remains tracked in [browser qualification](https://github.com/Orchestration-Maestro/maestro/issues/825)
+and [surface qualification](https://github.com/Orchestration-Maestro/maestro/issues/1084).

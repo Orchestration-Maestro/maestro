@@ -118,3 +118,10 @@ adapted under MIT; its copyright and permission text are retained in
 [third-party notices](../../THIRD-PARTY-NOTICES.md). Native composition tests use
 chrono 0.4.45 (defaults off/std, MIT) to name the existing application clock return
 type. This dev-only declaration adds no package version or production edge.
+
+Retained sandbox loading additionally enables `web-sys/DomParser` and
+`web-sys/SupportedType` on the same locked version, with no added package or
+licence. Native HTML parsing owns recovery and validation; iframe sandbox/style
+attributes need no additional binding features. Document preparation embeds only
+the runtime and navigation programs required by the sandbox, not a JavaScript
+frontend. See [retained HTML loading](../browser/sandbox.md#retained-html-loading).

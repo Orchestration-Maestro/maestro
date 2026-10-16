@@ -211,9 +211,7 @@ impl BrowserAttachmentHost {
             ),
             s.opacity
         );
-        for (key, value) in p.css_properties() {
-            let _ = write!(style, "{key}:{value};");
-        }
+        crate::browser::append_brand_properties(&mut style, p);
         Ok(style)
     }
     /// Mount a hidden candidate with its complete registration lifetime.

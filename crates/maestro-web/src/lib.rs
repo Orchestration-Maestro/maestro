@@ -60,3 +60,5 @@ pub use tools::artifacts::artifact_element::ArtifactElement;
 
 /// Retained tabbed artifact views using the application-selected filename.
 pub use tools::artifacts::ArtifactsPanel;
+#[cfg(target_arch = "wasm32")]
+pub use components::sandboxed_iframe::SandboxIframe;
