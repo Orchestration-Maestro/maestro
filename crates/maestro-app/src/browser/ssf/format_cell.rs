@@ -68,6 +68,10 @@ pub struct CellObject {
     pub z: Option<super::NumberFormat>,
     /// Native extended-format identifier fallback.
     pub xf: Option<Xf>,
+    /// Owned formula text without the leading equals sign.
+    pub f: Option<String>,
+    /// Optional enclosing array-formula range.
+    pub array_formula: Option<String>,
 }
 /// Cell-only date-format preparation options.
 #[derive(Debug, Default)]

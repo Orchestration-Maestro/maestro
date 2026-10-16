@@ -4,6 +4,7 @@ use super::{
     CellAddress, CellObject, CellValue, ExcelDataType, Range, Ssf, WorkBook, WorkSheet,
     WorkbookError, decode_cell, decode_range, encode_cell, format_cell::ERRORS, styles::Package,
 };
+mod formulas;
 use calamine::{DataType, Reader, Xls, Xlsx, XlsxError};
 use indexmap::IndexMap;
 use std::{collections::BTreeMap, io::Cursor};
@@ -64,9 +65,10 @@ fn read_xlsx(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook
                 })?;
             let path = resolve_path(target, workbook);
             let values = values(&mut native, name, &package)?;
+            let formulas = formulas::collect(&mut native, name)?;
             sheets.insert(
                 name.to_owned(),
-                sheet(&package, &path, values, (&xfs, ssf, date1904), &shared)?,
+                sheet(&package, &path, values, formulas, (&xfs, ssf, date1904), &shared)?,
             );
         }
     }
@@ -76,8 +78,7 @@ fn read_xlsx(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook
         ssf: ssf
             .table
             .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone(),
+            .map_or_else(|error| error.into_inner().clone(), |table| table.clone()),
     })
 }
 /// Stream native cells, continuing after unsupported raw error labels only.
@@ -115,6 +116,7 @@ fn sheet(
     package: &Package<'_>,
     path: &str,
     mut values: BTreeMap<(u32, u32), CellValue>,
+    mut formulas: BTreeMap<(u32, u32), String>,
     format: (&[u32], &Ssf, bool),
     shared: &[String],
 ) -> Result<WorkSheet, WorkbookError> {
@@ -125,6 +127,7 @@ fn sheet(
         range: None,
         merges: Vec::new(),
     };
+    let mut arrays = Vec::new();
     let mut row_index = 0;
     for row in xml
         .element(xml.root(), "sheetData")
@@ -144,25 +147,24 @@ fn sheet(
                 position = decode_cell(address)?;
             }
             let raw = xml.element(node, "v").map(|n| n.text_content());
+            let formula = formulas.remove(&(position.r, position.c));
+            let array = formulas::array_range(&xml, node, position, &mut arrays)?;
             let value = values.remove(&(position.r, position.c));
-            let value = if xml.attr(node, "t") == Some("str") {
-                raw.as_deref()
-                    .map(super::unescapexml::unescapexml)
-                    .map(CellValue::Text)
-            } else if xml.attr(node, "t") == Some("d") {
-                raw.as_deref()
-                    .map(|s| super::datenum::datenum(s, format.2))
-                    .transpose()?
-                    .map(CellValue::Number)
-            } else {
-                value
-            };
+            let formulas = (formula, array);
+            let value = raw_value(
+                xml.attr(node, "t"),
+                raw.as_deref(),
+                value,
+                &formulas,
+                format.2,
+            )?;
             let error = (xml.attr(node, "t") == Some("e")).then_some(raw).flatten();
             if let Some(mut cell) = cell(
                 value,
                 error,
                 xml.attr(node, "s").and_then(|s| s.parse().ok()),
                 format,
+                formulas,
             ) {
                 super::rich_text::adopt(&xml, node, &mut cell, shared);
                 result.cells.insert(encode_cell(position), cell);
@@ -173,6 +175,28 @@ fn sheet(
     sheet_range(&xml, &mut result)?;
     super::hyperlinks::adopt(package, path, &xml, &mut result)?;
     Ok(result)
+}
+/// Overlay authored strings and missing formula caches on native scalar values.
+fn raw_value(
+    kind: Option<&str>,
+    raw: Option<&str>,
+    value: Option<CellValue>,
+    formulas: &(Option<String>, Option<String>),
+    date1904: bool,
+) -> Result<Option<CellValue>, WorkbookError> {
+    Ok(match kind {
+        Some("str") => Some(CellValue::Text(raw.map(super::unescapexml::unescapexml).unwrap_or_default())),
+        Some("d") => raw
+            .map(|s| super::datenum::datenum(s, date1904))
+            .transpose()?
+            .map(CellValue::Number),
+        None | Some("n")
+            if raw.is_none_or(str::is_empty) && (formulas.0.is_some() || formulas.1.is_some()) =>
+        {
+            Some(CellValue::Missing)
+        }
+        _ => value,
+    })
 }
 /// Retain declared bounds and merge order, falling back to observed cells.
 fn sheet_range(
@@ -209,12 +233,21 @@ fn cell(
     error: Option<String>,
     style: Option<usize>,
     format: (&[u32], &Ssf, bool),
+    formulas: (Option<String>, Option<String>),
 ) -> Option<CellObject> {
     let value = value.map(|value| match value {
         CellValue::Text(text) => CellValue::Text(text.replace("\r\n", "\n")),
         value => value,
     });
-    let mut cell = basic_cell(value, error)?;
+    let mut cell = if matches!(value, Some(CellValue::Missing))
+        && (formulas.0.is_some() || formulas.1.is_some())
+    {
+        CellObject { t: Some(ExcelDataType::Number), ..Default::default() }
+    } else {
+        basic_cell(value, error)?
+    };
+    cell.f = formulas.0;
+    cell.array_formula = formulas.1;
     let id = style
         .and_then(|index| format.0.get(index))
         .copied()
@@ -241,6 +274,9 @@ fn cell(
                 .unwrap_or("General")
                 .to_owned()
         });
+    }
+    if matches!(cell.v, CellValue::Missing) {
+        return Some(cell);
     }
     cell.w = cell.w.or_else(|| {
         format

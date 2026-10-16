@@ -11,6 +11,8 @@ fn ssf_reader_table_alias() {
     assert!(std::sync::Arc::ptr_eq(&table, &ssf.get_table()));
     table.write().unwrap().insert(0, "0.000".into());
     let mut cell = CellObject {
+        f: None,
+        array_formula: None,
         t: Some(ExcelDataType::Number),
         v: CellValue::Number(1.25),
         w: None,
@@ -105,6 +107,8 @@ fn ssf_default_cell_states() {
             ssf.get_table().write().unwrap().insert(0, code);
         }
         let mut cell = case.args.cell.map(|c| CellObject {
+            f: None,
+            array_formula: None,
             t: c.t.as_deref().map(kind),
             v: c.v.value(),
             w: c.w,

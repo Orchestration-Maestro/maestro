@@ -8,11 +8,13 @@ mod styles;
 mod unescapexml;
 pub use read::read;
 mod address;
+mod sheet_to_csv;
 mod workbook;
 pub use address::{
     CellAddress, Range, decode_cell, decode_range, encode_cell, encode_col, encode_range,
     encode_row,
 };
+pub use sheet_to_csv::sheet_to_csv;
 pub use workbook::{WorkBook, WorkSheet, WorkbookError};
 mod format;
 mod format_cell;

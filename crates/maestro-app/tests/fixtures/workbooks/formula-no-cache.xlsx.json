@@ -16,7 +16,19 @@
               },
               "w_after_read": "42.00",
               "text": "42.00",
-              "w_after_format": "42.00"
+              "w_after_format": "42.00",
+              "f": "SUM(40,2)"
+            },
+            {
+              "address": "B1",
+              "type": "n",
+              "value": {
+                "missing": true
+              },
+              "w_after_read": null,
+              "f": "1+1",
+              "text": "",
+              "w_after_format": ""
             }
           ]
         }

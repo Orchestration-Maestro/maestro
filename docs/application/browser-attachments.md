@@ -24,7 +24,7 @@ a suffix-only text match uses `text/plain`.
 PDF, Word, PowerPoint and spreadsheet recognition precedes image/text handling.
 PowerPoint recognition uses the exact presentation MIME or a case-insensitive
 `.pptx` suffix. Earlier PDF/Word recognition wins; presentation recognition
-precedes spreadsheet recognition. Word and spreadsheets still return
+precedes spreadsheet recognition. Word still returns
 `AttachmentError::Unsupported`. The separate
 [Word property preparation](document-formats.md#word-default-properties-and-conditional-table-styles)
 reads table layout and indentation without rendering or extracting attachments.
@@ -78,6 +78,22 @@ with headings only for retained text. Wrapper separators are LF. Package failure
 return `AttachmentError::Pptx`, display `Failed to process PPTX: ` before the
 package diagnostic and expose the retained package error through `Error::source`.
 This additional variant requires exhaustive SDK matches to handle it.
+
+Spreadsheet recognition uses exact XLSX/Excel MIME strings or case-insensitive
+`.xlsx`/`.xls` suffixes. Admitted MIME strings beginning with `application/vnd`
+are retained; other matches use the canonical XLSX MIME. Reading follows the
+bytes: XLSX is supported, including XLSX bytes with an `.xls` name. Binary XLS
+reading remains in [the legacy reader](https://github.com/Orchestration-Maestro/maestro/issues/1046),
+with its complete formatting in [legacy formatting](https://github.com/Orchestration-Maestro/maestro/issues/1025).
+
+Spreadsheet documents retain original bytes/name/size and have no preview.
+The literal `<excel filename="NAME">` wrapper contains workbook-ordered sheets,
+each `\n<sheet name="NAME" index="N">\nCSV\n</sheet>`, followed by
+`\n</excel>`. Names are not escaped; indices start at one and include empty
+sheets. [Default CSV serialization](document-formats.md#default-csv) uses the
+shared workbook formatter. Processing failures return `AttachmentError::Excel`,
+display `Failed to process Excel: ` before the diagnostic and expose the retained
+`WorkbookError` through `Error::source`. Exhaustive SDK matches must handle it.
 
 ## Messages
 

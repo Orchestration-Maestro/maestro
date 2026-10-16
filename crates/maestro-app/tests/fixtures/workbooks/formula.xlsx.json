@@ -16,7 +16,8 @@
               },
               "w_after_read": "42.00",
               "text": "42.00",
-              "w_after_format": "42.00"
+              "w_after_format": "42.00",
+              "f": "SUM(40,2)"
             },
             {
               "address": "B1",
@@ -26,7 +27,8 @@
               },
               "w_after_read": "0",
               "text": "0",
-              "w_after_format": "0"
+              "w_after_format": "0",
+              "f": "1+1"
             }
           ]
         }

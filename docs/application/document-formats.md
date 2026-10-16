@@ -76,7 +76,11 @@ fail, fallback uses unrounded scalar text without caching: booleans use `true` o
 readable RFC3339 text with milliseconds, not host-dependent date spelling; HTML
 raw-value attributes reuse this spelling. Standard error
 codes use their labels; an unknown numeric error stays numeric. Unknown XLSX error labels survive
-native conversion, and no-cache formula cells are omitted without evaluation.
+native conversion, and formulas are not evaluated.
+Cells retain owned `f` formula text and optional `array_formula` range metadata.
+Shared formulas expand within their own sheet; function prefixes are removed
+after native XML decoding. Uncached numeric formulas retain missing raw values
+rather than fabricated zeroes; explicit string cells without a value retain empty strings.
 Malformed archives, required missing parts, XML, reader and address failures have
 distinct `WorkbookError` variants. Missing style declarations are optional, while
 missing declared style parts and malformed style XML fail with workbook/part
@@ -102,6 +106,20 @@ spaces before literal digits join a fraction only after its denominator slash.
 Numeric fields use the magnitude for negative values in multi-section formats;
 a single-section format retains its sign, moving it into a leading literal when
 needed. Scientific and engineering fields use the same selected value.
+
+## Default CSV
+
+`sheet_to_csv(&mut sheet, &ssf)` traverses the declared inclusive rectangle with
+comma fields and LF rows. Missing ranges produce empty text. Blank rows, columns
+and declared trailing extent remain; hidden rows/columns and merges do not change
+traversal. There is no unconditional final LF.
+
+Present raw values use `format_cell`, which may populate text caches; caches
+without raw values do not manufacture CSV data. Missing/null values instead emit
+`=` plus a retained scalar formula, unless a nonempty array range suppresses it.
+Cached zero wins over formulas. Fields containing comma, quote or LF are quoted,
+with embedded quotes doubled; lone CR and surrounding whitespace are retained.
+The initial cell's formatted `ID` is quoted. No custom CSV options are exposed.
 
 ## Word package reader
 

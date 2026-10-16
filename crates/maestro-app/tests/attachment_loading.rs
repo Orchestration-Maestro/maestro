@@ -203,6 +203,16 @@ fn assert_document_failure(
 ) {
     if mime == "application/pdf" || name.to_ascii_lowercase().ends_with(".pdf") {
         assert!(matches!(result, Err(AttachmentError::Pdf(_))));
+    } else if [".xlsx", ".xls"]
+        .iter()
+        .any(|suffix| name.to_ascii_lowercase().ends_with(suffix))
+        || [
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/vnd.ms-excel",
+        ]
+        .contains(&mime)
+    {
+        assert!(matches!(result, Err(AttachmentError::Excel(_))));
     } else {
         assert!(matches!(result, Err(AttachmentError::Unsupported(_))));
     }

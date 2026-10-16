@@ -36,6 +36,19 @@ pub fn observed(result: Result<Attachment, AttachmentError>) -> Value {
             assert!(wrapped.to_string().starts_with(prefix));
             json!({"error_kind":"Pptx", "prefix":prefix})
         }
+        Err(AttachmentError::Excel(error)) => {
+            let wrapped = AttachmentError::Excel(error);
+            let source = std::error::Error::source(&wrapped).unwrap();
+            assert!(
+                source
+                    .downcast_ref::<maestro_app::browser::ssf::WorkbookError>()
+                    .is_some()
+            );
+            assert!(!source.to_string().is_empty());
+            let prefix = "Failed to process Excel: ";
+            assert!(wrapped.to_string().starts_with(prefix));
+            json!({"error_kind":"Excel", "prefix":prefix})
+        }
         Err(AttachmentError::Unsupported(mime)) => {
             json!({"error":format!("Unsupported file type: {mime}")})
         }
