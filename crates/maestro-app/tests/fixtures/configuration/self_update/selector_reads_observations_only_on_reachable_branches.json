@@ -1,0 +1,156 @@
+[
+  {
+    "id": "unknown-no-effects",
+    "input": {
+      "package_dir": "/source/agent",
+      "executable": "/bin/maestro",
+      "home_error": true,
+      "cwd_error": true
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": []
+  },
+  {
+    "id": "standalone-no-effects",
+    "input": {
+      "standalone": true,
+      "home_error": true,
+      "cwd_error": true
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": []
+  },
+  {
+    "id": "instruction-no-effects",
+    "input": {
+      "op": "instruction",
+      "home_error": true,
+      "cwd_error": true
+    },
+    "expected": {
+      "value": "Run: npm --prefix /opt/tool install -g @old/agent"
+    },
+    "trace": []
+  },
+  {
+    "id": "missing-package-no-query",
+    "input": {
+      "existing": [],
+      "npm_command": [
+        "npm"
+      ],
+      "probe": {
+        "status": 9,
+        "stdout": "",
+        "stderr": "must not read"
+      },
+      "access_errors": [
+        "/opt/tool/lib/node_modules/@old/agent"
+      ]
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ]
+    ]
+  },
+  {
+    "id": "relative-needs-cwd",
+    "input": {
+      "package_dir": "node_modules/@old/agent",
+      "executable": "/runtime/npm/node",
+      "cwd_error": true
+    },
+    "expected": {
+      "error": "cwd unavailable"
+    },
+    "trace": []
+  },
+  {
+    "id": "bun-needs-home",
+    "input": {
+      "package_dir": "/custom/.bun/install/global/node_modules/@old/agent",
+      "probe": {
+        "status": 1,
+        "stdout": "",
+        "stderr": ""
+      },
+      "home_error": true
+    },
+    "expected": {
+      "error": "home unavailable"
+    },
+    "trace": [
+      [
+        "exists",
+        "/custom/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/custom/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "bun",
+        [
+          "pm",
+          "bin",
+          "-g"
+        ]
+      ],
+      [
+        "home"
+      ]
+    ]
+  },
+  {
+    "id": "unavailable-unmanaged-no-access",
+    "input": {
+      "op": "unavailable",
+      "npm_command": [
+        "npm"
+      ],
+      "probe": {
+        "status": 0,
+        "stdout": "/not-owned",
+        "stderr": ""
+      },
+      "access_errors": [
+        "/opt/tool/lib/node_modules/@old/agent"
+      ]
+    },
+    "expected": {
+      "value": "This installation is not managed by a global npm install. Update it with the package manager, wrapper, or source checkout that provides it."
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/not-owned"
+      ]
+    ]
+  }
+]

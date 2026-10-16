@@ -54,3 +54,32 @@ operations read neither clock nor writer. Enabled samples retain label text,
 order, duplicates and signed deltas. Printing keeps samples; reset clears them
 and reads a new clock only when enabled. Printing returns the original writer
 error. Callers supply the clock and stderr writer; no global timing state is added.
+
+## Self-update selection
+
+On native targets, `config::get_self_update_command` takes a borrowed
+`SelfUpdateContext`, the installed package name, optional configured npm argv,
+and an optional replacement package name. It returns an owned `SelfUpdateCommand`
+only for an evidenced global installation whose package directory and immediate
+parent pass write-access checks. A replacement contains removal then installation
+in `steps`; otherwise callers execute the top-level command and literal `args`.
+The display is human-readable text, not a POSIX shell command to execute.
+
+The selector reuses installation detection and caller-selected package roots.
+It supports npm, pnpm, Yarn and Bun; unconfigured npm can infer a matching
+`lib/node_modules` prefix. Configured npm argv disables that fallback. Ownership
+uses existing canonical paths with a separator-delimited strict descendant
+comparison, case-folded only on Windows. Supplied `SelfUpdateOperations` control
+filesystem, host flavor, home, access and read-only query effects. Required
+configured-query errors retain the native cause and command context.
+
+`get_update_instruction` returns a manual command without ownership/access
+probes. `get_self_update_unavailable_instruction` explains unmanaged or unwritable
+installations and gives standalone release-download guidance. These functions
+select descriptions only: no installation, removal or release lookup is run.
+
+`NativeSelfUpdateOperations` delegates query capture to the process owner without
+a deadline or buffer limit. Unix access uses the OS write-access operation;
+Windows checks existence and read-only attributes, not directory ACLs, so a later
+update may still fail with a permissions error. See the
+[configuration library notes](../libraries/application-configuration.md).

@@ -1,0 +1,306 @@
+[
+  {
+    "id": "package-denied-command",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\n",
+        "stderr": ""
+      },
+      "access_errors": [
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      "op": "command"
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ]
+    ]
+  },
+  {
+    "id": "package-denied-unavailable",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\n",
+        "stderr": ""
+      },
+      "access_errors": [
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      "op": "unavailable"
+    },
+    "expected": {
+      "value": "This installation is managed by a global npm install, but the install path is not writable. Update it yourself with: npm --prefix /opt/tool install -g @old/agent"
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ]
+    ]
+  },
+  {
+    "id": "parent-denied-command",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\n",
+        "stderr": ""
+      },
+      "access_errors": [
+        "/opt/tool/lib/node_modules/@old"
+      ],
+      "op": "command"
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "parent-denied-unavailable",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\n",
+        "stderr": ""
+      },
+      "access_errors": [
+        "/opt/tool/lib/node_modules/@old"
+      ],
+      "op": "unavailable"
+    },
+    "expected": {
+      "value": "This installation is managed by a global npm install, but the install path is not writable. Update it yourself with: npm --prefix /opt/tool install -g @old/agent"
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "both-writable-command",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\n",
+        "stderr": ""
+      },
+      "access_errors": [],
+      "op": "command"
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "--prefix",
+          "/opt/tool",
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "npm --prefix /opt/tool install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "both-writable-unavailable",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\n",
+        "stderr": ""
+      },
+      "access_errors": [],
+      "op": "unavailable"
+    },
+    "expected": {
+      "value": "This installation is not managed by a global npm install. Update it with the package manager, wrapper, or source checkout that provides it."
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  }
+]

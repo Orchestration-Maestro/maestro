@@ -1,0 +1,397 @@
+[
+  {
+    "id": "pnpm-root",
+    "input": {
+      "package_dir": "/opt/tool/lib/node_modules/@old/agent",
+      "executable": "/runtime/pnpm/node",
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules",
+        "stderr": ""
+      },
+      "existing": [
+        "/opt/tool/lib/node_modules/@old/agent",
+        "/opt/tool/lib/node_modules",
+        "/opt/tool/lib",
+        "/opt/tool/lib/node_modules/node_modules",
+        "/home/sample/.bun/install/global/node_modules"
+      ]
+    },
+    "expected": {
+      "value": {
+        "command": "pnpm",
+        "args": [
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "pnpm install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "pnpm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "pnpm-parent",
+    "input": {
+      "package_dir": "/opt/tool/lib/store/agent",
+      "executable": "/runtime/pnpm/node",
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules",
+        "stderr": ""
+      },
+      "existing": [
+        "/opt/tool/lib/store/agent",
+        "/opt/tool/lib/node_modules",
+        "/opt/tool/lib",
+        "/opt/tool/lib/node_modules/node_modules",
+        "/home/sample/.bun/install/global/node_modules"
+      ]
+    },
+    "expected": {
+      "value": {
+        "command": "pnpm",
+        "args": [
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "pnpm install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/store/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/store/agent"
+      ],
+      [
+        "command",
+        "pnpm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "exists",
+        "/opt/tool/lib"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/store/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/store"
+      ]
+    ]
+  },
+  {
+    "id": "yarn-first",
+    "input": {
+      "package_dir": "/opt/yarn/global/@old/agent",
+      "executable": "/runtime/yarn/node",
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/yarn/global",
+        "stderr": ""
+      },
+      "existing": [
+        "/opt/yarn/global/@old/agent",
+        "/opt/yarn/global",
+        "/opt/yarn",
+        "/opt/yarn/global/node_modules",
+        "/home/sample/.bun/install/global/node_modules"
+      ]
+    },
+    "expected": {
+      "value": {
+        "command": "yarn",
+        "args": [
+          "global",
+          "add",
+          "@old/agent"
+        ],
+        "display": "yarn global add @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/yarn/global/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/yarn/global/@old/agent"
+      ],
+      [
+        "command",
+        "yarn",
+        [
+          "global",
+          "dir"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/yarn/global"
+      ],
+      [
+        "canonicalize",
+        "/opt/yarn/global"
+      ],
+      [
+        "access",
+        "/opt/yarn/global/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/yarn/global/@old"
+      ]
+    ]
+  },
+  {
+    "id": "yarn-node-modules",
+    "input": {
+      "package_dir": "/opt/yarn/global/node_modules/@old/agent",
+      "executable": "/runtime/yarn/node",
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/yarn/global",
+        "stderr": ""
+      },
+      "existing": [
+        "/opt/yarn/global/node_modules/@old/agent",
+        "/opt/yarn/global",
+        "/opt/yarn",
+        "/opt/yarn/global/node_modules",
+        "/home/sample/.bun/install/global/node_modules"
+      ]
+    },
+    "expected": {
+      "value": {
+        "command": "yarn",
+        "args": [
+          "global",
+          "add",
+          "@old/agent"
+        ],
+        "display": "yarn global add @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/yarn/global/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/yarn/global/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "yarn",
+        [
+          "global",
+          "dir"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/yarn/global"
+      ],
+      [
+        "canonicalize",
+        "/opt/yarn/global"
+      ],
+      [
+        "access",
+        "/opt/yarn/global/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/yarn/global/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "bun-failed-probe",
+    "input": {
+      "package_dir": "/home/sample/.bun/install/global/node_modules/@old/agent",
+      "executable": "/runtime/install/global/node_modules/maestro/cli.js",
+      "probe": {
+        "status": 1,
+        "stdout": "",
+        "stderr": ""
+      },
+      "existing": [
+        "/home/sample/.bun/install/global/node_modules/@old/agent",
+        ".",
+        "node_modules",
+        "/home/sample/.bun/install/global/node_modules"
+      ]
+    },
+    "expected": {
+      "value": {
+        "command": "bun",
+        "args": [
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "bun install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/home/sample/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/home/sample/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "bun",
+        [
+          "pm",
+          "bin",
+          "-g"
+        ]
+      ],
+      [
+        "home"
+      ],
+      [
+        "exists",
+        "/home/sample/.bun/install/global/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/home/sample/.bun/install/global/node_modules"
+      ],
+      [
+        "access",
+        "/home/sample/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/home/sample/.bun/install/global/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "pnpm-failed-probe",
+    "input": {
+      "executable": "/runtime/pnpm/node",
+      "probe": {
+        "status": 6,
+        "stdout": "ignored",
+        "stderr": "failure"
+      }
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "pnpm",
+        [
+          "root",
+          "-g"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "yarn-failed-probe",
+    "input": {
+      "executable": "/runtime/yarn/node",
+      "probe": {
+        "status": 6,
+        "stdout": "ignored",
+        "stderr": "failure"
+      }
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "yarn",
+        [
+          "global",
+          "dir"
+        ]
+      ]
+    ]
+  }
+]

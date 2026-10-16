@@ -1,0 +1,79 @@
+[
+  {
+    "id": "owned-renamed",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\n",
+        "stderr": ""
+      },
+      "package_name": "@old/owned",
+      "update_package_name": "@new/owned"
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "install",
+          "-g",
+          "@new/owned"
+        ],
+        "display": "npm uninstall -g @old/owned && npm install -g @new/owned",
+        "steps": [
+          {
+            "command": "npm",
+            "args": [
+              "uninstall",
+              "-g",
+              "@old/owned"
+            ],
+            "display": "npm uninstall -g @old/owned"
+          },
+          {
+            "command": "npm",
+            "args": [
+              "install",
+              "-g",
+              "@new/owned"
+            ],
+            "display": "npm install -g @new/owned"
+          }
+        ]
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  }
+]

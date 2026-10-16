@@ -1,0 +1,211 @@
+//! Native self-update probes never execute update verbs.
+#![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
+
+use maestro_app::configuration::config::{NativeSelfUpdateOperations, SelfUpdateOperations};
+
+#[cfg(unix)]
+#[test]
+fn native_update_probes_capture_only_helper_output() {
+    use maestro_app::configuration::config::installation::{Installation, PackageLayout};
+    use maestro_app::configuration::config::{SelfUpdateContext, get_self_update_command};
+    use std::{fs, os::unix::fs::symlink};
+    let scratch = Scratch::new();
+    let root = scratch.0.join("global");
+    let package = root.join("agent");
+    fs::create_dir_all(&package).unwrap();
+    let alias = scratch.0.join("alias");
+    symlink(&root, &alias).unwrap();
+    let helper = install_helper(&scratch);
+    let installation = Installation {
+        module_dir: "/source".into(),
+        executable: "/runtime/npm/node".into(),
+        layout: PackageLayout::Package,
+    };
+    let dir = package.to_str().unwrap();
+    let operations = NativeSelfUpdateOperations;
+    let context = SelfUpdateContext {
+        installation: &installation,
+        package_dir: dir,
+        operations: &operations,
+    };
+    let configured = vec![
+        helper.to_string_lossy().into_owned(),
+        alias.to_string_lossy().into_owned(),
+    ];
+    let selected = get_self_update_command(&context, "agent", Some(&configured), Some("new-agent"))
+        .unwrap()
+        .unwrap();
+    assert_eq!(selected.command, configured[0]);
+    assert_eq!(
+        selected.args,
+        [configured[1].as_str(), "install", "-g", "new-agent"]
+    );
+    assert_eq!(
+        selected.steps.unwrap()[0].args,
+        [configured[1].as_str(), "uninstall", "-g", "agent"]
+    );
+    let failed = vec![configured[0].clone(), "fail".into()];
+    let error = get_self_update_command(&context, "agent", Some(&failed), None).unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        format!("Failed to run {} fail root -g: query denied", configured[0])
+    );
+    let missing = vec![scratch.0.join("absent").to_string_lossy().into_owned()];
+    let source_error = operations
+        .run_command_sync(&missing[0], &["root".into(), "-g".into()])
+        .unwrap_err();
+    let native_reason = std::error::Error::source(&source_error)
+        .unwrap()
+        .to_string();
+    let error = get_self_update_command(&context, "agent", Some(&missing), None).unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        format!("Failed to run {} root -g: {native_reason}", missing[0])
+    );
+    assert!(std::error::Error::source(&error).is_some());
+}
+
+#[cfg(unix)]
+fn install_helper(scratch: &Scratch) -> std::path::PathBuf {
+    use std::{fs::OpenOptions, io::Write};
+    let source = scratch.0.join("query-source");
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&source)
+        .unwrap();
+    file.write_all(b"#!/bin/sh\nroot=$1\nshift\n[ \"$*\" = 'root -g' ] || exit 91\nif [ \"$root\" = fail ]; then printf ' query denied\\n' >&2; exit 7; fi\nprintf ' \\357\\273\\277%s\\n' \"$root\"\n").unwrap();
+    drop(file);
+    let target = scratch.0.join("query-helper");
+    assert!(
+        std::process::Command::new("install")
+            .args(["-m", "0700"])
+            .arg(&source)
+            .arg(&target)
+            .status()
+            .unwrap()
+            .success()
+    );
+    target
+}
+
+#[cfg(unix)]
+#[test]
+fn native_update_access_matches_system_decision() {
+    use maestro_app::configuration::config::installation::{Installation, PackageLayout};
+    use maestro_app::configuration::config::{
+        SelfUpdateContext, get_self_update_command, get_self_update_unavailable_instruction,
+    };
+    use std::{fs, os::unix::fs::PermissionsExt};
+    let scratch = Scratch::new();
+    let parent = scratch.0.join("node_modules");
+    let package = parent.join("agent");
+    fs::create_dir_all(&package).unwrap();
+    let helper = install_helper(&scratch);
+    let configured = vec![
+        helper.to_string_lossy().into_owned(),
+        parent.to_string_lossy().into_owned(),
+    ];
+    let installation = Installation {
+        module_dir: "/source".into(),
+        executable: "/runtime/npm/node".into(),
+        layout: PackageLayout::Package,
+    };
+    let operations = NativeSelfUpdateOperations;
+    let context = SelfUpdateContext {
+        installation: &installation,
+        package_dir: package.to_str().unwrap(),
+        operations: &operations,
+    };
+    for (package_mode, parent_mode) in [(0o700, 0o700), (0o500, 0o700), (0o700, 0o500)] {
+        fs::set_permissions(&package, fs::Permissions::from_mode(package_mode)).unwrap();
+        fs::set_permissions(&parent, fs::Permissions::from_mode(parent_mode)).unwrap();
+        let package_access = rustix::fs::access(&package, rustix::fs::Access::WRITE_OK).is_ok();
+        let parent_access = rustix::fs::access(&parent, rustix::fs::Access::WRITE_OK).is_ok();
+        assert_eq!(
+            operations
+                .check_write_access(package.to_str().unwrap())
+                .is_ok(),
+            package_access
+        );
+        assert_eq!(
+            operations
+                .check_write_access(parent.to_str().unwrap())
+                .is_ok(),
+            parent_access
+        );
+        let command = get_self_update_command(&context, "agent", Some(&configured), None).unwrap();
+        assert_eq!(command.is_some(), package_access && parent_access);
+        let guidance =
+            get_self_update_unavailable_instruction(&context, "agent", Some(&configured), None)
+                .unwrap();
+        assert_eq!(
+            guidance.contains("not writable"),
+            !(package_access && parent_access)
+        );
+    }
+    fs::set_permissions(&parent, fs::Permissions::from_mode(0o700)).unwrap();
+    fs::set_permissions(&package, fs::Permissions::from_mode(0o700)).unwrap();
+}
+
+#[cfg(windows)]
+#[test]
+fn native_windows_update_access_matches_directory_rule() {
+    use std::fs;
+    let scratch = Scratch::new();
+    let operations = NativeSelfUpdateOperations;
+    let dir = scratch.0.join("directory");
+    fs::create_dir(&dir).unwrap();
+    let file = scratch.0.join("file");
+    drop(
+        fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&file)
+            .unwrap(),
+    );
+    for path in [&dir, &file] {
+        assert!(
+            operations
+                .check_write_access(path.to_str().unwrap())
+                .is_ok()
+        );
+        let mut permissions = fs::metadata(path).unwrap().permissions();
+        permissions.set_readonly(true);
+        fs::set_permissions(path, permissions.clone()).unwrap();
+        assert_eq!(
+            operations
+                .check_write_access(path.to_str().unwrap())
+                .is_ok(),
+            path == &dir
+        );
+        permissions.set_readonly(false);
+        fs::set_permissions(path, permissions).unwrap();
+    }
+    assert!(
+        operations
+            .check_write_access(scratch.0.join("absent").to_str().unwrap())
+            .is_err()
+    );
+    assert_eq!(fs::read(&file).unwrap(), b"");
+    assert_eq!(fs::read_dir(&dir).unwrap().count(), 0);
+}
+
+struct Scratch(std::path::PathBuf);
+impl Scratch {
+    fn new() -> Self {
+        let path = std::env::temp_dir().join(format!(
+            "maestro-update-{}-{}",
+            std::process::id(),
+            uuid::Uuid::new_v4()
+        ));
+        std::fs::create_dir(&path).unwrap();
+        Self(path)
+    }
+}
+impl Drop for Scratch {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}

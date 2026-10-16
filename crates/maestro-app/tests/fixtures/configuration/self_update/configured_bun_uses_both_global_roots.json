@@ -1,0 +1,235 @@
+[
+  {
+    "id": "bun-home",
+    "input": {
+      "package_dir": "/home/sample/.bun/install/global/node_modules/@old/agent",
+      "executable": "/runtime/npm/node",
+      "npm_command": [
+        "bun"
+      ],
+      "home": "/home/sample",
+      "probe": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": {
+        "command": "bun",
+        "args": [
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "bun install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/home/sample/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/home/sample/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "bun",
+        [
+          "pm",
+          "bin",
+          "-g"
+        ]
+      ],
+      [
+        "home"
+      ],
+      [
+        "exists",
+        "/home/sample/.bun/install/global/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/home/sample/.bun/install/global/node_modules"
+      ],
+      [
+        "access",
+        "/home/sample/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/home/sample/.bun/install/global/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "bun-bin",
+    "input": {
+      "package_dir": "/custom/.bun/install/global/node_modules/@old/agent",
+      "executable": "/runtime/npm/node",
+      "npm_command": [
+        "bun"
+      ],
+      "home": "/unrelated",
+      "probe": {
+        "status": 0,
+        "stdout": "/custom/.bun/bin",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": {
+        "command": "bun",
+        "args": [
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "bun install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/custom/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/custom/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "bun",
+        [
+          "pm",
+          "bin",
+          "-g"
+        ]
+      ],
+      [
+        "home"
+      ],
+      [
+        "exists",
+        "/unrelated/.bun/install/global/node_modules"
+      ],
+      [
+        "exists",
+        "/custom/.bun/install/global/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/custom/.bun/install/global/node_modules"
+      ],
+      [
+        "access",
+        "/custom/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/custom/.bun/install/global/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "configured-bun-failure",
+    "input": {
+      "executable": "/runtime/npm/node",
+      "npm_command": [
+        "bun",
+        "--profile",
+        "x"
+      ],
+      "probe": {
+        "status": 9,
+        "stdout": "",
+        "stderr": "not available"
+      },
+      "home_error": true
+    },
+    "expected": {
+      "error": "Failed to run bun --profile x pm bin -g: not available"
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "bun",
+        [
+          "--profile",
+          "x",
+          "pm",
+          "bin",
+          "-g"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "configured-bun-exe-is-not-bun",
+    "input": {
+      "npm_command": [
+        "bun.exe"
+      ],
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\n",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": {
+        "command": "bun.exe",
+        "args": [
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "bun.exe install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "bun.exe",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  }
+]

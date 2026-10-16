@@ -1,0 +1,281 @@
+[
+  {
+    "id": "npm",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "--prefix",
+          "/opt/tool",
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "npm --prefix /opt/tool install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "pnpm",
+    "input": {
+      "executable": "/usr/pnpm/maestro",
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": {
+        "command": "pnpm",
+        "args": [
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "pnpm install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "pnpm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "yarn",
+    "input": {
+      "executable": "/usr/yarn/maestro",
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": {
+        "command": "yarn",
+        "args": [
+          "global",
+          "add",
+          "@old/agent"
+        ],
+        "display": "yarn global add @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "yarn",
+        [
+          "global",
+          "dir"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib"
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "bun",
+    "input": {
+      "package_dir": "/opt/.bun/install/global/node_modules/@old/agent",
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/.bun/bin",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": {
+        "command": "bun",
+        "args": [
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "bun install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "bun",
+        [
+          "pm",
+          "bin",
+          "-g"
+        ]
+      ],
+      [
+        "home"
+      ],
+      [
+        "exists",
+        "/home/sample/.bun/install/global/node_modules"
+      ],
+      [
+        "exists",
+        "/opt/.bun/install/global/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/.bun/install/global/node_modules"
+      ],
+      [
+        "access",
+        "/opt/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/.bun/install/global/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "standalone",
+    "input": {
+      "standalone": true,
+      "probe": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": []
+  },
+  {
+    "id": "unknown",
+    "input": {
+      "package_dir": "/checkout/agent",
+      "executable": "/bin/maestro",
+      "probe": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": []
+  },
+  {
+    "id": "windows-pnpm-instruction",
+    "input": {
+      "op": "instruction",
+      "executable": "C:\\Users\\Admin\\pnpm-repository\\global\\5\\.pnpm\\agent\\node_modules\\@old\\agent\\dist\\cli.js"
+    },
+    "expected": {
+      "value": "Run: pnpm install -g @old/agent"
+    },
+    "trace": []
+  }
+]

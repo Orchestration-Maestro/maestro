@@ -1,0 +1,364 @@
+[
+  {
+    "id": "trim-feff",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "﻿/opt/tool/lib/node_modules﻿\n",
+        "stderr": ""
+      },
+      "npm_command": [
+        "npm"
+      ]
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "npm install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "keep-next-line",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules",
+        "stderr": ""
+      },
+      "npm_command": [
+        "npm"
+      ]
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/work//opt/tool/lib/node_modules"
+      ]
+    ]
+  },
+  {
+    "id": "empty-root",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": " \t﻿\n",
+        "stderr": ""
+      },
+      "npm_command": [
+        "npm"
+      ]
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "nonzero-ignored",
+    "input": {
+      "probe": {
+        "status": 7,
+        "stdout": "ignored",
+        "stderr": " bad "
+      }
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "--prefix",
+          "/opt/tool",
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "npm --prefix /opt/tool install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "stderr-error",
+    "input": {
+      "probe": {
+        "status": 7,
+        "stdout": "",
+        "stderr": "﻿ bad\n"
+      },
+      "npm_command": [
+        "npm"
+      ]
+    },
+    "expected": {
+      "error": "Failed to run npm root -g: bad"
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "spawn-error",
+    "input": {
+      "probe": {
+        "status": null,
+        "stdout": "",
+        "stderr": "ignored",
+        "error": "program absent"
+      },
+      "npm_command": [
+        "npm"
+      ]
+    },
+    "expected": {
+      "error": "Failed to run npm root -g: program absent"
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "numeric-status",
+    "input": {
+      "probe": {
+        "status": 2,
+        "stdout": "",
+        "stderr": ""
+      },
+      "npm_command": [
+        "npm"
+      ]
+    },
+    "expected": {
+      "error": "Failed to run npm root -g: exit code 2"
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "unknown-status",
+    "input": {
+      "probe": {
+        "status": null,
+        "stdout": "",
+        "stderr": " ﻿ "
+      },
+      "npm_command": [
+        "npm"
+      ]
+    },
+    "expected": {
+      "error": "Failed to run npm root -g: exit code unknown"
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "multiline-output",
+    "input": {
+      "npm_command": [
+        "npm"
+      ],
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\\nwrapper message\\n",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules\\nwrapper message\\n"
+      ]
+    ]
+  }
+]

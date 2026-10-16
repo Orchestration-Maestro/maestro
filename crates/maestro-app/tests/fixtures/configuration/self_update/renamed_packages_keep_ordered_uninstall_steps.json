@@ -1,0 +1,327 @@
+[
+  {
+    "id": "npm-renamed",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules",
+        "stderr": ""
+      },
+      "update_package_name": "@new/maestro"
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "--prefix",
+          "/opt/tool",
+          "install",
+          "-g",
+          "@new/maestro"
+        ],
+        "display": "npm --prefix /opt/tool uninstall -g @old/agent && npm --prefix /opt/tool install -g @new/maestro",
+        "steps": [
+          {
+            "command": "npm",
+            "args": [
+              "--prefix",
+              "/opt/tool",
+              "uninstall",
+              "-g",
+              "@old/agent"
+            ],
+            "display": "npm --prefix /opt/tool uninstall -g @old/agent"
+          },
+          {
+            "command": "npm",
+            "args": [
+              "--prefix",
+              "/opt/tool",
+              "install",
+              "-g",
+              "@new/maestro"
+            ],
+            "display": "npm --prefix /opt/tool install -g @new/maestro"
+          }
+        ]
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "pnpm-renamed",
+    "input": {
+      "executable": "/usr/pnpm/maestro",
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules",
+        "stderr": ""
+      },
+      "update_package_name": "@new/maestro"
+    },
+    "expected": {
+      "value": {
+        "command": "pnpm",
+        "args": [
+          "install",
+          "-g",
+          "@new/maestro"
+        ],
+        "display": "pnpm remove -g @old/agent && pnpm install -g @new/maestro",
+        "steps": [
+          {
+            "command": "pnpm",
+            "args": [
+              "remove",
+              "-g",
+              "@old/agent"
+            ],
+            "display": "pnpm remove -g @old/agent"
+          },
+          {
+            "command": "pnpm",
+            "args": [
+              "install",
+              "-g",
+              "@new/maestro"
+            ],
+            "display": "pnpm install -g @new/maestro"
+          }
+        ]
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "pnpm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "yarn-renamed",
+    "input": {
+      "executable": "/usr/yarn/maestro",
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib",
+        "stderr": ""
+      },
+      "update_package_name": "@new/maestro"
+    },
+    "expected": {
+      "value": {
+        "command": "yarn",
+        "args": [
+          "global",
+          "add",
+          "@new/maestro"
+        ],
+        "display": "yarn global remove @old/agent && yarn global add @new/maestro",
+        "steps": [
+          {
+            "command": "yarn",
+            "args": [
+              "global",
+              "remove",
+              "@old/agent"
+            ],
+            "display": "yarn global remove @old/agent"
+          },
+          {
+            "command": "yarn",
+            "args": [
+              "global",
+              "add",
+              "@new/maestro"
+            ],
+            "display": "yarn global add @new/maestro"
+          }
+        ]
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "yarn",
+        [
+          "global",
+          "dir"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib"
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "bun-renamed",
+    "input": {
+      "package_dir": "/opt/.bun/install/global/node_modules/@old/agent",
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/.bun/bin",
+        "stderr": ""
+      },
+      "update_package_name": "@new/maestro"
+    },
+    "expected": {
+      "value": {
+        "command": "bun",
+        "args": [
+          "install",
+          "-g",
+          "@new/maestro"
+        ],
+        "display": "bun uninstall -g @old/agent && bun install -g @new/maestro",
+        "steps": [
+          {
+            "command": "bun",
+            "args": [
+              "uninstall",
+              "-g",
+              "@old/agent"
+            ],
+            "display": "bun uninstall -g @old/agent"
+          },
+          {
+            "command": "bun",
+            "args": [
+              "install",
+              "-g",
+              "@new/maestro"
+            ],
+            "display": "bun install -g @new/maestro"
+          }
+        ]
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "bun",
+        [
+          "pm",
+          "bin",
+          "-g"
+        ]
+      ],
+      [
+        "home"
+      ],
+      [
+        "exists",
+        "/home/sample/.bun/install/global/node_modules"
+      ],
+      [
+        "exists",
+        "/opt/.bun/install/global/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/.bun/install/global/node_modules"
+      ],
+      [
+        "access",
+        "/opt/.bun/install/global/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/.bun/install/global/node_modules/@old"
+      ]
+    ]
+  }
+]

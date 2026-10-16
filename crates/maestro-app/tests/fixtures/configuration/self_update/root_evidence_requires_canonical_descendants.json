@@ -1,0 +1,717 @@
+[
+  {
+    "id": "missing-package",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\n",
+        "stderr": ""
+      },
+      "existing": [
+        "/opt/tool/lib/node_modules"
+      ]
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ]
+    ]
+  },
+  {
+    "id": "missing-root",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/absent",
+        "stderr": ""
+      },
+      "npm_command": [
+        "npm"
+      ],
+      "existing": [
+        "/opt/tool/lib/node_modules/@old/agent"
+      ]
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/absent"
+      ]
+    ]
+  },
+  {
+    "id": "package-canonical-failure",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\n",
+        "stderr": ""
+      },
+      "canonical_errors": [
+        "/opt/tool/lib/node_modules/@old/agent"
+      ]
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ]
+    ]
+  },
+  {
+    "id": "root-canonical-failure",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\n",
+        "stderr": ""
+      },
+      "canonical_errors": [
+        "/opt/tool/lib/node_modules"
+      ]
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ]
+    ]
+  },
+  {
+    "id": "filesystem-root",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/",
+        "stderr": ""
+      },
+      "npm_command": [
+        "npm"
+      ],
+      "existing": [
+        "/opt/tool/lib/node_modules/@old/agent",
+        "/"
+      ]
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "npm install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/"
+      ],
+      [
+        "canonicalize",
+        "/"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "reported-mismatch-inferred-match",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/unrelated",
+        "stderr": ""
+      },
+      "existing": [
+        "/opt/tool/lib/node_modules/@old/agent",
+        "/unrelated",
+        "/opt/tool/lib/node_modules"
+      ]
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "--prefix",
+          "/opt/tool",
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "npm --prefix /opt/tool install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/unrelated"
+      ],
+      [
+        "canonicalize",
+        "/unrelated"
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "symlink-outside-root",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/alias",
+        "stderr": ""
+      },
+      "npm_command": [
+        "npm"
+      ],
+      "existing": [
+        "/opt/tool/lib/node_modules/@old/agent",
+        "/alias"
+      ],
+      "canonical": {
+        "/opt/tool/lib/node_modules/@old/agent": "/elsewhere/agent",
+        "/alias": "/store/root"
+      }
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/alias"
+      ],
+      [
+        "canonicalize",
+        "/alias"
+      ]
+    ]
+  },
+  {
+    "id": "root-is-package",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules/@old/agent",
+        "stderr": ""
+      },
+      "npm_command": [
+        "npm"
+      ],
+      "existing": [
+        "/opt/tool/lib/node_modules/@old/agent"
+      ]
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ]
+    ]
+  },
+  {
+    "id": "prefix-decoy",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node",
+        "stderr": ""
+      },
+      "npm_command": [
+        "npm"
+      ],
+      "existing": [
+        "/opt/tool/lib/node_modules/@old/agent",
+        "/opt/tool/lib/node"
+      ]
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node"
+      ]
+    ]
+  },
+  {
+    "id": "root-trailing-separator",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules/",
+        "stderr": ""
+      },
+      "npm_command": [
+        "npm"
+      ],
+      "existing": [
+        "/opt/tool/lib/node_modules/@old/agent",
+        "/opt/tool/lib/node_modules"
+      ]
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "npm install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "symlink-match",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/alias",
+        "stderr": ""
+      },
+      "npm_command": [
+        "npm"
+      ],
+      "existing": [
+        "/opt/tool/lib/node_modules/@old/agent",
+        "/alias"
+      ],
+      "canonical": {
+        "/opt/tool/lib/node_modules/@old/agent": "/store/root/@old/agent",
+        "/alias": "/store/root"
+      }
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "npm install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/alias"
+      ],
+      [
+        "canonicalize",
+        "/alias"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "relative-package",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "./node_modules",
+        "stderr": ""
+      },
+      "package_dir": "./node_modules/@old/agent",
+      "executable": "/runtime/npm/node",
+      "npm_command": [
+        "npm"
+      ],
+      "cwd": "/work",
+      "existing": [
+        "/work/node_modules/@old/agent",
+        "/work/node_modules"
+      ]
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "npm install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/work/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/work/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/work/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/work/node_modules"
+      ],
+      [
+        "access",
+        "./node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "./node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "windows-case",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "c:\\root\\node_modules",
+        "stderr": ""
+      },
+      "windows": true,
+      "package_dir": "C:\\ROOT\\node_modules\\@old\\agent",
+      "npm_command": [
+        "npm"
+      ],
+      "existing": [
+        "C:\\ROOT\\node_modules\\@old\\agent",
+        "c:\\root\\node_modules"
+      ]
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "npm install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "C:\\ROOT\\node_modules\\@old\\agent"
+      ],
+      [
+        "canonicalize",
+        "C:\\ROOT\\node_modules\\@old\\agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "c:\\root\\node_modules"
+      ],
+      [
+        "canonicalize",
+        "c:\\root\\node_modules"
+      ],
+      [
+        "access",
+        "C:\\ROOT\\node_modules\\@old\\agent"
+      ],
+      [
+        "access",
+        "C:\\ROOT\\node_modules\\@old"
+      ]
+    ]
+  },
+  {
+    "id": "posix-case",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/OPT/tool/lib/node_modules",
+        "stderr": ""
+      },
+      "npm_command": [
+        "npm"
+      ],
+      "existing": [
+        "/opt/tool/lib/node_modules/@old/agent",
+        "/OPT/tool/lib/node_modules"
+      ]
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/OPT/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/OPT/tool/lib/node_modules"
+      ]
+    ]
+  }
+]
