@@ -1,7 +1,7 @@
 //! Shared worksheet table projection with literal attribute boundaries.
 use super::{
-    CellAddress, CellFormatOptions, CellObject, CellValue, ExcelDataType, NumberFormat, Range, Ssf, WorkSheet, encode_cell,
-    format_cell,
+    CellAddress, CellFormatOptions, CellObject, CellValue, ExcelDataType, NumberFormat, Range, Ssf,
+    WorkSheet, encode_cell, format_cell,
 };
 use maestro_text::markup::{EscapeMode, escape};
 use std::fmt::Write as _;
@@ -94,9 +94,6 @@ fn project(cell: &mut CellObject, out: &mut String, ssf: &Ssf) -> String {
                 t: Some(ExcelDataType::Error),
                 v: CellValue::Number(code),
                 w: Some(label.into()),
-                h: None,
-                z: None,
-                l: None,
                 ..Default::default()
             },
             out,
@@ -105,23 +102,15 @@ fn project(cell: &mut CellObject, out: &mut String, ssf: &Ssf) -> String {
     }
     let present = !matches!(cell.v, CellValue::Missing | CellValue::Null);
     let body = content(cell, ssf);
-    attribute(
-        out,
-        "data-t",
-        match cell.t {
-            Some(ExcelDataType::Number) => "n",
-            Some(ExcelDataType::Text) => "s",
-            Some(ExcelDataType::Boolean) => "b",
-            Some(ExcelDataType::Error) => "e",
-            Some(ExcelDataType::Date) => "d",
-            Some(ExcelDataType::Stub) | None => "z",
-        },
-    );
+    attribute(out, "data-t", cell_type(cell.t));
     if present {
         let _ = write!(
             out,
             " data-v=\"{}\"",
-            escape(&super::format_cell::raw_text(&cell.v), EscapeMode::SpreadsheetHtml)
+            escape(
+                &super::format_cell::raw_text(&cell.v),
+                EscapeMode::SpreadsheetHtml
+            )
         );
     }
     if let Some(z) = &cell.z {
@@ -141,6 +130,17 @@ fn project(cell: &mut CellObject, out: &mut String, ssf: &Ssf) -> String {
         )
     } else {
         body
+    }
+}
+/// Preserve the authored classification independently of its scalar value.
+fn cell_type(kind: Option<ExcelDataType>) -> &'static str {
+    match kind {
+        Some(ExcelDataType::Number) => "n",
+        Some(ExcelDataType::Text) => "s",
+        Some(ExcelDataType::Boolean) => "b",
+        Some(ExcelDataType::Error) => "e",
+        Some(ExcelDataType::Date) => "d",
+        Some(ExcelDataType::Stub) | None => "z",
     }
 }
 /// Read generated markup before escaped formatted text, without caching errors.

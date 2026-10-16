@@ -73,7 +73,8 @@ prepare `z` from `CellFormatOptions::date_nf`; standalone table/epoch options
 are not accepted by this helper. Raw values remain unchanged. If both formats
 fail, fallback uses unrounded scalar text without caching: booleans use `true` or
 `false`, null uses `null`, and a missing value uses `undefined`. UTC Dates use
-readable RFC3339 text with milliseconds, not host-dependent date spelling. Standard error
+readable RFC3339 text with milliseconds, not host-dependent date spelling; HTML
+raw-value attributes reuse this spelling. Standard error
 codes use their labels; an unknown numeric error stays numeric. Unknown XLSX error labels survive
 native conversion, and no-cache formula cells are omitted without evaluation.
 Malformed archives, required missing parts, XML, reader and address failures have
@@ -284,7 +285,7 @@ executable schemes while keeping ordinary links unchanged. Rich literal text and
 identifier/format attributes are escaped at their writing boundary. Explicit XML
 off-values leave rich flags disabled.
 
-`CellObject::z` stores an optional raw number-format string for explicitly supplied
-cells. Default workbook reading leaves it absent. General typed format options
-remain separate from this projection. Full standalone format dispatch and legacy
-reading remain in [#1046](https://github.com/Orchestration-Maestro/maestro/issues/1046).
+`CellObject::z` stores an optional authored number-format code or numeric selector
+for explicitly supplied cells; HTML metadata retains either spelling. Default
+workbook reading leaves it absent. General typed format options remain separate
+from this projection.

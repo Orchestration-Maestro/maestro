@@ -78,3 +78,57 @@ fn workbook_preview_flags_respect_explicit_off_values() {
 fn workbook_preview_hyperlinks_keep_ranges_fragments_and_stubs() {
     workbooks(&["links.xlsx", "link-ranges.xlsx", "active-links.xlsx"]);
 }
+
+#[test]
+fn sheet_tables_share_raw_date_spelling_with_failed_cell_formats() {
+    use maestro_app::browser::ssf::*;
+    let ssf = Ssf::default();
+    let _ = ssf.load("[", Some(999));
+    let mut cell = CellObject {
+        t: Some(ExcelDataType::Date),
+        v: CellValue::Date("2026-10-16T12:34:56.789Z".parse().unwrap()),
+        z: Some(NumberFormat::Code("[".into())),
+        xf: Some(Xf { num_fmt_id: 999 }),
+        ..Default::default()
+    };
+    let CellValue::Text(raw) =
+        format_cell(Some(&mut cell), None, &CellFormatOptions::default(), &ssf)
+    else {
+        panic!("raw date must be text")
+    };
+    assert_eq!(raw, "2026-10-16T12:34:56.789Z");
+    let mut sheet = WorkSheet {
+        cells: [("A1".into(), cell)].into_iter().collect(),
+        range: Some(decode_range("A1").unwrap()),
+        merges: Vec::new(),
+    };
+    let html = sheet_to_html(&mut sheet, "date", &ssf);
+    assert!(
+        html.contains(&format!("data-t=\"d\" data-v=\"{raw}\"")),
+        "{html}"
+    );
+}
+
+#[test]
+fn sheet_tables_keep_numeric_format_selector_metadata() {
+    use maestro_app::browser::ssf::*;
+    let mut sheet = WorkSheet {
+        cells: [(
+            "A1".into(),
+            CellObject {
+                t: Some(ExcelDataType::Number),
+                v: CellValue::Number(1.25),
+                z: Some(NumberFormat::Id(2)),
+                ..Default::default()
+            },
+        )]
+        .into_iter()
+        .collect(),
+        range: Some(decode_range("A1").unwrap()),
+        merges: Vec::new(),
+    };
+    assert_eq!(
+        sheet_to_html(&mut sheet, "", &Ssf::default()),
+        "<table><tr><td data-t=\"n\" data-v=\"1.25\" data-z=\"2\" id=\"sjs-A1\">1.25</td></tr></table>"
+    );
+}
