@@ -306,12 +306,32 @@ fn scripted_queue_and_registration_survive_cleanup_across_families() -> crate::T
                 assert_eq!(crate::json::canonical(observed), corpus.observations[index]);
                 assert_eq!(weak.upgrade().is_some(), index == 0);
             }
-            drop(registration);
-            drop(retained);
+            check_last_alias(registration, retained, trace);
             assert!(weak.upgrade().is_none());
             Ok(())
         }),
     )
+}
+
+/// Pending captures survive each raw/simple alias and release only after the last owner.
+fn check_last_alias(registration: FauxProviderRegistration, retained: ApiProvider, trace: Trace) {
+    let pending = Arc::new(Factory {
+        trace,
+        outcome: "success".into(),
+    });
+    let weak = Arc::downgrade(&pending);
+    registration.set_responses(vec![FauxResponseStep::Factory(pending.clone())]);
+    assert_eq!(registration.state.call_count(), 2);
+    assert_eq!(registration.get_pending_response_count(), 1);
+    registration.append_responses(vec![FauxResponseStep::Factory(pending)]);
+    assert_eq!(registration.state.call_count(), 2);
+    assert_eq!(registration.get_pending_response_count(), 2);
+    drop(registration);
+    assert!(weak.upgrade().is_some());
+    drop(retained.stream);
+    assert!(weak.upgrade().is_some());
+    drop(retained.stream_simple);
+    assert!(weak.upgrade().is_none());
 }
 
 /// Recorded source-factory outcomes, not a second callback dispatch mechanism.
