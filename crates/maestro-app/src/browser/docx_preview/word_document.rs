@@ -1,7 +1,7 @@
 //! Ordered, cached discovery of supported Word package parts.
 use super::{
-    DocxError, Options, Part, PartKind, Relationship, common::open_xml_package::OpenXmlPackage,
-    utils,
+    DocxError, Options, Part, PartData, PartKind, Relationship,
+    common::open_xml_package::OpenXmlPackage, utils,
 };
 use std::collections::HashMap;
 
@@ -17,6 +17,14 @@ pub struct WordDocument {
     index: HashMap<String, usize>,
     /// Latest designated main document.
     document: Option<usize>,
+    /// Latest designated core properties.
+    core_props: Option<usize>,
+    /// Latest designated extended properties.
+    extended_props: Option<usize>,
+    /// Latest designated comments.
+    comments: Option<usize>,
+    /// Latest designated extended comments.
+    comments_extended: Option<usize>,
 }
 
 impl WordDocument {
@@ -33,6 +41,10 @@ impl WordDocument {
             parts: Vec::new(),
             index: HashMap::new(),
             document: None,
+            core_props: None,
+            extended_props: None,
+            comments: None,
+            comments_extended: None,
         };
         let mut roots = Vec::new();
         for (kind, fallback) in [
@@ -54,24 +66,7 @@ impl WordDocument {
         }
         let mut pending: Vec<_> = roots.into_iter().rev().collect();
         while let Some(index) = pending.pop() {
-            let path = &document.parts[index].path;
-            let rels = document.package.relationships(Some(path))?;
-            let xml = document.package.text(path)?.unwrap_or_default();
-            document.package.parse(&xml, path)?;
-            let folder = utils::split_path(path).0;
-            let children: Vec<_> = rels
-                .as_deref()
-                .unwrap_or_default()
-                .iter()
-                .filter_map(|r| {
-                    Some((
-                        utils::resolve_path(r.target.as_deref()?, folder),
-                        PartKind::from_type(r.r#type.as_deref()?)?,
-                    ))
-                })
-                .collect();
-            document.parts[index].rels = rels;
-            document.parts[index].xml = xml;
+            let children = document.load_part(index)?;
             pending.extend(
                 children
                     .into_iter()
@@ -82,6 +77,36 @@ impl WordDocument {
             );
         }
         Ok(document)
+    }
+    /// Admit relationships and XML, prepare semantics, then return descendant reservations.
+    fn load_part(&mut self, index: usize) -> Result<Vec<(String, PartKind)>, DocxError> {
+        let part = &mut self.parts[index];
+        let path = &part.path;
+        let rels = self.package.relationships(Some(path))?;
+        let source = self.package.text(path)?.unwrap_or_default();
+        let xml = self.package.parse(&source, path)?;
+        let data = PartData::parse_xml(part.kind, &xml).map_err(|mut error| {
+            if let DocxError::Xml { path: context, .. } = &mut error {
+                *context = Some(path.clone());
+            }
+            error
+        })?;
+        let folder = utils::split_path(path).0;
+        let children = rels
+            .as_deref()
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|r| {
+                Some((
+                    utils::resolve_path(r.target.as_deref()?, folder),
+                    PartKind::from_type(r.r#type.as_deref()?)?,
+                ))
+            })
+            .collect();
+        part.rels = rels;
+        part.xml = source;
+        part.data = data;
+        Ok(children)
     }
     /// Reserve a fresh supported key before walking descendants, terminating cached cycles.
     fn reserve(&mut self, path: String, kind: PartKind) -> Option<usize> {
@@ -95,9 +120,15 @@ impl WordDocument {
             kind,
             rels: None,
             xml: String::new(),
+            data: None,
         });
-        if kind == PartKind::Document {
-            self.document = Some(index);
+        match kind {
+            PartKind::Document => self.document = Some(index),
+            PartKind::CoreProps => self.core_props = Some(index),
+            PartKind::ExtendedProps => self.extended_props = Some(index),
+            PartKind::Comments => self.comments = Some(index),
+            PartKind::CommentsExtended => self.comments_extended = Some(index),
+            _ => {}
         }
         Some(index)
     }
@@ -112,6 +143,34 @@ impl WordDocument {
     /// Borrow the latest designated document part.
     pub fn document_part(&self) -> Option<&Part> {
         self.document.map(|i| &self.parts[i])
+    }
+    /// Borrow the latest designated core props data.
+    pub fn core_props_part(&self) -> Option<&super::CorePropsPart> {
+        match self.parts[self.core_props?].data.as_ref()? {
+            PartData::CoreProps(data) => Some(data),
+            _ => None,
+        }
+    }
+    /// Borrow the latest designated extended props data.
+    pub fn extended_props_part(&self) -> Option<&super::ExtendedPropsPart> {
+        match self.parts[self.extended_props?].data.as_ref()? {
+            PartData::ExtendedProps(data) => Some(data),
+            _ => None,
+        }
+    }
+    /// Borrow the latest designated comments data.
+    pub fn comments_part(&self) -> Option<&super::CommentsPart> {
+        match self.parts[self.comments?].data.as_ref()? {
+            PartData::Comments(data) => Some(data),
+            _ => None,
+        }
+    }
+    /// Borrow the latest designated comments extended data.
+    pub fn comments_extended_part(&self) -> Option<&super::CommentsExtendedPart> {
+        match self.parts[self.comments_extended?].data.as_ref()? {
+            PartData::CommentsExtended(data) => Some(data),
+            _ => None,
+        }
     }
     /// Resolve an ID using part relationships when present, otherwise roots, retaining the part folder.
     pub fn find_part_by_rel_id(&self, id: &str, base_part: Option<&Part>) -> Option<&Part> {

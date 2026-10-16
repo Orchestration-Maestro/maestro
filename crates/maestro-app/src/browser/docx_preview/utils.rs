@@ -143,3 +143,14 @@ fn font_identifier(chars: &mut std::iter::Peekable<std::str::Chars<'_>>, first: 
     }
     true
 }
+
+/// Retain the last record for each snapshot key in canonical enumeration order.
+pub(super) fn key_by<T>(
+    entries: impl IntoIterator<Item = (Option<String>, T)>,
+) -> indexmap::IndexMap<String, T> {
+    let map: indexmap::IndexMap<_, _> = entries
+        .into_iter()
+        .map(|(key, record)| (key.unwrap_or_else(|| "null".into()), record))
+        .collect();
+    maestro_json::canonical_entries(map).into_iter().collect()
+}

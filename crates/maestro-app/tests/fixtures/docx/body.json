@@ -2661,68 +2661,16 @@
               }
             ]
           }
-        },
-        {
-          "context": "paragraph",
-          "name": "commentRangeStart",
-          "kind": "commentRangeStart",
-          "xml": {
-            "local_name": "commentRangeStart",
-            "namespace": "urn:w",
-            "attributes": [
-              {
-                "local_name": "id",
-                "namespace": "urn:w",
-                "value": "4"
-              }
-            ],
-            "children": []
-          }
-        },
-        {
-          "context": "paragraph",
-          "name": "commentRangeEnd",
-          "kind": "commentRangeEnd",
-          "xml": {
-            "local_name": "commentRangeEnd",
-            "namespace": "urn:w",
-            "attributes": [
-              {
-                "local_name": "id",
-                "namespace": "urn:w",
-                "value": "4"
-              }
-            ],
-            "children": []
-          }
         }
-      ]
-    }
-  },
-  {
-    "test": "run_foreign_branches_remain_owned",
-    "input": {
-      "operation": "run",
-      "xml": "<w:r xmlns:w=\"urn:w\" xmlns:a=\"urn:a\"><w:commentReference w:id=\"3\"/><w:drawing><a:inline/></w:drawing><w:pict><v:rect xmlns:v=\"urn:v\"/></w:pict></w:r>"
-    },
-    "expected": {
-      "foreign_slots": [
+      ],
+      "typed_markers": [
         {
-          "context": "run",
-          "name": "commentReference",
-          "kind": "commentReference",
-          "xml": {
-            "local_name": "commentReference",
-            "namespace": "urn:w",
-            "attributes": [
-              {
-                "local_name": "id",
-                "namespace": "urn:w",
-                "value": "3"
-              }
-            ],
-            "children": []
-          }
+          "type": "commentRangeStart",
+          "id": "4"
+        },
+        {
+          "type": "commentRangeEnd",
+          "id": "4"
         }
       ]
     }

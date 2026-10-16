@@ -39,7 +39,7 @@ mod utils;
 pub(crate) use utils::resolve_path;
 mod word_document;
 pub use common::{
-    part::{Part, PartKind},
+    part::{Part, PartData, PartKind},
     relationship::Relationship,
 };
 pub use word_document::WordDocument;
@@ -91,3 +91,15 @@ mod vml;
 pub use vml::{VmlAttributeValue, VmlElement, VmlImageHref, VmlTag};
 
 pub use document_parser::MathProperties;
+
+mod document_props;
+pub use document_props::{
+    CorePropsDeclaration, CorePropsPart, CustomProperty, CustomPropsPart, ExtendedPropsDeclaration,
+    ExtendedPropsPart,
+};
+
+mod comments;
+pub use comments::{
+    CommentsExtended, CommentsExtendedPart, CommentsPart, WmlComment, WmlCommentRangeEnd,
+    WmlCommentRangeStart, WmlCommentReference,
+};

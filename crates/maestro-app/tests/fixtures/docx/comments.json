@@ -1,0 +1,1012 @@
+[
+  {
+    "test": "comments_preserve_metadata_order_and_duplicate_ids",
+    "input": {
+      "operation": "comments",
+      "xml": "<w:comments xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"></w:comments>"
+    },
+    "expected": {
+      "comments": [],
+      "lookup": []
+    }
+  },
+  {
+    "test": "comments_preserve_metadata_order_and_duplicate_ids",
+    "input": {
+      "operation": "comments",
+      "xml": "<w:comments xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:comment id=\"2\" author=\"first\" initials=\"F\" date=\"raw date\"></w:comment><w:comment id=\"1\" author=\"other\" initials=\"O\" date=\"\"></w:comment><w:comment id=\"2\" author=\"replacement\"></w:comment><w:comment></w:comment><w:comment id=\"\" author=\"\" initials=\"\" date=\"\"></w:comment></w:comments>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "cssStyle": [],
+          "type": "comment",
+          "id": "2",
+          "author": "first",
+          "initials": "F",
+          "date": "raw date",
+          "children": {
+            "roots": [],
+            "nodes": []
+          }
+        },
+        {
+          "cssStyle": [],
+          "type": "comment",
+          "id": "1",
+          "author": "other",
+          "initials": "O",
+          "date": "",
+          "children": {
+            "roots": [],
+            "nodes": []
+          }
+        },
+        {
+          "cssStyle": [],
+          "type": "comment",
+          "id": "2",
+          "author": "replacement",
+          "initials": null,
+          "date": null,
+          "children": {
+            "roots": [],
+            "nodes": []
+          }
+        },
+        {
+          "cssStyle": [],
+          "type": "comment",
+          "id": null,
+          "author": null,
+          "initials": null,
+          "date": null,
+          "children": {
+            "roots": [],
+            "nodes": []
+          }
+        },
+        {
+          "cssStyle": [],
+          "type": "comment",
+          "id": "",
+          "author": "",
+          "initials": "",
+          "date": "",
+          "children": {
+            "roots": [],
+            "nodes": []
+          }
+        }
+      ],
+      "lookup": [
+        {
+          "key": "1",
+          "index": 1
+        },
+        {
+          "key": "2",
+          "index": 2
+        },
+        {
+          "key": "null",
+          "index": 3
+        },
+        {
+          "key": "",
+          "index": 4
+        }
+      ]
+    }
+  },
+  {
+    "test": "comments_choose_immediate_local_names_and_first_attributes",
+    "input": {
+      "operation": "comments",
+      "xml": "<w:comments xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><q:comment q:id=\"first\" w:id=\"second\" q:author=\"A\" w:author=\"B\"/><!--skip--><q:outer><w:comment id=\"7\" author=\"Author\" initials=\"AU\" date=\"2024-01-02T03:04:05Z\"></w:comment></q:outer><w:Comment id=\"wrong-case\"/><w:comment id=\"last\" date=\" not a parsed date \" author=\" Unicode Ω \" initials=\"Ω\"></w:comment></w:comments>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "cssStyle": [],
+          "type": "comment",
+          "id": "first",
+          "author": "A",
+          "initials": null,
+          "date": null,
+          "children": {
+            "roots": [],
+            "nodes": []
+          }
+        },
+        {
+          "cssStyle": [],
+          "type": "comment",
+          "id": "last",
+          "author": " Unicode Ω ",
+          "initials": "Ω",
+          "date": " not a parsed date ",
+          "children": {
+            "roots": [],
+            "nodes": []
+          }
+        }
+      ],
+      "lookup": [
+        {
+          "key": "first",
+          "index": 0
+        },
+        {
+          "key": "last",
+          "index": 1
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_children_reuse_formatting_and_parent_identity",
+    "input": {
+      "operation": "comments",
+      "xml": "<w:comments xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:comment id=\"7\" author=\"Author\" initials=\"AU\" date=\"2024-01-02T03:04:05Z\"><w:p><w:pPr><w:pStyle val=\"CommentText\"/><w:keepNext/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>A &amp; B</w:t><w:tab/></w:r><w:r><w:t>second</w:t></w:r></w:p><w:sdt><w:sdtContent><w:p><w:r><w:t>control</w:t></w:r></w:p></w:sdtContent></w:sdt><w:altChunk id=\"chunk\"/></w:comment><w:comment id=\"8\"><w:p><w:r><w:t>separate</w:t></w:r></w:p></w:comment></w:comments>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "cssStyle": [],
+          "type": "comment",
+          "id": "7",
+          "author": "Author",
+          "initials": "AU",
+          "date": "2024-01-02T03:04:05Z",
+          "children": {
+            "roots": [
+              0,
+              6,
+              9
+            ],
+            "nodes": [
+              {
+                "type": "paragraph",
+                "children": [
+                  1,
+                  4
+                ],
+                "cssStyle": [],
+                "styleName": "CommentText",
+                "keepNext": true
+              },
+              {
+                "type": "run",
+                "children": [
+                  2,
+                  3
+                ],
+                "cssStyle": [
+                  [
+                    "font-weight",
+                    "bold"
+                  ]
+                ],
+                "parent": 0
+              },
+              {
+                "type": "text",
+                "text": "A & B"
+              },
+              {
+                "type": "tab"
+              },
+              {
+                "type": "run",
+                "children": [
+                  5
+                ],
+                "parent": 0
+              },
+              {
+                "type": "text",
+                "text": "second"
+              },
+              {
+                "type": "paragraph",
+                "children": [
+                  7
+                ]
+              },
+              {
+                "type": "run",
+                "children": [
+                  8
+                ],
+                "parent": 6
+              },
+              {
+                "type": "text",
+                "text": "control"
+              },
+              {
+                "type": "altChunk",
+                "children": [],
+                "id": "chunk"
+              }
+            ]
+          }
+        },
+        {
+          "cssStyle": [],
+          "type": "comment",
+          "id": "8",
+          "author": null,
+          "initials": null,
+          "date": null,
+          "children": {
+            "roots": [
+              0
+            ],
+            "nodes": [
+              {
+                "type": "paragraph",
+                "children": [
+                  1
+                ]
+              },
+              {
+                "type": "run",
+                "children": [
+                  2
+                ],
+                "parent": 0
+              },
+              {
+                "type": "text",
+                "text": "separate"
+              }
+            ]
+          }
+        }
+      ],
+      "lookup": [
+        {
+          "key": "7",
+          "index": 0
+        },
+        {
+          "key": "8",
+          "index": 1
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_lookup_shares_records_with_source_list",
+    "input": {
+      "operation": "comment_alias",
+      "xml": "<w:comments xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:comment id=\"2\" author=\"old\"></w:comment><w:comment id=\"1\" author=\"other\"></w:comment><w:comment id=\"2\" author=\"new\"></w:comment></w:comments>"
+    },
+    "expected": {
+      "same": true,
+      "list_author": "changed through lookup",
+      "retained_author": "changed through lookup",
+      "retained_id": "changed-id",
+      "old_key_still_alias": true,
+      "new_key_absent": true,
+      "lookup_keys": [
+        "1",
+        "2"
+      ]
+    }
+  },
+  {
+    "test": "comment_extensions_preserve_links_and_nullable_flags",
+    "input": {
+      "operation": "extensions",
+      "xml": "<w:commentsEx xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"></w:commentsEx>"
+    },
+    "expected": {
+      "comments": [],
+      "lookup": []
+    }
+  },
+  {
+    "test": "comment_extensions_preserve_links_and_nullable_flags",
+    "input": {
+      "operation": "extensions",
+      "xml": "<w:commentsEx xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentEx paraId=\"002A\" paraIdParent=\"001B\" done=\"1\"></w:commentEx><w:commentEx paraId=\"002B\" paraIdParent=\"\" done=\"0\"></w:commentEx><w:commentEx></w:commentEx><q:outer><w:commentEx paraId=\"nested\"></w:commentEx></q:outer><q:commentEx q:paraId=\"first\" w:paraId=\"second\"/></w:commentsEx>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "paraId": "002A",
+          "paraIdParent": "001B",
+          "done": true
+        },
+        {
+          "paraId": "002B",
+          "paraIdParent": "",
+          "done": false
+        },
+        {
+          "paraId": null,
+          "paraIdParent": null,
+          "done": null
+        },
+        {
+          "paraId": "first",
+          "paraIdParent": null,
+          "done": null
+        }
+      ],
+      "lookup": [
+        {
+          "key": "002A",
+          "index": 0
+        },
+        {
+          "key": "002B",
+          "index": 1
+        },
+        {
+          "key": "null",
+          "index": 2
+        },
+        {
+          "key": "first",
+          "index": 3
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_extension_flags_use_exact_tokens",
+    "input": {
+      "operation": "extensions",
+      "xml": "<w:commentsEx xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentEx paraId=\"A\"></w:commentEx></w:commentsEx>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "paraId": "A",
+          "paraIdParent": null,
+          "done": null
+        }
+      ],
+      "lookup": [
+        {
+          "key": "A",
+          "index": 0
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_extension_flags_use_exact_tokens",
+    "input": {
+      "operation": "extensions",
+      "xml": "<w:commentsEx xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentEx paraId=\"A\" done=\"\"></w:commentEx></w:commentsEx>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "paraId": "A",
+          "paraIdParent": null,
+          "done": null
+        }
+      ],
+      "lookup": [
+        {
+          "key": "A",
+          "index": 0
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_extension_flags_use_exact_tokens",
+    "input": {
+      "operation": "extensions",
+      "xml": "<w:commentsEx xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentEx paraId=\"A\" done=\"1\"></w:commentEx></w:commentsEx>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "paraId": "A",
+          "paraIdParent": null,
+          "done": true
+        }
+      ],
+      "lookup": [
+        {
+          "key": "A",
+          "index": 0
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_extension_flags_use_exact_tokens",
+    "input": {
+      "operation": "extensions",
+      "xml": "<w:commentsEx xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentEx paraId=\"A\" done=\"0\"></w:commentEx></w:commentsEx>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "paraId": "A",
+          "paraIdParent": null,
+          "done": false
+        }
+      ],
+      "lookup": [
+        {
+          "key": "A",
+          "index": 0
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_extension_flags_use_exact_tokens",
+    "input": {
+      "operation": "extensions",
+      "xml": "<w:commentsEx xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentEx paraId=\"A\" done=\"on\"></w:commentEx></w:commentsEx>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "paraId": "A",
+          "paraIdParent": null,
+          "done": true
+        }
+      ],
+      "lookup": [
+        {
+          "key": "A",
+          "index": 0
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_extension_flags_use_exact_tokens",
+    "input": {
+      "operation": "extensions",
+      "xml": "<w:commentsEx xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentEx paraId=\"A\" done=\"off\"></w:commentEx></w:commentsEx>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "paraId": "A",
+          "paraIdParent": null,
+          "done": false
+        }
+      ],
+      "lookup": [
+        {
+          "key": "A",
+          "index": 0
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_extension_flags_use_exact_tokens",
+    "input": {
+      "operation": "extensions",
+      "xml": "<w:commentsEx xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentEx paraId=\"A\" done=\"true\"></w:commentEx></w:commentsEx>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "paraId": "A",
+          "paraIdParent": null,
+          "done": true
+        }
+      ],
+      "lookup": [
+        {
+          "key": "A",
+          "index": 0
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_extension_flags_use_exact_tokens",
+    "input": {
+      "operation": "extensions",
+      "xml": "<w:commentsEx xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentEx paraId=\"A\" done=\"false\"></w:commentEx></w:commentsEx>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "paraId": "A",
+          "paraIdParent": null,
+          "done": false
+        }
+      ],
+      "lookup": [
+        {
+          "key": "A",
+          "index": 0
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_extension_flags_use_exact_tokens",
+    "input": {
+      "operation": "extensions",
+      "xml": "<w:commentsEx xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentEx paraId=\"A\" done=\"TRUE\"></w:commentEx></w:commentsEx>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "paraId": "A",
+          "paraIdParent": null,
+          "done": null
+        }
+      ],
+      "lookup": [
+        {
+          "key": "A",
+          "index": 0
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_extension_flags_use_exact_tokens",
+    "input": {
+      "operation": "extensions",
+      "xml": "<w:commentsEx xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentEx paraId=\"A\" done=\"yes\"></w:commentEx></w:commentsEx>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "paraId": "A",
+          "paraIdParent": null,
+          "done": null
+        }
+      ],
+      "lookup": [
+        {
+          "key": "A",
+          "index": 0
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_extension_flags_use_exact_tokens",
+    "input": {
+      "operation": "extensions",
+      "xml": "<w:commentsEx xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentEx paraId=\"A\" done=\" true \"></w:commentEx></w:commentsEx>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "paraId": "A",
+          "paraIdParent": null,
+          "done": null
+        }
+      ],
+      "lookup": [
+        {
+          "key": "A",
+          "index": 0
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_extension_lookup_replaces_duplicates_without_losing_records",
+    "input": {
+      "operation": "extensions",
+      "xml": "<w:commentsEx xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentEx paraId=\"0002\" paraIdParent=\"old\" done=\"0\"></w:commentEx><w:commentEx paraId=\"0001\" paraIdParent=\"other\" done=\"1\"></w:commentEx><w:commentEx paraId=\"0002\" paraIdParent=\"new\" done=\"1\"></w:commentEx><w:commentEx></w:commentEx><w:commentEx paraId=\"null\" done=\"0\"></w:commentEx></w:commentsEx>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "paraId": "0002",
+          "paraIdParent": "old",
+          "done": false
+        },
+        {
+          "paraId": "0001",
+          "paraIdParent": "other",
+          "done": true
+        },
+        {
+          "paraId": "0002",
+          "paraIdParent": "new",
+          "done": true
+        },
+        {
+          "paraId": null,
+          "paraIdParent": null,
+          "done": null
+        },
+        {
+          "paraId": "null",
+          "paraIdParent": null,
+          "done": false
+        }
+      ],
+      "lookup": [
+        {
+          "key": "0002",
+          "index": 2
+        },
+        {
+          "key": "0001",
+          "index": 1
+        },
+        {
+          "key": "null",
+          "index": 4
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_extension_lookup_shares_retained_record",
+    "input": {
+      "operation": "extension_alias",
+      "xml": "<w:commentsEx xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentEx paraId=\"A\" done=\"0\"></w:commentEx></w:commentsEx>"
+    },
+    "expected": {
+      "same": true,
+      "list_done": true,
+      "retained_done": true,
+      "retained_id": "changed-id",
+      "old_key_still_alias": true,
+      "new_key_absent": true,
+      "lookup_keys": [
+        "A"
+      ]
+    }
+  },
+  {
+    "test": "comment_markers_keep_kind_id_and_inline_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentRangeStart></w:commentRangeStart><w:r><w:t>before</w:t><w:commentReference></w:commentReference><w:t>after</w:t></w:r><w:commentRangeEnd></w:commentRangeEnd></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1,
+            2,
+            6
+          ]
+        },
+        {
+          "children": [],
+          "cssStyle": [],
+          "id": null,
+          "type": "commentRangeStart"
+        },
+        {
+          "type": "run",
+          "children": [
+            3,
+            4,
+            5
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "before"
+        },
+        {
+          "children": [],
+          "cssStyle": [],
+          "id": null,
+          "type": "commentReference"
+        },
+        {
+          "type": "text",
+          "text": "after"
+        },
+        {
+          "children": [],
+          "cssStyle": [],
+          "id": null,
+          "type": "commentRangeEnd"
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_markers_keep_kind_id_and_inline_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentRangeStart w:id=\"\"></w:commentRangeStart><w:r><w:t>before</w:t><w:commentReference w:id=\"\"></w:commentReference><w:t>after</w:t></w:r><w:commentRangeEnd w:id=\"\"></w:commentRangeEnd></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1,
+            2,
+            6
+          ]
+        },
+        {
+          "children": [],
+          "cssStyle": [],
+          "id": "",
+          "type": "commentRangeStart"
+        },
+        {
+          "type": "run",
+          "children": [
+            3,
+            4,
+            5
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "before"
+        },
+        {
+          "children": [],
+          "cssStyle": [],
+          "id": "",
+          "type": "commentReference"
+        },
+        {
+          "type": "text",
+          "text": "after"
+        },
+        {
+          "children": [],
+          "cssStyle": [],
+          "id": "",
+          "type": "commentRangeEnd"
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_markers_keep_kind_id_and_inline_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:commentRangeStart w:id=\"003\"></w:commentRangeStart><w:r><w:t>before</w:t><w:commentReference w:id=\"003\"></w:commentReference><w:t>after</w:t></w:r><w:commentRangeEnd w:id=\"003\"></w:commentRangeEnd></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1,
+            2,
+            6
+          ]
+        },
+        {
+          "children": [],
+          "cssStyle": [],
+          "id": "003",
+          "type": "commentRangeStart"
+        },
+        {
+          "type": "run",
+          "children": [
+            3,
+            4,
+            5
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "before"
+        },
+        {
+          "children": [],
+          "cssStyle": [],
+          "id": "003",
+          "type": "commentReference"
+        },
+        {
+          "type": "text",
+          "text": "after"
+        },
+        {
+          "children": [],
+          "cssStyle": [],
+          "id": "003",
+          "type": "commentRangeEnd"
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_markers_keep_kind_id_and_inline_order",
+    "input": {
+      "operation": "run",
+      "xml": "<w:r xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><q:commentReference q:id=\"first\" w:id=\"second\"/><w:commentReference id=\"second\"/></w:r>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "run",
+          "children": [
+            1,
+            2
+          ],
+          "parent": null
+        },
+        {
+          "children": [],
+          "cssStyle": [],
+          "id": "first",
+          "type": "commentReference"
+        },
+        {
+          "children": [],
+          "cssStyle": [],
+          "id": "second",
+          "type": "commentReference"
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_markers_survive_nested_body_routes",
+    "input": {
+      "operation": "comments",
+      "xml": "<w:comments xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:comment id=\"7\" author=\"Author\" initials=\"AU\" date=\"2024-01-02T03:04:05Z\"><w:p><w:sdt><w:sdtContent><w:commentRangeStart id=\"A\"/><w:r><w:commentReference id=\"A\"/></w:r></w:sdtContent></w:sdt><w:ins><w:commentRangeEnd id=\"A\"/></w:ins></w:p></w:comment></w:comments>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "cssStyle": [],
+          "type": "comment",
+          "id": "7",
+          "author": "Author",
+          "initials": "AU",
+          "date": "2024-01-02T03:04:05Z",
+          "children": {
+            "roots": [
+              0
+            ],
+            "nodes": [
+              {
+                "type": "paragraph",
+                "children": [
+                  1,
+                  2,
+                  5
+                ]
+              },
+              {
+                "children": [],
+                "cssStyle": [],
+                "id": "A",
+                "type": "commentRangeStart"
+              },
+              {
+                "type": "run",
+                "children": [
+                  3
+                ],
+                "parent": 4
+              },
+              {
+                "children": [],
+                "cssStyle": [],
+                "id": "A",
+                "type": "commentReference"
+              },
+              {
+                "type": "paragraph",
+                "children": [
+                  1,
+                  2
+                ]
+              },
+              {
+                "type": "inserted",
+                "children": [
+                  6
+                ]
+              },
+              {
+                "children": [],
+                "cssStyle": [],
+                "id": "A",
+                "type": "commentRangeEnd"
+              }
+            ]
+          }
+        }
+      ],
+      "lookup": [
+        {
+          "key": "7",
+          "index": 0
+        }
+      ]
+    }
+  },
+  {
+    "test": "comment_body_errors_fail_the_enclosing_part",
+    "input": {
+      "operation": "comments",
+      "xml": "<w:comments xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:comment id=\"7\" author=\"Author\" initials=\"AU\" date=\"2024-01-02T03:04:05Z\"><w:p><w:pPr><w:pStyle val=\"CommentText\"/><w:keepNext/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>A &amp; B</w:t><w:tab/></w:r><w:r><w:t>second</w:t></w:r></w:p></w:comment><w:comment id=\"bad\"><w:p><w:r><w:drawing><wp:inline><a:graphic/></wp:inline></w:drawing></w:r></w:p></w:comment></w:comments>"
+    },
+    "expected": {
+      "kind": "invalid-xml-part"
+    }
+  },
+  {
+    "test": "comment_parts_keep_source_after_input_release",
+    "input": {
+      "operation": "comments",
+      "xml": "<w:comments xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:vt=\"http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes\" xmlns:a=\"http://schemas.openxmlformats.org/drawingml/2006/main\" xmlns:wp=\"http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing\"><w:comment id=\"7\" author=\"Author\" initials=\"AU\" date=\"2024-01-02T03:04:05Z\"><w:p><w:r><w:t>owned Ω</w:t></w:r></w:p></w:comment></w:comments>"
+    },
+    "expected": {
+      "comments": [
+        {
+          "cssStyle": [],
+          "type": "comment",
+          "id": "7",
+          "author": "Author",
+          "initials": "AU",
+          "date": "2024-01-02T03:04:05Z",
+          "children": {
+            "roots": [
+              0
+            ],
+            "nodes": [
+              {
+                "type": "paragraph",
+                "children": [
+                  1
+                ]
+              },
+              {
+                "type": "run",
+                "children": [
+                  2
+                ],
+                "parent": 0
+              },
+              {
+                "type": "text",
+                "text": "owned Ω"
+              }
+            ]
+          }
+        }
+      ],
+      "lookup": [
+        {
+          "key": "7",
+          "index": 0
+        }
+      ]
+    }
+  }
+]

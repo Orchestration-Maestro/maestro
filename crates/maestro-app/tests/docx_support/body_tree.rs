@@ -43,6 +43,9 @@ fn payload(data: &Data) -> Value {
         } => {
             json!({"id":id,"name":name,"colFirst":col_first.map_or(Value::Null,number),"colLast":col_last.map_or(Value::Null,number)})
         }
+        Data::CommentReference(c) => json!({"id":c.id,"children":[],"cssStyle":[]}),
+        Data::CommentRangeStart(c) => json!({"id":c.id,"children":[],"cssStyle":[]}),
+        Data::CommentRangeEnd(c) => json!({"id":c.id,"children":[],"cssStyle":[]}),
         Data::BookmarkEnd { id } => json!({"id":id}),
         Data::Break { r#break } => json!({"break":r#break}),
         Data::Symbol { font, char } => json!({"font":font,"char":char}),
@@ -152,7 +155,7 @@ fn member<T>(out: &mut Value, key: &str, value: Option<T>, encode: impl FnOnce(T
     }
 }
 /// Preserve nonfinite numbers and negative zero as fixture-only markers.
-fn number(value: f64) -> Value {
+pub(super) fn number(value: f64) -> Value {
     if value.is_nan() {
         json!({"$number":"NaN"})
     } else if value == 0.0 && value.is_sign_negative() {
