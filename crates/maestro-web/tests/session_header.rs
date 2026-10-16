@@ -489,3 +489,66 @@ fn check_native_failures(
         );
     }
 }
+
+/// Adjacent background below a clipped control cannot activate any action.
+#[test]
+fn header_pointer_rejects_adjacent_clipped_background() {
+    let pack = pack();
+    let p = pack.presentation(BrandMode::Dark).unwrap();
+    for index in 0..3 {
+        let mut canvas = Canvas::new(&p);
+        canvas.host.height.set(12.);
+        canvas.frame(vec![]);
+        let rect = canvas.host.holes.borrow()[index];
+        let pos = egui::pos2(rect.center().x, rect.top() + 8.);
+        canvas.frame(pointer(pos, true));
+        assert!(
+            canvas.frame(pointer(pos, false)).0.is_empty(),
+            "action {index}"
+        );
+    }
+}
+
+/// A gesture at a previous slot cannot activate a control moved this frame.
+#[test]
+fn header_pointer_rejects_previous_slot_after_move() {
+    let pack = pack();
+    let p = pack.presentation(BrandMode::Dark).unwrap();
+    for index in 0..3 {
+        let mut canvas = Canvas::new(&p);
+        canvas.frame(vec![]);
+        let pos = canvas.host.holes.borrow()[index].center();
+        canvas.frame(pointer(pos, true));
+        canvas.host.offset.set(egui::vec2(0., 100.));
+        assert!(
+            canvas.frame(pointer(pos, false)).0.is_empty(),
+            "action {index}"
+        );
+    }
+}
+
+/// Keyboard activation remains independent of pointer location.
+#[test]
+fn header_keyboard_activation_ignores_pointer_geometry() {
+    use maestro_web::export_html::template::HeaderAction;
+    let pack = pack();
+    let p = pack.presentation(BrandMode::Dark).unwrap();
+    let mut canvas = Canvas::new(&p);
+    canvas.frame(vec![]);
+    let key = |key, pressed| egui::Event::Key {
+        key,
+        physical_key: None,
+        pressed,
+        repeat: false,
+        modifiers: egui::Modifiers::NONE,
+    };
+    canvas.frame(vec![
+        egui::Event::PointerMoved(egui::pos2(700., 500.)),
+        key(egui::Key::Tab, true),
+    ]);
+    canvas.frame(vec![key(egui::Key::Tab, false)]);
+    assert_eq!(
+        canvas.frame(vec![key(egui::Key::Enter, true)]).0,
+        [HeaderAction::ToggleThinking]
+    );
+}

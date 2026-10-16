@@ -102,8 +102,9 @@ package is installed for reading content.
 
 The offline header reuses these same bindings for literal metadata, identified
 canvas-control slots and native date localization. Native Date construction and
-zero-argument locale formatting use existing js-sys reflection; catchable geometry
-readback uses the same boundary so native failures reach transaction cleanup.
+zero-argument locale formatting use existing js-sys reflection. Geometry readback
+uses a typed catchable binding without realm-local rectangle casts, so native
+failures reach transaction cleanup.
 Slot sizing, optional-style restoration and fractional-scroll restoration share
 one owner for measurement and publication. No package, binding feature, font or
 browser-runner dependency is added.

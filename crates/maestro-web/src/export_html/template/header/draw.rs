@@ -89,14 +89,20 @@ impl Placement<'_> {
                 }
                 let mut child = ui.new_child(egui::UiBuilder::new().id_salt(id).max_rect(full));
                 child.set_clip_rect(visible);
-                child
-                    .put(full, button(label))
-                    .on_hover_text(*tooltip)
-                    .clicked()
-                    .then_some(*action)
+                let response = child.put(full, button(label)).on_hover_text(*tooltip);
+                activated(&response, visible).then_some(*action)
             })
             .collect())
     }
+}
+/// Admit pointer clicks only within current visible canvas points, retaining keyboard clicks.
+/// Native CSS pixels have already been converted per axis by the host's transform.
+fn activated(response: &egui::Response, visible_canvas_points: egui::Rect) -> bool {
+    response.clicked()
+        && (!response.clicked_by(egui::PointerButton::Primary)
+            || response
+                .interact_pointer_pos()
+                .is_some_and(|canvas_points| visible_canvas_points.contains(canvas_points)))
 }
 /// Use the same existing button for sizing and painting.
 fn button(label: &str) -> egui::Button<'_> {

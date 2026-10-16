@@ -36,6 +36,8 @@ pub struct Host {
     pub height: Cell<f32>,
     /// Whether the controlled layout exposes native slots.
     pub controls: Cell<bool>,
+    /// Current native slot translation in canvas points.
+    pub offset: Cell<egui::Vec2>,
     /// Last actual sizes indexed by caller identity.
     pub sizes: RefCell<Vec<(egui::Id, egui::Vec2)>>,
     /// Actual slot identities for each admitted factory.
@@ -104,7 +106,8 @@ impl AttachmentHost for Host {
                         (
                             *id,
                             egui::Rect::from_min_size(
-                                egui::pos2(10. + f32::from(u16::try_from(i).unwrap()) * 150., 5.),
+                                egui::pos2(10. + f32::from(u16::try_from(i).unwrap()) * 150., 5.)
+                                    + self.offset.get(),
                                 *size,
                             ),
                         )

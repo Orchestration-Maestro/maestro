@@ -585,3 +585,39 @@ fn owned_factory_survives_document() {
     assert!(text.contains("Session: owned <雪>") && text.contains("literal <model>"));
     assert!(root.element.query_selector("model").unwrap().is_none());
 }
+
+/// Geometry returned by another same-origin realm reaches actual placement.
+/// # Panics
+/// Panics if the native rectangle cannot be converted or placement differs.
+#[wasm_bindgen]
+pub fn reading_geometry_accepts_second_realm_rectangle() {
+    std::panic::set_hook(Box::new(|info| {
+        web_sys::console::error_1(&info.to_string().into())
+    }));
+    let slots = Slots::new();
+    let document = web_sys::window().unwrap().document().unwrap();
+    let canvas = document.get_element_by_id("canvas").unwrap();
+    let restore = js(
+        &canvas,
+        "const frame=document.createElement('iframe');document.body.append(frame);const original=value.getBoundingClientRect;const rect=new frame.contentWindow.DOMRect(20,30,1000,450);value.getBoundingClientRect=()=>rect;return ()=>{delete value.getBoundingClientRect;frame.remove()}",
+    );
+    let sizes = Slots::sizes([(40., 20.), (70., 30.), (100., 40.)]);
+    let result = slots.place(ReadingPhase::Measure, egui::vec2(300., 40.), &sizes);
+    if result.is_ok() {
+        slots.layout().unwrap();
+        slots
+            .place(ReadingPhase::Publish, egui::vec2(300., 40.), &sizes)
+            .unwrap();
+        let rect = slots.wrapper().get_bounding_client_rect();
+        assert!((rect.left() - 35.).abs() < 0.01);
+        assert!((rect.top() - 43.5).abs() < 0.01);
+        assert!((rect.width() - 375.).abs() < 0.01);
+        assert!((rect.height() - 30.).abs() < 0.01);
+    }
+    restore
+        .dyn_into::<js_sys::Function>()
+        .unwrap()
+        .call0(&JsValue::NULL)
+        .unwrap();
+    result.unwrap();
+}

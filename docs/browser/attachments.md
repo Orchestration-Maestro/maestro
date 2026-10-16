@@ -37,7 +37,8 @@ retained native properties; document-preview operands carry the original shared
 handle. Component identities are independent of attachment identifiers.
 
 On WebAssembly, `BrowserAttachmentHost::new(canvas)` uses that canvas's document
-and maps canvas points through its physical size and CSS bounding rectangle. Native
+and maps canvas points through its physical size and CSS bounding rectangle,
+including rectangles from another same-origin realm. Native
 image/pre elements retain their identity when only their rectangles move. Modal
 ownership hides sibling surfaces and restores them when the overlay closes.
 Surfaces provide disjoint control rectangles as `occluders`: an even-odd CSS path
@@ -94,4 +95,5 @@ through the shared event-subscription owner, with no root backedge, polling or
 new timer. Observer disconnection precedes callable release. Existing modal
 visibility is shared with attachments. Features paint controls at their full
 reserved slot rectangles through the viewport/caller clip and interact only with
-the positive visible intersection. The header is the first mixed-content consumer.
+the current positive visible intersection for pointer activation. Keyboard
+activation is unaffected. The header is the first mixed-content consumer.

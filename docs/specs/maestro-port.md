@@ -180,8 +180,9 @@ layout and stages its clamped fractional scroll offsets. One shared transaction
 restores optional wrapper/slot styles and both scroll axes after measurement or
 failed publication, attempting every restoration and preserving the original error.
 Publication applies the same sizes and staged offsets before committing the root.
-Canvas paint retains full control geometry through the final clip; interaction uses
-only its positive visible intersection. Unchanged content retains its native root and selection.
+Canvas paint retains full control geometry through the final clip; pointer activation
+is admitted only within its current positive visible intersection. Keyboard activation
+is unchanged. Unchanged content retains its native root and selection.
 The existing event-subscription owner retains scroll/resize callbacks; no second
 registry, listener runtime or painted reading-text fallback is introduced.
 Native viewport projection and inverse readback share the canvas axis transform.

@@ -84,6 +84,8 @@ its own surface. No document, date-function or presentation borrow is retained.
 Horizontal, vertical and wrapped parents use an independent top-down child.
 Actual button dimensions size identified native slots. One live readback supplies
 publication holes, full canvas paint geometry and clipped interaction rectangles.
+Pointer activation is rechecked against the current positive visible intersection,
+including when slots move between input frames; keyboard activation is unchanged.
 The viewport is bounded by available height, including zero, without a second
 canvas scroller or painted reading text. A transparent flow container includes
 the panel's trailing spacing once without extending its background.

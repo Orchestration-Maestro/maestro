@@ -52,12 +52,22 @@ impl Drop for DomSurface {
 pub(crate) fn host_error(error: &wasm_bindgen::JsValue) -> AttachmentUiError {
     AttachmentUiError::Host(format!("{error:?}"))
 }
+#[wasm_bindgen::prelude::wasm_bindgen]
+extern "C" {
+    /// Element view for catchable native geometry without realm-local casts.
+    #[wasm_bindgen(extends = Element)]
+    type GeometryElement;
+
+    /// Read a native rectangle, preserving thrown browser errors.
+    #[wasm_bindgen(method, catch, js_name = getBoundingClientRect)]
+    fn bounding_rect(this: &GeometryElement) -> Result<web_sys::DomRect, wasm_bindgen::JsValue>;
+}
 /// Read native geometry through a catchable operation so transactions can restore state.
 fn bounds(element: &Element) -> Result<web_sys::DomRect, AttachmentUiError> {
-    js_sys::Reflect::get(element, &"getBoundingClientRect".into())
-        .and_then(wasm_bindgen::JsCast::dyn_into::<js_sys::Function>)
-        .and_then(|method| method.call0(element))
-        .and_then(wasm_bindgen::JsCast::dyn_into)
+    use wasm_bindgen::JsCast as _;
+    element
+        .unchecked_ref::<GeometryElement>()
+        .bounding_rect()
         .map_err(|e| host_error(&e))
 }
 impl BrowserAttachmentHost {
