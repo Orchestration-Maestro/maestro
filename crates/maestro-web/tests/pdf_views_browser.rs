@@ -384,8 +384,7 @@ pub fn pdf_overlay_native_viewport_keeps_panel_and_border() {
                         && ['Top','Right','Bottom','Left'].every(edge=>
                             style['border'+edge+'Color']===expected.borderTopColor
                             && Math.abs(parseFloat(style['border'+edge+'Width'])-1)<0.5
-                            && style['border'+edge+'Style']==='solid')
-                        && style.boxShadow!=='none';
+                            && style['border'+edge+'Style']==='solid');
                     probe.remove();
                     if(!framed) throw Error('bounded viewport has no panel frame');
                     if(style.overflowY!=='auto' || bounds.height<=0 || bounds.bottom>800

@@ -12,8 +12,6 @@ div:has(> .maestro-pdf:not(.maestro-pdf-artifact)) {
   box-sizing: border-box;
   background: var(--maestro-color-panel);
   border: 1px solid var(--maestro-color-border);
-  box-shadow: 0 10px 15px -3px color-mix(in srgb, var(--maestro-color-text) 10%, transparent),
-              0 4px 6px -4px color-mix(in srgb, var(--maestro-color-text) 10%, transparent);
 }
 .maestro-pdf > div:not(:last-child) { margin-bottom: var(--maestro-spacing-md); }
 .maestro-pdf img {
