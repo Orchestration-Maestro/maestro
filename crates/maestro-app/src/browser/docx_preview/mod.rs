@@ -68,9 +68,13 @@ pub use document_parser::{
     parse_table_style,
 };
 
+pub use document::border::{Border, Borders};
 pub use document::common::CommonProperties;
 pub use document::paragraph::{LineSpacing, Numbering, ParagraphProperties, TabStop};
 pub use document::run::{RunProperties, VerticalAlign};
+pub use document::section::{
+    Column, Columns, FooterHeaderReference, PageMargins, PageNumber, PageSize, SectionProperties,
+};
 
 mod styles;
 pub use document::style::{IDomStyle, IDomSubStyle};

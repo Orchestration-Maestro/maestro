@@ -1,0 +1,5004 @@
+[
+  {
+    "test": "section_groups_keep_absence_empty_and_last_records",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {}
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_groups_keep_absence_empty_and_last_records",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgSz/><w:pgMar/><w:cols/><w:pgBorders/><w:pgNumType/><w:type/></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": null
+            },
+            "pageMargins": {
+              "left": null,
+              "right": null,
+              "top": null,
+              "bottom": null,
+              "header": null,
+              "footer": null,
+              "gutter": null
+            },
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": null,
+              "equalWidth": true,
+              "columns": []
+            },
+            "pageBorders": {},
+            "pageNumber": {
+              "chapSep": null,
+              "chapStyle": null,
+              "format": null,
+              "start": null
+            },
+            "type": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_groups_keep_absence_empty_and_last_records",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgSz w=\"20\"/><w:pgSz h=\"40\"/><w:pgMar left=\"20\"/><w:pgMar right=\"40\"/><w:cols num=\"2\"/><w:cols/><w:pgNumType start=\"3\"/><w:pgNumType/><w:type val=\"nextPage\"/><w:type/></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": null,
+              "height": "2.00pt",
+              "orientation": null
+            },
+            "pageMargins": {
+              "left": null,
+              "right": "2.00pt",
+              "top": null,
+              "bottom": null,
+              "header": null,
+              "footer": null,
+              "gutter": null
+            },
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": null,
+              "equalWidth": true,
+              "columns": []
+            },
+            "pageNumber": {
+              "chapSep": null,
+              "chapStyle": null,
+              "format": null,
+              "start": null
+            },
+            "type": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_geometry_uses_each_shared_length",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgSz orient=\"landscape\"></w:pgSz><w:pgMar></w:pgMar></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": "landscape"
+            },
+            "pageMargins": {
+              "left": null,
+              "right": null,
+              "top": null,
+              "bottom": null,
+              "header": null,
+              "footer": null,
+              "gutter": null
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_geometry_uses_each_shared_length",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgSz w=\"\"  h=\"\"  orient=\"landscape\"></w:pgSz><w:pgMar left=\"\"  right=\"\"  top=\"\"  bottom=\"\"  header=\"\"  footer=\"\"  gutter=\"\"></w:pgMar></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": "NaNpt",
+              "height": "NaNpt",
+              "orientation": "landscape"
+            },
+            "pageMargins": {
+              "left": "NaNpt",
+              "right": "NaNpt",
+              "top": "NaNpt",
+              "bottom": "NaNpt",
+              "header": "NaNpt",
+              "footer": "NaNpt",
+              "gutter": "NaNpt"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_geometry_uses_each_shared_length",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgSz w=\"0\"  h=\"0\"  orient=\"landscape\"></w:pgSz><w:pgMar left=\"0\"  right=\"0\"  top=\"0\"  bottom=\"0\"  header=\"0\"  footer=\"0\"  gutter=\"0\"></w:pgMar></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": "0.00pt",
+              "height": "0.00pt",
+              "orientation": "landscape"
+            },
+            "pageMargins": {
+              "left": "0.00pt",
+              "right": "0.00pt",
+              "top": "0.00pt",
+              "bottom": "0.00pt",
+              "header": "0.00pt",
+              "footer": "0.00pt",
+              "gutter": "0.00pt"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_geometry_uses_each_shared_length",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgSz w=\"-20\"  h=\"-20\"  orient=\"landscape\"></w:pgSz><w:pgMar left=\"-20\"  right=\"-20\"  top=\"-20\"  bottom=\"-20\"  header=\"-20\"  footer=\"-20\"  gutter=\"-20\"></w:pgMar></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": "-1.00pt",
+              "height": "-1.00pt",
+              "orientation": "landscape"
+            },
+            "pageMargins": {
+              "left": "-1.00pt",
+              "right": "-1.00pt",
+              "top": "-1.00pt",
+              "bottom": "-1.00pt",
+              "header": "-1.00pt",
+              "footer": "-1.00pt",
+              "gutter": "-1.00pt"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_geometry_uses_each_shared_length",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgSz w=\"1.5\"  h=\"1.5\"  orient=\"landscape\"></w:pgSz><w:pgMar left=\"1.5\"  right=\"1.5\"  top=\"1.5\"  bottom=\"1.5\"  header=\"1.5\"  footer=\"1.5\"  gutter=\"1.5\"></w:pgMar></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": "0.05pt",
+              "height": "0.05pt",
+              "orientation": "landscape"
+            },
+            "pageMargins": {
+              "left": "0.05pt",
+              "right": "0.05pt",
+              "top": "0.05pt",
+              "bottom": "0.05pt",
+              "header": "0.05pt",
+              "footer": "0.05pt",
+              "gutter": "0.05pt"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_geometry_uses_each_shared_length",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgSz w=\"12px\"  h=\"12px\"  orient=\"landscape\"></w:pgSz><w:pgMar left=\"12px\"  right=\"12px\"  top=\"12px\"  bottom=\"12px\"  header=\"12px\"  footer=\"12px\"  gutter=\"12px\"></w:pgMar></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": "12px",
+              "height": "12px",
+              "orientation": "landscape"
+            },
+            "pageMargins": {
+              "left": "12px",
+              "right": "12px",
+              "top": "12px",
+              "bottom": "12px",
+              "header": "12px",
+              "footer": "12px",
+              "gutter": "12px"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_geometry_uses_each_shared_length",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgSz w=\"1.25pt\"  h=\"1.25pt\"  orient=\"landscape\"></w:pgSz><w:pgMar left=\"1.25pt\"  right=\"1.25pt\"  top=\"1.25pt\"  bottom=\"1.25pt\"  header=\"1.25pt\"  footer=\"1.25pt\"  gutter=\"1.25pt\"></w:pgMar></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": "1.25pt",
+              "height": "1.25pt",
+              "orientation": "landscape"
+            },
+            "pageMargins": {
+              "left": "1.25pt",
+              "right": "1.25pt",
+              "top": "1.25pt",
+              "bottom": "1.25pt",
+              "header": "1.25pt",
+              "footer": "1.25pt",
+              "gutter": "1.25pt"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_geometry_uses_each_shared_length",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgSz w=\"33%\"  h=\"33%\"  orient=\"landscape\"></w:pgSz><w:pgMar left=\"33%\"  right=\"33%\"  top=\"33%\"  bottom=\"33%\"  header=\"33%\"  footer=\"33%\"  gutter=\"33%\"></w:pgMar></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": "33%",
+              "height": "33%",
+              "orientation": "landscape"
+            },
+            "pageMargins": {
+              "left": "33%",
+              "right": "33%",
+              "top": "33%",
+              "bottom": "33%",
+              "header": "33%",
+              "footer": "33%",
+              "gutter": "33%"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_geometry_uses_each_shared_length",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgSz w=\"﻿20\"  h=\"﻿20\"  orient=\"landscape\"></w:pgSz><w:pgMar left=\"﻿20\"  right=\"﻿20\"  top=\"﻿20\"  bottom=\"﻿20\"  header=\"﻿20\"  footer=\"﻿20\"  gutter=\"﻿20\"></w:pgMar></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": "1.00pt",
+              "height": "1.00pt",
+              "orientation": "landscape"
+            },
+            "pageMargins": {
+              "left": "1.00pt",
+              "right": "1.00pt",
+              "top": "1.00pt",
+              "bottom": "1.00pt",
+              "header": "1.00pt",
+              "footer": "1.00pt",
+              "gutter": "1.00pt"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_geometry_uses_each_shared_length",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgSz w=\"20\"  h=\"20\"  orient=\"landscape\"></w:pgSz><w:pgMar left=\"20\"  right=\"20\"  top=\"20\"  bottom=\"20\"  header=\"20\"  footer=\"20\"  gutter=\"20\"></w:pgMar></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": "NaNpt",
+              "height": "NaNpt",
+              "orientation": "landscape"
+            },
+            "pageMargins": {
+              "left": "NaNpt",
+              "right": "NaNpt",
+              "top": "NaNpt",
+              "bottom": "NaNpt",
+              "header": "NaNpt",
+              "footer": "NaNpt",
+              "gutter": "NaNpt"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_geometry_uses_each_shared_length",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgSz w=\"junk\"  h=\"junk\"  orient=\"landscape\"></w:pgSz><w:pgMar left=\"junk\"  right=\"junk\"  top=\"junk\"  bottom=\"junk\"  header=\"junk\"  footer=\"junk\"  gutter=\"junk\"></w:pgMar></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": "NaNpt",
+              "height": "NaNpt",
+              "orientation": "landscape"
+            },
+            "pageMargins": {
+              "left": "NaNpt",
+              "right": "NaNpt",
+              "top": "NaNpt",
+              "bottom": "NaNpt",
+              "header": "NaNpt",
+              "footer": "NaNpt",
+              "gutter": "NaNpt"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_geometry_uses_each_shared_length",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgSz w=\"20\" h=\"40\" orient=\"portrait\"/><w:pgMar left=\"20\" right=\"40\" top=\"60\" bottom=\"80\" header=\"100\" footer=\"120\" gutter=\"140\"/></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": "1.00pt",
+              "height": "2.00pt",
+              "orientation": "portrait"
+            },
+            "pageMargins": {
+              "left": "1.00pt",
+              "right": "2.00pt",
+              "top": "3.00pt",
+              "bottom": "4.00pt",
+              "header": "5.00pt",
+              "footer": "6.00pt",
+              "gutter": "7.00pt"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_types_and_orientation_keep_open_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:type></w:type><w:pgSz></w:pgSz></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "type": null,
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": null
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_types_and_orientation_keep_open_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:type val=\"\"></w:type><w:pgSz orient=\"\"></w:pgSz></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "type": "",
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": ""
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_types_and_orientation_keep_open_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:type val=\"continuous\"></w:type><w:pgSz orient=\"continuous\"></w:pgSz></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "type": "continuous",
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": "continuous"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_types_and_orientation_keep_open_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:type val=\"nextPage\"></w:type><w:pgSz orient=\"nextPage\"></w:pgSz></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "type": "nextPage",
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": "nextPage"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_types_and_orientation_keep_open_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:type val=\"nextColumn\"></w:type><w:pgSz orient=\"nextColumn\"></w:pgSz></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "type": "nextColumn",
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": "nextColumn"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_types_and_orientation_keep_open_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:type val=\"evenPage\"></w:type><w:pgSz orient=\"evenPage\"></w:pgSz></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "type": "evenPage",
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": "evenPage"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_types_and_orientation_keep_open_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:type val=\"oddPage\"></w:type><w:pgSz orient=\"oddPage\"></w:pgSz></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "type": "oddPage",
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": "oddPage"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_types_and_orientation_keep_open_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:type val=\"custom\"></w:type><w:pgSz orient=\"custom\"></w:pgSz></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "type": "custom",
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": "custom"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_types_and_orientation_keep_open_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:type val=\" nextPage \"></w:type><w:pgSz orient=\" nextPage \"></w:pgSz></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "type": " nextPage ",
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": " nextPage "
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_keep_number_and_nested_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols space=\"40\"><w:col w=\"20\" space=\"40\"/><w:unknown><w:col w=\"999\"/></w:unknown><q:col w=\"60\"/><w:col w=\"20\" space=\"40\"/></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": "2.00pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "3.00pt",
+                  "space": null
+                },
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_keep_number_and_nested_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"\"  space=\"40\"><w:col w=\"20\" space=\"40\"/><w:unknown><w:col w=\"999\"/></w:unknown><q:col w=\"60\"/><w:col w=\"20\" space=\"40\"/></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": "2.00pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "3.00pt",
+                  "space": null
+                },
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_keep_number_and_nested_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"0\"  space=\"40\"><w:col w=\"20\" space=\"40\"/><w:unknown><w:col w=\"999\"/></w:unknown><q:col w=\"60\"/><w:col w=\"20\" space=\"40\"/></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 0,
+              "space": "2.00pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "3.00pt",
+                  "space": null
+                },
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_keep_number_and_nested_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"-0\"  space=\"40\"><w:col w=\"20\" space=\"40\"/><w:unknown><w:col w=\"999\"/></w:unknown><q:col w=\"60\"/><w:col w=\"20\" space=\"40\"/></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": {
+                "$number": "-0"
+              },
+              "space": "2.00pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "3.00pt",
+                  "space": null
+                },
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_keep_number_and_nested_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"1\"  space=\"40\"><w:col w=\"20\" space=\"40\"/><w:unknown><w:col w=\"999\"/></w:unknown><q:col w=\"60\"/><w:col w=\"20\" space=\"40\"/></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 1,
+              "space": "2.00pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "3.00pt",
+                  "space": null
+                },
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_keep_number_and_nested_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"-20\"  space=\"40\"><w:col w=\"20\" space=\"40\"/><w:unknown><w:col w=\"999\"/></w:unknown><q:col w=\"60\"/><w:col w=\"20\" space=\"40\"/></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": -20,
+              "space": "2.00pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "3.00pt",
+                  "space": null
+                },
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_keep_number_and_nested_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"+42tail\"  space=\"40\"><w:col w=\"20\" space=\"40\"/><w:unknown><w:col w=\"999\"/></w:unknown><q:col w=\"60\"/><w:col w=\"20\" space=\"40\"/></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 42,
+              "space": "2.00pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "3.00pt",
+                  "space": null
+                },
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_keep_number_and_nested_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"1.5\"  space=\"40\"><w:col w=\"20\" space=\"40\"/><w:unknown><w:col w=\"999\"/></w:unknown><q:col w=\"60\"/><w:col w=\"20\" space=\"40\"/></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 1,
+              "space": "2.00pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "3.00pt",
+                  "space": null
+                },
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_keep_number_and_nested_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"0x20\"  space=\"40\"><w:col w=\"20\" space=\"40\"/><w:unknown><w:col w=\"999\"/></w:unknown><q:col w=\"60\"/><w:col w=\"20\" space=\"40\"/></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 32,
+              "space": "2.00pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "3.00pt",
+                  "space": null
+                },
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_keep_number_and_nested_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"﻿20\"  space=\"40\"><w:col w=\"20\" space=\"40\"/><w:unknown><w:col w=\"999\"/></w:unknown><q:col w=\"60\"/><w:col w=\"20\" space=\"40\"/></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 20,
+              "space": "2.00pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "3.00pt",
+                  "space": null
+                },
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_keep_number_and_nested_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"20\"  space=\"40\"><w:col w=\"20\" space=\"40\"/><w:unknown><w:col w=\"999\"/></w:unknown><q:col w=\"60\"/><w:col w=\"20\" space=\"40\"/></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": {
+                "$number": "NaN"
+              },
+              "space": "2.00pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "3.00pt",
+                  "space": null
+                },
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_keep_number_and_nested_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"junk\"  space=\"40\"><w:col w=\"20\" space=\"40\"/><w:unknown><w:col w=\"999\"/></w:unknown><q:col w=\"60\"/><w:col w=\"20\" space=\"40\"/></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": {
+                "$number": "NaN"
+              },
+              "space": "2.00pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "3.00pt",
+                  "space": null
+                },
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_booleans_keep_independent_defaults",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols></w:cols><w:titlePg></w:titlePg></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": null,
+              "equalWidth": true,
+              "columns": []
+            },
+            "titlePage": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_booleans_keep_independent_defaults",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols sep=\"\"  equalWidth=\"\"></w:cols><w:titlePg val=\"\"></w:titlePg></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": null,
+              "equalWidth": true,
+              "columns": []
+            },
+            "titlePage": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_booleans_keep_independent_defaults",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols sep=\"1\"  equalWidth=\"1\"></w:cols><w:titlePg val=\"1\"></w:titlePg></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": true,
+              "equalWidth": true,
+              "columns": []
+            },
+            "titlePage": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_booleans_keep_independent_defaults",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols sep=\"0\"  equalWidth=\"0\"></w:cols><w:titlePg val=\"0\"></w:titlePg></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": false,
+              "equalWidth": false,
+              "columns": []
+            },
+            "titlePage": false
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_booleans_keep_independent_defaults",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols sep=\"on\"  equalWidth=\"on\"></w:cols><w:titlePg val=\"on\"></w:titlePg></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": true,
+              "equalWidth": true,
+              "columns": []
+            },
+            "titlePage": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_booleans_keep_independent_defaults",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols sep=\"off\"  equalWidth=\"off\"></w:cols><w:titlePg val=\"off\"></w:titlePg></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": false,
+              "equalWidth": false,
+              "columns": []
+            },
+            "titlePage": false
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_booleans_keep_independent_defaults",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols sep=\"true\"  equalWidth=\"true\"></w:cols><w:titlePg val=\"true\"></w:titlePg></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": true,
+              "equalWidth": true,
+              "columns": []
+            },
+            "titlePage": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_booleans_keep_independent_defaults",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols sep=\"false\"  equalWidth=\"false\"></w:cols><w:titlePg val=\"false\"></w:titlePg></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": false,
+              "equalWidth": false,
+              "columns": []
+            },
+            "titlePage": false
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_booleans_keep_independent_defaults",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols sep=\"TRUE\"  equalWidth=\"TRUE\"></w:cols><w:titlePg val=\"TRUE\"></w:titlePg></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": null,
+              "equalWidth": true,
+              "columns": []
+            },
+            "titlePage": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_booleans_keep_independent_defaults",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols sep=\"yes\"  equalWidth=\"yes\"></w:cols><w:titlePg val=\"yes\"></w:titlePg></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": null,
+              "equalWidth": true,
+              "columns": []
+            },
+            "titlePage": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_booleans_keep_independent_defaults",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols sep=\"true\" equalWidth=\"false\"/><w:titlePg val=\"false\"/></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": true,
+              "equalWidth": false,
+              "columns": []
+            },
+            "titlePage": false
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_booleans_keep_independent_defaults",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols sep=\"false\" equalWidth=\"true\"/><w:titlePg val=\"true\"/></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": false,
+              "equalWidth": true,
+              "columns": []
+            },
+            "titlePage": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_header_footer_references_keep_kind_and_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:headerReference></w:headerReference><w:footerReference id=\"rFooter\"></w:footerReference><w:headerReference id=\"rSecond\"  type=\"even\"></w:headerReference><w:headerReference></w:headerReference></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "headerRefs": [
+              {
+                "id": null,
+                "type": null
+              },
+              {
+                "id": "rSecond",
+                "type": "even"
+              },
+              {
+                "id": null,
+                "type": null
+              }
+            ],
+            "footerRefs": [
+              {
+                "id": "rFooter",
+                "type": null
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_header_footer_references_keep_kind_and_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:headerReference id=\"\"  type=\"\"></w:headerReference><w:footerReference id=\"rFooter\"  type=\"\"></w:footerReference><w:headerReference id=\"rSecond\"  type=\"even\"></w:headerReference><w:headerReference id=\"\"  type=\"\"></w:headerReference></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "headerRefs": [
+              {
+                "id": "",
+                "type": ""
+              },
+              {
+                "id": "rSecond",
+                "type": "even"
+              },
+              {
+                "id": "",
+                "type": ""
+              }
+            ],
+            "footerRefs": [
+              {
+                "id": "rFooter",
+                "type": ""
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_header_footer_references_keep_kind_and_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:headerReference id=\"default\"  type=\"default\"></w:headerReference><w:footerReference id=\"rFooter\"  type=\"default\"></w:footerReference><w:headerReference id=\"rSecond\"  type=\"even\"></w:headerReference><w:headerReference id=\"default\"  type=\"default\"></w:headerReference></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "headerRefs": [
+              {
+                "id": "default",
+                "type": "default"
+              },
+              {
+                "id": "rSecond",
+                "type": "even"
+              },
+              {
+                "id": "default",
+                "type": "default"
+              }
+            ],
+            "footerRefs": [
+              {
+                "id": "rFooter",
+                "type": "default"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_header_footer_references_keep_kind_and_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:headerReference id=\"first\"  type=\"first\"></w:headerReference><w:footerReference id=\"rFooter\"  type=\"first\"></w:footerReference><w:headerReference id=\"rSecond\"  type=\"even\"></w:headerReference><w:headerReference id=\"first\"  type=\"first\"></w:headerReference></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "headerRefs": [
+              {
+                "id": "first",
+                "type": "first"
+              },
+              {
+                "id": "rSecond",
+                "type": "even"
+              },
+              {
+                "id": "first",
+                "type": "first"
+              }
+            ],
+            "footerRefs": [
+              {
+                "id": "rFooter",
+                "type": "first"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_header_footer_references_keep_kind_and_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:headerReference id=\"even\"  type=\"even\"></w:headerReference><w:footerReference id=\"rFooter\"  type=\"even\"></w:footerReference><w:headerReference id=\"rSecond\"  type=\"even\"></w:headerReference><w:headerReference id=\"even\"  type=\"even\"></w:headerReference></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "headerRefs": [
+              {
+                "id": "even",
+                "type": "even"
+              },
+              {
+                "id": "rSecond",
+                "type": "even"
+              },
+              {
+                "id": "even",
+                "type": "even"
+              }
+            ],
+            "footerRefs": [
+              {
+                "id": "rFooter",
+                "type": "even"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_header_footer_references_keep_kind_and_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:headerReference id=\"custom\"  type=\"custom\"></w:headerReference><w:footerReference id=\"rFooter\"  type=\"custom\"></w:footerReference><w:headerReference id=\"rSecond\"  type=\"even\"></w:headerReference><w:headerReference id=\"custom\"  type=\"custom\"></w:headerReference></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "headerRefs": [
+              {
+                "id": "custom",
+                "type": "custom"
+              },
+              {
+                "id": "rSecond",
+                "type": "even"
+              },
+              {
+                "id": "custom",
+                "type": "custom"
+              }
+            ],
+            "footerRefs": [
+              {
+                "id": "rFooter",
+                "type": "custom"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_page_numbers_keep_strings_and_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgNumType></w:pgNumType></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageNumber": {
+              "chapSep": null,
+              "chapStyle": null,
+              "format": null,
+              "start": null
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_page_numbers_keep_strings_and_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgNumType chapSep=\"\"  chapStyle=\"\"  fmt=\"\"  start=\"\"></w:pgNumType></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageNumber": {
+              "chapSep": "",
+              "chapStyle": "",
+              "format": "",
+              "start": null
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_page_numbers_keep_strings_and_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgNumType chapSep=\"0\"  chapStyle=\"0\"  fmt=\"0\"  start=\"0\"></w:pgNumType></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageNumber": {
+              "chapSep": "0",
+              "chapStyle": "0",
+              "format": "0",
+              "start": 0
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_page_numbers_keep_strings_and_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgNumType chapSep=\"-0\"  chapStyle=\"-0\"  fmt=\"-0\"  start=\"-0\"></w:pgNumType></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageNumber": {
+              "chapSep": "-0",
+              "chapStyle": "-0",
+              "format": "-0",
+              "start": {
+                "$number": "-0"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_page_numbers_keep_strings_and_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgNumType chapSep=\"1\"  chapStyle=\"1\"  fmt=\"1\"  start=\"1\"></w:pgNumType></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageNumber": {
+              "chapSep": "1",
+              "chapStyle": "1",
+              "format": "1",
+              "start": 1
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_page_numbers_keep_strings_and_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgNumType chapSep=\"-20\"  chapStyle=\"-20\"  fmt=\"-20\"  start=\"-20\"></w:pgNumType></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageNumber": {
+              "chapSep": "-20",
+              "chapStyle": "-20",
+              "format": "-20",
+              "start": -20
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_page_numbers_keep_strings_and_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgNumType chapSep=\"+42tail\"  chapStyle=\"+42tail\"  fmt=\"+42tail\"  start=\"+42tail\"></w:pgNumType></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageNumber": {
+              "chapSep": "+42tail",
+              "chapStyle": "+42tail",
+              "format": "+42tail",
+              "start": 42
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_page_numbers_keep_strings_and_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgNumType chapSep=\"1.5\"  chapStyle=\"1.5\"  fmt=\"1.5\"  start=\"1.5\"></w:pgNumType></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageNumber": {
+              "chapSep": "1.5",
+              "chapStyle": "1.5",
+              "format": "1.5",
+              "start": 1
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_page_numbers_keep_strings_and_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgNumType chapSep=\"0x20\"  chapStyle=\"0x20\"  fmt=\"0x20\"  start=\"0x20\"></w:pgNumType></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageNumber": {
+              "chapSep": "0x20",
+              "chapStyle": "0x20",
+              "format": "0x20",
+              "start": 32
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_page_numbers_keep_strings_and_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgNumType chapSep=\"﻿20\"  chapStyle=\"﻿20\"  fmt=\"﻿20\"  start=\"﻿20\"></w:pgNumType></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageNumber": {
+              "chapSep": "﻿20",
+              "chapStyle": "﻿20",
+              "format": "﻿20",
+              "start": 20
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_page_numbers_keep_strings_and_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgNumType chapSep=\"20\"  chapStyle=\"20\"  fmt=\"20\"  start=\"20\"></w:pgNumType></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageNumber": {
+              "chapSep": "20",
+              "chapStyle": "20",
+              "format": "20",
+              "start": {
+                "$number": "NaN"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_page_numbers_keep_strings_and_numeric_prefixes",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgNumType chapSep=\"junk\"  chapStyle=\"junk\"  fmt=\"junk\"  start=\"junk\"></w:pgNumType></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageNumber": {
+              "chapSep": "junk",
+              "chapStyle": "junk",
+              "format": "junk",
+              "start": {
+                "$number": "NaN"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:left val=\"double\"  color=\"auto\"  frame=\"true\"  shadow=\"false\"></w:left></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "left": {
+                "type": "double",
+                "color": "auto",
+                "size": null,
+                "offset": null,
+                "frame": true,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:left val=\"double\"  color=\"auto\"  sz=\"\"  space=\"\"  frame=\"true\"  shadow=\"false\"></w:left></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "left": {
+                "type": "double",
+                "color": "auto",
+                "size": "NaNpt",
+                "offset": "NaNpt",
+                "frame": true,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:left val=\"double\"  color=\"auto\"  sz=\"0\"  space=\"0\"  frame=\"true\"  shadow=\"false\"></w:left></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "left": {
+                "type": "double",
+                "color": "auto",
+                "size": "0.25pt",
+                "offset": "0.00pt",
+                "frame": true,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:left val=\"double\"  color=\"auto\"  sz=\"-20\"  space=\"-20\"  frame=\"true\"  shadow=\"false\"></w:left></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "left": {
+                "type": "double",
+                "color": "auto",
+                "size": "0.25pt",
+                "offset": "-20.00pt",
+                "frame": true,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:left val=\"double\"  color=\"auto\"  sz=\"1.5\"  space=\"1.5\"  frame=\"true\"  shadow=\"false\"></w:left></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "left": {
+                "type": "double",
+                "color": "auto",
+                "size": "0.25pt",
+                "offset": "1.00pt",
+                "frame": true,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:left val=\"double\"  color=\"auto\"  sz=\"12px\"  space=\"12px\"  frame=\"true\"  shadow=\"false\"></w:left></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "left": {
+                "type": "double",
+                "color": "auto",
+                "size": "12px",
+                "offset": "12px",
+                "frame": true,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:left val=\"double\"  color=\"auto\"  sz=\"1.25pt\"  space=\"1.25pt\"  frame=\"true\"  shadow=\"false\"></w:left></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "left": {
+                "type": "double",
+                "color": "auto",
+                "size": "1.25pt",
+                "offset": "1.25pt",
+                "frame": true,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:left val=\"double\"  color=\"auto\"  sz=\"33%\"  space=\"33%\"  frame=\"true\"  shadow=\"false\"></w:left></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "left": {
+                "type": "double",
+                "color": "auto",
+                "size": "33%",
+                "offset": "33%",
+                "frame": true,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:left val=\"double\"  color=\"auto\"  sz=\"﻿20\"  space=\"﻿20\"  frame=\"true\"  shadow=\"false\"></w:left></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "left": {
+                "type": "double",
+                "color": "auto",
+                "size": "2.50pt",
+                "offset": "20.00pt",
+                "frame": true,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:left val=\"double\"  color=\"auto\"  sz=\"20\"  space=\"20\"  frame=\"true\"  shadow=\"false\"></w:left></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "left": {
+                "type": "double",
+                "color": "auto",
+                "size": "NaNpt",
+                "offset": "NaNpt",
+                "frame": true,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:left val=\"double\"  color=\"auto\"  sz=\"junk\"  space=\"junk\"  frame=\"true\"  shadow=\"false\"></w:left></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "left": {
+                "type": "double",
+                "color": "auto",
+                "size": "NaNpt",
+                "offset": "NaNpt",
+                "frame": true,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:top></w:top></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "top": {
+                "type": null,
+                "color": null,
+                "size": null,
+                "offset": null,
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:top val=\"\"  color=\"\"  frame=\"\"  shadow=\"\"></w:top></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "top": {
+                "type": "",
+                "color": "",
+                "size": null,
+                "offset": null,
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:top val=\"1\"  color=\"1\"  frame=\"1\"  shadow=\"1\"></w:top></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "top": {
+                "type": "1",
+                "color": "1",
+                "size": null,
+                "offset": null,
+                "frame": true,
+                "shadow": true
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:top val=\"0\"  color=\"0\"  frame=\"0\"  shadow=\"0\"></w:top></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "top": {
+                "type": "0",
+                "color": "0",
+                "size": null,
+                "offset": null,
+                "frame": false,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:top val=\"on\"  color=\"on\"  frame=\"on\"  shadow=\"on\"></w:top></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "top": {
+                "type": "on",
+                "color": "on",
+                "size": null,
+                "offset": null,
+                "frame": true,
+                "shadow": true
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:top val=\"off\"  color=\"off\"  frame=\"off\"  shadow=\"off\"></w:top></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "top": {
+                "type": "off",
+                "color": "off",
+                "size": null,
+                "offset": null,
+                "frame": false,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:top val=\"true\"  color=\"true\"  frame=\"true\"  shadow=\"true\"></w:top></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "top": {
+                "type": "true",
+                "color": "true",
+                "size": null,
+                "offset": null,
+                "frame": true,
+                "shadow": true
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:top val=\"false\"  color=\"false\"  frame=\"false\"  shadow=\"false\"></w:top></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "top": {
+                "type": "false",
+                "color": "false",
+                "size": null,
+                "offset": null,
+                "frame": false,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_keep_raw_fields_and_units",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:top val=\"TRUE\"  color=\"TRUE\"  frame=\"TRUE\"  shadow=\"TRUE\"></w:top></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "top": {
+                "type": "TRUE",
+                "color": "TRUE",
+                "size": null,
+                "offset": null,
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_select_physical_sides_and_last_values",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:left val=\"single\"/><w:top val=\"double\"/><w:right val=\"dotted\"/><w:bottom val=\"dashed\"/><w:start val=\"bad\"/><w:end val=\"bad\"/><w:insideH val=\"bad\"/><w:unknown><w:left val=\"hidden\"/></w:unknown><w:left val=\"last\"/></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "left": {
+                "type": "last",
+                "color": null,
+                "size": null,
+                "offset": null,
+                "frame": null,
+                "shadow": null
+              },
+              "top": {
+                "type": "double",
+                "color": null,
+                "size": null,
+                "offset": null,
+                "frame": null,
+                "shadow": null
+              },
+              "right": {
+                "type": "dotted",
+                "color": null,
+                "size": null,
+                "offset": null,
+                "frame": null,
+                "shadow": null
+              },
+              "bottom": {
+                "type": "dashed",
+                "color": null,
+                "size": null,
+                "offset": null,
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_selection_uses_immediate_local_names",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><q:pgSz xmlns:a=\"urn:a\" a:w=\"20\" w:w=\"999\" h=\"40\"/><w:unknown><w:pgMar left=\"999\"/></w:unknown><q:pgMar left=\"20\"/></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": "1.00pt",
+              "height": "2.00pt",
+              "orientation": null
+            },
+            "pageMargins": {
+              "left": "1.00pt",
+              "right": null,
+              "top": null,
+              "bottom": null,
+              "header": null,
+              "footer": null,
+              "gutter": null
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_presence_and_group_replacement_keep_other_metadata",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:r><w:t>without properties</w:t></w:r></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            2
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "without properties"
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_presence_and_group_replacement_keep_other_metadata",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr/></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_presence_and_group_replacement_keep_other_metadata",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:pStyle val=\"retained\"/><w:keepNext/><w:tabs><w:tab pos=\"20\"/></w:tabs><w:sectPr><w:pgSz w=\"40\"/></w:sectPr><w:b/></w:pPr><w:pPr><w:i/></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [
+            [
+              "font-style",
+              "italic"
+            ]
+          ],
+          "styleName": "retained",
+          "keepNext": true,
+          "tabs": [
+            {
+              "position": "1.00pt",
+              "leader": null,
+              "style": null
+            }
+          ],
+          "sectionProps": {
+            "pageSize": {
+              "width": "2.00pt",
+              "height": null,
+              "orientation": null
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_presence_and_group_replacement_keep_other_metadata",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:pStyle val=\"retained\"/><w:sectPr><w:pgSz w=\"40\"/></w:sectPr><w:b/></w:pPr><w:pPr><w:sectPr/></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "styleName": "retained",
+          "sectionProps": {}
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_presence_and_group_replacement_keep_other_metadata",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:headerReference id=\"old\"/><w:pgSz w=\"40\"/></w:sectPr><w:sectPr><w:footerReference id=\"new\"/></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "footerRefs": [
+              {
+                "id": "new",
+                "type": null
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_groups_keep_absence_empty_and_last_records",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:left val=\"old\"/></w:pgBorders><w:pgBorders/><w:titlePg val=\"true\"/><w:titlePg val=\"false\"/></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {},
+            "titlePage": false
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_groups_keep_absence_empty_and_last_records",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols><w:col w=\"20\"/></w:cols><w:cols><w:col w=\"40\"/></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "2.00pt",
+                  "space": null
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_widths_clamp_without_changing_offsets",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:right sz=\"-1\"  space=\"-1\"></w:right></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "right": {
+                "type": null,
+                "color": null,
+                "size": "0.25pt",
+                "offset": "-1.00pt",
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_widths_clamp_without_changing_offsets",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:right sz=\"1\"  space=\"1\"></w:right></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "right": {
+                "type": null,
+                "color": null,
+                "size": "0.25pt",
+                "offset": "1.00pt",
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_widths_clamp_without_changing_offsets",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:right sz=\"2\"  space=\"2\"></w:right></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "right": {
+                "type": null,
+                "color": null,
+                "size": "0.25pt",
+                "offset": "2.00pt",
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_widths_clamp_without_changing_offsets",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:right sz=\"95\"  space=\"95\"></w:right></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "right": {
+                "type": null,
+                "color": null,
+                "size": "11.88pt",
+                "offset": "95.00pt",
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_widths_clamp_without_changing_offsets",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:right sz=\"96\"  space=\"96\"></w:right></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "right": {
+                "type": null,
+                "color": null,
+                "size": "12.00pt",
+                "offset": "96.00pt",
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_widths_clamp_without_changing_offsets",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:right sz=\"97\"  space=\"97\"></w:right></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "right": {
+                "type": null,
+                "color": null,
+                "size": "12.00pt",
+                "offset": "97.00pt",
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_widths_clamp_without_changing_offsets",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:right sz=\"0x10\"  space=\"0x10\"></w:right></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "right": {
+                "type": null,
+                "color": null,
+                "size": "2.00pt",
+                "offset": "16.00pt",
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_widths_clamp_without_changing_offsets",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:right sz=\"+42tail\"  space=\"+42tail\"></w:right></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "right": {
+                "type": null,
+                "color": null,
+                "size": "5.25pt",
+                "offset": "42.00pt",
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_widths_clamp_without_changing_offsets",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:right sz=\"1PT\"  space=\"1PT\"></w:right></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "right": {
+                "type": null,
+                "color": null,
+                "size": "0.25pt",
+                "offset": "1.00pt",
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_widths_clamp_without_changing_offsets",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:right sz=\"x&#10;pt\"  space=\"x&#10;pt\"></w:right></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "right": {
+                "type": null,
+                "color": null,
+                "size": "NaNpt",
+                "offset": "NaNpt",
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_widths_clamp_without_changing_offsets",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:right sz=\"﻿20\"  space=\"﻿20\"></w:right></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "right": {
+                "type": null,
+                "color": null,
+                "size": "2.50pt",
+                "offset": "20.00pt",
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_widths_clamp_without_changing_offsets",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:right sz=\"20\"  space=\"20\"></w:right></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "right": {
+                "type": null,
+                "color": null,
+                "size": "NaNpt",
+                "offset": "NaNpt",
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_flags_are_independent_and_nullable",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:bottom val=\"single\"  color=\"green\"></w:bottom></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "bottom": {
+                "type": "single",
+                "color": "green",
+                "size": null,
+                "offset": null,
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_flags_are_independent_and_nullable",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:bottom val=\"single\"  color=\"green\"  frame=\"true\"  shadow=\"true\"></w:bottom></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "bottom": {
+                "type": "single",
+                "color": "green",
+                "size": null,
+                "offset": null,
+                "frame": true,
+                "shadow": true
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_flags_are_independent_and_nullable",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:bottom val=\"single\"  color=\"green\"  frame=\"false\"  shadow=\"false\"></w:bottom></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "bottom": {
+                "type": "single",
+                "color": "green",
+                "size": null,
+                "offset": null,
+                "frame": false,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_flags_are_independent_and_nullable",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:bottom val=\"single\"  color=\"green\"  frame=\"true\"  shadow=\"false\"></w:bottom></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "bottom": {
+                "type": "single",
+                "color": "green",
+                "size": null,
+                "offset": null,
+                "frame": true,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_flags_are_independent_and_nullable",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:bottom val=\"single\"  color=\"green\"  frame=\"false\"  shadow=\"true\"></w:bottom></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "bottom": {
+                "type": "single",
+                "color": "green",
+                "size": null,
+                "offset": null,
+                "frame": false,
+                "shadow": true
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_flags_are_independent_and_nullable",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:bottom val=\"single\"  color=\"green\"  frame=\"true\"></w:bottom></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "bottom": {
+                "type": "single",
+                "color": "green",
+                "size": null,
+                "offset": null,
+                "frame": true,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_flags_are_independent_and_nullable",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:bottom val=\"single\"  color=\"green\"  shadow=\"true\"></w:bottom></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "bottom": {
+                "type": "single",
+                "color": "green",
+                "size": null,
+                "offset": null,
+                "frame": null,
+                "shadow": true
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_border_flags_are_independent_and_nullable",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:bottom val=\"single\"  color=\"green\"  frame=\"unknown\"  shadow=\"false\"></w:bottom></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "bottom": {
+                "type": "single",
+                "color": "green",
+                "size": null,
+                "offset": null,
+                "frame": null,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_booleans_keep_independent_defaults",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols sep=\"false\"  equalWidth=\"true\"></w:cols><w:titlePg val=\"true\"></w:titlePg></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": false,
+              "equalWidth": true,
+              "columns": []
+            },
+            "titlePage": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_booleans_keep_independent_defaults",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols sep=\"true\"  equalWidth=\"false\"></w:cols><w:titlePg val=\"true\"></w:titlePg></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": true,
+              "equalWidth": false,
+              "columns": []
+            },
+            "titlePage": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_booleans_keep_independent_defaults",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols sep=\"true\"  equalWidth=\"true\"></w:cols><w:titlePg val=\"false\"></w:titlePg></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": null,
+              "space": null,
+              "separator": true,
+              "equalWidth": true,
+              "columns": []
+            },
+            "titlePage": false
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_convert_each_length_without_cross_wiring",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"3\"><w:col w=\"20\"  space=\"40\"></w:col><w:col space=\"60\"></w:col><w:col w=\"80\"></w:col></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 3,
+              "space": null,
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": null,
+                  "space": "3.00pt"
+                },
+                {
+                  "width": "4.00pt",
+                  "space": null
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_convert_each_length_without_cross_wiring",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"3\"  space=\"\"><w:col w=\"20\"  space=\"40\"></w:col><w:col w=\"\"  space=\"60\"></w:col><w:col w=\"80\"  space=\"\"></w:col></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 3,
+              "space": "NaNpt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "NaNpt",
+                  "space": "3.00pt"
+                },
+                {
+                  "width": "4.00pt",
+                  "space": "NaNpt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_convert_each_length_without_cross_wiring",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"3\"  space=\"0\"><w:col w=\"20\"  space=\"40\"></w:col><w:col w=\"0\"  space=\"60\"></w:col><w:col w=\"80\"  space=\"0\"></w:col></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 3,
+              "space": "0.00pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "0.00pt",
+                  "space": "3.00pt"
+                },
+                {
+                  "width": "4.00pt",
+                  "space": "0.00pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_convert_each_length_without_cross_wiring",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"3\"  space=\"-0\"><w:col w=\"20\"  space=\"40\"></w:col><w:col w=\"-0\"  space=\"60\"></w:col><w:col w=\"80\"  space=\"-0\"></w:col></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 3,
+              "space": "0.00pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "0.00pt",
+                  "space": "3.00pt"
+                },
+                {
+                  "width": "4.00pt",
+                  "space": "0.00pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_convert_each_length_without_cross_wiring",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"3\"  space=\"1\"><w:col w=\"20\"  space=\"40\"></w:col><w:col w=\"1\"  space=\"60\"></w:col><w:col w=\"80\"  space=\"1\"></w:col></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 3,
+              "space": "0.05pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "0.05pt",
+                  "space": "3.00pt"
+                },
+                {
+                  "width": "4.00pt",
+                  "space": "0.05pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_convert_each_length_without_cross_wiring",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"3\"  space=\"1.5\"><w:col w=\"20\"  space=\"40\"></w:col><w:col w=\"1.5\"  space=\"60\"></w:col><w:col w=\"80\"  space=\"1.5\"></w:col></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 3,
+              "space": "0.05pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "0.05pt",
+                  "space": "3.00pt"
+                },
+                {
+                  "width": "4.00pt",
+                  "space": "0.05pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_convert_each_length_without_cross_wiring",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"3\"  space=\"+42tail\"><w:col w=\"20\"  space=\"40\"></w:col><w:col w=\"+42tail\"  space=\"60\"></w:col><w:col w=\"80\"  space=\"+42tail\"></w:col></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 3,
+              "space": "2.10pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "2.10pt",
+                  "space": "3.00pt"
+                },
+                {
+                  "width": "4.00pt",
+                  "space": "2.10pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_convert_each_length_without_cross_wiring",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"3\"  space=\"0x20\"><w:col w=\"20\"  space=\"40\"></w:col><w:col w=\"0x20\"  space=\"60\"></w:col><w:col w=\"80\"  space=\"0x20\"></w:col></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 3,
+              "space": "1.60pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "1.60pt",
+                  "space": "3.00pt"
+                },
+                {
+                  "width": "4.00pt",
+                  "space": "1.60pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_convert_each_length_without_cross_wiring",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"3\"  space=\"12px\"><w:col w=\"20\"  space=\"40\"></w:col><w:col w=\"12px\"  space=\"60\"></w:col><w:col w=\"80\"  space=\"12px\"></w:col></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 3,
+              "space": "12px",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "12px",
+                  "space": "3.00pt"
+                },
+                {
+                  "width": "4.00pt",
+                  "space": "12px"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_convert_each_length_without_cross_wiring",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"3\"  space=\"1.25pt\"><w:col w=\"20\"  space=\"40\"></w:col><w:col w=\"1.25pt\"  space=\"60\"></w:col><w:col w=\"80\"  space=\"1.25pt\"></w:col></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 3,
+              "space": "1.25pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "1.25pt",
+                  "space": "3.00pt"
+                },
+                {
+                  "width": "4.00pt",
+                  "space": "1.25pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_convert_each_length_without_cross_wiring",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"3\"  space=\"33%\"><w:col w=\"20\"  space=\"40\"></w:col><w:col w=\"33%\"  space=\"60\"></w:col><w:col w=\"80\"  space=\"33%\"></w:col></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 3,
+              "space": "33%",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "33%",
+                  "space": "3.00pt"
+                },
+                {
+                  "width": "4.00pt",
+                  "space": "33%"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_convert_each_length_without_cross_wiring",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"3\"  space=\"﻿20\"><w:col w=\"20\"  space=\"40\"></w:col><w:col w=\"﻿20\"  space=\"60\"></w:col><w:col w=\"80\"  space=\"﻿20\"></w:col></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 3,
+              "space": "1.00pt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "1.00pt",
+                  "space": "3.00pt"
+                },
+                {
+                  "width": "4.00pt",
+                  "space": "1.00pt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_convert_each_length_without_cross_wiring",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"3\"  space=\"20\"><w:col w=\"20\"  space=\"40\"></w:col><w:col w=\"20\"  space=\"60\"></w:col><w:col w=\"80\"  space=\"20\"></w:col></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 3,
+              "space": "NaNpt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "NaNpt",
+                  "space": "3.00pt"
+                },
+                {
+                  "width": "4.00pt",
+                  "space": "NaNpt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_columns_convert_each_length_without_cross_wiring",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols num=\"3\"  space=\"junk\"><w:col w=\"20\"  space=\"40\"></w:col><w:col w=\"junk\"  space=\"60\"></w:col><w:col w=\"80\"  space=\"junk\"></w:col></w:cols></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "columns": {
+              "numberOfColumns": 3,
+              "space": "NaNpt",
+              "separator": null,
+              "equalWidth": true,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "NaNpt",
+                  "space": "3.00pt"
+                },
+                {
+                  "width": "4.00pt",
+                  "space": "NaNpt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_parent_selection_uses_the_shared_qualified_owner",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><q:sectPr><w:pgSz w=\"999\"/></q:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_parent_selection_uses_the_shared_qualified_owner",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:unknown><w:sectPr><w:pgSz w=\"999\"/></w:sectPr></w:unknown><w:sectPr>text<!-- ignored --><?q ignored?><q:headerReference xmlns:a=\"urn:a\" a:id=\"first\" id=\"second\" type=\"even\"/><w:unknown><w:pgSz w=\"999\"/></w:unknown><q:pgSz xmlns:a=\"urn:a\" a:w=\"20\" w=\"999\"/></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "headerRefs": [
+              {
+                "id": "first",
+                "type": "even"
+              }
+            ],
+            "pageSize": {
+              "width": "1.00pt",
+              "height": null,
+              "orientation": null
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_parent_selection_uses_the_shared_qualified_owner",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:headerReference xmlns:a=\"urn:a\" id=\"first\" a:id=\"second\"/><w:pgSz xmlns:a=\"urn:a\" w=\"20\" a:w=\"999\"/><w:pgBorders><q:top xmlns:a=\"urn:a\" a:val=\"first\" val=\"second\"/></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "headerRefs": [
+              {
+                "id": "first",
+                "type": null
+              }
+            ],
+            "pageSize": {
+              "width": "1.00pt",
+              "height": null,
+              "orientation": null
+            },
+            "pageBorders": {
+              "top": {
+                "type": "first",
+                "color": null,
+                "size": null,
+                "offset": null,
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_types_and_orientation_keep_open_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:type val=\"0\"></w:type><w:pgSz orient=\"0\"></w:pgSz></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "type": "0",
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": "0"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_types_and_orientation_keep_open_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:type val=\"false\"></w:type><w:pgSz orient=\"false\"></w:pgSz></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "type": "false",
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": "false"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_types_and_orientation_keep_open_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:type val=\"{}\"></w:type><w:pgSz orient=\"{}\"></w:pgSz></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "type": "{}",
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": "{}"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_types_and_orientation_keep_open_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:type val=\"[]\"></w:type><w:pgSz orient=\"[]\"></w:pgSz></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "type": "[]",
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": "[]"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_types_and_orientation_keep_open_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:type val=\"A&amp;B\"></w:type><w:pgSz orient=\"A&amp;B\"></w:pgSz></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "type": "A&B",
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": "A&B"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_types_and_orientation_keep_open_text",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:type val=\"&quot;quoted&quot;\"></w:type><w:pgSz orient=\"&quot;quoted&quot;\"></w:pgSz></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "type": "\"quoted\"",
+            "pageSize": {
+              "width": null,
+              "height": null,
+              "orientation": "\"quoted\""
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_header_footer_references_keep_kind_and_order",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:footerReference id=\"f2\" type=\"even\"/><w:headerReference id=\"h1\" type=\"first\"/><w:footerReference id=\"f1\" type=\"default\"/><w:headerReference id=\"h1\" type=\"first\"/></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "footerRefs": [
+              {
+                "id": "f2",
+                "type": "even"
+              },
+              {
+                "id": "f1",
+                "type": "default"
+              }
+            ],
+            "headerRefs": [
+              {
+                "id": "h1",
+                "type": "first"
+              },
+              {
+                "id": "h1",
+                "type": "first"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_borders_select_physical_sides_and_last_values",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgBorders><w:bottom val=\"one\"/><w:right val=\"two\"/><w:top val=\"three\"/><w:left val=\"four\"/><w:top val=\"last\"/></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageBorders": {
+              "bottom": {
+                "type": "one",
+                "color": null,
+                "size": null,
+                "offset": null,
+                "frame": null,
+                "shadow": null
+              },
+              "right": {
+                "type": "two",
+                "color": null,
+                "size": null,
+                "offset": null,
+                "frame": null,
+                "shadow": null
+              },
+              "top": {
+                "type": "last",
+                "color": null,
+                "size": null,
+                "offset": null,
+                "frame": null,
+                "shadow": null
+              },
+              "left": {
+                "type": "four",
+                "color": null,
+                "size": null,
+                "offset": null,
+                "frame": null,
+                "shadow": null
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_body_routes_keep_sections_and_hidden_parent_identity",
+    "input": {
+      "operation": "body",
+      "xml": "<w:body xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:p><w:pPr><w:pStyle val=\"root\"/><w:sectPr><w:pgSz w=\"20\"/><w:headerReference id=\"root\"/></w:sectPr></w:pPr><w:r><w:t>root</w:t></w:r></w:p><w:sdt><w:sdtContent><w:p><w:pPr><w:pStyle val=\"body-control\"/><w:sectPr><w:pgSz w=\"40\"/><w:headerReference id=\"body-control\"/></w:sectPr></w:pPr><w:r><w:t>body-control</w:t></w:r></w:p></w:sdtContent></w:sdt><w:p><w:pPr><w:sectPr><w:type val=\"nextPage\"/></w:sectPr></w:pPr><w:sdt><w:sdtContent><w:pPr><w:sectPr><w:pgSz w=\"60\"/></w:sectPr></w:pPr><w:r><w:t>hidden-control</w:t></w:r></w:sdtContent></w:sdt><w:ins><w:pPr><w:sectPr><w:pgSz w=\"80\"/></w:sectPr></w:pPr><w:r><w:t>hidden-insert</w:t></w:r></w:ins><w:del><w:pPr><w:sectPr><w:pgSz w=\"100\"/></w:sectPr></w:pPr><w:r><w:t>hidden-delete</w:t></w:r></w:del></w:p></w:body>"
+    },
+    "expected": {
+      "roots": [
+        0,
+        3,
+        6
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [
+            1
+          ],
+          "cssStyle": [],
+          "styleName": "root",
+          "sectionProps": {
+            "pageSize": {
+              "width": "1.00pt",
+              "height": null,
+              "orientation": null
+            },
+            "headerRefs": [
+              {
+                "id": "root",
+                "type": null
+              }
+            ]
+          }
+        },
+        {
+          "type": "run",
+          "children": [
+            2
+          ],
+          "parent": 0
+        },
+        {
+          "type": "text",
+          "text": "root"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            4
+          ],
+          "cssStyle": [],
+          "styleName": "body-control",
+          "sectionProps": {
+            "pageSize": {
+              "width": "2.00pt",
+              "height": null,
+              "orientation": null
+            },
+            "headerRefs": [
+              {
+                "id": "body-control",
+                "type": null
+              }
+            ]
+          }
+        },
+        {
+          "type": "run",
+          "children": [
+            5
+          ],
+          "parent": 3
+        },
+        {
+          "type": "text",
+          "text": "body-control"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            7,
+            10,
+            14
+          ],
+          "cssStyle": [],
+          "sectionProps": {
+            "type": "nextPage"
+          }
+        },
+        {
+          "type": "run",
+          "children": [
+            8
+          ],
+          "parent": 9
+        },
+        {
+          "type": "text",
+          "text": "hidden-control"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            7
+          ],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": "3.00pt",
+              "height": null,
+              "orientation": null
+            }
+          }
+        },
+        {
+          "type": "inserted",
+          "children": [
+            11
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            12
+          ],
+          "parent": 13
+        },
+        {
+          "type": "text",
+          "text": "hidden-insert"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            11
+          ],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": "4.00pt",
+              "height": null,
+              "orientation": null
+            }
+          }
+        },
+        {
+          "type": "deleted",
+          "children": [
+            15
+          ]
+        },
+        {
+          "type": "run",
+          "children": [
+            16
+          ],
+          "parent": 17
+        },
+        {
+          "type": "text",
+          "text": "hidden-delete"
+        },
+        {
+          "type": "paragraph",
+          "children": [
+            15
+          ],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": "5.00pt",
+              "height": null,
+              "orientation": null
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "section_records_outlive_all_xml_input_owners",
+    "input": {
+      "operation": "paragraph",
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:pgSz w=\"12240\" h=\"15840\" orient=\"landscape\"/><w:pgMar left=\"20\" right=\"40\" top=\"60\" bottom=\"80\" header=\"100\" footer=\"120\" gutter=\"140\"/><w:type val=\"continuous\"/><w:cols num=\"2\" space=\"80\" sep=\"true\" equalWidth=\"false\"><w:col w=\"20\" space=\"40\"/><w:col w=\"60\" space=\"80\"/></w:cols><w:headerReference id=\"head&amp;owned\" type=\"first\"/><w:footerReference id=\"foot-owned\" type=\"even\"/><w:titlePg val=\"false\"/><w:pgNumType chapSep=\"hyphen\" chapStyle=\"2\" fmt=\"lowerRoman\" start=\"-0\"/><w:pgBorders><w:left val=\"double\" color=\"A&amp;B\" sz=\"16\" space=\"3\" frame=\"true\" shadow=\"false\"/></w:pgBorders></w:sectPr></w:pPr></w:p>"
+    },
+    "expected": {
+      "roots": [
+        0
+      ],
+      "nodes": [
+        {
+          "type": "paragraph",
+          "children": [],
+          "cssStyle": [],
+          "sectionProps": {
+            "pageSize": {
+              "width": "612.00pt",
+              "height": "792.00pt",
+              "orientation": "landscape"
+            },
+            "pageMargins": {
+              "left": "1.00pt",
+              "right": "2.00pt",
+              "top": "3.00pt",
+              "bottom": "4.00pt",
+              "header": "5.00pt",
+              "footer": "6.00pt",
+              "gutter": "7.00pt"
+            },
+            "type": "continuous",
+            "columns": {
+              "numberOfColumns": 2,
+              "space": "4.00pt",
+              "separator": true,
+              "equalWidth": false,
+              "columns": [
+                {
+                  "width": "1.00pt",
+                  "space": "2.00pt"
+                },
+                {
+                  "width": "3.00pt",
+                  "space": "4.00pt"
+                }
+              ]
+            },
+            "headerRefs": [
+              {
+                "id": "head&owned",
+                "type": "first"
+              }
+            ],
+            "footerRefs": [
+              {
+                "id": "foot-owned",
+                "type": "even"
+              }
+            ],
+            "titlePage": false,
+            "pageNumber": {
+              "chapSep": "hyphen",
+              "chapStyle": "2",
+              "format": "lowerRoman",
+              "start": {
+                "$number": "-0"
+              }
+            },
+            "pageBorders": {
+              "left": {
+                "type": "double",
+                "color": "A&B",
+                "size": "2.00pt",
+                "offset": "3.00pt",
+                "frame": true,
+                "shadow": false
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+]
