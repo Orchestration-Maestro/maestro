@@ -126,7 +126,7 @@ fn sheet(
         merges: Vec::new(),
     };
     let mut arrays = Vec::new();
-    let mut shared = formulas::Shared::new();
+    let mut shared_formulas = formulas::Shared::new();
     let mut row_index = 0;
     for row in xml
         .element(xml.root(), "sheetData")
@@ -146,7 +146,7 @@ fn sheet(
                 position = decode_cell(address)?;
             }
             let raw = xml.element(node, "v").map(|n| n.text_content());
-            let formula = formulas::formula(&xml, node, position, &mut shared)?;
+            let formula = formulas::formula(&xml, node, position, &mut shared_formulas)?;
             let array = formulas::array_range(&xml, node, position, &mut arrays)?;
             let value = values.remove(&(position.r, position.c));
             let formulas = (formula, array);
