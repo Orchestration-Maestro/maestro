@@ -130,6 +130,10 @@ process group, the harness directs its LLVM profiles into that fixture's target
 directory, outside the merged coverage profile set, because cleanup can forcibly
 stop its descendants.
 
+Disposable browser test fixtures regenerate their lock offline against the
+current workspace dependencies before running locked recipes. The authored lock
+is unchanged; unrelated workspace dependency additions need no fixture refresh.
+
 Tooling test fixtures share a child-toolchain command builder that removes the
 parent runner's coverage flags, profile output path and coverage-wrapper state
 only from the child command, leaving the parent's environment unchanged.

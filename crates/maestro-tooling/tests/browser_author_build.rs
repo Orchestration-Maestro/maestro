@@ -603,14 +603,7 @@ fn browser_wasm_closure_excludes_native_engines() {
         format!("{original}\n[dependencies.native-only]\npath=\"native-only\"\n"),
     )
     .unwrap();
-    assert!(
-        toolchain_support::command("cargo")
-            .args(["generate-lockfile", "--offline", "--manifest-path"])
-            .arg(&manifest)
-            .status()
-            .unwrap()
-            .success()
-    );
+    browser.generate_lockfile();
     let failed = browser.run("browser-library-build");
     assert!(!failed.status.success());
     assert!(String::from_utf8_lossy(&failed.stderr).contains("could not find `unix`"));
