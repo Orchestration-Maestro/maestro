@@ -18,7 +18,7 @@ use super::Shared;
 use maestro_text::Utf8Stream;
 
 /// The most bytes one read takes.
-const READ_SIZE: usize = 4096;
+pub(super) const READ_SIZE: usize = 4096;
 
 /// Where the bytes of standard input come from.
 pub(super) enum Source {
@@ -45,7 +45,7 @@ impl Source {
     }
 
     /// Reads the next available bytes; `Ok(0)` is the end of input.
-    async fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
+    pub(super) async fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
         match self {
             Self::Reactor(descriptor) => loop {
                 let mut ready = descriptor.readable().await?;

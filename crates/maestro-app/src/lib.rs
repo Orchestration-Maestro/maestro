@@ -141,3 +141,5 @@ pub use maestro_packages::{
     DefaultPackageManager, PackageManager, PathMetadata, ProgressCallback, ProgressEvent,
     ResolvedPaths, ResolvedResource,
 };
+
+pub use presentation_data::slash_commands::{SlashCommandInfo, SlashCommandSource};

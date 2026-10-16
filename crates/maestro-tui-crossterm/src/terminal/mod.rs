@@ -20,6 +20,7 @@ use tokio::time::Instant;
 
 use dimensions::Dimensions;
 use lifecycle::Running;
+pub use lifecycle::wait_for_input;
 use output::{
     CLEAR_FROM_CURSOR, CLEAR_LINE, CLEAR_SCREEN, CURSOR_HIDE, CURSOR_SHOW, PROGRESS_CLEAR,
     append_log, emit, log_destination, relative_move, title,

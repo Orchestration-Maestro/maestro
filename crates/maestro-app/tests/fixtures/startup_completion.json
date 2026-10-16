@@ -1,0 +1,5989 @@
+{
+  "startup_without_legacy_inputs_is_inert": [
+    {
+      "input": {
+        "entries": {}
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "persisted_aliases_are_rewritten_once": [
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"cursorUp\":[\"up\",\"ctrl+p\"],\"expandTools\":\"ctrl+x\"}"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020227475692e656469746f722e637572736f725570223a205b0a20202020227570222c0a20202020226374726c2b70220a20205d2c0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020227475692e656469746f722e637572736f725570223a205b0a20202020227570222c0a20202020226374726c2b70220a20205d2c0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "persisted_current_names_win_before_value_admission": [
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"expandTools\":\"ctrl+x\",\"app.tools.expand\":\"ctrl+y\"}"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b79220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b79220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"app.tools.expand\":\"ctrl+y\",\"expandTools\":\"ctrl+x\"}"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b79220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b79220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"expandTools\":\"ctrl+x\",\"app.tools.expand\":null}"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a206e756c6c0a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a206e756c6c0a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "persisted_nonobjects_invalid_and_current_files_keep_their_bytes": [
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{bad"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b626164"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b626164"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "null"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "6e756c6c"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "6e756c6c"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "[]"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "5b5d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "5b5d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "[\"expandTools\"]"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "5b22657870616e64546f6f6c73225d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "5b22657870616e64546f6f6c73225d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "\"expandTools\""
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "22657870616e64546f6f6c7322"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "22657870616e64546f6f6c7322"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "true"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "74727565"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "74727565"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "12"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "3132"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "3132"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{}"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b7d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b7d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{ \"app.clear\": \"ctrl+x\" }\n\n"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b20226170702e636c656172223a20226374726c2b7822207d0a0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b20226170702e636c656172223a20226374726c2b7822207d0a0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "﻿{\"expandTools\":\"ctrl+x\"}"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "efbbbf7b22657870616e64546f6f6c73223a226374726c2b78227d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "efbbbf7b22657870616e64546f6f6c73223a226374726c2b78227d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "persisted_rewrite_uses_shared_order_and_json_bytes": [
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"expandTools\":\"ctrl+x\",\"2\":-0,\"10\":1e21,\"01\":1.5,\"😀\":\"x\",\"\":\"y\",\"z\":{\"nested\":[true,null]},\"a\":\"﻿ \"}"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a20202232223a20302c0a2020223130223a2031652b32312c0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78222c0a2020223031223a20312e352c0a20202261223a2022efbbbf20c285222c0a2020227a223a207b0a20202020226e6573746564223a205b0a202020202020747275652c0a2020202020206e756c6c0a202020205d0a20207d2c0a202022f09f9880223a202278222c0a202022ee8080223a202279220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a20202232223a20302c0a2020223130223a2031652b32312c0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78222c0a2020223031223a20312e352c0a20202261223a2022efbbbf20c285222c0a2020227a223a207b0a20202020226e6573746564223a205b0a202020202020747275652c0a2020202020206e756c6c0a202020205d0a20207d2c0a202022f09f9880223a202278222c0a202022ee8080223a202279220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"expandTools\":\"a\",\"expandTools\":\"b\",\"interrupt\":false,\"mystery\":[1,{},[]]}"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e696e74657272757074223a2066616c73652c0a2020226170702e746f6f6c732e657870616e64223a202262222c0a2020226d797374657279223a205b0a20202020312c0a202020207b7d2c0a202020205b5d0a20205d0a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e696e74657272757074223a2066616c73652c0a2020226170702e746f6f6c732e657870616e64223a202262222c0a2020226d797374657279223a205b0a20202020312c0a202020207b7d2c0a202020205b5d0a20205d0a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "raw": {
+          "expandTools": null
+        }
+      },
+      "expected": {
+        "config": {
+          "app.tools.expand": null
+        },
+        "order": [
+          "app.tools.expand"
+        ],
+        "migrated": true,
+        "pretty": "{\n  \"app.tools.expand\": null\n}\n"
+      }
+    },
+    {
+      "input": {
+        "raw": {
+          "expandTools": [],
+          "custom": {
+            "a": [
+              true,
+              null,
+              0,
+              1e+21
+            ]
+          }
+        }
+      },
+      "expected": {
+        "config": {
+          "app.tools.expand": [],
+          "custom": {
+            "a": [
+              true,
+              null,
+              0,
+              1e+21
+            ]
+          }
+        },
+        "order": [
+          "app.tools.expand",
+          "custom"
+        ],
+        "migrated": true,
+        "pretty": "{\n  \"app.tools.expand\": [],\n  \"custom\": {\n    \"a\": [\n      true,\n      null,\n      0,\n      1e+21\n    ]\n  }\n}\n"
+      }
+    },
+    {
+      "input": {
+        "raw": {
+          "2": 1e+21,
+          "10": 0,
+          "01": 1,
+          "expandTools": "x",
+          "😀": "a",
+          "": "b"
+        }
+      },
+      "expected": {
+        "config": {
+          "2": 1e+21,
+          "10": 0,
+          "app.tools.expand": "x",
+          "01": 1,
+          "😀": "a",
+          "": "b"
+        },
+        "order": [
+          "2",
+          "10",
+          "app.tools.expand",
+          "01",
+          "😀",
+          ""
+        ],
+        "migrated": true,
+        "pretty": "{\n  \"2\": 1e+21,\n  \"10\": 0,\n  \"app.tools.expand\": \"x\",\n  \"01\": 1,\n  \"😀\": \"a\",\n  \"\": \"b\"\n}\n"
+      }
+    },
+    {
+      "input": {
+        "raw": {
+          "expandTools": "x",
+          "app.tools.expand": false
+        }
+      },
+      "expected": {
+        "config": {
+          "app.tools.expand": false
+        },
+        "order": [
+          "app.tools.expand"
+        ],
+        "migrated": true,
+        "pretty": "{\n  \"app.tools.expand\": false\n}\n"
+      }
+    }
+  ],
+  "persisted_native_reader_failures_leave_the_document_unchanged": [
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"expandTools\":\"ctrl+x\",\"other\":1e400}"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b22657870616e64546f6f6c73223a226374726c2b78222c226f74686572223a31653430307d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b22657870616e64546f6f6c73223a226374726c2b78222c226f74686572223a31653430307d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"expandTools\":\"ctrl+x\",\"other\":\"\\ud800\"}"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b22657870616e64546f6f6c73223a226374726c2b78222c226f74686572223a225c7564383030227d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b22657870616e64546f6f6c73223a226374726c2b78222c226f74686572223a225c7564383030227d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "persisted_rewrite_follows_links_and_tolerates_io_failures": [
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "dir"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "link",
+            "target": "../keys"
+          },
+          "keys": {
+            "kind": "file",
+            "text": "{\"expandTools\":\"ctrl+x\"}"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "link",
+                "target": "../keys",
+                "readable": true,
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78220a7d0a"
+              },
+              "keys": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "link",
+                "target": "../keys",
+                "readable": true,
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78220a7d0a"
+              },
+              "keys": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "link",
+            "target": "../absent"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "link",
+                "target": "../absent",
+                "readable": false,
+                "hex": null
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "link",
+                "target": "../absent",
+                "readable": false,
+                "hex": null
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"expandTools\":\"ctrl+x\"}"
+          }
+        },
+        "unreadable": [
+          "agent/keybindings.json"
+        ]
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b22657870616e64546f6f6c73223a226374726c2b78227d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b22657870616e64546f6f6c73223a226374726c2b78227d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"expandTools\":\"ctrl+x\"}"
+          }
+        },
+        "permissions": {
+          "agent/keybindings.json": 292
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b22657870616e64546f6f6c73223a226374726c2b78227d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b22657870616e64546f6f6c73223a226374726c2b78227d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"expandTools\":\"ctrl+x\"}"
+          },
+          "key-alias": {
+            "kind": "hardlink",
+            "target": "agent/keybindings.json"
+          }
+        },
+        "permissions": {
+          "agent/keybindings.json": 416
+        },
+        "observe_modes": [
+          "agent/keybindings.json",
+          "key-alias"
+        ]
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78220a7d0a"
+              },
+              "key-alias": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            },
+            "observed_modes": {
+              "agent/keybindings.json": 416,
+              "key-alias": 416
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78220a7d0a"
+              },
+              "key-alias": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            },
+            "observed_modes": {
+              "agent/keybindings.json": 416,
+              "key-alias": 416
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "persisted_unknown_prototype_names_keep_literal_identity": [
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"__proto__\":\"a\",\"constructor\":\"b\",\"expandTools\":\"ctrl+x\"}"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78222c0a2020225f5f70726f746f5f5f223a202261222c0a202022636f6e7374727563746f72223a202262220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78222c0a2020225f5f70726f746f5f5f223a202261222c0a202022636f6e7374727563746f72223a202262220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"toString\":\"a\",\"normal\":\"b\",\"expandTools\":\"ctrl+x\"}"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78222c0a2020226e6f726d616c223a202262222c0a202022746f537472696e67223a202261220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78222c0a2020226e6f726d616c223a202262222c0a202022746f537472696e67223a202261220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "managed_binary_names_move_in_fixed_order_once": [
+    {
+      "input": {
+        "entries": {}
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools": {
+            "kind": "file",
+            "text": "not a directory"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/tools": {
+                "kind": "file",
+                "hex": "6e6f742061206469726563746f7279"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/tools": {
+                "kind": "file",
+                "hex": "6e6f742061206469726563746f7279"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools": {
+            "kind": "dir"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "file",
+            "text": "fd"
+          },
+          "agent/tools/rg": {
+            "kind": "file",
+            "text": "rg"
+          },
+          "agent/tools/fd.exe": {
+            "kind": "file",
+            "text": "fd.exe"
+          },
+          "agent/tools/rg.exe": {
+            "kind": "file",
+            "text": "rg.exe"
+          },
+          "agent/tools/other": {
+            "kind": "file",
+            "text": "keep"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated managed binaries tools/ → bin/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "6664"
+              },
+              "agent/bin/fd.exe": {
+                "kind": "file",
+                "hex": "66642e657865"
+              },
+              "agent/bin/rg": {
+                "kind": "file",
+                "hex": "7267"
+              },
+              "agent/bin/rg.exe": {
+                "kind": "file",
+                "hex": "72672e657865"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/other": {
+                "kind": "file",
+                "hex": "6b656570"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "6664"
+              },
+              "agent/bin/fd.exe": {
+                "kind": "file",
+                "hex": "66642e657865"
+              },
+              "agent/bin/rg": {
+                "kind": "file",
+                "hex": "7267"
+              },
+              "agent/bin/rg.exe": {
+                "kind": "file",
+                "hex": "72672e657865"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/other": {
+                "kind": "file",
+                "hex": "6b656570"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "managed_binary_collisions_remove_only_old_files": [
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "file",
+            "text": "old"
+          },
+          "agent/bin/fd": {
+            "kind": "file",
+            "text": "new"
+          },
+          "agent/current": {
+            "kind": "file",
+            "text": "current"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "6e6577"
+              },
+              "agent/current": {
+                "kind": "file",
+                "hex": "63757272656e74"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "6e6577"
+              },
+              "agent/current": {
+                "kind": "file",
+                "hex": "63757272656e74"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "file",
+            "text": "old"
+          },
+          "agent/bin/fd": {
+            "kind": "dir"
+          },
+          "agent/current": {
+            "kind": "file",
+            "text": "current"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "dir"
+              },
+              "agent/current": {
+                "kind": "file",
+                "hex": "63757272656e74"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "dir"
+              },
+              "agent/current": {
+                "kind": "file",
+                "hex": "63757272656e74"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "file",
+            "text": "old"
+          },
+          "agent/bin/fd": {
+            "kind": "link",
+            "target": "../current"
+          },
+          "agent/current": {
+            "kind": "file",
+            "text": "current"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "link",
+                "target": "../current",
+                "readable": true,
+                "hex": "63757272656e74"
+              },
+              "agent/current": {
+                "kind": "file",
+                "hex": "63757272656e74"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "link",
+                "target": "../current",
+                "readable": true,
+                "hex": "63757272656e74"
+              },
+              "agent/current": {
+                "kind": "file",
+                "hex": "63757272656e74"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "file",
+            "text": "old"
+          },
+          "agent/bin/fd": {
+            "kind": "link",
+            "target": "../missing"
+          },
+          "agent/current": {
+            "kind": "file",
+            "text": "current"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated managed binaries tools/ → bin/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "6f6c64"
+              },
+              "agent/current": {
+                "kind": "file",
+                "hex": "63757272656e74"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "6f6c64"
+              },
+              "agent/current": {
+                "kind": "file",
+                "hex": "63757272656e74"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "dir"
+          },
+          "agent/tools/fd/child": {
+            "kind": "file",
+            "text": "keep"
+          },
+          "agent/bin/fd": {
+            "kind": "file",
+            "text": "new"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "6e6577"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/fd": {
+                "kind": "dir"
+              },
+              "agent/tools/fd/child": {
+                "kind": "file",
+                "hex": "6b656570"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "6e6577"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/fd": {
+                "kind": "dir"
+              },
+              "agent/tools/fd/child": {
+                "kind": "file",
+                "hex": "6b656570"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "file",
+            "text": "old"
+          },
+          "agent/bin/fd": {
+            "kind": "hardlink",
+            "target": "agent/tools/fd"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "6f6c64"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "6f6c64"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "file",
+            "text": "keep"
+          },
+          "agent/bin": {
+            "kind": "link",
+            "target": "tools"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "link",
+                "target": "tools",
+                "readable": true,
+                "hex": null
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "agent/tools/fd": {
+                "kind": "file",
+                "hex": "6b656570"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "link",
+                "target": "tools",
+                "readable": true,
+                "hex": null
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "agent/tools/fd": {
+                "kind": "file",
+                "hex": "6b656570"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "managed_binary_source_directories_are_not_recursively_deleted": [
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "dir"
+          },
+          "agent/tools/fd/child": {
+            "kind": "file",
+            "text": "keep"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated managed binaries tools/ → bin/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "dir"
+              },
+              "agent/bin/fd/child": {
+                "kind": "file",
+                "hex": "6b656570"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "dir"
+              },
+              "agent/bin/fd/child": {
+                "kind": "file",
+                "hex": "6b656570"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "link",
+            "target": "../absent"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/fd": {
+                "kind": "link",
+                "target": "../absent",
+                "readable": false,
+                "hex": null
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/fd": {
+                "kind": "link",
+                "target": "../absent",
+                "readable": false,
+                "hex": null
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "managed_binary_rename_and_delete_failures_are_tolerated": [
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "file",
+            "text": "old"
+          },
+          "agent/bin": {
+            "kind": "file",
+            "text": "blocked"
+          },
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"expandTools\":\"ctrl+x\"}"
+          },
+          "agent/commands/template.md": {
+            "kind": "file",
+            "text": "template"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated Global commands/ → prompts/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "file",
+                "hex": "626c6f636b6564"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78220a7d0a"
+              },
+              "agent/prompts": {
+                "kind": "dir"
+              },
+              "agent/prompts/template.md": {
+                "kind": "file",
+                "hex": "74656d706c617465"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/fd": {
+                "kind": "file",
+                "hex": "6f6c64"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "file",
+                "hex": "626c6f636b6564"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78220a7d0a"
+              },
+              "agent/prompts": {
+                "kind": "dir"
+              },
+              "agent/prompts/template.md": {
+                "kind": "file",
+                "hex": "74656d706c617465"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/fd": {
+                "kind": "file",
+                "hex": "6f6c64"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "file",
+            "text": "old"
+          },
+          "agent/bin": {
+            "kind": "dir"
+          }
+        },
+        "permissions": {
+          "agent/tools": 365
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/fd": {
+                "kind": "file",
+                "hex": "6f6c64"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/fd": {
+                "kind": "file",
+                "hex": "6f6c64"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "file",
+            "text": "old"
+          },
+          "agent/bin/fd": {
+            "kind": "file",
+            "text": "new"
+          }
+        },
+        "permissions": {
+          "agent/tools": 365
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "6e6577"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/fd": {
+                "kind": "file",
+                "hex": "6f6c64"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "6e6577"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/fd": {
+                "kind": "file",
+                "hex": "6f6c64"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "managed_binary_create_failure_stops_later_conversions": [
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "file",
+            "text": "old"
+          },
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"expandTools\":\"ctrl+x\"}"
+          },
+          "agent/commands/template.md": {
+            "kind": "file",
+            "text": "template"
+          }
+        },
+        "permissions": {
+          "agent": 365
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": null,
+            "error": {
+              "code": "EACCES"
+            },
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/commands": {
+                "kind": "dir"
+              },
+              "agent/commands/template.md": {
+                "kind": "file",
+                "hex": "74656d706c617465"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b22657870616e64546f6f6c73223a226374726c2b78227d"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/fd": {
+                "kind": "file",
+                "hex": "6f6c64"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": null,
+            "error": {
+              "code": "EACCES"
+            },
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/commands": {
+                "kind": "dir"
+              },
+              "agent/commands/template.md": {
+                "kind": "file",
+                "hex": "74656d706c617465"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b22657870616e64546f6f6c73223a226374726c2b78227d"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/fd": {
+                "kind": "file",
+                "hex": "6f6c64"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "managed_binary_links_retain_their_original_referent": [
+    {
+      "input": {
+        "entries": {
+          "agent/program": {
+            "kind": "file",
+            "text": "expected"
+          },
+          "agent/tools/lib/program": {
+            "kind": "file",
+            "text": "expected"
+          },
+          "agent/tools/fd": {
+            "kind": "link",
+            "target": "lib/program"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated managed binaries tools/ → bin/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "link",
+                "target": "$ROOT/agent/tools/lib/program",
+                "readable": true,
+                "hex": "6578706563746564"
+              },
+              "agent/program": {
+                "kind": "file",
+                "hex": "6578706563746564"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/lib": {
+                "kind": "dir"
+              },
+              "agent/tools/lib/program": {
+                "kind": "file",
+                "hex": "6578706563746564"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "link",
+                "target": "$ROOT/agent/tools/lib/program",
+                "readable": true,
+                "hex": "6578706563746564"
+              },
+              "agent/program": {
+                "kind": "file",
+                "hex": "6578706563746564"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/lib": {
+                "kind": "dir"
+              },
+              "agent/tools/lib/program": {
+                "kind": "file",
+                "hex": "6578706563746564"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/program": {
+            "kind": "file",
+            "text": "expected"
+          },
+          "agent/tools/lib/program": {
+            "kind": "file",
+            "text": "expected"
+          },
+          "agent/tools/fd": {
+            "kind": "link",
+            "target": "../program"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated managed binaries tools/ → bin/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "link",
+                "target": "$ROOT/agent/program",
+                "readable": true,
+                "hex": "6578706563746564"
+              },
+              "agent/program": {
+                "kind": "file",
+                "hex": "6578706563746564"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/lib": {
+                "kind": "dir"
+              },
+              "agent/tools/lib/program": {
+                "kind": "file",
+                "hex": "6578706563746564"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "link",
+                "target": "$ROOT/agent/program",
+                "readable": true,
+                "hex": "6578706563746564"
+              },
+              "agent/program": {
+                "kind": "file",
+                "hex": "6578706563746564"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/lib": {
+                "kind": "dir"
+              },
+              "agent/tools/lib/program": {
+                "kind": "file",
+                "hex": "6578706563746564"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/program": {
+            "kind": "file",
+            "text": "expected"
+          },
+          "agent/tools/lib/program": {
+            "kind": "file",
+            "text": "expected"
+          },
+          "agent/tools/fd": {
+            "kind": "link",
+            "target": "$ROOT/agent/program"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated managed binaries tools/ → bin/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "link",
+                "target": "$ROOT/agent/program",
+                "readable": true,
+                "hex": "6578706563746564"
+              },
+              "agent/program": {
+                "kind": "file",
+                "hex": "6578706563746564"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/lib": {
+                "kind": "dir"
+              },
+              "agent/tools/lib/program": {
+                "kind": "file",
+                "hex": "6578706563746564"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "link",
+                "target": "$ROOT/agent/program",
+                "readable": true,
+                "hex": "6578706563746564"
+              },
+              "agent/program": {
+                "kind": "file",
+                "hex": "6578706563746564"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/lib": {
+                "kind": "dir"
+              },
+              "agent/tools/lib/program": {
+                "kind": "file",
+                "hex": "6578706563746564"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "managed_binary_links_do_not_switch_to_destination_decoys": [
+    {
+      "input": {
+        "entries": {
+          "agent/tools/lib/program": {
+            "kind": "file",
+            "text": "original"
+          },
+          "agent/bin/lib/program": {
+            "kind": "file",
+            "text": "decoy"
+          },
+          "agent/tools/fd": {
+            "kind": "link",
+            "target": "lib/program"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated managed binaries tools/ → bin/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "link",
+                "target": "$ROOT/agent/tools/lib/program",
+                "readable": true,
+                "hex": "6f726967696e616c"
+              },
+              "agent/bin/lib": {
+                "kind": "dir"
+              },
+              "agent/bin/lib/program": {
+                "kind": "file",
+                "hex": "6465636f79"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/lib": {
+                "kind": "dir"
+              },
+              "agent/tools/lib/program": {
+                "kind": "file",
+                "hex": "6f726967696e616c"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "link",
+                "target": "$ROOT/agent/tools/lib/program",
+                "readable": true,
+                "hex": "6f726967696e616c"
+              },
+              "agent/bin/lib": {
+                "kind": "dir"
+              },
+              "agent/bin/lib/program": {
+                "kind": "file",
+                "hex": "6465636f79"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/lib": {
+                "kind": "dir"
+              },
+              "agent/tools/lib/program": {
+                "kind": "file",
+                "hex": "6f726967696e616c"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "managed_binary_directory_links_keep_the_captured_directory": [
+    {
+      "input": {
+        "entries": {
+          "agent/tools/lib/child": {
+            "kind": "file",
+            "text": "original"
+          },
+          "agent/tools/fd": {
+            "kind": "link",
+            "target": "lib"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated managed binaries tools/ → bin/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "link",
+                "target": "$ROOT/agent/tools/lib",
+                "readable": true,
+                "hex": null
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/lib": {
+                "kind": "dir"
+              },
+              "agent/tools/lib/child": {
+                "kind": "file",
+                "hex": "6f726967696e616c"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "link",
+                "target": "$ROOT/agent/tools/lib",
+                "readable": true,
+                "hex": null
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/lib": {
+                "kind": "dir"
+              },
+              "agent/tools/lib/child": {
+                "kind": "file",
+                "hex": "6f726967696e616c"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "managed_binary_sibling_and_intermediate_links_keep_identity": [
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "link",
+            "target": "rg"
+          },
+          "agent/tools/rg": {
+            "kind": "file",
+            "text": "body"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated managed binaries tools/ → bin/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "link",
+                "target": "$ROOT/agent/bin/rg",
+                "readable": true,
+                "hex": "626f6479"
+              },
+              "agent/bin/rg": {
+                "kind": "file",
+                "hex": "626f6479"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "link",
+                "target": "$ROOT/agent/bin/rg",
+                "readable": true,
+                "hex": "626f6479"
+              },
+              "agent/bin/rg": {
+                "kind": "file",
+                "hex": "626f6479"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "file",
+            "text": "body"
+          },
+          "agent/tools/rg": {
+            "kind": "link",
+            "target": "fd"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated managed binaries tools/ → bin/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "626f6479"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "agent/bin/rg": {
+                "kind": "link",
+                "target": "$ROOT/agent/bin/fd",
+                "readable": true,
+                "hex": "626f6479"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "626f6479"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "agent/bin/rg": {
+                "kind": "link",
+                "target": "$ROOT/agent/bin/fd",
+                "readable": true,
+                "hex": "626f6479"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "link",
+            "target": "alias"
+          },
+          "agent/tools/alias": {
+            "kind": "link",
+            "target": "rg"
+          },
+          "agent/tools/rg": {
+            "kind": "file",
+            "text": "body"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated managed binaries tools/ → bin/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "link",
+                "target": "$ROOT/agent/bin/rg",
+                "readable": true,
+                "hex": "626f6479"
+              },
+              "agent/bin/rg": {
+                "kind": "file",
+                "hex": "626f6479"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/alias": {
+                "kind": "link",
+                "target": "rg",
+                "readable": false,
+                "hex": null
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "link",
+                "target": "$ROOT/agent/bin/rg",
+                "readable": true,
+                "hex": "626f6479"
+              },
+              "agent/bin/rg": {
+                "kind": "file",
+                "hex": "626f6479"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/alias": {
+                "kind": "link",
+                "target": "rg",
+                "readable": false,
+                "hex": null
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd/lib/body": {
+            "kind": "file",
+            "text": "body"
+          },
+          "agent/tools/rg": {
+            "kind": "link",
+            "target": "fd/lib/body"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated managed binaries tools/ → bin/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "dir"
+              },
+              "agent/bin/fd/lib": {
+                "kind": "dir"
+              },
+              "agent/bin/fd/lib/body": {
+                "kind": "file",
+                "hex": "626f6479"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "agent/bin/rg": {
+                "kind": "link",
+                "target": "$ROOT/agent/bin/fd/lib/body",
+                "readable": true,
+                "hex": "626f6479"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "dir"
+              },
+              "agent/bin/fd/lib": {
+                "kind": "dir"
+              },
+              "agent/bin/fd/lib/body": {
+                "kind": "file",
+                "hex": "626f6479"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "agent/bin/rg": {
+                "kind": "link",
+                "target": "$ROOT/agent/bin/fd/lib/body",
+                "readable": true,
+                "hex": "626f6479"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "command_directories_convert_global_then_project_once": [
+    {
+      "input": {
+        "entries": {
+          "agent/commands/template.md": {
+            "kind": "file",
+            "text": "global"
+          },
+          "project/.maestro/commands/local.md": {
+            "kind": "file",
+            "text": "project"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated Global commands/ → prompts/\u001b[39m\n\u001b[32mMigrated Project commands/ → prompts/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/prompts": {
+                "kind": "dir"
+              },
+              "agent/prompts/template.md": {
+                "kind": "file",
+                "hex": "676c6f62616c"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "project/.maestro": {
+                "kind": "dir"
+              },
+              "project/.maestro/prompts": {
+                "kind": "dir"
+              },
+              "project/.maestro/prompts/local.md": {
+                "kind": "file",
+                "hex": "70726f6a656374"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/prompts": {
+                "kind": "dir"
+              },
+              "agent/prompts/template.md": {
+                "kind": "file",
+                "hex": "676c6f62616c"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "project/.maestro": {
+                "kind": "dir"
+              },
+              "project/.maestro/prompts": {
+                "kind": "dir"
+              },
+              "project/.maestro/prompts/local.md": {
+                "kind": "file",
+                "hex": "70726f6a656374"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/commands/template.md": {
+            "kind": "file",
+            "text": "old"
+          },
+          "agent/prompts/new.md": {
+            "kind": "file",
+            "text": "new"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/commands": {
+                "kind": "dir"
+              },
+              "agent/commands/template.md": {
+                "kind": "file",
+                "hex": "6f6c64"
+              },
+              "agent/prompts": {
+                "kind": "dir"
+              },
+              "agent/prompts/new.md": {
+                "kind": "file",
+                "hex": "6e6577"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/commands": {
+                "kind": "dir"
+              },
+              "agent/commands/template.md": {
+                "kind": "file",
+                "hex": "6f6c64"
+              },
+              "agent/prompts": {
+                "kind": "dir"
+              },
+              "agent/prompts/new.md": {
+                "kind": "file",
+                "hex": "6e6577"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/commands": {
+            "kind": "file",
+            "text": "plain"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated Global commands/ → prompts/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/prompts": {
+                "kind": "file",
+                "hex": "706c61696e"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/prompts": {
+                "kind": "file",
+                "hex": "706c61696e"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/commands": {
+            "kind": "link",
+            "target": "../templates"
+          },
+          "templates/a.md": {
+            "kind": "file",
+            "text": "linked"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated Global commands/ → prompts/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/prompts": {
+                "kind": "link",
+                "target": "../templates",
+                "readable": true,
+                "hex": null
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "templates": {
+                "kind": "dir"
+              },
+              "templates/a.md": {
+                "kind": "file",
+                "hex": "6c696e6b6564"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/prompts": {
+                "kind": "link",
+                "target": "../templates",
+                "readable": true,
+                "hex": null
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "templates": {
+                "kind": "dir"
+              },
+              "templates/a.md": {
+                "kind": "file",
+                "hex": "6c696e6b6564"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/commands": {
+            "kind": "link",
+            "target": "../absent"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/commands": {
+                "kind": "link",
+                "target": "../absent",
+                "readable": false,
+                "hex": null
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/commands": {
+                "kind": "link",
+                "target": "../absent",
+                "readable": false,
+                "hex": null
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/commands/a": {
+            "kind": "file",
+            "text": "a"
+          },
+          "agent/prompts": {
+            "kind": "link",
+            "target": "../absent"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "\u001b[33mWarning: Could not migrate Global commands/ to prompts/: <native rename failure>\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/commands": {
+                "kind": "dir"
+              },
+              "agent/commands/a": {
+                "kind": "file",
+                "hex": "61"
+              },
+              "agent/prompts": {
+                "kind": "link",
+                "target": "../absent",
+                "readable": false,
+                "hex": null
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "\u001b[33mWarning: Could not migrate Global commands/ to prompts/: <native rename failure>\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/commands": {
+                "kind": "dir"
+              },
+              "agent/commands/a": {
+                "kind": "file",
+                "hex": "61"
+              },
+              "agent/prompts": {
+                "kind": "link",
+                "target": "../absent",
+                "readable": false,
+                "hex": null
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "command_rename_failures_warn_and_keep_going": [
+    {
+      "input": {
+        "entries": {
+          "agent/commands/a": {
+            "kind": "file",
+            "text": "a"
+          },
+          "project/.maestro/commands/b": {
+            "kind": "file",
+            "text": "b"
+          },
+          "project/.maestro/hooks/a": {
+            "kind": "file",
+            "text": "a"
+          }
+        },
+        "permissions": {
+          "agent": 365
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Project hooks/ directory found. Hooks have been renamed to extensions."
+              ]
+            },
+            "error": null,
+            "output": "\u001b[33mWarning: Could not migrate Global commands/ to prompts/: <native rename failure>\u001b[39m\n\u001b[32mMigrated Project commands/ → prompts/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/commands": {
+                "kind": "dir"
+              },
+              "agent/commands/a": {
+                "kind": "file",
+                "hex": "61"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "project/.maestro": {
+                "kind": "dir"
+              },
+              "project/.maestro/hooks": {
+                "kind": "dir"
+              },
+              "project/.maestro/hooks/a": {
+                "kind": "file",
+                "hex": "61"
+              },
+              "project/.maestro/prompts": {
+                "kind": "dir"
+              },
+              "project/.maestro/prompts/b": {
+                "kind": "file",
+                "hex": "62"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Project hooks/ directory found. Hooks have been renamed to extensions."
+              ]
+            },
+            "error": null,
+            "output": "\u001b[33mWarning: Could not migrate Global commands/ to prompts/: <native rename failure>\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/commands": {
+                "kind": "dir"
+              },
+              "agent/commands/a": {
+                "kind": "file",
+                "hex": "61"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "project/.maestro": {
+                "kind": "dir"
+              },
+              "project/.maestro/hooks": {
+                "kind": "dir"
+              },
+              "project/.maestro/hooks/a": {
+                "kind": "file",
+                "hex": "61"
+              },
+              "project/.maestro/prompts": {
+                "kind": "dir"
+              },
+              "project/.maestro/prompts/b": {
+                "kind": "file",
+                "hex": "62"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "deprecated_directory_warning_domains_and_order_are_exact": [
+    {
+      "input": {
+        "entries": {}
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/hooks": {
+            "kind": "dir"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global hooks/ directory found. Hooks have been renamed to extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/hooks": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global hooks/ directory found. Hooks have been renamed to extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/hooks": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/hooks": {
+            "kind": "file",
+            "text": "legacy"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global hooks/ directory found. Hooks have been renamed to extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/hooks": {
+                "kind": "file",
+                "hex": "6c6567616379"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global hooks/ directory found. Hooks have been renamed to extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/hooks": {
+                "kind": "file",
+                "hex": "6c6567616379"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/hooks": {
+            "kind": "link",
+            "target": "../missing"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/hooks": {
+                "kind": "link",
+                "target": "../missing",
+                "readable": false,
+                "hex": null
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/hooks": {
+                "kind": "link",
+                "target": "../missing",
+                "readable": false,
+                "hex": null
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/hooks": {
+            "kind": "link",
+            "target": "../hooks"
+          },
+          "hooks": {
+            "kind": "dir"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global hooks/ directory found. Hooks have been renamed to extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/hooks": {
+                "kind": "link",
+                "target": "../hooks",
+                "readable": true,
+                "hex": null
+              },
+              "hooks": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global hooks/ directory found. Hooks have been renamed to extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/hooks": {
+                "kind": "link",
+                "target": "../hooks",
+                "readable": true,
+                "hex": null
+              },
+              "hooks": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools": {
+            "kind": "file",
+            "text": "plain"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/tools": {
+                "kind": "file",
+                "hex": "706c61696e"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/tools": {
+                "kind": "file",
+                "hex": "706c61696e"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools/fd": {
+            "kind": "file",
+            "text": "fd"
+          },
+          "agent/tools/RG.EXE": {
+            "kind": "file",
+            "text": "rg"
+          },
+          "agent/tools/.hidden": {
+            "kind": "file",
+            "text": "ignore"
+          },
+          "agent/tools/.DS_Store": {
+            "kind": "file",
+            "text": "ignore"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated managed binaries tools/ → bin/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "6664"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/.DS_Store": {
+                "kind": "file",
+                "hex": "69676e6f7265"
+              },
+              "agent/tools/.hidden": {
+                "kind": "file",
+                "hex": "69676e6f7265"
+              },
+              "agent/tools/RG.EXE": {
+                "kind": "file",
+                "hex": "7267"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "6664"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/.DS_Store": {
+                "kind": "file",
+                "hex": "69676e6f7265"
+              },
+              "agent/tools/.hidden": {
+                "kind": "file",
+                "hex": "69676e6f7265"
+              },
+              "agent/tools/RG.EXE": {
+                "kind": "file",
+                "hex": "7267"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/tools/FD": {
+            "kind": "file",
+            "text": "ignore"
+          },
+          "agent/tools/rgx": {
+            "kind": "file",
+            "text": "custom"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/FD": {
+                "kind": "file",
+                "hex": "69676e6f7265"
+              },
+              "agent/tools/rgx": {
+                "kind": "file",
+                "hex": "637573746f6d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/FD": {
+                "kind": "file",
+                "hex": "69676e6f7265"
+              },
+              "agent/tools/rgx": {
+                "kind": "file",
+                "hex": "637573746f6d"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "entries": {
+          "agent/hooks": {
+            "kind": "dir"
+          },
+          "agent/tools/plugin": {
+            "kind": "dir"
+          },
+          "project/.maestro/hooks": {
+            "kind": "dir"
+          },
+          "project/.maestro/tools/plugin.js": {
+            "kind": "file",
+            "text": "custom"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global hooks/ directory found. Hooks have been renamed to extensions.",
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions.",
+                "Project hooks/ directory found. Hooks have been renamed to extensions.",
+                "Project tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/hooks": {
+                "kind": "dir"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/plugin": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "project/.maestro": {
+                "kind": "dir"
+              },
+              "project/.maestro/hooks": {
+                "kind": "dir"
+              },
+              "project/.maestro/tools": {
+                "kind": "dir"
+              },
+              "project/.maestro/tools/plugin.js": {
+                "kind": "file",
+                "hex": "637573746f6d"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global hooks/ directory found. Hooks have been renamed to extensions.",
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions.",
+                "Project hooks/ directory found. Hooks have been renamed to extensions.",
+                "Project tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/hooks": {
+                "kind": "dir"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/plugin": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "project/.maestro": {
+                "kind": "dir"
+              },
+              "project/.maestro/hooks": {
+                "kind": "dir"
+              },
+              "project/.maestro/tools": {
+                "kind": "dir"
+              },
+              "project/.maestro/tools/plugin.js": {
+                "kind": "file",
+                "hex": "637573746f6d"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "input": {
+        "root": "project/.maestro",
+        "entries": {
+          "project/.maestro/hooks": {
+            "kind": "dir"
+          },
+          "project/.maestro/tools/custom": {
+            "kind": "file",
+            "text": "custom"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global hooks/ directory found. Hooks have been renamed to extensions.",
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions.",
+                "Project hooks/ directory found. Hooks have been renamed to extensions.",
+                "Project tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "project/.maestro": {
+                "kind": "dir"
+              },
+              "project/.maestro/hooks": {
+                "kind": "dir"
+              },
+              "project/.maestro/tools": {
+                "kind": "dir"
+              },
+              "project/.maestro/tools/custom": {
+                "kind": "file",
+                "hex": "637573746f6d"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global hooks/ directory found. Hooks have been renamed to extensions.",
+                "Global tools/ directory contains custom tools. Custom tools have been merged into extensions.",
+                "Project hooks/ directory found. Hooks have been renamed to extensions.",
+                "Project tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "project/.maestro": {
+                "kind": "dir"
+              },
+              "project/.maestro/hooks": {
+                "kind": "dir"
+              },
+              "project/.maestro/tools": {
+                "kind": "dir"
+              },
+              "project/.maestro/tools/custom": {
+                "kind": "file",
+                "hex": "637573746f6d"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "startup_call_uses_supplied_cwd_and_call_time_root": [
+    {
+      "input": {
+        "relative_root": true,
+        "cwd": "project/work/..",
+        "entries": {
+          "project/work": {
+            "kind": "dir"
+          },
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"expandTools\":\"ctrl+x\"}"
+          },
+          "project/.maestro/commands/a": {
+            "kind": "file",
+            "text": "selected"
+          },
+          "project/other/.maestro/commands/b": {
+            "kind": "file",
+            "text": "decoy"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated Project commands/ → prompts/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "project/other": {
+                "kind": "dir"
+              },
+              "project/work": {
+                "kind": "dir"
+              },
+              "project/.maestro": {
+                "kind": "dir"
+              },
+              "project/.maestro/prompts": {
+                "kind": "dir"
+              },
+              "project/.maestro/prompts/a": {
+                "kind": "file",
+                "hex": "73656c6563746564"
+              },
+              "project/other/.maestro": {
+                "kind": "dir"
+              },
+              "project/other/.maestro/commands": {
+                "kind": "dir"
+              },
+              "project/other/.maestro/commands/b": {
+                "kind": "file",
+                "hex": "6465636f79"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": []
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78220a7d0a"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "project/other": {
+                "kind": "dir"
+              },
+              "project/work": {
+                "kind": "dir"
+              },
+              "project/.maestro": {
+                "kind": "dir"
+              },
+              "project/.maestro/prompts": {
+                "kind": "dir"
+              },
+              "project/.maestro/prompts/a": {
+                "kind": "file",
+                "hex": "73656c6563746564"
+              },
+              "project/other/.maestro": {
+                "kind": "dir"
+              },
+              "project/other/.maestro/commands": {
+                "kind": "dir"
+              },
+              "project/other/.maestro/commands/b": {
+                "kind": "file",
+                "hex": "6465636f79"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "deprecated_directory_read_errors_are_tolerated": [
+    {
+      "input": {
+        "entries": {
+          "agent/tools/custom": {
+            "kind": "file",
+            "text": "custom"
+          },
+          "project/.maestro/hooks": {
+            "kind": "dir"
+          }
+        },
+        "unreadable": [
+          "agent/tools"
+        ]
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Project hooks/ directory found. Hooks have been renamed to extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/custom": {
+                "kind": "file",
+                "hex": "637573746f6d"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "project/.maestro": {
+                "kind": "dir"
+              },
+              "project/.maestro/hooks": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Project hooks/ directory found. Hooks have been renamed to extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/custom": {
+                "kind": "file",
+                "hex": "637573746f6d"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "project/.maestro": {
+                "kind": "dir"
+              },
+              "project/.maestro/hooks": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "startup_failure_keeps_later_conversions_unstarted": [
+    {
+      "input": {
+        "entries": {
+          "agent/oauth.json": {
+            "kind": "file",
+            "text": "{\"provider\":{\"access\":\"token\"}}"
+          },
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"expandTools\":\"ctrl+x\"}"
+          },
+          "agent/tools/fd": {
+            "kind": "file",
+            "text": "old"
+          },
+          "agent/commands/a": {
+            "kind": "file",
+            "text": "template"
+          }
+        },
+        "permissions": {
+          "agent": 365
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": null,
+            "error": {
+              "code": "EACCES"
+            },
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/commands": {
+                "kind": "dir"
+              },
+              "agent/commands/a": {
+                "kind": "file",
+                "hex": "74656d706c617465"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b22657870616e64546f6f6c73223a226374726c2b78227d"
+              },
+              "agent/oauth.json": {
+                "kind": "file",
+                "hex": "7b2270726f7669646572223a7b22616363657373223a22746f6b656e227d7d"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/fd": {
+                "kind": "file",
+                "hex": "6f6c64"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          },
+          {
+            "result": null,
+            "error": {
+              "code": "EACCES"
+            },
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/commands": {
+                "kind": "dir"
+              },
+              "agent/commands/a": {
+                "kind": "file",
+                "hex": "74656d706c617465"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b22657870616e64546f6f6c73223a226374726c2b78227d"
+              },
+              "agent/oauth.json": {
+                "kind": "file",
+                "hex": "7b2270726f7669646572223a7b22616363657373223a22746f6b656e227d7d"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "agent/tools/fd": {
+                "kind": "file",
+                "hex": "6f6c64"
+              },
+              "project": {
+                "kind": "dir"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "startup_order_observes_preceding_conversion_effects": [
+    {
+      "input": {
+        "entries": {
+          "agent/oauth.json": {
+            "kind": "file",
+            "text": "{\"provider\":{\"access\":\"token\"}}"
+          },
+          "agent/settings.json": {
+            "kind": "file",
+            "text": "{\"apiKeys\":{\"other\":\"key\"}}"
+          },
+          "agent/root.jsonl": {
+            "kind": "file",
+            "text": "{\"type\":\"session\",\"cwd\":\"/work\"}\nbody"
+          },
+          "agent/tools/fd": {
+            "kind": "file",
+            "text": "binary"
+          },
+          "agent/keybindings.json": {
+            "kind": "file",
+            "text": "{\"expandTools\":\"ctrl+x\"}"
+          },
+          "agent/commands/prompt.md": {
+            "kind": "file",
+            "text": "template"
+          },
+          "agent/hooks": {
+            "kind": "dir"
+          },
+          "project/.maestro/commands/local.md": {
+            "kind": "file",
+            "text": "local"
+          },
+          "project/.maestro/tools/plugin": {
+            "kind": "file",
+            "text": "plugin"
+          }
+        }
+      },
+      "expected": {
+        "calls": [
+          {
+            "result": {
+              "migratedAuthProviders": [
+                "provider",
+                "other"
+              ],
+              "deprecationWarnings": [
+                "Global hooks/ directory found. Hooks have been renamed to extensions.",
+                "Project tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "\u001b[32mMigrated managed binaries tools/ → bin/\u001b[39m\n\u001b[32mMigrated Global commands/ → prompts/\u001b[39m\n\u001b[32mMigrated Project commands/ → prompts/\u001b[39m\n",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/auth.json": {
+                "kind": "file",
+                "hex": "7b0a20202270726f7669646572223a207b0a202020202274797065223a20226f61757468222c0a2020202022616363657373223a2022746f6b656e220a20207d2c0a2020226f74686572223a207b0a202020202274797065223a20226170695f6b6579222c0a20202020226b6579223a20226b6579220a20207d0a7d"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "62696e617279"
+              },
+              "agent/hooks": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78220a7d0a"
+              },
+              "agent/oauth.json.migrated": {
+                "kind": "file",
+                "hex": "7b2270726f7669646572223a7b22616363657373223a22746f6b656e227d7d"
+              },
+              "agent/prompts": {
+                "kind": "dir"
+              },
+              "agent/prompts/prompt.md": {
+                "kind": "file",
+                "hex": "74656d706c617465"
+              },
+              "agent/sessions": {
+                "kind": "dir"
+              },
+              "agent/sessions/--work--": {
+                "kind": "dir"
+              },
+              "agent/sessions/--work--/root.jsonl": {
+                "kind": "file",
+                "hex": "7b2274797065223a2273657373696f6e222c22637764223a222f776f726b227d0a626f6479"
+              },
+              "agent/settings.json": {
+                "kind": "file",
+                "hex": "7b7d"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "project/.maestro": {
+                "kind": "dir"
+              },
+              "project/.maestro/prompts": {
+                "kind": "dir"
+              },
+              "project/.maestro/prompts/local.md": {
+                "kind": "file",
+                "hex": "6c6f63616c"
+              },
+              "project/.maestro/tools": {
+                "kind": "dir"
+              },
+              "project/.maestro/tools/plugin": {
+                "kind": "file",
+                "hex": "706c7567696e"
+              }
+            }
+          },
+          {
+            "result": {
+              "migratedAuthProviders": [],
+              "deprecationWarnings": [
+                "Global hooks/ directory found. Hooks have been renamed to extensions.",
+                "Project tools/ directory contains custom tools. Custom tools have been merged into extensions."
+              ]
+            },
+            "error": null,
+            "output": "",
+            "tree": {
+              "agent": {
+                "kind": "dir"
+              },
+              "agent/auth.json": {
+                "kind": "file",
+                "hex": "7b0a20202270726f7669646572223a207b0a202020202274797065223a20226f61757468222c0a2020202022616363657373223a2022746f6b656e220a20207d2c0a2020226f74686572223a207b0a202020202274797065223a20226170695f6b6579222c0a20202020226b6579223a20226b6579220a20207d0a7d"
+              },
+              "agent/bin": {
+                "kind": "dir"
+              },
+              "agent/bin/fd": {
+                "kind": "file",
+                "hex": "62696e617279"
+              },
+              "agent/hooks": {
+                "kind": "dir"
+              },
+              "agent/keybindings.json": {
+                "kind": "file",
+                "hex": "7b0a2020226170702e746f6f6c732e657870616e64223a20226374726c2b78220a7d0a"
+              },
+              "agent/oauth.json.migrated": {
+                "kind": "file",
+                "hex": "7b2270726f7669646572223a7b22616363657373223a22746f6b656e227d7d"
+              },
+              "agent/prompts": {
+                "kind": "dir"
+              },
+              "agent/prompts/prompt.md": {
+                "kind": "file",
+                "hex": "74656d706c617465"
+              },
+              "agent/sessions": {
+                "kind": "dir"
+              },
+              "agent/sessions/--work--": {
+                "kind": "dir"
+              },
+              "agent/sessions/--work--/root.jsonl": {
+                "kind": "file",
+                "hex": "7b2274797065223a2273657373696f6e222c22637764223a222f776f726b227d0a626f6479"
+              },
+              "agent/settings.json": {
+                "kind": "file",
+                "hex": "7b7d"
+              },
+              "agent/tools": {
+                "kind": "dir"
+              },
+              "project": {
+                "kind": "dir"
+              },
+              "project/.maestro": {
+                "kind": "dir"
+              },
+              "project/.maestro/prompts": {
+                "kind": "dir"
+              },
+              "project/.maestro/prompts/local.md": {
+                "kind": "file",
+                "hex": "6c6f63616c"
+              },
+              "project/.maestro/tools": {
+                "kind": "dir"
+              },
+              "project/.maestro/tools/plugin": {
+                "kind": "file",
+                "hex": "706c7567696e"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "ordinary_slash_commands_keep_every_name_description_and_order": [
+    {
+      "input": {},
+      "expected": [
+        {
+          "name": "settings",
+          "description": "Open settings menu"
+        },
+        {
+          "name": "model",
+          "description": "Select model (opens selector UI)"
+        },
+        {
+          "name": "scoped-models",
+          "description": "Enable/disable models for Ctrl+P cycling"
+        },
+        {
+          "name": "export",
+          "description": "Export session (HTML default, or specify path: .html/.jsonl)"
+        },
+        {
+          "name": "import",
+          "description": "Import and resume a session from a JSONL file"
+        },
+        {
+          "name": "share",
+          "description": "Share session as a secret GitHub gist"
+        },
+        {
+          "name": "copy",
+          "description": "Copy last agent message to clipboard"
+        },
+        {
+          "name": "name",
+          "description": "Set session display name"
+        },
+        {
+          "name": "session",
+          "description": "Show session info and stats"
+        },
+        {
+          "name": "changelog",
+          "description": "Show changelog entries"
+        },
+        {
+          "name": "hotkeys",
+          "description": "Show all keyboard shortcuts"
+        },
+        {
+          "name": "fork",
+          "description": "Create a new fork from a previous user message"
+        },
+        {
+          "name": "clone",
+          "description": "Duplicate the current session at the current position"
+        },
+        {
+          "name": "tree",
+          "description": "Navigate session tree (switch branches)"
+        },
+        {
+          "name": "login",
+          "description": "Configure provider authentication"
+        },
+        {
+          "name": "logout",
+          "description": "Remove provider authentication"
+        },
+        {
+          "name": "new",
+          "description": "Start a new session"
+        },
+        {
+          "name": "compact",
+          "description": "Manually compact the session context"
+        },
+        {
+          "name": "resume",
+          "description": "Resume a different session"
+        },
+        {
+          "name": "reload",
+          "description": "Reload keybindings, extensions, skills, prompts, and themes"
+        },
+        {
+          "name": "quit",
+          "description": "Quit maestro"
+        }
+      ]
+    }
+  ],
+  "slash_command_records_keep_owned_source_metadata": [
+    {
+      "input": {
+        "source": "extension",
+        "description_present": false
+      },
+      "expected": {
+        "name": "example",
+        "source": "extension",
+        "sourceInfo": {
+          "path": "commands/example",
+          "source": "package:fixture",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": "commands"
+        }
+      }
+    },
+    {
+      "input": {
+        "source": "extension",
+        "description_present": true
+      },
+      "expected": {
+        "name": "example",
+        "description": "",
+        "source": "extension",
+        "sourceInfo": {
+          "path": "commands/example",
+          "source": "package:fixture",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": "commands"
+        }
+      }
+    },
+    {
+      "input": {
+        "source": "prompt",
+        "description_present": false
+      },
+      "expected": {
+        "name": "example",
+        "source": "prompt",
+        "sourceInfo": {
+          "path": "commands/example",
+          "source": "package:fixture",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": "commands"
+        }
+      }
+    },
+    {
+      "input": {
+        "source": "prompt",
+        "description_present": true
+      },
+      "expected": {
+        "name": "example",
+        "description": "",
+        "source": "prompt",
+        "sourceInfo": {
+          "path": "commands/example",
+          "source": "package:fixture",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": "commands"
+        }
+      }
+    },
+    {
+      "input": {
+        "source": "skill",
+        "description_present": false
+      },
+      "expected": {
+        "name": "skill:example",
+        "source": "skill",
+        "sourceInfo": {
+          "path": "commands/example",
+          "source": "package:fixture",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": "commands"
+        }
+      }
+    },
+    {
+      "input": {
+        "source": "skill",
+        "description_present": true
+      },
+      "expected": {
+        "name": "skill:example",
+        "description": "",
+        "source": "skill",
+        "sourceInfo": {
+          "path": "commands/example",
+          "source": "package:fixture",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": "commands"
+        }
+      }
+    },
+    {
+      "input": {
+        "source": "future-source",
+        "description_present": false
+      },
+      "expected": {
+        "name": "example",
+        "source": "future-source",
+        "sourceInfo": {
+          "path": "commands/example",
+          "source": "package:fixture",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": "commands"
+        }
+      }
+    },
+    {
+      "input": {
+        "source": "future-source",
+        "description_present": true
+      },
+      "expected": {
+        "name": "example",
+        "description": "",
+        "source": "future-source",
+        "sourceInfo": {
+          "path": "commands/example",
+          "source": "package:fixture",
+          "scope": "project",
+          "origin": "package",
+          "baseDir": "commands"
+        }
+      }
+    },
+    {
+      "input": {
+        "value": {
+          "name": "literal:command",
+          "description": "detail",
+          "source": "skill",
+          "sourceInfo": {
+            "path": "folder/😀",
+            "source": "cli:literal",
+            "scope": "user",
+            "origin": "top-level"
+          }
+        }
+      },
+      "expected": {
+        "name": "literal:command",
+        "description": "detail",
+        "source": "skill",
+        "sourceInfo": {
+          "path": "folder/😀",
+          "source": "cli:literal",
+          "scope": "user",
+          "origin": "top-level"
+        }
+      }
+    },
+    {
+      "input": {
+        "value": {
+          "name": "literal:command",
+          "description": "detail",
+          "source": "skill",
+          "sourceInfo": {
+            "path": "folder/😀",
+            "source": "cli:literal",
+            "scope": "temporary",
+            "origin": "package",
+            "baseDir": ""
+          }
+        }
+      },
+      "expected": {
+        "name": "literal:command",
+        "description": "detail",
+        "source": "skill",
+        "sourceInfo": {
+          "path": "folder/😀",
+          "source": "cli:literal",
+          "scope": "temporary",
+          "origin": "package",
+          "baseDir": ""
+        }
+      }
+    },
+    {
+      "input": {
+        "value": {
+          "name": "literal:command",
+          "description": "detail",
+          "source": "skill",
+          "sourceInfo": {
+            "path": "folder/😀",
+            "source": "cli:literal",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "nested/base"
+          }
+        }
+      },
+      "expected": {
+        "name": "literal:command",
+        "description": "detail",
+        "source": "skill",
+        "sourceInfo": {
+          "path": "folder/😀",
+          "source": "cli:literal",
+          "scope": "project",
+          "origin": "top-level",
+          "baseDir": "nested/base"
+        }
+      }
+    },
+    {
+      "input": {
+        "value": {
+          "name": "literal:command",
+          "description": "detail",
+          "source": "skill",
+          "sourceInfo": {
+            "path": "folder/😀",
+            "source": "cli:literal",
+            "scope": "temporary",
+            "origin": "top-level"
+          }
+        }
+      },
+      "expected": {
+        "name": "literal:command",
+        "description": "detail",
+        "source": "skill",
+        "sourceInfo": {
+          "path": "folder/😀",
+          "source": "cli:literal",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      }
+    }
+  ],
+  "empty_deprecation_output_does_not_acquire_input": [
+    {
+      "input": {
+        "warnings": []
+      },
+      "expected": {
+        "before": {
+          "output": "",
+          "done": true
+        },
+        "after": {
+          "output": "",
+          "done": true
+        }
+      }
+    }
+  ],
+  "deprecation_output_waits_for_one_host_completion": [
+    {
+      "input": {
+        "warnings": [
+          "Global hooks/ directory found. Hooks have been renamed to extensions."
+        ]
+      },
+      "expected": {
+        "before": {
+          "output": "\u001b[33mWarning: Global hooks/ directory found. Hooks have been renamed to extensions.\u001b[39m\n\u001b[33m\u001b[39m\n\u001b[33mMove your extensions to the extensions/ directory.\u001b[39m\n\u001b[33mMigration guide: https://github.com/Orchestration-Maestro/maestro/blob/main/docs/application/startup.md#native-legacy-conversions\u001b[39m\n\u001b[33mDocumentation: https://github.com/Orchestration-Maestro/maestro/blob/main/docs/extensions/guest.md\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2mPress any key to continue...\u001b[22m\n",
+          "done": false
+        },
+        "after": {
+          "output": "\u001b[33mWarning: Global hooks/ directory found. Hooks have been renamed to extensions.\u001b[39m\n\u001b[33m\u001b[39m\n\u001b[33mMove your extensions to the extensions/ directory.\u001b[39m\n\u001b[33mMigration guide: https://github.com/Orchestration-Maestro/maestro/blob/main/docs/application/startup.md#native-legacy-conversions\u001b[39m\n\u001b[33mDocumentation: https://github.com/Orchestration-Maestro/maestro/blob/main/docs/extensions/guest.md\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2mPress any key to continue...\u001b[22m\n\n",
+          "done": true
+        }
+      }
+    },
+    {
+      "input": {
+        "warnings": [
+          "same",
+          "same",
+          "embedded\nline",
+          "\u001b[39mreopened"
+        ]
+      },
+      "expected": {
+        "before": {
+          "output": "\u001b[33mWarning: same\u001b[39m\n\u001b[33mWarning: same\u001b[39m\n\u001b[33mWarning: embedded\u001b[39m\n\u001b[33mline\u001b[39m\n\u001b[33mWarning: \u001b[39m\u001b[33mreopened\u001b[39m\n\u001b[33m\u001b[39m\n\u001b[33mMove your extensions to the extensions/ directory.\u001b[39m\n\u001b[33mMigration guide: https://github.com/Orchestration-Maestro/maestro/blob/main/docs/application/startup.md#native-legacy-conversions\u001b[39m\n\u001b[33mDocumentation: https://github.com/Orchestration-Maestro/maestro/blob/main/docs/extensions/guest.md\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2mPress any key to continue...\u001b[22m\n",
+          "done": false
+        },
+        "after": {
+          "output": "\u001b[33mWarning: same\u001b[39m\n\u001b[33mWarning: same\u001b[39m\n\u001b[33mWarning: embedded\u001b[39m\n\u001b[33mline\u001b[39m\n\u001b[33mWarning: \u001b[39m\u001b[33mreopened\u001b[39m\n\u001b[33m\u001b[39m\n\u001b[33mMove your extensions to the extensions/ directory.\u001b[39m\n\u001b[33mMigration guide: https://github.com/Orchestration-Maestro/maestro/blob/main/docs/application/startup.md#native-legacy-conversions\u001b[39m\n\u001b[33mDocumentation: https://github.com/Orchestration-Maestro/maestro/blob/main/docs/extensions/guest.md\u001b[39m\n\u001b[2m\u001b[22m\n\u001b[2mPress any key to continue...\u001b[22m\n\n",
+          "done": true
+        }
+      }
+    }
+  ]
+}
