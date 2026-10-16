@@ -26,10 +26,17 @@ struct Row {
 }
 /// Decode each selected policy input without ignoring additional fields.
 fn cases<I: DeserializeOwned, E: DeserializeOwned>(name: &str) -> Vec<(String, I, E)> {
-    let corpus: Corpus = serde_json::from_str(include_str!(
-        "../../../../tests/fixtures/indexeddb_policy.json"
-    ))
-    .unwrap();
+    decode_cases(
+        include_str!("../../../../tests/fixtures/indexeddb_policy.json"),
+        name,
+    )
+}
+/// Decode strict rows shared by both policy recordings.
+fn decode_cases<I: DeserializeOwned, E: DeserializeOwned>(
+    source: &str,
+    name: &str,
+) -> Vec<(String, I, E)> {
+    let corpus: Corpus = serde_json::from_str(source).unwrap();
     let cases: Vec<_> = corpus
         .rows
         .into_iter()
@@ -167,4 +174,112 @@ fn retained_opening_waiter_drop_keeps_request_pending() {
     assert!(events.borrow().is_empty());
     drop(opening);
     assert_eq!(*events.borrow(), ["settle", "detach"]);
+}
+
+/// Decode the independently recorded adapter cases.
+fn adapter_cases<I: DeserializeOwned, E: DeserializeOwned>(name: &str) -> Vec<(String, I, E)> {
+    decode_cases(
+        include_str!("../../../../tests/fixtures/indexeddb_adapter_policy.json"),
+        name,
+    )
+}
+/// Authored optional prefix.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PrefixInput {
+    /// Unmodified prefix.
+    prefix: Option<String>,
+}
+/// Browser range arguments.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+struct Bounds {
+    /// Inclusive lower key.
+    lower: String,
+    /// Inclusive upper key.
+    upper: String,
+    /// Lower openness.
+    lower_open: bool,
+    /// Upper openness.
+    upper_open: bool,
+}
+#[test]
+fn prefix_bounds_keep_empty_and_inclusive_fence() {
+    for (id, input, expected) in
+        adapter_cases::<PrefixInput, Option<Bounds>>("prefix_bounds_keep_empty_and_inclusive_fence")
+    {
+        let actual = prefix_bounds(input.prefix.as_deref());
+        assert_eq!(
+            actual,
+            expected
+                .as_ref()
+                .map(|b| (b.lower.as_str(), b.upper.clone())),
+            "{id}"
+        );
+        if let Some(bounds) = expected {
+            assert!(!bounds.lower_open && !bounds.upper_open, "{id}");
+        }
+    }
+}
+
+/// Requested index order.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DirectionInput {
+    /// Serialized direction.
+    direction: String,
+}
+#[test]
+fn index_direction_selects_native_cursor_order() {
+    use maestro_app::browser::storage::IndexDirection;
+    assert_eq!(IndexDirection::default(), IndexDirection::Asc);
+    for (id, input, expected) in
+        adapter_cases::<DirectionInput, String>("index_direction_selects_native_cursor_order")
+    {
+        let direction = match input.direction.as_str() {
+            "asc" => IndexDirection::Asc,
+            "desc" => IndexDirection::Desc,
+            _ => panic!("unknown direction"),
+        };
+        assert_eq!(cursor_direction(direction), expected, "{id}");
+    }
+}
+
+/// Optional platform byte estimates.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct QuotaInput {
+    /// Optional used bytes.
+    usage: Option<f64>,
+    /// Optional available bytes.
+    quota: Option<f64>,
+}
+/// Recorded quota result.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct QuotaExpected {
+    /// Used bytes.
+    usage: f64,
+    /// Available bytes.
+    quota: f64,
+    /// Percentage used.
+    percent: f64,
+}
+/// Compare every recorded numeric field without rounding.
+fn check_quota(name: &str) {
+    for (id, input, expected) in adapter_cases::<QuotaInput, QuotaExpected>(name) {
+        let actual = quota_info(input.usage, input.quota);
+        assert_eq!(actual.usage.to_bits(), expected.usage.to_bits(), "{id}");
+        assert_eq!(actual.quota.to_bits(), expected.quota.to_bits(), "{id}");
+        assert_eq!(actual.percent.to_bits(), expected.percent.to_bits(), "{id}");
+    }
+}
+#[test]
+fn quota_values_default_independently() {
+    check_quota("quota_values_default_independently");
+}
+
+#[test]
+fn quota_percent_keeps_division_before_scaling() {
+    check_quota("quota_percent_keeps_division_before_scaling");
 }

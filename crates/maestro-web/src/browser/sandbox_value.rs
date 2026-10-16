@@ -20,7 +20,7 @@ impl SandboxValue for BrowserSandboxValue {
     }
 }
 /// Invoke the browser's primitive string conversion without a JSON round trip.
-fn native_string(value: &JsValue) -> Result<String, JsValue> {
+pub(crate) fn native_string(value: &JsValue) -> Result<String, JsValue> {
     let string: Function = Reflect::get(&js_sys::global(), &"String".into())?.dyn_into()?;
     Ok(string
         .call1(&JsValue::UNDEFINED, value)?

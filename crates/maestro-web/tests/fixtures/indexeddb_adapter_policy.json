@@ -1,0 +1,205 @@
+{
+  "rows": [
+    {
+      "id": "prefix-0",
+      "test": "prefix_bounds_keep_empty_and_inclusive_fence",
+      "input": {
+        "prefix": null
+      },
+      "expected": null
+    },
+    {
+      "id": "prefix-1",
+      "test": "prefix_bounds_keep_empty_and_inclusive_fence",
+      "input": {
+        "prefix": ""
+      },
+      "expected": null
+    },
+    {
+      "id": "prefix-2",
+      "test": "prefix_bounds_keep_empty_and_inclusive_fence",
+      "input": {
+        "prefix": "a"
+      },
+      "expected": {
+        "lower": "a",
+        "upper": "a￿",
+        "lowerOpen": false,
+        "upperOpen": false
+      }
+    },
+    {
+      "id": "prefix-3",
+      "test": "prefix_bounds_keep_empty_and_inclusive_fence",
+      "input": {
+        "prefix": "é😀"
+      },
+      "expected": {
+        "lower": "é😀",
+        "upper": "é😀￿",
+        "lowerOpen": false,
+        "upperOpen": false
+      }
+    },
+    {
+      "id": "prefix-4",
+      "test": "prefix_bounds_keep_empty_and_inclusive_fence",
+      "input": {
+        "prefix": "﻿ "
+      },
+      "expected": {
+        "lower": "﻿ ",
+        "upper": "﻿ ￿",
+        "lowerOpen": false,
+        "upperOpen": false
+      }
+    },
+    {
+      "id": "prefix-5",
+      "test": "prefix_bounds_keep_empty_and_inclusive_fence",
+      "input": {
+        "prefix": "a￿"
+      },
+      "expected": {
+        "lower": "a￿",
+        "upper": "a￿￿",
+        "lowerOpen": false,
+        "upperOpen": false
+      }
+    },
+    {
+      "id": "direction-1",
+      "test": "index_direction_selects_native_cursor_order",
+      "input": {
+        "direction": "asc"
+      },
+      "expected": "next"
+    },
+    {
+      "id": "direction-2",
+      "test": "index_direction_selects_native_cursor_order",
+      "input": {
+        "direction": "desc"
+      },
+      "expected": "prev"
+    },
+    {
+      "id": "quota-estimate-only",
+      "test": "quota_values_default_independently",
+      "input": {
+        "usage": null,
+        "quota": null
+      },
+      "expected": {
+        "usage": 0,
+        "quota": 0,
+        "percent": 0
+      }
+    },
+    {
+      "id": "quota-usage-only",
+      "test": "quota_values_default_independently",
+      "input": {
+        "usage": 9,
+        "quota": null
+      },
+      "expected": {
+        "usage": 9,
+        "quota": 0,
+        "percent": 0
+      }
+    },
+    {
+      "id": "quota-quota-only",
+      "test": "quota_values_default_independently",
+      "input": {
+        "usage": null,
+        "quota": 10
+      },
+      "expected": {
+        "usage": 0,
+        "quota": 10,
+        "percent": 0
+      }
+    },
+    {
+      "id": "quota-zeros",
+      "test": "quota_values_default_independently",
+      "input": {
+        "usage": 0,
+        "quota": 0
+      },
+      "expected": {
+        "usage": 0,
+        "quota": 0,
+        "percent": 0
+      }
+    },
+    {
+      "id": "quota-zero-quota",
+      "test": "quota_values_default_independently",
+      "input": {
+        "usage": 9,
+        "quota": 0
+      },
+      "expected": {
+        "usage": 9,
+        "quota": 0,
+        "percent": 0
+      }
+    },
+    {
+      "id": "quota-zero-usage",
+      "test": "quota_values_default_independently",
+      "input": {
+        "usage": 0,
+        "quota": 9
+      },
+      "expected": {
+        "usage": 0,
+        "quota": 9,
+        "percent": 0
+      }
+    },
+    {
+      "id": "quota-third",
+      "test": "quota_percent_keeps_division_before_scaling",
+      "input": {
+        "usage": 1,
+        "quota": 3
+      },
+      "expected": {
+        "usage": 1,
+        "quota": 3,
+        "percent": 33.33333333333333
+      }
+    },
+    {
+      "id": "quota-over-quota",
+      "test": "quota_percent_keeps_division_before_scaling",
+      "input": {
+        "usage": 5,
+        "quota": 3
+      },
+      "expected": {
+        "usage": 5,
+        "quota": 3,
+        "percent": 166.66666666666669
+      }
+    },
+    {
+      "id": "quota-large-bytes",
+      "test": "quota_percent_keeps_division_before_scaling",
+      "input": {
+        "usage": 9007199254740992,
+        "quota": 18446744073709552000
+      },
+      "expected": {
+        "usage": 9007199254740992,
+        "quota": 18446744073709552000,
+        "percent": 0.048828125
+      }
+    }
+  ]
+}

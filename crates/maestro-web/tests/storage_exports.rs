@@ -392,13 +392,66 @@ fn browser_session_records() -> (maestro_app::SessionData, maestro_app::SessionM
 fn indexeddb_backend_exports_keep_raw_values() {
     use maestro_web::IndexedDBStorageBackend;
     use wasm_bindgen::JsValue;
+    fn output<T>(_: impl Future<Output = io::Result<T>>) {}
     let backend = IndexedDBStorageBackend::new(maestro_app::IndexedDBConfig {
         db_name: "native-values".into(),
         version: 1.0,
         stores: vec![],
     });
-    fn output<T>(_: impl Future<Output = io::Result<T>>) {}
     output::<Option<JsValue>>(backend.get("records", "key"));
     output::<()>(backend.set("records", "key", JsValue::NULL));
     output::<()>(backend.delete("records", "key"));
+    raw_operations(&backend);
+}
+
+/// Compile every raw operation and retain a native transaction beyond its callback.
+#[cfg(target_arch = "wasm32")]
+fn raw_operations(backend: &maestro_web::IndexedDBStorageBackend) {
+    use maestro_web::storage::backends::indexeddb_storage_backend::IndexedDBStorageTransaction;
+    use wasm_bindgen::JsValue;
+    fn output<T>(_: impl Future<Output = io::Result<T>>) {}
+    output::<Vec<String>>(backend.keys("records", Some("prefix")));
+    output::<Vec<JsValue>>(backend.get_all_from_index("records", "time", IndexDirection::Desc));
+    output::<()>(backend.clear("records"));
+    output::<bool>(backend.has("records", ""));
+    output::<QuotaInfo>(backend.get_quota_info());
+    output::<bool>(backend.request_persistence());
+    output::<(Rc<IndexedDBStorageTransaction>, JsValue)>(backend.transaction(
+        &["records".into()],
+        TransactionMode::Readwrite,
+        |tx| async move {
+            let _: Option<JsValue> = tx.get("records", "k").await?;
+            tx.set("records", "k", JsValue::UNDEFINED).await?;
+            tx.delete("records", "k").await?;
+            Ok((tx, JsValue::UNDEFINED))
+        },
+    ));
+}
+
+/// Compile the complete JSON adapter and retained transaction trait coercions.
+#[cfg(target_arch = "wasm32")]
+#[test]
+fn indexeddb_adapter_exports_complete_storage_contract() {
+    use maestro_web::IndexedDBStorageBackend;
+    use maestro_web::storage::backends::indexeddb_storage_backend::IndexedDBStorageTransaction;
+    let backend = Rc::new(IndexedDBStorageBackend::new(IndexedDBConfig {
+        db_name: "application-values".into(),
+        version: 1.0,
+        stores: vec![],
+    }));
+    let application: Rc<dyn maestro_app::StorageBackend> = backend.clone();
+    let _get = application.get("one", "k");
+    let _contract = exercise_contract(application.as_ref());
+    let names = vec!["one".into()];
+    let _retained = backend.transaction(
+        &names,
+        TransactionMode::Readwrite,
+        |tx: Rc<IndexedDBStorageTransaction>| async move {
+            let application: Rc<dyn maestro_app::StorageTransaction> = tx;
+            application.set("one", "k", Value::Null).await?;
+            let value = application.get("one", "k").await?;
+            application.delete("one", "k").await?;
+            Ok(value)
+        },
+    );
 }
