@@ -24,6 +24,10 @@ pub enum Failure {
 /// Actual content handles submitted by the public caller.
 #[derive(Default)]
 pub struct Host {
+    /// Original byte downloads at the reached platform boundary.
+    pub downloads: RefCell<Vec<(String, String, Vec<u8>)>>,
+    /// Reached platform failure, independent of decoding.
+    pub fail_download: Cell<bool>,
     /// Ordered operations, never deduplicated or synthesized.
     pub events: RefCell<Vec<Event>>,
     /// Factories observed during admission, including failed publication.
@@ -50,6 +54,22 @@ pub struct Host {
     pub css: RefCell<Vec<std::collections::BTreeMap<String, String>>>,
 }
 impl AttachmentHost for Host {
+    fn download_bytes(
+        &self,
+        bytes: &[u8],
+        name: &str,
+        mime: &str,
+    ) -> Result<(), AttachmentUiError> {
+        self.downloads
+            .borrow_mut()
+            .push((name.into(), mime.into(), bytes.to_vec()));
+        if self.fail_download.get() {
+            Err(AttachmentUiError::Host("save failed".into()))
+        } else {
+            Ok(())
+        }
+    }
+
     fn present(
         &self,
         s: AttachmentSurface<'_>,
@@ -143,14 +163,14 @@ impl AttachmentHost for Host {
     fn spawn_local(&self, _: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
         unreachable!()
     }
-    fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentUiError> {
-        unreachable!("unexpected byte download")
-    }
     fn download(&self, _: Rc<RefCell<maestro_web::Attachment>>) -> Result<(), AttachmentUiError> {
         unreachable!()
     }
 }
 /// Load a real owned offline document without provider work.
+/// # Panics
+/// Panics when controlled fixture input is invalid.
+#[must_use]
 pub fn document(id: &serde_json::Value) -> maestro_web::export_html::template::SessionDocument {
     use base64::Engine as _;
     maestro_web::export_html::template::load_document(
@@ -159,6 +179,9 @@ pub fn document(id: &serde_json::Value) -> maestro_web::export_html::template::S
 }
 /// Load the repository pack through its normal operations.
 #[cfg(not(target_arch = "wasm32"))]
+/// # Panics
+/// Panics when controlled fixture input is invalid.
+#[must_use]
 pub fn pack() -> maestro_theme::BrandPack {
     maestro_theme::load_brand_pack(
         concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json"),
@@ -167,6 +190,8 @@ pub fn pack() -> maestro_theme::BrandPack {
     .unwrap()
 }
 /// Render through the public operation in a caller-selected layout.
+/// # Panics
+/// Panics if drawing mutates the caller style.
 pub fn draw(
     state: &mut maestro_web::export_html::template::HeaderState,
     doc: &maestro_web::export_html::template::SessionDocument,
@@ -189,6 +214,8 @@ pub fn draw(
     )
 }
 /// Forward the caller's date function through the public render boundary.
+/// # Panics
+/// Panics if drawing mutates the caller style.
 pub fn draw_view(
     state: &mut maestro_web::export_html::template::HeaderState,
     doc: &maestro_web::export_html::template::SessionDocument,
@@ -250,6 +277,7 @@ pub struct Canvas<'a> {
 }
 impl<'a> Canvas<'a> {
     /// Create a full-size canvas with three controlled slots.
+    #[must_use]
     pub fn new(presentation: &'a maestro_theme::BrandPresentation<'a>) -> Self {
         let host = Rc::new(Host::default());
         host.height.set(300.);
@@ -273,6 +301,8 @@ impl<'a> Canvas<'a> {
         self.frame_with(events, true, |_| {})
     }
     /// Draw the caller's enabled state and real foreground surfaces in the same context.
+    /// # Panics
+    /// Panics if controlled header drawing fails.
     pub fn frame_with(
         &mut self,
         events: Vec<egui::Event>,
@@ -314,6 +344,7 @@ impl<'a> Canvas<'a> {
     }
 }
 /// One pointer transition at a supplied canvas point.
+#[must_use]
 pub fn pointer(pos: egui::Pos2, pressed: bool) -> Vec<egui::Event> {
     vec![
         egui::Event::PointerMoved(pos),

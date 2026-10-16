@@ -1,0 +1,37 @@
+//! Owned artifact fields with independent header and body drawing.
+use crate::browser::attachment_content::AttachmentUiError;
+/// Call-scoped localization and branding, never retained by a native factory.
+#[derive(Clone, Copy)]
+pub struct ArtifactView<'a> {
+    /// Caller localization.
+    pub i18n: &'a crate::I18n,
+    /// Caller brand projection.
+    pub presentation: &'a maestro_theme::BrandPresentation<'a>,
+}
+/// An editable artifact with its independent header controls and native body.
+pub trait ArtifactElement {
+    /// Read the authored filename.
+    fn filename(&self) -> &str;
+    /// Replace the authored filename.
+    fn set_filename(&mut self, filename: String);
+    /// Read the original content.
+    fn content(&self) -> &str;
+    /// Replace the original content.
+    fn set_content(&mut self, content: String);
+    /// Draw independent header controls.
+    /// # Errors
+    /// Returns localization, decoding or platform failures.
+    fn get_header_buttons(
+        &mut self,
+        ui: &mut egui::Ui,
+        view: ArtifactView<'_>,
+    ) -> Result<(), AttachmentUiError>;
+    /// Draw the body into the supplied viewport.
+    /// # Errors
+    /// Returns localization or native placement failures.
+    fn render(
+        &mut self,
+        ui: &mut egui::Ui,
+        view: ArtifactView<'_>,
+    ) -> Result<(), AttachmentUiError>;
+}

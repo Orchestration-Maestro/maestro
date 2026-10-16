@@ -1,0 +1,1228 @@
+{
+  "classifier": [
+    {
+      "input": {
+        "filename": "asset.html"
+      },
+      "output": "html"
+    },
+    {
+      "input": {
+        "filename": "asset.HTML"
+      },
+      "output": "html"
+    },
+    {
+      "input": {
+        "filename": "asset.svg"
+      },
+      "output": "svg"
+    },
+    {
+      "input": {
+        "filename": "asset.SVG"
+      },
+      "output": "svg"
+    },
+    {
+      "input": {
+        "filename": "asset.md"
+      },
+      "output": "markdown"
+    },
+    {
+      "input": {
+        "filename": "asset.MD"
+      },
+      "output": "markdown"
+    },
+    {
+      "input": {
+        "filename": "asset.markdown"
+      },
+      "output": "markdown"
+    },
+    {
+      "input": {
+        "filename": "asset.MARKDOWN"
+      },
+      "output": "markdown"
+    },
+    {
+      "input": {
+        "filename": "asset.pdf"
+      },
+      "output": "pdf"
+    },
+    {
+      "input": {
+        "filename": "asset.PDF"
+      },
+      "output": "pdf"
+    },
+    {
+      "input": {
+        "filename": "asset.xlsx"
+      },
+      "output": "excel"
+    },
+    {
+      "input": {
+        "filename": "asset.XLSX"
+      },
+      "output": "excel"
+    },
+    {
+      "input": {
+        "filename": "asset.xls"
+      },
+      "output": "excel"
+    },
+    {
+      "input": {
+        "filename": "asset.XLS"
+      },
+      "output": "excel"
+    },
+    {
+      "input": {
+        "filename": "asset.docx"
+      },
+      "output": "docx"
+    },
+    {
+      "input": {
+        "filename": "asset.DOCX"
+      },
+      "output": "docx"
+    },
+    {
+      "input": {
+        "filename": "asset.png"
+      },
+      "output": "image"
+    },
+    {
+      "input": {
+        "filename": "asset.PNG"
+      },
+      "output": "image"
+    },
+    {
+      "input": {
+        "filename": "asset.jpg"
+      },
+      "output": "image"
+    },
+    {
+      "input": {
+        "filename": "asset.JPG"
+      },
+      "output": "image"
+    },
+    {
+      "input": {
+        "filename": "asset.jpeg"
+      },
+      "output": "image"
+    },
+    {
+      "input": {
+        "filename": "asset.JPEG"
+      },
+      "output": "image"
+    },
+    {
+      "input": {
+        "filename": "asset.gif"
+      },
+      "output": "image"
+    },
+    {
+      "input": {
+        "filename": "asset.GIF"
+      },
+      "output": "image"
+    },
+    {
+      "input": {
+        "filename": "asset.webp"
+      },
+      "output": "image"
+    },
+    {
+      "input": {
+        "filename": "asset.WEBP"
+      },
+      "output": "image"
+    },
+    {
+      "input": {
+        "filename": "asset.bmp"
+      },
+      "output": "image"
+    },
+    {
+      "input": {
+        "filename": "asset.BMP"
+      },
+      "output": "image"
+    },
+    {
+      "input": {
+        "filename": "asset.ico"
+      },
+      "output": "image"
+    },
+    {
+      "input": {
+        "filename": "asset.ICO"
+      },
+      "output": "image"
+    },
+    {
+      "input": {
+        "filename": "asset.txt"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.TXT"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.json"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.JSON"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.xml"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.XML"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.yaml"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.YAML"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.yml"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.YML"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.csv"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.CSV"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.js"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.JS"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.ts"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.TS"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.jsx"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.JSX"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.tsx"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.TSX"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.py"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.PY"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.java"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.JAVA"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.c"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.C"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.cpp"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.CPP"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.h"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.H"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.css"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.CSS"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.scss"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.SCSS"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.sass"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.SASS"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.less"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.LESS"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.sh"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": "asset.SH"
+      },
+      "output": "text"
+    },
+    {
+      "input": {
+        "filename": ""
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": "README"
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": "html"
+      },
+      "output": "html"
+    },
+    {
+      "input": {
+        "filename": ".HTML"
+      },
+      "output": "html"
+    },
+    {
+      "input": {
+        "filename": "a."
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": "a.md.zip"
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": "a.zip.md"
+      },
+      "output": "markdown"
+    },
+    {
+      "input": {
+        "filename": "a.htm"
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": "a.pptx"
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": "a.avif"
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": "a.doc"
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": "a.rs"
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": "a.html "
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": "folder.html/file"
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": "folder/file.PDF"
+      },
+      "output": "pdf"
+    },
+    {
+      "input": {
+        "filename": "a.İHTML"
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": "a.ＨＴＭＬ"
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": "a.K"
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": "a.Σ"
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": "a.﻿html"
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": "a.marKdown"
+      },
+      "output": "markdown"
+    },
+    {
+      "input": {
+        "filename": "a.MARKDOWN"
+      },
+      "output": "markdown"
+    },
+    {
+      "input": {
+        "filename": "a.gİf"
+      },
+      "output": "generic"
+    },
+    {
+      "input": {
+        "filename": " <script>雪 & \"quotes\"</script>.zip"
+      },
+      "output": "generic"
+    }
+  ],
+  "mime": [
+    {
+      "input": {
+        "filename": "asset.pdf"
+      },
+      "output": "application/pdf"
+    },
+    {
+      "input": {
+        "filename": "asset.PDF"
+      },
+      "output": "application/pdf"
+    },
+    {
+      "input": {
+        "filename": "asset.zip"
+      },
+      "output": "application/zip"
+    },
+    {
+      "input": {
+        "filename": "asset.ZIP"
+      },
+      "output": "application/zip"
+    },
+    {
+      "input": {
+        "filename": "asset.tar"
+      },
+      "output": "application/x-tar"
+    },
+    {
+      "input": {
+        "filename": "asset.TAR"
+      },
+      "output": "application/x-tar"
+    },
+    {
+      "input": {
+        "filename": "asset.gz"
+      },
+      "output": "application/gzip"
+    },
+    {
+      "input": {
+        "filename": "asset.GZ"
+      },
+      "output": "application/gzip"
+    },
+    {
+      "input": {
+        "filename": "asset.rar"
+      },
+      "output": "application/vnd.rar"
+    },
+    {
+      "input": {
+        "filename": "asset.RAR"
+      },
+      "output": "application/vnd.rar"
+    },
+    {
+      "input": {
+        "filename": "asset.7z"
+      },
+      "output": "application/x-7z-compressed"
+    },
+    {
+      "input": {
+        "filename": "asset.7Z"
+      },
+      "output": "application/x-7z-compressed"
+    },
+    {
+      "input": {
+        "filename": "asset.mp3"
+      },
+      "output": "audio/mpeg"
+    },
+    {
+      "input": {
+        "filename": "asset.MP3"
+      },
+      "output": "audio/mpeg"
+    },
+    {
+      "input": {
+        "filename": "asset.mp4"
+      },
+      "output": "video/mp4"
+    },
+    {
+      "input": {
+        "filename": "asset.MP4"
+      },
+      "output": "video/mp4"
+    },
+    {
+      "input": {
+        "filename": "asset.avi"
+      },
+      "output": "video/x-msvideo"
+    },
+    {
+      "input": {
+        "filename": "asset.AVI"
+      },
+      "output": "video/x-msvideo"
+    },
+    {
+      "input": {
+        "filename": "asset.mov"
+      },
+      "output": "video/quicktime"
+    },
+    {
+      "input": {
+        "filename": "asset.MOV"
+      },
+      "output": "video/quicktime"
+    },
+    {
+      "input": {
+        "filename": "asset.wav"
+      },
+      "output": "audio/wav"
+    },
+    {
+      "input": {
+        "filename": "asset.WAV"
+      },
+      "output": "audio/wav"
+    },
+    {
+      "input": {
+        "filename": "asset.ogg"
+      },
+      "output": "audio/ogg"
+    },
+    {
+      "input": {
+        "filename": "asset.OGG"
+      },
+      "output": "audio/ogg"
+    },
+    {
+      "input": {
+        "filename": "asset.json"
+      },
+      "output": "application/json"
+    },
+    {
+      "input": {
+        "filename": "asset.JSON"
+      },
+      "output": "application/json"
+    },
+    {
+      "input": {
+        "filename": "asset.xml"
+      },
+      "output": "application/xml"
+    },
+    {
+      "input": {
+        "filename": "asset.XML"
+      },
+      "output": "application/xml"
+    },
+    {
+      "input": {
+        "filename": "asset.bin"
+      },
+      "output": "application/octet-stream"
+    },
+    {
+      "input": {
+        "filename": "asset.BIN"
+      },
+      "output": "application/octet-stream"
+    },
+    {
+      "input": {
+        "filename": ""
+      },
+      "output": "application/octet-stream"
+    },
+    {
+      "input": {
+        "filename": "README"
+      },
+      "output": "application/octet-stream"
+    },
+    {
+      "input": {
+        "filename": "zip"
+      },
+      "output": "application/zip"
+    },
+    {
+      "input": {
+        "filename": "a.zip."
+      },
+      "output": "application/octet-stream"
+    },
+    {
+      "input": {
+        "filename": "a.zip.txt"
+      },
+      "output": "application/octet-stream"
+    },
+    {
+      "input": {
+        "filename": "a.zip "
+      },
+      "output": "application/octet-stream"
+    },
+    {
+      "input": {
+        "filename": "a.unknown"
+      },
+      "output": "application/octet-stream"
+    },
+    {
+      "input": {
+        "filename": "a.md.zip"
+      },
+      "output": "application/zip"
+    },
+    {
+      "input": {
+        "filename": " <script>雪 & \"quotes\"</script>.zip"
+      },
+      "output": "application/zip"
+    }
+  ],
+  "decode": [
+    {
+      "input": {
+        "content": ""
+      },
+      "output": {
+        "bytes": []
+      }
+    },
+    {
+      "input": {
+        "content": "AAEC//79"
+      },
+      "output": {
+        "bytes": [
+          0,
+          1,
+          2,
+          255,
+          254,
+          253
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "Zg=="
+      },
+      "output": {
+        "bytes": [
+          102
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "Zg"
+      },
+      "output": {
+        "bytes": [
+          102
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "Zm8="
+      },
+      "output": {
+        "bytes": [
+          102,
+          111
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "Zm8"
+      },
+      "output": {
+        "bytes": [
+          102,
+          111
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": " \tAAEC\r\n//79\f "
+      },
+      "output": {
+        "bytes": [
+          0,
+          1,
+          2,
+          255,
+          254,
+          253
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "data:application/zip;base64,AAEC//79"
+      },
+      "output": {
+        "bytes": [
+          0,
+          1,
+          2,
+          255,
+          254,
+          253
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "data:;base64,Zg=="
+      },
+      "output": {
+        "bytes": [
+          102
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "data:;base64,AAEC\n//79"
+      },
+      "output": {
+        "bytes": [
+          0,
+          1,
+          2,
+          255,
+          254,
+          253
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "Zh=="
+      },
+      "output": {
+        "bytes": [
+          102
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "Zm9="
+      },
+      "output": {
+        "bytes": [
+          102,
+          111
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "data:;base64,AAEC\r//79"
+      },
+      "output": {
+        "bytes": [
+          0,
+          1,
+          2,
+          255,
+          254,
+          253
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "data:;base64,AAEC\r\n//79"
+      },
+      "output": {
+        "bytes": [
+          0,
+          1,
+          2,
+          255,
+          254,
+          253
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "data:;base64, \t\r\n"
+      },
+      "output": {
+        "bytes": []
+      }
+    },
+    {
+      "input": {
+        "content": "data:text/plain;odd=base64,AAEC"
+      },
+      "output": {
+        "bytes": [
+          0,
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "data:;base64,AAEC //79"
+      },
+      "output": {
+        "error": "InvalidCharacterError"
+      }
+    },
+    {
+      "input": {
+        "content": "data:;base64,AAEC //79"
+      },
+      "output": {
+        "error": "InvalidCharacterError"
+      }
+    },
+    {
+      "input": {
+        "content": "Z"
+      },
+      "output": {
+        "error": "InvalidCharacterError"
+      }
+    },
+    {
+      "input": {
+        "content": "Zg="
+      },
+      "output": {
+        "error": "InvalidCharacterError"
+      }
+    },
+    {
+      "input": {
+        "content": "-_8="
+      },
+      "output": {
+        "error": "InvalidCharacterError"
+      }
+    },
+    {
+      "input": {
+        "content": "AAEC //79"
+      },
+      "output": {
+        "error": "InvalidCharacterError"
+      }
+    },
+    {
+      "input": {
+        "content": "hello!"
+      },
+      "output": {
+        "error": "InvalidCharacterError"
+      }
+    },
+    {
+      "input": {
+        "content": "data:;base64,"
+      },
+      "output": {
+        "error": "InvalidCharacterError"
+      }
+    },
+    {
+      "input": {
+        "content": "data:text/plain,hello"
+      },
+      "output": {
+        "error": "InvalidCharacterError"
+      }
+    },
+    {
+      "input": {
+        "content": "DATA:;base64,AAEC"
+      },
+      "output": {
+        "error": "InvalidCharacterError"
+      }
+    },
+    {
+      "input": {
+        "content": "data:;BASE64,AAEC"
+      },
+      "output": {
+        "error": "InvalidCharacterError"
+      }
+    },
+    {
+      "input": {
+        "content": "Zg==="
+      },
+      "output": {
+        "error": "InvalidCharacterError"
+      }
+    },
+    {
+      "input": {
+        "content": "Zg==AA"
+      },
+      "output": {
+        "error": "InvalidCharacterError"
+      }
+    },
+    {
+      "input": {
+        "content": "===="
+      },
+      "output": {
+        "error": "InvalidCharacterError"
+      }
+    },
+    {
+      "input": {
+        "content": "data:;base64,\nAAEC//79"
+      },
+      "output": {
+        "bytes": [
+          0,
+          1,
+          2,
+          255,
+          254,
+          253
+        ]
+      }
+    }
+  ],
+  "download": [
+    {
+      "input": {
+        "kind": "bytes",
+        "bytes": [
+          0,
+          1,
+          255
+        ],
+        "filename": "literal\"[x].zip",
+        "mimeType": "text/plain"
+      },
+      "output": {
+        "bytes": [
+          0,
+          1,
+          255
+        ],
+        "mime": "text/plain"
+      }
+    },
+    {
+      "input": {
+        "kind": "slice",
+        "bytes": [
+          77,
+          1,
+          2,
+          88
+        ],
+        "start": 1,
+        "end": 3,
+        "filename": "literal\"[x].zip",
+        "mimeType": "text/plain"
+      },
+      "output": {
+        "bytes": [
+          1,
+          2
+        ],
+        "mime": "text/plain"
+      }
+    },
+    {
+      "input": {
+        "kind": "bytes",
+        "bytes": [],
+        "mimeType": "application/octet-stream",
+        "filename": ""
+      },
+      "output": {
+        "bytes": [],
+        "mime": "application/octet-stream"
+      }
+    },
+    {
+      "input": {
+        "kind": "bytes",
+        "bytes": [
+          0,
+          1,
+          2,
+          255,
+          254,
+          253
+        ],
+        "mimeType": "application/zip",
+        "filename": "a.md.zip"
+      },
+      "output": {
+        "bytes": [
+          0,
+          1,
+          2,
+          255,
+          254,
+          253
+        ],
+        "mime": "application/zip"
+      }
+    },
+    {
+      "input": {
+        "kind": "slice",
+        "bytes": [
+          77,
+          1,
+          2,
+          88
+        ],
+        "start": 1,
+        "end": 3,
+        "mimeType": "application/octet-stream",
+        "filename": " <script>雪 & \"quotes\"</script>.zip"
+      },
+      "output": {
+        "bytes": [
+          1,
+          2
+        ],
+        "mime": "application/octet-stream"
+      }
+    }
+  ]
+}

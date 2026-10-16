@@ -177,7 +177,7 @@ impl BrowserAttachmentHost {
                 format!("border-radius:var(--maestro-radii-panel);pointer-events:none;{}",if *fit==ImageFit::Cover{"object-fit:cover;"}else{"object-fit:contain;width:auto;height:auto;max-width:100%;max-height:100%;"})
             },
             AttachmentContent::Text{text,view}=>{
-                if element.text_content().as_deref()!=Some(text){element.set_text_content(Some(text));}
+                set_text_if_changed(element, text);
                 format!("white-space:pre-wrap;overflow:auto;margin:0;padding:var(--maestro-spacing-lg);font-family:var(--maestro-type-mono-font);font-size:{};line-height:var(--maestro-type-mono-line-height);background:var(--maestro-color-panel);color:var(--maestro-color-text);border:1px solid var(--maestro-color-border);",if *view==TextView::Extracted{"calc(var(--maestro-type-mono-size) * 6 / 7)"}else{"var(--maestro-type-mono-size)"})
             },
             AttachmentContent::Preview{..}=>"background:var(--maestro-color-panel);color:var(--maestro-color-text);overflow:auto;".into(),
@@ -325,5 +325,12 @@ impl AttachmentHost for BrowserAttachmentHost {
     }
     fn download(&self, attachment: Rc<RefCell<Attachment>>) -> Result<(), AttachmentUiError> {
         crate::utils::download::download(&self.document, &attachment)
+    }
+}
+
+/// Change only differing native text, preserving unrelated selection.
+pub(crate) fn set_text_if_changed(element: &web_sys::Element, text: &str) {
+    if element.text_content().as_deref() != Some(text) {
+        element.set_text_content(Some(text));
     }
 }

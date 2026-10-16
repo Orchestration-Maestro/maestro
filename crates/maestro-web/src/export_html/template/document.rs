@@ -1,9 +1,5 @@
 //! Raw exported document loading.
 use super::{Stats, compute_stats};
-use base64::{
-    Engine as _, alphabet,
-    engine::{DecodePaddingMode, GeneralPurpose, GeneralPurposeConfig},
-};
 use indexmap::IndexMap;
 use maestro_app::{Presence, export_html::template::read_message, is_truthy};
 use serde_json::{Map, Value};
@@ -157,20 +153,7 @@ impl SessionDocument {
 
 /// Frame standard base64, then reuse the shared whole-buffer UTF-8 decoder.
 fn decode(base64: &str) -> io::Result<Map<String, Value>> {
-    let framed: Vec<_> = base64
-        .bytes()
-        .filter(|b| !matches!(b, b'\t' | b'\n' | 12 | b'\r' | b' '))
-        .collect();
-    if framed.contains(&b'=') && framed.len() % 4 != 0 {
-        return Err(invalid("incomplete base64 padding"));
-    }
-    let decoder = GeneralPurpose::new(
-        &alphabet::STANDARD,
-        GeneralPurposeConfig::new()
-            .with_decode_padding_mode(DecodePaddingMode::Indifferent)
-            .with_decode_allow_trailing_bits(true),
-    );
-    let bytes = decoder.decode(framed).map_err(invalid)?;
+    let bytes = crate::utils::base64::decode(base64)?;
     let data: Map<String, Value> =
         serde_json::from_str(&maestro_app::decode_utf8(&bytes)).map_err(invalid)?;
     Ok(data)

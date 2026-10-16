@@ -292,8 +292,17 @@ pub(crate) fn ghost(
     p: &BrandPresentation<'_>,
     name: &str,
 ) -> Result<egui::Response, AttachmentUiError> {
+    ghost_sized(ui, p, name, egui::vec2(32., 32.))
+}
+/// Draw a ghost control with a centered sixteen-point glyph.
+pub(crate) fn ghost_sized(
+    ui: &mut egui::Ui,
+    p: &BrandPresentation<'_>,
+    name: &str,
+    size: egui::Vec2,
+) -> Result<egui::Response, AttachmentUiError> {
     let response = ui
-        .allocate_response(egui::vec2(32., 32.), egui::Sense::click())
+        .allocate_response(size, egui::Sense::click())
         .on_hover_cursor(egui::CursorIcon::PointingHand);
     if response.hovered() || response.has_focus() {
         ui.painter().rect(
@@ -314,7 +323,12 @@ pub(crate) fn ghost(
             egui::StrokeKind::Inside,
         );
     }
-    glyph(ui, response.rect.shrink(8.), name, color(p, "text")?)?;
+    glyph(
+        ui,
+        egui::Rect::from_center_size(response.rect.center(), egui::vec2(16., 16.)),
+        name,
+        color(p, "text")?,
+    )?;
     Ok(response)
 }
 #[cfg(any(target_arch = "wasm32", test))]
