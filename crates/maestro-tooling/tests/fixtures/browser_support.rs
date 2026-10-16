@@ -67,10 +67,22 @@ impl Browser {
             source.join("crates/maestro-theme").to_str().unwrap(),
         );
         fs::write(manifest, text).unwrap();
-        Self {
+        let browser = Self {
             workspace,
             _build_lock: lock,
-        }
+        };
+        browser.generate_lockfile();
+        browser
+    }
+
+    pub fn generate_lockfile(&self) {
+        success(
+            &super::toolchain_support::command("cargo")
+                .args(["generate-lockfile", "--offline", "--manifest-path"])
+                .arg(self.fixture("Cargo.toml"))
+                .output()
+                .unwrap(),
+        );
     }
 
     pub fn command(&self, recipe: &str) -> Command {
