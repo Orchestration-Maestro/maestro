@@ -1,4 +1,5 @@
 //! Caller initialization and live conversation state.
+use crate::types::{AgentExecution, Threaded};
 use crate::types::{AgentMessage, CustomAgentMessages, SharedAgentTool, ThinkingLevel};
 use maestro_models::{Model, ModelCost};
 use std::sync::{Arc, OnceLock, RwLock};
@@ -8,7 +9,10 @@ use std::sync::{Arc, OnceLock, RwLock};
 /// use maestro_agent::AgentInitialState;
 /// let initial: AgentInitialState = AgentInitialState { is_streaming: true, ..Default::default() };
 /// ```
-pub struct AgentInitialState<C: CustomAgentMessages = crate::NoCustomMessages> {
+pub struct AgentInitialState<
+    C: CustomAgentMessages = crate::NoCustomMessages,
+    E: AgentExecution = Threaded,
+> {
     /// Optional instruction text.
     pub system_prompt: Option<String>,
     /// Optional shared model descriptor.
@@ -16,11 +20,11 @@ pub struct AgentInitialState<C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Optional requested thinking level.
     pub thinking_level: Option<ThinkingLevel>,
     /// Initial executable tools.
-    pub tools: Vec<SharedAgentTool>,
+    pub tools: Vec<SharedAgentTool<E>>,
     /// Initial conversation entries.
     pub messages: Vec<AgentMessage<C>>,
 }
-impl<C: CustomAgentMessages> Default for AgentInitialState<C> {
+impl<C: CustomAgentMessages, E: AgentExecution> Default for AgentInitialState<C, E> {
     fn default() -> Self {
         Self {
             system_prompt: None,
@@ -32,7 +36,10 @@ impl<C: CustomAgentMessages> Default for AgentInitialState<C> {
     }
 }
 /// Live caller fields with private collection slots and runtime observations.
-pub struct AgentState<C: CustomAgentMessages = crate::NoCustomMessages> {
+pub struct AgentState<
+    C: CustomAgentMessages = crate::NoCustomMessages,
+    E: AgentExecution = Threaded,
+> {
     /// Instruction text.
     pub system_prompt: String,
     /// Selected shared model descriptor.
@@ -40,7 +47,7 @@ pub struct AgentState<C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Requested thinking level.
     pub thinking_level: ThinkingLevel,
     /// Current executable-tool collection.
-    tools: Arc<RwLock<Vec<SharedAgentTool>>>,
+    tools: E::Shared<RwLock<Vec<SharedAgentTool<E>>>>,
     /// Current conversation collection.
     pub(super) messages: Arc<RwLock<Vec<AgentMessage<C>>>>,
     /// Runtime streaming flag.
@@ -52,14 +59,14 @@ pub struct AgentState<C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Runtime error text.
     pub(super) error_message: Option<String>,
 }
-impl<C: CustomAgentMessages> AgentState<C> {
+impl<C: CustomAgentMessages, E: AgentExecution> AgentState<C, E> {
     /// Construct live slots from caller initialization.
-    pub(super) fn new(initial: AgentInitialState<C>) -> Self {
+    pub(super) fn new(initial: AgentInitialState<C, E>) -> Self {
         Self {
             system_prompt: initial.system_prompt.unwrap_or_default(),
             model: initial.model.unwrap_or_else(default_model),
             thinking_level: initial.thinking_level.unwrap_or(ThinkingLevel::Off),
-            tools: Arc::new(RwLock::new(initial.tools)),
+            tools: E::share(RwLock::new(initial.tools)),
             messages: Arc::new(RwLock::new(initial.messages)),
             is_streaming: false,
             streaming_message: None,
@@ -69,12 +76,12 @@ impl<C: CustomAgentMessages> AgentState<C> {
     }
     /// The current tool collection handle.
     #[must_use]
-    pub fn tools(&self) -> &Arc<RwLock<Vec<SharedAgentTool>>> {
+    pub fn tools(&self) -> &E::Shared<RwLock<Vec<SharedAgentTool<E>>>> {
         &self.tools
     }
     /// Retain supplied tool entries in new outer storage.
-    pub fn set_tools(&mut self, tools: Vec<SharedAgentTool>) {
-        self.tools = Arc::new(RwLock::new(tools));
+    pub fn set_tools(&mut self, tools: Vec<SharedAgentTool<E>>) {
+        self.tools = E::share(RwLock::new(tools));
     }
     /// The current history collection handle.
     #[must_use]

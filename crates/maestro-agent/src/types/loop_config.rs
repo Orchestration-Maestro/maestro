@@ -1,23 +1,21 @@
 //! Conversation inputs and model-boundary callbacks.
 use super::{AgentMessage, CustomAgentMessages, SharedAgentTool};
-use maestro_models::{
-    AssistantMessageEventStream, BoxFuture, Cancellation, Context, DiagnosticErrorInfo, JsonObject,
-    Message, Model, ProviderObjects, ProviderStreamOptions, SimpleStreamOptions,
-};
+use maestro_models::{JsonObject, Model, ProviderObjects, SimpleStreamOptions};
 use std::sync::{Arc, RwLock};
 
-/// Retained ordered conversation entries.
-pub(crate) type Messages<C> = Arc<RwLock<Vec<AgentMessage<C>>>>;
 /// Instructions and retained conversation inputs for one operation.
-pub struct AgentContext<C: CustomAgentMessages = crate::NoCustomMessages> {
+pub struct AgentContextRecord<
+    C: CustomAgentMessages = crate::NoCustomMessages,
+    E: super::AgentExecution = super::Threaded,
+> {
     /// Model instructions.
     pub system_prompt: String,
     /// Mutable ordered history.
     pub messages: Arc<RwLock<Vec<AgentMessage<C>>>>,
     /// Optional mutable executable-tool inventory.
-    pub tools: Option<Arc<RwLock<Vec<SharedAgentTool>>>>,
+    pub tools: Option<E::Shared<RwLock<Vec<SharedAgentTool<E>>>>>,
 }
-impl<C: CustomAgentMessages> Clone for AgentContext<C> {
+impl<C: CustomAgentMessages, E: super::AgentExecution> Clone for AgentContextRecord<C, E> {
     fn clone(&self) -> Self {
         Self {
             system_prompt: self.system_prompt.clone(),
@@ -27,17 +25,20 @@ impl<C: CustomAgentMessages> Clone for AgentContext<C> {
     }
 }
 /// Model selection and callbacks for each request.
-pub struct AgentLoopConfig<C: CustomAgentMessages = crate::NoCustomMessages> {
+pub struct AgentLoopConfigRecord<
+    C: CustomAgentMessages = crate::NoCustomMessages,
+    E: super::AgentExecution = super::Threaded,
+> {
     /// Optional validated-argument hook.
-    pub before_tool_call: Option<super::BeforeToolCall<C>>,
+    pub before_tool_call: Option<super::BeforeToolCall<C, E>>,
     /// Optional execution-outcome hook.
-    pub after_tool_call: Option<super::AfterToolCall<C>>,
+    pub after_tool_call: Option<super::AfterToolCall<C, E>>,
     /// Optional completed-turn stop decision.
-    pub should_stop_after_turn: Option<super::ShouldStopAfterTurn<C>>,
+    pub should_stop_after_turn: Option<super::ShouldStopAfterTurn<C, E>>,
     /// Optional steering poll at entry and after a completed turn.
-    pub get_steering_messages: Option<super::GetSteeringMessages<C>>,
+    pub get_steering_messages: Option<super::GetSteeringMessages<C, E>>,
     /// Optional follow-up poll when ordinary continuation is exhausted.
-    pub get_follow_up_messages: Option<super::GetFollowUpMessages<C>>,
+    pub get_follow_up_messages: Option<super::GetFollowUpMessages<C, E>>,
     /// Batch preference; absence selects parallel unless a tool requires sequential.
     pub tool_execution: Option<super::ToolExecutionMode>,
     /// Captured model handle: provider is read before key resolution, descriptor afterwards.
@@ -51,70 +52,31 @@ pub struct AgentLoopConfig<C: CustomAgentMessages = crate::NoCustomMessages> {
     /// Typed objects passed to a replacement stream.
     pub objects: ProviderObjects,
     /// Convert conversation entries at the request boundary.
-    pub convert_to_llm: ConvertToLlm<C>,
+    pub convert_to_llm: ConvertToLlm<C, E>,
     /// Optional transformation before conversion.
-    pub transform_context: TransformContext<C>,
+    pub transform_context: TransformContext<C, E>,
     /// Optional per-request credential resolver.
-    pub get_api_key: GetApiKey,
+    pub get_api_key: GetApiKey<E>,
 }
-/// Convert shared conversation entries into model messages.
-#[cfg(not(target_arch = "wasm32"))]
-pub type ConvertToLlm<C> =
-    Arc<dyn Fn(Messages<C>) -> BoxFuture<Result<Vec<Message>, DiagnosticErrorInfo>> + Send + Sync>;
-/// Convert browser-local conversation entries into model messages.
-#[cfg(target_arch = "wasm32")]
-pub type ConvertToLlm<C> =
-    Arc<dyn Fn(Messages<C>) -> BoxFuture<Result<Vec<Message>, DiagnosticErrorInfo>>>;
-/// Optionally transform retained history before conversion.
-#[cfg(not(target_arch = "wasm32"))]
-pub type TransformContext<C> = Option<
-    Arc<
-        dyn Fn(
-                Messages<C>,
-                Option<Cancellation>,
-            ) -> BoxFuture<Result<Messages<C>, DiagnosticErrorInfo>>
-            + Send
-            + Sync,
-    >,
->;
-/// Optionally transform browser-local history before conversion.
-#[cfg(target_arch = "wasm32")]
-pub type TransformContext<C> = Option<
-    Arc<
-        dyn Fn(
-            Messages<C>,
-            Option<Cancellation>,
-        ) -> BoxFuture<Result<Messages<C>, DiagnosticErrorInfo>>,
-    >,
->;
-/// Optionally resolve a provider credential for each request.
-#[cfg(not(target_arch = "wasm32"))]
-pub type GetApiKey = Option<
-    Arc<dyn Fn(String) -> BoxFuture<Result<Option<String>, DiagnosticErrorInfo>> + Send + Sync>,
->;
-/// Optionally resolve a provider credential in the browser.
-#[cfg(target_arch = "wasm32")]
-pub type GetApiKey =
-    Option<Arc<dyn Fn(String) -> BoxFuture<Result<Option<String>, DiagnosticErrorInfo>>>>;
-/// Construct a replacement model stream with simple and open options.
-#[cfg(not(target_arch = "wasm32"))]
-pub type StreamFn = Arc<
-    dyn Fn(
-            Model,
-            Context,
-            SimpleStreamOptions,
-            ProviderStreamOptions,
-        ) -> BoxFuture<Result<AssistantMessageEventStream, DiagnosticErrorInfo>>
-        + Send
-        + Sync,
->;
-/// Construct a browser-local replacement model stream.
-#[cfg(target_arch = "wasm32")]
-pub type StreamFn = Arc<
-    dyn Fn(
-        Model,
-        Context,
-        SimpleStreamOptions,
-        ProviderStreamOptions,
-    ) -> BoxFuture<Result<AssistantMessageEventStream, DiagnosticErrorInfo>>,
->;
+/// Convert conversation entries at the model boundary.
+pub type ConvertToLlm<C, E = super::Threaded> =
+    <E as maestro_models::Execution>::Shared<<E as super::AgentExecution>::Convert<C>>;
+/// Transform retained conversation entries.
+pub type TransformContext<C, E = super::Threaded> =
+    Option<<E as maestro_models::Execution>::Shared<<E as super::AgentExecution>::Transform<C>>>;
+/// Resolve credentials per request.
+pub type GetApiKey<E = super::Threaded> =
+    Option<<E as maestro_models::Execution>::Shared<<E as super::AgentExecution>::Key>>;
+/// Construct a replacement model stream.
+pub type StreamFn<E = super::Threaded> =
+    <E as maestro_models::Execution>::Shared<<E as super::AgentExecution>::Stream>;
+
+/// Thread-safe default representation of the `AgentContext` record.
+pub type AgentContext<C = crate::NoCustomMessages> = AgentContextRecord<C, super::Threaded>;
+/// Local representation of the `AgentContext` record.
+pub type LocalAgentContext<C = crate::NoCustomMessages> = AgentContextRecord<C, super::Local>;
+
+/// Thread-safe default representation of the `AgentLoopConfig` record.
+pub type AgentLoopConfig<C = crate::NoCustomMessages> = AgentLoopConfigRecord<C, super::Threaded>;
+/// Local representation of the `AgentLoopConfig` record.
+pub type LocalAgentLoopConfig<C = crate::NoCustomMessages> = AgentLoopConfigRecord<C, super::Local>;

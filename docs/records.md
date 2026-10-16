@@ -125,6 +125,13 @@ assert!(matches!(event.as_mut().poll(&mut context),
 
 ## Stream ownership
 
+`Execution`, `Local` and `Threaded` select erased futures and shared/weak pointer
+representations for callable owners. They do not create tasks. Local uses `Rc`;
+thread-safe uses `Arc` and native `Send` futures. Browser futures remain local.
+`EventStream::new_local_items` admits local retained items through the same FIFO;
+`new` keeps its existing native thread-safety bounds. Classifier and extractor
+callbacks retain their existing target-specific bounds.
+
 `EventStream` is a producer-owned FIFO. Readers compete for events; the first
 terminal result is independently and repeatedly observable. Assistant updates
 and terminal observations retain the same live message handle, not snapshots.

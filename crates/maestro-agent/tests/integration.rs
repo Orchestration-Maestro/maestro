@@ -26,4 +26,7 @@ mod tool_record_identity;
 mod tool_turns;
 mod turn_controls;
 
+mod execution_affinity;
 mod message_storage;
+
+mod execution_replay;

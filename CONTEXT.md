@@ -55,6 +55,7 @@ are later scope, not active foundation concepts.
 ### Execution
 
 - **Agent:** The conversation runner, not a supervisor persona.
+- **Execution affinity:** The compile-time local or thread-safe representation of agent callables and submitted futures; local interactive work uses a caller-owned local executor, while the embedding SDK defaults to thread-safe execution.
 - **Run:** One foreground prompt or continuation through low-level idle.
 - **Turn:** One assistant response with its tool results.
 - **Tool:** An executable definition with preparation, input validation, execution, progress and preview/render callbacks.

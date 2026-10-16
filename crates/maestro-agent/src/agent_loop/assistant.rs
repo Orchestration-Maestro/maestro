@@ -1,13 +1,13 @@
 //! Request conversion and streamed assistant reduction.
 use super::{Driver, read, write};
-use crate::{AgentEvent, AgentMessage, AgentTool, CustomAgentMessages};
+use crate::{AgentEvent, AgentMessage, AgentToolRecord, CustomAgentMessages};
 use maestro_models::{
     AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo,
     ProviderStreamOptions, SharedAssistantMessage, stream_simple,
 };
 use std::sync::{Arc, RwLock};
 
-impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
+impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, E> {
     /// Invoke the selected model after transformation and conversion.
     pub(super) async fn assistant(&self) -> Result<SharedAssistantMessage, DiagnosticErrorInfo> {
         let history = match &self.config.transform_context {
@@ -37,7 +37,7 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
             .context
             .tools
             .as_deref()
-            .map(tool_definitions)
+            .map(tool_definitions::<E>)
             .transpose()?;
         let context = Context {
             system_prompt: Some(self.context.system_prompt.clone()),
@@ -142,8 +142,8 @@ fn update_partial(event: &AssistantMessageEvent) -> Option<&SharedAssistantMessa
 }
 
 /// Snapshot entries before invoking live descriptions outside all tool locks.
-fn tool_definitions(
-    tools: &RwLock<Vec<crate::SharedAgentTool>>,
+fn tool_definitions<E: crate::AgentExecution>(
+    tools: &RwLock<Vec<crate::SharedAgentTool<E>>>,
 ) -> Result<Vec<maestro_models::Tool>, DiagnosticErrorInfo> {
     let entries = read(tools).clone();
     let definitions: Vec<_> = entries
@@ -155,6 +155,6 @@ fn tool_definitions(
         .collect();
     definitions
         .into_iter()
-        .map(|(tool, description)| AgentTool::resolve_definition(tool, description))
+        .map(|(tool, description)| AgentToolRecord::<E>::resolve_definition(tool, description))
         .collect()
 }

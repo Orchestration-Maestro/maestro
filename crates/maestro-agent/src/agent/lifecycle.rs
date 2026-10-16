@@ -1,12 +1,13 @@
 //! Runtime reduction, synthetic failures and final settlement.
 use super::{Agent, CustomAgentMessages, lock, read, write};
+use crate::types::AgentExecution;
 use crate::{AgentEvent, AgentMessage};
 use maestro_models::{
     AssistantContent, AssistantMessage, BoxFuture, Cancellation, DiagnosticErrorInfo, StopReason,
     TextContent, Usage, timestamp_now,
 };
 use std::sync::{Arc, RwLock};
-impl<C: CustomAgentMessages + 'static> Agent<C> {
+impl<C: CustomAgentMessages + 'static, E: AgentExecution> Agent<C, E> {
     /// The current run signal, absent while idle.
     pub fn signal(&self) -> Option<Cancellation> {
         lock(&self.active).as_ref().map(|run| run.signal.clone())
@@ -28,12 +29,12 @@ impl<C: CustomAgentMessages + 'static> Agent<C> {
     }
     /// Publish original failure history before awaiting synthetic end listeners.
     pub(super) async fn handle_failure(
-        self: &Arc<Self>,
+        agent: E::Shared<Self>,
         error: DiagnosticErrorInfo,
         signal: Cancellation,
     ) -> Result<(), DiagnosticErrorInfo> {
         let message = {
-            let state = read(&self.state);
+            let state = read(&agent.state);
             let model = read(&state.model);
             AgentMessage::Assistant(Arc::new(RwLock::new(AssistantMessage {
                 content: vec![AssistantContent::Text(TextContent {
@@ -57,12 +58,13 @@ impl<C: CustomAgentMessages + 'static> Agent<C> {
             })))
         };
         let retired = {
-            let mut state = write(&self.state);
+            let mut state = write(&agent.state);
             write(state.messages()).push(message.clone());
             state.error_message.replace(error.message)
         };
         drop(retired);
-        self.emit(
+        Self::emit(
+            agent.clone(),
             AgentEvent::AgentEnd {
                 messages: vec![message],
             },

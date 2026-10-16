@@ -2,6 +2,12 @@
 
 ## Observable raw streams
 
+The root operations use thread-safe callables by default. Their local counterparts
+have the same names under `maestro_agent::agent_loop::local`, with
+`LocalAgentContext`, `LocalAgentLoopConfig`, `agent_loop::LocalAgentLoopOptions` and an
+`AgentSpawner<Local>`. Both namespaces keep one explicit custom-message type
+argument and share the same operation bodies.
+
 `agent_loop(prompts, context, Arc<AgentLoopConfig>, options, spawn)` submits one
 owned prompt operation through the caller's `AgentSpawner` and returns an
 `EventStream<AgentEvent, Vec<AgentMessage>>` immediately.

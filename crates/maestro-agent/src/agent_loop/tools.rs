@@ -1,5 +1,6 @@
 //! Tool preparation, concurrent finalization and ordered artifacts.
 use super::{Driver, failure, read};
+use crate::types::AgentExecution;
 use crate::{AgentEvent, AgentMessage, AgentToolResult, CustomAgentMessages, SharedAgentTool};
 use maestro_models::{
     AssistantContent, DiagnosticErrorInfo, SharedAssistantMessage, TextContent, ToolCall,
@@ -8,14 +9,14 @@ use maestro_models::{
 use std::sync::{Arc, RwLock};
 
 /// The chosen inventory record retained through execution and progress settlement.
-struct Prepared {
+struct Prepared<E: AgentExecution> {
     /// The captured tool entry, independent of later inventory edits.
-    tool: SharedAgentTool,
+    tool: SharedAgentTool<E>,
     /// The prepared and validated arguments.
     arguments: serde_json::Value,
 }
 
-impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
+impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, E> {
     /// Complete a selected batch with ordered artifacts.
     pub(super) async fn tools(
         &self,
@@ -88,7 +89,7 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         let mut work: FuturesUnordered<_> = allowed
             .into_iter()
             .map(|(index, call, prepared)| {
-                let execute = Arc::clone(&read(&prepared.tool).execute);
+                let execute = read(&prepared.tool).execute.clone();
                 let execution = self.execute(&call, &execute, prepared.arguments.clone());
                 async move {
                     let (result, is_error) = self
@@ -127,7 +128,7 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         &self,
         response: &SharedAssistantMessage,
         (index, call): (usize, &mut ToolCall),
-    ) -> Result<Result<Prepared, DiagnosticErrorInfo>, DiagnosticErrorInfo> {
+    ) -> Result<Result<Prepared<E>, DiagnosticErrorInfo>, DiagnosticErrorInfo> {
         (self.emit)(AgentEvent::ToolExecutionStart {
             tool_call: call.clone(),
         })
@@ -139,7 +140,7 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         &self,
         response: &SharedAssistantMessage,
         (index, call): (usize, &mut ToolCall),
-    ) -> Result<Prepared, DiagnosticErrorInfo> {
+    ) -> Result<Prepared<E>, DiagnosticErrorInfo> {
         let mut prepared = self.prepare(response, (index, call))?;
         if let Some(before) = &self.config.before_tool_call
             && let Some(result) = before(
@@ -164,7 +165,7 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         Ok(prepared)
     }
     /// Retain the first exactly named tool from the current inventory.
-    fn lookup(&self, name: &str) -> Option<SharedAgentTool> {
+    fn lookup(&self, name: &str) -> Option<SharedAgentTool<E>> {
         self.context.tools.as_ref().and_then(|tools| {
             read(tools)
                 .iter()
@@ -177,13 +178,13 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         &self,
         response: &SharedAssistantMessage,
         call: &ToolCall,
-        prepared: Result<Prepared, DiagnosticErrorInfo>,
+        prepared: Result<Prepared<E>, DiagnosticErrorInfo>,
     ) -> Result<(AgentToolResult, bool), DiagnosticErrorInfo> {
         let prepared = match prepared {
             Ok(prepared) => prepared,
             Err(error) => return Ok((error_result(error), true)),
         };
-        let execute = Arc::clone(&read(&prepared.tool).execute);
+        let execute = read(&prepared.tool).execute.clone();
         let execution = self.execute(call, &execute, prepared.arguments.clone());
         self.finalize_execution(response, call, prepared, execution)
             .await
@@ -193,7 +194,7 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         &self,
         response: &SharedAssistantMessage,
         call: &ToolCall,
-        prepared: Prepared,
+        prepared: Prepared<E>,
         execution: impl std::future::Future<
             Output = Result<Result<AgentToolResult, DiagnosticErrorInfo>, DiagnosticErrorInfo>,
         >,
@@ -244,7 +245,7 @@ impl<C: CustomAgentMessages + 'static> Driver<'_, C> {
         &self,
         response: &SharedAssistantMessage,
         (index, call): (usize, &mut ToolCall),
-    ) -> Result<Prepared, DiagnosticErrorInfo> {
+    ) -> Result<Prepared<E>, DiagnosticErrorInfo> {
         let tool = self
             .lookup(&call.name)
             .ok_or_else(|| failure(format!("Tool {} not found", call.name)))?;

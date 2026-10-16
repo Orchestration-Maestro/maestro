@@ -20,6 +20,41 @@ maestro-models = { path = "../maestro-models" }
 The runnable examples also use `tokio` for the task facility the caller must supply and
 `futures-util` for stream and future combinators.
 
+## Local execution
+
+Use `Agent::<C, Local>::new_local` inside a caller-owned local task facility when
+callbacks retain single-thread objects. `AgentTool`, `AgentContext`,
+`AgentLoopConfig` and `AgentLoopOptions` keep their thread-safe struct-literal
+aliases; the corresponding `LocalAgent*` aliases select local callables. Generic
+code can use their `*Record` owners. Agent hooks borrow mutable arguments across
+awaits in either representation. Model payload/response hooks remain thread-safe.
+
+```rust
+use maestro_agent::{Agent, AgentOptions, Local};
+use std::{convert::Infallible, rc::Rc};
+
+let local = Rc::new(tokio::task::LocalSet::new());
+let tasks = local.clone();
+let ui = Rc::new(String::from("editor"));
+let retained = ui.clone();
+let agent = Rc::new(Agent::<Infallible, Local>::new_local(AgentOptions {
+    spawn: Some(Rc::new(move |task| { tasks.spawn_local(task); })),
+    before_tool_call: Some(Rc::new(move |context, _| {
+        let ui = retained.clone();
+        Box::pin(async move {
+            context.args["editor"] = ui.as_str().into();
+            Ok(None)
+        })
+    })),
+    ..Default::default()
+}));
+assert!(agent.signal().is_none());
+```
+
+The caller must drive the local task facility for admitted work to finish, just
+as the thread-safe examples below require a running task facility. See
+[owned runs](../agent.md) and [raw local operations](../loop.md).
+
 ## Quick start
 
 An `Agent` never starts tasks by itself: `AgentOptions::spawn` receives each run's
