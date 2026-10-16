@@ -1,17 +1,19 @@
 //! Reading transactions in the existing native surface registry.
+use super::super::placement::Transform;
 use super::super::{ReadingContent, ReadingLayout, ReadingPhase, ReadingPlacement, ReadingRoot};
 use crate::browser::{
     attachment_content::{
         AttachmentContent, AttachmentSurface, AttachmentUiError,
-        browser::{BrowserAttachmentHost, DomSurface, host_error},
+        browser::{BrowserAttachmentHost, DomSurface, bounds, host_error},
     },
     event_subscription::EventSubscription,
 };
-use js_sys::Reflect;
 use maestro_theme::BrandPresentation;
 use std::{cell::RefCell, fmt::Write as _, rc::Rc};
 use wasm_bindgen::{JsCast as _, closure::Closure};
 use web_sys::{Element, ResizeObserver};
+mod transaction;
+use transaction::{Scroll, size_slots, transaction};
 /// One root's registration lifetime and staged measurement operands.
 pub(super) struct NativeReading {
     /// Stable feature identity.
@@ -28,6 +30,10 @@ pub(super) struct NativeReading {
     measurement: String,
     /// Current physical density for live canvas observation.
     pixels: f32,
+    /// Owned dimensions staged for the next read and publication.
+    sizes: Vec<(egui::Id, egui::Vec2)>,
+    /// Clamped offsets observed during the last successful measurement.
+    scroll: Option<Scroll>,
 }
 /// Preserve the native failure category when installing placement.
 fn attr(element: &Element, value: &str) -> Result<(), AttachmentUiError> {
@@ -64,7 +70,77 @@ impl NativeReading {
             _scroll: scroll,
             measurement: String::new(),
             pixels: 1.,
+            sizes: vec![],
+            scroll: None,
         })
+    }
+    /// Retain call-scoped dimensions and bounded hidden placement for readback.
+    fn stage(
+        &mut self,
+        s: &AttachmentSurface<'_>,
+        style: String,
+        placement: &ReadingPlacement<'_>,
+    ) {
+        self.measurement = style + "visibility:hidden;pointer-events:none;height:auto;";
+        if s.rect.height().is_finite() {
+            let _ = write!(self.measurement, "max-height:{}px;", s.rect.height());
+        }
+        self.sizes = placement.sizes.to_vec();
+        self.pixels = s.pixels_per_point;
+        *self.context.borrow_mut() = placement.context.clone();
+    }
+    /// Apply final geometry with the same rollback boundary used by measurement.
+    fn publish(&self, wrapper: &Element, style: &str) -> Result<(), AttachmentUiError> {
+        transaction(wrapper, &self.root.slots, ReadingPhase::Publish, |_| {
+            size_slots(&self.root.slots, &self.sizes)?;
+            attr(wrapper, style)?;
+            if let Some(scroll) = &self.scroll {
+                scroll.apply(wrapper)?;
+            }
+            Ok(())
+        })
+    }
+    /// Read a complete slot snapshot through the existing inverse projection.
+    fn controls(
+        &self,
+        wrapper: &Element,
+        transform: &Transform,
+    ) -> Result<Vec<(egui::Id, egui::Rect)>, AttachmentUiError> {
+        let origin = bounds(wrapper)?;
+        self.root
+            .slots
+            .iter()
+            .map(|(id, element)| {
+                let rect = bounds(element)?;
+                Ok((
+                    *id,
+                    transform.relative(
+                        [rect.x(), rect.y(), rect.width(), rect.height()],
+                        [origin.x(), origin.y()],
+                    ),
+                ))
+            })
+            .collect()
+    }
+    /// Restore native state before committing only the successful staged offsets.
+    fn measure(
+        &mut self,
+        wrapper: &Element,
+        transform: &Transform,
+    ) -> Result<ReadingLayout, AttachmentUiError> {
+        let (layout, scroll) =
+            transaction(wrapper, &self.root.slots, ReadingPhase::Measure, |saved| {
+                size_slots(&self.root.slots, &self.sizes)?;
+                attr(wrapper, &self.measurement)?;
+                saved.apply(wrapper)?;
+                let layout = ReadingLayout {
+                    height: transform.height(bounds(&self.root.element)?.height()),
+                    controls: self.controls(wrapper, transform)?,
+                };
+                Ok((layout, Scroll::read(wrapper)?))
+            })?;
+        self.scroll = Some(scroll);
+        Ok(layout)
     }
 }
 impl Drop for NativeReading {
@@ -82,9 +158,13 @@ impl BrowserAttachmentHost {
         let transform = self.transform(s.pixels_per_point)?;
         let [left, top] = transform.position(s.rect.min);
         let mut style = format!(
-            "position:fixed;left:{left}px;top:{top}px;width:{}px;height:{}px;overflow:auto;transform-origin:0 0;transform:scale({},{});clip-path:{};opacity:{};",
+            "position:fixed;left:{left}px;top:{top}px;width:{}px;height:{};overflow:auto;transform-origin:0 0;transform:scale({},{});clip-path:{};opacity:{};",
             s.rect.width(),
-            s.rect.height(),
+            if s.rect.height().is_finite() {
+                s.rect.height().to_string() + "px"
+            } else {
+                "auto".into()
+            },
             transform.scale.0,
             transform.scale.1,
             super::super::placement::clip_path(s, (1., 1.)),
@@ -131,53 +211,57 @@ impl BrowserAttachmentHost {
         s: &AttachmentSurface<'_>,
         p: &BrandPresentation<'_>,
     ) -> Result<(), AttachmentUiError> {
-        let AttachmentContent::Reading(placement) = &s.content else {
-            return Ok(());
-        };
         let retained = self.surfaces.borrow_mut().remove(&s.id);
         let mut surface = retained.map_or_else(|| self.create("div"), Ok)?;
-        let result = (|| {
-            let mut style = self.reading_style(s, p)?;
-            let same = surface
-                .reading
-                .as_ref()
-                .is_some_and(|r| Rc::ptr_eq(&r.content, &placement.content));
-            if placement.phase == ReadingPhase::Measure && !same {
-                surface.pending = Some(Box::new(self.create_reading(placement)?));
-            }
-            let target = match surface.pending.as_deref_mut() {
-                Some(pending) => pending,
-                None => &mut surface,
-            };
-            let reading = target
-                .reading
-                .as_mut()
-                .filter(|r| Rc::ptr_eq(&r.content, &placement.content))
-                .ok_or_else(|| {
-                    AttachmentUiError::Host("Reading content was not measured".into())
-                })?;
-            if placement.phase == ReadingPhase::Measure {
-                reading.measurement = style + "visibility:hidden;pointer-events:none;";
-                reading.pixels = s.pixels_per_point;
-                *reading.context.borrow_mut() = placement.context.clone();
-                return Ok(());
-            }
-            let top = self.overlays.borrow().last().copied();
-            style.push_str(super::super::visibility_style(s.id, placement.modal, top));
-            attr(&target.wrapper, &style)?;
-            target.style = style;
-            target.modal = placement.modal;
-            if let Some(candidate) = surface.pending.take() {
-                surface = *candidate;
-            }
-            Ok(())
-        })();
+        let result = self.update_reading(s, p, &mut surface);
         if result.is_err() {
             drop(surface.pending.take());
         }
         let displaced = self.surfaces.borrow_mut().insert(s.id, surface);
         drop(displaced);
         result
+    }
+    /// Update the reached native owner without committing partial placement.
+    fn update_reading(
+        &self,
+        s: &AttachmentSurface<'_>,
+        p: &BrandPresentation<'_>,
+        surface: &mut DomSurface,
+    ) -> Result<(), AttachmentUiError> {
+        let AttachmentContent::Reading(placement) = &s.content else {
+            return Ok(());
+        };
+
+        let mut style = self.reading_style(s, p)?;
+        let same = surface
+            .reading
+            .as_ref()
+            .is_some_and(|r| Rc::ptr_eq(&r.content, &placement.content));
+        if placement.phase == ReadingPhase::Measure && !same {
+            surface.pending = Some(Box::new(self.create_reading(placement)?));
+        }
+        let target = match surface.pending.as_deref_mut() {
+            Some(pending) => pending,
+            None => &mut *surface,
+        };
+        let reading = target
+            .reading
+            .as_mut()
+            .filter(|r| Rc::ptr_eq(&r.content, &placement.content))
+            .ok_or_else(|| AttachmentUiError::Host("Reading content was not measured".into()))?;
+        if placement.phase == ReadingPhase::Measure {
+            reading.stage(s, style, placement);
+            return Ok(());
+        }
+        let top = self.overlays.borrow().last().copied();
+        style.push_str(super::super::visibility_style(s.id, placement.modal, top));
+        reading.publish(&target.wrapper, &style)?;
+        target.style = style;
+        target.modal = placement.modal;
+        if let Some(candidate) = surface.pending.take() {
+            *surface = *candidate;
+        }
+        Ok(())
     }
     /// Read natural height now, restoring placement and native scroll afterwards.
     pub(super) fn measure_reading(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentUiError> {
@@ -187,27 +271,16 @@ impl BrowserAttachmentHost {
             .remove(&id)
             .ok_or_else(|| AttachmentUiError::Host("Missing reading surface".into()))?;
         let result = (|| {
-            let target = surface.pending.as_deref().unwrap_or(&surface);
+            let target = match surface.pending.as_deref_mut() {
+                Some(pending) => pending,
+                None => &mut surface,
+            };
             let r = target
                 .reading
-                .as_ref()
+                .as_mut()
                 .ok_or_else(|| AttachmentUiError::Host("Surface is not reading content".into()))?;
             let transform = self.transform(r.pixels)?;
-            let saved = target.wrapper.get_attribute("style").unwrap_or_default();
-            // Element's integer bindings would truncate native subpixel offsets.
-            let left =
-                Reflect::get(&target.wrapper, &"scrollLeft".into()).map_err(|e| host_error(&e))?;
-            let top =
-                Reflect::get(&target.wrapper, &"scrollTop".into()).map_err(|e| host_error(&e))?;
-            let measured = attr(&target.wrapper, &r.measurement).map(|()| ReadingLayout {
-                height: transform.height(r.root.element.get_bounding_client_rect().height()),
-            });
-            let restored = attr(&target.wrapper, &saved);
-            let horizontal = Reflect::set(&target.wrapper, &"scrollLeft".into(), &left)
-                .map_err(|e| host_error(&e));
-            let vertical = Reflect::set(&target.wrapper, &"scrollTop".into(), &top)
-                .map_err(|e| host_error(&e));
-            measured.and_then(|layout| restored.and(horizontal).and(vertical).map(|_| layout))
+            r.measure(&target.wrapper, &transform)
         })();
         if result.is_err() {
             drop(surface.pending.take());

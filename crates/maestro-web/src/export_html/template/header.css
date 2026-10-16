@@ -14,3 +14,50 @@
   font-weight: bold;
   color: var(--maestro-color-accent);
 }
+
+.maestro-session-header .help-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: calc(var(--maestro-spacing-lg) / 2);
+  font-size: calc(var(--maestro-type-body-size) * 11 / 12);
+  margin-bottom: var(--maestro-spacing-lg);
+}
+.maestro-session-header .help-hint {
+  flex: 1 1 240px;
+  color: var(--maestro-color-warning);
+}
+.maestro-session-header .help-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--maestro-spacing-sm);
+}
+.maestro-session-header .control-slot {
+  display: block;
+  flex-shrink: 0;
+}
+.maestro-session-header .header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  font-size: calc(var(--maestro-type-body-size) * 11 / 12);
+  color: var(--maestro-color-text);
+}
+.maestro-session-header .info-item {
+  display: flex;
+  align-items: baseline;
+  color: var(--maestro-color-muted);
+}
+.maestro-session-header .info-label {
+  color: var(--maestro-color-muted);
+  font-weight: 600;
+  margin-right: var(--maestro-spacing-sm);
+  min-width: 100px;
+}
+
+.maestro-session-header .info-value {
+  color: var(--maestro-color-text);
+  flex: 1;
+}

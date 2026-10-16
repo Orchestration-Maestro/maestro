@@ -69,21 +69,29 @@ color admission uses the existing shared style owner, before content placement.
 
 The same registry admits `AttachmentContent::Reading(ReadingPlacement)`.
 On WebAssembly, an owned `ReadingContent` factory receives the actual canvas
-`Document` and returns a `ReadingRoot` containing its native element. It is not a
+`Document` and returns a `ReadingRoot` containing its native element and identified
+empty control slots. It is not a
 raw-markup or template interface. The host retains the complete returned owner.
 
 `ReadingPhase::Measure` stages a hidden candidate without replacing the published
-root. `reading_layout(id)` reads unclipped natural height in canvas points;
+root. Placements supply actual canvas control sizes by identity.
+`reading_layout(id)` reads unclipped natural height and full slot rectangles in
+wrapper-local canvas points after bounded layout and native scroll clamping;
 `ReadingPhase::Publish` installs complete placement. Zero-sized final viewports
 are valid. Failed measurement/publication discards the candidate and retains the
 previous root, native selection, scroll and placement without remounting it.
-Measurement restores the wrapper's prior style and fractional scroll positions
-on both axes. Feature roots must contain their trailing flow spacing within
+One shared transaction restores exact optional wrapper/slot style attributes and
+fractional scroll positions on both axes after measurement or failed publication.
+All restoration attempts run: the original operation error takes precedence,
+otherwise the first cleanup error is returned. A failed native restoration write
+cannot itself be guaranteed recovered. Publication applies the staged sizes and
+clamped offsets before committing placement. Feature roots must contain their trailing flow spacing within
 the measured root, rather than leaving an external margin outside its bounds.
 
 The full viewport, including typography, uses the existing canvas's separate
 axis scales exactly once. Native resize and scroll callbacks request repaint
 through the shared event-subscription owner, with no root backedge, polling or
 new timer. Observer disconnection precedes callable release. Existing modal
-visibility is shared with attachments. Canvas-control slots are not part of
-this reading interface yet; they arrive with their actual consuming controls.
+visibility is shared with attachments. Features paint controls at their full
+reserved slot rectangles through the viewport/caller clip and interact only with
+the positive visible intersection. The header is the first mixed-content consumer.

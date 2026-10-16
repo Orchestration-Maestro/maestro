@@ -34,6 +34,14 @@ pub struct Host {
     pending: RefCell<HashMap<egui::Id, Rc<ReadingContent>>>,
     /// Native natural height supplied by this host.
     pub height: Cell<f32>,
+    /// Whether the controlled layout exposes native slots.
+    pub controls: Cell<bool>,
+    /// Last actual sizes indexed by caller identity.
+    pub sizes: RefCell<Vec<(egui::Id, egui::Vec2)>>,
+    /// Actual slot identities for each admitted factory.
+    pub slot_ids: RefCell<Vec<Vec<egui::Id>>>,
+    /// Published transparent control holes.
+    pub holes: RefCell<Vec<egui::Rect>>,
     /// Selected reached failure, if any.
     pub failure: Cell<Option<Failure>>,
     /// Presentation properties supplied to the boundary.
@@ -48,11 +56,14 @@ impl AttachmentHost for Host {
         let AttachmentContent::Reading(reading) = s.content else {
             panic!("expected reading content")
         };
-        assert!(s.occluders.is_empty());
         self.css.borrow_mut().push(p.css_properties());
         match reading.phase {
             ReadingPhase::Measure => {
                 self.events.borrow_mut().push(Event::Measure(s.id));
+                *self.sizes.borrow_mut() = reading.sizes.to_vec();
+                self.slot_ids
+                    .borrow_mut()
+                    .push(reading.sizes.iter().map(|(id, _)| *id).collect());
                 self.admissions
                     .borrow_mut()
                     .push(Rc::clone(&reading.content));
@@ -63,6 +74,7 @@ impl AttachmentHost for Host {
             }
             ReadingPhase::Publish => {
                 self.events.borrow_mut().push(Event::Publish(s.id));
+                *self.holes.borrow_mut() = s.occluders;
                 if self.failure.get() == Some(Failure::Publish) {
                     return Err(AttachmentUiError::BorrowConflict);
                 }
@@ -82,6 +94,25 @@ impl AttachmentHost for Host {
         }
         Ok(ReadingLayout {
             height: self.height.get(),
+            controls: if self.controls.get() {
+                self.sizes
+                    .borrow()
+                    .iter()
+                    .enumerate()
+                    .rev()
+                    .map(|(i, (id, size))| {
+                        (
+                            *id,
+                            egui::Rect::from_min_size(
+                                egui::pos2(10. + f32::from(u16::try_from(i).unwrap()) * 150., 5.),
+                                *size,
+                            ),
+                        )
+                    })
+                    .collect()
+            } else {
+                vec![]
+            },
         })
     }
     fn remove(&self, id: egui::Id) {
@@ -124,6 +155,7 @@ pub fn document(id: &serde_json::Value) -> maestro_web::export_html::template::S
     ).unwrap()
 }
 /// Load the repository pack through its normal operations.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn pack() -> maestro_theme::BrandPack {
     maestro_theme::load_brand_pack(
         concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json"),
@@ -138,9 +170,34 @@ pub fn draw(
     presentation: &maestro_theme::BrandPresentation<'_>,
     layout: egui::Layout,
     size: egui::Vec2,
-) -> (std::io::Result<()>, egui::FullOutput) {
+) -> (
+    std::io::Result<Vec<maestro_web::export_html::template::HeaderAction>>,
+    egui::FullOutput,
+) {
+    draw_view(
+        state,
+        doc,
+        &maestro_web::export_html::template::HeaderView {
+            presentation,
+            localize_date: &|_| Ok("native date".into()),
+        },
+        layout,
+        size,
+    )
+}
+/// Forward the caller's date function through the public render boundary.
+pub fn draw_view(
+    state: &mut maestro_web::export_html::template::HeaderState,
+    doc: &maestro_web::export_html::template::SessionDocument,
+    view: &maestro_web::export_html::template::HeaderView<'_>,
+    layout: egui::Layout,
+    size: egui::Vec2,
+) -> (
+    std::io::Result<Vec<maestro_web::export_html::template::HeaderAction>>,
+    egui::FullOutput,
+) {
     let context = egui::Context::default();
-    let mut result = Ok(());
+    let mut result = Ok(vec![]);
     let mut output = context.run_ui(
         egui::RawInput {
             screen_rect: Some(egui::Rect::from_min_size(
@@ -161,7 +218,10 @@ pub fn draw(
                         ui,
                         doc,
                         state,
-                        maestro_web::export_html::template::HeaderView { presentation },
+                        maestro_web::export_html::template::HeaderView {
+                            presentation: view.presentation,
+                            localize_date: view.localize_date,
+                        },
                     );
                     assert_eq!(ui.style().as_ref(), style.as_ref());
                 },
@@ -170,4 +230,79 @@ pub fn draw(
     );
     output.textures_delta.clear();
     (result, output)
+}
+
+/// Reusable canvas frames for actual control state and pointer observations.
+pub struct Canvas<'a> {
+    /// Controlled native slots and published holes.
+    pub host: Rc<Host>,
+    /// Feature lifecycle across frames.
+    state: maestro_web::export_html::template::HeaderState,
+    /// Retained input/focus state.
+    context: egui::Context,
+    /// Literal source document.
+    document: maestro_web::export_html::template::SessionDocument,
+    /// Selected style for every frame.
+    presentation: &'a maestro_theme::BrandPresentation<'a>,
+}
+impl<'a> Canvas<'a> {
+    /// Create a full-size canvas with three controlled slots.
+    pub fn new(presentation: &'a maestro_theme::BrandPresentation<'a>) -> Self {
+        let host = Rc::new(Host::default());
+        host.height.set(300.);
+        host.controls.set(true);
+        Self {
+            state: maestro_web::export_html::template::HeaderState::new(host.clone()),
+            host,
+            context: egui::Context::default(),
+            document: document(&serde_json::json!("controls")),
+            presentation,
+        }
+    }
+    /// Drive an input frame and retain its complete observable actions and paint.
+    pub fn frame(
+        &mut self,
+        events: Vec<egui::Event>,
+    ) -> (
+        Vec<maestro_web::export_html::template::HeaderAction>,
+        egui::FullOutput,
+    ) {
+        let mut actions = Vec::new();
+        let mut output = self.context.run_ui(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(800., 600.),
+                )),
+                events,
+                ..Default::default()
+            },
+            |ui| {
+                actions = maestro_web::export_html::template::render_header(
+                    ui,
+                    &self.document,
+                    &mut self.state,
+                    maestro_web::export_html::template::HeaderView {
+                        presentation: self.presentation,
+                        localize_date: &|_| unreachable!(),
+                    },
+                )
+                .unwrap();
+            },
+        );
+        output.textures_delta.clear();
+        (actions, output)
+    }
+}
+/// One pointer transition at a supplied canvas point.
+pub fn pointer(pos: egui::Pos2, pressed: bool) -> Vec<egui::Event> {
+    vec![
+        egui::Event::PointerMoved(pos),
+        egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        },
+    ]
 }

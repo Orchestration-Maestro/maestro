@@ -153,6 +153,10 @@ fn reading_geometry_shares_fractional_axis_transform() {
         [54_f64, 34.25].map(f64::to_bits)
     );
     assert!((transform.height(90.) - 120.).abs() < f32::EPSILON);
+    assert_eq!(
+        transform.relative([54., 34.25, 30., 15.], [41.5, 19.25]),
+        egui::Rect::from_min_size(egui::pos2(10., 20.), egui::vec2(24., 20.))
+    );
     let unit = super::placement::Transform::new([0., 0., 100., 100.], [100, 100], 1.).unwrap();
     assert!((unit.height(90.) - 90.).abs() < f32::EPSILON);
     assert_eq!(
@@ -209,6 +213,7 @@ fn reading_modal_style_targets_keep_reading_identity() {
         content: AttachmentContent::Reading(super::ReadingPlacement {
             content: std::rc::Rc::new(content),
             phase: super::ReadingPhase::Publish,
+            sizes: &[],
             modal: Some(modal),
             context: &repaint,
         }),

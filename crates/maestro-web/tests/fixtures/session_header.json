@@ -1,0 +1,2139 @@
+[
+  {
+    "name": "empty",
+    "input": {
+      "data": {
+        "entries": []
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "populated",
+    "input": {
+      "data": {
+        "header": {
+          "id": "session <雪> & \"quoted\"",
+          "timestamp": "2025-01-02T03:04:05Z"
+        },
+        "entries": [
+          {
+            "type": "message",
+            "message": {
+              "role": "user"
+            }
+          },
+          {
+            "id": "a",
+            "type": "message",
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call"
+                }
+              ],
+              "usage": {
+                "input": 1050,
+                "output": 10500,
+                "cacheRead": 999999,
+                "cacheWrite": 1000000,
+                "cost": {
+                  "input": 0.1,
+                  "output": 0.2,
+                  "cacheRead": 0.3,
+                  "cacheWrite": 0.4,
+                  "total": 777
+                }
+              },
+              "model": "<m>",
+              "provider": "p2"
+            }
+          },
+          {
+            "id": "b",
+            "type": "message",
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call"
+                }
+              ],
+              "usage": null,
+              "model": "z",
+              "provider": "p1"
+            }
+          },
+          {
+            "id": "c",
+            "type": "message",
+            "message": {
+              "role": "assistant",
+              "content": [
+                {
+                  "type": "toolCall",
+                  "id": "call"
+                }
+              ],
+              "usage": null,
+              "model": "<m>",
+              "provider": "p2"
+            }
+          },
+          {
+            "type": "message",
+            "message": {
+              "role": "toolResult"
+            }
+          },
+          {
+            "type": "custom_message",
+            "display": false
+          },
+          {
+            "type": "compaction"
+          },
+          {
+            "type": "branch_summary"
+          }
+        ],
+        "leafId": "a",
+        "systemPrompt": "Literal <script>no</script>\n\nline & end",
+        "tools": [
+          {
+            "name": "plain <x>",
+            "description": "literal & description",
+            "parameters": {}
+          },
+          {
+            "name": "params",
+            "description": "d",
+            "parameters": {
+              "properties": {
+                "b": {
+                  "type": "integer",
+                  "description": "count"
+                },
+                "a": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "a"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "output": {
+      "title": "Session: session <雪> & \"quoted\"",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "1/2/2025, 3:04:05 AM"
+        ],
+        [
+          "Models:",
+          "p2/<m>, p1/z"
+        ],
+        [
+          "Messages:",
+          "1 user, 3 assistant, 1 tool results, 1 custom, 1 compactions, 1 branch summaries"
+        ],
+        [
+          "Tool Calls:",
+          "3"
+        ],
+        [
+          "Tokens:",
+          "↑1.1k ↓11k R1000k W1.0M"
+        ],
+        [
+          "Cost:",
+          "$1.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "counter-userMessages",
+    "input": {
+      "data": {
+        "entries": []
+      },
+      "stats": {
+        "userMessages": 2
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "2 user"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "counter-assistantMessages",
+    "input": {
+      "data": {
+        "entries": []
+      },
+      "stats": {
+        "assistantMessages": 2
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "2 assistant"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "counter-toolResults",
+    "input": {
+      "data": {
+        "entries": []
+      },
+      "stats": {
+        "toolResults": 2
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "2 tool results"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "counter-customMessages",
+    "input": {
+      "data": {
+        "entries": []
+      },
+      "stats": {
+        "customMessages": 2
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "2 custom"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "counter-compactions",
+    "input": {
+      "data": {
+        "entries": []
+      },
+      "stats": {
+        "compactions": 2
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "2 compactions"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "counter-branchSummaries",
+    "input": {
+      "data": {
+        "entries": []
+      },
+      "stats": {
+        "branchSummaries": 2
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "2 branch summaries"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "counter-toolCalls",
+    "input": {
+      "data": {
+        "entries": []
+      },
+      "stats": {
+        "toolCalls": 2
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "2"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "stats-snapshot",
+    "input": {
+      "data": {
+        "entries": [],
+        "header": {
+          "id": "prepared"
+        }
+      },
+      "stats": {
+        "models": [
+          "z/<tag>",
+          "a",
+          "z/<tag>"
+        ],
+        "userMessages": 7,
+        "toolCalls": 9,
+        "tokens": {
+          "input": -2,
+          "output": 3,
+          "cacheRead": 4,
+          "cacheWrite": 5
+        },
+        "cost": {
+          "input": 0.03125,
+          "output": 0.00025,
+          "cacheRead": 0.0005,
+          "cacheWrite": 0.001,
+          "total": 999
+        }
+      }
+    },
+    "output": {
+      "title": "Session: prepared",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "z/<tag>, a, z/<tag>"
+        ],
+        [
+          "Messages:",
+          "7 user"
+        ],
+        [
+          "Tool Calls:",
+          "9"
+        ],
+        [
+          "Tokens:",
+          "↑-2 ↓3 R4 W5"
+        ],
+        [
+          "Cost:",
+          "$0.033"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "all-categories",
+    "input": {
+      "data": {
+        "entries": []
+      },
+      "stats": {
+        "userMessages": 1,
+        "assistantMessages": 2,
+        "toolResults": 3,
+        "customMessages": 4,
+        "compactions": 5,
+        "branchSummaries": 6
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "1 user, 2 assistant, 3 tool results, 4 custom, 5 compactions, 6 branch summaries"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "no-models",
+    "input": {
+      "data": {
+        "entries": []
+      },
+      "stats": {
+        "models": []
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "empty-model-name",
+    "input": {
+      "data": {
+        "entries": []
+      },
+      "stats": {
+        "models": [
+          ""
+        ]
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "cost-cancellation",
+    "input": {
+      "data": {
+        "entries": []
+      },
+      "stats": {
+        "cost": {
+          "input": 10000000000000000,
+          "output": 1,
+          "cacheRead": -10000000000000000,
+          "cacheWrite": 0.03125
+        }
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.031"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "negative-cost",
+    "input": {
+      "data": {
+        "entries": []
+      },
+      "stats": {
+        "cost": {
+          "input": -0.0005
+        }
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$-0.001"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "fixed-half",
+    "input": {
+      "data": {
+        "entries": []
+      },
+      "stats": {
+        "cost": {
+          "input": 0.03125
+        }
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.031"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "large-cost",
+    "input": {
+      "data": {
+        "entries": []
+      },
+      "stats": {
+        "cost": {
+          "input": 1e+21
+        }
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$1e+21"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "all-negative-tokens",
+    "input": {
+      "data": {
+        "entries": []
+      },
+      "stats": {
+        "tokens": {
+          "input": -0.5,
+          "output": -1000,
+          "cacheRead": -1000000,
+          "cacheWrite": -2
+        }
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "↑-0.5 ↓-1000 R-1000000 W-2"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "tokens--0",
+    "input": {
+      "operation": "tokens",
+      "count": "-0"
+    },
+    "output": "0"
+  },
+  {
+    "name": "tokens-0",
+    "input": {
+      "operation": "tokens",
+      "count": "0"
+    },
+    "output": "0"
+  },
+  {
+    "name": "tokens-0.5",
+    "input": {
+      "operation": "tokens",
+      "count": "0.5"
+    },
+    "output": "0.5"
+  },
+  {
+    "name": "tokens--1",
+    "input": {
+      "operation": "tokens",
+      "count": "-1"
+    },
+    "output": "-1"
+  },
+  {
+    "name": "tokens--1000",
+    "input": {
+      "operation": "tokens",
+      "count": "-1000"
+    },
+    "output": "-1000"
+  },
+  {
+    "name": "tokens-999",
+    "input": {
+      "operation": "tokens",
+      "count": "999"
+    },
+    "output": "999"
+  },
+  {
+    "name": "tokens-999.5",
+    "input": {
+      "operation": "tokens",
+      "count": "999.5"
+    },
+    "output": "999.5"
+  },
+  {
+    "name": "tokens-999.999",
+    "input": {
+      "operation": "tokens",
+      "count": "999.999"
+    },
+    "output": "999.999"
+  },
+  {
+    "name": "tokens-1000",
+    "input": {
+      "operation": "tokens",
+      "count": "1000"
+    },
+    "output": "1.0k"
+  },
+  {
+    "name": "tokens-1049",
+    "input": {
+      "operation": "tokens",
+      "count": "1049"
+    },
+    "output": "1.0k"
+  },
+  {
+    "name": "tokens-1050",
+    "input": {
+      "operation": "tokens",
+      "count": "1050"
+    },
+    "output": "1.1k"
+  },
+  {
+    "name": "tokens-9999",
+    "input": {
+      "operation": "tokens",
+      "count": "9999"
+    },
+    "output": "10.0k"
+  },
+  {
+    "name": "tokens-9999.5",
+    "input": {
+      "operation": "tokens",
+      "count": "9999.5"
+    },
+    "output": "10.0k"
+  },
+  {
+    "name": "tokens-9999.999",
+    "input": {
+      "operation": "tokens",
+      "count": "9999.999"
+    },
+    "output": "10.0k"
+  },
+  {
+    "name": "tokens-10000",
+    "input": {
+      "operation": "tokens",
+      "count": "10000"
+    },
+    "output": "10k"
+  },
+  {
+    "name": "tokens-10499",
+    "input": {
+      "operation": "tokens",
+      "count": "10499"
+    },
+    "output": "10k"
+  },
+  {
+    "name": "tokens-10500",
+    "input": {
+      "operation": "tokens",
+      "count": "10500"
+    },
+    "output": "11k"
+  },
+  {
+    "name": "tokens-999499",
+    "input": {
+      "operation": "tokens",
+      "count": "999499"
+    },
+    "output": "999k"
+  },
+  {
+    "name": "tokens-999500",
+    "input": {
+      "operation": "tokens",
+      "count": "999500"
+    },
+    "output": "1000k"
+  },
+  {
+    "name": "tokens-999999",
+    "input": {
+      "operation": "tokens",
+      "count": "999999"
+    },
+    "output": "1000k"
+  },
+  {
+    "name": "tokens-1000000",
+    "input": {
+      "operation": "tokens",
+      "count": "1000000"
+    },
+    "output": "1.0M"
+  },
+  {
+    "name": "tokens-1049999",
+    "input": {
+      "operation": "tokens",
+      "count": "1049999"
+    },
+    "output": "1.0M"
+  },
+  {
+    "name": "tokens-1050000",
+    "input": {
+      "operation": "tokens",
+      "count": "1050000"
+    },
+    "output": "1.1M"
+  },
+  {
+    "name": "tokens-999999999",
+    "input": {
+      "operation": "tokens",
+      "count": "999999999"
+    },
+    "output": "1000.0M"
+  },
+  {
+    "name": "tokens-1e21",
+    "input": {
+      "operation": "tokens",
+      "count": "1e21"
+    },
+    "output": "1000000000000000.0M"
+  },
+  {
+    "name": "tokens-NaN",
+    "input": {
+      "operation": "tokens",
+      "count": "NaN"
+    },
+    "output": "NaNM"
+  },
+  {
+    "name": "tokens-Infinity",
+    "input": {
+      "operation": "tokens",
+      "count": "Infinity"
+    },
+    "output": "InfinityM"
+  },
+  {
+    "name": "tokens--Infinity",
+    "input": {
+      "operation": "tokens",
+      "count": "-Infinity"
+    },
+    "output": "-Infinity"
+  },
+  {
+    "name": "id-missing",
+    "input": {
+      "data": {
+        "entries": [],
+        "header": {}
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "id-null",
+    "input": {
+      "data": {
+        "entries": [],
+        "header": {
+          "id": null
+        }
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "id-empty",
+    "input": {
+      "data": {
+        "entries": [],
+        "header": {
+          "id": ""
+        }
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "id-zero",
+    "input": {
+      "data": {
+        "entries": [],
+        "header": {
+          "id": 0
+        }
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "id-false",
+    "input": {
+      "data": {
+        "entries": [],
+        "header": {
+          "id": false
+        }
+      }
+    },
+    "output": {
+      "title": "Session: unknown",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "id-text",
+    "input": {
+      "data": {
+        "entries": [],
+        "header": {
+          "id": " <literal> "
+        }
+      }
+    },
+    "output": {
+      "title": "Session:  <literal> ",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "date-missing",
+    "input": {
+      "data": {
+        "entries": [],
+        "header": {
+          "id": "date-domain"
+        }
+      }
+    },
+    "output": {
+      "title": "Session: date-domain",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "date-null",
+    "input": {
+      "data": {
+        "entries": [],
+        "header": {
+          "id": "date-domain",
+          "timestamp": null
+        }
+      }
+    },
+    "output": {
+      "title": "Session: date-domain",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "date-empty",
+    "input": {
+      "data": {
+        "entries": [],
+        "header": {
+          "id": "date-domain",
+          "timestamp": ""
+        }
+      }
+    },
+    "output": {
+      "title": "Session: date-domain",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "date-zero",
+    "input": {
+      "data": {
+        "entries": [],
+        "header": {
+          "id": "date-domain",
+          "timestamp": 0
+        }
+      }
+    },
+    "output": {
+      "title": "Session: date-domain",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "date-false",
+    "input": {
+      "data": {
+        "entries": [],
+        "header": {
+          "id": "date-domain",
+          "timestamp": false
+        }
+      }
+    },
+    "output": {
+      "title": "Session: date-domain",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "unknown"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "date-text",
+    "input": {
+      "data": {
+        "entries": [],
+        "header": {
+          "id": "date-domain",
+          "timestamp": "not-a-date"
+        }
+      }
+    },
+    "output": {
+      "title": "Session: date-domain",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "Invalid Date"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "date-number",
+    "input": {
+      "data": {
+        "entries": [],
+        "header": {
+          "id": "date-domain",
+          "timestamp": 1
+        }
+      }
+    },
+    "output": {
+      "title": "Session: date-domain",
+      "help": "T toggle thinking · O toggle tools",
+      "buttons": [
+        {
+          "text": "Toggle thinking",
+          "title": "Toggle thinking (T)"
+        },
+        {
+          "text": "Toggle tools",
+          "title": "Toggle tools (O)"
+        },
+        {
+          "text": "↓ JSONL",
+          "title": "Download session as JSONL"
+        }
+      ],
+      "info": [
+        [
+          "Date:",
+          "1/1/1970, 12:00:00 AM"
+        ],
+        [
+          "Models:",
+          "unknown"
+        ],
+        [
+          "Messages:",
+          "0"
+        ],
+        [
+          "Tool Calls:",
+          "0"
+        ],
+        [
+          "Tokens:",
+          "0"
+        ],
+        [
+          "Cost:",
+          "$0.000"
+        ]
+      ]
+    }
+  },
+  {
+    "name": "date-boundary-2025-01-02",
+    "input": {
+      "operation": "date",
+      "timestamp": "2025-01-02"
+    },
+    "output": "1/2/2025, 12:00:00 AM"
+  },
+  {
+    "name": "date-boundary-2025-01-02T03:04:05.999Z",
+    "input": {
+      "operation": "date",
+      "timestamp": "2025-01-02T03:04:05.999Z"
+    },
+    "output": "1/2/2025, 3:04:05 AM"
+  },
+  {
+    "name": "date-boundary-2025-01-02T05:04:05+02:00",
+    "input": {
+      "operation": "date",
+      "timestamp": "2025-01-02T05:04:05+02:00"
+    },
+    "output": "1/2/2025, 3:04:05 AM"
+  },
+  {
+    "name": "date-boundary-2025-01-02T03:04:05",
+    "input": {
+      "operation": "date",
+      "timestamp": "2025-01-02T03:04:05"
+    },
+    "output": "1/2/2025, 3:04:05 AM"
+  },
+  {
+    "name": "date-boundary-2025-03-09T07:00:00Z",
+    "input": {
+      "operation": "date",
+      "timestamp": "2025-03-09T07:00:00Z"
+    },
+    "output": "3/9/2025, 7:00:00 AM"
+  },
+  {
+    "name": "date-boundary-invalid",
+    "input": {
+      "operation": "date",
+      "timestamp": "invalid"
+    },
+    "output": "Invalid Date"
+  }
+]

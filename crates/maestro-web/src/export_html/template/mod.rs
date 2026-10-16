@@ -6,7 +6,9 @@ pub use stats::{Stats, compute_stats};
 
 mod header;
 
-pub use header::{HeaderState, HeaderView, render_header};
+#[cfg(target_arch = "wasm32")]
+pub use header::localize_header_date;
+pub use header::{HeaderAction, HeaderState, HeaderView, render_header};
 
 mod download;
 pub use download::download_session_json;

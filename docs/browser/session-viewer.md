@@ -60,28 +60,41 @@ synchronously. The native adapter shares the
 [attachment download owner](attachments.md#platform-ownership), releasing its
 temporary anchor and object URL on success or a reached platform failure.
 
-## Native identity
+## Native header
 
 Retain a `HeaderState::new(host)` and call
-`render_header(ui, &document, &mut state, HeaderView { presentation })` through
-`maestro_web::export_html::template`. This fallible operation renders only
-`Session: <id>` as literal browser text, with `unknown` for an absent header or
-an absent or falsy ID.
-It does not interpret markup, trim the ID or inspect deferred prompt/tool fields.
-A truthy nonstring identity returns an invalid-data error.
+`render_header(ui, &document, &mut state, HeaderView { presentation, localize_date })`
+through `maestro_web::export_html::template`. The fallible operation returns
+ordered `HeaderAction` requests for thinking, tools and session download; it does
+not execute them. Title, keyboard help and six metadata rows remain literal,
+selectable native text. The three labelled controls remain on the canvas.
 
-The caller supplies the host and selected brand presentation. Equal identities
-reuse the owned native factory; changed identities commit only after successful
-measurement and placement. Dropping the state removes only its own surface.
-Horizontal, vertical and wrapped parents all use an independent top-down child;
-the native viewport is bounded by available height, without a second canvas
-scroller or painted reading text. A transparent flow container includes the
-panel's trailing spacing in that allocation without extending its background.
+Identity uses `unknown` for an absent header or falsy ID and rejects a truthy
+nonstring. Preparation consumes `global_stats` without recounting edited history
+or inspecting deferred prompt/tool fields. Models retain supplied order, token
+counts use thousand/million tiers, and cost adds four components left-to-right
+before three-place rounding. A falsy timestamp skips localization; otherwise the
+supplied date operation receives the unchanged value. The browser's
+`localize_header_date` uses native `Date` and zero-argument `toLocaleString`.
 
-Metadata, help and canvas actions are tracked in
-[#1090](https://github.com/Orchestration-Maestro/maestro/issues/1090), and native
-prompt/tool disclosures in
-[#1086](https://github.com/Orchestration-Maestro/maestro/issues/1086).
-Browser Find, real selection, font reflow and observer/compositor behavior remain
-qualified by [#1084](https://github.com/Orchestration-Maestro/maestro/issues/1084);
-controlled hosts and WebAssembly compilation do not prove those observations.
+The caller supplies the host, date operation and selected brand presentation.
+Equal complete preparations reuse the owned native factory; changes commit only
+after successful measurement and publication. Dropping the state removes only
+its own surface. No document, date-function or presentation borrow is retained.
+Horizontal, vertical and wrapped parents use an independent top-down child.
+Actual button dimensions size identified native slots. One live readback supplies
+publication holes, full canvas paint geometry and clipped interaction rectangles.
+The viewport is bounded by available height, including zero, without a second
+canvas scroller or painted reading text. A transparent flow container includes
+the panel's trailing spacing once without extending its background.
+
+Prompt/tool disclosures remain tracked in
+[#1086](https://github.com/Orchestration-Maestro/maestro/issues/1086), action
+execution in [#1044](https://github.com/Orchestration-Maestro/maestro/issues/1044)
+and the JSONL download operation is described above.
+Actual browser tests cover slot readback, fractional scroll, selection endpoints,
+bounded geometry and rollback. Browser Find, font reflow and broad
+observer/compositor qualification remain
+[#1084](https://github.com/Orchestration-Maestro/maestro/issues/1084) and
+[#825](https://github.com/Orchestration-Maestro/maestro/issues/825); compilation or
+controlled-host tests alone do not prove those observations.
