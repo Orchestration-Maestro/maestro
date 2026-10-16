@@ -1204,25 +1204,23 @@ fn browser_author_preparation_is_route_local() {
     let browser = Browser::new();
     success(&browser.run("browser-example-check"));
     let config = browser.path("target/maestro-browser/.author/example/Trunk.json");
-    let value: serde_json::Value = serde_json::from_slice(&fs::read(config).unwrap()).unwrap();
-    assert_eq!(
-        std::path::Path::new(value["build"]["target"].as_str().unwrap())
-            .canonicalize()
-            .unwrap(),
-        browser.fixture("index.html").canonicalize().unwrap()
-    );
+    assert_authored_target(&browser, &config, "index.html");
     assert!(!browser.path("target/maestro-browser/example").exists());
     assert!(
         browser
             .path("target/maestro-browser/.author/example/inputs/wordmark.txt")
             .is_file()
     );
+    let marker = install_authored_hook(&browser);
     let mut retained = Vec::new();
     for (recipe, route, mode) in [
         ("browser-library-build", "library", "dark"),
         ("browser-example-build", "example", "light"),
         ("browser-debug-build", "debug", "dark"),
     ] {
+        if marker.exists() {
+            fs::remove_file(&marker).unwrap();
+        }
         success(
             &browser
                 .command(recipe)
@@ -1230,6 +1228,7 @@ fn browser_author_preparation_is_route_local() {
                 .output()
                 .unwrap(),
         );
+        assert!(marker.is_file(), "the actual native authored hook must run");
         let directory = browser.path(&format!("target/maestro-browser/.author/{route}"));
         retained.push((
             directory.join("inputs/text.txt"),
@@ -1238,19 +1237,12 @@ fn browser_author_preparation_is_route_local() {
         for (path, bytes) in &retained {
             assert_eq!(&fs::read(path).unwrap(), bytes);
         }
-        let value: serde_json::Value =
-            serde_json::from_slice(&fs::read(directory.join("Trunk.json")).unwrap()).unwrap();
         let target = if route == "debug" {
             "debug.html"
         } else {
             "index.html"
         };
-        assert_eq!(
-            std::path::Path::new(value["build"]["target"].as_str().unwrap())
-                .canonicalize()
-                .unwrap(),
-            browser.fixture(target).canonicalize().unwrap()
-        );
+        assert_authored_target(&browser, &directory.join("Trunk.json"), target);
         assert_identity_wasm(
             &browser,
             route,
@@ -1259,6 +1251,28 @@ fn browser_author_preparation_is_route_local() {
             "Space Grotesk",
         );
     }
+}
+
+/// Compare the generated target with the actual authored file identity.
+fn assert_authored_target(browser: &Browser, config: &std::path::Path, target: &str) {
+    let value: serde_json::Value = serde_json::from_slice(&fs::read(config).unwrap()).unwrap();
+    assert_eq!(
+        std::path::Path::new(value["build"]["target"].as_str().unwrap())
+            .canonicalize()
+            .unwrap(),
+        browser.fixture(target).canonicalize().unwrap()
+    );
+}
+
+/// Install a native authored hook whose filesystem effect the real bundler observes.
+fn install_authored_hook(browser: &Browser) -> std::path::PathBuf {
+    let marker = browser.path("authored-hook-ran");
+    let authored = browser.fixture("Trunk.json");
+    let mut configuration: serde_json::Value =
+        serde_json::from_slice(&fs::read(&authored).unwrap()).unwrap();
+    configuration["hooks"] = serde_json::json!([{"stage": "pre_build", "command": "touch", "command_arguments": [&marker]}]);
+    fs::write(authored, serde_json::to_vec_pretty(&configuration).unwrap()).unwrap();
+    marker
 }
 
 #[test]
