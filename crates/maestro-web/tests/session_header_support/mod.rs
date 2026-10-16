@@ -211,7 +211,7 @@ impl AttachmentHost for Host {
 pub fn document(id: &serde_json::Value) -> maestro_web::export_html::template::SessionDocument {
     use base64::Engine as _;
     maestro_web::export_html::template::load_document(
-        &base64::engine::general_purpose::STANDARD.encode(serde_json::json!({"entries":[],"header":{"id":id},"systemPrompt":{"unread":true},"tools":false}).to_string()), "", None,
+        &base64::engine::general_purpose::STANDARD.encode(serde_json::json!({"entries":[],"header":{"id":id},"systemPrompt":"admitted prompt","tools":false}).to_string()), "", None,
     ).unwrap()
 }
 /// Load the repository pack through its normal operations.

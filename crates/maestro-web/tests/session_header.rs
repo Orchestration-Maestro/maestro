@@ -701,3 +701,97 @@ fn header_pointer_rejects_disabled_controls() {
         );
     }
 }
+
+/// Complete disclosure preparation changes the retained factory, not raw unknown fields.
+#[test]
+fn header_native_disclosures_use_owned_preparation() {
+    let host = Rc::new(Host::default());
+    host.height.set(120.);
+    let mut state = HeaderState::new(host.clone());
+    let pack = pack();
+    let presentation = pack.presentation(BrandMode::Dark).unwrap();
+    let mut doc = document(&serde_json::json!("disclosure owner"));
+    let mut show = |doc: &maestro_web::export_html::template::SessionDocument| {
+        draw(
+            &mut state,
+            doc,
+            &presentation,
+            egui::Layout::top_down(egui::Align::Min),
+            egui::vec2(300., 40.),
+        )
+        .0
+        .unwrap();
+        Rc::clone(&host.published.borrow().values().next().unwrap().0)
+    };
+    let original = show(&doc);
+    doc.data
+        .insert("systemPrompt".into(), serde_json::json!("changed prompt"));
+    let prompt = show(&doc);
+    assert!(!Rc::ptr_eq(&original, &prompt));
+    doc.data.insert("tools".into(),serde_json::json!([{"name":"owned <tool>","description":"d","parameters":{"properties":{"x":{"type":"string"}}}}]));
+    let tools = show(&doc);
+    assert!(!Rc::ptr_eq(&prompt, &tools));
+    doc.data["tools"][0]["parameters"]["properties"]["x"]["description"] =
+        serde_json::json!("changed parameter");
+    let parameter = show(&doc);
+    assert!(!Rc::ptr_eq(&tools, &parameter));
+    doc.data["tools"][0]["unknown"] = serde_json::json!({"kept":true});
+    assert!(Rc::ptr_eq(&parameter, &show(&doc)));
+    drop(doc);
+    assert!(Rc::ptr_eq(
+        &parameter,
+        &host.published.borrow().values().next().unwrap().0
+    ));
+}
+
+/// Reached preparation and transaction failures leave the published factory intact.
+#[test]
+fn header_native_disclosure_failures_keep_published_owner() {
+    let host = Rc::new(Host::default());
+    host.height.set(120.);
+    let mut state = HeaderState::new(host.clone());
+    let pack = pack();
+    let presentation = pack.presentation(BrandMode::Dark).unwrap();
+    let layout = egui::Layout::top_down(egui::Align::Min);
+    let size = egui::vec2(300., 40.);
+    let mut doc = document(&serde_json::json!("published"));
+    draw(&mut state, &doc, &presentation, layout, size)
+        .0
+        .unwrap();
+    let published = Rc::clone(&host.published.borrow().values().next().unwrap().0);
+    host.events.borrow_mut().clear();
+    doc.data
+        .insert("systemPrompt".into(), serde_json::json!(true));
+    assert_eq!(
+        draw(&mut state, &doc, &presentation, layout, size)
+            .0
+            .unwrap_err()
+            .kind(),
+        std::io::ErrorKind::InvalidData
+    );
+    assert!(host.events.borrow().is_empty());
+    doc.data
+        .insert("systemPrompt".into(), serde_json::json!("changed"));
+    for failure in [Failure::Measure, Failure::Read, Failure::Publish] {
+        host.failure.set(Some(failure));
+        assert!(
+            draw(&mut state, &doc, &presentation, layout, size)
+                .0
+                .is_err()
+        );
+        assert!(Rc::ptr_eq(
+            &published,
+            &host.published.borrow().values().next().unwrap().0
+        ));
+    }
+    host.failure.set(None);
+    doc.data
+        .insert("systemPrompt".into(), serde_json::json!("admitted prompt"));
+    draw(&mut state, &doc, &presentation, layout, size)
+        .0
+        .unwrap();
+    assert!(Rc::ptr_eq(
+        &published,
+        &host.published.borrow().values().next().unwrap().0
+    ));
+}

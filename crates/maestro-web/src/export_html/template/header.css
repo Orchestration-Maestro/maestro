@@ -1,12 +1,16 @@
+.maestro-session-viewer-header {
+  font-family: var(--maestro-type-body-font);
+  font-size: var(--maestro-type-body-size);
+  line-height: var(--maestro-type-body-line-height);
+  color: var(--maestro-color-text);
+}
 .maestro-session-header {
   box-sizing: border-box;
   background: var(--maestro-color-panel);
   border-radius: var(--maestro-radii-panel);
   padding: var(--maestro-spacing-lg);
   margin-bottom: var(--maestro-spacing-lg);
-  font-family: var(--maestro-type-body-font);
-  font-size: var(--maestro-type-body-size);
-  line-height: var(--maestro-type-body-line-height);
+
 }
 .maestro-session-header h1 {
   margin: 0 0 var(--maestro-spacing-lg);
@@ -60,4 +64,95 @@
 .maestro-session-header .info-value {
   color: var(--maestro-color-text);
   flex: 1;
+}
+.maestro-session-viewer-header .system-prompt,
+.maestro-session-viewer-header .tools-list {
+  background: var(--maestro-color-panel);
+  padding: var(--maestro-spacing-lg);
+  border-radius: var(--maestro-radii-panel);
+  margin-bottom: var(--maestro-spacing-lg);
+}
+.maestro-session-viewer-header .system-prompt.expandable,
+.maestro-session-viewer-header .tool-item:has(.tool-params-hint) {
+  cursor: pointer;
+}
+.maestro-session-viewer-header .system-prompt-header,
+.maestro-session-viewer-header .tools-header {
+  font-weight: bold;
+  color: var(--maestro-color-accent);
+}
+.maestro-session-viewer-header .system-prompt-preview,
+.maestro-session-viewer-header .system-prompt-full {
+  color: var(--maestro-color-text);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-size: calc(var(--maestro-type-body-size) * 11 / 12);
+  margin-top: var(--maestro-spacing-lg);
+}
+.maestro-session-viewer-header .system-prompt-expand-hint {
+  color: var(--maestro-color-muted);
+  font-style: italic;
+  margin-top: var(--maestro-spacing-xs);
+}
+.maestro-session-viewer-header .system-prompt-full,
+.maestro-session-viewer-header .system-prompt.expanded .system-prompt-preview,
+.maestro-session-viewer-header .system-prompt.expanded .system-prompt-expand-hint {
+  display: none;
+}
+.maestro-session-viewer-header .system-prompt.expanded .system-prompt-full {
+  display: block;
+}
+.maestro-session-viewer-header .tools-header {
+  margin-bottom: var(--maestro-spacing-lg);
+}
+.maestro-session-viewer-header .tool-item,
+.maestro-session-viewer-header .tool-param {
+  font-size: calc(var(--maestro-type-body-size) * 11 / 12);
+}
+.maestro-session-viewer-header .tool-item-name,
+.maestro-session-viewer-header .tool-param-name {
+  font-weight: bold;
+  color: var(--maestro-color-text);
+}
+.maestro-session-viewer-header .tool-item-desc,
+.maestro-session-viewer-header .tool-param-type,
+.maestro-session-viewer-header .tool-param-optional,
+.maestro-session-viewer-header .tool-param-desc {
+  color: var(--maestro-color-muted);
+}
+.maestro-session-viewer-header .tool-params-hint,
+.maestro-session-viewer-header .tool-param-type {
+  font-style: italic;
+}
+.maestro-session-viewer-header .tool-params-hint {
+  color: var(--maestro-color-muted);
+}
+.maestro-session-viewer-header .tool-params-hint::after {
+  content: '[click to show parameters]';
+}
+.maestro-session-viewer-header .tool-item.params-expanded .tool-params-hint::after {
+  content: '[hide parameters]';
+}
+.maestro-session-viewer-header .tool-params-content {
+  display: none;
+  margin-top: var(--maestro-spacing-xs);
+  margin-left: calc(var(--maestro-spacing-lg) / 2);
+  padding-left: var(--maestro-spacing-sm);
+  border-left: 1px solid var(--maestro-color-border);
+}
+.maestro-session-viewer-header .tool-item.params-expanded .tool-params-content {
+  display: block;
+}
+.maestro-session-viewer-header .tool-param {
+  margin-bottom: var(--maestro-spacing-xs);
+}
+.maestro-session-viewer-header .tool-param-required {
+  color: var(--maestro-color-warning);
+}
+.maestro-session-viewer-header .tool-param-required,
+.maestro-session-viewer-header .tool-param-optional {
+  font-size: calc(var(--maestro-type-body-size) * 10 / 12);
+}
+.maestro-session-viewer-header .tool-param-desc {
+  margin-left: var(--maestro-spacing-sm);
 }

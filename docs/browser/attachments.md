@@ -94,7 +94,11 @@ color admission uses the existing shared style owner, before content placement.
 The same registry admits `AttachmentContent::Reading(ReadingPlacement)`.
 On WebAssembly, an owned `ReadingContent` factory receives the actual canvas
 `Document` and returns a `ReadingRoot` containing its native element and identified
-empty control slots. It is not a
+empty control slots. Its optional opaque `owner` retains mounted feature state
+and listener guards; passive roots use `None`. Callbacks capture this state weakly,
+and the factory never retains it. Root teardown attempts detachment through the
+shared subscription owner; a failed native removal may retain the callable, but
+its expired weak capture cannot change released feature state. It is not a
 raw-markup or template interface. The host retains the complete returned owner.
 
 `ReadingPhase::Measure` stages a hidden candidate without replacing the published

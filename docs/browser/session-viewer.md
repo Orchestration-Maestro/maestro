@@ -71,7 +71,7 @@ selectable native text. The three labelled controls remain on the canvas.
 
 Identity uses `unknown` for an absent header or falsy ID and rejects a truthy
 nonstring. Preparation consumes `global_stats` without recounting edited history
-or inspecting deferred prompt/tool fields. Models retain supplied order, token
+while preparing prompt/tool disclosures from the current raw fields. Models retain supplied order, token
 counts use thousand/million tiers, and cost adds four components left-to-right
 before three-place rounding. A falsy timestamp skips localization; otherwise the
 supplied date operation receives the unchanged value. The browser's
@@ -92,10 +92,23 @@ The viewport is bounded by available height, including zero, without a second
 canvas scroller or painted reading text. A transparent flow container includes
 the panel's trailing spacing once without extending its background.
 
-Prompt/tool disclosures remain tracked in
-[#1086](https://github.com/Orchestration-Maestro/maestro/issues/1086), action
-execution in [#1044](https://github.com/Orchestration-Maestro/maestro/issues/1044)
-and the JSONL download operation is described above.
+System prompts preserve literal text and blank lines. More than ten LF-split
+lines produce a ten-line preview and a remaining-line hint; shorter prompts are
+fully visible. Display normalizes CRLF/CR and omits NUL after counting lines.
+Tools retain supplied order and literal descriptions. Parameters use canonical
+key order, exact raw required-name matching, comma-joined string unions and `any`
+for a falsy type. Only reached schema operations are validated, even when collapsed;
+unknown raw fields remain in the document.
+
+Prompt and parameter disclosures toggle independently on their complete native
+containers. A nonempty selection in the owning window suppresses toggling.
+Unchanged preparations retain the mounted root, selection and expansion; successful
+replacement starts collapsed. Mounted roots own weakly captured listener state,
+not factories or header state. Metadata, prompt and tools are separately decorated
+siblings in one transparent native flow, with normal description whitespace and
+pre-wrapped prompt text. Action execution remains
+[#1044](https://github.com/Orchestration-Maestro/maestro/issues/1044); the JSONL
+download operation is described above.
 Actual browser tests cover slot readback, fractional scroll, selection endpoints,
 bounded geometry and rollback. Browser Find, font reflow and broad
 observer/compositor qualification remain

@@ -235,6 +235,7 @@ fn reading_content(
             element.set_class_name(class);
             element.set_text_content(Some("retained native text"));
             Ok(ReadingRoot {
+                owner: None,
                 element,
                 slots: vec![],
             })

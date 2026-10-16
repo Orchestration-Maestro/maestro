@@ -168,7 +168,7 @@ fn header_uses_prepared_statistics_without_recounting() {
     let mut doc = case_document(&row);
     doc.data["entries"] = json!([{"type":"message","message":false}]);
     doc.data
-        .insert("systemPrompt".into(), json!({"unread":true}));
+        .insert("systemPrompt".into(), json!("admitted prompt"));
     doc.data.insert("tools".into(), json!(false));
     let prepared = prepare(&doc, &|_| unreachable!()).unwrap();
     assert_eq!(
@@ -272,3 +272,5 @@ fn header_cost_sums_four_components_before_three_place_rounding() {
         assert_metadata(row);
     }
 }
+
+mod disclosures;
