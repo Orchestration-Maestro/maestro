@@ -16,7 +16,9 @@ advisory_exceptions = [
 # Locked builds remain available; avoid an emergency ZIP/parser upgrade.
 # Remove both entries in https://github.com/Orchestration-Maestro/maestro/issues/1134.
 yanked_crate_exceptions = [
+  # Approved 2026-10-16; expires 2026-10-23; remove in #1134.
   { package = "zip", version = "6.0.0" },
+  # Approved 2026-10-16; expires 2026-10-23; remove in #1134.
   { package = "zip", version = "8.6.0" },
 ]
 
