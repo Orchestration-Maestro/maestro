@@ -108,20 +108,22 @@ pub struct ProviderObjects {
     entries: std::collections::HashMap<std::any::TypeId, ObjectHandle>,
 }
 
-impl ProviderObjects {
-    /// Store `value`, replacing any earlier value of the same type.
-    #[cfg(not(target_arch = "wasm32"))]
-    pub fn insert<T: std::any::Any + Send + Sync>(&mut self, value: T) {
-        self.entries
-            .insert(std::any::TypeId::of::<T>(), std::sync::Arc::new(value));
-    }
+/// Generate typed insertion with the target's object-sharing bounds.
+macro_rules! provider_object_insert {
+    ($($bound:tt)+) => {
+        /// Store `value`, replacing any earlier value of the same type.
+        pub fn insert<T: $($bound)+>(&mut self, value: T) {
+            self.entries
+                .insert(std::any::TypeId::of::<T>(), std::sync::Arc::new(value));
+        }
+    };
+}
 
-    /// Store `value`, replacing any earlier value of the same type.
+impl ProviderObjects {
+    #[cfg(not(target_arch = "wasm32"))]
+    provider_object_insert!(std::any::Any + Send + Sync);
     #[cfg(target_arch = "wasm32")]
-    pub fn insert<T: std::any::Any>(&mut self, value: T) {
-        self.entries
-            .insert(std::any::TypeId::of::<T>(), std::sync::Arc::new(value));
-    }
+    provider_object_insert!(std::any::Any);
 
     /// Borrow the stored value of type `T`, if any.
     #[must_use]

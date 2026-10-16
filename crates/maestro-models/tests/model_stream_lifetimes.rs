@@ -163,6 +163,85 @@ mod tests {
         assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 3);
     }
 
+    fn abandon_readers(stream: &EventStream<i32>) {
+        drop(stream.next());
+        drop(stream.result());
+        let mut readers: Vec<_> = (0..3).map(|_| Box::pin(stream.next())).collect();
+        for reader in &mut readers {
+            assert_eq!(poll(reader.as_mut()), Poll::Pending);
+        }
+        drop(readers.remove(1));
+        stream.push(11);
+        stream.push(33);
+        for (reader, expected) in readers.iter_mut().zip([11, 33]) {
+            assert_eq!(poll(reader.as_mut()), Poll::Ready(Some(expected)));
+        }
+        drop(readers);
+        let mut assigned = Box::pin(stream.next());
+        assert_eq!(poll(assigned.as_mut()), Poll::Pending);
+        stream.push(44);
+        drop(assigned);
+        let mut survivor = Box::pin(stream.next());
+        assert_eq!(poll(survivor.as_mut()), Poll::Pending);
+        stream.push(55);
+        assert_eq!(poll(survivor.as_mut()), Poll::Ready(Some(55)));
+    }
+
+    #[test]
+    fn maestro_abandoned_waiters_remove_only_their_identity() {
+        let stream = EventStream::new(|_: &i32| false, |value| *value);
+        abandon_readers(&stream);
+        let mut observers: Vec<_> = (0..3).map(|_| Box::pin(stream.result())).collect();
+        for observer in &mut observers {
+            assert_eq!(poll(observer.as_mut()), Poll::Pending);
+        }
+        drop(observers.remove(1));
+        stream.end(Some(77));
+        for observer in &mut observers {
+            assert_eq!(poll(observer.as_mut()), Poll::Ready(77));
+        }
+        drop(observers);
+        assert_eq!(poll(std::pin::pin!(stream.result())), Poll::Ready(77));
+        assert_eq!(poll(std::pin::pin!(stream.next())), Poll::Ready(None));
+        let terminal = EventStream::new(|_: &i32| true, |value| *value);
+        let mut reader = Box::pin(terminal.next());
+        let mut observer = Box::pin(terminal.result());
+        assert_eq!(poll(reader.as_mut()), Poll::Pending);
+        assert_eq!(poll(observer.as_mut()), Poll::Pending);
+        terminal.push(99);
+        drop((reader, observer));
+        assert_eq!(poll(std::pin::pin!(terminal.next())), Poll::Ready(None));
+        assert_eq!(poll(std::pin::pin!(terminal.result())), Poll::Ready(99));
+    }
+
+    #[test]
+    fn maestro_abandoned_waiters_drop_wakers_after_unlock() {
+        use futures_util::FutureExt;
+        for observe in [false, true] {
+            let stream = EventStream::new(|_: &i32| false, |value| *value);
+            let holder = Arc::new(std::sync::OnceLock::new());
+            assert!(holder.set(stream.clone()).is_ok());
+            let mut survivor = Box::pin(stream.result());
+            assert_eq!(poll(survivor.as_mut()), Poll::Pending);
+            let waker = Waker::from(Arc::new(ReentrantWake(Arc::downgrade(&holder))));
+            let mut abandoned: std::pin::Pin<Box<dyn Future<Output = ()>>> = if observe {
+                Box::pin(stream.result().map(|_| ()))
+            } else {
+                Box::pin(stream.next().map(|_| ()))
+            };
+            assert_eq!(
+                abandoned.as_mut().poll(&mut Context::from_waker(&waker)),
+                Poll::Pending
+            );
+            drop(waker);
+            drop(abandoned);
+            assert_eq!(poll(std::pin::pin!(stream.next())), Poll::Ready(None));
+            assert_eq!(poll(survivor.as_mut()), Poll::Pending);
+            stream.end(Some(17));
+            assert_eq!(poll(survivor.as_mut()), Poll::Ready(17));
+        }
+    }
+
     #[test]
     fn maestro_dropped_observers_leave_producer_running() {
         waker_destruction_can_reenter();

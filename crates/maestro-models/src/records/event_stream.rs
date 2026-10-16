@@ -297,17 +297,24 @@ impl<T, R> Reading<T, R> {
     }
 }
 
-impl<T, R> Drop for Reading<T, R> {
-    fn drop(&mut self) {
+/// Retire one future's registration before destroying caller-owned values.
+macro_rules! remove_waiter {
+    ($owner:ident, $collection:ident, $remove:ident) => {
         let retired = {
-            let mut state = lock(&self.state);
+            let mut state = lock(&$owner.state);
             let position = state
-                .readers
+                .$collection
                 .iter()
-                .position(|reader| Arc::ptr_eq(&reader.identity, &self.identity));
-            position.and_then(|position| state.readers.remove(position))
+                .position(|waiter| Arc::ptr_eq(&waiter.identity, &$owner.identity));
+            position.$remove(|position| state.$collection.remove(position))
         };
         drop(retired);
+    };
+}
+
+impl<T, R> Drop for Reading<T, R> {
+    fn drop(&mut self) {
+        remove_waiter!(self, readers, and_then);
     }
 }
 
@@ -352,15 +359,7 @@ impl<T, R: Clone> Observing<T, R> {
 
 impl<T, R> Drop for Observing<T, R> {
     fn drop(&mut self) {
-        let retired = {
-            let mut state = lock(&self.state);
-            let position = state
-                .observers
-                .iter()
-                .position(|observer| Arc::ptr_eq(&observer.identity, &self.identity));
-            position.map(|position| state.observers.remove(position))
-        };
-        drop(retired);
+        remove_waiter!(self, observers, map);
     }
 }
 

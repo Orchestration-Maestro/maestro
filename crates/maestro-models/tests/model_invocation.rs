@@ -87,6 +87,87 @@ mod tests {
         }
     }
 
+    fn assert_timestamp(stream: &maestro_models::AssistantMessageEventStream, expected: f64) {
+        assert_eq!(
+            ready(stream.result()).read().unwrap().timestamp.to_bits(),
+            expected.to_bits()
+        );
+    }
+
+    fn assert_cloud_selection() -> crate::child_process::TestResult {
+        for (call, expected) in [
+            (
+                maestro_models::stream(model("bedrock-converse-stream"), context(), None)?,
+                81.0_f64,
+            ),
+            (
+                maestro_models::stream_simple(model("bedrock-converse-stream"), context(), None)?,
+                82.0,
+            ),
+        ] {
+            assert_timestamp(&call, expected);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn maestro_platform_stores_keep_distinct_owners() -> crate::child_process::TestResult {
+        use maestro_models::records::api_registry::*;
+        use maestro_models::{BedrockProviderModule, get_oauth_provider, reset_oauth_providers};
+        let _serial = crate::bundled::registry();
+        if crate::child_process::child_case().is_none() {
+            let name = "maestro_platform_stores_keep_distinct_owners";
+            return crate::child_process::rerun(name, "owners", &[]);
+        }
+        let visits = Arc::new(Mutex::new(Vec::new()));
+        let recorded = Arc::clone(&visits);
+        let removal = register_session_resource_cleanup(Arc::new(move |session| {
+            recorded.lock().unwrap().push(session.map(str::to_owned));
+            Ok(())
+        }));
+        register_api_provider(provider("separate", 71.0), None);
+        let retained = get_api_provider("separate").unwrap();
+        let cloud = provider("bedrock-converse-stream", 81.0);
+        maestro_models::set_bedrock_provider_module(BedrockProviderModule {
+            stream_bedrock: cloud.stream,
+            stream_simple_bedrock: cloud.stream_simple,
+        });
+        reset_oauth_providers();
+        let account = get_oauth_provider("anthropic").unwrap();
+        assert_timestamp(
+            &(retained.stream)(model("separate"), context(), None)?,
+            71.0,
+        );
+        cleanup_session_resources(Some("before"))?;
+        clear_api_providers();
+        assert!(Arc::ptr_eq(
+            &account,
+            &get_oauth_provider("anthropic").unwrap()
+        ));
+        assert_timestamp(
+            &(retained.stream_simple)(model("separate"), context(), None)?,
+            72.0,
+        );
+        cleanup_session_resources(Some("cleared"))?;
+        maestro_models::reset_api_providers();
+        assert!(Arc::ptr_eq(
+            &account,
+            &get_oauth_provider("anthropic").unwrap()
+        ));
+        assert_cloud_selection()?;
+        removal.remove();
+        cleanup_session_resources(Some("removed"))?;
+        assert_eq!(
+            *visits.lock().unwrap(),
+            [Some("before".into()), Some("cleared".into())]
+        );
+        assert_timestamp(
+            &(retained.stream)(model("separate"), context(), None)?,
+            71.0,
+        );
+        Ok(())
+    }
+
     fn assert_retained_provider(retained: &maestro_models::records::api_registry::ApiProvider) {
         assert_eq!(
             ready(
@@ -202,12 +283,8 @@ mod tests {
         clear_api_providers();
     }
 
-    #[test]
-    fn maestro_dispatch_reports_missing_api() {
-        use maestro_models::records::api_registry::*;
+    fn assert_missing_api() {
         use maestro_models::records::stream::*;
-        let _serial = crate::bundled::registry();
-        clear_api_providers();
         for failure in [
             stream(model("missing"), context(), None).err().unwrap(),
             stream_simple(model("missing"), context(), None)
@@ -222,6 +299,15 @@ mod tests {
             );
             assert_eq!(failure.name.as_deref(), Some("Error"));
         }
+    }
+
+    #[test]
+    fn maestro_dispatch_reports_missing_api() {
+        use maestro_models::records::api_registry::*;
+        use maestro_models::records::stream::*;
+        let _serial = crate::bundled::registry();
+        clear_api_providers();
+        assert_missing_api();
         let failure = DiagnosticErrorInfo {
             name: Some("Setup".into()),
             message: "adapter failure".into(),
@@ -232,11 +318,20 @@ mod tests {
         };
         let raw = failure.clone();
         let simple = failure.clone();
+        let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let raw_calls = Arc::clone(&calls);
+        let simple_calls = Arc::clone(&calls);
         register_api_provider(
             ApiProvider {
                 api: "failure".into(),
-                stream: Arc::new(move |_, _, _| Err(raw.clone())),
-                stream_simple: Arc::new(move |_, _, _| Err(simple.clone())),
+                stream: Arc::new(move |_, _, _| {
+                    raw_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                    Err(raw.clone())
+                }),
+                stream_simple: Arc::new(move |_, _, _| {
+                    simple_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                    Err(simple.clone())
+                }),
             },
             None,
         );
@@ -250,14 +345,12 @@ mod tests {
                 .unwrap(),
             failure
         );
-        assert_eq!(
-            ready(complete(model("failure"), context(), None)).unwrap_err(),
-            failure
-        );
-        assert_eq!(
-            ready(complete_simple(model("failure"), context(), None)).unwrap_err(),
-            failure
-        );
+        let raw = complete(model("failure"), context(), None);
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 3);
+        let simple = complete_simple(model("failure"), context(), None);
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 4);
+        assert_eq!(ready(raw).unwrap_err(), failure);
+        assert_eq!(ready(simple).unwrap_err(), failure);
         clear_api_providers();
     }
 
