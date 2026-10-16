@@ -1,5 +1,6 @@
-//! Image, text, PDF and presentation attachment records and loading.
+//! Image and document attachment records and loading.
 use crate::browser::docx_preview::{DocxError, OpenXmlPackage, Options, decode_text};
+use crate::browser::ssf::{self, Ssf, WorkbookError};
 use base64::{Engine, engine::general_purpose::STANDARD};
 use maestro_models::{Fetch, FetchError, HttpRequest};
 use serde::{Deserialize, Serialize};
@@ -77,6 +78,8 @@ pub enum AttachmentError {
     Pdf(String),
     /// Presentation package processing failure.
     Pptx(DocxError),
+    /// Spreadsheet workbook processing failure.
+    Excel(WorkbookError),
 }
 impl fmt::Display for AttachmentError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -88,6 +91,7 @@ impl fmt::Display for AttachmentError {
             Self::Unsupported(mime) => write!(formatter, "Unsupported file type: {mime}"),
             Self::Pdf(error) => write!(formatter, "Failed to process PDF: {error}"),
             Self::Pptx(error) => write!(formatter, "Failed to process PPTX: {error}"),
+            Self::Excel(error) => write!(formatter, "Failed to process Excel: {error}"),
         }
     }
 }
@@ -96,15 +100,16 @@ impl std::error::Error for AttachmentError {
         match self {
             Self::Fetch(error) => Some(error),
             Self::Pptx(error) => Some(error),
+            Self::Excel(error) => Some(error),
             _ => None,
         }
     }
 }
-/// Load original bytes as an image, text, PDF or presentation attachment.
+/// Load original bytes as an image or document attachment.
 ///
 /// # Errors
 /// Returns transport/body failures, non-success status, unsupported media types,
-/// or PDF/presentation processing failures. Word and spreadsheets remain unsupported.
+/// or document processing failures. Word and binary XLS remain unsupported.
 pub async fn load_attachment(
     source: AttachmentSource<'_>,
     file_name: Option<&str>,
@@ -313,7 +318,15 @@ fn attachment_text(
         ]
         .contains(&mime.as_str())
     {
-        return Err(AttachmentError::Unsupported(mime));
+        let mime = if mime.starts_with("application/vnd") {
+            mime
+        } else {
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet".into()
+        };
+        return Ok((
+            mime,
+            Some(process_excel(bytes, name).map_err(AttachmentError::Excel)?),
+        ));
     }
     if mime.starts_with("image/") {
         return Ok((mime, None));
@@ -334,4 +347,21 @@ fn attachment_text(
         "text/plain".into()
     };
     Ok((mime, Some(maestro_text::decode_utf8(bytes).into_owned())))
+}
+
+/// Extract ordered workbook sheets as formatted CSV inside literal wrappers.
+fn process_excel(bytes: &[u8], name: &str) -> Result<String, WorkbookError> {
+    let mut ssf = Ssf::default();
+    let mut workbook = ssf::read(bytes, name, &mut ssf)?;
+    let mut output = format!("<excel filename=\"{name}\">");
+    for (index, (name, sheet)) in workbook.sheets.iter_mut().enumerate() {
+        let csv = ssf::sheet_to_csv(sheet, &ssf);
+        let _ = write!(
+            output,
+            "\n<sheet name=\"{name}\" index=\"{}\">\n{csv}\n</sheet>",
+            index + 1
+        );
+    }
+    output.push_str("\n</excel>");
+    Ok(output)
 }

@@ -78,6 +78,8 @@ struct Cell {
     r#type: String,
     value: Value,
     w_after_read: Option<String>,
+    f: Option<String>,
+    array_formula: Option<String>,
     text: Value,
     w_after_format: Option<String>,
 }
@@ -179,6 +181,8 @@ fn check_cell(cell: &mut ssf::CellObject, expected: &Cell, ssf: &Ssf) {
     assert_eq!(kind, expected.r#type);
     assert_eq!(cell.v, expected.value.scalar());
     assert_eq!(cell.w, expected.w_after_read);
+    assert_eq!(cell.f, expected.f);
+    assert_eq!(cell.array_formula, expected.array_formula);
     assert_eq!(
         ssf::format_cell(Some(cell), None, &CellFormatOptions::default(), ssf),
         expected.text.scalar()
@@ -252,7 +256,7 @@ fn workbook_raw_errors_survive_reader_conversion() {
 }
 
 #[test]
-fn workbook_formulas_keep_only_reference_cached_values() {
+fn workbook_formulas_preserve_cached_and_uncached_values() {
     for file in ["formula.xlsx", "formula-no-cache.xlsx"] {
         check(file);
     }
