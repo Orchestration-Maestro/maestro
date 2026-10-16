@@ -46,3 +46,13 @@ wasm-bindgen-cli and miniserve respectively. Trunk's mandatory
 lockfree-object-pool 0.1.6 uses the Boost Software License 1.0; its
 [notice](../licenses/author-tools/lockfree-object-pool.txt) is retained alongside
 these author-tool records. See [browser author commands](../browser-build.md).
+
+The bundler configuration is authored as `Trunk.json`, parsed with tooling's
+existing serde_json dependency. Tooling builds the existing theme owner's native
+export example and its own wiring-only locked-metadata adapter as separate locked
+root operations; no theme/brand Cargo edge is added to tooling or the fixture.
+Generated route configurations retain the pinned tool versions and original
+absolute HTML/watch paths. Only the Trunk child's `CARGO` selects the adapter;
+metadata gains `--locked`, while other invocations pass through unchanged. See the
+[browser lock/write contract](../browser-build.md#locks-writes-and-direct-cargo-use)
+for preparation, independent lock maintenance and offline source provisioning.

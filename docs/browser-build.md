@@ -31,7 +31,7 @@ interaction qualification remain tracked in [#111](https://github.com/Orchestrat
 
 Outputs live under `target/maestro-browser/{library,example,debug}`. Optimized
 builds run wasm-opt; debug output does not certify a browser debugging session.
-Clean preserves authored files, shared fonts, Cargo caches and sibling outputs.
+Clean preserves authored files, shared fonts, Cargo caches, preparation inputs and sibling outputs.
 Native tool diagnostics and failures propagate through the recipes.
 
 Build, check and watch recipes accept positional `pack` and `mode` inputs:
@@ -44,15 +44,23 @@ Defaults select the checkout's brand pack and dark appearance. Supply both
 positional inputs before additional native options. Native options are forwarded
 by build/watch/serve/debug recipes; preview accepts only native server options.
 Relative pack paths resolve from the recipe directory. Paths containing spaces,
-apostrophes and non-ASCII characters remain literal arguments. Preparation reads `MAESTRO_BRAND_PACK` / `MAESTRO_BRAND_MODE` through
-the existing theme loader and projection; no alternate identity decoder exists.
+apostrophes and non-ASCII characters remain literal arguments. One `maestro-tooling`
+operation prepares and dispatches all author checks, builds and watch routes. A
+locked native `maestro-theme` example uses the existing loader/projection and writes
+eleven presentation files plus pack/mark directory observations; the fixture has
+no native path dependency or build script.
 
 Root `dev` composes `native-dev` with `browser-dev` using just's native parallel
 dependencies. Root `dev-compile` composes models with `browser-dev-compile`;
 `models-dev-compile` still selects only models. Trunk owns browser watching,
 rebuilding and serving; watchexec retains the native compiler graph.
-The browser watch routes first check the fixture to prepare an invocation-specific
-configuration under `target/maestro-browser/`. It retains the fixture and default
+Preparation creates route-specific inputs and `Trunk.json` configurations under
+`target/maestro-browser/.author/{library,example,debug}/`, outside the replaceable
+distributions. Checks may create these directories without creating distributions.
+The generated configuration uses absolute original HTML/watch paths and retains
+the authored asset paths and tool pins. Trunk
+invokes the same locked native exporter through a pre-build hook on each rebuild.
+The initial watch configuration retains the fixture and default
 brand roots and adds the containing directories of both the authored paths and
 symlink-resolved targets of the selected pack and mark template, including
 external directories. Recursive directory watching covers edits to linked targets,
@@ -61,6 +69,48 @@ roots. If you change the template to a path outside the watched directories,
 restart the serve or watch command ([tracked follow-up](https://github.com/Orchestration-Maestro/maestro/issues/1088)).
 The native watch option replaces configured roots rather than extending them, so the configuration is prepared from the existing theme loader;
 there is no second pack decoder.
+
+## Locks, writes and direct Cargo use
+
+Preparation/builds write only Cargo outputs/caches, route-owned author inputs and
+configuration, and the requested distributions. They do not rewrite authored
+Rust, manifests, locks, identity files or borrowed Cargo configuration. The explicit
+`browser-check` formatter is the sole intentional authored-source write.
+
+The fixture keeps its own adjacent reviewed lock. Unrelated root dependency changes
+need no fixture lock update; changes to fixture dependencies need explicit reviewed
+lock maintenance. Native exporter/adapter builds and metadata use the root lock;
+direct fixture checks use its authored manifest, `--locked` and the wasm target.
+Only the Trunk child receives the locked-metadata Cargo adapter in its `CARGO`
+environment: metadata gains `--locked` while native arguments, diagnostics and
+status survive. Native build and artifact queries retain Trunk's locked behavior.
+A stale lock fails without repair, including through actual Trunk.
+
+For direct fixture Cargo work, prepare the selected inputs first, then provide
+`MAESTRO_BROWSER_INPUTS` pointing to their absolute directory:
+
+```sh
+cargo run --locked -p maestro-theme --example browser_author_inputs -- \
+  "$PWD/assets/brand/brand.json" dark "$PWD/target/maestro-browser/.author/example/inputs"
+MAESTRO_BROWSER_INPUTS="$PWD/target/maestro-browser/.author/example/inputs" \
+  cargo check --locked --manifest-path crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml \
+  --target wasm32-unknown-unknown
+```
+
+Before tests, explicitly provision both independent locks:
+
+```sh
+cargo fetch --locked
+cargo fetch --locked --manifest-path crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml
+```
+
+Shared CI declares the fixture through `additional_locked_manifests` without
+activating the optional product browser-build job. Cold-cache tests stage complete
+local sources with root `cargo vendor --locked --offline --sync <fixture-manifest>
+<owned-source-directory>`. Their child starts with empty Cargo home/target and a
+test-owned directory-source/offline configuration, not a copied registry/index or
+build cache. Missing local sources fail visibly; setup never repairs locks or
+fetches during the cold phase.
 
 ## Tools and prepared metadata
 

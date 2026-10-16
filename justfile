@@ -191,7 +191,7 @@ check-browser-smoke:
 
 # Remove only the prepared browser library output.
 browser-clean:
-    trunk clean --config {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Trunk.toml")}} --dist {{quote(justfile_directory() / "target/maestro-browser/library")}}
+    trunk clean --config {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Trunk.json")}} --dist {{quote(justfile_directory() / "target/maestro-browser/library")}}
 
 # Prepare the isolated browser author library through native tools.
 browser-library-build pack=(justfile_directory() / "assets/brand/brand.json") mode="dark" *args:
@@ -199,23 +199,19 @@ browser-library-build pack=(justfile_directory() / "assets/brand/brand.json") mo
 
 # Watch shared browser inputs and serve the editable example.
 browser-dev pack=(justfile_directory() / "assets/brand/brand.json") mode="dark" *args:
-    shift 2; just _browser-watch serve example {{quote(pack)}} {{quote(mode)}} --address 127.0.0.1 "$@"
+    shift 2; just _browser-watch serve {{quote(pack)}} {{quote(mode)}} --address 127.0.0.1 "$@"
 
 # Watch browser Rust and stylesheet inputs without a server.
 browser-dev-compile pack=(justfile_directory() / "assets/brand/brand.json") mode="dark" *args:
-    shift 2; just _browser-watch watch library {{quote(pack)}} {{quote(mode)}} "$@"
+    shift 2; just _browser-watch watch {{quote(pack)}} {{quote(mode)}} "$@"
 
 # Format and strictly check the delivered browser library and author fixture.
 browser-check pack=(justfile_directory() / "assets/brand/brand.json") mode="dark":
-    cargo fmt -p maestro-web
-    cargo fmt --manifest-path {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml")}}
-    cargo clippy --no-deps -p maestro-web --target wasm32-unknown-unknown --locked -- -D warnings
-    MAESTRO_BRAND_PACK={{quote(absolute_path(pack))}} MAESTRO_BRAND_MODE={{quote(mode)}} cargo clippy --manifest-path {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml")}} --target wasm32-unknown-unknown --locked -- -D warnings
-    just browser-example-check {{quote(pack)}} {{quote(mode)}}
+    cargo run --quiet --locked -p maestro-tooling --bin development -- browser-author check {{quote(pack)}} {{quote(mode)}}
 
 # Type-check shared example declarations without emitting a distribution.
 browser-example-check pack=(justfile_directory() / "assets/brand/brand.json") mode="dark":
-    MAESTRO_BRAND_PACK={{quote(absolute_path(pack))}} MAESTRO_BRAND_MODE={{quote(mode)}} cargo check --manifest-path {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml")}} --target wasm32-unknown-unknown --locked
+    cargo run --quiet --locked -p maestro-tooling --bin development -- browser-author example-check {{quote(pack)}} {{quote(mode)}}
 
 # Serve the example through the single shared browser watch graph.
 browser-example-dev pack=(justfile_directory() / "assets/brand/brand.json") mode="dark" *args:
@@ -231,24 +227,23 @@ browser-example-preview *args:
 
 # Remove only the prepared browser example output.
 browser-example-clean:
-    trunk clean --config {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Trunk.toml")}} --dist {{quote(justfile_directory() / "target/maestro-browser/example")}}
+    trunk clean --config {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Trunk.json")}} --dist {{quote(justfile_directory() / "target/maestro-browser/example")}}
 
 # Retain source locations and declarations without an optimizer pass.
 browser-debug-build pack=(justfile_directory() / "assets/brand/brand.json") mode="dark" *args:
-    shift 2; MAESTRO_BRAND_PACK={{quote(absolute_path(pack))}} MAESTRO_BRAND_MODE={{quote(mode)}} trunk build {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/debug.html")}} --config {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Trunk.toml")}} --locked --dist {{quote(justfile_directory() / "target/maestro-browser/debug")}} "$@"
+    shift 2; cargo run --quiet --locked -p maestro-tooling --bin development -- browser-author debug-build {{quote(pack)}} {{quote(mode)}} "$@"
 
 # Caller-owned shared build interface, failing before the next build on error.
 browser-build pack=(justfile_directory() / "assets/brand/brand.json") mode="dark":
     just browser-library-build {{quote(pack)}} {{quote(mode)}}
     just browser-example-build {{quote(pack)}} {{quote(mode)}}
 
-# One optimized build path owns the fixture, asset inputs and tool pins.
+# One library operation prepares and dispatches the native author tools.
 [private]
 _browser-build output pack mode *args:
-    shift 3; MAESTRO_BRAND_PACK={{quote(absolute_path(pack))}} MAESTRO_BRAND_MODE={{quote(mode)}} trunk build --config {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Trunk.toml")}} --locked --release --dist {{quote(justfile_directory() / "target/maestro-browser" / output)}} "$@"
+    shift 3; cargo run --quiet --locked -p maestro-tooling --bin development -- browser-author {{output}}-build {{quote(pack)}} {{quote(mode)}} "$@"
 
-# Prepare invocation-specific roots before starting the native watcher.
+# Trunk owns the only browser watch graph after shared native preparation.
 [private]
-_browser-watch command output pack mode *args:
-    MAESTRO_BROWSER_WATCH_CONFIG={{quote(justfile_directory() / "target/maestro-browser/watch.toml")}} just browser-example-check {{quote(pack)}} {{quote(mode)}}
-    shift 4; MAESTRO_BRAND_PACK={{quote(absolute_path(pack))}} MAESTRO_BRAND_MODE={{quote(mode)}} trunk {{command}} {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/index.html")}} --config {{quote(justfile_directory() / "target/maestro-browser/watch.toml")}} --locked --dist {{quote(justfile_directory() / "target/maestro-browser" / output)}} "$@"
+_browser-watch command pack mode *args:
+    shift 3; cargo run --quiet --locked -p maestro-tooling --bin development -- browser-author {{command}} {{quote(pack)}} {{quote(mode)}} "$@"
