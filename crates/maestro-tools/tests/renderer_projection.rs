@@ -281,16 +281,20 @@ fn renderer_binding_keeps_same_type_state_across_slots() {
     let second = ToolRendererBinding::from_definition(&tool);
     assert_eq!(first.render_shell, Some(ToolRenderShell::SelfRendered));
     first.render_call.unwrap()(Some(&args), &env.theme, &row).unwrap();
-    second.render_result.unwrap()(
-        &raw(Some(&json!(["custom"]))),
-        ToolRenderResultOptions {
-            expanded: false,
-            is_partial: false,
-        },
-        &env.theme,
-        &row,
-    )
-    .unwrap();
+    second
+        .render_result
+        .unwrap()
+        .prepare(raw(Some(&json!(["custom"]))))
+        .unwrap()
+        .render(
+            ToolRenderResultOptions {
+                expanded: false,
+                is_partial: false,
+            },
+            &env.theme,
+            &row,
+        )
+        .unwrap();
     let aliases = aliases.borrow();
     assert!(Rc::ptr_eq(&aliases[0], &aliases[1]));
 }
@@ -443,16 +447,11 @@ fn renderer_binding_can_wrap_a_builtin_callback() {
         row.last_component = None;
         let render_result = binding.render_result.unwrap();
         let settle = |line: &str, theme: &maestro_theme::Theme| {
-            render_result(
-                &raw(Some(&json!(["+1 persisted", line]))),
-                ToolRenderResultOptions {
-                    expanded: false,
-                    is_partial: false,
-                },
-                theme,
-                &row,
-            )
-            .unwrap()
+            render_result
+                .prepare(raw(Some(&json!(["+1 persisted", line]))))
+                .unwrap()
+                .render(settled(false), theme, &row)
+                .unwrap()
         };
         let output = settle("1.25", &env.theme);
         assert!(output.render(80).is_empty());
@@ -697,4 +696,207 @@ fn retained_edit_malformed_line_uses_absent_fallback() {
     )
     .unwrap();
     assert_ne!(retained.render(80), expected);
+}
+
+#[test]
+fn prepared_typed_details_are_shared_and_released_per_operation() {
+    let (env, setup) = environment();
+    let args = json!({});
+    let row = context::<()>(&args, &setup, &env, None);
+    let count = Cell::new(0);
+    let seen = Rc::new(RefCell::new(Vec::new()));
+    let observed = Rc::clone(&seen);
+    let callback = ToolRenderResult::<Rc<()>, ()>::Typed(Rc::new(move |result, _, _, _| {
+        observed
+            .borrow_mut()
+            .push(result.details.map(Rc::downgrade));
+        Ok(empty())
+    }));
+    let value = json!(null);
+    let prepared = callback
+        .prepare_raw(raw(Some(&value)), |_| {
+            count.set(count.get() + 1);
+            Ok(Rc::new(()))
+        })
+        .unwrap();
+    let second = callback
+        .prepare_raw(raw(Some(&value)), |_| {
+            count.set(count.get() + 1);
+            Ok(Rc::new(()))
+        })
+        .unwrap();
+    let missing = callback
+        .prepare_raw(raw(None), |_| panic!("missing details decoded"))
+        .unwrap();
+    drop(callback);
+    for expanded in [false, true] {
+        prepared
+            .render(settled(expanded), &env.theme, &row)
+            .unwrap();
+    }
+    second.render(settled(false), &env.theme, &row).unwrap();
+    missing.render(settled(false), &env.theme, &row).unwrap();
+    assert_eq!(count.get(), 2);
+    let seen = seen.borrow();
+    let first = seen[0].as_ref().unwrap();
+    assert!(std::rc::Weak::ptr_eq(first, seen[1].as_ref().unwrap()));
+    assert!(!std::rc::Weak::ptr_eq(first, seen[2].as_ref().unwrap()));
+    assert!(seen[3].is_none());
+    assert!(first.upgrade().is_some());
+    drop(prepared);
+    assert!(first.upgrade().is_none());
+    check_prepared_binding_release();
+}
+
+#[test]
+fn prepared_raw_details_keep_presence_and_borrowed_identity() {
+    let (env, setup) = environment();
+    let args = json!({});
+    let null = json!(null);
+    for details in [None, Some(&null)] {
+        for flag in [None, Some(false), Some(true)] {
+            check_prepared_raw_case(details, flag);
+        }
+    }
+    let callback =
+        ToolRenderResult::<std::convert::Infallible, ()>::Raw(Rc::new(|_, _, _, _| Ok(empty())));
+    let prepared = callback
+        .prepare_raw(raw(Some(&null)), |_| panic!("raw decoder invoked"))
+        .unwrap();
+    prepared
+        .render(
+            settled(false),
+            &env.theme,
+            &context::<()>(&args, &setup, &env, None),
+        )
+        .unwrap();
+}
+
+#[test]
+fn prepared_result_failures_keep_original_diagnostics() {
+    let (env, setup) = environment();
+    let args = json!({});
+    let row = context::<()>(&args, &setup, &env, None);
+    let diagnostic = maestro_models::DiagnosticErrorInfo {
+        name: Some("CustomFailure".into()),
+        message: "original diagnostic".into(),
+        stack: Some("original stack".into()),
+        code: Some(maestro_models::DiagnosticCode::Text("custom-code".into())),
+    };
+    let expected = diagnostic.clone();
+    let called = Rc::new(Cell::new(0));
+    let seen = Rc::clone(&called);
+    let callback = ToolRenderResult::<u32, ()>::Typed(Rc::new(move |_, _, _, _| {
+        seen.set(seen.get() + 1);
+        Err(diagnostic.clone())
+    }));
+    let value = json!(null);
+    assert_eq!(
+        callback
+            .prepare_raw(raw(Some(&value)), |_| Err(expected.clone()))
+            .err()
+            .unwrap(),
+        expected
+    );
+    assert_eq!(called.get(), 0);
+    for _ in 0..2 {
+        let prepared = callback.prepare_raw(raw(Some(&value)), |_| Ok(7)).unwrap();
+        let error = prepared
+            .render(settled(false), &env.theme, &row)
+            .err()
+            .unwrap();
+        assert_eq!(error, expected);
+    }
+    assert_eq!(called.get(), 2);
+    let mut tool = definition::<(), u32>();
+    tool.render_result = Some(callback);
+    assert_eq!(
+        ToolRendererBinding::from_raw(&tool).err().unwrap().message,
+        "Typed result callback requires ToolRendererBinding::from_definition"
+    );
+}
+
+fn check_prepared_binding_release() {
+    let (env, setup) = environment();
+    let args = json!({});
+    let capture = Rc::new(());
+    let weak = Rc::downgrade(&capture);
+    let mut tool = definition::<(), Vec<String>>();
+    tool.render_result = Some(ToolRenderResult::Typed(Rc::new(move |result, _, _, _| {
+        assert_eq!(Rc::strong_count(&capture), 1);
+        assert_eq!(result.details.unwrap(), &["retained"]);
+        Ok(empty())
+    })));
+    let binding = ToolRendererBinding::from_definition(&tool);
+    let payload = json!(["retained"]);
+    let operation = binding
+        .render_result
+        .as_ref()
+        .unwrap()
+        .prepare(raw(Some(&payload)))
+        .unwrap();
+    drop(tool);
+    drop(binding);
+    let row = context::<ToolRendererState>(&args, &setup, &env, None);
+    operation.render(settled(false), &env.theme, &row).unwrap();
+    assert!(weak.upgrade().is_some());
+    drop(operation);
+    assert!(weak.upgrade().is_none());
+}
+
+fn settled(expanded: bool) -> ToolRenderResultOptions {
+    ToolRenderResultOptions {
+        expanded,
+        is_partial: false,
+    }
+}
+
+fn check_prepared_raw_case(details: Option<&serde_json::Value>, flag: Option<bool>) {
+    use maestro_tools::{ToolRenderResultBinding, ToolRenderResultCallback};
+    let (env, setup) = environment();
+    let args = json!({});
+    let content = vec![maestro_models::UserBlock::Text(
+        maestro_models::TextContent {
+            text: "ordered".into(),
+            text_signature: None,
+        },
+    )];
+    let pointer = content.as_ptr();
+    let expected = details.map(std::ptr::from_ref);
+    let calls = Rc::new(Cell::new(0));
+    let seen = Rc::clone(&calls);
+    let callback: ToolRenderResultCallback<serde_json::Value, ToolRendererState> =
+        Rc::new(move |r, options, _, row| {
+            assert_eq!(r.details.map(std::ptr::from_ref), expected);
+            assert_eq!(r.content.as_ptr(), pointer);
+            assert_eq!(r.terminate, flag);
+            assert_eq!(r.is_error, flag);
+            assert_eq!(options.expanded, row.expanded);
+            assert_eq!(
+                *row.state.borrow().state::<u32>().borrow(),
+                u32::from(options.expanded)
+            );
+            assert_eq!(row.last_component.is_some(), options.expanded);
+            seen.set(seen.get() + 1);
+            Ok(empty())
+        });
+    let binding = ToolRenderResultBinding::from(callback);
+    let prepared = binding
+        .prepare(ToolRenderResultLike {
+            content: &content,
+            details,
+            terminate: flag,
+            is_error: flag,
+        })
+        .unwrap();
+    drop(binding);
+    for expanded in [false, true] {
+        let mut row = context::<ToolRendererState>(&args, &setup, &env, expanded.then(empty));
+        row.expanded = expanded;
+        *row.state.borrow().state::<u32>().borrow_mut() = u32::from(expanded);
+        prepared
+            .render(settled(expanded), &env.theme, &row)
+            .unwrap();
+    }
+    assert_eq!(calls.get(), 2);
 }

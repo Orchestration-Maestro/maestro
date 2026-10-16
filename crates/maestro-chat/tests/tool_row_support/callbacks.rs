@@ -67,7 +67,7 @@ impl Callbacks {
         });
         Some(ToolRendererBinding {
             render_call: call,
-            render_result: result,
+            render_result: result.map(Into::into),
             render_shell: def.shell.as_deref().map(|s| match s {
                 "default" => ToolRenderShell::Default,
                 "self" => ToolRenderShell::SelfRendered,

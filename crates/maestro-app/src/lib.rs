@@ -21,8 +21,8 @@ pub use maestro_tools::output::render_utils::{ToolRenderResultLike, get_text_out
 pub use maestro_tools::{EditRenderState, ToolDef};
 pub use maestro_tools::{
     ToolDefinition, ToolRenderCall, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase,
-    ToolRenderResult, ToolRenderResultCallback, ToolRenderResultOptions, ToolRenderShell,
-    ToolRendererBinding, ToolRendererState,
+    ToolRenderResult, ToolRenderResultBinding, ToolRenderResultCallback, ToolRenderResultOptions,
+    ToolRenderShell, ToolRendererBinding, ToolRendererState,
 };
 
 pub use presentation_data::footer_data_provider::ReadonlyFooterDataProvider;

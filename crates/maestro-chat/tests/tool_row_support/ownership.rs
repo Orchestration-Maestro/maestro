@@ -1,8 +1,11 @@
 //! Replacement, fallible-child propagation and weak teardown witnesses.
-use maestro_app::{ToolRenderShell, ToolRendererBinding};
+use maestro_app::{
+    ToolRenderResultCallback, ToolRenderShell, ToolRendererBinding, ToolRendererState,
+};
 use maestro_chat::{ToolExecutionComponent, ToolExecutionResult};
 use maestro_tui::{Component, Container};
 use serde::Deserialize;
+use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
 /// Recorded replacement inputs and independently corrected image payloads.
 #[derive(Deserialize)]
@@ -177,33 +180,14 @@ pub fn live_callback_phases() {
     let observed = handle.clone();
     let errors = Rc::new(RefCell::new(Vec::new()));
     let observed_errors = errors.clone();
+    let result = installed_call_result(observed, observed_errors);
     params.tool_definition = Some(ToolRendererBinding {
         render_call: Some(Rc::new(move |_, _, _| {
             publication.set_theme_instance(changed.clone()).unwrap();
             let text = maestro_tui::Text::new("installed call".into(), 0, 0, None);
             Ok(Rc::new(text))
         })),
-        render_result: Some(Rc::new(move |result, _, theme, context| {
-            assert!(result.content.is_empty());
-            assert!(result.details.is_none());
-            assert!(result.terminate.is_none());
-            assert!(
-                result.is_error.is_none(),
-                "result payload has no error field"
-            );
-            observed_errors.borrow_mut().push(context.is_error);
-            let row = observed.borrow().as_ref().unwrap().upgrade().unwrap();
-            assert!(
-                row.render(40)
-                    .iter()
-                    .any(|line| line.contains("installed call"))
-            );
-            let text = theme
-                .fg(&maestro_theme::ThemeColor::ToolTitle, "new theme")
-                .unwrap();
-            assert_eq!(text, "\x1b[38;5;61mnew theme\x1b[39m");
-            Ok(Rc::new(maestro_tui::Text::new(text, 0, 0, None)))
-        })),
+        render_result: Some(result.into()),
         render_shell: None,
     });
     let row = Rc::new(ToolExecutionComponent::new(params).unwrap());
@@ -290,4 +274,131 @@ pub fn invalidation_error() {
             .iter()
             .any(|line| line.contains("custom_tool"))
     );
+}
+
+thread_local! {
+    static DECODES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+struct Decoded(u32);
+impl<'de> serde::Deserialize<'de> for Decoded {
+    fn deserialize<D: serde::Deserializer<'de>>(decoder: D) -> Result<Self, D::Error> {
+        let value = u32::deserialize(decoder)?;
+        DECODES.with(|count| count.set(count.get() + 1));
+        Ok(Self(value))
+    }
+}
+/// Each rebuild prepares fresh result data while preserving the call slot's state.
+pub fn typed_rebuilds() {
+    DECODES.with(|count| count.set(0));
+    let runtime = super::manual_runtime::ManualRuntime::new();
+    let (mut params, _) = super::params(&super::default_input(), &runtime);
+    let states = Rc::new(RefCell::new(Vec::new()));
+    let observed = Rc::new(RefCell::new(Vec::new()));
+    let definition = typed_definition(&states, observed.clone());
+    params.tool_definition = Some(ToolRendererBinding::from_definition(&definition));
+    let row = ToolExecutionComponent::new(params).unwrap();
+    let result = |details| maestro_chat::ToolExecutionResult {
+        content: vec![],
+        details: Some(details),
+        is_error: false,
+    };
+    row.update_result(result(serde_json::json!(7)), true)
+        .unwrap();
+    assert_eq!(DECODES.with(std::cell::Cell::get), 1);
+    row.set_expanded(true).unwrap();
+    assert_eq!(DECODES.with(std::cell::Cell::get), 2);
+    row.update_result(result(serde_json::json!(9)), false)
+        .unwrap();
+    assert_eq!(DECODES.with(std::cell::Cell::get), 3);
+    assert_eq!(
+        *observed.borrow(),
+        [(7, false, true, 2), (7, true, true, 3), (9, true, false, 4)]
+    );
+    row.update_result(result(serde_json::json!("invalid")), false)
+        .unwrap();
+    assert_eq!(observed.borrow().len(), 3);
+    assert_eq!(*states.borrow()[0].borrow(), 5);
+    assert!(
+        states
+            .borrow()
+            .iter()
+            .all(|state| Rc::ptr_eq(state, &states.borrow()[0]))
+    );
+    assert!(row.render(40).iter().any(|line| line.contains("call")));
+}
+
+fn typed_definition(
+    states: &Rc<RefCell<Vec<Rc<RefCell<u32>>>>>,
+    events: RebuildEvents,
+) -> maestro_app::ToolDefinition<(), (), Decoded, u32> {
+    use maestro_app::{ToolDefinition, ToolRenderResult};
+    use std::sync::Arc;
+    let seen = states.clone();
+    ToolDefinition::<(), (), Decoded, u32> {
+        definition: serde_json::from_value(
+            serde_json::json!({"name":"custom","description":"","parameters":{}}),
+        )
+        .unwrap(),
+        label: "custom".into(),
+        prompt_snippet: None,
+        prompt_guidelines: None,
+        prepare_arguments: None,
+        execution_mode: None,
+        execute: Arc::new(|_, (), _, _, _| {
+            Box::pin(async { panic!("rendering must not execute") })
+        }),
+        render_shell: Some(maestro_app::ToolRenderShell::SelfRendered),
+        render_call: Some(Rc::new(move |_, _, row| {
+            *row.state.borrow_mut() += 1;
+            seen.borrow_mut().push(row.state.clone());
+            Ok(Rc::new(maestro_tui::Text::new("call".into(), 0, 0, None)))
+        })),
+        render_result: Some(ToolRenderResult::Typed(Rc::new(
+            move |result, options, _, row| {
+                events.borrow_mut().push((
+                    result.details.unwrap().0,
+                    options.expanded,
+                    options.is_partial,
+                    *row.state.borrow(),
+                ));
+                Ok(Rc::new(maestro_tui::Text::new(
+                    format!("value {}", result.details.unwrap().0),
+                    0,
+                    0,
+                    None,
+                )))
+            },
+        ))),
+    }
+}
+
+/// Ordered result observations for each rebuild.
+type RebuildEvents = Rc<RefCell<Vec<(u32, bool, bool, u32)>>>;
+
+/// Observe the installed call and live theme through the result phase.
+fn installed_call_result(
+    observed: Rc<RefCell<Option<std::rc::Weak<ToolExecutionComponent>>>>,
+    observed_errors: Rc<RefCell<Vec<bool>>>,
+) -> ToolRenderResultCallback<Value, ToolRendererState> {
+    Rc::new(move |result, _, theme, context| {
+        assert!(result.content.is_empty());
+        assert!(result.details.is_none());
+        assert!(result.terminate.is_none());
+        assert!(
+            result.is_error.is_none(),
+            "result payload has no error field"
+        );
+        observed_errors.borrow_mut().push(context.is_error);
+        let row = observed.borrow().as_ref().unwrap().upgrade().unwrap();
+        assert!(
+            row.render(40)
+                .iter()
+                .any(|line| line.contains("installed call"))
+        );
+        let text = theme
+            .fg(&maestro_theme::ThemeColor::ToolTitle, "new theme")
+            .unwrap();
+        assert_eq!(text, "\x1b[38;5;61mnew theme\x1b[39m");
+        Ok(Rc::new(maestro_tui::Text::new(text, 0, 0, None)))
+    })
 }

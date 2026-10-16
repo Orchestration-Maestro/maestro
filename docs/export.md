@@ -77,7 +77,7 @@ adjacent `ansi-line` divs without separators; only an empty converted line becom
 not brand roles.
 
 `create_tool_html_renderer` implements the existing `ToolHtmlRenderer` contract
-through [tools-owned definitions](tools-read.md#tool-definitions). Supply live lookup,
+through [tools-owned renderer bindings](tools.md#renderer-projections). Supply live lookup,
 theme, cwd and host environment. Each call ID owns a `ToolRendererState`;
 custom state uses `Default`, and JSON state starts as an empty object. Width defaults
 to 100 only when omitted. The adapter retains arguments, shared mutable state and
@@ -94,8 +94,19 @@ is included only when nonempty and different. Ordinary lookup, callback, compone
 and typed-input failures return absence without rolling back earlier mutations.
 Direct user-supplied renderer errors still propagate through the serializer.
 
-Result callbacks retain one `ToolRenderResult` slot. Typed callbacks decode present
+Lookup returns `ToolRendererBinding`, so native factories and custom tools with
+different parameter, details and state types share one registry. The adapter
+prepares the selected result binding once per operation. Typed callbacks decode present
 details once and share that value across collapsed and expanded phases; raw callbacks
 borrow persisted JSON directly, so sparse builtin metadata does not require decoding
 an execution record. Both phases use the same per-ID typed state owner, available via
 `ToolRenderContext::renderer_state` for native delegation with `with_state`.
+
+For example, a caller can populate one binding registry with
+`ToolDef::renderer_binding()` for native tools and
+`ToolRendererBinding::from_definition(&custom_definition)` for typed custom tools,
+then supply `get_tool_definition: |name| Ok(bindings.get(name).cloned())`.
+Use `ToolRendererBinding::from_raw(&custom_definition)` for a custom raw slot
+whose execution details need no decoder. Neither lookup nor preparation executes
+the tool. Both result phases retain the selected binding even if callbacks change
+the registry; subsequent operations perform a new lookup.

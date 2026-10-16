@@ -94,6 +94,9 @@ Callback failures fall back in that slot; failures from a returned child's
 `try_render` propagate. Call and result slots share typed state but retain separate
 previous components. Result callbacks receive content and optional raw details;
 error status is carried only by the render context, not the result payload.
+Each rebuild prepares the selected result binding again before rendering once,
+using the current details, expansion and streaming flags. Preparation failures
+use the same result-slot fallback as callback failures.
 
 `update_args`, `mark_execution_started`, `set_args_complete`, `update_result`,
 `set_expanded`, `set_show_images` and `set_image_width_cells` rebuild the retained

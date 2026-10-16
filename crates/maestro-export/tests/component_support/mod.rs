@@ -238,7 +238,7 @@ fn observe(config: &Config) -> Value {
             }
             _ => Some(Rc::clone(&tool)),
         };
-        Ok(found)
+        Ok(found.map(|tool| maestro_tools::ToolRendererBinding::from_definition(&tool)))
     };
     let renderer: Rc<dyn ToolHtmlRenderer + '_> =
         Rc::new(create_tool_html_renderer(ToolHtmlRendererDeps {
@@ -361,3 +361,6 @@ const STEP_MEMBERS: [&str; 14] = [
     "reuse",
     "count",
 ];
+
+#[allow(dead_code)]
+pub mod bindings;

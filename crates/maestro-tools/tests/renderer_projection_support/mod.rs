@@ -95,17 +95,21 @@ pub fn render(input: &Input, env: &Env) -> Vec<String> {
         terminate: None,
         is_error: Some(input.is_error),
     };
-    binding.render_result.unwrap()(
-        &result,
-        ToolRenderResultOptions {
-            expanded: input.options.expanded,
-            is_partial: input.options.is_partial,
-        },
-        &env.theme,
-        &row,
-    )
-    .unwrap()
-    .render(80)
+    binding
+        .render_result
+        .unwrap()
+        .prepare(result)
+        .unwrap()
+        .render(
+            ToolRenderResultOptions {
+                expanded: input.options.expanded,
+                is_partial: input.options.is_partial,
+            },
+            &env.theme,
+            &row,
+        )
+        .unwrap()
+        .render(80)
 }
 /// Replay a nonoverlapping source group, rejecting duplicate queries and unused palette values.
 pub fn check(range: std::ops::Range<usize>) {
