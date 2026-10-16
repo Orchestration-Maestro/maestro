@@ -1,0 +1,159 @@
+[
+  {
+    "id": "npm-instruction",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules",
+        "stderr": ""
+      },
+      "op": "instruction"
+    },
+    "expected": {
+      "value": "Run: npm --prefix /opt/tool install -g @old/agent"
+    },
+    "trace": []
+  },
+  {
+    "id": "pnpm-instruction",
+    "input": {
+      "executable": "/usr/pnpm/maestro",
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules",
+        "stderr": ""
+      },
+      "op": "instruction"
+    },
+    "expected": {
+      "value": "Run: pnpm install -g @old/agent"
+    },
+    "trace": []
+  },
+  {
+    "id": "yarn-instruction",
+    "input": {
+      "executable": "/usr/yarn/maestro",
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib",
+        "stderr": ""
+      },
+      "op": "instruction"
+    },
+    "expected": {
+      "value": "Run: yarn global add @old/agent"
+    },
+    "trace": []
+  },
+  {
+    "id": "bun-instruction",
+    "input": {
+      "package_dir": "/opt/.bun/install/global/node_modules/@old/agent",
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/.bun/bin",
+        "stderr": ""
+      },
+      "op": "instruction"
+    },
+    "expected": {
+      "value": "Run: bun install -g @old/agent"
+    },
+    "trace": []
+  },
+  {
+    "id": "standalone-instruction",
+    "input": {
+      "standalone": true,
+      "probe": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "op": "instruction"
+    },
+    "expected": {
+      "value": "Download from: https://github.com/Orchestration-Maestro/maestro/releases/latest"
+    },
+    "trace": []
+  },
+  {
+    "id": "unknown-instruction",
+    "input": {
+      "package_dir": "/checkout/agent",
+      "executable": "/bin/maestro",
+      "probe": {
+        "status": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      "op": "instruction"
+    },
+    "expected": {
+      "value": "Update @old/agent using the package manager, wrapper, or source checkout that provides this installation."
+    },
+    "trace": []
+  },
+  {
+    "id": "unknown-renamed",
+    "input": {
+      "op": "unavailable",
+      "package_dir": "/source/agent",
+      "executable": "/bin/maestro",
+      "update_package_name": "@new/maestro"
+    },
+    "expected": {
+      "value": "Update @new/maestro using the package manager, wrapper, or source checkout that provides this installation."
+    },
+    "trace": []
+  },
+  {
+    "id": "managed-writable-manual",
+    "input": {
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\n",
+        "stderr": ""
+      },
+      "op": "unavailable"
+    },
+    "expected": {
+      "value": "This installation is not managed by a global npm install. Update it with the package manager, wrapper, or source checkout that provides it."
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  }
+]

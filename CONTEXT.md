@@ -87,6 +87,7 @@ are later scope, not active foundation concepts.
 - **Pending edit:** An unsaved preference edit captured with a revision; a successful save acknowledges only the revisions it wrote, so later or failed edits stay pending.
 - **Configuration root:** The user configuration directory selected by the application configuration owner from a nonempty override or its home-based default; lower-level services consume the supplied root. See [application configuration](docs/application/configuration.md).
 - **InstallMethod:** The package-manager classification selected from supplied installation layout and path evidence, without executing a manager.
+- **SelfUpdateCommand:** An owned self-update command description with literal installation arguments, a display and optional ordered removal/installation steps; selection does not execute an update.
 - **Session directory:** A caller-selected or default directory used for native session files.
 - **File-write lock:** Native OS file locking on a stable sidecar file for mutual exclusion. The [shared effect contract](docs/specs/maestro-port.md#crates-and-delivery-order) assigns bounded synchronous acquisition of a caller-opened file to `maestro-lock`; settings and credentials retain opening, permissions, persistence, unlocking and asynchronous acquisition policy. The [lock documentation](docs/locking.md) gives synchronous acquisition policy; the [credentials documentation](docs/credentials.md) gives the asynchronous schedule.
 - **Credential:** Provider-owned authentication data, not permission to execute a tool.

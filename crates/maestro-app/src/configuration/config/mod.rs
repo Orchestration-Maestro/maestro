@@ -3,6 +3,15 @@
 pub mod installation;
 pub mod paths;
 
+#[cfg(not(target_arch = "wasm32"))]
+mod self_update;
+#[cfg(not(target_arch = "wasm32"))]
+pub use self_update::{
+    NativeSelfUpdateOperations, SelfUpdateCommand, SelfUpdateCommandStep, SelfUpdateContext,
+    SelfUpdateOperations, get_self_update_command, get_self_update_unavailable_instruction,
+    get_update_instruction,
+};
+
 use std::sync::LazyLock;
 
 /// The distribution package name.

@@ -1,0 +1,60 @@
+[
+  {
+    "id": "resolved-override",
+    "input": {
+      "package_dir": "/chosen/lib/node_modules/@old/agent",
+      "probe": {
+        "status": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "--prefix",
+          "/chosen",
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "npm --prefix /chosen install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/chosen/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/chosen/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/chosen/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/chosen/lib/node_modules"
+      ],
+      [
+        "access",
+        "/chosen/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/chosen/lib/node_modules/@old"
+      ]
+    ]
+  }
+]

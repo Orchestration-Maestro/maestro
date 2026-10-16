@@ -1,0 +1,374 @@
+[
+  {
+    "id": "configured-prefix",
+    "input": {
+      "npm_command": [
+        "npm",
+        "--prefix",
+        "/opt/tool"
+      ],
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\n",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "--prefix",
+          "/opt/tool",
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "npm --prefix /opt/tool install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "--prefix",
+          "/opt/tool",
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "configured-wrapper",
+    "input": {
+      "npm_command": [
+        "wrapper",
+        "--profile",
+        "named profile"
+      ],
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\n",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": {
+        "command": "wrapper",
+        "args": [
+          "--profile",
+          "named profile",
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "wrapper --profile \"named profile\" install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "wrapper",
+        [
+          "--profile",
+          "named profile",
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "configured-empty",
+    "input": {
+      "npm_command": [],
+      "probe": {
+        "status": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "--prefix",
+          "/opt/tool",
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "npm --prefix /opt/tool install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "configured-no-fallback",
+    "input": {
+      "npm_command": [
+        "npm"
+      ],
+      "probe": {
+        "status": 0,
+        "stdout": "/other/root",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/other/root"
+      ]
+    ]
+  },
+  {
+    "id": "configured-renamed",
+    "input": {
+      "npm_command": [
+        "npm",
+        "--prefix",
+        "/opt/tool"
+      ],
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\n",
+        "stderr": ""
+      },
+      "update_package_name": "@new/maestro"
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "--prefix",
+          "/opt/tool",
+          "install",
+          "-g",
+          "@new/maestro"
+        ],
+        "display": "npm --prefix /opt/tool uninstall -g @old/agent && npm --prefix /opt/tool install -g @new/maestro",
+        "steps": [
+          {
+            "command": "npm",
+            "args": [
+              "--prefix",
+              "/opt/tool",
+              "uninstall",
+              "-g",
+              "@old/agent"
+            ],
+            "display": "npm --prefix /opt/tool uninstall -g @old/agent"
+          },
+          {
+            "command": "npm",
+            "args": [
+              "--prefix",
+              "/opt/tool",
+              "install",
+              "-g",
+              "@new/maestro"
+            ],
+            "display": "npm --prefix /opt/tool install -g @new/maestro"
+          }
+        ]
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "--prefix",
+          "/opt/tool",
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "non-npm-ignores-configuration",
+    "input": {
+      "executable": "/runtime/pnpm/node",
+      "npm_command": [
+        "invalid-wrapper"
+      ],
+      "probe": {
+        "status": 0,
+        "stdout": "/opt/tool/lib/node_modules\n",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": {
+        "command": "pnpm",
+        "args": [
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "pnpm install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "pnpm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  }
+]

@@ -1,0 +1,286 @@
+[
+  {
+    "id": "unscoped",
+    "input": {
+      "package_dir": "/custom/lib/node_modules/agent",
+      "package_name": "agent",
+      "probe": {
+        "status": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "--prefix",
+          "/custom",
+          "install",
+          "-g",
+          "agent"
+        ],
+        "display": "npm --prefix /custom install -g agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/custom/lib/node_modules/agent"
+      ],
+      [
+        "canonicalize",
+        "/custom/lib/node_modules/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/custom/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/custom/lib/node_modules"
+      ],
+      [
+        "access",
+        "/custom/lib/node_modules/agent"
+      ],
+      [
+        "access",
+        "/custom/lib/node_modules"
+      ]
+    ]
+  },
+  {
+    "id": "scoped",
+    "input": {
+      "package_dir": "/opt/tool/lib/node_modules/@old/agent",
+      "package_name": "@old/agent",
+      "probe": {
+        "status": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": {
+        "command": "npm",
+        "args": [
+          "--prefix",
+          "/opt/tool",
+          "install",
+          "-g",
+          "@old/agent"
+        ],
+        "display": "npm --prefix /opt/tool install -g @old/agent"
+      }
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ],
+      [
+        "exists",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "access",
+        "/opt/tool/lib/node_modules/@old"
+      ]
+    ]
+  },
+  {
+    "id": "local",
+    "input": {
+      "package_dir": "/project/node_modules/@old/agent",
+      "package_name": "@old/agent",
+      "probe": {
+        "status": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/project/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/project/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "scope-mismatch",
+    "input": {
+      "package_dir": "/opt/tool/lib/node_modules/@old/agent",
+      "package_name": "@wrong/agent",
+      "probe": {
+        "status": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "name-mismatch",
+    "input": {
+      "package_dir": "/opt/tool/lib/node_modules/@old/agent",
+      "package_name": "@old/other",
+      "probe": {
+        "status": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/tool/lib/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "lib-mismatch",
+    "input": {
+      "package_dir": "/opt/lib64/node_modules/@old/agent",
+      "package_name": "@old/agent",
+      "probe": {
+        "status": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": null
+    },
+    "trace": [
+      [
+        "exists",
+        "/opt/lib64/node_modules/@old/agent"
+      ],
+      [
+        "canonicalize",
+        "/opt/lib64/node_modules/@old/agent"
+      ],
+      [
+        "command",
+        "npm",
+        [
+          "root",
+          "-g"
+        ]
+      ]
+    ]
+  },
+  {
+    "id": "windows-custom",
+    "input": {
+      "package_dir": "C:\\Users\\Admin\\npm prefix\\node_modules\\@old\\agent",
+      "package_name": "@old/agent",
+      "op": "instruction",
+      "probe": {
+        "status": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": "Run: npm install -g @old/agent"
+    },
+    "trace": []
+  },
+  {
+    "id": "backslash-lib",
+    "input": {
+      "package_dir": "C:\\prefix\\lib\\node_modules\\@old\\agent",
+      "package_name": "@old/agent",
+      "op": "instruction",
+      "probe": {
+        "status": 1,
+        "stdout": "",
+        "stderr": ""
+      }
+    },
+    "expected": {
+      "value": "Run: npm --prefix C:\\prefix install -g @old/agent"
+    },
+    "trace": []
+  }
+]

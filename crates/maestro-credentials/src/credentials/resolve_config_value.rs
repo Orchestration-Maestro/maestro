@@ -242,21 +242,12 @@ pub(in crate::credentials) mod native {
 
     /// Run one launch through the shared synchronous capture.
     fn run(launch: Launch) -> Attempt {
-        let mut command = Command::new(&launch.executable);
+        let mut command = match launch.command() {
+            Ok(command) => Command::from(command),
+            Err(error) => return attempt(Err(SpawnSyncError::Spawn(error))),
+        };
         #[cfg(windows)]
-        {
-            use std::os::windows::process::CommandExt;
-            command.creation_flags(0x0800_0000);
-            if launch.verbatim {
-                for arg in launch.args {
-                    command.as_std_mut().raw_arg(arg);
-                }
-            } else {
-                command.args(launch.args);
-            }
-        }
-        #[cfg(not(windows))]
-        command.args(launch.args);
+        command.creation_flags(0x0800_0000);
         attempt(spawn_sync(
             &mut command,
             SpawnSyncOptions::Capture {
