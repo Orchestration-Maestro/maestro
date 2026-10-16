@@ -8,10 +8,38 @@ use std::{cell::Cell, rc::Rc, sync::Arc};
 mod bundled_cases;
 mod corpus;
 mod dispatch_corpus;
+#[path = "support/original_options.rs"]
+mod original_options;
 mod registered;
 mod registry_corpus;
 mod response_policies;
 mod scripted;
+
+#[test]
+fn raw_simple_and_catalog_keep_original_option_families() -> crate::TestResult {
+    let _serial = crate::bundled::registry();
+    let owner = Arc::new(original_options::OptionsProvider::default());
+    maestro_models::register_api_provider(
+        maestro_models::ApiProvider {
+            api: "controlled".into(),
+            stream: owner.clone(),
+            stream_simple: owner.clone(),
+        },
+        Some("original-options".into()),
+    );
+    assert!(owner.observed.lock().unwrap().is_empty());
+    let provider = maestro_models::get_api_provider("controlled").unwrap();
+    let model = crate::bundled::descriptor("controlled", "https://fixture.invalid")?;
+    crate::chat::block_on(
+        false,
+        tokio::task::LocalSet::new().run_until(async {
+            original_options::exercise(&provider, &model, &owner).await;
+            Ok(())
+        }),
+    )?;
+    maestro_models::unregister_api_providers("original-options");
+    Ok(())
+}
 
 #[test]
 fn base_options_share_hooks_without_calling_them() {
