@@ -599,7 +599,7 @@ pub fn reading_geometry_accepts_second_realm_rectangle() {
     let canvas = document.get_element_by_id("canvas").unwrap();
     let restore = js(
         &canvas,
-        "const frame=document.createElement('iframe');document.body.append(frame);const original=value.getBoundingClientRect;const rect=new frame.contentWindow.DOMRect(20,30,1000,450);value.getBoundingClientRect=()=>rect;return ()=>{delete value.getBoundingClientRect;frame.remove()}",
+        "const frame=document.createElement('iframe');document.body.append(frame);const rect=new frame.contentWindow.DOMRect(20,30,1000,450);value.getBoundingClientRect=()=>rect;return ()=>{delete value.getBoundingClientRect;frame.remove()}",
     );
     let sizes = Slots::sizes([(40., 20.), (70., 30.), (100., 40.)]);
     let result = slots.place(ReadingPhase::Measure, egui::vec2(300., 40.), &sizes);
