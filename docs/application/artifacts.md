@@ -37,6 +37,10 @@ Callbacks run without application state or record locks held. Mutation effects
 publish state before updating views and notifying the host; dependent HTML views
 refresh afterward. Deleting the selected file selects the first remaining file,
 or clears the selection if no file remains. Opening an unknown file does nothing.
+`active_filename()` returns an owned observation of that shared selection slot.
+`show_artifact(filename)` selects a literal name and updates its view without
+calling the host-open notification. Empty and unknown names remain observable;
+`open_artifact(filename)` additionally notifies only for an existing map key.
 
 `browser::tools::artifacts::get_file_type` is the single filename discriminator.
 It selects HTML, SVG, Markdown, image, PDF, spreadsheet, Word, text/code or generic
@@ -64,11 +68,14 @@ These local types do not change the default SDK tool's thread-safety.
 
 This interface does not mount browser views or format console records. Artifact
 reconstruction and runtime access remain in [#753](https://github.com/Orchestration-Maestro/maestro/issues/753),
-the tabbed/overlay panel in [#1108](https://github.com/Orchestration-Maestro/maestro/issues/1108),
 HTML views in [#819](https://github.com/Orchestration-Maestro/maestro/issues/819),
 and tool cards in [#820](https://github.com/Orchestration-Maestro/maestro/issues/820).
 Sandbox corrections remain in [#104](https://github.com/Orchestration-Maestro/maestro/issues/104)
 and [#105](https://github.com/Orchestration-Maestro/maestro/issues/105).
 
 The [generic-file and PDF views](../browser/artifacts.md) are embeddable
-independently of the panel shell and accept the existing replaceable native host.
+independently of the panel shell and accept the existing replaceable native host. The
+[browser panel](../browser/artifacts.md#retained-panel) accepts this caller during
+connection and drawing, and sends tab activation through its shared selection
+operation. An embedding presentation can retain the browser panel and delegate
+upsert/show/removal to it; the panel does not retain the application caller.

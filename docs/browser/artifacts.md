@@ -1,4 +1,4 @@
-# Artifact views
+# Artifact panels and views
 
 `maestro_web::tools::artifacts::create_artifact_element` constructs an owned
 `Box<dyn maestro_web::ArtifactElement>` for PDF or an unrecognized filename suffix.
@@ -35,9 +35,60 @@ The [local application caller](../application/artifacts.md) can retain a supplie
 presentation adapter that owns these views. This library does not install an
 incomplete application presentation implementation.
 
-The tabbed/overlay shell and retained visibility remain in
-[#1108](https://github.com/Orchestration-Maestro/maestro/issues/1108).
-Other specialized viewers remain in
+## Retained panel
+
+`maestro_web::ArtifactsPanel` owns installed views, tab layout and pending tab
+scrolling. The application caller owns the only selected filename. Retain both
+across frames and supply the existing host:
+
+```rust,ignore
+let panel = std::rc::Rc::new(maestro_web::ArtifactsPanel::new(host));
+panel.connected_callback(&caller)?;
+panel.render(ui, &caller, view)?;
+```
+
+The embedding presentation delegates its view upsert, show and removal callbacks
+to this panel. The library does not install a production presentation adapter.
+Tabs use record filenames in insertion order; clicking one calls the application's
+`show_artifact`, not its host-open notification. Tab labels collapse HTML spaces,
+tabs and line breaks into a single line; selection and downloads keep the original
+filename. Horizontal padding also keeps an empty label clickable. Keyboard traversal
+visits tabs, selected-view header controls, then close, with controls right-aligned.
+The selected installed view
+supplies the original-byte download header. A close activation calls the optional
+notification without changing selection or disposing views. Header controls run
+once per toolkit render pass, which can run more than once in one presentation
+when layout needs another pass. The reservation never falls below the download
+and close components' sizes. Cached measurements apply only to the selected
+filename that produced them and are replaced when selection changes. Close keeps
+its own right-edge rectangle even if a caller header overflows. Oversized caller
+controls are clipped until a later layout pass measures their width. Selected-tab scrolling is repeated when that
+measurement changes the available tab viewport.
+
+`set_collapsed` and `set_overlay` request repaint. Rendering reconciles native
+visibility. Empty, collapsed and disconnected panels paint no shell; selected
+header evaluation still propagates decoding errors when hidden. Reconnection
+chooses the first map key only for absent or empty selection. Existing unknown
+selection is retained.
+
+`ArtifactElement::set_visibility` and `AttachmentHost::set_retained_visibility`
+hide a retained root without releasing it, including before first publication.
+Tab switches, collapse and disconnection preserve the view's native root,
+selection and scroll. Remove a file or drop its final view owner to release its
+surface. Ordinary attachment-modal closure still releases its modal-owned
+children; retained panel placement does not change that ownership rule.
+
+Inline layout reserves a left border outside the native body. Both layouts reserve
+the tab-bar divider outside that body. Overlay uses viewport geometry and toolkit modal
+input admission with transparent backdrop paint. **The full-viewport dimmed and
+blurred backdrop is not yet composed**; [#1145](https://github.com/Orchestration-Maestro/maestro/issues/1145)
+owns it. The target dims and blurs the underlying application, while the panel's
+header, tabs and content stay sharp and interactive. No canvas-fill blur substitute
+or partial content-only dimming is included.
+
+## Remaining viewers
+
+Specialized viewers remain in
 [#797](https://github.com/Orchestration-Maestro/maestro/issues/797),
 [#798](https://github.com/Orchestration-Maestro/maestro/issues/798),
 [#816](https://github.com/Orchestration-Maestro/maestro/issues/816),
@@ -61,6 +112,9 @@ Replacing content cancels the old document and clears the prior load error;
 assigning the same content after a load error retries instead. Empty content cancels
 unfinished work but retains already displayed successful pages; empty content
 after an error instead shows an empty body. Dropping the view removes its surface.
+Panel visibility hides the retained PDF or error body without releasing it;
+showing it again preserves the native root and scroll position. The retained policy
+owns panel placement; leaving overlay mode does not release the PDF or error body.
 Errors use selectable literal native text with the localized `Error loading PDF`
 heading, distinct from the overlay's `Error loading file` heading. Caller branding
 styles page chrome and error text, not document pixels.

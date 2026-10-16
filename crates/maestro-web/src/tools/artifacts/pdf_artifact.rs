@@ -26,6 +26,8 @@ pub struct PdfArtifact {
     error: error::Error,
     /// Retained repaint context, never borrowed drawing inputs.
     context: Option<egui::Context>,
+    /// Whether the retained body is currently shown.
+    visible: bool,
 }
 impl PdfArtifact {
     /// Start with empty fields using the supplied native host.
@@ -41,6 +43,7 @@ impl PdfArtifact {
             failure: None,
             error: error::Error::default(),
             context: None,
+            visible: true,
         }
     }
     /// Wake the last header or body context after an owned edit.
@@ -69,6 +72,15 @@ impl PdfArtifact {
     }
 }
 impl ArtifactElement for PdfArtifact {
+    fn set_visibility(
+        &mut self,
+        visible: bool,
+        modal: Option<egui::Id>,
+    ) -> Result<(), AttachmentUiError> {
+        self.host.set_retained_visibility(self.id, visible, modal)?;
+        self.visible = visible;
+        Ok(())
+    }
     fn filename(&self) -> &str {
         &self.filename
     }
@@ -111,6 +123,9 @@ impl ArtifactElement for PdfArtifact {
         view: ArtifactView<'_>,
     ) -> Result<(), AttachmentUiError> {
         self.context = Some(ui.ctx().clone());
+        if !self.visible {
+            return Ok(());
+        }
         self.prepare(ui);
         if let Some(message) = &self.failure {
             self.error.present(

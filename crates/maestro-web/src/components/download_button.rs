@@ -1,6 +1,9 @@
 //! Original-byte download control.
 use crate::browser::attachment_content::{self, AttachmentHost, AttachmentUiError};
 use crate::tools::artifacts::artifact_element::ArtifactView;
+/// Original-byte control extent in logical points.
+pub(crate) const SIZE: egui::Vec2 = egui::vec2(36., 32.);
+
 /// Draw a small ghost control whose activation consumes only the supplied bytes.
 pub(crate) fn draw(
     ui: &mut egui::Ui,
@@ -11,9 +14,8 @@ pub(crate) fn draw(
 ) -> Result<(), AttachmentUiError> {
     attachment_content::style(ui, view.presentation)?;
     let title = view.i18n.text("Download")?;
-    let response =
-        attachment_content::ghost_sized(ui, view.presentation, "Download", egui::vec2(36., 32.))?
-            .on_hover_text(&title);
+    let response = attachment_content::ghost_sized(ui, view.presentation, "Download", SIZE)?
+        .on_hover_text(&title);
     response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &title));
     if response.clicked() {
         host.download_bytes(data.1, filename, data.0)?;
@@ -22,4 +24,4 @@ pub(crate) fn draw(
 }
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

@@ -99,6 +99,14 @@ impl AttachmentHost for Host {
         }
         Ok(())
     }
+    fn set_retained_visibility(
+        &self,
+        _: egui::Id,
+        _: bool,
+        _: Option<egui::Id>,
+    ) -> Result<(), AttachmentUiError> {
+        Ok(())
+    }
     fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentUiError> {
         self.effects
             .borrow_mut()

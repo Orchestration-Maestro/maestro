@@ -115,6 +115,13 @@ impl Drop for GenericArtifact {
     }
 }
 impl ArtifactElement for GenericArtifact {
+    fn set_visibility(
+        &mut self,
+        visible: bool,
+        modal: Option<egui::Id>,
+    ) -> Result<(), AttachmentUiError> {
+        self.host.set_retained_visibility(self.id, visible, modal)
+    }
     fn filename(&self) -> &str {
         &self.filename
     }

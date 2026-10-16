@@ -165,7 +165,16 @@ pub trait AttachmentHost {
         surface: AttachmentSurface<'_>,
         presentation: &BrandPresentation<'_>,
     ) -> Result<(), AttachmentUiError>;
-    /// Change modal ownership, preserving hidden surfaces.
+    /// Record retained visibility independently from content publication.
+    /// # Errors
+    /// Returns platform failures without releasing the retained surface.
+    fn set_retained_visibility(
+        &self,
+        id: egui::Id,
+        visible: bool,
+        modal: Option<egui::Id>,
+    ) -> Result<(), AttachmentUiError>;
+    /// Change modal admission, releasing ordinary modal-owned children on close.
     /// # Errors
     /// Returns platform failures.
     fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentUiError>;
@@ -286,13 +295,16 @@ pub(crate) fn identity() -> egui::Id {
     ))
 }
 
+/// Default icon-control extent in logical points.
+pub(crate) const GHOST_SIZE: egui::Vec2 = egui::vec2(32., 32.);
+
 /// Draw an icon-only ghost control with the supplied hover and focus roles.
 pub(crate) fn ghost(
     ui: &mut egui::Ui,
     p: &BrandPresentation<'_>,
     name: &str,
 ) -> Result<egui::Response, AttachmentUiError> {
-    ghost_sized(ui, p, name, egui::vec2(32., 32.))
+    ghost_sized(ui, p, name, GHOST_SIZE)
 }
 /// Draw a ghost control with a centered sixteen-point glyph.
 pub(crate) fn ghost_sized(

@@ -18,7 +18,16 @@ pub trait ArtifactElement {
     fn content(&self) -> &str;
     /// Replace the original content.
     fn set_content(&mut self, content: String);
-    /// Draw independent header controls.
+    /// Change retained visibility and containing modal without releasing the view.
+    /// # Errors
+    /// Returns native retained-policy failures.
+    fn set_visibility(
+        &mut self,
+        visible: bool,
+        modal: Option<egui::Id>,
+    ) -> Result<(), AttachmentUiError>;
+    /// Draw independent header controls once per toolkit render pass.
+    /// Layout may require multiple passes within one presentation.
     /// # Errors
     /// Returns localization, decoding or platform failures.
     fn get_header_buttons(

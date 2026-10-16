@@ -49,6 +49,42 @@ fn pdf_artifact_fields_start_empty_and_retain_owned_edits() {
     assert_eq!(host.downloads.borrow().last().unwrap().1, "application/pdf");
 }
 
+#[test]
+fn pdf_artifact_retains_visibility_without_modal_ownership_for_pages_and_errors() {
+    let frame = artifact_support::Frame::default();
+    let modal = Some(egui::Id::new("pdf-panel-modal"));
+    for content in [encoded("synthetic-multipage.pdf"), "aGVsbG8=".into()] {
+        let host = Rc::new(session_header_support::Host::default());
+        let mut view = create_artifact_element("a.pdf", &content, host.clone()).unwrap();
+        view.set_visibility(false, modal).unwrap();
+        frame.draw(view.as_mut(), false, vec![]).unwrap();
+        assert!(host.published.borrow().is_empty());
+        assert_eq!(
+            host.retained.borrow().values().copied().collect::<Vec<_>>(),
+            [(false, modal)]
+        );
+        view.set_visibility(true, modal).unwrap();
+        frame.draw(view.as_mut(), false, vec![]).unwrap();
+        let (id, reading) = {
+            let published = host.published.borrow();
+            let (id, (reading, _)) = published.iter().next().unwrap();
+            (*id, Rc::clone(reading))
+        };
+        assert_eq!(host.retained.borrow()[&id], (true, modal));
+        assert_eq!(host.publication_modals.borrow()[&id], None);
+        view.set_visibility(false, None).unwrap();
+        let events = host.events.borrow().len();
+        frame.draw(view.as_mut(), false, vec![]).unwrap();
+        assert_eq!(host.retained.borrow()[&id], (false, None));
+        assert_eq!(host.events.borrow().len(), events);
+        view.set_visibility(true, None).unwrap();
+        frame.draw(view.as_mut(), false, vec![]).unwrap();
+        assert_eq!(host.retained.borrow()[&id], (true, None));
+        assert_eq!(host.publication_modals.borrow()[&id], None);
+        assert!(Rc::ptr_eq(&reading, &host.published.borrow()[&id].0));
+    }
+}
+
 fn encoded(name: &str) -> String {
     base64::engine::general_purpose::STANDARD.encode(
         std::fs::read(format!(
@@ -354,6 +390,7 @@ fn pdf_local_application_tool_updates_the_real_pdf_view() {
     use std::cell::{Cell, RefCell};
     let host = Rc::new(session_header_support::Host::default());
     let presentation = Rc::new(Presentation {
+        panel: None,
         host: host.clone(),
         view: RefCell::default(),
         created: Cell::default(),

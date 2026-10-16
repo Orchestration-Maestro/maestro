@@ -227,6 +227,7 @@ fn local_artifact_tool_updates_the_real_generic_view() {
     let host = Rc::new(Host::default());
     let presentation = Rc::new(Presentation {
         host: host.clone(),
+        panel: None,
         view: RefCell::default(),
         created: Cell::default(),
         opened: Cell::default(),
