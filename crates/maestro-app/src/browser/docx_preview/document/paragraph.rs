@@ -1,6 +1,7 @@
 //! Owned paragraph metadata and immediate property readers.
 use super::super::{XmlElement, XmlParser};
 use super::common::{CommonProperties, LengthUsage, WORDML_NAMESPACE, parse_common_property};
+use super::section::{SectionProperties, parse_section_properties};
 /// One tab stop, including nullable attributes.
 #[derive(Debug, Default)]
 pub struct TabStop {
@@ -38,6 +39,8 @@ pub struct ParagraphProperties {
     pub common: CommonProperties,
     /// Fresh ordered CSS from the last property group.
     pub css_style: Option<indexmap::IndexMap<String, Option<String>>>,
+    /// Last encountered section, independent of later CSS replacement.
+    pub section_props: Option<SectionProperties>,
     /// Encountered tab stops, including an empty group.
     pub tabs: Option<Vec<TabStop>>,
     /// Encountered numbering reference.
@@ -79,6 +82,7 @@ pub(crate) fn parse_paragraph_property(
         "keepNext" => props.keep_next = xml.bool_attr(element, "val", Some(true)),
         "pageBreakBefore" => props.page_break_before = xml.bool_attr(element, "val", Some(true)),
         "numPr" => props.numbering = Some(parse_numbering(xml, element)),
+        "sectPr" => props.section_props = Some(parse_section_properties(xml, element)),
         "outlineLvl" => props.outline_level = Some(xml.int_attr(element, "val", None)),
         "tabs" => props.tabs = Some(parse_tabs(xml, element)),
         "spacing" => {

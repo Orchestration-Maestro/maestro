@@ -121,8 +121,15 @@ property group replaces its ordered CSS map without clearing unrelated metadata.
 Paragraph spacing and alignment update both metadata and CSS through the shared
 property dispatcher. Conditional classes use a present bit-string before Boolean
 flags, including an authoritative empty mask. Parsed tabs are retained independently
-of experimental positioning. Section parsing follows in
-[section properties](https://github.com/Orchestration-Maestro/maestro/issues/1059).
+of experimental positioning.
+
+Paragraphs also retain owned nested section properties: page dimensions and margins,
+open section/orientation strings, columns, ordered header/footer references,
+title-page flags, page numbering and raw physical-side borders. Border frame/shadow
+and column separator flags remain nullable. Repeated singleton groups replace the
+whole earlier group; later paragraph property groups without a section retain the
+existing section. Package-level section composition, pagination, inheritance and
+rendering remain separate work.
 
 Recognized foreign branches retain shared complete XML source with selected byte
 ranges, preserving ancestor namespaces. Tables, links, smart tags and comments

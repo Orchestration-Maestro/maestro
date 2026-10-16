@@ -1,7 +1,7 @@
 //! Lossless observations of owned Word trees.
 #![cfg(test)]
 use maestro_app::browser::docx_preview::{
-    OpenXmlElementData as Data, OpenXmlElementTree, OwnedXmlElement,
+    FooterHeaderReference, OpenXmlElementData as Data, OpenXmlElementTree, OwnedXmlElement,
 };
 use serde_json::{Value, json};
 
@@ -227,6 +227,7 @@ fn paragraph_properties(
     out: &mut Value,
 ) {
     common(&p.common, out);
+    member(out, "sectionProps", p.section_props.as_ref(), section);
     styles(p.css_style.as_ref(), out);
     member(out, "tabs", p.tabs.as_ref(), |tabs| {
         json!(
@@ -292,4 +293,55 @@ fn vml(v: &maestro_app::browser::docx_preview::VmlElement, out: &mut Value) {
         v.image_href.as_ref(),
         |v| json!({"id":v.id,"title":v.title}),
     );
+}
+
+/// Observe every section group without collapsing absent and nullable fields.
+fn section(p: &maestro_app::browser::docx_preview::SectionProperties) -> Value {
+    let mut out = json!({});
+    member(
+        &mut out,
+        "pageSize",
+        p.page_size.as_ref(),
+        |s| json!({"width":s.width,"height":s.height,"orientation":s.orientation}),
+    );
+    member(&mut out, "pageMargins", p.page_margins.as_ref(), |m| {
+        json!({"left":m.left,"right":m.right,"top":m.top,"bottom":m.bottom,
+            "header":m.header,"footer":m.footer,"gutter":m.gutter})
+    });
+    member(&mut out, "type", p.r#type.as_ref(), |v| json!(v));
+    member(&mut out, "columns", p.columns.as_ref(), |c| {
+        json!({"numberOfColumns":c.number_of_columns.map_or(Value::Null,number),
+            "space":c.space,"separator":c.separator,"equalWidth":c.equal_width,
+            "columns":c.columns.iter().map(|c| json!({"width":c.width,"space":c.space})).collect::<Vec<_>>()})
+    });
+    let references = |refs: &Vec<FooterHeaderReference>| {
+        json!(
+            refs.iter()
+                .map(|r| json!({"id":r.id,"type":r.r#type}))
+                .collect::<Vec<_>>()
+        )
+    };
+    member(&mut out, "headerRefs", p.header_refs.as_ref(), references);
+    member(&mut out, "footerRefs", p.footer_refs.as_ref(), references);
+    member(&mut out, "titlePage", p.title_page, |v| json!(v));
+    member(&mut out, "pageNumber", p.page_number.as_ref(), |n| {
+        json!({"chapSep":n.chap_sep,"chapStyle":n.chap_style,"format":n.format,
+            "start":n.start.map_or(Value::Null,number)})
+    });
+    member(&mut out, "pageBorders", p.page_borders.as_ref(), |b| {
+        let mut borders = json!({});
+        for (key, side) in [
+            ("left", &b.left),
+            ("top", &b.top),
+            ("right", &b.right),
+            ("bottom", &b.bottom),
+        ] {
+            member(&mut borders, key, side.as_ref(), |s| {
+                json!({"type":s.r#type,"color":s.color,"size":s.size,"offset":s.offset,
+                    "frame":s.frame,"shadow":s.shadow})
+            });
+        }
+        borders
+    });
+    out
 }
