@@ -174,11 +174,23 @@ content. Feature modules prepare literal native text; the shared browser host
 owns admission, placement, live natural-height readback, modal visibility and
 teardown. Reading factories receive the canvas's actual document and return the
 native root with identified empty canvas-control slots. Placements supply actual
-control sizes by identity; live readback returns full slot rectangles in wrapper-local
-canvas points alongside unclipped natural height. Measurement uses a bounded hidden
-layout and stages its clamped fractional scroll offsets. One shared transaction
-restores optional wrapper/slot styles and both scroll axes after measurement or
-failed publication, attempting every restoration and preserving the original error.
+control sizes by identity; live readback returns full slot rectangles in frame-local
+canvas points alongside unclipped natural height. The retained native tree is
+frame → viewport → feature root. The outer frame owns position, size, separate-axis
+transform, opacity and external clipping; it never scrolls. Its paint extent is
+the ancestor clip intersected with finite drawable canvas bounds, minus control
+occluders, without intersection with its own rectangle. A zero-size viewport is empty.
+The retained host-created viewport owns an explicit border-box clip and is the only
+scrolling element. Feature styles own decoration: the PDF overlay's background and
+border stay on the viewport, its outer shadow stays on the frame, and page-local
+shadows stay on pages. Other reading features gain no frame shadow.
+Measurement uses bounded hidden auto-height frame/viewport placement, reads natural
+height from the feature root and stages the viewport's clamped fractional offsets.
+It does not assign height to feature roots or depend on percentage height beneath
+an indefinite measurement parent. One shared transaction restores optional
+frame/viewport/slot styles and both viewport scroll axes after measurement or
+failed publication, attempting every restoration and preserving the operation error,
+or the first cleanup error when the operation succeeded.
 Publication applies the same sizes and staged offsets before committing the root.
 Canvas paint retains full control geometry through the final clip. Pointer activation
 requires a press inside the control's current positive visible intersection and a
