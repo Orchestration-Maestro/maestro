@@ -5,6 +5,10 @@ toolchain and the development tools in `mise.toml` and `mise.lock`.
 
 ## Setup and build
 
+The pinned toolchain includes `llvm-tools-preview` for the tooling tests' profile
+counter checks. When using another toolchain, install it with
+`rustup component add llvm-tools-preview --toolchain <toolchain>` before testing.
+
 ```sh
 git clone https://github.com/Orchestration-Maestro/maestro.git
 cd maestro
@@ -123,6 +127,14 @@ process group, stopped on completion or panic. Before starting a watch-test
 process group, the harness directs its LLVM profiles into that fixture's target
 directory, outside the merged coverage profile set, because cleanup can forcibly
 stop its descendants.
+
+Tooling test fixtures share a child-toolchain command builder that removes the
+parent runner's coverage flags, profile output path and coverage-wrapper state
+only from the child command, leaving the parent's environment unchanged.
+It restores the wrapper that preceded coverage, when present. This keeps nested
+native and WebAssembly builds independent of parent instrumentation without
+changing measurement of the test runner. Profile-writer fixtures still request
+their own instrumentation explicitly.
 
 Compiler watches do not run catalog generation or copy assets. Browser selections
 are activated by [#113](https://github.com/Orchestration-Maestro/maestro/issues/113).
