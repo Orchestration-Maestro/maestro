@@ -71,8 +71,9 @@ text, before the optional non-null value override. It tries `z` before the XF
 format ID and caches only successful formatting. Date-classified cells can
 prepare `z` from `CellFormatOptions::date_nf`; standalone table/epoch options
 are not accepted by this helper. Raw values remain unchanged. If both formats
-fail, fallback uses unrounded scalar text without caching; UTC Dates use readable
-RFC3339 text with milliseconds, not host-dependent date spelling. Standard error
+fail, fallback uses unrounded scalar text without caching: booleans use `true` or
+`false`, null uses `null`, and a missing value uses `undefined`. UTC Dates use
+readable RFC3339 text with milliseconds, not host-dependent date spelling. Standard error
 codes use their labels; an unknown numeric error stays numeric. Unknown XLSX error labels survive
 native conversion, and no-cache formula cells are omitted without evaluation.
 Malformed archives, required missing parts, XML, reader and address failures have

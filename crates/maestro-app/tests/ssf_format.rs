@@ -331,6 +331,59 @@ fn ssf_cell_patterns() {
 }
 
 #[test]
+fn ssf_cell_double_failure_preserves_raw_scalars() {
+    use maestro_app::browser::ssf::{NumberFormat, Xf};
+
+    let ssf = Ssf::default();
+    let _ = ssf.load("\"bad", Some(164));
+    let actual: Vec<_> = [
+        CellValue::Boolean(true),
+        CellValue::Boolean(false),
+        CellValue::Null,
+        CellValue::Missing,
+    ]
+    .into_iter()
+    .map(|value| {
+        let mut cell = CellObject {
+            t: Some(ExcelDataType::Boolean),
+            v: value.clone(),
+            z: Some(NumberFormat::Code("\"bad".into())),
+            xf: Some(Xf { num_fmt_id: 164 }),
+            ..CellObject::default()
+        };
+        let text = format_cell(Some(&mut cell), None, &CellFormatOptions::default(), &ssf);
+        assert_eq!(cell.v, value);
+        assert_eq!(cell.w, None);
+        text
+    })
+    .collect();
+    assert_eq!(
+        actual,
+        ["true", "false", "null", "undefined"].map(|text| CellValue::Text(text.into()))
+    );
+}
+
+#[test]
+fn ssf_cell_single_failure_uses_xf_format() {
+    use maestro_app::browser::ssf::{NumberFormat, Xf};
+
+    let ssf = Ssf::default();
+    let _ = ssf.load("0.000", Some(164));
+    let mut cell = CellObject {
+        t: Some(ExcelDataType::Number),
+        v: CellValue::Number(1.25),
+        z: Some(NumberFormat::Code("\"bad".into())),
+        xf: Some(Xf { num_fmt_id: 164 }),
+        ..CellObject::default()
+    };
+    assert_eq!(
+        format_cell(Some(&mut cell), None, &CellFormatOptions::default(), &ssf),
+        CellValue::Text("1.250".into())
+    );
+    assert_eq!(cell.w.as_deref(), Some("1.250"));
+}
+
+#[test]
 fn ssf_cell_override() {
     ssf_support::run("ssf_cell_override");
 }

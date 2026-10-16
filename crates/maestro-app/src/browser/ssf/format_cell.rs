@@ -1,5 +1,5 @@
 //! Retained spreadsheet scalars and default cached text.
-use super::{GeneralValue, Ssf, general};
+use super::{GeneralValue, Ssf};
 /// Owned scalar independent of a cell's declared type.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub enum CellValue {
@@ -159,6 +159,9 @@ fn raw_text(value: &CellValue) -> String {
     match value {
         CellValue::Number(n) => super::write_num::spelling(*n),
         CellValue::Date(date) => date.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
-        _ => general(value.scalar()),
+        CellValue::Text(text) => text.clone(),
+        CellValue::Boolean(value) => value.to_string(),
+        CellValue::Null => "null".into(),
+        CellValue::Missing => "undefined".into(),
     }
 }
