@@ -32,7 +32,9 @@ Artifact padding/background remain separate.
 Selecting text, replacing content or closing cancels unfinished page work.
 Modern spreadsheet previews share the artifact table owner: workbook-order sheet
 controls select retained native tables with formatted text, merged cells, rich
-emphasis and non-executable links. One sheet omits the tab strip. Each multi-sheet
+emphasis and non-executable links styled with the live accent role. Keyboard
+traversal reaches and reveals offscreen sheet tabs; clipped pointer hits do not
+select sheets. One sheet omits the tab strip. Each multi-sheet
 body retains its own scroll offsets; ordinary repaints retain the table nodes.
 The registry owns position and scaling, while the spreadsheet root keeps its
 bounded height during measurement. Selecting text, replacing content or closing

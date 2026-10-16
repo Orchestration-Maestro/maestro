@@ -91,3 +91,15 @@ pub(super) fn bound(sheets: &Sheets, height: f32) -> Result<(), AttachmentUiErro
     }
     Ok(())
 }
+
+/// Reveal the focused canvas tab through its retained native layout slot.
+pub(super) fn reveal(sheets: &Sheets, index: usize) -> Result<(), AttachmentUiError> {
+    if let Some(root) = sheets.root.borrow().as_ref()
+        && let Some(slot) = root
+            .query_selector(&format!(".maestro-excel-tab:nth-child({})", index + 1))
+            .map_err(|e| host_error(&e))?
+    {
+        slot.scroll_into_view();
+    }
+    Ok(())
+}

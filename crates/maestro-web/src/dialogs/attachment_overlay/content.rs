@@ -203,15 +203,14 @@ impl AttachmentOverlay {
         reload: bool,
     ) -> Result<egui::Rect, AttachmentUiError> {
         if reload {
-            let content = self
-                .attachment
-                .try_borrow()
-                .map_err(|_| AttachmentUiError::BorrowConflict)?
-                .content
-                .clone();
-            let result = crate::utils::base64::decode(&content)
-                .map_err(|e| e.to_string())
-                .and_then(|bytes| self.excel.open(&bytes));
+            let bytes = {
+                let attachment = self
+                    .attachment
+                    .try_borrow()
+                    .map_err(|_| AttachmentUiError::BorrowConflict)?;
+                crate::utils::base64::decode(&attachment.content).map_err(|e| e.to_string())
+            };
+            let result = bytes.and_then(|bytes| self.excel.open(&bytes));
             if let Err(message) = result {
                 self.error = Some(super::error::detail(
                     &message,

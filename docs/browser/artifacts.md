@@ -122,7 +122,9 @@ styles page chrome and error text, not document pixels.
 
 `tools::artifacts::excel_artifact::ExcelArtifact` shares modern workbook/table
 preparation with attachment previews. Sheets keep workbook order; multiple sheets
-have canvas tabs above selectable native tables. Table bodies retain their nodes
+have canvas tabs above selectable native tables. Keyboard traversal includes offscreen
+tabs and reveals the focused tab; clipped pointer hits do not select a sheet.
+Workbook links use the live accent role, including visited links. Table bodies retain their nodes
 and independent scrolling across tab switches. The native registry owns placement;
 the feature root keeps bounded height while the registry measures control slots.
 No spreadsheet timer or worker is installed.

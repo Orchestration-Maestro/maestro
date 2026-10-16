@@ -44,6 +44,9 @@ div:has(> .maestro-excel:not(.maestro-excel-artifact)) {
   border-collapse: collapse;
   color: var(--maestro-color-text);
 }
+.maestro-excel a, .maestro-excel a:visited {
+  color: var(--maestro-color-accent);
+}
 .maestro-excel td, .maestro-excel th {
   border: 1px solid var(--maestro-color-border);
   padding: calc(var(--maestro-spacing-sm)) calc(var(--maestro-spacing-md) * .75);

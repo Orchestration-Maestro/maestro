@@ -85,13 +85,15 @@ fn draw_tabs(
             continue;
         };
         let visible = full.intersect(rect).intersect(ui.clip_rect());
-        if !visible.is_positive() {
-            continue;
-        }
         let mut child = ui.new_child(egui::UiBuilder::new().id_salt(id).max_rect(*full));
         child.set_clip_rect(visible);
         let selected = index == excel.selected;
         let response = child.put(*full, button(label, selected));
+        #[cfg(target_arch = "wasm32")]
+        if response.gained_focus() {
+            super::browser::reveal(&excel.sheets, index)?;
+            ui.ctx().request_repaint();
+        }
         let active = selected || response.hovered() || response.has_focus();
         if active {
             let ink = color(presentation, if selected { "accent" } else { "border" })?;
@@ -101,7 +103,7 @@ fn draw_tabs(
                 egui::Stroke::new(2., ink),
             );
         }
-        if response.enabled() {
+        if response.enabled() && visible.is_positive() {
             slots.push((index, visible, response.layer_id));
         }
         if response.clicked() && !response.clicked_by(egui::PointerButton::Primary) {

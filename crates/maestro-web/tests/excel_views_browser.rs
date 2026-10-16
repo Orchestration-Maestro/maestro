@@ -385,3 +385,77 @@ pub fn excel_native_host_failures_preserve_error_controls_and_download() {
         "!document.querySelector('.maestro-file-error')&&document.querySelector('.maestro-excel table')!==null",
     );
 }
+
+/// Workbook links use the live accent foreground in either pack and mode.
+#[wasm_bindgen]
+pub fn excel_links_follow_live_accent() {
+    let mut view = View::new("a.xlsx", &encoded("links"));
+    for pack in ["brand.json", "signal.json"] {
+        view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
+        for mode in [
+            maestro_theme::BrandMode::Dark,
+            maestro_theme::BrandMode::Light,
+        ] {
+            view.mode = mode;
+            view.draw(false, vec![]);
+            let p = view.pack.presentation(mode).unwrap();
+            let accent = egui::Color32::from_hex(p.colors["accent"]).unwrap();
+            check(&format!(
+                "document.querySelectorAll('.maestro-excel a').length===2&&[...document.querySelectorAll('.maestro-excel a')].every(a=>getComputedStyle(a).color==='rgb({}, {}, {})')",
+                accent.r(),
+                accent.g(),
+                accent.b()
+            ));
+        }
+    }
+}
+
+/// Keyboard traversal reveals clipped sheet tabs without admitting hidden pointer hits.
+#[wasm_bindgen]
+pub fn excel_keyboard_reveals_offscreen_sheet_tabs() {
+    let mut view = View::new("a.xlsx", &encoded("scroll"));
+    view.size = egui::vec2(45., 140.);
+    view.draw(false, vec![]);
+    view.draw(false, vec![]);
+    check(
+        "(()=>{const t=document.querySelectorAll('.maestro-excel-tab')[1].getBoundingClientRect();const r=document.querySelector('.maestro-excel').parentElement.getBoundingClientRect();return t.left>=r.right})()",
+    );
+    tab(&mut view, 1);
+    check(
+        "getComputedStyle(document.querySelectorAll('.maestro-excel-sheet')[0]).display!=='none'",
+    );
+    for _ in 0..2 {
+        for pressed in [true, false] {
+            view.draw(
+                false,
+                vec![
+                    egui::Event::PointerMoved(egui::pos2(900., 700.)),
+                    egui::Event::Key {
+                        key: egui::Key::Tab,
+                        physical_key: None,
+                        pressed,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
+                    },
+                ],
+            );
+        }
+    }
+    view.draw(false, vec![]);
+    check(
+        "(()=>{const t=document.querySelectorAll('.maestro-excel-tab')[1].getBoundingClientRect();const r=document.querySelector('.maestro-excel').parentElement;const b=r.getBoundingClientRect();return r.scrollLeft>0&&t.left<b.right&&t.left>=b.left-1})()",
+    );
+    view.draw(
+        false,
+        vec![egui::Event::Key {
+            key: egui::Key::Enter,
+            physical_key: None,
+            pressed: true,
+            repeat: false,
+            modifiers: egui::Modifiers::NONE,
+        }],
+    );
+    check(
+        "getComputedStyle(document.querySelectorAll('.maestro-excel-sheet')[1]).display!=='none'&&document.querySelectorAll('.maestro-excel-sheet')[1].querySelector('td').textContent==='1000'",
+    );
+}
