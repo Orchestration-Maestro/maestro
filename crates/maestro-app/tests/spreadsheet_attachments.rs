@@ -284,3 +284,68 @@ fn spreadsheet_extraction_reuses_formatted_workbook_values() {
 fn spreadsheet_failures_keep_typed_workbook_sources() {
     attachment_suite("spreadsheet_failures_keep_typed_workbook_sources");
 }
+
+#[test]
+fn workbook_written_formula_escapes_decode_once() {
+    use maestro_app::browser::utils::attachment_utils::{AttachmentSource, load_attachment};
+    let bytes = include_bytes!("fixtures/spreadsheet/formula-escapes.xlsx");
+    let mut format = Ssf::default();
+    let mut book = ssf::read(bytes, "escapes.xlsx", &mut format).unwrap();
+    let sheet = book.sheets.get_mut("Escapes").unwrap();
+    for (address, expected) in [("A1", "\"a\rb\""), ("B1", "\"a\rb\""), ("C1", "\"a\nb\"")] {
+        assert_eq!(sheet.cells[address].f.as_deref(), Some(expected));
+    }
+    let csv = "7,\"=\"\"a\rb\"\"\",\"=\"\"a\nb\"\"\"";
+    assert_eq!(ssf::sheet_to_csv(sheet, &format), csv);
+    let fetch: maestro_models::Fetch = std::sync::Arc::new(|_| panic!("file needs no fetch"));
+    let attachment = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(load_attachment(
+            AttachmentSource::File {
+                bytes,
+                name: "escapes.xlsx",
+                mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            },
+            None,
+            &fetch,
+        ))
+        .unwrap();
+    assert_eq!(attachment.extracted_text.as_deref(), Some(format!("<excel filename=\"escapes.xlsx\">\n<sheet name=\"Escapes\" index=\"1\">\n{csv}\n</sheet>\n</excel>").as_str()));
+}
+
+#[test]
+fn workbook_shared_formulas_preserve_sheet_identifiers() {
+    let book = ssf::read(
+        include_bytes!("fixtures/spreadsheet/shared-identifiers.xlsx"),
+        "shared.xlsx",
+        &mut Ssf::default(),
+    )
+    .unwrap();
+    let sheet = &book.sheets["Escapes"];
+    for (address, formula) in [
+        ("A1", "'Q1'!A1+Q1!$B1+\"A1\"+SUM(C1)"),
+        ("A2", "'Q1'!A2+Q1!$B2+\"A1\"+SUM(C2)"),
+        ("A3", "'Q1'!A3+Q1!$B3+\"A1\"+SUM(C3)"),
+    ] {
+        assert_eq!(sheet.cells[address].f.as_deref(), Some(formula));
+    }
+}
+
+#[test]
+fn workbook_shared_formulas_preserve_structured_columns() {
+    let book = ssf::read(
+        include_bytes!("fixtures/spreadsheet/shared-identifiers.xlsx"),
+        "shared.xlsx",
+        &mut Ssf::default(),
+    )
+    .unwrap();
+    let sheet = &book.sheets["Escapes"];
+    for (address, formula) in [
+        ("B1", "Table1[A1]+Table1[[#This Row],[B2]]+A1"),
+        ("B2", "Table1[A1]+Table1[[#This Row],[B2]]+A2"),
+        ("B3", "Table1[A1]+Table1[[#This Row],[B2]]+A3"),
+    ] {
+        assert_eq!(sheet.cells[address].f.as_deref(), Some(formula));
+    }
+}

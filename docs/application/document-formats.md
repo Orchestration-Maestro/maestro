@@ -78,8 +78,9 @@ raw-value attributes reuse this spelling. Standard error
 codes use their labels; an unknown numeric error stays numeric. Unknown XLSX error labels survive
 native conversion, and formulas are not evaluated.
 Cells retain owned `f` formula text and optional `array_formula` range metadata.
-Shared formulas expand within their own sheet; function prefixes are removed
-after native XML decoding. Uncached numeric formulas retain missing raw values
+Formula text decodes spreadsheet escapes once, normalizes CRLF to LF and removes
+function prefixes. Shared formulas expand within their own sheet, preserving
+quoted strings and structured column names. Uncached numeric formulas retain missing raw values
 rather than fabricated zeroes; explicit string cells without a value retain empty strings.
 Malformed archives, required missing parts, XML, reader and address failures have
 distinct `WorkbookError` variants. Missing style declarations are optional, while

@@ -65,10 +65,9 @@ fn read_xlsx(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook
                 })?;
             let path = resolve_path(target, workbook);
             let values = values(&mut native, name, &package)?;
-            let formulas = formulas::collect(&mut native, name)?;
             sheets.insert(
                 name.to_owned(),
-                sheet(&package, &path, values, formulas, (&xfs, ssf, date1904), &shared)?,
+                sheet(&package, &path, values, (&xfs, ssf, date1904), &shared)?,
             );
         }
     }
@@ -116,7 +115,6 @@ fn sheet(
     package: &Package<'_>,
     path: &str,
     mut values: BTreeMap<(u32, u32), CellValue>,
-    mut formulas: BTreeMap<(u32, u32), String>,
     format: (&[u32], &Ssf, bool),
     shared: &[String],
 ) -> Result<WorkSheet, WorkbookError> {
@@ -128,6 +126,7 @@ fn sheet(
         merges: Vec::new(),
     };
     let mut arrays = Vec::new();
+    let mut shared = formulas::Shared::new();
     let mut row_index = 0;
     for row in xml
         .element(xml.root(), "sheetData")
@@ -147,7 +146,7 @@ fn sheet(
                 position = decode_cell(address)?;
             }
             let raw = xml.element(node, "v").map(|n| n.text_content());
-            let formula = formulas.remove(&(position.r, position.c));
+            let formula = formulas::formula(&xml, node, position, &mut shared)?;
             let array = formulas::array_range(&xml, node, position, &mut arrays)?;
             let value = values.remove(&(position.r, position.c));
             let formulas = (formula, array);
