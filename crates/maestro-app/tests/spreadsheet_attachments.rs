@@ -2,6 +2,7 @@
 #![cfg(test)]
 mod support {
     pub mod attachment_observation;
+    mod shared_operands;
     pub mod spreadsheet;
 }
 use maestro_app::browser::ssf::{self, Ssf};

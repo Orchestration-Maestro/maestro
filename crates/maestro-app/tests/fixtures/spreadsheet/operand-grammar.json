@@ -1,0 +1,762 @@
+{
+  "named": [
+    {
+      "id": "quoted-sheet",
+      "start": "B2",
+      "end": "B3",
+      "source": "'Q1'!A1",
+      "expected": "'Q1'!A2"
+    },
+    {
+      "id": "quoted-escaped-unicode-sheet",
+      "start": "B2",
+      "end": "B3",
+      "source": "'Q1''s 年'!A1",
+      "expected": "'Q1''s 年'!A2"
+    },
+    {
+      "id": "structured-column",
+      "start": "B2",
+      "end": "B3",
+      "source": "SUM(Table1[A1])+A1",
+      "expected": "SUM(Table1[A1])+A2"
+    },
+    {
+      "id": "structured-nested",
+      "start": "B2",
+      "end": "B3",
+      "source": "SUM(Table1[[#Data],[A1]:[B2]])+A1",
+      "expected": "SUM(Table1[[#Data],[A1]:[B2]])+A2"
+    },
+    {
+      "id": "cjk-sheet",
+      "start": "B2",
+      "end": "B3",
+      "source": "Q1年!A1",
+      "expected": "Q1年!A2"
+    },
+    {
+      "id": "greek-name",
+      "start": "B2",
+      "end": "B3",
+      "source": "ΩA1+A1",
+      "expected": "ΩA1+A2"
+    },
+    {
+      "id": "accent-name",
+      "start": "B2",
+      "end": "B3",
+      "source": "A1é+A1",
+      "expected": "A1é+A2"
+    },
+    {
+      "id": "dynamic-range",
+      "start": "B2",
+      "end": "B3",
+      "source": "SUM(A1:INDEX(A:A,10))",
+      "expected": "SUM(A2:INDEX(A:A,10))"
+    },
+    {
+      "id": "named-range",
+      "start": "B2",
+      "end": "B3",
+      "source": "SUM(A1:LastCell)",
+      "expected": "SUM(A2:LastCell)"
+    },
+    {
+      "id": "spaced-range",
+      "start": "B2",
+      "end": "B3",
+      "source": "SUM(A1: A3)",
+      "expected": "SUM(A2: A4)"
+    },
+    {
+      "id": "three-dimensional-sheet",
+      "start": "B2",
+      "end": "B3",
+      "source": "SUM(Q1:Q3!A1)",
+      "expected": "SUM(Q1:Q3!A2)"
+    },
+    {
+      "id": "string",
+      "start": "B2",
+      "end": "B3",
+      "source": "\"A1\"&A1",
+      "expected": "\"A1\"&A2"
+    },
+    {
+      "id": "escaped-string",
+      "start": "B2",
+      "end": "B3",
+      "source": "\"A1\"\"B2\"&A1",
+      "expected": "\"A1\"\"B2\"&A2"
+    },
+    {
+      "id": "whole-column",
+      "start": "B2",
+      "end": "C2",
+      "source": "SUM(A:A)",
+      "expected": "SUM(B:B)"
+    },
+    {
+      "id": "whole-row",
+      "start": "B2",
+      "end": "B3",
+      "source": "SUM(1:1)",
+      "expected": "SUM(2:2)"
+    },
+    {
+      "id": "absolute-whole-column",
+      "start": "B2",
+      "end": "C2",
+      "source": "SUM($A:B)",
+      "expected": "SUM($A:C)"
+    },
+    {
+      "id": "absolute-whole-row",
+      "start": "B2",
+      "end": "B3",
+      "source": "SUM($1:2)",
+      "expected": "SUM($1:3)"
+    },
+    {
+      "id": "lowercase",
+      "start": "B2",
+      "end": "C3",
+      "source": "a1",
+      "expected": "B2"
+    },
+    {
+      "id": "mixed-absolute",
+      "start": "B2",
+      "end": "C3",
+      "source": "A1+$B1+C$1+$D$1",
+      "expected": "B2+$B2+D$1+$D$1"
+    },
+    {
+      "id": "function-cell-shape",
+      "start": "B2",
+      "end": "B3",
+      "source": "LOG10(A1)",
+      "expected": "LOG10(A2)"
+    },
+    {
+      "id": "outside-grid-name",
+      "start": "B2",
+      "end": "B3",
+      "source": "XFE1+A1048577+A1",
+      "expected": "XFE1+A1048577+A2"
+    },
+    {
+      "id": "qualified-name",
+      "start": "B2",
+      "end": "B3",
+      "source": "'Q1'!LastCell+A1",
+      "expected": "'Q1'!LastCell+A2"
+    },
+    {
+      "id": "external-qualifier",
+      "start": "B2",
+      "end": "B3",
+      "source": "'[1]Q1'!A1",
+      "expected": "'[1]Q1'!A2"
+    },
+    {
+      "id": "reference-union",
+      "start": "B2",
+      "end": "B3",
+      "source": "SUM((A1,B2))",
+      "expected": "SUM((A2,B3))"
+    },
+    {
+      "id": "reference-intersection",
+      "start": "B2",
+      "end": "B3",
+      "source": "SUM(A1:B3 B2:C4)",
+      "expected": "SUM(A2:B4 B3:C5)"
+    },
+    {
+      "id": "rc-in-xlsx",
+      "start": "B2",
+      "end": "B3",
+      "source": "RC+R1C1+R[-1]C[2]+A1",
+      "expected": "RC+R1C1+R[-1]C[2]+A2"
+    },
+    {
+      "id": "array-text",
+      "start": "B2",
+      "end": "B3",
+      "source": "{\"A1\",1;\"B2\",2}&A1",
+      "expected": "{\"A1\",1;\"B2\",2}&A2"
+    },
+    {
+      "id": "numeric-exponent",
+      "start": "B2",
+      "end": "B3",
+      "source": "1E10+A1",
+      "expected": "1E10+A2"
+    },
+    {
+      "id": "operator-range-call",
+      "start": "B2",
+      "end": "B3",
+      "source": "SUM(A1:OFFSET(A1,2,0))",
+      "expected": "SUM(A2:OFFSET(A2,2,0))"
+    },
+    {
+      "id": "parenthesized-range",
+      "start": "B2",
+      "end": "B3",
+      "source": "SUM((A1):INDEX(A:A,10))",
+      "expected": "SUM((A2):INDEX(A:A,10))"
+    }
+  ],
+  "fragments": [
+    [
+      {
+        "cell": [
+          "A1",
+          "B2"
+        ]
+      }
+    ],
+    [
+      {
+        "cell": [
+          "$A1",
+          "$A2"
+        ]
+      }
+    ],
+    [
+      {
+        "cell": [
+          "A$1",
+          "B$1"
+        ]
+      }
+    ],
+    [
+      {
+        "cell": [
+          "$A$1",
+          "$A$1"
+        ]
+      }
+    ],
+    [
+      {
+        "cell": [
+          "a1",
+          "B2"
+        ]
+      }
+    ],
+    [
+      {
+        "cell": [
+          "$a1",
+          "$A2"
+        ]
+      }
+    ],
+    [
+      {
+        "cell": [
+          "a$1",
+          "B$1"
+        ]
+      }
+    ],
+    [
+      {
+        "cell": [
+          "$a$1",
+          "$a$1"
+        ]
+      }
+    ],
+    [
+      {
+        "raw": "Q1!"
+      },
+      {
+        "cell": [
+          "A1",
+          "B2"
+        ]
+      }
+    ],
+    [
+      {
+        "raw": "'Q1'!"
+      },
+      {
+        "cell": [
+          "A1",
+          "B2"
+        ]
+      }
+    ],
+    [
+      {
+        "raw": "Q1年!"
+      },
+      {
+        "cell": [
+          "A1",
+          "B2"
+        ]
+      }
+    ],
+    [
+      {
+        "raw": "'Q1''s 年'!"
+      },
+      {
+        "cell": [
+          "A1",
+          "B2"
+        ]
+      }
+    ],
+    [
+      {
+        "raw": "Q1:Q3!"
+      },
+      {
+        "cell": [
+          "A1",
+          "B2"
+        ]
+      }
+    ],
+    [
+      {
+        "raw": "'[1]Q1'!"
+      },
+      {
+        "cell": [
+          "A1",
+          "B2"
+        ]
+      }
+    ],
+    [
+      {
+        "raw": "ΩA1"
+      }
+    ],
+    [
+      {
+        "raw": "A1é"
+      }
+    ],
+    [
+      {
+        "raw": "名A1"
+      }
+    ],
+    [
+      {
+        "raw": "A1_name"
+      }
+    ],
+    [
+      {
+        "raw": "A1.name"
+      }
+    ],
+    [
+      {
+        "raw": "\\A1"
+      }
+    ],
+    [
+      {
+        "raw": "Table1[A1]"
+      }
+    ],
+    [
+      {
+        "raw": "Table1[[#Data],[A1]:[B2]]"
+      }
+    ],
+    [
+      {
+        "raw": "Table1[A1']B2]"
+      }
+    ],
+    [
+      {
+        "raw": "[@A1]"
+      }
+    ],
+    [
+      {
+        "raw": "\"A1\""
+      }
+    ],
+    [
+      {
+        "raw": "\"A1\"\"B2\""
+      }
+    ],
+    [
+      {
+        "axis": [
+          "A:A",
+          "B:B"
+        ]
+      }
+    ],
+    [
+      {
+        "axis": [
+          "$A:B",
+          "$A:C"
+        ]
+      }
+    ],
+    [
+      {
+        "axis": [
+          "1:1",
+          "2:2"
+        ]
+      }
+    ],
+    [
+      {
+        "axis": [
+          "$1:2",
+          "$1:3"
+        ]
+      }
+    ],
+    [
+      {
+        "cell": [
+          "A1",
+          "B2"
+        ]
+      },
+      {
+        "raw": ":LastCell"
+      }
+    ],
+    [
+      {
+        "cell": [
+          "A1",
+          "B2"
+        ]
+      },
+      {
+        "raw": ":INDEX("
+      },
+      {
+        "axis": [
+          "A:A",
+          "B:B"
+        ]
+      },
+      {
+        "raw": ",10)"
+      }
+    ],
+    [
+      {
+        "cell": [
+          "A1",
+          "B2"
+        ]
+      },
+      {
+        "raw": ":'Q1'!"
+      },
+      {
+        "cell": [
+          "B2",
+          "C3"
+        ]
+      }
+    ],
+    [
+      {
+        "raw": "("
+      },
+      {
+        "cell": [
+          "A1",
+          "B2"
+        ]
+      },
+      {
+        "raw": "):OFFSET("
+      },
+      {
+        "cell": [
+          "B2",
+          "C3"
+        ]
+      },
+      {
+        "raw": ",1,0)"
+      }
+    ],
+    [
+      {
+        "raw": "1E10"
+      }
+    ],
+    [
+      {
+        "raw": "TRUE"
+      }
+    ],
+    [
+      {
+        "raw": "#REF!"
+      }
+    ],
+    [
+      {
+        "raw": "XFE1"
+      }
+    ],
+    [
+      {
+        "raw": "LOG10("
+      },
+      {
+        "cell": [
+          "A1",
+          "B2"
+        ]
+      },
+      {
+        "raw": ")"
+      }
+    ],
+    [
+      {
+        "raw": "ΩA1("
+      },
+      {
+        "cell": [
+          "A1",
+          "B2"
+        ]
+      },
+      {
+        "raw": ")"
+      }
+    ]
+  ],
+  "boundary": [
+    {
+      "id": "bare-axis",
+      "source": "A+1+A:A+1:1",
+      "expected": "A+1+B:B+2:2",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "edge",
+      "source": "$XFD$1048576+XFC1048575+XFE1+A1048577",
+      "expected": "$XFD$1048576+XFD1048576+XFE1+A1048577",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "zero-spelling",
+      "source": "a1+$a$1+SUM(a:a)+Q1年!b2",
+      "expected": "a1+$a$1+SUM(a:a)+Q1年!b2",
+      "start": "B2",
+      "end": "B2"
+    },
+    {
+      "id": "down",
+      "source": "B2+$A2+B$1+$D$4",
+      "expected": "B3+$A3+B$1+$D$4",
+      "start": "B2",
+      "end": "B3"
+    },
+    {
+      "id": "right",
+      "source": "B2+$A2+B$1+$D$4",
+      "expected": "C2+$A2+C$1+$D$4",
+      "start": "B2",
+      "end": "C2"
+    },
+    {
+      "id": "up-left",
+      "source": "B2+$A2+B$1+$D$4",
+      "expected": "A1+$A1+A$1+$D$4",
+      "start": "C3",
+      "end": "B2"
+    },
+    {
+      "id": "nested",
+      "source": "IF(TRUE,SUM((A1):INDEX(A:A,10)),LOG10(B2))",
+      "expected": "IF(TRUE,SUM((B2):INDEX(B:B,10)),LOG10(C3))",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "external-unquoted",
+      "source": "[1]Q1!A1+[1]!B2+!C3",
+      "expected": "[1]Q1!B2+[1]!C3+!D4",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "quoted-three-dimensional",
+      "source": "'Q1:Q3'!A1",
+      "expected": "'Q1:Q3'!B2",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "qualifier-boundaries",
+      "source": "A1:LastCell+Q1:Q3!A1+A1:INDEX(A:A,10)",
+      "expected": "B2:LastCell+Q1:Q3!B2+B2:INDEX(B:B,10)",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "structured-escapes",
+      "source": "SUM(Table1[A1'[B2],Table1[A1'#B2],Table1[A1''B2])+A1",
+      "expected": "SUM(Table1[A1'[B2],Table1[A1'#B2],Table1[A1''B2])+B2",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "range-structured",
+      "source": "A1:Table1[A1]+Table1[A1]:A1+(A1):B2+INDEX(A:A,1):B2",
+      "expected": "B2:Table1[A1]+Table1[A1]:B2+(B2):C3+INDEX(B:B,1):C3",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "numeric-literals",
+      "source": "1E-10+1E+10+.5+2.5e-3+A1",
+      "expected": "1E-10+1E+10+.5+2.5e-3+B2",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "error-boolean",
+      "source": "TRUE+FALSE+#REF!+#N/A+#DIV/0!+#VALUE!+#NAME?+A1#",
+      "expected": "TRUE+FALSE+#REF!+#N/A+#DIV/0!+#VALUE!+#NAME?+B2#",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "linebreak-quotes",
+      "source": "\"A1\rB2\nC3\"&\"A1\"\"B2\"&A1\r\n+B2",
+      "expected": "\"A1\rB2\nC3\"&\"A1\"\"B2\"&B2\n+C3",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "unknown-unit",
+      "source": "~A1:A1+?B2*A1",
+      "expected": "~A1:B2+?B2*B2",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "unterminated-string",
+      "source": "A1+\"B2+A1",
+      "expected": "B2+\"B2+A1",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "unterminated-sheet",
+      "source": "A1+'Q1!B2+A1",
+      "expected": "B2+'Q1!B2+A1",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "unterminated-structured",
+      "source": "A1+Table1[[B2]+A1",
+      "expected": "B2+Table1[[B2]+A1",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "prefix-postfix",
+      "source": "@A1%+B2#",
+      "expected": "@B2%+C3#",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "fixed-spelling",
+      "source": "$a$1+a$1+$a1",
+      "expected": "$a$1+B$1+$A2",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "zero-row-applicable",
+      "source": "a$1+$a$1+$a:$b",
+      "expected": "a$1+$a$1+$a:$b",
+      "start": "B2",
+      "end": "B3"
+    },
+    {
+      "id": "zero-column-applicable",
+      "source": "$a1+$a$1+$1:$2",
+      "expected": "$a1+$a$1+$1:$2",
+      "start": "B2",
+      "end": "C2"
+    },
+    {
+      "id": "name-completion",
+      "source": "A1?+A1.name+A1_name+\\A1+ΩA1(A1)",
+      "expected": "A1?+A1.name+A1_name+\\A1+ΩA1(B2)",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "array-constants",
+      "source": "{\"A1\"\"B2\",1E-10;TRUE,#REF!}&A1",
+      "expected": "{\"A1\"\"B2\",1E-10;TRUE,#REF!}&B2",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "composition-first",
+      "source": "C3+$A3+C$1+$D$4",
+      "expected": "D4+$A4+D$1+$D$4",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "composition-second",
+      "source": "D4+$A4+D$1+$D$4",
+      "expected": "E5+$A5+E$1+$D$4",
+      "start": "B2",
+      "end": "C3"
+    },
+    {
+      "id": "composition-direct",
+      "source": "C3+$A3+C$1+$D$4",
+      "expected": "E5+$A5+E$1+$D$4",
+      "start": "B2",
+      "end": "D4"
+    },
+    {
+      "id": "inverse",
+      "source": "D4+$A4+D$1+$D$4",
+      "expected": "C3+$A3+C$1+$D$4",
+      "start": "C3",
+      "end": "B2"
+    }
+  ]
+}
