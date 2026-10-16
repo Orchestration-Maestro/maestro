@@ -42,8 +42,6 @@ enum Piece {
     Raw(String),
     /// Source and worked shifted A1 coordinate.
     Cell([String; 2]),
-    /// Source and worked shifted homogeneous axis pair.
-    Axis([String; 2]),
 }
 
 /// Load strict readable recordings.
@@ -57,7 +55,7 @@ fn fragment(pieces: &[Piece], shifted: bool) -> String {
         .iter()
         .map(|p| match p {
             Piece::Raw(text) => text.as_str(),
-            Piece::Cell(pair) | Piece::Axis(pair) => pair[usize::from(shifted)].as_str(),
+            Piece::Cell(pair) => pair[usize::from(shifted)].as_str(),
         })
         .collect()
 }
@@ -206,6 +204,18 @@ named! {
     workbook_shared_numeric_exponent => "numeric-exponent",
     workbook_shared_operator_range_call => "operator-range-call",
     workbook_shared_parenthesized_range => "parenthesized-range",
+    workbook_shared_qualified_range => "qualified-range",
+    workbook_shared_intersection_cell => "intersection-cell",
+    workbook_shared_error_na_division => "error-na-division",
+    workbook_shared_error_divzero_division => "error-divzero-division",
+    workbook_shared_error_name_division => "error-name-division",
+    workbook_shared_error_getting_data_division => "error-getting-data-division",
+    workbook_shared_spill_division => "spill-division",
+    workbook_shared_intersection_range => "intersection-range",
+    workbook_shared_intersection_axis => "intersection-axis",
+    workbook_shared_quarterly_qualifier => "quarterly-qualifier",
+    workbook_shared_ambiguous_colon_qualifier => "ambiguous-colon-qualifier",
+    workbook_shared_mixed_case_coordinate => "mixed-case-coordinate",
 }
 
 #[test]
@@ -268,7 +278,7 @@ fn assert_piece(text: &str, piece: &Piece) {
         Piece::Raw(raw) => {
             assert!(text.contains(raw), "opaque span {raw:?} in {text:?}");
         }
-        Piece::Cell(pair) | Piece::Axis(pair) => {
+        Piece::Cell(pair) => {
             assert!(
                 text.contains(&pair[1]),
                 "coordinate leaf {:?} in {text:?}",

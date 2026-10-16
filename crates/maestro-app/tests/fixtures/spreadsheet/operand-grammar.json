@@ -96,35 +96,35 @@
       "start": "B2",
       "end": "C2",
       "source": "SUM(A:A)",
-      "expected": "SUM(B:B)"
+      "expected": "SUM(A:A)"
     },
     {
       "id": "whole-row",
       "start": "B2",
       "end": "B3",
       "source": "SUM(1:1)",
-      "expected": "SUM(2:2)"
+      "expected": "SUM(1:1)"
     },
     {
       "id": "absolute-whole-column",
       "start": "B2",
       "end": "C2",
       "source": "SUM($A:B)",
-      "expected": "SUM($A:C)"
+      "expected": "SUM($A:B)"
     },
     {
       "id": "absolute-whole-row",
       "start": "B2",
       "end": "B3",
       "source": "SUM($1:2)",
-      "expected": "SUM($1:3)"
+      "expected": "SUM($1:2)"
     },
     {
       "id": "lowercase",
       "start": "B2",
       "end": "C3",
       "source": "a1",
-      "expected": "B2"
+      "expected": "b2"
     },
     {
       "id": "mixed-absolute",
@@ -248,7 +248,7 @@
       {
         "cell": [
           "a1",
-          "B2"
+          "b2"
         ]
       }
     ],
@@ -256,7 +256,7 @@
       {
         "cell": [
           "$a1",
-          "$A2"
+          "$a2"
         ]
       }
     ],
@@ -264,7 +264,7 @@
       {
         "cell": [
           "a$1",
-          "B$1"
+          "b$1"
         ]
       }
     ],
@@ -404,34 +404,22 @@
     ],
     [
       {
-        "axis": [
-          "A:A",
-          "B:B"
-        ]
+        "raw": "A:A"
       }
     ],
     [
       {
-        "axis": [
-          "$A:B",
-          "$A:C"
-        ]
+        "raw": "$A:B"
       }
     ],
     [
       {
-        "axis": [
-          "1:1",
-          "2:2"
-        ]
+        "raw": "1:1"
       }
     ],
     [
       {
-        "axis": [
-          "$1:2",
-          "$1:3"
-        ]
+        "raw": "$1:2"
       }
     ],
     [
@@ -456,10 +444,7 @@
         "raw": ":INDEX("
       },
       {
-        "axis": [
-          "A:A",
-          "B:B"
-        ]
+        "raw": "A:A"
       },
       {
         "raw": ",10)"
@@ -558,7 +543,7 @@
     {
       "id": "bare-axis",
       "source": "A+1+A:A+1:1",
-      "expected": "A+1+B:B+2:2",
+      "expected": "A+1+A:A+1:1",
       "start": "B2",
       "end": "C3"
     },
@@ -600,7 +585,7 @@
     {
       "id": "nested",
       "source": "IF(TRUE,SUM((A1):INDEX(A:A,10)),LOG10(B2))",
-      "expected": "IF(TRUE,SUM((B2):INDEX(B:B,10)),LOG10(C3))",
+      "expected": "IF(TRUE,SUM((B2):INDEX(A:A,10)),LOG10(C3))",
       "start": "B2",
       "end": "C3"
     },
@@ -621,7 +606,7 @@
     {
       "id": "qualifier-boundaries",
       "source": "A1:LastCell+Q1:Q3!A1+A1:INDEX(A:A,10)",
-      "expected": "B2:LastCell+Q1:Q3!B2+B2:INDEX(B:B,10)",
+      "expected": "B2:LastCell+Q1:Q3!B2+B2:INDEX(A:A,10)",
       "start": "B2",
       "end": "C3"
     },
@@ -635,7 +620,7 @@
     {
       "id": "range-structured",
       "source": "A1:Table1[A1]+Table1[A1]:A1+(A1):B2+INDEX(A:A,1):B2",
-      "expected": "B2:Table1[A1]+Table1[A1]:B2+(B2):C3+INDEX(B:B,1):C3",
+      "expected": "B2:Table1[A1]+Table1[A1]:B2+(B2):C3+INDEX(A:A,1):C3",
       "start": "B2",
       "end": "C3"
     },
@@ -663,7 +648,7 @@
     {
       "id": "unknown-unit",
       "source": "~A1:A1+?B2*A1",
-      "expected": "~A1:B2+?B2*B2",
+      "expected": "~B2:B2+?B2*B2",
       "start": "B2",
       "end": "C3"
     },
@@ -698,7 +683,7 @@
     {
       "id": "fixed-spelling",
       "source": "$a$1+a$1+$a1",
-      "expected": "$a$1+B$1+$A2",
+      "expected": "$a$1+b$1+$a2",
       "start": "B2",
       "end": "C3"
     },
@@ -733,7 +718,7 @@
     {
       "id": "unquoted-sheet-punctuation",
       "source": "SUM(Q1#part!A1)+Q1~part!B2",
-      "expected": "SUM(Q1#part!B2)+Q1~part!C3",
+      "expected": "SUM(R2#part!B2)+R2~part!C3",
       "start": "B2",
       "end": "C3"
     },
@@ -813,6 +798,90 @@
       "expected": "C3+$A3+C$1+$D$4",
       "start": "C3",
       "end": "B2"
+    },
+    {
+      "id": "qualified-range",
+      "start": "B2",
+      "end": "C3",
+      "source": "SUM(Sheet1!A1:Sheet1!B2)",
+      "expected": "SUM(Sheet1!B2:Sheet1!C3)"
+    },
+    {
+      "id": "intersection-cell",
+      "start": "B2",
+      "end": "C3",
+      "source": "SUM(A1 (B1:B2))",
+      "expected": "SUM(B2 (C2:C3))"
+    },
+    {
+      "id": "error-na-division",
+      "start": "B2",
+      "end": "B3",
+      "source": "#N/A/A1",
+      "expected": "#N/A/A2"
+    },
+    {
+      "id": "error-divzero-division",
+      "start": "B2",
+      "end": "B3",
+      "source": "#DIV/0!/A1",
+      "expected": "#DIV/0!/A2"
+    },
+    {
+      "id": "error-name-division",
+      "start": "B2",
+      "end": "B3",
+      "source": "#NAME?/A1",
+      "expected": "#NAME?/A2"
+    },
+    {
+      "id": "error-getting-data-division",
+      "start": "B2",
+      "end": "B3",
+      "source": "#GETTING_DATA/A1",
+      "expected": "#GETTING_DATA/A2"
+    },
+    {
+      "id": "spill-division",
+      "start": "B2",
+      "end": "B3",
+      "source": "SUM(A1#/B1)",
+      "expected": "SUM(A2#/B2)"
+    },
+    {
+      "id": "intersection-range",
+      "start": "B2",
+      "end": "B3",
+      "source": "SUM(A1 (A1:A3))",
+      "expected": "SUM(A2 (A2:A4))"
+    },
+    {
+      "id": "intersection-axis",
+      "start": "B2",
+      "end": "C3",
+      "source": "SUM(A:A (B:B))",
+      "expected": "SUM(A:A (B:B))"
+    },
+    {
+      "id": "quarterly-qualifier",
+      "start": "B2",
+      "end": "C3",
+      "source": "SUM(Q1:Q4!B2)",
+      "expected": "SUM(Q1:Q4!C3)"
+    },
+    {
+      "id": "ambiguous-colon-qualifier",
+      "start": "B2",
+      "end": "C3",
+      "source": "A1:Sheet2!B2",
+      "expected": "A1:Sheet2!C3"
+    },
+    {
+      "id": "mixed-case-coordinate",
+      "start": "B2",
+      "end": "C3",
+      "source": "aB1+z1",
+      "expected": "aC2+aa2"
     }
   ]
 }

@@ -1,4 +1,4 @@
-//! Sheet-local formula metadata with operand-aware native displacement.
+//! Sheet-local formula metadata with lexical coordinate displacement.
 use super::super::{CellAddress, Range, WorkbookError, decode_range};
 use crate::browser::docx_preview::{XmlElement, XmlParser};
 use std::collections::BTreeMap;
@@ -32,281 +32,130 @@ pub(super) fn formula(
     Ok((!text.is_empty()).then_some(text))
 }
 
-/// Traverse borrowed operand spans, copying all non-coordinate source bytes.
-/// Calls/groups need no retained stack because enclosing groups do not affect
-/// classification; only opaque arrays retain delimiter context.
+/// Advance lexical coordinate matches outside opaque spans.
 fn expand(text: &str, start: CellAddress, end: CellAddress) -> Result<String, WorkbookError> {
     let mut result = String::with_capacity(text.len());
-    let mut rest = text;
-    while !rest.is_empty() {
-        let (length, kind) = operand(rest);
-        let (token, remaining) = rest.split_at(length);
-        if let Some(kind) = kind {
-            result.push_str(&displace(token, kind, start, end)?);
-        } else {
-            result.push_str(token);
+    let mut cursor = 0;
+    while cursor < text.len() {
+        let rest = &text[cursor..];
+        let previous = text[..cursor].chars().next_back();
+        if let Some(length) = opaque_length(rest, previous) {
+            result.push_str(&rest[..length]);
+            cursor += length;
+            continue;
         }
-        rest = remaining;
+        if previous.is_none_or(|c| !identifier(c))
+            && let Some(length) = coordinate_length(rest)
+            && rest[length..]
+                .chars()
+                .next()
+                .is_none_or(|c| !identifier(c) && c != '(')
+        {
+            result.push_str(&displace(&rest[..length], start, end)?);
+            cursor += length;
+            continue;
+        }
+        if let Some(c) = rest.chars().next() {
+            result.push(c);
+            cursor += c.len_utf8();
+        }
     }
     Ok(result)
 }
 
-/// Coordinate productions distinguished from names and scalar numbers.
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum ReferenceKind {
-    /// A column and a row.
-    Cell,
-    /// A whole column endpoint, admitted only in a homogeneous pair.
-    Column,
-    /// A whole row endpoint, admitted only in a homogeneous pair.
-    Row,
+/// Identifier neighbours prevent coordinate-shaped substrings from matching.
+fn identifier(c: char) -> bool {
+    c.is_alphanumeric() || matches!(c, '_' | '.' | '\\' | '?')
 }
 
-/// Select complete qualifiers and opaque productions before coordinate operands.
-fn operand(text: &str) -> (usize, Option<ReferenceKind>) {
-    if let Some(length) = qualifier_length(text) {
-        return (length, None);
-    }
+/// Quotes/brackets and complete unquoted qualifiers retain their source bytes.
+fn opaque_length(text: &str, previous: Option<char>) -> Option<usize> {
     match text.as_bytes()[0] {
-        b'\'' | b'"' => return (quoted_length(text, text.as_bytes()[0]), None),
-        b'[' => return (bracket_length(text), None),
-        b'{' => return (array_length(text), None),
-        b'#' => return (error_length(text), None),
+        b'\'' | b'"' => return Some(quoted_length(text, text.as_bytes()[0])),
+        b'[' => return Some(bracket_length(text)),
         _ => {}
     }
-    let length = name_length(text);
-    let token = &text[..length];
-    let suffix = &text[length..];
-    if suffix.starts_with('[') && !token.is_empty() {
-        return (length + bracket_length(suffix), None);
-    }
-    if let Some(kind) = reference_kind(token) {
-        if let Some(pair) = axis_pair(text, length, kind) {
-            return (pair, Some(kind));
-        }
-        if kind == ReferenceKind::Cell
-            && terminates(suffix)
-            && !suffix.trim_start().starts_with('(')
-        {
-            return (length, Some(kind));
-        }
-    }
-    if let Some(length) = number_length(text).filter(|n| terminates(&text[*n..])) {
-        return (length, None);
-    }
-    if token.chars().next().is_some_and(name_start) && terminates(suffix) {
-        return (length, None);
-    }
-    (recovery_length(text), None)
-}
-
-/// A colon belongs to an axis operand only with two complete same-axis endpoints.
-fn axis_pair(text: &str, length: usize, kind: ReferenceKind) -> Option<usize> {
-    if kind == ReferenceKind::Cell {
+    if previous.is_some_and(identifier) {
         return None;
     }
-    let right = text[length..].strip_prefix(':')?;
-    let length_right = name_length(right);
-    (reference_kind(&right[..length_right]) == Some(kind)
-        && terminates(&right[length_right..])
-        && !right[length_right..].trim_start().starts_with('('))
-    .then_some(length + 1 + length_right)
-}
-
-/// Recognize A1 syntax; the native library owns grid-bound validation.
-fn reference_kind(text: &str) -> Option<ReferenceKind> {
-    let text = text.strip_prefix('$').unwrap_or(text);
-    let boundary = text.bytes().take_while(u8::is_ascii_alphabetic).count();
-    let (column, row) = text.split_at(boundary);
-    let row = row.strip_prefix('$').unwrap_or(row);
-    if column.len() > 3
-        || row.len() > 7
-        || row.starts_with('0')
-        || !row.bytes().all(|c| c.is_ascii_digit())
-    {
+    let length = text.find(|c| !identifier(c)).unwrap_or(text.len());
+    if length == 0 {
         return None;
     }
-    match (column.is_empty(), row.is_empty()) {
-        (false, false) => Some(ReferenceKind::Cell),
-        (false, true) if !text.ends_with('$') => Some(ReferenceKind::Column),
-        (true, false) => Some(ReferenceKind::Row),
-        _ => None,
+    let rest = &text[length..];
+    if rest.starts_with('!') {
+        return Some(length + 1);
     }
+    if previous != Some('!')
+        && let Some(right) = rest.strip_prefix(':')
+    {
+        let second = right.find(|c| !identifier(c)).unwrap_or(right.len());
+        if second > 0 && right[second..].starts_with('!') {
+            return Some(length + 1 + second + 1);
+        }
+    }
+    None
 }
 
-/// Preserve inactive axes and delegate only isolated coordinate operations.
-fn displace(
-    text: &str,
-    kind: ReferenceKind,
-    start: CellAddress,
-    end: CellAddress,
-) -> Result<String, WorkbookError> {
-    let active = |part| applicable(part, kind, start, end);
-    if !text.split(':').any(active)
-        || calamine::expand_shared_formula(text, (0, 0), (0, 0)).is_err()
-    {
+/// Match the bounded coordinate core without consuming either neighbour.
+fn coordinate_length(text: &str) -> Option<usize> {
+    let column_start = usize::from(text.starts_with('$'));
+    let column_length = text[column_start..]
+        .bytes()
+        .take(4)
+        .take_while(u8::is_ascii_alphabetic)
+        .count();
+    let column_end = column_start + column_length;
+    let column = text[column_start..column_end].to_ascii_uppercase();
+    if column_length == 0 || column_length > 3 || (column_length == 3 && column.as_str() > "XFD") {
+        return None;
+    }
+    let row_start = column_end + usize::from(text[column_end..].starts_with('$'));
+    let row_length = text[row_start..]
+        .bytes()
+        .take(8)
+        .take_while(u8::is_ascii_digit)
+        .count();
+    let row = &text[row_start..row_start + row_length];
+    if row.starts_with('0') || !(1..=1_048_576).contains(&row.parse::<u32>().ok()?) {
+        return None;
+    }
+    Some(row_start + row_length)
+}
+
+/// Delegate isolated coordinate arithmetic, preserving inactive axes and case.
+fn displace(text: &str, start: CellAddress, end: CellAddress) -> Result<String, WorkbookError> {
+    let row = text
+        .trim_start_matches('$')
+        .trim_start_matches(|c: char| c.is_ascii_alphabetic());
+    if (text.starts_with('$') || start.c == end.c) && (row.starts_with('$') || start.r == end.r) {
         return Ok(text.to_owned());
     }
-    let shifted = calamine::expand_shared_formula(text, (start.r, start.c), (end.r, end.c))
-        .map_err(|e| WorkbookError::Reader(e.to_string()))?;
-    Ok(text
-        .split(':')
-        .zip(shifted.split(':'))
-        .map(|(raw, moved)| if active(raw) { moved } else { raw })
-        .collect::<Vec<_>>()
-        .join(":"))
+    let shifted = calamine::expand_shared_formula(
+        &text.to_ascii_uppercase(),
+        (start.r, start.c),
+        (end.r, end.c),
+    )
+    .map_err(|e| WorkbookError::Reader(e.to_string()))?;
+    Ok(retain_column_case(text, &shifted))
 }
 
-/// An operand changes only when at least one relative axis has a nonzero delta.
-fn applicable(text: &str, kind: ReferenceKind, start: CellAddress, end: CellAddress) -> bool {
-    match kind {
-        ReferenceKind::Column => !text.starts_with('$') && start.c != end.c,
-        ReferenceKind::Row => !text.starts_with('$') && start.r != end.r,
-        ReferenceKind::Cell => {
-            let row = text
-                .trim_start_matches('$')
-                .trim_start_matches(|c: char| c.is_ascii_alphabetic());
-            (!text.starts_with('$') && start.c != end.c)
-                || (!row.starts_with('$') && start.r != end.r)
-        }
-    }
-}
-
-/// Non-ASCII format characters belong to names without Unicode normalization.
-fn name_start(c: char) -> bool {
-    c.is_ascii_alphabetic() || c >= '\u{80}' || matches!(c, '_' | '\\')
-}
-
-/// Complete defined-name continuation, including coordinate-shaped suffixes.
-fn name_character(c: char) -> bool {
-    name_start(c) || c.is_ascii_digit() || matches!(c, '.' | '?')
-}
-
-/// End of a name or coordinate spelling, before its production's successor.
-fn name_length(text: &str) -> usize {
-    text.find(|c| !name_character(c) && c != '$')
-        .unwrap_or(text.len())
-}
-
-/// Unquoted sheet text permits coordinate spellings without classifying them.
-fn sheet_length(text: &str) -> usize {
-    text.find(|c: char| c.is_ascii_whitespace() || ":,+-*/^&=<>%;(){}!\"'[]\\?".contains(c))
-        .unwrap_or(text.len())
-}
-
-/// A sheet or external-book qualifier is opaque only when complete through `!`.
-fn qualifier_length(text: &str) -> Option<usize> {
-    if text.starts_with('\'') {
-        let length = quoted_length(text, b'\'');
-        return text[length..].starts_with('!').then_some(length + 1);
-    }
-    let book = if text.starts_with('[') {
-        text.find(']')? + 1
-    } else {
-        0
-    };
-    let first = sheet_length(&text[book..]);
-    let mut length = book + first;
-    if text[length..].starts_with(':') {
-        let second = sheet_length(&text[length + 1..]);
-        if first == 0 || second == 0 {
-            return None;
-        }
-        length += 1 + second;
-    }
-    text[length..].starts_with('!').then_some(length + 1)
-}
-
-/// Operators, separators and group delimiters terminate independent operands.
-fn terminates(text: &str) -> bool {
-    text.is_empty()
-        || text.starts_with(|c: char| c.is_ascii_whitespace() || ":,+-*/^&=<>%;(){}@#".contains(c))
-}
-
-/// Consume a complete decimal/exponent literal, including an exponent sign.
-fn number_length(text: &str) -> Option<usize> {
-    let bytes = text.as_bytes();
-    let mut cursor = bytes.iter().take_while(|c| c.is_ascii_digit()).count();
-    let mut digits = cursor;
-    if bytes.get(cursor) == Some(&b'.') {
-        cursor += 1;
-        let fraction = bytes[cursor..]
-            .iter()
-            .take_while(|c| c.is_ascii_digit())
-            .count();
-        cursor += fraction;
-        digits += fraction;
-    }
-    if digits == 0 {
-        return None;
-    }
-    if matches!(bytes.get(cursor), Some(b'e' | b'E')) {
-        let mut exponent = cursor + 1;
-        if matches!(bytes.get(exponent), Some(b'+' | b'-')) {
-            exponent += 1;
-        }
-        let count = bytes[exponent..]
-            .iter()
-            .take_while(|c| c.is_ascii_digit())
-            .count();
-        if count != 0 {
-            cursor = exponent + count;
-        }
-    }
-    Some(cursor)
-}
-
-/// Error literals retain their slash, question mark and exclamation mark.
-fn error_length(text: &str) -> usize {
-    text[1..]
-        .find(|c: char| c.is_ascii_whitespace() || ":,+-*^&=<>%;(){}@#".contains(c))
-        .map_or(text.len(), |n| n + 1)
-}
-
-/// Unknown units are never rescanned internally; colon also ends recovery.
-fn recovery_length(text: &str) -> usize {
-    let mut cursor = 0;
-    while cursor < text.len() {
-        let remaining = &text[cursor..];
-        if terminates(remaining) {
-            return if cursor == 0 {
-                remaining.chars().next().map_or(0, char::len_utf8)
-            } else {
-                cursor
-            };
-        }
-        cursor += match remaining.as_bytes()[0] {
-            b'\'' | b'"' => quoted_length(remaining, remaining.as_bytes()[0]),
-            b'[' => bracket_length(remaining),
-            _ => remaining.chars().next().map_or(0, char::len_utf8),
-        };
-    }
-    cursor
-}
-
-/// Arrays contain constants, retained with iterative delimiter context.
-fn array_length(text: &str) -> usize {
-    let mut delimiters = Vec::new();
-    let mut cursor = 0;
-    while cursor < text.len() {
-        let remaining = &text[cursor..];
-        match remaining.as_bytes()[0] {
-            b'"' => {
-                cursor += quoted_length(remaining, b'"');
-                continue;
-            }
-            b'{' => delimiters.push(b'}'),
-            b'}' => {
-                delimiters.pop();
-                if delimiters.is_empty() {
-                    return cursor + 1;
+/// Apply authored column letter casing, extending the last case at a width change.
+fn retain_column_case(text: &str, shifted: &str) -> String {
+    let mut casing = text.bytes().filter(u8::is_ascii_alphabetic);
+    let mut last = b'A';
+    shifted
+        .chars()
+        .map(|c| {
+            if c.is_ascii_alphabetic() {
+                last = casing.next().unwrap_or(last);
+                if last.is_ascii_lowercase() {
+                    return c.to_ascii_lowercase();
                 }
             }
-            _ => {}
-        }
-        cursor += remaining.chars().next().map_or(0, char::len_utf8);
-    }
-    text.len()
+            c
+        })
+        .collect()
 }
 
 /// Keep quoted string and sheet-name contents opaque, including doubled delimiters.
