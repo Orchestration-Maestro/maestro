@@ -76,6 +76,7 @@ futures-core = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 linux-raw-sys = { version = "0.12.1", default-features = false, features = ["auxvec", "elf", "errno", "general", "if_ether", "ioctl", "net", "netlink", "no_std", "prctl", "system", "xdp"] }
 mio = { version = "1.2.4", features = ["net", "os-ext"] }
@@ -104,6 +105,7 @@ futures-core = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 linux-raw-sys = { version = "0.12.1", default-features = false, features = ["auxvec", "elf", "errno", "general", "if_ether", "ioctl", "net", "netlink", "no_std", "prctl", "system", "xdp"] }
 mio = { version = "1.2.4", features = ["net", "os-ext"] }
@@ -132,6 +134,7 @@ futures-core = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 percent-encoding = { version = "2.3.2" }
@@ -159,6 +162,7 @@ futures-core = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 percent-encoding = { version = "2.3.2" }
@@ -181,6 +185,7 @@ digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
 fastrand = { version = "2.5.0" }
 form_urlencoded = { version = "1.2.2" }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
+image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 percent-encoding = { version = "2.3.2" }
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
