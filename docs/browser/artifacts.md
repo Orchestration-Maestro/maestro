@@ -55,8 +55,10 @@ uses the same complete original-byte selector as generic artifacts, with fixed
 
 Body drawing opens changed nonempty content and advances one page per repaint
 frame. Completed native images retain their order and opaque white document
-pixels; the scrollable reading wrapper adds 16-point padding. Replacing content
-cancels the old document and clears the prior load error. Empty content cancels
+pixels; the scrollable reading wrapper adds 16-point padding. Assigning unchanged
+successful content preserves page nodes, rendering progress and scroll position.
+Replacing content cancels the old document and clears the prior load error;
+assigning the same content after a load error retries instead. Empty content cancels
 unfinished work but retains already displayed successful pages; empty content
 after an error instead shows an empty body. Dropping the view removes its surface.
 Errors use selectable literal native text with the localized `Error loading PDF`

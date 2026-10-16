@@ -80,6 +80,9 @@ impl ArtifactElement for PdfArtifact {
         &self.content
     }
     fn set_content(&mut self, content: String) {
+        if self.content == content && self.failure.is_none() {
+            return;
+        }
         let retain = content.is_empty() && self.failure.is_none();
         self.pdf.reset(retain);
         self.content = content;

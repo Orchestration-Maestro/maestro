@@ -329,6 +329,80 @@ pub fn pdf_native_pages_keep_order_geometry_and_separators() {
     );
 }
 
+/// Artifact separators keep the source's collapsed page margins.
+#[wasm_bindgen]
+pub fn pdf_artifact_native_page_gap_follows_source_spacing() {
+    let mut view = View::new();
+    for _ in 0..3 {
+        view.draw(false, vec![]);
+    }
+    check(
+        "(()=>{const p=[...document.querySelectorAll('.maestro-pdf img')];return p.length===3&&p.slice(1).every((p,i)=>Math.abs(p.getBoundingClientRect().top-document.querySelectorAll('.maestro-pdf img')[i].getBoundingClientRect().bottom-33)<0.5)})()",
+    );
+}
+
+/// Overlay separators keep the source's collapsed page margins.
+#[wasm_bindgen]
+pub fn pdf_overlay_native_page_gap_follows_source_spacing() {
+    let view = View::new();
+    let mut overlay = AttachmentOverlay::open(record(), None, view.host.clone());
+    for _ in 0..4 {
+        view.overlay(&mut overlay, vec![]);
+    }
+    check(
+        "(()=>{const p=[...document.querySelectorAll('.maestro-pdf img')];return p.length===3&&p.slice(1).every((p,i)=>Math.abs(p.getBoundingClientRect().top-document.querySelectorAll('.maestro-pdf img')[i].getBoundingClientRect().bottom-33)<0.5)})()",
+    );
+}
+
+/// The native overlay viewport owns panel chrome independently of the artifact.
+#[wasm_bindgen]
+pub fn pdf_overlay_native_viewport_keeps_panel_and_border() {
+    let mut view = View::new();
+    for pack in ["brand.json", "signal.json"] {
+        view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
+        for mode in [
+            maestro_theme::BrandMode::Dark,
+            maestro_theme::BrandMode::Light,
+        ] {
+            view.mode = mode;
+            let mut overlay = AttachmentOverlay::open(record(), None, view.host.clone());
+            for _ in 0..2 {
+                view.overlay(&mut overlay, vec![]);
+            }
+            check(
+                "(()=>{const r=document.querySelector('.maestro-pdf:not(.maestro-pdf-artifact)'),s=getComputedStyle(r),p=document.createElement('div');r.append(p);p.style.background='var(--maestro-color-panel)';p.style.border='1px solid var(--maestro-color-border)';const c=getComputedStyle(p);const ok=s.backgroundColor===c.backgroundColor&&s.borderTopColor===c.borderTopColor&&Math.abs(parseFloat(s.borderTopWidth)-1)<0.5&&s.borderTopStyle==='solid'&&s.boxShadow!=='none';p.remove();return ok})()",
+            );
+            drop(overlay);
+            view.draw(false, vec![]);
+            check(
+                "(()=>{const r=document.querySelector('.maestro-pdf-artifact'),s=getComputedStyle(r),p=document.createElement('div');r.append(p);p.style.background='var(--maestro-color-background)';const ok=s.backgroundColor===getComputedStyle(p).backgroundColor&&s.borderTopWidth==='0px'&&s.boxShadow==='none';p.remove();return ok})()",
+            );
+        }
+    }
+}
+
+/// Equal-content edits preserve completed pages and the reader's position.
+#[wasm_bindgen]
+pub fn pdf_same_content_rewrite_retains_pages_and_scroll() {
+    let mut view = View::new();
+    view.draw(false, vec![]);
+    js("globalThis.firstPage=document.querySelector('.maestro-pdf img')");
+    view.element.set_content(encoded(true));
+    for _ in 0..2 {
+        view.draw(false, vec![]);
+    }
+    check("firstPage===document.querySelector('.maestro-pdf img')");
+    js(
+        "globalThis.retainedRoot=document.querySelector('.maestro-pdf');globalThis.retainedPages=[...retainedRoot.querySelectorAll('img')];globalThis.retainedWrapper=retainedRoot.parentElement;retainedWrapper.scrollTop=41.5;globalThis.retainedScroll=retainedWrapper.scrollTop;",
+    );
+    check("retainedPages.length===3&&retainedScroll>0");
+    view.element.set_content(encoded(true));
+    view.draw(false, vec![]);
+    check(
+        "retainedRoot===document.querySelector('.maestro-pdf')&&retainedRoot.querySelectorAll('img').length===3&&retainedPages.every((p,i)=>p===retainedRoot.querySelectorAll('img')[i])&&retainedWrapper.scrollTop===retainedScroll",
+    );
+}
+
 /// Caller brand properties govern chrome and localized selectable error text.
 #[wasm_bindgen]
 pub fn pdf_native_modes_and_error_text_follow_brand_and_localization() {
