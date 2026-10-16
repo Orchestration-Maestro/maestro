@@ -132,3 +132,12 @@ pub use configuration::config::get_agent_dir;
 
 /// Configurable application action identifiers and their shared manager.
 pub use presentation_data::keybindings::{AppKeybinding, KeybindingsManager};
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod output_guard;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_packages::{
+    DefaultPackageManager, PackageManager, PathMetadata, ProgressCallback, ProgressEvent,
+    ResolvedPaths, ResolvedResource,
+};

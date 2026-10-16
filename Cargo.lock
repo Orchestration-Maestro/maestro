@@ -2960,6 +2960,7 @@ dependencies = [
  "maestro-dependencies",
  "maestro-json",
  "maestro-models",
+ "maestro-packages",
  "maestro-path",
  "maestro-process",
  "maestro-resources",

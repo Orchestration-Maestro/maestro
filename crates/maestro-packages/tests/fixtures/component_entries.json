@@ -1,0 +1,719 @@
+[
+  {
+    "id": "discovery-top-level",
+    "input": {
+      "operation": "explicit",
+      "files": [
+        {
+          "path": "extensions/top.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/wrong.WASM",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/entry.wasm.bak",
+          "text": "decoy"
+        }
+      ],
+      "configured": null,
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/extensions/top.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-root-index",
+    "input": {
+      "operation": "explicit",
+      "files": [
+        {
+          "path": "extensions/index.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/helper.wasm",
+          "text": "@author_component"
+        }
+      ],
+      "configured": null,
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/extensions/index.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-child-index",
+    "input": {
+      "operation": "explicit",
+      "files": [
+        {
+          "path": "extensions/child/index.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/child/helper.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/only-helper/helper.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/deep/nested/index.wasm",
+          "text": "@author_component"
+        }
+      ],
+      "configured": null,
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/extensions/child/index.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-mixed",
+    "input": {
+      "operation": "explicit",
+      "files": [
+        {
+          "path": "extensions/top.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/child/index.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/child/helper.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/only-helper/helper.wasm",
+          "text": "@author_component"
+        }
+      ],
+      "configured": null,
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/extensions/child/index.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        },
+        {
+          "path": "$ROOT/extensions/top.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-pruned",
+    "input": {
+      "operation": "explicit",
+      "files": [
+        {
+          "path": "extensions/top.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/ignored.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/.hidden.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/node_modules/pkg/index.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/.gitignore",
+          "text": "ignored.wasm\n"
+        }
+      ],
+      "configured": null,
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/extensions/top.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-manifest-wins",
+    "input": {
+      "operation": "explicit",
+      "files": [
+        {
+          "path": "extensions/package.json",
+          "text": "{\"maestro\":{\"extensions\":[\"chosen.wasm\",\"chosen.wasm\"]}}"
+        },
+        {
+          "path": "extensions/chosen.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/index.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/helper.wasm",
+          "text": "@author_component"
+        }
+      ],
+      "configured": null,
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/extensions/chosen.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-manifest-empty",
+    "input": {
+      "operation": "explicit",
+      "files": [
+        {
+          "path": "extensions/package.json",
+          "text": "{\"maestro\":{\"extensions\":[]}}"
+        },
+        {
+          "path": "extensions/index.wasm",
+          "text": "@author_component"
+        }
+      ],
+      "configured": null,
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/extensions/index.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-manifest-missing",
+    "input": {
+      "operation": "explicit",
+      "files": [
+        {
+          "path": "extensions/package.json",
+          "text": "{\"maestro\":{\"extensions\":[\"absent.wasm\"]}}"
+        },
+        {
+          "path": "extensions/index.wasm",
+          "text": "@author_component"
+        }
+      ],
+      "configured": null,
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/extensions/index.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-manifest-null",
+    "input": {
+      "operation": "explicit",
+      "files": [
+        {
+          "path": "extensions/package.json",
+          "text": "{\"maestro\":{\"extensions\":null}}"
+        },
+        {
+          "path": "extensions/index.wasm",
+          "text": "@author_component"
+        }
+      ],
+      "configured": null,
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/extensions/index.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-manifest-wrong-shape",
+    "input": {
+      "operation": "explicit",
+      "files": [
+        {
+          "path": "extensions/package.json",
+          "text": "{\"maestro\":{\"extensions\":{\"entry\":\"chosen.wasm\"}}}"
+        },
+        {
+          "path": "extensions/index.wasm",
+          "text": "@author_component"
+        }
+      ],
+      "configured": null,
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/extensions/index.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-manifest-invalid",
+    "input": {
+      "operation": "explicit",
+      "files": [
+        {
+          "path": "extensions/package.json",
+          "text": "{"
+        },
+        {
+          "path": "extensions/index.wasm",
+          "text": "@author_component"
+        }
+      ],
+      "configured": null,
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/extensions/index.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-manifest-key-case",
+    "input": {
+      "operation": "explicit",
+      "files": [
+        {
+          "path": "extensions/package.json",
+          "text": "{\"Maestro\":{\"extensions\":[\"chosen.wasm\"]}}"
+        },
+        {
+          "path": "extensions/chosen.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/index.wasm",
+          "text": "@author_component"
+        }
+      ],
+      "configured": null,
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/extensions/index.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-child-manifest",
+    "input": {
+      "operation": "explicit",
+      "files": [
+        {
+          "path": "extensions/child/package.json",
+          "text": "{\"maestro\":{\"extensions\":[\"chosen.wasm\"]}}"
+        },
+        {
+          "path": "extensions/child/chosen.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/child/index.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/child/helper.wasm",
+          "text": "@author_component"
+        }
+      ],
+      "configured": null,
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/extensions/child/chosen.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-helper-only",
+    "input": {
+      "operation": "explicit",
+      "files": [
+        {
+          "path": "extensions/only/helper.wasm",
+          "text": "@author_component"
+        }
+      ],
+      "configured": null,
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-configured-directory",
+    "input": {
+      "operation": "configured",
+      "files": [
+        {
+          "path": "entry/index.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "entry/helper.wasm",
+          "text": "@author_component"
+        }
+      ],
+      "configured": {
+        "extensions": [
+          "../entry"
+        ]
+      },
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/entry/index.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "local",
+            "scope": "project",
+            "origin": "top-level"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-automatic-scopes",
+    "input": {
+      "operation": "automatic",
+      "files": [
+        {
+          "path": "user/extensions/user.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": ".maestro/extensions/project/index.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": ".maestro/extensions/project/helper.wasm",
+          "text": "@author_component"
+        }
+      ],
+      "configured": null,
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/.maestro/extensions/project/index.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "auto",
+            "scope": "project",
+            "origin": "top-level",
+            "baseDir": "$ROOT/.maestro"
+          }
+        },
+        {
+          "path": "$ROOT/user/extensions/user.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "auto",
+            "scope": "user",
+            "origin": "top-level",
+            "baseDir": "$ROOT/user"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-manifest-glob-directory",
+    "input": {
+      "operation": "explicit",
+      "files": [
+        {
+          "path": "package.json",
+          "text": "{\"maestro\":{\"extensions\":[\"group/*\"]}}"
+        },
+        {
+          "path": "group/chosen/index.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "group/chosen/helper.wasm",
+          "text": "@author_component"
+        }
+      ],
+      "configured": null,
+      "filtered": null
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/group/chosen/index.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  },
+  {
+    "id": "discovery-filtered-package",
+    "input": {
+      "operation": "filtered",
+      "files": [
+        {
+          "path": "extensions/top.wasm",
+          "text": "@author_component"
+        },
+        {
+          "path": "extensions/ignored.wasm",
+          "text": "@author_component"
+        }
+      ],
+      "configured": null,
+      "filtered": {
+        "packages": [
+          {
+            "source": "$ROOT",
+            "extensions": [
+              "!ignored.wasm"
+            ]
+          }
+        ]
+      }
+    },
+    "expected": {
+      "extensions": [
+        {
+          "path": "$ROOT/extensions/ignored.wasm",
+          "enabled": false,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        },
+        {
+          "path": "$ROOT/extensions/top.wasm",
+          "enabled": true,
+          "metadata": {
+            "source": "$ROOT",
+            "scope": "user",
+            "origin": "package",
+            "baseDir": "$ROOT"
+          }
+        }
+      ],
+      "skills": [],
+      "prompts": [],
+      "themes": []
+    }
+  }
+]

@@ -109,8 +109,9 @@ Without a present package-root manifest, a local directory with none of these
 paths is returned as an extension root; an existing conventional path suppresses
 that fallback even when discovery is empty.
 Extension entry-point manifests use `package.json`'s `maestro.extensions` literal
-paths before `index.ts` or `index.js`. Other extension discovery admits top-level
-source files and entry-bearing children. Skills stop at an admitted `SKILL.md`;
+paths before `index.ts`, `index.js` or `index.wasm`, in that order. Other extension
+discovery admits top-level `.ts`, `.js` and `.wasm` files and entry-bearing children.
+Suffix matching is case-sensitive; a child's helper files are not implicit entries. Skills stop at an admitted `SKILL.md`;
 loose Markdown is root-only. Prompts and themes recurse by their suffix.
 
 Discovery reads `.gitignore`, `.ignore` and `.fdignore` in that order, using
