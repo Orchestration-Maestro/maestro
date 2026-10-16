@@ -128,3 +128,15 @@ fn parse_line_spacing(xml: &XmlParser<'_>, element: XmlElement<'_, '_>) -> LineS
         line_rule: xml.attr(element, "lineRule").map(str::to_owned),
     }
 }
+
+/// Collect fresh raw paragraph metadata from immediate children.
+pub(crate) fn parse_paragraph_properties(
+    xml: &XmlParser<'_>,
+    element: XmlElement<'_, '_>,
+) -> ParagraphProperties {
+    let mut result = ParagraphProperties::default();
+    for child in xml.elements(element, None) {
+        parse_paragraph_property(xml, child, &mut result);
+    }
+    result
+}

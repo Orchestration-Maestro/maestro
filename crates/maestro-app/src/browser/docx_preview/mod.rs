@@ -72,3 +72,15 @@ pub use document_parser::{
 pub use document::common::CommonProperties;
 pub use document::paragraph::{LineSpacing, Numbering, ParagraphProperties, TabStop};
 pub use document::run::{RunProperties, VerticalAlign};
+
+mod styles;
+pub use document::style::{IDomStyle, IDomSubStyle};
+pub use styles::StylesPart;
+mod theme;
+pub use theme::{DmlColorScheme, DmlFontScheme, DmlFormInfo, DmlTheme, ThemePart};
+mod header_footer;
+pub use header_footer::{FooterPart, HeaderPart, WmlFooter, WmlHeader};
+mod notes;
+pub use notes::{EndnotesPart, FootnotesPart, WmlBaseNote, WmlEndnote, WmlFootnote};
+mod settings;
+pub use settings::{NoteProperties, SettingsPart, WmlSettings};

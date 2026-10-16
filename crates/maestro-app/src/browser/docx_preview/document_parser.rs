@@ -27,7 +27,7 @@ pub fn parse_run(input: &OwnedXmlElement) -> Result<OpenXmlElementTree, DocxErro
 }
 /// Selected immediate-child framing.
 #[derive(Clone, Copy)]
-enum Framing {
+pub(super) enum Framing {
     /// Body children.
     Body,
     /// One paragraph.
@@ -39,17 +39,26 @@ enum Framing {
 fn parse(input: &OwnedXmlElement, framing: Framing) -> Result<OpenXmlElementTree, DocxError> {
     let xml = parse_xml_string(input.source(), false)?;
     let selected = xml.selected(input)?;
+    Ok(parse_selected(&xml, selected, input, framing))
+}
+/// Construct one arena from an already admitted selection.
+pub(super) fn parse_selected<'doc, 'input: 'doc>(
+    xml: &'doc XmlParser<'input>,
+    element: XmlElement<'doc, 'input>,
+    input: &'doc OwnedXmlElement,
+    framing: Framing,
+) -> OpenXmlElementTree {
     let mut parser = DocumentParser {
-        xml: &xml,
+        xml,
         input,
         tree: OpenXmlElementTree::default(),
     };
     parser.tree.roots = match framing {
-        Framing::Body => parser.body(selected),
-        Framing::Paragraph => vec![parser.paragraph(selected)],
-        Framing::Run => vec![parser.run(selected, None)],
+        Framing::Body => parser.body(element),
+        Framing::Paragraph => vec![parser.paragraph(element)],
+        Framing::Run => vec![parser.run(element, None)],
     };
-    Ok(parser.tree)
+    parser.tree
 }
 /// One parse's borrowed XML view and owned result arena.
 struct DocumentParser<'doc, 'input> {
@@ -324,3 +333,4 @@ mod table_style;
 pub use table_style::{TableStyle, parse_table_style};
 
 mod properties;
+pub(super) mod styles;

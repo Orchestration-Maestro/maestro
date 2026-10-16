@@ -166,3 +166,30 @@ for first/last rows and columns and horizontal/vertical banding. Property-child
 order, duplicates and empty maps are retained. Unsupported regions return no
 records. Table-style preparation remains separate from the owned element tree;
 neither operation renders a preview.
+
+## Word styles and auxiliary parts
+
+`maestro_app::browser::docx_preview` exposes `StylesPart`, `ThemePart`,
+`HeaderPart`, `FooterPart`, `FootnotesPart`, `EndnotesPart` and `SettingsPart`.
+Their `parse_xml` factories prepare owned records separately from package
+loading; headers, footers and notes reuse the ordinary body parser.
+
+Styles retain ordered named/default definitions, repeated identifiers,
+relationships and CSS declarations without resolving inheritance. Each style
+property group appends CSS while replacing its corresponding raw metadata;
+this differs from paragraph-node metadata merging. The supplied `ignore_width`
+policy reaches both ordinary and conditional declarations and suppresses only
+cell widths. An aliases child without a value fails with an XML-part error.
+
+Themes keep raw color values in insertion order and independent major/minor font
+groups. Direct sRGB children take precedence over system-color fallbacks. Missing
+font children remain distinct from children with missing typeface attributes.
+The required `themeElements` child must be present. Settings keep encountered tab
+sizes, nullable hyphenation flags and separate note-default groups with ordered,
+nullable IDs. Repeated schemes and note-default groups replace earlier groups.
+
+Header/footer roots have static Rust kinds and initially empty CSS maps. Note
+records retain raw nullable IDs/types and repeated IDs in source order. Note
+parts select their own immediate note kind using one admitted source per call.
+Package-to-part composition and preview rendering remain separate from these
+factories; no inherited-style resolution or document rendering occurs here.
