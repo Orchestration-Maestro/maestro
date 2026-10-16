@@ -1020,3 +1020,91 @@ async fn check_edit_aliases(
         expected.rewrite_record_same.0
     );
 }
+
+/// Read the recorded classifier cases from the shared browser corpus.
+fn filename_cases() -> Vec<(String, FileType)> {
+    let fixture: Value = serde_json::from_str(include_str!(
+        "../../../../../maestro-web/tests/fixtures/generic_artifacts.json"
+    ))
+    .unwrap();
+    fixture["classifier"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|case| {
+            let expected = match case["output"].as_str().unwrap() {
+                "html" => FileType::Html,
+                "svg" => FileType::Svg,
+                "markdown" => FileType::Markdown,
+                "image" => FileType::Image,
+                "pdf" => FileType::Pdf,
+                "excel" => FileType::Excel,
+                "docx" => FileType::Docx,
+                "text" => FileType::Text,
+                "generic" => FileType::Generic,
+                _ => panic!("unknown recorded view"),
+            };
+            (case["input"]["filename"].as_str().unwrap().into(), expected)
+        })
+        .collect()
+}
+/// Canonical supported suffixes select their matching view.
+#[test]
+fn artifact_extensions_select_the_registered_view() {
+    for (name, expected) in filename_cases().into_iter().take(70) {
+        assert_eq!(get_file_type(&name), expected, "{name}");
+    }
+}
+/// Filename boundaries retain literal suffix and Unicode lowercase semantics.
+#[test]
+fn artifact_names_use_the_last_literal_segment() {
+    for (name, expected) in filename_cases().into_iter().skip(70) {
+        assert_eq!(get_file_type(&name), expected, "{name}");
+    }
+}
+/// Both affinity representations execute the same retained command policy.
+#[test]
+fn artifact_local_and_threaded_tools_share_command_policy() {
+    let local_host = std::rc::Rc::new(Host::default());
+    let threaded_host = Arc::new(Host::default());
+    let local = LocalArtifactsPanel::new_local(local_host.clone());
+    let threaded = ArtifactsPanel::new(threaded_host.clone());
+    let local_tool = local.tool();
+    let threaded_tool = threaded.tool();
+    assert_eq!(local_tool.label, threaded_tool.label);
+    assert_eq!(
+        serde_json::to_value(&local_tool.definition).unwrap(),
+        serde_json::to_value(&threaded_tool.definition).unwrap()
+    );
+    local.open_artifact("absent");
+    let local_map = local.artifacts();
+    assert!(local_map.read().unwrap().is_empty());
+    drop(local);
+    drop(threaded);
+    for args in [
+        json!({"command":"create","filename":"a.zip","content":"Zg=="}),
+        json!({"command":"update","filename":"a.zip","old_str":"Zg==","new_str":"Zm8="}),
+        json!({"command":"rewrite","filename":"a.zip","content":"AAEC//79"}),
+        json!({"command":"get","filename":"a.zip"}),
+        json!({"command":"logs","filename":"a.zip"}),
+        json!({"command":"delete","filename":"a.zip"}),
+        json!({"command":"get","filename":"absent"}),
+    ] {
+        let local = run((local_tool.execute)(
+            "call".into(),
+            args.clone(),
+            None,
+            None,
+        ))
+        .unwrap();
+        let threaded = run((threaded_tool.execute)("call".into(), args, None, None)).unwrap();
+        assert_eq!(
+            serde_json::to_value(local).unwrap(),
+            serde_json::to_value(threaded).unwrap()
+        );
+    }
+    assert_eq!(
+        *local_host.events.lock().unwrap(),
+        *threaded_host.events.lock().unwrap()
+    );
+}

@@ -1,0 +1,17 @@
+.maestro-generic-artifact {
+  box-sizing: border-box;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--maestro-color-background);
+  color: var(--maestro-color-muted);
+  padding: var(--maestro-spacing-xl);
+  font-family: var(--maestro-type-body-font);
+  font-size: var(--maestro-type-body-size);
+  line-height: var(--maestro-type-body-line-height);
+}
+.maestro-generic-artifact > div { text-align: center; max-width: 28rem; }
+.maestro-generic-artifact svg { display: block; width: 4rem; height: 4rem; margin: 0 auto var(--maestro-spacing-md); opacity: 0.5; }
+.maestro-generic-artifact > div > div { font-size: 1.125em; font-weight: 500; color: var(--maestro-color-text); margin-bottom: var(--maestro-spacing-sm); }
+.maestro-generic-artifact p { margin: 0 0 var(--maestro-spacing-md); font-size: 0.875em; }

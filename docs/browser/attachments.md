@@ -48,13 +48,19 @@ and a CSS projection test exercise this boundary; browser hit testing, image
 animation/selection and device placement remain qualified by
 [#825](https://github.com/Orchestration-Maestro/maestro/issues/825).
 
-Attachment downloads use the owning window's native base64 decoder, a Blob with the original
+Attachment-record downloads use the owning window's native base64 decoder, a Blob with the original
 MIME type and a temporary anchor with the original filename. The object URL and
 anchor are released on exit. The same byte sink serves
 [session JSONL downloads](session-viewer.md#jsonl-download) through
 `AttachmentHost::download_bytes`, without base64 conversion.
 Download errors propagate rather than selecting a
 text mode or replacing the preview with a file-display error.
+
+`AttachmentHost::download_bytes(content, filename, mime_type)` also saves supplied
+original byte slices. Controlled hosts implement this required operation; there
+is no unsupported default. The browser adapter shares the same Blob, anchor and
+object-URL lifecycle with attachment-record downloads. The
+[generic artifact header](artifacts.md) uses this route after shared byte decoding.
 
 Pass the selected `BrandPresentation` to each render call. Colors, type, radii and
 DOM custom properties come from that presentation; image bytes are not recolored.

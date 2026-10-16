@@ -50,3 +50,5 @@ pub use maestro_app::browser::components::sandbox::{
     console_runtime_provider::{ConsoleLog, ConsoleRuntimeProvider},
     file_download_runtime_provider::{DownloadableFile, FileDownloadRuntimeProvider},
 };
+pub mod tools;
+pub use tools::artifacts::artifact_element::ArtifactElement;

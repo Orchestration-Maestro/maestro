@@ -38,8 +38,11 @@ publish state before updating views and notifying the host; dependent HTML views
 refresh afterward. Deleting the selected file selects the first remaining file,
 or clears the selection if no file remains. Opening an unknown file does nothing.
 
-A filename whose last dot-separated segment equals `html` ignoring ASCII case
-(including the filename `html`) triggers the HTML path. Normal HTML mutations
+`browser::tools::artifacts::get_file_type` is the single filename discriminator.
+It selects HTML, SVG, Markdown, image, PDF, spreadsheet, Word, text/code or generic
+from the last literal dot-separated segment with Unicode lowercase. It does not
+trim whitespace or normalize paths. HTML selection (including the filename
+`html`) triggers the HTML path. Normal HTML mutations
 capture the selected view's log reader before requesting a 1,500 ms wait, then
 append a newline and that reader's current output. The host owns wait execution;
 the application adds no timer runtime. A missing HTML view appends only the
@@ -50,12 +53,22 @@ The SDK also exports the read-only artifact storage and attachment runtime
 descriptions; their actual runtime operations are separate from this command
 owner.
 
+`ArtifactsPanel` defaults to the existing shared presentation pointer.
+`browser::tools::artifacts::LocalArtifactsPanel::new_local` instead retains the
+existing local execution pointer and returns a local executable tool, permitting
+native `Rc` captures. Both use the same command state, declarations and policy.
+The module also exposes `LocalArtifactPresentation` and the typed `FileType`.
+These local types do not change the default SDK tool's thread-safety.
+
 ## Browser integration
 
 This interface does not mount browser views or format console records. Artifact
 reconstruction and runtime access remain in [#753](https://github.com/Orchestration-Maestro/maestro/issues/753),
-the rendered panel in [#794](https://github.com/Orchestration-Maestro/maestro/issues/794),
+the tabbed/overlay panel in [#1108](https://github.com/Orchestration-Maestro/maestro/issues/1108),
 HTML views in [#819](https://github.com/Orchestration-Maestro/maestro/issues/819),
 and tool cards in [#820](https://github.com/Orchestration-Maestro/maestro/issues/820).
 Sandbox corrections remain in [#104](https://github.com/Orchestration-Maestro/maestro/issues/104)
 and [#105](https://github.com/Orchestration-Maestro/maestro/issues/105).
+
+The [generic-file view](../browser/artifacts.md) is embeddable independently of
+the panel shell and accepts the existing replaceable native host.

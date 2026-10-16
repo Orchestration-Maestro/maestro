@@ -55,3 +55,7 @@ impl LanguageHost for Host {
         self.diagnostics.borrow_mut().push(diagnostic.clone());
     }
 }
+
+/// Embedded brand input without filesystem operations.
+#[cfg(target_arch = "wasm32")]
+pub mod brand;

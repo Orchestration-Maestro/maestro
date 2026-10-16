@@ -1,7 +1,7 @@
 //! Browser-executed assertions through the public native header boundary.
 #![cfg(all(test, target_arch = "wasm32"))]
 use base64::Engine as _;
-use maestro_theme::{BrandMode, ThemeInfo, ThemeOperations};
+use maestro_theme::BrandMode;
 use maestro_web::browser::attachment_content::BrowserAttachmentHost;
 use maestro_web::export_html::template::{
     HeaderState, HeaderView, SessionDocument, load_document, localize_header_date, render_header,
@@ -9,25 +9,8 @@ use maestro_web::export_html::template::{
 use std::rc::Rc;
 use wasm_bindgen::{JsCast as _, prelude::*};
 
-/// Supply only the checked-in brand pack, with no browser filesystem access.
-struct Pack;
-impl ThemeOperations for Pack {
-    fn read_to_string(&self, _: &str) -> std::io::Result<String> {
-        Ok(include_str!("../../../assets/brand/brand.json").into())
-    }
-    fn environment(&self, _: &str) -> Option<String> {
-        unreachable!()
-    }
-    fn exists(&self, _: &str) -> bool {
-        unreachable!()
-    }
-    fn read_dir(&self, _: &str) -> std::io::Result<Vec<String>> {
-        unreachable!()
-    }
-    fn sort_by_name(&self, _: &mut [ThemeInfo]) -> std::io::Result<()> {
-        unreachable!()
-    }
-}
+pub mod support;
+use support::brand::Pack;
 /// Real native owner and canvas caller retained across repaints.
 struct Header {
     state: HeaderState,

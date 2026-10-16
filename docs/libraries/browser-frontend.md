@@ -10,7 +10,7 @@ font bundle; native tests enable the dev-only egui default fonts.
 | egui | 0.36.2 | production defaults off; drawing, controls and color/image types; dev-only default_fonts | MIT |
 | usvg | 0.48.1 | defaults off; SVG parsing; roxmltree re-export | MIT |
 | resvg | 0.48.1 | defaults off; native rendering; tiny-skia re-export | MIT |
-| base64 | 0.23.1 | defaults off/std; offline export payload decoding | MIT |
+| base64 | 0.23.1 | defaults off/std; offline export and generic-artifact payload decoding | MIT |
 | url | 2.5.8 | default; form-urlencoded deep-link parsing | MIT |
 | indexmap | 2.14.2 | serde, default/std | MIT |
 | ryu-js | 1.0.3 | workspace number formatting | Apache-2.0 |
@@ -108,3 +108,9 @@ failures reach transaction cleanup.
 Slot sizing, optional-style restoration and fractional-scroll restoration share
 one owner for measurement and publication. No package, binding feature, font or
 browser-runner dependency is added.
+Generic artifact views reuse the existing reading registry, native SVG bindings,
+canvas ghost control and original-byte download lifecycle. The byte control is
+adapted under MIT; its copyright and permission text are retained in
+[third-party notices](../../THIRD-PARTY-NOTICES.md). Native composition tests use
+chrono 0.4.45 (defaults off/std, MIT) to name the existing application clock return
+type. This dev-only declaration adds no package version or production edge.

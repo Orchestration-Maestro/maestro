@@ -5,3 +5,5 @@ pub mod input;
 
 /// Sandbox runtime messaging.
 pub mod sandbox;
+
+pub(crate) mod download_button;

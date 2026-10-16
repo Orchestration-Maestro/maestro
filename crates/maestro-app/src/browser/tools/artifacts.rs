@@ -5,7 +5,7 @@ use super::prompts::{
 };
 use chrono::{DateTime, Utc};
 use indexmap::IndexMap;
-use maestro_agent::{AgentTool, AgentToolResult};
+use maestro_agent::{AgentTool, AgentToolResult, LocalAgentTool};
 use maestro_models::{
     BoxFuture, StringEnumOptions, TextContent, Tool, UserBlock, present, string_enum,
 };
@@ -133,11 +133,11 @@ struct State {
 }
 /// Retained command policy, independent of a concrete browser panel.
 #[derive(Clone)]
-pub struct ArtifactsPanel {
+pub struct ArtifactsPanel<P = SharedArtifactPresentation> {
     /// Shared current state slot.
     state: Arc<RwLock<State>>,
     /// Owned view and clock operations.
-    presentation: SharedArtifactPresentation,
+    presentation: P,
 }
 /// Reconstruction-only notification and wait controls.
 #[derive(Default)]
@@ -147,18 +147,72 @@ struct Options {
     /// Suppress the HTML log delay.
     skip_wait: bool,
 }
-impl ArtifactsPanel {
-    /// Retain the supplied presentation operations with an empty store.
-    #[must_use]
-    pub fn new(presentation: SharedArtifactPresentation) -> Self {
-        Self {
-            state: Arc::new(RwLock::new(State {
-                artifacts: Arc::new(RwLock::new(IndexMap::new())),
-                active: None,
-            })),
-            presentation,
+/// Local presentation pointer from the shared execution representation.
+pub type LocalArtifactPresentation =
+    <maestro_models::Local as maestro_models::Execution>::Shared<dyn ArtifactPresentation>;
+/// Retained caller accepting local presentation captures on every target.
+pub type LocalArtifactsPanel = ArtifactsPanel<LocalArtifactPresentation>;
+/// One constructor and executable template for both supported pointer families.
+macro_rules! caller {
+    ($presentation:ty, $new:ident, $tool:ident, $module:ident, $pointer:ident) => {
+        impl ArtifactsPanel<$presentation> {
+            /// Retain the supplied presentation operations with an empty store.
+            #[must_use]
+            pub fn $new(presentation: $presentation) -> Self {
+                Self {
+                    state: Arc::new(RwLock::new(State {
+                        artifacts: Arc::new(RwLock::new(IndexMap::new())),
+                        active: None,
+                    })),
+                    presentation,
+                }
+            }
+            /// Build an executable declaration retaining this same command state.
+            #[must_use]
+            pub fn tool(&self) -> $tool {
+                let panel = self.clone();
+                $tool::typed(
+                    Tool {
+                        name: "artifacts".into(),
+                        description: artifacts_tool_description(&[
+                            ATTACHMENTS_RUNTIME_DESCRIPTION,
+                            ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO,
+                        ]),
+                        parameters: schema(),
+                    },
+                    "Artifacts".into(),
+                    std::$module::$pointer::new(move |_, Parameters(params), _, _| {
+                        let panel = panel.clone();
+                        Box::pin(async move {
+                            let text = panel.execute(params, Options::default()).await;
+                            Ok(AgentToolResult::<()> {
+                                content: vec![UserBlock::Text(TextContent {
+                                    text,
+                                    text_signature: None,
+                                })],
+                                details: None,
+                                terminate: None,
+                            })
+                        })
+                    }),
+                )
+            }
         }
-    }
+    };
+}
+caller!(SharedArtifactPresentation, new, AgentTool, sync, Arc);
+caller!(
+    std::rc::Rc<dyn ArtifactPresentation>,
+    new_local,
+    LocalAgentTool,
+    rc,
+    Rc
+);
+impl<P> ArtifactsPanel<P>
+where
+    P: Clone + std::ops::Deref,
+    P::Target: ArtifactPresentation,
+{
     /// Return the current map handle; create and delete replace its container.
     #[must_use]
     pub fn artifacts(&self) -> Artifacts {
@@ -171,36 +225,6 @@ impl ArtifactsPanel {
             self.show(filename);
             self.presentation.on_open();
         }
-    }
-    /// Build an executable declaration retaining this same command state.
-    #[must_use]
-    pub fn tool(&self) -> AgentTool {
-        let panel = self.clone();
-        AgentTool::typed(
-            Tool {
-                name: "artifacts".into(),
-                description: artifacts_tool_description(&[
-                    ATTACHMENTS_RUNTIME_DESCRIPTION,
-                    ARTIFACTS_RUNTIME_PROVIDER_DESCRIPTION_RO,
-                ]),
-                parameters: schema(),
-            },
-            "Artifacts".into(),
-            Arc::new(move |_, Parameters(params), _, _| {
-                let panel = panel.clone();
-                Box::pin(async move {
-                    let text = panel.execute(params, Options::default()).await;
-                    Ok(AgentToolResult::<()> {
-                        content: vec![UserBlock::Text(TextContent {
-                            text,
-                            text_signature: None,
-                        })],
-                        details: None,
-                        terminate: None,
-                    })
-                })
-            }),
-        )
     }
     /// Select a filename without holding the state guard through host operations.
     fn show(&self, filename: &str) {
@@ -350,7 +374,7 @@ impl ArtifactsPanel {
     async fn finish(&self, filename: &str, mut result: String, skip_wait: bool) -> String {
         self.presentation
             .reload_all_html_artifacts(self.artifacts());
-        if is_html(filename) && !skip_wait {
+        if get_file_type(filename) == FileType::Html && !skip_wait {
             let reader = self.presentation.get_logs(filename).ok();
             result.push('\n');
             if let Some(reader) = reader {
@@ -396,12 +420,49 @@ impl ArtifactsPanel {
         }
     }
 }
-/// Select HTML from only the last dot-separated filename segment.
-fn is_html(filename: &str) -> bool {
-    filename
+/// Artifact view selected from the literal filename suffix.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum FileType {
+    /// HTML document.
+    Html,
+    /// Scalable vector image.
+    Svg,
+    /// Markdown document.
+    Markdown,
+    /// Raster image.
+    Image,
+    /// Portable document.
+    Pdf,
+    /// Spreadsheet.
+    Excel,
+    /// Word document.
+    Docx,
+    /// Text or source code.
+    Text,
+    /// Download-only file.
+    Generic,
+}
+/// Select a view using the last literal dot-delimited segment.
+#[must_use]
+pub fn get_file_type(filename: &str) -> FileType {
+    match filename
         .rsplit('.')
         .next()
-        .is_some_and(|extension| extension.eq_ignore_ascii_case("html"))
+        .unwrap_or_default()
+        .to_lowercase()
+        .as_str()
+    {
+        "html" => FileType::Html,
+        "svg" => FileType::Svg,
+        "md" | "markdown" => FileType::Markdown,
+        "png" | "jpg" | "jpeg" | "gif" | "webp" | "bmp" | "ico" => FileType::Image,
+        "pdf" => FileType::Pdf,
+        "xlsx" | "xls" => FileType::Excel,
+        "docx" => FileType::Docx,
+        "txt" | "json" | "xml" | "yaml" | "yml" | "csv" | "js" | "ts" | "jsx" | "tsx" | "py"
+        | "java" | "c" | "cpp" | "h" | "css" | "scss" | "sass" | "less" | "sh" => FileType::Text,
+        _ => FileType::Generic,
+    }
 }
 /// Model schema using the shared string-enum owner.
 fn schema() -> serde_json::Value {

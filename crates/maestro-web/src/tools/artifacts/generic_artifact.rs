@@ -1,0 +1,196 @@
+//! Download-only artifact with a retained literal native reading body.
+use super::artifact_element::{ArtifactElement, ArtifactView};
+use crate::{
+    browser::attachment_content::{
+        self, AttachmentContent, AttachmentHost, AttachmentSurface, AttachmentUiError,
+        ReadingContent, ReadingPhase, ReadingPlacement,
+    },
+    components::download_button,
+};
+use std::{cell::RefCell, rc::Rc};
+/// Current owned native text and, in a browser, its retained nodes.
+#[derive(Default)]
+struct Text {
+    /// Filename followed by the two localized guidance sentences.
+    values: [String; 3],
+    /// Mounted nodes survive field edits without replacing the root.
+    #[cfg(target_arch = "wasm32")]
+    nodes: Option<[web_sys::Element; 3]>,
+}
+/// Generic file with independent original content and native reading lifetime.
+pub struct GenericArtifact {
+    /// Original authored filename.
+    filename: String,
+    /// Original base64 content, never decoded by body drawing.
+    content: String,
+    /// Replaceable native effects.
+    host: Rc<dyn AttachmentHost>,
+    /// Surface identity independent of the filename.
+    id: egui::Id,
+    /// Owned current native operands.
+    text: Rc<RefCell<Text>>,
+    /// Successfully published factory identity.
+    reading: Option<Rc<ReadingContent>>,
+    /// Owned repaint handle retained after drawing.
+    context: Option<egui::Context>,
+}
+impl GenericArtifact {
+    /// Start with empty filename and content using the supplied native host.
+    #[must_use]
+    pub fn new(host: Rc<dyn AttachmentHost>) -> Self {
+        Self {
+            filename: String::new(),
+            content: String::new(),
+            host,
+            id: attachment_content::identity(),
+            text: Rc::new(RefCell::new(Text::default())),
+            reading: None,
+            context: None,
+        }
+    }
+    /// Wake the last drawing context without retaining borrowed drawing inputs.
+    fn repaint(&self) {
+        if let Some(context) = &self.context {
+            context.request_repaint();
+        }
+    }
+    /// Select complete original bytes, including folded data URL payloads.
+    fn bytes(&self) -> Result<Vec<u8>, AttachmentUiError> {
+        let payload = self
+            .content
+            .strip_prefix("data:")
+            .and_then(|s| s.split_once("base64,"))
+            .map(|(_, payload)| payload)
+            .filter(|payload| !payload.is_empty())
+            .unwrap_or(&self.content);
+        Ok(crate::utils::base64::decode(payload)?)
+    }
+    /// Select the explicitly supported download media types.
+    fn mime(&self) -> &'static str {
+        match self
+            .filename
+            .rsplit('.')
+            .next()
+            .unwrap_or_default()
+            .to_lowercase()
+            .as_str()
+        {
+            "pdf" => "application/pdf",
+            "zip" => "application/zip",
+            "tar" => "application/x-tar",
+            "gz" => "application/gzip",
+            "rar" => "application/vnd.rar",
+            "7z" => "application/x-7z-compressed",
+            "mp3" => "audio/mpeg",
+            "mp4" => "video/mp4",
+            "avi" => "video/x-msvideo",
+            "mov" => "video/quicktime",
+            "wav" => "audio/wav",
+            "ogg" => "audio/ogg",
+            "json" => "application/json",
+            "xml" => "application/xml",
+            _ => "application/octet-stream",
+        }
+    }
+    /// Update owned text operands and only the changed native nodes.
+    fn update_text(&self, view: ArtifactView<'_>) -> Result<(), AttachmentUiError> {
+        let values = [
+            self.filename.clone(),
+            view.i18n
+                .text("Preview not available for this file type.")?,
+            view.i18n
+                .text("Click the download button above to view it on your computer.")?,
+        ];
+        self.text.borrow_mut().values = values;
+        #[cfg(target_arch = "wasm32")]
+        browser::sync(&self.text.borrow());
+        Ok(())
+    }
+    /// Create a factory retaining owned text only.
+    fn reading(&self) -> Rc<ReadingContent> {
+        if let Some(reading) = &self.reading {
+            return Rc::clone(reading);
+        }
+        #[cfg(target_arch = "wasm32")]
+        let text = Rc::clone(&self.text);
+        Rc::new(ReadingContent {
+            #[cfg(target_arch = "wasm32")]
+            mount: Rc::new(move |document| browser::mount(document, &text)),
+        })
+    }
+}
+impl Drop for GenericArtifact {
+    fn drop(&mut self) {
+        self.host.remove(self.id);
+    }
+}
+impl ArtifactElement for GenericArtifact {
+    fn filename(&self) -> &str {
+        &self.filename
+    }
+    fn set_filename(&mut self, filename: String) {
+        self.filename = filename;
+        self.repaint();
+    }
+    fn content(&self) -> &str {
+        &self.content
+    }
+    fn set_content(&mut self, content: String) {
+        self.content = content;
+        self.repaint();
+    }
+    fn get_header_buttons(
+        &mut self,
+        ui: &mut egui::Ui,
+        view: ArtifactView<'_>,
+    ) -> Result<(), AttachmentUiError> {
+        self.context = Some(ui.ctx().clone());
+        let bytes = self.bytes()?;
+        ui.scope(|ui| {
+            download_button::draw(
+                ui,
+                view,
+                self.host.as_ref(),
+                &self.filename,
+                (self.mime(), &bytes),
+            )
+        })
+        .inner
+    }
+    fn render(
+        &mut self,
+        ui: &mut egui::Ui,
+        view: ArtifactView<'_>,
+    ) -> Result<(), AttachmentUiError> {
+        self.context = Some(ui.ctx().clone());
+        self.update_text(view)?;
+        let reading = self.reading();
+        let rect = ui
+            .allocate_space(ui.available_size().max(egui::Vec2::ZERO))
+            .1;
+        for phase in [ReadingPhase::Measure, ReadingPhase::Publish] {
+            self.host.present(
+                AttachmentSurface {
+                    id: self.id,
+                    rect,
+                    clip_rect: ui.clip_rect(),
+                    pixels_per_point: ui.ctx().pixels_per_point(),
+                    opacity: 1.,
+                    occluders: vec![],
+                    content: AttachmentContent::Reading(ReadingPlacement {
+                        content: Rc::clone(&reading),
+                        phase,
+                        sizes: &[],
+                        modal: None,
+                        context: ui.ctx(),
+                    }),
+                },
+                view.presentation,
+            )?;
+        }
+        self.reading = Some(reading);
+        Ok(())
+    }
+}
+#[cfg(target_arch = "wasm32")]
+mod browser;
