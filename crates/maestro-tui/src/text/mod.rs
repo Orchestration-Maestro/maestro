@@ -6,8 +6,10 @@ use std::borrow::Cow;
 
 pub(crate) use utils::Endings;
 
-/// Expands displayed tabs to three spaces, preserving recognized escapes.
-pub(crate) fn expand_tabs(text: &str) -> Cow<'_, str> {
+/// Expands displayed tab bytes to three spaces, preserving recognized escapes.
+/// Unlike width measurement, this replaces tab bytes in the returned text.
+#[must_use]
+pub fn expand_tabs(text: &str) -> Cow<'_, str> {
     if !text.contains('\t') {
         return Cow::Borrowed(text);
     }

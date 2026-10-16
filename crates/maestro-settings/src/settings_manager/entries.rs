@@ -14,16 +14,18 @@ pub enum SettingsListEntry {
 }
 
 impl SettingsListEntry {
-    /// Reads a stored list member.
-    fn from_value(value: &Value) -> Self {
+    /// Reads a stored list member, retaining unknown JSON for a lossless round trip.
+    #[must_use]
+    pub fn from_value(value: &Value) -> Self {
         value.as_str().map_or_else(
             || Self::Unknown(value.clone()),
             |text| Self::String(text.to_owned()),
         )
     }
 
-    /// Writes the member as JSON.
-    fn into_value(self) -> Value {
+    /// Restores the member as JSON, including unknown values unchanged.
+    #[must_use]
+    pub fn into_value(self) -> Value {
         match self {
             Self::String(text) => Value::String(text),
             Self::Unknown(value) => value,
@@ -84,8 +86,10 @@ pub enum PackageSource {
 
 impl PackageSource {
     /// Reads a stored package entry. An object is typed only when its `source`
-    /// is a string and every present resource list is an array.
-    pub(crate) fn from_value(value: &Value) -> Self {
+    /// is a string and every present resource list is an array. Unknown values
+    /// and object members survive a lossless round trip through `into_value`.
+    #[must_use]
+    pub fn from_value(value: &Value) -> Self {
         match value {
             Value::String(source) => Self::Source(source.clone()),
             Value::Object(map) if is_filtered(map) => Self::Filtered(FilteredPackage(map.clone())),
@@ -93,8 +97,9 @@ impl PackageSource {
         }
     }
 
-    /// Writes the entry as JSON.
-    pub(crate) fn into_value(self) -> Value {
+    /// Restores the entry as JSON, retaining unknown values and object members.
+    #[must_use]
+    pub fn into_value(self) -> Value {
         match self {
             Self::Source(source) => Value::String(source),
             Self::Filtered(package) => Value::Object(package.0),

@@ -84,7 +84,7 @@ pub use maestro_catalog::{
     ScopedModel, model_id_comparator,
 };
 pub use maestro_models::models_are_equal;
-pub use maestro_settings::SettingsManager;
+pub use maestro_settings::{PackageSource, SettingsListEntry, SettingsManager};
 
 pub use browser::storage::{
     AppStorage, AutoDiscoveryProviderType, CustomProvider, CustomProviderType,
@@ -93,7 +93,7 @@ pub use browser::storage::{
     Store, StoreConfig, get_app_storage, set_app_storage,
 };
 #[cfg(not(target_arch = "wasm32"))]
-pub use maestro_resources::NativeResourceOperations;
+pub use maestro_resources::{NativeResourceOperations, SourceOrigin, SourceScope};
 pub use maestro_resources::{
     ResourceEntry, ResourceFileType, ResourceOperations, canonicalize_path,
 };

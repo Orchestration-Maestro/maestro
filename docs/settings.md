@@ -55,6 +55,12 @@ below, which rename or remove legacy keys.
   `FilteredPackage`, a view with the same rules.
 - Defaults are results of the getters. They are never inserted into a document.
 
+`SettingsListEntry::{from_value, into_value}` and
+`PackageSource::{from_value, into_value}` are public canonical JSON adapters.
+Reading and writing through a pair retains unknown values and object members,
+including their in-memory order; persistence still follows [saved text](#saved-text).
+The application forwards these existing types for configuration consumers.
+
 ### Merging
 
 Project settings override global ones. The two documents merge at the top level; a

@@ -273,3 +273,61 @@ Eight visible rows use the shared centered list window. Borders sample the live
 theme; header styling stays captured, navigation rebuilds rows, edits rebuild rows
 and footer, and save rebuilds only the footer. Wrapping, cursor decoration and
 cell widths belong to the [terminal components](../terminal/components.md).
+
+## Resource configuration
+
+Native callers use
+[`components::config_selector::ConfigSelectorComponent`](../../crates/maestro-chat/src/components/config_selector/mod.rs).
+Pass `maestro_app::ResolvedPaths`, a shared mutable `SettingsManager`,
+`ConfigSelectorOptions` and `ConfigSelectorCallbacks`. Options supply project and
+agent directories, existing `ResourceOperations`, a prepared `Collator`, live
+theme and a live bold-style policy. `NativeResourceOperations` supplies real
+process-directory observations; these are separate from the selected project.
+The component does not acquire packages or reload resources.
+
+Render the component, but focus and dispatch input to `get_resource_list()`.
+The same list survives inherited `Container` child-array edits. Focus forwards
+through that retained list to its search input. Groups capture their labels;
+items remain shared mutable `ResourceItem` handles in callback arguments,
+filtering, painting and `update_item`. That operation updates its supplied item
+first, then the first grouped item with the same current path and kind.
+
+Packages precede top-level sources. Within each origin, scopes order user,
+project, temporary, then source names use stable locale order. Kind headings
+follow extensions, skills, prompts, themes; item labels use stable locale order.
+Labels are basenames, except extensions outside an `extensions` directory use
+`parent/basename`, and skills named `SKILL.md` use their parent directory.
+A contradictory project/temporary comparison is resolved into this total order.
+
+Typing matches the current name, kind or full path case-insensitively and retains
+matching ancestors. A wholly whitespace query resets the view; other queries
+retain leading/trailing whitespace. Filtering selects the first match. Up/down
+skip headings and clamp; page keys move 15 flat entries before finding an item.
+The painted window holds at most 15 flat entries, with resource-only counts.
+Colors and bold policy remain live; header hints stay literal `space` and `esc`.
+
+Live binding priority is up, down, page-up, page-down, cancel, literal Ctrl+C,
+literal space or confirm, then search. Cancel/exit do not change settings.
+A successful toggle edits its raw selected scope, updates the item, then invokes
+`on_toggle`; the initial callback requests rendering. Callback slots can be
+replaced or cleared, including during synchronous re-entry, without a list/item
+borrow held across notification.
+
+Only project resources use project settings; user and temporary resources use
+global settings. Top-level patterns are relative to the supplied agent directory
+or the project's configuration directory. Package patterns use an explicitly
+supplied base (including empty), otherwise the resource's parent directory.
+The first matching package source is edited; no match still updates the row and
+notifies without writing settings. Exactly matching strings, after stripping one
+leading `!`, `+` or `-`, are replaced by one signed pattern. Other entries, package
+members and the other scope are retained. Wrong-typed roots/filters read as empty;
+unknown members survive through the [settings adapters](../settings.md#reading).
+The existing settings owner controls persistence and `flush`/`reload` completion.
+
+Relative paths observe the live process directory only when needed at toggle
+time. Inherent `ResourceList::handle_input` and toolkit `try_handle_input`
+propagate the original native error before changing rows, settings or
+notifications. The required legacy input bridge discards that error without
+inventing a fallback path. List and composed `try_render` propagate theme or
+child failures; legacy render returns no rows on failure, never a partial frame.
+Displayed tabs use the toolkit's [tab expansion](../terminal/text.md#measuring).

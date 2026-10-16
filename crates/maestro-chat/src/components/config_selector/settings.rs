@@ -1,0 +1,148 @@
+//! Signed-pattern updates using raw scoped snapshots and canonical adapters.
+use super::{ResourceItem, resource_list::ResourceList};
+use maestro_app::{PackageSource, PathMetadata, SettingsListEntry, SourceOrigin, SourceScope};
+use maestro_path::{Cwd, dirname, join, relative, resolve_with};
+use serde_json::{Map, Value};
+use std::{cell::RefCell, io, rc::Rc};
+
+/// Replaces only exact signed strings, retaining unknown entries and order.
+fn patterns(current: Option<&Value>, pattern: &str, enabled: bool) -> Vec<SettingsListEntry> {
+    let mut entries: Vec<_> = current
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .map(SettingsListEntry::from_value)
+        .filter(|entry| match entry {
+            SettingsListEntry::String(text) => {
+                text.strip_prefix(['!', '+', '-']).unwrap_or(text) != pattern
+            }
+            SettingsListEntry::Unknown(_) => true,
+        })
+        .collect();
+    entries.push(SettingsListEntry::String(format!(
+        "{}{pattern}",
+        if enabled { '+' } else { '-' }
+    )));
+    entries
+}
+impl ResourceList {
+    /// Reads the selected scope before deriving and persisting its pattern.
+    pub(super) fn toggle_resource(
+        &self,
+        item: &Rc<RefCell<ResourceItem>>,
+        enabled: bool,
+    ) -> io::Result<()> {
+        let (path, kind, metadata) = {
+            let item = item.borrow();
+            (
+                item.path.clone(),
+                item.resource_type.clone(),
+                item.metadata.clone(),
+            )
+        };
+        let snapshot = if metadata.scope == SourceScope::Project {
+            self.settings.borrow().get_project_settings()
+        } else {
+            self.settings.borrow().get_global_settings()
+        };
+        if metadata.origin == SourceOrigin::TopLevel {
+            let base = if metadata.scope == SourceScope::Project {
+                join(&[
+                    &self.options.cwd,
+                    maestro_app::configuration::config::CONFIG_DIR_NAME,
+                ])
+            } else {
+                self.options.agent_dir.clone()
+            };
+            let pattern = self.relative_pattern(&base, &path)?;
+            let entries = patterns(snapshot.0.get(&kind), &pattern, enabled);
+            self.set_paths(metadata.scope, &kind, entries);
+        } else {
+            self.toggle_package(&snapshot.0, (&path, &kind, &metadata), enabled)?;
+        }
+        Ok(())
+    }
+    /// Edits only the first package with a matching string source.
+    fn toggle_package(
+        &self,
+        snapshot: &Map<String, Value>,
+        item: (&str, &str, &PathMetadata),
+        enabled: bool,
+    ) -> io::Result<()> {
+        let (path, kind, metadata) = item;
+        let mut packages = snapshot
+            .get("packages")
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
+        let Some(index) = packages.iter().position(|package| {
+            package
+                .as_str()
+                .or_else(|| package.get("source").and_then(Value::as_str))
+                == Some(metadata.source.as_str())
+        }) else {
+            return Ok(());
+        };
+        let base = metadata.base_dir.clone().unwrap_or_else(|| dirname(path));
+        let pattern = self.relative_pattern(&base, path)?;
+        let selected = &mut packages[index];
+        if let Value::String(source) = selected {
+            let mut object = Map::new();
+            object.insert("source".into(), Value::String(std::mem::take(source)));
+            *selected = Value::Object(object);
+        }
+        if let Value::Object(object) = selected {
+            let entries = patterns(object.get(kind), &pattern, enabled);
+            object.insert(
+                kind.into(),
+                Value::Array(
+                    entries
+                        .into_iter()
+                        .map(SettingsListEntry::into_value)
+                        .collect(),
+                ),
+            );
+        }
+        let packages = packages.iter().map(PackageSource::from_value).collect();
+        if metadata.scope == SourceScope::Project {
+            self.settings.borrow_mut().set_project_packages(packages);
+        } else {
+            self.settings.borrow_mut().set_packages(packages);
+        }
+        Ok(())
+    }
+    /// Binds open authored operands to one live ambient observation per toggle.
+    fn relative_pattern(&self, from: &str, to: &str) -> io::Result<String> {
+        if from == to {
+            return Ok(String::new());
+        }
+        let paths = resolve_with(
+            &[&[from], &[to]],
+            || self.options.path_operations.drive_directories(),
+            || self.options.path_operations.current_directory(),
+        )?;
+        Ok(relative(
+            &paths[0],
+            &paths[1],
+            &Cwd {
+                current: "",
+                drive_directories: &[],
+            },
+        ))
+    }
+    /// Routes default kinds to the existing scope-specific settings setters.
+    fn set_paths(&self, scope: SourceScope, kind: &str, entries: Vec<SettingsListEntry>) {
+        let mut settings = self.settings.borrow_mut();
+        match (kind, scope == SourceScope::Project) {
+            ("extensions", true) => settings.set_project_extension_paths(entries),
+            ("extensions", false) => settings.set_extension_paths(entries),
+            ("skills", true) => settings.set_project_skill_paths(entries),
+            ("skills", false) => settings.set_skill_paths(entries),
+            ("prompts", true) => settings.set_project_prompt_template_paths(entries),
+            ("prompts", false) => settings.set_prompt_template_paths(entries),
+            ("themes", true) => settings.set_project_theme_paths(entries),
+            ("themes", false) => settings.set_theme_paths(entries),
+            _ => {}
+        }
+    }
+}
