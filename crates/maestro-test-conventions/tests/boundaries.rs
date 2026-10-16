@@ -1025,3 +1025,53 @@ fn wit_async_selector_keeps_static_path_admission() {
     let error = check_workspace(&workspace.root).unwrap_err();
     assert!(error.contains("expected static path"), "{error}");
 }
+
+#[test]
+fn slash_command_records_have_one_shared_owner() {
+    for name in ["SlashCommandInfo", "SlashCommandSource"] {
+        let workspace = Workspace::new();
+        workspace.foundation(&[
+            "maestro-request",
+            "maestro-app",
+            "maestro-extensions-wasm",
+            "maestro-tui",
+        ]);
+        for owner in ["maestro-app", "maestro-extensions-wasm", "maestro-tui"] {
+            source(
+                &workspace,
+                owner,
+                "src/lib.rs",
+                &format!("pub struct {name};"),
+            );
+            assert!(
+                check_workspace(&workspace.root)
+                    .unwrap_err()
+                    .contains("belongs to maestro-request")
+            );
+            source(
+                &workspace,
+                owner,
+                "src/lib.rs",
+                &format!("pub use maestro_request::slash_commands::{name};"),
+            );
+        }
+        source(
+            &workspace,
+            "maestro-request",
+            "src/lib.rs",
+            &format!("pub struct {name};"),
+        );
+        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        source(
+            &workspace,
+            "maestro-request",
+            "other.rs",
+            &format!("pub type {name} = ();"),
+        );
+        assert!(
+            check_workspace(&workspace.root)
+                .unwrap_err()
+                .contains("duplicate declaration")
+        );
+    }
+}

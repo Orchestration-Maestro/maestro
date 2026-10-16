@@ -186,6 +186,8 @@ fn check_declarations(
             "ToolDefinition" | "ToolRenderContext" | "ToolRenderResultOptions"
         ) {
             "maestro-tools"
+        } else if matches!(name.as_str(), "SlashCommandInfo" | "SlashCommandSource") {
+            "maestro-request"
         } else {
             continue;
         };
@@ -199,7 +201,9 @@ fn check_declarations(
                 member.name
             ));
         }
-        if owner == "maestro-tools" && !declarations.insert(format!("{}::{name}", member.name)) {
+        if matches!(owner, "maestro-tools" | "maestro-request")
+            && !declarations.insert(format!("{}::{name}", member.name))
+        {
             return Err(format!(
                 "{}:{line}: duplicate declaration {name}",
                 source.path.display()
