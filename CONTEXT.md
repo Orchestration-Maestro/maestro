@@ -185,4 +185,4 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Worksheet:** Ordered populated spreadsheet cells with retained raw values, optional formatted text, declared or observed range and ordered merged regions.
 
 - **Browser input:** The retained `maestro-web::Input` field, with native browser editing and event/ref handles; distinct from the terminal toolkit `Input`.
-- **Reading content:** A feature-owned native text factory admitted by the existing browser attachment-surface registry; the shared host measures natural height, publishes bounded placement and retains unchanged roots. See [owned reading content](docs/browser/attachments.md#owned-reading-content).
+- **Reading content:** A feature-owned native text factory admitted by the existing browser attachment-surface registry; the shared host measures natural height and identified canvas-control slots, restores optional styles and fractional scroll transactionally, publishes bounded placement and retains unchanged roots. See [owned reading content](docs/browser/attachments.md#owned-reading-content).

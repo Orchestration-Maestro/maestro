@@ -52,6 +52,24 @@ impl Drop for DomSurface {
 pub(crate) fn host_error(error: &wasm_bindgen::JsValue) -> AttachmentUiError {
     AttachmentUiError::Host(format!("{error:?}"))
 }
+#[wasm_bindgen::prelude::wasm_bindgen]
+extern "C" {
+    /// Element view for catchable native geometry without realm-local casts.
+    #[wasm_bindgen(extends = Element)]
+    type GeometryElement;
+
+    /// Read a native rectangle, preserving thrown browser errors.
+    #[wasm_bindgen(method, catch, js_name = getBoundingClientRect)]
+    fn bounding_rect(this: &GeometryElement) -> Result<web_sys::DomRect, wasm_bindgen::JsValue>;
+}
+/// Read native geometry through a catchable operation so transactions can restore state.
+fn bounds(element: &Element) -> Result<web_sys::DomRect, AttachmentUiError> {
+    use wasm_bindgen::JsCast as _;
+    element
+        .unchecked_ref::<GeometryElement>()
+        .bounding_rect()
+        .map_err(|e| host_error(&e))
+}
 impl BrowserAttachmentHost {
     /// Retain the caller's canvas and its owning document.
     /// # Errors
@@ -112,7 +130,7 @@ impl BrowserAttachmentHost {
     }
     /// Observe the current canvas coordinate frame.
     fn transform(&self, pixels: f32) -> Result<super::placement::Transform, AttachmentUiError> {
-        let b = self.canvas.get_bounding_client_rect();
+        let b = bounds(&self.canvas)?;
         super::placement::Transform::new(
             [b.left(), b.top(), b.width(), b.height()],
             [self.canvas.width(), self.canvas.height()],

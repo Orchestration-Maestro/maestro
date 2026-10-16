@@ -71,6 +71,16 @@ impl Transform {
             self.origin[1] + f64::from(p.y) * self.scale.1,
         ]
     }
+    /// Invert a native viewport rectangle relative to a native wrapper origin.
+    pub fn relative(&self, rect: [f64; 4], origin: [f64; 2]) -> egui::Rect {
+        egui::Rect::from_min_size(
+            egui::pos2(
+                super::points((rect[0] - origin[0]) / self.scale.0),
+                super::points((rect[1] - origin[1]) / self.scale.1),
+            ),
+            egui::vec2(super::points(rect[2] / self.scale.0), self.height(rect[3])),
+        )
+    }
     /// Read a natural CSS height in canvas points.
     pub fn height(&self, css: f64) -> f32 {
         super::points(css / self.scale.1)

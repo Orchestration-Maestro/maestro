@@ -22,6 +22,8 @@ pub struct ReadingPlacement<'a> {
     pub content: Rc<ReadingContent>,
     /// Current transaction phase.
     pub phase: ReadingPhase,
+    /// Actual canvas-control sizes, matched by identity.
+    pub sizes: &'a [(egui::Id, egui::Vec2)],
     /// Containing foreground modal.
     pub modal: Option<egui::Id>,
     /// Current repaint owner.
@@ -31,6 +33,8 @@ pub struct ReadingPlacement<'a> {
 pub struct ReadingLayout {
     /// Unclipped natural height.
     pub height: f32,
+    /// Full native slot rectangles in wrapper-local canvas points.
+    pub controls: Vec<(egui::Id, egui::Rect)>,
 }
 /// Feature factory returning the whole retained native owner.
 #[cfg(target_arch = "wasm32")]
@@ -40,4 +44,6 @@ pub type ReadingMount = dyn Fn(&web_sys::Document) -> Result<ReadingRoot, Attach
 pub struct ReadingRoot {
     /// Feature-created native text root.
     pub element: web_sys::Element,
+    /// Empty native slots retaining their caller identities.
+    pub slots: Vec<(egui::Id, web_sys::Element)>,
 }

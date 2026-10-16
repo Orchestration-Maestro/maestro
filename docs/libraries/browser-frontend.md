@@ -99,3 +99,12 @@ that same locked version. This feature adds no package dependency. The existing
 native event-subscription owner retains its scroll callback; the observer shares
 that callable and disconnects before it is released. No font or browser-runner
 package is installed for reading content.
+
+The offline header reuses these same bindings for literal metadata, identified
+canvas-control slots and native date localization. Native Date construction and
+zero-argument locale formatting use existing js-sys reflection. Geometry readback
+uses a typed catchable binding without realm-local rectangle casts, so native
+failures reach transaction cleanup.
+Slot sizing, optional-style restoration and fractional-scroll restoration share
+one owner for measurement and publication. No package, binding feature, font or
+browser-runner dependency is added.

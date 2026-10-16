@@ -172,8 +172,19 @@ Shared-workflow changes require one separate issue and clone in maestro-rust-wor
 `maestro-web` extends its existing attachment-surface registry with owned reading
 content. Feature modules prepare literal native text; the shared browser host
 owns admission, placement, live natural-height readback, modal visibility and
-teardown. Canvas-control slots arrive with their consuming controls. Reading factories receive the
-canvas's actual document. Unchanged content retains its native root and selection.
+teardown. Reading factories receive the canvas's actual document and return the
+native root with identified empty canvas-control slots. Placements supply actual
+control sizes by identity; live readback returns full slot rectangles in wrapper-local
+canvas points alongside unclipped natural height. Measurement uses a bounded hidden
+layout and stages its clamped fractional scroll offsets. One shared transaction
+restores optional wrapper/slot styles and both scroll axes after measurement or
+failed publication, attempting every restoration and preserving the original error.
+Publication applies the same sizes and staged offsets before committing the root.
+Canvas paint retains full control geometry through the final clip. Pointer activation
+requires a press inside the control's current positive visible intersection and a
+release inside that same control's then-current visible intersection. At both
+endpoints the control must be enabled and its layer must own the input. Keyboard
+activation is unchanged. Unchanged content retains its native root and selection.
 The existing event-subscription owner retains scroll/resize callbacks; no second
 registry, listener runtime or painted reading-text fallback is introduced.
 Native viewport projection and inverse readback share the canvas axis transform.
