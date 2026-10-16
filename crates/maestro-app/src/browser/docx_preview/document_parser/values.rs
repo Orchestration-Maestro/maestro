@@ -88,12 +88,16 @@ pub(super) fn value_of_margin<'doc, 'input: 'doc>(
     xml.length_attr(element, "w", LengthUsage::Dxa)
 }
 
-/// Select fixed table layout only for the exact fixed token.
+/// Select exact fixed layout from type, falling back to val only when absent.
 pub(super) fn value_of_tbl_layout<'doc, 'input: 'doc>(
     xml: &'doc XmlParser<'input>,
     element: XmlElement<'doc, 'input>,
 ) -> &'static str {
-    if xml.attr(element, "val") == Some("fixed") {
+    if xml
+        .attr(element, "type")
+        .or_else(|| xml.attr(element, "val"))
+        == Some("fixed")
+    {
         "fixed"
     } else {
         "auto"

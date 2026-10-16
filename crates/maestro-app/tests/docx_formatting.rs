@@ -169,12 +169,20 @@ fn observe_default(
 }
 /// Check the envelope, complete-input uniqueness and all rows of one behavior.
 fn check(name: &str, count: usize) {
-    let source = include_str!("fixtures/docx/formatting.json");
+    check_source(
+        include_str!("fixtures/docx/formatting.json"),
+        412,
+        name,
+        count,
+    );
+}
+/// Replay a complete fixture source through the shared observer.
+fn check_source(source: &str, total: usize, name: &str, count: usize) {
     let raw: Vec<serde_json::Value> = serde_json::from_str(source).unwrap();
     let inputs: std::collections::HashSet<_> = raw.iter().map(|c| c["input"].to_string()).collect();
     assert_eq!(inputs.len(), raw.len(), "complete inputs must be unique");
     let cases: Vec<Case> = serde_json::from_str(source).unwrap();
-    assert_eq!(cases.len(), 412);
+    assert_eq!(cases.len(), total);
     let selected: Vec<_> = cases.into_iter().filter(|c| c.test == name).collect();
     assert_eq!(selected.len(), count);
     for (index, case) in selected.into_iter().enumerate() {
@@ -359,4 +367,119 @@ fn table_style_records_keep_child_order_and_owned_values() {
 #[test]
 fn default_dispatch_uses_local_names_and_first_attributes() {
     check("default_dispatch_uses_local_names_and_first_attributes", 1);
+}
+
+#[test]
+fn producer_table_properties_keep_layout_and_zero_indent() {
+    use maestro_app::browser::docx_preview::{Options, WordDocument};
+    let document = WordDocument::load(
+        include_bytes!("fixtures/docx/packages/table-contracts.docx"),
+        Options::default(),
+    )
+    .unwrap();
+    let xml = parse_xml_string(&document.document_part().unwrap().xml, false).unwrap();
+    let body = xml.element(xml.root(), "body").unwrap();
+    let table = xml.element(body, "tbl").unwrap();
+    let properties = xml.element(table, "tblPr").unwrap();
+    let layout = xml.element(properties, "tblLayout").unwrap();
+    let indent = xml.element(properties, "tblInd").unwrap();
+    assert_eq!(xml.attr(layout, "type"), Some("fixed"));
+    assert_eq!(xml.attr(indent, "w"), Some("0"));
+    assert_eq!(xml.attr(indent, "type"), Some("dxa"));
+    let mut style = IndexMap::new();
+    parse_default_properties(
+        &xml,
+        properties,
+        &mut style,
+        None,
+        DefaultPropertiesOptions::default(),
+    );
+    assert_eq!(
+        style.get("table-layout").and_then(Option::as_deref),
+        Some("fixed")
+    );
+    assert_eq!(
+        style.get("margin-inline-start").and_then(Option::as_deref),
+        Some("0.00pt")
+    );
+}
+
+#[test]
+fn table_layout_uses_type_before_legacy_val() {
+    check_source(
+        include_str!("fixtures/docx/table-contracts.json"),
+        65,
+        "table_layout_uses_type_before_legacy_val",
+        17,
+    );
+}
+
+#[test]
+fn table_indent_reads_dxa_width_and_nil_zero() {
+    check_source(
+        include_str!("fixtures/docx/table-contracts.json"),
+        65,
+        "table_indent_reads_dxa_width_and_nil_zero",
+        21,
+    );
+}
+
+#[test]
+fn table_indent_ignores_percentage_and_auto_widths() {
+    check_source(
+        include_str!("fixtures/docx/table-contracts.json"),
+        65,
+        "table_indent_ignores_percentage_and_auto_widths",
+        6,
+    );
+}
+
+#[test]
+fn table_indent_keeps_legacy_paragraph_fields() {
+    check_source(
+        include_str!("fixtures/docx/table-contracts.json"),
+        65,
+        "table_indent_keeps_legacy_paragraph_fields",
+        6,
+    );
+}
+
+#[test]
+fn table_contracts_preserve_order_and_child_map_separation() {
+    check_source(
+        include_str!("fixtures/docx/table-contracts.json"),
+        65,
+        "table_contracts_preserve_order_and_child_map_separation",
+        2,
+    );
+}
+
+#[test]
+fn table_contracts_respect_interception() {
+    check_source(
+        include_str!("fixtures/docx/table-contracts.json"),
+        65,
+        "table_contracts_respect_interception",
+        2,
+    );
+}
+
+#[test]
+fn conditional_table_styles_share_attribute_contracts() {
+    check_source(
+        include_str!("fixtures/docx/table-contracts.json"),
+        65,
+        "conditional_table_styles_share_attribute_contracts",
+        2,
+    );
+}
+
+#[test]
+fn table_attribute_fallbacks_keep_unaffected_neighbours() {
+    check_source(
+        include_str!("fixtures/docx/table-contracts.json"),
+        65,
+        "table_attribute_fallbacks_keep_unaffected_neighbours",
+        9,
+    );
 }

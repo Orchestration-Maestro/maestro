@@ -1,0 +1,1797 @@
+[
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout /></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "table-layout",
+          "auto"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout type=\"\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "table-layout",
+          "auto"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout type=\"fixed\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "table-layout",
+          "fixed"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout type=\"autofit\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "table-layout",
+          "auto"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout type=\"auto\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "table-layout",
+          "auto"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout type=\"FIXED\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "table-layout",
+          "auto"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout type=\" fixed \"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "table-layout",
+          "auto"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout type=\"custom\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "table-layout",
+          "auto"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout /></w:tblPr>",
+      "style": [
+        [
+          "keep",
+          "legacy"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "keep",
+          "legacy"
+        ],
+        [
+          "table-layout",
+          "auto"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout val=\"\"/></w:tblPr>",
+      "style": [
+        [
+          "keep",
+          "legacy"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "keep",
+          "legacy"
+        ],
+        [
+          "table-layout",
+          "auto"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout val=\"fixed\"/></w:tblPr>",
+      "style": [
+        [
+          "keep",
+          "legacy"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "keep",
+          "legacy"
+        ],
+        [
+          "table-layout",
+          "fixed"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout val=\"autofit\"/></w:tblPr>",
+      "style": [
+        [
+          "keep",
+          "legacy"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "keep",
+          "legacy"
+        ],
+        [
+          "table-layout",
+          "auto"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout val=\"FIXED\"/></w:tblPr>",
+      "style": [
+        [
+          "keep",
+          "legacy"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "keep",
+          "legacy"
+        ],
+        [
+          "table-layout",
+          "auto"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout type=\"fixed\" val=\"autofit\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "table-layout",
+          "fixed"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout type=\"autofit\" val=\"fixed\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "table-layout",
+          "auto"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout type=\"\" val=\"fixed\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "table-layout",
+          "auto"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_layout_uses_type_before_legacy_val",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout type=\"FIXED\" val=\"fixed\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "table-layout",
+          "auto"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"0\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "0.00pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"1\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "0.05pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"20\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "1.00pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"732\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "36.60pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"-500\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "-25.00pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"1440\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "72.00pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"+20\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "1.00pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"1.5\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "0.05pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"0x10\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "0.80pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"﻿20\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "1.00pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"20\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "NaNpt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"12pt\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "12pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"3px\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "3px"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"25%\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "25%"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "NaNpt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"junk\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "NaNpt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"732\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "36.60pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"732\" type=\"\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "36.60pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"732\" type=\"unknown\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "36.60pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"732\" type=\"nil\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "0.00pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_reads_dxa_width_and_nil_zero",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"junk\" type=\"nil\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "0.00pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_ignores_percentage_and_auto_widths",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"0\" type=\"pct\"/></w:tblPr>",
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ],
+        [
+          "width",
+          "unrelated"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ],
+        [
+          "width",
+          "unrelated"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_ignores_percentage_and_auto_widths",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"732\" type=\"pct\"/></w:tblPr>",
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ],
+        [
+          "width",
+          "unrelated"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ],
+        [
+          "width",
+          "unrelated"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_ignores_percentage_and_auto_widths",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"junk\" type=\"pct\"/></w:tblPr>",
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ],
+        [
+          "width",
+          "unrelated"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ],
+        [
+          "width",
+          "unrelated"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_ignores_percentage_and_auto_widths",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"0\" type=\"auto\"/></w:tblPr>",
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ],
+        [
+          "width",
+          "unrelated"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ],
+        [
+          "width",
+          "unrelated"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_ignores_percentage_and_auto_widths",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"732\" type=\"auto\"/></w:tblPr>",
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ],
+        [
+          "width",
+          "unrelated"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ],
+        [
+          "width",
+          "unrelated"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_ignores_percentage_and_auto_widths",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"junk\" type=\"auto\"/></w:tblPr>",
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ],
+        [
+          "width",
+          "unrelated"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ],
+        [
+          "width",
+          "unrelated"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_keeps_legacy_paragraph_fields",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd firstLine=\"40\" hanging=\"20\" start=\"60\" end=\"80\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "text-indent",
+          "-1.00pt"
+        ],
+        [
+          "margin-inline-start",
+          "3.00pt"
+        ],
+        [
+          "margin-inline-end",
+          "4.00pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_keeps_legacy_paragraph_fields",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd firstLine=\"40\" hanging=\"20\" start=\"60\" end=\"80\" w=\"999\" type=\"pct\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "text-indent",
+          "-1.00pt"
+        ],
+        [
+          "margin-inline-start",
+          "3.00pt"
+        ],
+        [
+          "margin-inline-end",
+          "4.00pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_keeps_legacy_paragraph_fields",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd left=\"20\" start=\"40\" right=\"60\" end=\"80\" w=\"732\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "36.60pt"
+        ],
+        [
+          "margin-inline-end",
+          "3.00pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_keeps_legacy_paragraph_fields",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd firstLine=\"40\" hanging=\"20\" end=\"80\" w=\"0\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "text-indent",
+          "-1.00pt"
+        ],
+        [
+          "margin-inline-end",
+          "4.00pt"
+        ],
+        [
+          "margin-inline-start",
+          "0.00pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_keeps_legacy_paragraph_fields",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd left=\"20\" start=\"40\" w=\"732\" type=\"auto\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "1.00pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_indent_keeps_legacy_paragraph_fields",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:ind firstLine=\"40\" hanging=\"20\" left=\"20\" start=\"40\" right=\"60\" end=\"80\" w=\"732\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "text-indent",
+          "-1.00pt"
+        ],
+        [
+          "margin-inline-start",
+          "1.00pt"
+        ],
+        [
+          "margin-inline-end",
+          "3.00pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_contracts_preserve_order_and_child_map_separation",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout type=\"fixed\"/><w:tblInd w=\"732\" type=\"dxa\"/><w:tblLayout type=\"autofit\"/><w:tblInd w=\"1440\" type=\"dxa\"/></w:tblPr>",
+      "style": [
+        [
+          "margin-inline-start",
+          "old"
+        ],
+        [
+          "keep",
+          null
+        ],
+        [
+          "table-layout",
+          "old"
+        ]
+      ],
+      "childStyle": [
+        [
+          "keep-child",
+          "unchanged"
+        ]
+      ],
+      "ignoreWidth": true,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "72.00pt"
+        ],
+        [
+          "keep",
+          null
+        ],
+        [
+          "table-layout",
+          "auto"
+        ]
+      ],
+      "childStyle": [
+        [
+          "keep-child",
+          "unchanged"
+        ]
+      ],
+      "seen": []
+    }
+  },
+  {
+    "test": "table_contracts_preserve_order_and_child_map_separation",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd w=\"732\" type=\"dxa\"/><w:tblInd w=\"999\" type=\"pct\"/><w:tblLayout type=\"fixed\"/></w:tblPr>",
+      "style": [],
+      "childStyle": [],
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "36.60pt"
+        ],
+        [
+          "table-layout",
+          "fixed"
+        ]
+      ],
+      "childStyle": [],
+      "seen": []
+    }
+  },
+  {
+    "test": "table_contracts_respect_interception",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout type=\"fixed\"/><w:tblInd w=\"732\" type=\"dxa\"/><w:b /></w:tblPr>",
+      "style": [
+        [
+          "keep",
+          "seed"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": [
+        {
+          "name": "tblLayout",
+          "consume": true,
+          "write": [
+            [
+              "table-layout",
+              "handled"
+            ]
+          ]
+        },
+        {
+          "name": "tblInd",
+          "consume": true,
+          "write": [
+            [
+              "margin-inline-start",
+              "handled"
+            ]
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "style": [
+        [
+          "keep",
+          "seed"
+        ],
+        [
+          "table-layout",
+          "handled"
+        ],
+        [
+          "margin-inline-start",
+          "handled"
+        ],
+        [
+          "font-weight",
+          "bold"
+        ]
+      ],
+      "childStyle": null,
+      "seen": [
+        {
+          "name": "tblLayout",
+          "style": [
+            [
+              "keep",
+              "seed"
+            ]
+          ]
+        },
+        {
+          "name": "tblInd",
+          "style": [
+            [
+              "keep",
+              "seed"
+            ],
+            [
+              "table-layout",
+              "handled"
+            ]
+          ]
+        },
+        {
+          "name": "b",
+          "style": [
+            [
+              "keep",
+              "seed"
+            ],
+            [
+              "table-layout",
+              "handled"
+            ],
+            [
+              "margin-inline-start",
+              "handled"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "table_contracts_respect_interception",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblLayout type=\"fixed\"/><w:tblInd w=\"732\" type=\"dxa\"/><w:b /></w:tblPr>",
+      "style": [
+        [
+          "keep",
+          "seed"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": [
+        {
+          "name": "tblLayout",
+          "consume": false,
+          "write": [
+            [
+              "table-layout",
+              "handled"
+            ]
+          ]
+        },
+        {
+          "name": "tblInd",
+          "consume": false,
+          "write": [
+            [
+              "margin-inline-start",
+              "handled"
+            ]
+          ]
+        }
+      ]
+    },
+    "expected": {
+      "style": [
+        [
+          "keep",
+          "seed"
+        ],
+        [
+          "table-layout",
+          "fixed"
+        ],
+        [
+          "margin-inline-start",
+          "36.60pt"
+        ],
+        [
+          "font-weight",
+          "bold"
+        ]
+      ],
+      "childStyle": null,
+      "seen": [
+        {
+          "name": "tblLayout",
+          "style": [
+            [
+              "keep",
+              "seed"
+            ]
+          ]
+        },
+        {
+          "name": "tblInd",
+          "style": [
+            [
+              "keep",
+              "seed"
+            ],
+            [
+              "table-layout",
+              "fixed"
+            ]
+          ]
+        },
+        {
+          "name": "b",
+          "style": [
+            [
+              "keep",
+              "seed"
+            ],
+            [
+              "table-layout",
+              "fixed"
+            ],
+            [
+              "margin-inline-start",
+              "36.60pt"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_table_styles_share_attribute_contracts",
+    "input": {
+      "operation": "tableStyle",
+      "xml": "<w:tblStylePr xmlns:w=\"urn:w\" type=\"firstRow\"><w:tblPr><w:tblLayout type=\"fixed\"/><w:tblInd w=\"732\" type=\"dxa\"/></w:tblPr><w:tcPr><w:tcW type=\"dxa\" w=\"400\"/></w:tcPr></w:tblStylePr>",
+      "ignoreWidth": false
+    },
+    "expected": {
+      "styles": [
+        {
+          "target": "tr.first-row td",
+          "mod": ".first-row",
+          "values": [
+            [
+              "table-layout",
+              "fixed"
+            ],
+            [
+              "margin-inline-start",
+              "36.60pt"
+            ]
+          ]
+        },
+        {
+          "target": "tr.first-row td",
+          "mod": ".first-row",
+          "values": [
+            [
+              "width",
+              "20.00pt"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "test": "conditional_table_styles_share_attribute_contracts",
+    "input": {
+      "operation": "tableStyle",
+      "xml": "<w:tblStylePr xmlns:w=\"urn:w\" type=\"firstRow\"><w:tblPr><w:tblLayout type=\"fixed\"/><w:tblInd w=\"732\" type=\"dxa\"/></w:tblPr><w:tcPr><w:tcW type=\"dxa\" w=\"400\"/></w:tcPr></w:tblStylePr>",
+      "ignoreWidth": true
+    },
+    "expected": {
+      "styles": [
+        {
+          "target": "tr.first-row td",
+          "mod": ".first-row",
+          "values": [
+            [
+              "table-layout",
+              "fixed"
+            ],
+            [
+              "margin-inline-start",
+              "36.60pt"
+            ]
+          ]
+        },
+        {
+          "target": "tr.first-row td",
+          "mod": ".first-row",
+          "values": []
+        }
+      ]
+    }
+  },
+  {
+    "test": "table_attribute_fallbacks_keep_unaffected_neighbours",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"></w:tblPr>",
+      "style": [
+        [
+          "table-layout",
+          "seed"
+        ],
+        [
+          "margin-inline-start",
+          "seed"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "table-layout",
+          "seed"
+        ],
+        [
+          "margin-inline-start",
+          "seed"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_attribute_fallbacks_keep_unaffected_neighbours",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd /></w:tblPr>",
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_attribute_fallbacks_keep_unaffected_neighbours",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd type=\"dxa\"/></w:tblPr>",
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_attribute_fallbacks_keep_unaffected_neighbours",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd type=\"nil\"/></w:tblPr>",
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_attribute_fallbacks_keep_unaffected_neighbours",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd type=\"pct\"/></w:tblPr>",
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_attribute_fallbacks_keep_unaffected_neighbours",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblInd type=\"auto\"/></w:tblPr>",
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "margin-inline-start",
+          "seed"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_attribute_fallbacks_keep_unaffected_neighbours",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:unknown><w:tblLayout type=\"fixed\"/><w:tblInd w=\"732\" type=\"dxa\"/></w:unknown></w:tblPr>",
+      "style": [
+        [
+          "keep",
+          "nested"
+        ]
+      ],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "keep",
+          "nested"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_attribute_fallbacks_keep_unaffected_neighbours",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><q:tblLayout xmlns:q=\"urn:q\" xmlns:a=\"urn:a\" a:type=\"autofit\" q:type=\"fixed\" val=\"fixed\"/><q:tblInd xmlns:q=\"urn:q\" xmlns:a=\"urn:a\" a:w=\"20\" q:w=\"40\" type=\"dxa\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "table-layout",
+          "auto"
+        ],
+        [
+          "margin-inline-start",
+          "1.00pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  },
+  {
+    "test": "table_attribute_fallbacks_keep_unaffected_neighbours",
+    "input": {
+      "operation": "default",
+      "xml": "<w:tblPr xmlns:w=\"urn:w\"><w:tblW type=\"pct\" w=\"2500\"/><w:tcW type=\"dxa\" w=\"400\"/><w:ind left=\"20\" right=\"40\"/></w:tblPr>",
+      "style": [],
+      "childStyle": null,
+      "ignoreWidth": false,
+      "handler": []
+    },
+    "expected": {
+      "style": [
+        [
+          "width",
+          "20.00pt"
+        ],
+        [
+          "margin-inline-start",
+          "1.00pt"
+        ],
+        [
+          "margin-inline-end",
+          "2.00pt"
+        ]
+      ],
+      "childStyle": null,
+      "seen": []
+    }
+  }
+]

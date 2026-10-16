@@ -116,7 +116,11 @@ fn observe_body(input: Input) -> Result<Value, DocxError> {
 }
 /// Replay every unique input owned by this test.
 fn check(name: &str) {
-    let cases: Vec<Case> = serde_json::from_str(include_str!("fixtures/docx/parts.json")).unwrap();
+    check_source(include_str!("fixtures/docx/parts.json"), name);
+}
+/// Replay a selected behavior using the existing owned-part observer.
+fn check_source(source: &str, name: &str) {
+    let cases: Vec<Case> = serde_json::from_str(source).unwrap();
     let mut seen = 0;
     for case in cases.into_iter().filter(|case| case.test == name) {
         let actual = observe(case.input);
@@ -309,4 +313,20 @@ fn notes_propagate_malformed_picture_errors() {
         };
         assert!(matches!(observe_body(input), Err(DocxError::Xml { .. })));
     }
+}
+
+#[test]
+fn named_table_styles_share_attribute_contracts() {
+    let source = include_str!("fixtures/docx/table-contract-styles.json");
+    let raw: Vec<Value> = serde_json::from_str(source).unwrap();
+    assert_eq!(raw.len(), 2);
+    let inputs: std::collections::HashSet<_> = raw.iter().map(|c| c["input"].to_string()).collect();
+    assert_eq!(inputs.len(), raw.len());
+    let cases: Vec<Case> = serde_json::from_str(source).unwrap();
+    assert!(
+        cases
+            .iter()
+            .all(|c| c.test == "named_table_styles_share_attribute_contracts")
+    );
+    check_source(source, "named_table_styles_share_attribute_contracts");
 }
