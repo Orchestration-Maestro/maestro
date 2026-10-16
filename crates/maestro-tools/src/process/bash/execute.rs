@@ -1,5 +1,5 @@
 //! Per-call raw output and progress execution.
-use super::{BashExecOptions, BashOperations, BashSpawnContext, BashToolDetails};
+use super::{BashExecOptions, BashExecution, BashOperations, BashSpawnContext, BashToolDetails};
 use crate::{
     output::{
         output_accumulator::{OutputAccumulator, OutputAccumulatorOptions, OutputSnapshot},
@@ -8,7 +8,7 @@ use crate::{
     utils::diagnostics::diagnostic,
 };
 use maestro_agent::{AgentToolResult, AgentToolUpdateCallback};
-use maestro_models::{Cancellation, DiagnosticErrorInfo};
+use maestro_models::{Cancellation, DiagnosticErrorInfo, Local, Threaded};
 use std::{
     io,
     sync::{Arc, Mutex},
@@ -88,9 +88,9 @@ impl Progress {
         }
     }
     /// Finalize decoding and emit pending progress while error-free; always attempt artifact closure.
-    fn finish(
+    fn finish<E: BashExecution>(
         mut self,
-        update: Option<&AgentToolUpdateCallback<BashToolDetails>>,
+        update: Option<&AgentToolUpdateCallback<BashToolDetails, E>>,
     ) -> io::Result<(OutputSnapshot, usize)> {
         if self.error.is_none() {
             self.error = self.output.finish().err();
@@ -120,13 +120,15 @@ async fn wait(deadline: Option<Instant>) {
     }
 }
 
+/// Share progress and settlement while selecting concrete borrowed sink bounds.
+macro_rules! execute { ($mode:ty) => {
 /// Run the supplied operation and close its output before classifying settlement.
-pub(super) async fn run(
-    operations: Arc<dyn BashOperations>,
+pub(crate) async fn run(
+    operations: Arc<dyn BashOperations<$mode>>,
     context: BashSpawnContext,
     timeout: Option<f64>,
     signal: Option<Cancellation>,
-    update: Option<AgentToolUpdateCallback<BashToolDetails>>,
+    update: Option<AgentToolUpdateCallback<BashToolDetails, $mode>>,
 ) -> Result<AgentToolResult<BashToolDetails>, DiagnosticErrorInfo> {
     let state = Mutex::new(Progress::new());
     let changed = Notify::new();
@@ -171,7 +173,19 @@ pub(super) async fn run(
         .into_inner()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     let (snapshot, last_line_bytes) = state
-        .finish(update.as_ref())
+        .finish::<$mode>(update.as_ref())
         .map_err(|error| diagnostic(&error))?;
-    super::result::settle(snapshot, last_line_bytes, result)
+    crate::process::bash::result::settle(snapshot, last_line_bytes, result)
+}
+
+}; }
+execute!(Threaded);
+/// Local progress uses the same accumulator and selected deadlines.
+pub(super) mod local {
+    use super::{
+        AgentToolResult, AgentToolUpdateCallback, Arc, BashExecOptions, BashOperations,
+        BashSpawnContext, BashToolDetails, Cancellation, DiagnosticErrorInfo, Local, Mutex, Notify,
+        Progress, diagnostic, wait,
+    };
+    execute!(Local);
 }

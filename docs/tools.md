@@ -83,3 +83,38 @@ A wrapper can borrow the existing map through `ToolRenderContext::renderer_state
 select a native state handle, release the map borrow and use `with_state` to
 delegate. This preserves the row's arguments, host effects and previous component.
 The application root re-exports these renderer types for frontends.
+
+## Caller-local construction
+
+Root factory names and explicit `::<C>` calls keep their thread-safe defaults.
+`maestro_tools::local` (also `tools::local` and each factory owner's `local`
+module) constructs the same definitions with `Rc` callbacks and local futures.
+Choose the namespace before construction; an erased tool is not converted between
+execution families. `ToolDefinitionRecord` and `ToolDefRecord` are the common
+record owners; their concrete aliases preserve existing struct-literal inference.
+
+```rust
+use maestro_tools::local::{create_read_tool_definition, wrap_tool_definition};
+use maestro_tools::{ReadContext, ReadToolOptions};
+use std::{cell::Cell, rc::Rc};
+
+struct Context(Rc<Cell<u32>>);
+impl ReadContext for Context {
+    fn model(&self) -> Option<std::sync::Arc<maestro_models::Model>> {
+        self.0.set(self.0.get() + 1);
+        None
+    }
+}
+let observed = Rc::new(Cell::new(0));
+let definition = create_read_tool_definition::<Context>("/work".into(), ReadToolOptions::default());
+let tool = wrap_tool_definition(definition, Some(Rc::new(move || Ok(Context(observed.clone())))));
+assert_eq!(tool.definition.name, "read");
+```
+
+Wrappers obtain fresh owned context per call. Read retains it through MIME
+detection; shell updates run synchronously, including the initial empty update
+before the execution future is polled. Both families reuse the same file
+operations, progress accumulator and native process waiter. Renderers remain
+caller-local even on default definitions: a renderer-bearing definition is not
+promised to be `Send`. Renderer projections retain no executable callbacks in
+either family.

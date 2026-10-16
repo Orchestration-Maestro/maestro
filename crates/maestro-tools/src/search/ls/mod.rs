@@ -59,11 +59,14 @@ pub struct LsToolOptions {
     pub operations: Option<Arc<dyn LsOperations>>,
 }
 
+/// One factory body with concrete callback ownership.
+macro_rules! factories {
+ ($ptr:ident, [$($bound:tt)*]) => {
 /// Build the `ls` tool definition.
 ///
 /// Paths are resolved against `cwd` when the tool is called, not here.
 #[must_use]
-pub fn create_ls_tool_definition<C: Send + 'static>(
+pub fn create_ls_tool_definition<C: 'static $($bound)*>(
     cwd: String,
     options: LsToolOptions,
 ) -> ToolDefinition<C, LsToolInput, LsToolDetails> {
@@ -95,7 +98,7 @@ pub fn create_ls_tool_definition<C: Send + 'static>(
         render_shell: None,
         prepare_arguments: None,
         execution_mode: None,
-        execute: Arc::new(move |_id, input, signal, _update, _context| {
+        execute: $ptr::new(move |_id, input, signal, _update, _context| {
             let lister = Arc::clone(&lister);
             Box::pin(async move { lister.list(input, signal).await })
         }),
@@ -108,4 +111,21 @@ pub fn create_ls_tool_definition<C: Send + 'static>(
 #[must_use]
 pub fn create_ls_tool(cwd: String, options: LsToolOptions) -> AgentTool {
     wrap_tool_definition(create_ls_tool_definition::<()>(cwd, options), None)
+}
+
+ };
+}
+factories!(Arc, [+ Send]);
+/// Caller-local factories over the same file operations.
+pub mod local {
+    use super::{
+        Arc, DEFAULT_LIMIT, DEFAULT_MAX_BYTES, Lister, LsToolDetails, LsToolInput, LsToolOptions,
+        NativeLsOperations, Tool, json, render,
+    };
+    use crate::tool_definition_wrapper::local::wrap_tool_definition;
+    use crate::types::local::ToolDefinition;
+    use std::rc::Rc;
+    /// Caller-local executable tool.
+    type AgentTool = maestro_agent::AgentToolRecord<maestro_models::Local>;
+    factories!(Rc, []);
 }

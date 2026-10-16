@@ -6,17 +6,19 @@
 use std::future::Future;
 use std::io;
 use std::pin::Pin;
-use std::process::{ExitStatus, Output, Stdio};
+use std::process::{Output, Stdio};
 use std::time::Duration;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWriteExt};
 use tokio::process::{Child, ChildStderr, ChildStdin, ChildStdout, Command};
 use tokio::time::Sleep;
 
 mod native;
+mod wait;
 #[cfg(windows)]
 pub use native::request_tree_kill;
 #[cfg(unix)]
 pub use native::{kill_process, kill_process_group};
+use wait::wait;
 
 /// Default post-exit pipe grace for local shells, in milliseconds.
 pub const EXIT_STDIO_GRACE_MS: u64 = 100;
@@ -272,19 +274,6 @@ async fn fill(
     Ok(None)
 }
 
-/// Delivers newly read bytes and removes only those bytes from retained output.
-fn deliver(
-    buf: &mut Vec<u8>,
-    start: Option<usize>,
-    sink: &mut Option<OutputSink<'_>>,
-    stream: OutputStream,
-) {
-    if let (Some(start), Some(sink)) = (start, sink) {
-        sink(stream, &buf[start..]);
-        buf.truncate(start);
-    }
-}
-
 /// A timer for `after`, if one is selected.
 fn timer(after: Option<Duration>) -> Option<Pin<Box<Sleep>>> {
     after.map(|after| Box::pin(tokio::time::sleep(after)))
@@ -324,53 +313,32 @@ pub async fn wait_for_child_process<F>(
     child: &mut CapturedChild,
     options: WaitOptions,
     termination: F,
-    mut on_data: Option<OutputSink<'_>>,
+    on_data: Option<OutputSink<'_>>,
 ) -> io::Result<Output>
 where
     F: Future<Output = Termination>,
 {
-    tokio::pin!(termination);
-    let mut status: Option<ExitStatus> = None;
-    let mut grace = None;
-    let mut escalation = None;
-    let mut stopped = false;
-    child.apply(options.stderr);
-    while child.stdout.is_some() || child.stderr.is_some() || status.is_none() {
-        tokio::select! {
-            biased;
-            requested = &mut termination, if !stopped => {
-                stopped = true;
-                let Next::Resume(after) = child.begin(requested).await? else {
-                    break;
-                };
-                escalation = timer(after);
-            }
-            () = fires(&mut escalation) => {
-                escalation = None;
-                child.kill_if_running().await?;
-            }
-            () = fires(&mut grace) => break,
-            value = child.child.wait(), if status.is_none() => {
-                status = Some(value?);
-                escalation = None;
-                grace = timer(options.post_exit_grace);
-            }
-            value = fill(&mut child.stdout, &mut child.out, true), if child.stdout.is_some() => deliver(&mut child.out, value?, &mut on_data, OutputStream::Stdout),
-            value = fill(&mut child.stderr, &mut child.err, on_data.is_some() || options.stderr == OutputMode::Capture), if child.stderr.is_some() => deliver(&mut child.err, value?, &mut on_data, OutputStream::Stderr),
-        }
-    }
-    child.stdout = None;
-    child.stderr = None;
-    let status = match status {
-        Some(status) => status,
-        None => child.child.wait().await?,
-    };
-    let (stdout, stderr) = child.take_output();
-    Ok(Output {
-        status,
-        stdout,
-        stderr,
-    })
+    wait(child, options, termination, on_data).await
+}
+
+/// Wait with a borrowed raw sink that may retain caller-local state.
+///
+/// Uses the same retention, termination and descriptor ordering as
+/// [`wait_for_child_process`], without requiring a thread-safe sink.
+///
+/// # Errors
+/// Returns the original native pipe, status or termination error.
+pub async fn wait_for_child_process_with_sink<F, S>(
+    child: &mut CapturedChild,
+    options: WaitOptions,
+    termination: F,
+    on_data: &mut S,
+) -> io::Result<Output>
+where
+    F: Future<Output = Termination>,
+    S: FnMut(OutputStream, &[u8]) + ?Sized,
+{
+    wait(child, options, termination, Some(on_data)).await
 }
 
 /// Why a synchronous capture produced no completed output.

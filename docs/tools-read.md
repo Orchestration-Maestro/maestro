@@ -180,7 +180,9 @@ keep the three states of `AgentToolResult` (absent, explicit null, value).
 current live description once; a supplied callback failure is returned unchanged.
 The converted definition and subsequent wrapping retain that snapshot, with prompt
 text and renderers absent. Native and browser builds differ only in whether the stored
-callbacks must be `Send + Sync`.
+default execution callbacks must be `Send + Sync`. The `local` factory and wrapper
+namespaces instead retain `Rc` callbacks and caller-local contexts across MIME
+detection; see [caller-local construction](tools.md#caller-local-construction).
 
 ## Display helpers
 

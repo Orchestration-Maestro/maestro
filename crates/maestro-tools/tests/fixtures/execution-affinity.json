@@ -1,0 +1,1703 @@
+{
+  "cases": [
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "metadata-read",
+      "input": {
+        "name": "read"
+      },
+      "expected": {
+        "name": "read",
+        "label": "read",
+        "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to read (relative or absolute)"
+            },
+            "offset": {
+              "type": "number",
+              "description": "Line number to start reading from (1-indexed)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of lines to read"
+            }
+          }
+        },
+        "promptSnippet": "Read file contents",
+        "promptGuidelines": [
+          "Use read to examine files instead of cat or sed."
+        ]
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "metadata-bash",
+      "input": {
+        "name": "bash"
+      },
+      "expected": {
+        "name": "bash",
+        "label": "bash",
+        "description": "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "command"
+          ],
+          "properties": {
+            "command": {
+              "type": "string",
+              "description": "Bash command to execute"
+            },
+            "timeout": {
+              "type": "number",
+              "description": "Timeout in seconds (optional, no default timeout)"
+            }
+          }
+        },
+        "promptSnippet": "Execute bash commands (ls, grep, find, etc.)"
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "metadata-edit",
+      "input": {
+        "name": "edit"
+      },
+      "expected": {
+        "name": "edit",
+        "label": "edit",
+        "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path",
+            "edits"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to edit (relative or absolute)"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "oldText",
+                  "newText"
+                ],
+                "properties": {
+                  "oldText": {
+                    "type": "string",
+                    "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                  },
+                  "newText": {
+                    "type": "string",
+                    "description": "Replacement text for this targeted edit."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+            }
+          },
+          "additionalProperties": false
+        },
+        "promptSnippet": "Make precise file edits with exact text replacement, including multiple disjoint edits in one call",
+        "promptGuidelines": [
+          "Use edit for precise changes (edits[].oldText must match exactly)",
+          "When changing multiple separate locations in one file, use one edit call with multiple entries in edits[] instead of multiple edit calls",
+          "Each edits[].oldText is matched against the original file, not after earlier edits are applied. Do not emit overlapping or nested edits. Merge nearby changes into one edit.",
+          "Keep edits[].oldText as small as possible while still being unique in the file. Do not pad with large unchanged regions."
+        ],
+        "renderShell": "self"
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "metadata-write",
+      "input": {
+        "name": "write"
+      },
+      "expected": {
+        "name": "write",
+        "label": "write",
+        "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path",
+            "content"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to write (relative or absolute)"
+            },
+            "content": {
+              "type": "string",
+              "description": "Content to write to the file"
+            }
+          }
+        },
+        "promptSnippet": "Create or overwrite files",
+        "promptGuidelines": [
+          "Use write only for new files or complete rewrites."
+        ]
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "metadata-grep",
+      "input": {
+        "name": "grep"
+      },
+      "expected": {
+        "name": "grep",
+        "label": "grep",
+        "description": "Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to 100 matches or 50KB (whichever is hit first). Long lines are truncated to 500 chars.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "pattern"
+          ],
+          "properties": {
+            "pattern": {
+              "type": "string",
+              "description": "Search pattern (regex or literal string)"
+            },
+            "path": {
+              "type": "string",
+              "description": "Directory or file to search (default: current directory)"
+            },
+            "glob": {
+              "type": "string",
+              "description": "Filter files by glob pattern, e.g. '*.ts' or '**/*.spec.ts'"
+            },
+            "ignoreCase": {
+              "type": "boolean",
+              "description": "Case-insensitive search (default: false)"
+            },
+            "literal": {
+              "type": "boolean",
+              "description": "Treat pattern as literal string instead of regex (default: false)"
+            },
+            "context": {
+              "type": "number",
+              "description": "Number of lines to show before and after each match (default: 0)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of matches to return (default: 100)"
+            }
+          }
+        },
+        "promptSnippet": "Search file contents for patterns (respects .gitignore)"
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "metadata-find",
+      "input": {
+        "name": "find"
+      },
+      "expected": {
+        "name": "find",
+        "label": "find",
+        "description": "Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to 1000 results or 50KB (whichever is hit first).",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "pattern"
+          ],
+          "properties": {
+            "pattern": {
+              "type": "string",
+              "description": "Glob pattern to match files, e.g. '*.ts', '**/*.json', or 'src/**/*.spec.ts'"
+            },
+            "path": {
+              "type": "string",
+              "description": "Directory to search in (default: current directory)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of results (default: 1000)"
+            }
+          }
+        },
+        "promptSnippet": "Find files by glob pattern (respects .gitignore)"
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "metadata-ls",
+      "input": {
+        "name": "ls"
+      },
+      "expected": {
+        "name": "ls",
+        "label": "ls",
+        "description": "List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is truncated to 500 entries or 50KB (whichever is hit first).",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Directory to list (default: current directory)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of entries to return (default: 500)"
+            }
+          }
+        },
+        "promptSnippet": "List directory contents"
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createCodingToolDefinitions",
+      "input": {
+        "factory": "createCodingToolDefinitions"
+      },
+      "expected": [
+        "read",
+        "bash",
+        "edit",
+        "write"
+      ]
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createReadOnlyToolDefinitions",
+      "input": {
+        "factory": "createReadOnlyToolDefinitions"
+      },
+      "expected": [
+        "read",
+        "grep",
+        "find",
+        "ls"
+      ]
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createAllToolDefinitions",
+      "input": {
+        "factory": "createAllToolDefinitions"
+      },
+      "expected": [
+        "read",
+        "bash",
+        "edit",
+        "write",
+        "grep",
+        "find",
+        "ls"
+      ]
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createCodingTools",
+      "input": {
+        "factory": "createCodingTools"
+      },
+      "expected": [
+        "read",
+        "bash",
+        "edit",
+        "write"
+      ]
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createReadOnlyTools",
+      "input": {
+        "factory": "createReadOnlyTools"
+      },
+      "expected": [
+        "read",
+        "grep",
+        "find",
+        "ls"
+      ]
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createAllTools",
+      "input": {
+        "factory": "createAllTools"
+      },
+      "expected": [
+        "read",
+        "bash",
+        "edit",
+        "write",
+        "grep",
+        "find",
+        "ls"
+      ]
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createToolDefinition-read",
+      "input": {
+        "selector": "createToolDefinition",
+        "name": "read"
+      },
+      "expected": {
+        "name": "read",
+        "label": "read",
+        "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to read (relative or absolute)"
+            },
+            "offset": {
+              "type": "number",
+              "description": "Line number to start reading from (1-indexed)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of lines to read"
+            }
+          }
+        },
+        "promptSnippet": "Read file contents",
+        "promptGuidelines": [
+          "Use read to examine files instead of cat or sed."
+        ]
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createTool-read",
+      "input": {
+        "selector": "createTool",
+        "name": "read"
+      },
+      "expected": {
+        "name": "read",
+        "label": "read",
+        "description": "Read the contents of a file. Supports text files and images (jpg, png, gif, webp). Images are sent as attachments. For text files, output is truncated to 2000 lines or 50KB (whichever is hit first). Use offset/limit for large files. When you need the full file, continue with offset until complete.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to read (relative or absolute)"
+            },
+            "offset": {
+              "type": "number",
+              "description": "Line number to start reading from (1-indexed)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of lines to read"
+            }
+          }
+        }
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createToolDefinition-bash",
+      "input": {
+        "selector": "createToolDefinition",
+        "name": "bash"
+      },
+      "expected": {
+        "name": "bash",
+        "label": "bash",
+        "description": "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "command"
+          ],
+          "properties": {
+            "command": {
+              "type": "string",
+              "description": "Bash command to execute"
+            },
+            "timeout": {
+              "type": "number",
+              "description": "Timeout in seconds (optional, no default timeout)"
+            }
+          }
+        },
+        "promptSnippet": "Execute bash commands (ls, grep, find, etc.)"
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createTool-bash",
+      "input": {
+        "selector": "createTool",
+        "name": "bash"
+      },
+      "expected": {
+        "name": "bash",
+        "label": "bash",
+        "description": "Execute a bash command in the current working directory. Returns stdout and stderr. Output is truncated to last 2000 lines or 50KB (whichever is hit first). If truncated, full output is saved to a temp file. Optionally provide a timeout in seconds.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "command"
+          ],
+          "properties": {
+            "command": {
+              "type": "string",
+              "description": "Bash command to execute"
+            },
+            "timeout": {
+              "type": "number",
+              "description": "Timeout in seconds (optional, no default timeout)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createToolDefinition-edit",
+      "input": {
+        "selector": "createToolDefinition",
+        "name": "edit"
+      },
+      "expected": {
+        "name": "edit",
+        "label": "edit",
+        "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path",
+            "edits"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to edit (relative or absolute)"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "oldText",
+                  "newText"
+                ],
+                "properties": {
+                  "oldText": {
+                    "type": "string",
+                    "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                  },
+                  "newText": {
+                    "type": "string",
+                    "description": "Replacement text for this targeted edit."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+            }
+          },
+          "additionalProperties": false
+        },
+        "promptSnippet": "Make precise file edits with exact text replacement, including multiple disjoint edits in one call",
+        "promptGuidelines": [
+          "Use edit for precise changes (edits[].oldText must match exactly)",
+          "When changing multiple separate locations in one file, use one edit call with multiple entries in edits[] instead of multiple edit calls",
+          "Each edits[].oldText is matched against the original file, not after earlier edits are applied. Do not emit overlapping or nested edits. Merge nearby changes into one edit.",
+          "Keep edits[].oldText as small as possible while still being unique in the file. Do not pad with large unchanged regions."
+        ],
+        "renderShell": "self"
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createTool-edit",
+      "input": {
+        "selector": "createTool",
+        "name": "edit"
+      },
+      "expected": {
+        "name": "edit",
+        "label": "edit",
+        "description": "Edit a single file using exact text replacement. Every edits[].oldText must match a unique, non-overlapping region of the original file. If two changes affect the same block or nearby lines, merge them into one edit instead of emitting overlapping edits. Do not include large unchanged regions just to connect distant changes.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path",
+            "edits"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to edit (relative or absolute)"
+            },
+            "edits": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "oldText",
+                  "newText"
+                ],
+                "properties": {
+                  "oldText": {
+                    "type": "string",
+                    "description": "Exact text for one targeted replacement. It must be unique in the original file and must not overlap with any other edits[].oldText in the same call."
+                  },
+                  "newText": {
+                    "type": "string",
+                    "description": "Replacement text for this targeted edit."
+                  }
+                },
+                "additionalProperties": false
+              },
+              "description": "One or more targeted replacements. Each edit is matched against the original file, not incrementally. Do not include overlapping or nested edits. If two changes touch the same block or nearby lines, merge them into one edit instead."
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createToolDefinition-write",
+      "input": {
+        "selector": "createToolDefinition",
+        "name": "write"
+      },
+      "expected": {
+        "name": "write",
+        "label": "write",
+        "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path",
+            "content"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to write (relative or absolute)"
+            },
+            "content": {
+              "type": "string",
+              "description": "Content to write to the file"
+            }
+          }
+        },
+        "promptSnippet": "Create or overwrite files",
+        "promptGuidelines": [
+          "Use write only for new files or complete rewrites."
+        ]
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createTool-write",
+      "input": {
+        "selector": "createTool",
+        "name": "write"
+      },
+      "expected": {
+        "name": "write",
+        "label": "write",
+        "description": "Write content to a file. Creates the file if it doesn't exist, overwrites if it does. Automatically creates parent directories.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "path",
+            "content"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Path to the file to write (relative or absolute)"
+            },
+            "content": {
+              "type": "string",
+              "description": "Content to write to the file"
+            }
+          }
+        }
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createToolDefinition-grep",
+      "input": {
+        "selector": "createToolDefinition",
+        "name": "grep"
+      },
+      "expected": {
+        "name": "grep",
+        "label": "grep",
+        "description": "Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to 100 matches or 50KB (whichever is hit first). Long lines are truncated to 500 chars.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "pattern"
+          ],
+          "properties": {
+            "pattern": {
+              "type": "string",
+              "description": "Search pattern (regex or literal string)"
+            },
+            "path": {
+              "type": "string",
+              "description": "Directory or file to search (default: current directory)"
+            },
+            "glob": {
+              "type": "string",
+              "description": "Filter files by glob pattern, e.g. '*.ts' or '**/*.spec.ts'"
+            },
+            "ignoreCase": {
+              "type": "boolean",
+              "description": "Case-insensitive search (default: false)"
+            },
+            "literal": {
+              "type": "boolean",
+              "description": "Treat pattern as literal string instead of regex (default: false)"
+            },
+            "context": {
+              "type": "number",
+              "description": "Number of lines to show before and after each match (default: 0)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of matches to return (default: 100)"
+            }
+          }
+        },
+        "promptSnippet": "Search file contents for patterns (respects .gitignore)"
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createTool-grep",
+      "input": {
+        "selector": "createTool",
+        "name": "grep"
+      },
+      "expected": {
+        "name": "grep",
+        "label": "grep",
+        "description": "Search file contents for a pattern. Returns matching lines with file paths and line numbers. Respects .gitignore. Output is truncated to 100 matches or 50KB (whichever is hit first). Long lines are truncated to 500 chars.",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "pattern"
+          ],
+          "properties": {
+            "pattern": {
+              "type": "string",
+              "description": "Search pattern (regex or literal string)"
+            },
+            "path": {
+              "type": "string",
+              "description": "Directory or file to search (default: current directory)"
+            },
+            "glob": {
+              "type": "string",
+              "description": "Filter files by glob pattern, e.g. '*.ts' or '**/*.spec.ts'"
+            },
+            "ignoreCase": {
+              "type": "boolean",
+              "description": "Case-insensitive search (default: false)"
+            },
+            "literal": {
+              "type": "boolean",
+              "description": "Treat pattern as literal string instead of regex (default: false)"
+            },
+            "context": {
+              "type": "number",
+              "description": "Number of lines to show before and after each match (default: 0)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of matches to return (default: 100)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createToolDefinition-find",
+      "input": {
+        "selector": "createToolDefinition",
+        "name": "find"
+      },
+      "expected": {
+        "name": "find",
+        "label": "find",
+        "description": "Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to 1000 results or 50KB (whichever is hit first).",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "pattern"
+          ],
+          "properties": {
+            "pattern": {
+              "type": "string",
+              "description": "Glob pattern to match files, e.g. '*.ts', '**/*.json', or 'src/**/*.spec.ts'"
+            },
+            "path": {
+              "type": "string",
+              "description": "Directory to search in (default: current directory)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of results (default: 1000)"
+            }
+          }
+        },
+        "promptSnippet": "Find files by glob pattern (respects .gitignore)"
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createTool-find",
+      "input": {
+        "selector": "createTool",
+        "name": "find"
+      },
+      "expected": {
+        "name": "find",
+        "label": "find",
+        "description": "Search for files by glob pattern. Returns matching file paths relative to the search directory. Respects .gitignore. Output is truncated to 1000 results or 50KB (whichever is hit first).",
+        "parameters": {
+          "type": "object",
+          "required": [
+            "pattern"
+          ],
+          "properties": {
+            "pattern": {
+              "type": "string",
+              "description": "Glob pattern to match files, e.g. '*.ts', '**/*.json', or 'src/**/*.spec.ts'"
+            },
+            "path": {
+              "type": "string",
+              "description": "Directory to search in (default: current directory)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of results (default: 1000)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createToolDefinition-ls",
+      "input": {
+        "selector": "createToolDefinition",
+        "name": "ls"
+      },
+      "expected": {
+        "name": "ls",
+        "label": "ls",
+        "description": "List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is truncated to 500 entries or 50KB (whichever is hit first).",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Directory to list (default: current directory)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of entries to return (default: 500)"
+            }
+          }
+        },
+        "promptSnippet": "List directory contents"
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "createTool-ls",
+      "input": {
+        "selector": "createTool",
+        "name": "ls"
+      },
+      "expected": {
+        "name": "ls",
+        "label": "ls",
+        "description": "List directory contents. Returns entries sorted alphabetically, with '/' suffix for directories. Includes dotfiles. Output is truncated to 500 entries or 50KB (whichever is hit first).",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Directory to list (default: current directory)"
+            },
+            "limit": {
+              "type": "number",
+              "description": "Maximum number of entries to return (default: 500)"
+            }
+          }
+        }
+      }
+    },
+    {
+      "test": "local_factories_keep_declarations_and_presets",
+      "id": "fresh-construction",
+      "input": {
+        "names": [
+          "read",
+          "bash",
+          "edit",
+          "write",
+          "grep",
+          "find",
+          "ls"
+        ]
+      },
+      "expected": [
+        {
+          "name": "read",
+          "freshExecute": true
+        },
+        {
+          "name": "bash",
+          "freshExecute": true
+        },
+        {
+          "name": "edit",
+          "freshExecute": true
+        },
+        {
+          "name": "write",
+          "freshExecute": true
+        },
+        {
+          "name": "grep",
+          "freshExecute": true
+        },
+        {
+          "name": "find",
+          "freshExecute": true
+        },
+        {
+          "name": "ls",
+          "freshExecute": true
+        }
+      ]
+    },
+    {
+      "test": "local_definition_wrapper_keeps_context_and_synchronous_updates",
+      "id": "false",
+      "input": {
+        "contextFactory": false
+      },
+      "expected": {
+        "seen": [
+          {
+            "id": "call-0",
+            "args": {
+              "n": 0
+            },
+            "sameSignal": true,
+            "context": null
+          },
+          {
+            "id": "call-1",
+            "args": {
+              "n": 1
+            },
+            "sameSignal": true,
+            "context": null
+          }
+        ],
+        "updates": [
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "prefix"
+              }
+            ],
+            "details": {
+              "n": -1
+            }
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "prefix"
+              }
+            ],
+            "details": {
+              "n": -1
+            }
+          }
+        ],
+        "results": [
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "details": null,
+            "terminate": false
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ]
+          }
+        ],
+        "count": 0,
+        "identity": true,
+        "preparation": {
+          "n": 4
+        },
+        "mode": "sequential"
+      }
+    },
+    {
+      "test": "local_definition_wrapper_keeps_context_and_synchronous_updates",
+      "id": "true",
+      "input": {
+        "contextFactory": true
+      },
+      "expected": {
+        "seen": [
+          {
+            "id": "call-0",
+            "args": {
+              "n": 0
+            },
+            "sameSignal": true,
+            "context": {
+              "n": 1
+            }
+          },
+          {
+            "id": "call-1",
+            "args": {
+              "n": 1
+            },
+            "sameSignal": true,
+            "context": {
+              "n": 2
+            }
+          }
+        ],
+        "updates": [
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "prefix"
+              }
+            ],
+            "details": {
+              "n": 1
+            }
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "prefix"
+              }
+            ],
+            "details": {
+              "n": 2
+            }
+          }
+        ],
+        "results": [
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ],
+            "details": null,
+            "terminate": false
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "done"
+              }
+            ]
+          }
+        ],
+        "count": 2,
+        "identity": true,
+        "preparation": {
+          "n": 4
+        },
+        "mode": "sequential"
+      }
+    },
+    {
+      "test": "local_context_failure_precedes_execution",
+      "id": "failure",
+      "input": {},
+      "expected": {
+        "error": "no context",
+        "ran": false,
+        "same": true
+      }
+    },
+    {
+      "test": "local_wrapper_keeps_duplicates_and_snapshot_execution",
+      "id": "order",
+      "input": {
+        "operation": "wrapToolDefinitions",
+        "names": [
+          "z",
+          "a",
+          "z"
+        ]
+      },
+      "expected": [
+        "z",
+        "a",
+        "z"
+      ]
+    },
+    {
+      "test": "local_wrapper_keeps_duplicates_and_snapshot_execution",
+      "id": "reverse",
+      "input": {
+        "operation": "createToolDefinitionFromAgentTool"
+      },
+      "expected": {
+        "metadata": {
+          "name": "custom",
+          "label": "L",
+          "description": "D",
+          "parameters": {
+            "type": "object"
+          },
+          "executionMode": "sequential"
+        },
+        "seen": [
+          "id",
+          {
+            "x": 1
+          }
+        ],
+        "result": {
+          "content": [],
+          "details": null
+        },
+        "preparation": {
+          "x": 1,
+          "prepared": true
+        },
+        "mode": "sequential",
+        "hasRender": false,
+        "hasSnippet": false
+      }
+    },
+    {
+      "test": "local_read_context_is_retained_through_detection",
+      "id": "none",
+      "input": {
+        "model": "none"
+      },
+      "expected": {
+        "seen": [
+          "access",
+          "mime",
+          "read"
+        ],
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Read image file [image/png]"
+            },
+            {
+              "type": "image",
+              "data": "AQID",
+              "mimeType": "image/png"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "test": "local_read_context_is_retained_through_detection",
+      "id": "vision",
+      "input": {
+        "model": "vision"
+      },
+      "expected": {
+        "seen": [
+          "access",
+          "mime",
+          "model",
+          "read"
+        ],
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Read image file [image/png]"
+            },
+            {
+              "type": "image",
+              "data": "AQID",
+              "mimeType": "image/png"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "test": "local_read_context_is_retained_through_detection",
+      "id": "text",
+      "input": {
+        "model": "text"
+      },
+      "expected": {
+        "seen": [
+          "access",
+          "mime",
+          "model",
+          "read"
+        ],
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Read image file [image/png]\n[Current model does not support images. The image will be omitted from this request.]"
+            },
+            {
+              "type": "image",
+              "data": "AQID",
+              "mimeType": "image/png"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "test": "local_read_context_is_retained_through_detection",
+      "id": "changed-after-mime",
+      "input": {
+        "model": "changed-after-mime"
+      },
+      "expected": {
+        "seen": [
+          "access",
+          "mime",
+          "model",
+          "read"
+        ],
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "Read image file [image/png]"
+            },
+            {
+              "type": "image",
+              "data": "AQID",
+              "mimeType": "image/png"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "test": "local_bash_progress_keeps_prefix_and_settlement",
+      "id": "success",
+      "input": {
+        "outcome": "success"
+      },
+      "expected": {
+        "calls": [
+          [
+            "hook",
+            "prefix\ncommand"
+          ],
+          [
+            "operation",
+            "selected",
+            "/selected",
+            2,
+            {
+              "SELECTED": "yes"
+            }
+          ],
+          [
+            "after-data",
+            [
+              [],
+              [
+                {
+                  "type": "text",
+                  "text": "hello"
+                }
+              ]
+            ]
+          ]
+        ],
+        "beforeAwait": [
+          [],
+          [
+            {
+              "type": "text",
+              "text": "hello"
+            }
+          ]
+        ],
+        "updates": [
+          {
+            "content": []
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "hello"
+              }
+            ],
+            "details": {}
+          }
+        ],
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "hello"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "test": "local_bash_progress_keeps_prefix_and_settlement",
+      "id": "empty",
+      "input": {
+        "outcome": "empty"
+      },
+      "expected": {
+        "calls": [
+          [
+            "hook",
+            "prefix\ncommand"
+          ]
+        ],
+        "beforeAwait": [
+          []
+        ],
+        "updates": [
+          {
+            "content": []
+          }
+        ],
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "(no output)"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "test": "local_bash_progress_keeps_prefix_and_settlement",
+      "id": "exit",
+      "input": {
+        "outcome": "exit"
+      },
+      "expected": {
+        "calls": [
+          [
+            "hook",
+            "prefix\ncommand"
+          ],
+          [
+            "operation",
+            "selected",
+            "/selected",
+            2,
+            {
+              "SELECTED": "yes"
+            }
+          ],
+          [
+            "after-data",
+            [
+              [],
+              [
+                {
+                  "type": "text",
+                  "text": "hello"
+                }
+              ]
+            ]
+          ]
+        ],
+        "beforeAwait": [
+          [],
+          [
+            {
+              "type": "text",
+              "text": "hello"
+            }
+          ]
+        ],
+        "updates": [
+          {
+            "content": []
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "hello"
+              }
+            ],
+            "details": {}
+          }
+        ],
+        "error": "hello\n\nCommand exited with code 3"
+      }
+    },
+    {
+      "test": "local_bash_progress_keeps_prefix_and_settlement",
+      "id": "aborted",
+      "input": {
+        "outcome": "aborted"
+      },
+      "expected": {
+        "calls": [
+          [
+            "hook",
+            "prefix\ncommand"
+          ],
+          [
+            "operation",
+            "selected",
+            "/selected",
+            2,
+            {
+              "SELECTED": "yes"
+            }
+          ],
+          [
+            "after-data",
+            [
+              [],
+              [
+                {
+                  "type": "text",
+                  "text": "hello"
+                }
+              ]
+            ]
+          ]
+        ],
+        "beforeAwait": [
+          [],
+          [
+            {
+              "type": "text",
+              "text": "hello"
+            }
+          ]
+        ],
+        "updates": [
+          {
+            "content": []
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "hello"
+              }
+            ],
+            "details": {}
+          }
+        ],
+        "error": "hello\n\nCommand aborted"
+      }
+    },
+    {
+      "test": "local_bash_progress_keeps_prefix_and_settlement",
+      "id": "timeout",
+      "input": {
+        "outcome": "timeout"
+      },
+      "expected": {
+        "calls": [
+          [
+            "hook",
+            "prefix\ncommand"
+          ],
+          [
+            "operation",
+            "selected",
+            "/selected",
+            2,
+            {
+              "SELECTED": "yes"
+            }
+          ],
+          [
+            "after-data",
+            [
+              [],
+              [
+                {
+                  "type": "text",
+                  "text": "hello"
+                }
+              ]
+            ]
+          ]
+        ],
+        "beforeAwait": [
+          [],
+          [
+            {
+              "type": "text",
+              "text": "hello"
+            }
+          ]
+        ],
+        "updates": [
+          {
+            "content": []
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "hello"
+              }
+            ],
+            "details": {}
+          }
+        ],
+        "error": "hello\n\nCommand timed out after 2 seconds"
+      }
+    },
+    {
+      "test": "local_bash_progress_keeps_prefix_and_settlement",
+      "id": "other",
+      "input": {
+        "outcome": "other"
+      },
+      "expected": {
+        "calls": [
+          [
+            "hook",
+            "prefix\ncommand"
+          ],
+          [
+            "operation",
+            "selected",
+            "/selected",
+            2,
+            {
+              "SELECTED": "yes"
+            }
+          ],
+          [
+            "after-data",
+            [
+              [],
+              [
+                {
+                  "type": "text",
+                  "text": "hello"
+                }
+              ]
+            ]
+          ]
+        ],
+        "beforeAwait": [
+          [],
+          [
+            {
+              "type": "text",
+              "text": "hello"
+            }
+          ]
+        ],
+        "updates": [
+          {
+            "content": []
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "hello"
+              }
+            ],
+            "details": {}
+          }
+        ],
+        "error": "operation failed"
+      }
+    },
+    {
+      "test": "local_bash_progress_keeps_prefix_and_settlement",
+      "id": "hook-error",
+      "input": {
+        "outcome": "hook-error"
+      },
+      "expected": {
+        "calls": [
+          [
+            "hook",
+            "prefix\ncommand"
+          ]
+        ],
+        "beforeAwait": [],
+        "updates": [],
+        "error": "hook failed"
+      }
+    },
+    {
+      "test": "local_bash_progress_uses_existing_throttle_and_decoder",
+      "id": "deadline-and-final-flush",
+      "input": {
+        "times": [
+          1000,
+          1099,
+          1100
+        ],
+        "chunks": [
+          [
+            97
+          ],
+          [
+            98
+          ],
+          [
+            240,
+            159
+          ],
+          [
+            152,
+            128
+          ]
+        ]
+      },
+      "expected": {
+        "atStart": [
+          [],
+          [
+            {
+              "type": "text",
+              "text": "a"
+            }
+          ]
+        ],
+        "before": [
+          [],
+          [
+            {
+              "type": "text",
+              "text": "a"
+            }
+          ]
+        ],
+        "atBoundary": [
+          [],
+          [
+            {
+              "type": "text",
+              "text": "a"
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "text": "ab"
+            }
+          ]
+        ],
+        "updates": [
+          {
+            "content": []
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "a"
+              }
+            ],
+            "details": {}
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "ab"
+              }
+            ],
+            "details": {}
+          },
+          {
+            "content": [
+              {
+                "type": "text",
+                "text": "ab😀"
+              }
+            ],
+            "details": {}
+          }
+        ],
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "ab😀"
+            }
+          ]
+        },
+        "pendingTimers": 0
+      }
+    }
+  ]
+}

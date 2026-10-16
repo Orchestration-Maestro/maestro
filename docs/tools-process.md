@@ -232,3 +232,13 @@ let result = (tool.execute)("call".into(), serde_json::json!({
 # Ok(())
 # }
 ```
+
+## Caller-local shell observers
+
+The [caller-local factories](tools.md#caller-local-construction) select
+`BashOperations<Local>` and local spawn hooks without changing command preparation
+or progress ordering. `BashExecOptions` borrows the selected raw callable; both
+native operation implementations share one driver. The process leaf's
+`wait_for_child_process_with_sink` accepts a mandatory borrowed sink without
+`Send`, sharing capture, descriptor delivery and termination with the existing
+`wait_for_child_process` interface. Its default `None` calls remain inferable.

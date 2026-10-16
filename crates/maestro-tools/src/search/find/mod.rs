@@ -57,9 +57,12 @@ pub struct FindToolOptions {
     /// Replacement operations; absent uses the native search program.
     pub operations: Option<Arc<dyn FindOperations>>,
 }
+/// One factory body with concrete callback ownership.
+macro_rules! factories {
+ ($ptr:ident, [$($bound:tt)*]) => {
 /// Build a file search definition without resolving paths or acquiring programs.
 #[must_use]
-pub fn create_find_tool_definition<C: Send + 'static>(
+pub fn create_find_tool_definition<C: 'static $($bound)*>(
     cwd: String,
     options: FindToolOptions,
     tools_manager: Arc<ToolsManager>,
@@ -75,7 +78,7 @@ pub fn create_find_tool_definition<C: Send + 'static>(
             "path": {"type":"string", "description":"Directory to search in (default: current directory)"},
             "limit": {"type":"number", "description":"Maximum number of results (default: 1000)"}
         }}) }, label: "find".into(), prompt_snippet: Some("Find files by glob pattern (respects .gitignore)".into()), prompt_guidelines: None, render_shell: None, prepare_arguments: None, execution_mode: None,
-        execute: Arc::new(move |_id, input, signal, _update, _context| {
+        execute: $ptr::new(move |_id, input, signal, _update, _context| {
             let finder = Arc::clone(&finder);
             Box::pin(async move { finder.find(input, signal).await })
         }), render_call: Some(Rc::new(render::render_call)), render_result: Some(crate::ToolRenderResult::Raw(Rc::new(render::render_result))),
@@ -92,4 +95,21 @@ pub fn create_find_tool(
         create_find_tool_definition::<()>(cwd, options, tools_manager),
         None,
     )
+}
+
+ };
+}
+factories!(Arc, [+ Send]);
+/// Caller-local factories over the same file operations.
+pub mod local {
+    use super::{
+        Arc, FindToolDetails, FindToolInput, FindToolOptions, Tool, ToolsManager, execute, json,
+        render,
+    };
+    use crate::tool_definition_wrapper::local::wrap_tool_definition;
+    use crate::types::local::ToolDefinition;
+    use std::rc::Rc;
+    /// Caller-local executable tool.
+    type AgentTool = maestro_agent::AgentToolRecord<maestro_models::Local>;
+    factories!(Rc, []);
 }

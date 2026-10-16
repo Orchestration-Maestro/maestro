@@ -57,9 +57,12 @@ pub struct GrepToolOptions {
     /// Replacement file effects; absent selects local files.
     pub operations: Option<Arc<dyn GrepOperations>>,
 }
+/// One factory body with concrete callback ownership.
+macro_rules! factories {
+ ($ptr:ident, [$($bound:tt)*]) => {
 /// Build a content search without filesystem or acquisition effects.
 #[must_use]
-pub fn create_grep_tool_definition<C: Send + 'static>(
+pub fn create_grep_tool_definition<C: 'static $($bound)*>(
     cwd: String,
     options: GrepToolOptions,
     tools_manager: Arc<ToolsManager>,
@@ -79,7 +82,7 @@ pub fn create_grep_tool_definition<C: Send + 'static>(
             "context":{"type":"number","description":"Number of lines to show before and after each match (default: 0)"},
             "limit":{"type":"number","description":"Maximum number of matches to return (default: 100)"}
         }}) }, label: "grep".into(), prompt_snippet: Some("Search file contents for patterns (respects .gitignore)".into()), prompt_guidelines: None, render_shell: None, prepare_arguments: None, execution_mode: None,
-        execute: Arc::new(move |_id, input, signal, _update, _context| {
+        execute: $ptr::new(move |_id, input, signal, _update, _context| {
             let searcher = Arc::clone(&searcher);
             Box::pin(async move { searcher.search(input, signal).await })
         }), render_call: Some(Rc::new(render::render_call)), render_result: Some(crate::ToolRenderResult::Raw(Rc::new(render::render_result))),
@@ -96,4 +99,21 @@ pub fn create_grep_tool(
         create_grep_tool_definition::<()>(cwd, options, tools_manager),
         None,
     )
+}
+
+ };
+}
+factories!(Arc, [+ Send]);
+/// Caller-local factories over the same file operations.
+pub mod local {
+    use super::{
+        Arc, GrepToolDetails, GrepToolInput, GrepToolOptions, Tool, ToolsManager, execute, json,
+        render,
+    };
+    use crate::tool_definition_wrapper::local::wrap_tool_definition;
+    use crate::types::local::ToolDefinition;
+    use std::rc::Rc;
+    /// Caller-local executable tool.
+    type AgentTool = maestro_agent::AgentToolRecord<maestro_models::Local>;
+    factories!(Rc, []);
 }

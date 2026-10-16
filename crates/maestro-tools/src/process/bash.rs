@@ -6,23 +6,24 @@ mod result;
 mod tool;
 pub use tool::{
     BashSpawnContext, BashSpawnHook, BashToolDetails, BashToolInput, BashToolOptions,
-    create_bash_tool, create_bash_tool_definition,
+    BashToolOptionsRecord, create_bash_tool, create_bash_tool_definition,
 };
 
+use crate::types::ToolExecution;
 use crate::utils::shell::{
     ShellEnv, get_shell_config, get_shell_env, kill_process_tree, track_detached_child_pid,
     untrack_detached_child_pid,
 };
-use maestro_models::Cancellation;
+use maestro_models::{Cancellation, DiagnosticErrorInfo, Execution, Local, Threaded};
 use maestro_process::child_process::{
-    CapturedChild, EXIT_STDIO_GRACE_MS, WaitOptions, wait_for_child_process,
+    CapturedChild, EXIT_STDIO_GRACE_MS, WaitOptions, wait_for_child_process_with_sink,
 };
-use std::{error::Error, fmt, future::Future, io, path::Path, pin::Pin, sync::Arc, time::Duration};
+use std::{error::Error, fmt, io, path::Path, sync::Arc, time::Duration};
 
 /// Inputs for one raw shell execution.
-pub struct BashExecOptions<'a> {
+pub struct BashExecOptions<'a, S: FnMut(&[u8]) + ?Sized = dyn FnMut(&[u8]) + Send + 'a> {
     /// Receives consumed raw stdout and stderr chunks synchronously.
-    pub on_data: &'a mut (dyn FnMut(&[u8]) + Send),
+    pub on_data: &'a mut S,
     /// Optional cooperative cancellation.
     pub signal: Option<&'a Cancellation>,
     /// Optional positive timeout in seconds.
@@ -80,27 +81,59 @@ impl From<maestro_models::DiagnosticErrorInfo> for BashError {
     }
 }
 
+/// Borrowed data and retained spawn-hook signatures for shell execution.
+pub trait BashExecution: ToolExecution {
+    /// Synchronous raw output observer borrowed only during execution.
+    type Data<'a>: FnMut(&[u8]) + ?Sized + 'a;
+    /// Command preparation before the first progress notification.
+    type SpawnHook: Fn(BashSpawnContext) -> Result<BashSpawnContext, DiagnosticErrorInfo> + ?Sized;
+}
+/// Concrete signatures, leaving shell configuration and process driving shared.
+macro_rules! family {
+    ($mode:ty, [$($data:tt)*], [$($hook:tt)*]) => {
+        impl BashExecution for $mode {
+            type Data<'a> = dyn FnMut(&[u8]) $($data)* + 'a;
+            type SpawnHook = dyn Fn(BashSpawnContext) -> Result<BashSpawnContext, DiagnosticErrorInfo> $($hook)*;
+        }
+    };
+}
+family!(Local, [], []);
+family!(Threaded, [+ Send], [+ Send + Sync]);
+
 /// A replaceable operation that streams raw bytes from a shell command.
-pub trait BashOperations: Send + Sync {
+pub trait BashOperations<E: BashExecution = Threaded>: Send + Sync {
     /// Executes the literal command in the supplied directory.
     fn exec<'a>(
         &'a self,
         command: &'a str,
         cwd: &'a str,
-        options: BashExecOptions<'a>,
-    ) -> Pin<Box<dyn Future<Output = Result<BashExecResult, BashError>> + Send + 'a>>;
+        options: BashExecOptions<'a, E::Data<'a>>,
+    ) -> E::Future<'a, Result<BashExecResult, BashError>>;
 }
 
-/// Creates local operations; shell and environment observations happen per execution.
-#[must_use]
-pub fn create_local_bash_operations(
-    bin_dir: String,
-    shell_path: Option<String>,
-) -> Arc<dyn BashOperations> {
-    Arc::new(LocalBash {
-        bin_dir,
-        shell_path,
-    })
+/// Construct the same native configuration in each concrete namespace.
+macro_rules! native_factory {
+    ($mode:ty) => {
+        /// Creates local operations; shell and environment observations happen per execution.
+        #[must_use]
+        pub fn create_local_bash_operations(
+            bin_dir: String,
+            shell_path: Option<String>,
+        ) -> Arc<dyn BashOperations<$mode>> {
+            Arc::new(LocalBash {
+                bin_dir,
+                shell_path,
+            })
+        }
+    };
+}
+native_factory!(Threaded);
+
+/// Caller-local shell factories and borrowed native data sinks.
+pub mod local {
+    pub use super::tool::local::*;
+    use super::{Arc, BashOperations, Local, LocalBash};
+    native_factory!(Local);
 }
 
 /// Factory-supplied operands, not cached shell discovery or inheritance.
@@ -111,24 +144,31 @@ struct LocalBash {
     shell_path: Option<String>,
 }
 
-impl BashOperations for LocalBash {
-    fn exec<'a>(
-        &'a self,
-        command: &'a str,
-        cwd: &'a str,
-        options: BashExecOptions<'a>,
-    ) -> Pin<Box<dyn Future<Output = Result<BashExecResult, BashError>> + Send + 'a>> {
-        Box::pin(self.run(command, cwd, options))
-    }
+/// Both callable families borrow the same native driver.
+macro_rules! native_operation {
+    ($mode:ty) => {
+        impl BashOperations<$mode> for LocalBash {
+            fn exec<'a>(
+                &'a self,
+                command: &'a str,
+                cwd: &'a str,
+                options: BashExecOptions<'a, <$mode as BashExecution>::Data<'a>>,
+            ) -> <$mode as Execution>::Future<'a, Result<BashExecResult, BashError>> {
+                Box::pin(self.run(command, cwd, options))
+            }
+        }
+    };
 }
+native_operation!(Threaded);
+native_operation!(Local);
 
 impl LocalBash {
     /// Resolves, spawns and waits without adding display or agent-tool policies.
-    async fn run(
+    async fn run<S: FnMut(&[u8]) + ?Sized>(
         &self,
         command: &str,
         cwd: &str,
-        options: BashExecOptions<'_>,
+        options: BashExecOptions<'_, S>,
     ) -> Result<BashExecResult, BashError> {
         let shell = get_shell_config(self.shell_path.as_deref())?;
         if !Path::new(cwd).exists() {
@@ -158,14 +198,14 @@ impl LocalBash {
         }
         let mut expired = false;
         let mut sink = |_, bytes: &[u8]| (options.on_data)(bytes);
-        let output = wait_for_child_process(
+        let output = wait_for_child_process_with_sink(
             &mut child,
             WaitOptions {
                 post_exit_grace: Some(Duration::from_millis(EXIT_STDIO_GRACE_MS)),
                 ..WaitOptions::default()
             },
             observe(pid, options.signal, options.timeout, &mut expired),
-            Some(&mut sink),
+            &mut sink,
         )
         .await;
         if let Some(pid) = pid {

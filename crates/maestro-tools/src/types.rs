@@ -5,11 +5,11 @@ pub use crate::result_renderer::{ToolRenderResult, ToolRenderResultCallback};
 use maestro_agent::{
     AgentToolResult, AgentToolUpdateCallback, PrepareArguments, ToolExecutionMode,
 };
-use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, Tool};
+use maestro_models::{Cancellation, DiagnosticErrorInfo, Local, Threaded, Tool};
 use maestro_theme::{LiveTheme, SyntaxHighlighter, Theme};
 use maestro_tui::{TerminalImage, tui::ComponentHandle};
 use serde_json::Value;
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc};
 
 /// How a tool's calls and results are framed on screen.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -117,45 +117,53 @@ pub type ToolRenderCall<S> = Rc<
     ) -> Result<ComponentHandle, DiagnosticErrorInfo>,
 >;
 
-/// Executes a tool with its call id, arguments, signal, progress observer and caller context.
-#[cfg(not(target_arch = "wasm32"))]
-pub type ExecuteToolDefinition<C, P, D> = Arc<
-    dyn Fn(
+/// Callable signatures for tool definitions in the agent's execution family.
+pub trait ToolExecution: maestro_agent::AgentExecution {
+    /// Definition execution with an owned per-call context.
+    type Definition<C, P, D>: Fn(
             String,
             P,
             Option<Cancellation>,
-            Option<AgentToolUpdateCallback<D>>,
+            Option<AgentToolUpdateCallback<D, Self>>,
             Option<C>,
-        ) -> BoxFuture<Result<AgentToolResult<D>, DiagnosticErrorInfo>>
-        + Send
-        + Sync,
->;
-
-/// Executes a browser tool with its call id, arguments, signal, progress observer and caller context.
-#[cfg(target_arch = "wasm32")]
-pub type ExecuteToolDefinition<C, P, D> = Arc<
-    dyn Fn(
-        String,
-        P,
-        Option<Cancellation>,
-        Option<AgentToolUpdateCallback<D>>,
-        Option<C>,
-    ) -> BoxFuture<Result<AgentToolResult<D>, DiagnosticErrorInfo>>,
->;
-
-/// Supplies a fresh caller context for each execution, or the reason there is none.
+        ) -> Self::Future<'static, Result<AgentToolResult<D>, DiagnosticErrorInfo>>
+        + ?Sized;
+    /// Fresh context construction before each execution.
+    type ContextFactory<C>: Fn() -> Result<C, DiagnosticErrorInfo> + ?Sized;
+}
+/// One callable declaration with concrete pointer and thread-safety bounds.
+macro_rules! family {
+    ($mode:ty, [$($bound:tt)*]) => {
+        impl ToolExecution for $mode {
+            type Definition<C, P, D> = dyn Fn(String, P, Option<Cancellation>, Option<AgentToolUpdateCallback<D, Self>>, Option<C>) -> Self::Future<'static, Result<AgentToolResult<D>, DiagnosticErrorInfo>> $($bound)*;
+            type ContextFactory<C> = dyn Fn() -> Result<C, DiagnosticErrorInfo> $($bound)*;
+        }
+    };
+}
+family!(Local, []);
 #[cfg(not(target_arch = "wasm32"))]
-pub type ToolContextFactory<C> = Arc<dyn Fn() -> Result<C, DiagnosticErrorInfo> + Send + Sync>;
-
-/// Supplies a fresh browser caller context for each execution, or the reason there is none.
+family!(Threaded, [+ Send + Sync]);
 #[cfg(target_arch = "wasm32")]
-pub type ToolContextFactory<C> = Arc<dyn Fn() -> Result<C, DiagnosticErrorInfo>>;
+family!(Threaded, []);
+
+/// Executes a tool with its call id, arguments, signal, observer and context.
+pub type ExecuteToolDefinition<C, P, D, E = Threaded> =
+    <E as maestro_models::Execution>::Shared<<E as ToolExecution>::Definition<C, P, D>>;
+/// Supplies a fresh caller context or its original failure.
+pub type ToolContextFactory<C, E = Threaded> =
+    <E as maestro_models::Execution>::Shared<<E as ToolExecution>::ContextFactory<C>>;
 
 /// An executable tool with prompt text and optional renderers.
 ///
 /// `C` is the caller context, `P` the parameters, `D` the result details and `S` the
 /// renderers' shared row state.
-pub struct ToolDefinition<C = (), P = Value, D = Value, S = Value> {
+pub struct ToolDefinitionRecord<
+    C = (),
+    P = Value,
+    D = Value,
+    S = Value,
+    E: ToolExecution = Threaded,
+> {
     /// Model-facing declaration.
     pub definition: Tool,
     /// Display label.
@@ -167,19 +175,41 @@ pub struct ToolDefinition<C = (), P = Value, D = Value, S = Value> {
     /// Frame selection for the renderers.
     pub render_shell: Option<ToolRenderShell>,
     /// Argument preparation; see [`PrepareArguments`] for the mutable input contract.
-    pub prepare_arguments: Option<PrepareArguments>,
+    pub prepare_arguments: Option<PrepareArguments<E>>,
     /// Scheduling preference.
     pub execution_mode: Option<ToolExecutionMode>,
     /// Execution callback.
-    pub execute: ExecuteToolDefinition<C, P, D>,
+    pub execute: ExecuteToolDefinition<C, P, D, E>,
     /// Call renderer.
     pub render_call: Option<ToolRenderCall<S>>,
     /// Result renderer.
     pub render_result: Option<ToolRenderResult<D, S>>,
 }
 
-/// Return the definition unchanged, fixing its type parameters for the caller.
-#[must_use]
-pub fn define_tool<C, P, D, S>(tool: ToolDefinition<C, P, D, S>) -> ToolDefinition<C, P, D, S> {
-    tool
+/// One identity implementation for each concrete namespace.
+macro_rules! definition_identity {
+    ($mode:ty) => {
+        /// Executable definition in this namespace's concrete callback family.
+        pub type ToolDefinition<C = (), P = Value, D = Value, S = Value> =
+            ToolDefinitionRecord<C, P, D, S, $mode>;
+        /// Return the definition unchanged, fixing its types for the caller.
+        #[must_use]
+        pub fn define_tool<C, P, D, S>(
+            tool: ToolDefinition<C, P, D, S>,
+        ) -> ToolDefinition<C, P, D, S> {
+            tool
+        }
+    };
+}
+definition_identity!(Threaded);
+/// Definitions retaining caller-local callbacks and context factories.
+pub mod local {
+    use super::ToolDefinitionRecord;
+    use maestro_models::Local;
+    use serde_json::Value;
+    /// Caller-local definition callback.
+    pub type ExecuteToolDefinition<C, P, D> = super::ExecuteToolDefinition<C, P, D, Local>;
+    /// Caller-local fresh context factory.
+    pub type ToolContextFactory<C> = super::ToolContextFactory<C, Local>;
+    definition_identity!(Local);
 }

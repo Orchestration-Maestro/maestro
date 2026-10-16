@@ -61,9 +61,10 @@ pub use renderer_binding::ToolRendererBinding;
 pub use renderer_state::ToolRendererState;
 #[cfg(not(target_arch = "wasm32"))]
 pub use tools::{
-    ALL_TOOL_NAMES, Tool, ToolDef, ToolName, ToolsOptions, create_all_tool_definitions,
-    create_all_tools, create_coding_tool_definitions, create_coding_tools,
-    create_read_only_tool_definitions, create_read_only_tools, create_tool, create_tool_definition,
+    ALL_TOOL_NAMES, Tool, ToolDef, ToolDefRecord, ToolName, ToolsOptions, ToolsOptionsRecord,
+    create_all_tool_definitions, create_all_tools, create_coding_tool_definitions,
+    create_coding_tools, create_read_only_tool_definitions, create_read_only_tools, create_tool,
+    create_tool_definition,
 };
 pub mod utils;
 #[cfg(not(target_arch = "wasm32"))]
@@ -86,9 +87,10 @@ pub use path_utils::{expand_path, resolve_read_path, resolve_to_cwd};
 #[cfg(not(target_arch = "wasm32"))]
 pub use process::{
     bash::{
-        BashError, BashExecOptions, BashExecResult, BashOperations, BashRenderState,
+        BashError, BashExecOptions, BashExecResult, BashExecution, BashOperations, BashRenderState,
         BashSpawnContext, BashSpawnHook, BashToolDetails, BashToolInput, BashToolOptions,
-        create_bash_tool, create_bash_tool_definition, create_local_bash_operations,
+        BashToolOptionsRecord, create_bash_tool, create_bash_tool_definition,
+        create_local_bash_operations,
     },
     exec::{ExecOptions, ExecResult, exec_command},
     sleep::{SleepError, sleep},
@@ -112,9 +114,9 @@ pub use tool_definition_wrapper::{
     create_tool_definition_from_agent_tool, wrap_tool_definition, wrap_tool_definitions,
 };
 pub use types::{
-    ExecuteToolDefinition, ToolContextFactory, ToolDefinition, ToolRenderCall, ToolRenderContext,
-    ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult, ToolRenderResultCallback,
-    ToolRenderResultOptions, ToolRenderShell, define_tool,
+    ExecuteToolDefinition, ToolContextFactory, ToolDefinition, ToolDefinitionRecord, ToolExecution,
+    ToolRenderCall, ToolRenderContext, ToolRenderEnvironment, ToolRenderPhase, ToolRenderResult,
+    ToolRenderResultCallback, ToolRenderResultOptions, ToolRenderShell, define_tool,
 };
 #[cfg(not(target_arch = "wasm32"))]
 pub use write::{
@@ -134,3 +136,11 @@ pub use search::grep::{
     GrepOperations, GrepToolDetails, GrepToolInput, GrepToolOptions, create_grep_tool,
     create_grep_tool_definition,
 };
+
+/// Tool factories retaining callbacks on the caller's thread.
+pub mod local {
+    pub use crate::tool_definition_wrapper::local::*;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub use crate::tools::local::*;
+    pub use crate::types::local::*;
+}
