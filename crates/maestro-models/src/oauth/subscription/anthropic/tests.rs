@@ -1473,3 +1473,29 @@ mod oauth_callback {
         let _released = native_probe("127.0.0.1");
     }
 }
+
+#[test]
+fn manual_settled_failure_overrides_accepted_callback() {
+    run(async {
+        let release = crate::EventStream::new(|()| true, |()| ());
+        let gate = release.clone();
+        let completed = crate::EventStream::new(|()| true, |()| ());
+        let witness = completed.clone();
+        let callbacks = Interaction::new(None, "unused", "");
+        *callbacks.manual.lock().unwrap() = Some(Box::pin(async move {
+            gate.result().await;
+            witness.push(());
+            Err(OAuthError::message("manual failed"))
+        }));
+        let callbacks: crate::OAuthCallbacks = callbacks;
+        let server = listener();
+        let proof = pkce();
+        let mut selected = Box::pin(super::select_code(&callbacks, &proof, &server));
+        assert!(selected.as_mut().now_or_never().is_none());
+        accept(&server.wait, "browser-code");
+        release.push(());
+        completed.result().await;
+        assert_eq!(selected.await.unwrap_err().to_string(), "manual failed");
+        server.close().await;
+    });
+}

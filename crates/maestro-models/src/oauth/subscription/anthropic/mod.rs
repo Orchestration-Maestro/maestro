@@ -5,10 +5,10 @@ use crate::oauth::native;
 #[cfg(test)]
 mod tests;
 
-use crate::providers::http::spawn_detached;
+use crate::oauth::callback::start_manual;
 use crate::{
-    BoxFuture, EventStream, Fetch, OAuthAuthInfo, OAuthCallbacks, OAuthCredentials, OAuthError,
-    OAuthPrompt, OAuthProviderInterface, Pkce,
+    BoxFuture, Fetch, OAuthAuthInfo, OAuthCallbacks, OAuthCredentials, OAuthError, OAuthPrompt,
+    OAuthProviderInterface, Pkce,
 };
 use callback::{AuthorizationCode, parse_authorization_input};
 #[cfg(not(target_arch = "wasm32"))]
@@ -171,20 +171,6 @@ async fn select_code(
         .ok_or_else(|| OAuthError::message("Missing OAuth state"))?;
     callbacks.on_progress("Exchanging authorization code for tokens...")?;
     Ok((code, state))
-}
-
-/// Own manual work even after an accepted callback makes its result irrelevant.
-fn start_manual(
-    future: BoxFuture<Result<String, OAuthError>>,
-    wait: EventStream<CallbackOutcome, ()>,
-) -> EventStream<Result<String, OAuthError>, ()> {
-    let manual = EventStream::new(|_| true, |_| ());
-    let output = manual.clone();
-    spawn_detached(async move {
-        output.push(future.await);
-        wait.push(CallbackOutcome::Cancelled);
-    });
-    manual
 }
 
 /// Validate nonempty supplied state before applying the absent-state verifier fallback.
