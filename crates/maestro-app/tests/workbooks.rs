@@ -1,6 +1,8 @@
 //! File-backed public workbook projections.
 #![cfg(test)]
-use maestro_app::browser::ssf::{self, CellValue, ExcelDataType, Ssf, WorkbookError};
+use maestro_app::browser::ssf::{
+    self, CellFormatOptions, CellValue, ExcelDataType, Ssf, WorkbookError,
+};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
@@ -172,11 +174,15 @@ fn check_cell(cell: &mut ssf::CellObject, expected: &Cell, ssf: &Ssf) {
         ExcelDataType::Boolean => "b",
         ExcelDataType::Error => "e",
         ExcelDataType::Stub => "z",
+        ExcelDataType::Date => "d",
     };
     assert_eq!(kind, expected.r#type);
     assert_eq!(cell.v, expected.value.scalar());
     assert_eq!(cell.w, expected.w_after_read);
-    assert_eq!(ssf::format_cell(Some(cell), ssf), expected.text.scalar());
+    assert_eq!(
+        ssf::format_cell(Some(cell), None, &CellFormatOptions::default(), ssf),
+        expected.text.scalar()
+    );
     assert_eq!(cell.w, expected.w_after_format);
     assert_eq!(cell.v, expected.value.scalar());
 }
@@ -190,6 +196,7 @@ fn workbook_sheet_order_and_scalar_text() {
 
 #[test]
 fn workbook_numeric_codes_and_custom_sections() {
+    ssf_support::run("workbook_numeric_codes_and_custom_sections");
     for file in [
         "formats.xlsx",
         "custom.xlsx",
@@ -294,4 +301,31 @@ fn workbook_string_escapes_decode_once_without_redecoding_shared_text() {
     for file in ["escaped-raw.xlsx", "escaped-shared.xlsx"] {
         check(file);
     }
+}
+
+mod ssf_support;
+
+#[test]
+fn workbook_legacy_values_use_general_and_populated_bounds() {
+    ssf_support::run("workbook_legacy_values_use_general_and_populated_bounds");
+}
+
+#[test]
+fn workbook_legacy_projection_preserves_order_merges_epoch_and_raw_text() {
+    ssf_support::run("workbook_legacy_projection_preserves_order_merges_epoch_and_raw_text");
+}
+
+#[test]
+fn workbook_legacy_general_does_not_consume_active_format_zero() {
+    ssf_support::run("workbook_legacy_general_does_not_consume_active_format_zero");
+}
+
+#[test]
+fn workbook_legacy_reader_failure_keeps_workbook_context() {
+    ssf_support::run("workbook_legacy_reader_failure_keeps_workbook_context");
+}
+
+#[test]
+fn workbook_format_code_escapes_share_one_decoder() {
+    ssf_support::run("workbook_format_code_escapes_share_one_decoder");
 }

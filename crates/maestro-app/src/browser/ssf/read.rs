@@ -4,14 +4,21 @@ use super::{
     CellAddress, CellObject, CellValue, ExcelDataType, Range, Ssf, WorkBook, WorkSheet,
     WorkbookError, decode_cell, decode_range, encode_cell, format_cell::ERRORS, styles::Package,
 };
-use calamine::{DataRef, Reader, Xlsx, XlsxError};
+use calamine::{DataType, Reader, Xls, Xlsx, XlsxError};
 use indexmap::IndexMap;
 use std::{collections::BTreeMap, io::Cursor};
-/// Read supplied XLSX bytes into owned sheets with formatted cell text.
+/// Read supplied XLSX or compound-file XLS bytes into owned sheets with formatted cell text.
 ///
 /// # Errors
 /// Returns contextual archive, missing-part, XML, native-reader or address failures.
 pub fn read(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook, WorkbookError> {
+    if data.starts_with(&[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) {
+        return read_legacy(data, workbook_name, ssf);
+    }
+    read_xlsx(data, workbook_name, ssf)
+}
+/// Read indexed modern workbook parts, replacing the active table after archive opening.
+fn read_xlsx(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook, WorkbookError> {
     let package = Package {
         archive: OpenXmlPackage::open(data, Options::default())
             .map_err(|e| WorkbookError::Archive(format!("{workbook_name}: {e}")))?,
@@ -86,18 +93,8 @@ fn values(
     loop {
         match reader.next_cell() {
             Ok(Some(cell)) => {
-                let value = match cell.get_value() {
-                    DataRef::Float(n) => CellValue::Number(*n),
-                    DataRef::Int(n) => {
-                        CellValue::Number(num_traits::ToPrimitive::to_f64(n).unwrap_or(0.0))
-                    }
-                    DataRef::String(s) | DataRef::DateTimeIso(s) | DataRef::DurationIso(s) => {
-                        CellValue::Text(s.clone())
-                    }
-                    DataRef::SharedString(s) => CellValue::Text((*s).to_owned()),
-                    DataRef::Bool(b) => CellValue::Boolean(*b),
-                    DataRef::DateTime(d) => CellValue::Number(d.as_f64()),
-                    DataRef::Error(_) | DataRef::Empty => continue,
+                let Some(value) = native_scalar(cell.get_value()) else {
+                    continue;
                 };
                 cells.insert(cell.get_position(), value);
             }
@@ -148,7 +145,9 @@ fn sheet(
             let raw = xml.element(node, "v").map(|n| n.text_content());
             let value = values.remove(&(position.r, position.c));
             let value = if xml.attr(node, "t") == Some("str") {
-                raw.as_deref().map(string_cell).map(CellValue::Text)
+                raw.as_deref()
+                    .map(super::unescapexml::unescapexml)
+                    .map(CellValue::Text)
             } else if xml.attr(node, "t") == Some("d") {
                 raw.as_deref()
                     .map(|s| super::datenum::datenum(s, format.2))
@@ -208,27 +207,11 @@ fn cell(
     style: Option<usize>,
     format: (&[u32], &Ssf, bool),
 ) -> Option<CellObject> {
-    let (kind, value, cached) = if let Some(label) = error {
-        let value = ERRORS
-            .iter()
-            .find(|(_, s)| *s == label)
-            .map_or(CellValue::Missing, |(n, _)| {
-                CellValue::Number(f64::from(*n))
-            });
-        (ExcelDataType::Error, value, Some(label))
-    } else {
-        let value = match value? {
-            CellValue::Text(text) => CellValue::Text(text.replace("\r\n", "\n")),
-            value => value,
-        };
-        let kind = match &value {
-            CellValue::Number(_) => ExcelDataType::Number,
-            CellValue::Text(_) => ExcelDataType::Text,
-            CellValue::Boolean(_) => ExcelDataType::Boolean,
-            CellValue::Missing | CellValue::Null => return None,
-        };
-        (kind, value, None)
-    };
+    let value = value.map(|value| match value {
+        CellValue::Text(text) => CellValue::Text(text.replace("\r\n", "\n")),
+        value => value,
+    });
+    let mut cell = basic_cell(value, error)?;
     let id = style
         .and_then(|index| format.0.get(index))
         .copied()
@@ -256,34 +239,138 @@ fn cell(
                 .to_owned()
         });
     }
-    let shown = cached.or_else(|| format.1.format(id, value.scalar(), format.2).ok());
+    cell.w = cell.w.or_else(|| {
+        format
+            .1
+            .format(
+                &super::NumberFormat::Id(id),
+                &cell.v,
+                &super::FormatOptions {
+                    date1904: format.2,
+                    ..Default::default()
+                },
+            )
+            .ok()
+    });
+    Some(cell)
+}
+
+/// Classify owned native scalars and recover raw error labels through the shared table.
+fn basic_cell(value: Option<CellValue>, error: Option<String>) -> Option<CellObject> {
+    let (kind, value, cached) = if let Some(label) = error {
+        let value = ERRORS
+            .iter()
+            .find(|(_, s)| *s == label)
+            .map_or(CellValue::Missing, |(n, _)| {
+                CellValue::Number(f64::from(*n))
+            });
+        (ExcelDataType::Error, value, Some(label))
+    } else {
+        let value = value?;
+        let kind = match &value {
+            CellValue::Number(_) | CellValue::Date(_) => ExcelDataType::Number,
+            CellValue::Text(_) => ExcelDataType::Text,
+            CellValue::Boolean(_) => ExcelDataType::Boolean,
+            CellValue::Missing | CellValue::Null => return None,
+        };
+        (kind, value, None)
+    };
     Some(CellObject {
         t: Some(kind),
         v: value,
-        w: shown,
+        w: cached,
+        ..Default::default()
     })
 }
-
-/// Decode raw spreadsheet string escapes in one pass over UTF-16 code units.
-fn string_cell(value: &str) -> String {
-    let mut rest = value;
-    let mut units = Vec::new();
-    while let Some(c) = rest.chars().next() {
-        let escaped = rest
-            .get(..7)
-            .filter(|s| {
-                (s.starts_with("_x") || s.starts_with("_X"))
-                    && s.ends_with('_')
-                    && s[2..6].bytes().all(|b| b.is_ascii_hexdigit())
-            })
-            .and_then(|s| u16::from_str_radix(&s[2..6], 16).ok());
-        if let Some(unit) = escaped {
-            units.push(unit);
-            rest = &rest[7..];
-        } else {
-            units.extend_from_slice(c.encode_utf16(&mut [0; 2]));
-            rest = &rest[c.len_utf8()..];
+/// Project both borrowed modern and owned legacy native scalars without display coercion.
+fn native_scalar(value: &impl DataType) -> Option<CellValue> {
+    use num_traits::ToPrimitive;
+    if let Some(number) = value
+        .get_float()
+        .or_else(|| value.get_int()?.to_f64())
+        .or_else(|| value.get_datetime().map(|date| date.as_f64()))
+    {
+        Some(CellValue::Number(number))
+    } else if let Some(text) = value
+        .get_string()
+        .or_else(|| value.get_datetime_iso())
+        .or_else(|| value.get_duration_iso())
+    {
+        Some(CellValue::Text(text.to_owned()))
+    } else {
+        value.get_bool().map(CellValue::Boolean)
+    }
+}
+/// Read legacy native values while retaining the existing live format owner.
+fn read_legacy(data: &[u8], name: &str, ssf: &Ssf) -> Result<WorkBook, WorkbookError> {
+    let mut native = Xls::new(Cursor::new(data))
+        .map_err(|error| WorkbookError::Reader(format!("{name}: {error}")))?;
+    let date1904 = native.has_1904_epoch();
+    let mut sheets = IndexMap::new();
+    for sheet_name in native.sheet_names() {
+        let values = native
+            .worksheet_range(&sheet_name)
+            .map_err(|error| WorkbookError::Reader(format!("{name}: {sheet_name}: {error}")))?;
+        let merges = native
+            .merge_cells_by_sheet_name(&sheet_name)
+            .map_err(|error| WorkbookError::Reader(format!("{name}: {sheet_name}: {error}")))?;
+        sheets.insert(sheet_name, legacy_sheet(&values, &merges)?);
+    }
+    Ok(WorkBook {
+        sheets,
+        date1904,
+        ssf: ssf
+            .table
+            .read()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone(),
+    })
+}
+/// Preserve native populated bounds, absolute positions, merge order and raw text.
+fn legacy_sheet(
+    values: &calamine::Range<calamine::Data>,
+    merges: &[calamine::Dimensions],
+) -> Result<WorkSheet, WorkbookError> {
+    let mut cells = IndexMap::new();
+    let start = values.start().unwrap_or_default();
+    for (row, column, value) in values.used_cells() {
+        let error = value.get_error().map(ToString::to_string);
+        if let Some(mut cell) = basic_cell(native_scalar(value), error) {
+            cell.w = cell.w.or_else(|| Some(super::general(cell.v.scalar())));
+            let position = CellAddress {
+                r: legacy_offset(start.0, row)?,
+                c: legacy_offset(start.1, column)?,
+            };
+            cells.insert(encode_cell(position), cell);
         }
     }
-    String::from_utf16_lossy(&units)
+    let range = values.start().zip(values.end()).map(|(s, e)| Range {
+        s: CellAddress { r: s.0, c: s.1 },
+        e: CellAddress { r: e.0, c: e.1 },
+    });
+    let merges = merges
+        .iter()
+        .map(|bounds| Range {
+            s: CellAddress {
+                r: bounds.start.0,
+                c: bounds.start.1,
+            },
+            e: CellAddress {
+                r: bounds.end.0,
+                c: bounds.end.1,
+            },
+        })
+        .collect();
+    Ok(WorkSheet {
+        cells,
+        range,
+        merges,
+    })
+}
+/// Add a native relative cell offset without truncating its address.
+fn legacy_offset(start: u32, offset: usize) -> Result<u32, WorkbookError> {
+    u32::try_from(offset)
+        .ok()
+        .and_then(|n| start.checked_add(n))
+        .ok_or_else(|| WorkbookError::Address("legacy cell address outside numeric range".into()))
 }

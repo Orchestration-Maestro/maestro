@@ -1,7 +1,7 @@
 # Spreadsheet values and workbooks
 
 The application library exposes `maestro_app::browser::ssf` for scalar spreadsheet
-formatting and in-memory XLSX reading. These operations do not render a workbook
+formatting and in-memory XLSX/XLS reading. These operations do not render a workbook
 preview or write files.
 
 - `init_table` overwrites built-in format IDs in the supplied table, retains other
@@ -43,21 +43,38 @@ preview or write files.
 The [numeric/calendar library inventory](../libraries/spreadsheet-formats.md)
 documents the underlying primitives. `read(bytes, name, &mut ssf)` uses the same
 selected-section evaluator for workbook number, currency, percentage, scientific,
-fraction, date and custom conditional formats. Full standalone formatting options,
-date-valued SDK inputs and legacy XLS reading are not yet exposed.
+fraction, date and custom conditional formats.
 
-`Ssf::get_table` returns a shared mutable format table. Reading a workbook replaces
-the current table slot without changing earlier handles; `WorkBook::ssf` is a
-detached snapshot. `WorkBook` preserves sheet order and the date epoch; each
+`Ssf::format` accepts `NumberFormat::Code` (including empty codes) or
+`NumberFormat::Id`, a borrowed `CellValue` and `FormatOptions`. Supplied tables
+replace direct active-table lookup; mapped fallback can still use the active
+table. Nonempty `date_nf` replaces exact `m/d/yy` or ID14. Owned UTC
+`CellValue::Date` inputs reuse the real-date serial conversion; General dispatch
+uses ID14 with the same table, date override and epoch options.
+
+`Ssf::load` overwrites an explicit ID or deduplicates before choosing the first
+hole in 0..392; a full range replaces391. `load_table` copies slots through391,
+including empty codes, and leaves the same-owner table unchanged.
+`Ssf::get_table` returns a shared mutable format table. Reading XLSX replaces
+the current table slot without changing earlier handles; XLS retains that slot.
+`WorkBook::ssf` is a detached snapshot. `WorkBook` preserves sheet order and the date epoch; each
 `WorkSheet` retains ordered populated cells, its range and merged regions.
-Blank sheets retain declared rectangular ranges; empty singleton defaults are omitted.
-Retained error cells load implicit formats into the live table and workbook snapshot.
-Cells retain raw typed values and optional formatted text. Raw string-cell escapes
-are decoded once; shared and inline strings are not decoded again. Decoded text
-normalizes CRLF to LF at the common cell boundary. `format_cell` respects
-present caches, including empty text, and otherwise uses the active default
-format with unrounded raw-scalar fallback on formatting failure, leaving the cache
-absent. Unknown error labels survive
+In XLSX, blank sheets retain declared rectangular ranges; empty singleton defaults
+are omitted. Retained error cells load implicit formats into the live table and
+workbook snapshot. Cells retain raw typed values and optional formatted text.
+Raw string-cell escapes and format-code attributes decode once after XML entity
+decoding; shared and inline strings are not decoded again. XLSX text normalizes
+CRLF to LF; XLS preserves raw text.
+
+`format_cell(cell, value, options, ssf)` respects present caches, including empty
+text, before the optional non-null value override. It tries `z` before the XF
+format ID and caches only successful formatting. Date-classified cells can
+prepare `z` from `CellFormatOptions::date_nf`; standalone table/epoch options
+are not accepted by this helper. Raw values remain unchanged. If both formats
+fail, fallback uses unrounded scalar text without caching: booleans use `true` or
+`false`, null uses `null`, and a missing value uses `undefined`. UTC Dates use
+readable RFC3339 text with milliseconds, not host-dependent date spelling. Standard error
+codes use their labels; an unknown numeric error stays numeric. Unknown XLSX error labels survive
 native conversion, and no-cache formula cells are omitted without evaluation.
 Malformed archives, required missing parts, XML, reader and address failures have
 distinct `WorkbookError` variants. Missing style declarations are optional, while
@@ -66,10 +83,17 @@ context. ISO dates and timezone-free datetimes use UTC serial conversion with th
 real March 1900 boundary. Time-only cells attach to the workbook epoch date and
 use the same millisecond serial conversion; noon is 0.5 in either epoch. Numeric
 serial 60 retains the spreadsheet's synthetic leap day.
+XLS selection uses the complete eight-byte compound-file header, not the supplied
+filename. The legacy reader preserves sheet order, populated bounds, merges,
+epoch, numbers, strings, booleans and error values; cached display text uses
+General independently of active format0. Full XLS formatting, format-table effects,
+rich-text/link and formula metadata, and declared blank dimensions remain tracked
+in [legacy workbook metadata](https://github.com/Orchestration-Maestro/maestro/issues/1025).
+
 `encode_row`, `encode_col`, `encode_cell` and `encode_range` render zero-based
 positions as A1 addresses; decoders accept absolute `$` markers.
 
-The internal evaluator The internal alternate projection uses
+The internal alternate projection uses
 a tabular Thursday-epoch calendar, preserving the standard serial sentinels.
 Midnight carry retains both the effective epoch and the first captured calendar.
 Meridiem labels use the rounded clock. General tokens resolve in source order;

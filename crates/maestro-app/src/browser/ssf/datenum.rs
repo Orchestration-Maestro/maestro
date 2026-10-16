@@ -23,15 +23,17 @@ pub(super) fn datenum(value: &str, date1904: bool) -> Result<f64, WorkbookError>
                 .find_map(|f| NaiveDateTime::parse_from_str(&local, f).ok())
                 .ok_or_else(|| WorkbookError::Reader(format!("invalid date {value}")))
         })?;
-    let instant = instant.and_utc();
-    let milliseconds = instant
-        .timestamp_millis()
-        .to_f64()
-        .ok_or_else(|| WorkbookError::Reader("date outside numeric range".into()))?;
+    Ok(datenum_date(&instant.and_utc(), date1904))
+}
+/// Convert a real UTC instant, retaining the shared millisecond arithmetic order.
+pub(super) fn datenum_date(instant: &chrono::DateTime<chrono::Utc>, date1904: bool) -> f64 {
+    let milliseconds = instant.timestamp_millis().to_f64().unwrap_or_default();
     let serial = (milliseconds + 2_209_161_600_000.0) / 86_400_000.0;
     if date1904 {
-        Ok(serial - 1462.0)
+        serial - 1462.0
+    } else if serial < 61.0 {
+        serial - 1.0
     } else {
-        Ok(if serial < 61.0 { serial - 1.0 } else { serial })
+        serial
     }
 }

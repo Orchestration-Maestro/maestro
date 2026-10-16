@@ -1,6 +1,8 @@
 //! Public spreadsheet state and coordinate behavior.
 #![cfg(test)]
-use maestro_app::browser::ssf::{CellObject, CellValue, ExcelDataType, Ssf, format_cell};
+use maestro_app::browser::ssf::{
+    CellFormatOptions, CellObject, CellValue, ExcelDataType, Ssf, format_cell,
+};
 
 #[test]
 fn ssf_reader_table_alias() {
@@ -12,9 +14,10 @@ fn ssf_reader_table_alias() {
         t: Some(ExcelDataType::Number),
         v: CellValue::Number(1.25),
         w: None,
+        ..Default::default()
     };
     assert_eq!(
-        format_cell(Some(&mut cell), &ssf),
+        format_cell(Some(&mut cell), None, &CellFormatOptions::default(), &ssf),
         CellValue::Text("1.250".into())
     );
     assert_eq!(cell.w.as_deref(), Some("1.250"));
@@ -105,8 +108,9 @@ fn ssf_default_cell_states() {
             t: c.t.as_deref().map(kind),
             v: c.v.value(),
             w: c.w,
+            ..Default::default()
         });
-        let text = format_cell(cell.as_mut(), &ssf);
+        let text = format_cell(cell.as_mut(), None, &CellFormatOptions::default(), &ssf);
         let expected = match case.expected.text {
             DefaultText::Text(s) => CellValue::Text(s),
             DefaultText::Number(n) => CellValue::Number(n),
@@ -170,6 +174,7 @@ fn ssf_range_projection() {
 #[test]
 fn ssf_retained_identity() {
     use maestro_app::browser::ssf::read;
+    ssf_support::run("ssf_retained_identity");
     let mut ssf = Ssf::default();
     let old = ssf.get_table();
     old.write().unwrap().insert(164, "\"old\"0".into());
@@ -191,4 +196,224 @@ fn ssf_retained_identity() {
         Some("\"new\"0")
     );
     assert_eq!(book.ssf.get(&164), None);
+}
+
+mod ssf_support;
+
+#[test]
+fn ssf_general_dispatch() {
+    ssf_support::run("ssf_general_dispatch");
+}
+
+#[test]
+fn ssf_section_layouts() {
+    ssf_support::run("ssf_section_layouts");
+}
+
+#[test]
+fn ssf_nonfinite_and_failures() {
+    ssf_support::run("ssf_nonfinite_and_failures");
+}
+
+#[test]
+fn ssf_conditional_selection() {
+    ssf_support::run("ssf_conditional_selection");
+}
+
+#[test]
+fn ssf_condition_thresholds() {
+    ssf_support::run("ssf_condition_thresholds");
+}
+
+#[test]
+fn ssf_empty_and_excess_sections() {
+    ssf_support::run("ssf_empty_and_excess_sections");
+}
+
+#[test]
+fn ssf_numeric_ids() {
+    ssf_support::run("ssf_numeric_ids");
+}
+
+#[test]
+fn ssf_quoted_delimiter_fix() {
+    ssf_support::run("ssf_quoted_delimiter_fix");
+}
+
+#[test]
+fn ssf_quoted_controls() {
+    ssf_support::run("ssf_quoted_controls");
+}
+
+#[test]
+fn ssf_mixed_text_numeric_sections() {
+    ssf_support::run("ssf_mixed_text_numeric_sections");
+}
+
+#[test]
+fn ssf_option_consumption() {
+    ssf_support::run("ssf_option_consumption");
+}
+
+#[test]
+fn ssf_date_serial_conversion() {
+    ssf_support::run("ssf_date_serial_conversion");
+}
+
+#[test]
+fn ssf_date_general() {
+    ssf_support::run("ssf_date_general");
+}
+
+#[test]
+fn ssf_date_epoch_routes() {
+    ssf_support::run("ssf_date_epoch_routes");
+}
+
+#[test]
+fn ssf_landed_corrections() {
+    ssf_support::run("ssf_landed_corrections");
+}
+
+#[test]
+fn ssf_load_auto() {
+    ssf_support::run("ssf_load_auto");
+}
+
+#[test]
+fn ssf_load_explicit() {
+    ssf_support::run("ssf_load_explicit");
+}
+
+#[test]
+fn ssf_load_full() {
+    ssf_support::run("ssf_load_full");
+}
+
+#[test]
+fn ssf_load_table_bounds() {
+    ssf_support::run("ssf_load_table_bounds");
+}
+
+#[test]
+fn ssf_table_alias() {
+    ssf_support::run("ssf_table_alias");
+}
+
+#[test]
+fn ssf_cell_cached() {
+    ssf_support::run("ssf_cell_cached");
+}
+
+#[test]
+fn ssf_cell_empty() {
+    ssf_support::run("ssf_cell_empty");
+    let mut cell = CellObject::default();
+    assert_eq!(cell.v, CellValue::Missing);
+    assert_eq!(cell.t, None);
+    assert_eq!(cell.w, None);
+    assert_eq!(cell.z, None);
+    assert_eq!(cell.xf, None);
+    assert_eq!(
+        format_cell(
+            Some(&mut cell),
+            None,
+            &CellFormatOptions::default(),
+            &Ssf::default()
+        ),
+        CellValue::Text(String::new()),
+    );
+}
+
+#[test]
+fn ssf_cell_patterns() {
+    ssf_support::run("ssf_cell_patterns");
+}
+
+#[test]
+fn ssf_cell_double_failure_preserves_raw_scalars() {
+    use maestro_app::browser::ssf::{NumberFormat, Xf};
+
+    let ssf = Ssf::default();
+    let _ = ssf.load("\"bad", Some(164));
+    let actual: Vec<_> = [
+        CellValue::Boolean(true),
+        CellValue::Boolean(false),
+        CellValue::Null,
+        CellValue::Missing,
+    ]
+    .into_iter()
+    .map(|value| {
+        let mut cell = CellObject {
+            t: Some(ExcelDataType::Boolean),
+            v: value.clone(),
+            z: Some(NumberFormat::Code("\"bad".into())),
+            xf: Some(Xf { num_fmt_id: 164 }),
+            ..CellObject::default()
+        };
+        let text = format_cell(Some(&mut cell), None, &CellFormatOptions::default(), &ssf);
+        assert_eq!(cell.v, value);
+        assert_eq!(cell.w, None);
+        text
+    })
+    .collect();
+    assert_eq!(
+        actual,
+        ["true", "false", "null", "undefined"].map(|text| CellValue::Text(text.into()))
+    );
+}
+
+#[test]
+fn ssf_cell_single_failure_uses_xf_format() {
+    use maestro_app::browser::ssf::{NumberFormat, Xf};
+
+    let ssf = Ssf::default();
+    let _ = ssf.load("0.000", Some(164));
+    let mut cell = CellObject {
+        t: Some(ExcelDataType::Number),
+        v: CellValue::Number(1.25),
+        z: Some(NumberFormat::Code("\"bad".into())),
+        xf: Some(Xf { num_fmt_id: 164 }),
+        ..CellObject::default()
+    };
+    assert_eq!(
+        format_cell(Some(&mut cell), None, &CellFormatOptions::default(), &ssf),
+        CellValue::Text("1.250".into())
+    );
+    assert_eq!(cell.w.as_deref(), Some("1.250"));
+}
+
+#[test]
+fn ssf_cell_override() {
+    ssf_support::run("ssf_cell_override");
+}
+
+#[test]
+fn ssf_cell_dates() {
+    use maestro_app::browser::ssf::NumberFormat;
+    ssf_support::run("ssf_cell_dates");
+    let mut cell = CellObject {
+        t: Some(ExcelDataType::Date),
+        v: CellValue::Date(
+            chrono::DateTime::parse_from_rfc3339("2023-01-01T00:00:00Z")
+                .unwrap()
+                .to_utc(),
+        ),
+        z: Some(NumberFormat::Code("yyyy".into())),
+        ..CellObject::default()
+    };
+    let override_format = NumberFormat::Code("mm".into());
+    let options = CellFormatOptions {
+        date_nf: Some(&override_format),
+    };
+    assert_eq!(
+        format_cell(Some(&mut cell), None, &options, &Ssf::default()),
+        CellValue::Text("2023".into())
+    );
+    assert_eq!(cell.z, Some(NumberFormat::Code("yyyy".into())));
+}
+
+#[test]
+fn ssf_cell_error_text() {
+    ssf_support::run("ssf_cell_error_text");
 }
