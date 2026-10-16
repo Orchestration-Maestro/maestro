@@ -10,16 +10,17 @@ use super::messages::{CacheControl, ToolParam, WireMessage, convert, tools};
 use super::tool_names::Naming;
 use super::{AnthropicOptions, AnthropicThinkingDisplay, CallOptions, ThinkingInput};
 use crate::arguments::json_parse::whitespace;
+use crate::options::resolve_cache_retention;
 use crate::providers::chat::cloudflare::resolve_cloudflare_base_url;
 use crate::providers::chat::github_copilot_headers::{
     build_copilot_dynamic_headers, has_copilot_vision_input,
 };
-use crate::providers::http::{HttpRequest, RequestFailure, edge_whitespace, endpoint_url};
+use crate::providers::http::{
+    HttpRequest, RequestFailure, copied, edge_whitespace, endpoint_url, layer,
+};
 use crate::providers::json_text::compact_json;
 use crate::{CacheRetention, Context, Model, ToolChoice, get_env_api_key};
 
-/// Environment variable that selects long cache retention when set to `long`.
-const CACHE_RETENTION_VARIABLE: &str = "MAESTRO_CACHE_RETENTION";
 /// Environment variable that supplies a bearer token next to the key.
 const AMBIENT_TOKEN_VARIABLE: &str = "ANTHROPIC_AUTH_TOKEN";
 /// Service endpoint used when the model names none.
@@ -185,13 +186,7 @@ impl<'a> Invocation<'a> {
         call: &'a CallOptions,
     ) -> Result<Self, RequestFailure> {
         let options = &call.raw;
-        let retention = options.common.cache_retention.unwrap_or_else(|| {
-            if std::env::var(CACHE_RETENTION_VARIABLE).is_ok_and(|value| value == "long") {
-                CacheRetention::Long
-            } else {
-                CacheRetention::Short
-            }
-        });
+        let retention = resolve_cache_retention(options.common.cache_retention);
         let mut invocation = Self {
             model,
             context,
@@ -437,7 +432,7 @@ impl<'a> Invocation<'a> {
     /// Apply model, account-history and caller layers in that order.
     fn layer_model_headers(&self, headers: &mut IndexMap<String, String>) {
         if let Some(source) = &self.model.headers {
-            layer(headers, source.iter().map(|(k, v)| (k.clone(), v.clone())));
+            layer(headers, copied(source));
         }
         if self.model.provider == "github-copilot" {
             layer(
@@ -449,7 +444,7 @@ impl<'a> Invocation<'a> {
             );
         }
         if let Some(source) = &self.options.common.headers {
-            layer(headers, source.iter().map(|(k, v)| (k.clone(), v.clone())));
+            layer(headers, copied(source));
         }
     }
 
@@ -489,17 +484,6 @@ impl<'a> Invocation<'a> {
             body: body.into_bytes(),
             signal: self.options.common.signal.clone(),
         })
-    }
-}
-
-/// Insert headers under lowercase names; a later insertion replaces an earlier one.
-fn layer(
-    layered: &mut IndexMap<String, String>,
-    source: impl IntoIterator<Item = (String, String)>,
-) {
-    for (mut name, value) in source {
-        name.make_ascii_lowercase();
-        layered.insert(name, value);
     }
 }
 

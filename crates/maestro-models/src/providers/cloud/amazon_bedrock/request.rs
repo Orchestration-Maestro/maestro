@@ -11,7 +11,7 @@ use super::thinking::{additional_model_request_fields, cache_point};
 use super::wire::{
     ContentBlock, PromptVariableValues, SystemContentBlock, ToolConfiguration, Union, list, map,
 };
-use crate::providers::chat::openai_completions::resolve_cache_retention;
+use crate::options::resolve_cache_retention;
 use crate::providers::http::RequestFailure;
 use crate::providers::json_text::compact_json;
 use crate::{Context, Model};

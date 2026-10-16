@@ -26,8 +26,7 @@ remaining image ends the stream before the payload hook. Tool declarations keep 
 descriptions and schema values. With nonempty tools, `tool_choice` selects automatic, required
 or named tool use; `ToolChoice::None`, absent tools or empty tools omit the tool configuration.
 
-Cache retention uses the explicit common option, otherwise `MAESTRO_CACHE_RETENTION=long`
-selects long retention and other values select short. None disables cache points. Supported
+Cache retention follows the shared [options policy](../model-options.md#cache-retention). None disables cache points. Supported
 Claude candidates receive a cache point after a nonempty system prompt and on the final
 converted turn only when it is a user turn. Long retention adds `ttl: "1h"`.
 `AWS_BEDROCK_FORCE_CACHE=1` enables cache points only when neither the identifier nor the name,

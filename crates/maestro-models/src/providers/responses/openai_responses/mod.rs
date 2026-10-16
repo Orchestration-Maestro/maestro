@@ -9,17 +9,15 @@ use super::openai_responses_shared::{
     messages::{convert_responses_messages, convert_responses_tools},
     process_responses_stream,
 };
-use crate::options::resolve_api_key;
+use crate::options::{resolve_api_key, resolve_cache_retention};
 use crate::providers::assistant_output::{conclude, fail, initial_message, start_producer};
 use crate::providers::chat::cloudflare::{is_cloudflare_provider, resolve_cloudflare_base_url};
 use crate::providers::chat::github_copilot_headers::{
     build_copilot_dynamic_headers, has_copilot_vision_input,
 };
-use crate::providers::chat::openai_completions::{
-    copied, layer, level_name, resolve_cache_retention, scope_headers,
-};
+use crate::providers::chat::openai_completions::{level_name, scope_headers};
 use crate::providers::http::{
-    HttpRequest, RequestFailure, SseMessages, endpoint_url, sdk_status_failure,
+    HttpRequest, RequestFailure, SseMessages, copied, endpoint_url, layer, sdk_status_failure,
     send_with_status_error,
 };
 use crate::providers::json_text::compact_json;
@@ -132,13 +130,8 @@ pub fn stream_simple_openai_responses(
     let reasoning_effort = options
         .as_ref()
         .and_then(|o| o.reasoning)
-        .and_then(|level| match clamp_thinking_level(&model, level.into()) {
-            ModelThinkingLevel::Off => None,
-            ModelThinkingLevel::Minimal => Some(ThinkingLevel::Minimal),
-            ModelThinkingLevel::Low => Some(ThinkingLevel::Low),
-            ModelThinkingLevel::Medium => Some(ThinkingLevel::Medium),
-            ModelThinkingLevel::High => Some(ThinkingLevel::High),
-            ModelThinkingLevel::Xhigh => Some(ThinkingLevel::Xhigh),
+        .and_then(|level| {
+            crate::reasoning_from_thinking_level(&clamp_thinking_level(&model, level.into()))
         });
     drop(options);
     Ok(stream_openai_responses(

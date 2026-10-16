@@ -322,3 +322,48 @@ mod tests {
         );
     }
 }
+
+/// Selected levels convert only after the caller's model support policy.
+#[test]
+fn thinking_conversion_preserves_each_level() {
+    use maestro_models::{ModelThinkingLevel, clamp_thinking_level, reasoning_from_thinking_level};
+    let rows: Vec<serde_json::Value> =
+        serde_json::from_str(include_str!("fixtures/provider_local_rules.json")).unwrap();
+    for row in rows.iter().filter(|row| {
+        matches!(
+            row["kind"].as_str(),
+            Some("thinking_conversion" | "thinking_clamp")
+        )
+    }) {
+        let input = &row["input"];
+        let level: Option<ModelThinkingLevel> =
+            serde_json::from_value(input["level"].clone()).unwrap();
+        let selected = if row["kind"] == "thinking_clamp" {
+            let mut descriptor = serde_json::json!({
+                "id": "controlled", "name": "Controlled", "api": "fixture", "provider": "fixture",
+                "baseUrl": "https://fixture.invalid", "reasoning": true, "input": ["text"],
+                "contextWindow": 100_000, "maxTokens": 1000,
+                "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
+            });
+            descriptor
+                .as_object_mut()
+                .unwrap()
+                .extend(input["model"].as_object().unwrap().clone());
+            let model = serde_json::from_value(descriptor).unwrap();
+            level.map(|level| clamp_thinking_level(&model, level))
+        } else {
+            level
+        };
+        let actual = selected.as_ref().and_then(reasoning_from_thinking_level);
+        assert_eq!(
+            actual.is_some(),
+            row["expected"]["present"].as_bool().unwrap()
+        );
+        if let Some(actual) = actual {
+            assert_eq!(
+                serde_json::to_value(actual).unwrap(),
+                row["expected"]["value"]
+            );
+        }
+    }
+}

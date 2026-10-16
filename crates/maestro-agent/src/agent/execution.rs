@@ -223,14 +223,7 @@ impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Agent<C, E> {
             .collect(),
             objects: ProviderObjects::default(),
             options: SimpleStreamOptions {
-                reasoning: match reasoning {
-                    ModelThinkingLevel::Off => None,
-                    ModelThinkingLevel::Minimal => Some(maestro_models::ThinkingLevel::Minimal),
-                    ModelThinkingLevel::Low => Some(maestro_models::ThinkingLevel::Low),
-                    ModelThinkingLevel::Medium => Some(maestro_models::ThinkingLevel::Medium),
-                    ModelThinkingLevel::High => Some(maestro_models::ThinkingLevel::High),
-                    ModelThinkingLevel::Xhigh => Some(maestro_models::ThinkingLevel::Xhigh),
-                },
+                reasoning: maestro_models::reasoning_from_thinking_level(reasoning),
                 common: StreamOptions {
                     transport: Some(read(&self.transport).clone()),
                     session_id: read(&self.session_id).clone(),

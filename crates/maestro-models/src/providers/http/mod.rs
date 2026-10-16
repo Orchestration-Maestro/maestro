@@ -29,7 +29,9 @@ pub(crate) use failure::{
     RequestFailure, endpoint_url, envelope_failure, sdk_status_failure, sdk_stream_failure,
     stream_failure,
 };
-pub(crate) use headers::{client_pairs, edge_whitespace, layer_request_headers, normalize_request};
+pub(crate) use headers::{
+    client_pairs, copied, edge_whitespace, layer, layer_request_headers, normalize_request,
+};
 pub(crate) use maestro_text::decode_utf8;
 pub(crate) use retry::{send, send_with_status_error};
 pub(crate) use runtime::sleep;

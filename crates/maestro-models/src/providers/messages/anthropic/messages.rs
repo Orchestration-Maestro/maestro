@@ -8,14 +8,12 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::arguments::json_parse::whitespace;
+use crate::projection::IMAGE_PLACEHOLDER;
 use crate::projection::normalize_tool_call_id;
 use crate::{
     AssistantContent, AssistantMessage, Context, JsonObject, Message, Model, Tool,
     ToolResultMessage, UserBlock, UserContent, transform_messages,
 };
-
-/// Placeholder for a tool result that holds only images.
-const IMAGE_PLACEHOLDER: &str = "(see attached image)";
 
 /// Marker that asks the service to cache everything up to the marked block.
 #[derive(Clone, Copy, Serialize)]

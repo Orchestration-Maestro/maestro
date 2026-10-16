@@ -121,3 +121,49 @@ pub(crate) fn layer_request_headers(
     }
     Ok(())
 }
+
+/// Insert headers under lowercase names; a later insertion replaces an earlier one.
+pub(crate) fn layer(
+    layered: &mut IndexMap<String, String>,
+    source: impl IntoIterator<Item = (String, String)>,
+) {
+    for (mut name, value) in source {
+        name.make_ascii_lowercase();
+        layered.insert(name, value);
+    }
+}
+
+/// Copy the entries of a header layer that the model or caller owns.
+pub(crate) fn copied(
+    source: &IndexMap<String, String>,
+) -> impl Iterator<Item = (String, String)> + '_ {
+    source
+        .iter()
+        .map(|(name, value)| (name.clone(), value.clone()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Layers replace by normalized name without validating earlier values.
+    #[test]
+    fn header_layer_keeps_order_and_final_values() {
+        let rows: Vec<serde_json::Value> = serde_json::from_str(include_str!(
+            "../../../tests/fixtures/provider_local_rules.json"
+        ))
+        .unwrap();
+        for row in rows.iter().filter(|row| row["kind"] == "headers") {
+            let mut actual = IndexMap::new();
+            for source in row["input"]["layers"].as_array().unwrap() {
+                let source: IndexMap<String, String> =
+                    serde_json::from_value(source.clone()).unwrap();
+                layer(&mut actual, copied(&source));
+            }
+            let actual: Vec<_> = actual.into_iter().collect();
+            let expected: Vec<(String, String)> =
+                serde_json::from_value(row["expected"]["entries"].clone()).unwrap();
+            assert_eq!(actual, expected);
+        }
+    }
+}

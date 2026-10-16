@@ -12,8 +12,7 @@ a stream (the root export of the same name settles it as an error stream; see th
 [linkage guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/module-linkage.md)), then uses the shared simple budget and reasoning selection. Raw calls
 also fall back to `OPENAI_API_KEY` after explicit and provider keys.
 
-Cache retention selects an explicit option, otherwise the exact `long` value of
-`MAESTRO_CACHE_RETENTION`, otherwise short. Long retention is sent only when the
+Cache retention follows the shared [options policy](../model-options.md#cache-retention). Long retention is sent only when the
 model compatibility permits it. Disabling `sendSessionIdHeader` leaves generated
 `x-client-request-id` enabled for a nonempty cache session. Cache none suppresses
 generated affinity and the prompt key, not explicitly supplied headers.

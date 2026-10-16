@@ -9,15 +9,16 @@ use crate::arguments::json_parse::whitespace;
 use crate::options::resolve_api_key;
 use crate::providers::assistant_output::conclude;
 use crate::providers::assistant_output::{fail, initial_message, start_producer};
-use crate::providers::chat::openai_completions::{copied, layer, scope_headers};
+use crate::providers::chat::openai_completions::scope_headers;
 use crate::providers::http::{
-    HttpRequest, RequestFailure, SseMessages, sdk_status_failure, send_with_status_error,
+    HttpRequest, RequestFailure, SseMessages, copied, layer, sdk_status_failure,
+    send_with_status_error,
 };
 use crate::providers::json_text::compact_json;
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Model,
-    ModelThinkingLevel, SharedAssistantMessage, SimpleStreamOptions, StreamOptions, ThinkingLevel,
-    build_base_options, clamp_thinking_level, get_env_api_key,
+    SharedAssistantMessage, SimpleStreamOptions, StreamOptions, ThinkingLevel, build_base_options,
+    clamp_thinking_level, get_env_api_key,
 };
 use futures_util::stream;
 use indexmap::IndexMap;
@@ -193,13 +194,8 @@ pub fn stream_simple_azure_openai_responses(
     let reasoning_effort = options
         .as_ref()
         .and_then(|o| o.reasoning)
-        .and_then(|level| match clamp_thinking_level(&model, level.into()) {
-            ModelThinkingLevel::Off => None,
-            ModelThinkingLevel::Minimal => Some(ThinkingLevel::Minimal),
-            ModelThinkingLevel::Low => Some(ThinkingLevel::Low),
-            ModelThinkingLevel::Medium => Some(ThinkingLevel::Medium),
-            ModelThinkingLevel::High => Some(ThinkingLevel::High),
-            ModelThinkingLevel::Xhigh => Some(ThinkingLevel::Xhigh),
+        .and_then(|level| {
+            crate::reasoning_from_thinking_level(&clamp_thinking_level(&model, level.into()))
         });
     drop(key);
     drop(options);

@@ -205,7 +205,7 @@ fn tool_message(tool: &crate::ToolResultMessage) -> ChatMessage<'_> {
         .any(|block| matches!(block, UserBlock::Image(_)));
     let text = if text.is_empty() {
         if has_images {
-            "(see attached image)"
+            crate::projection::IMAGE_PLACEHOLDER
         } else {
             "(no tool output)"
         }

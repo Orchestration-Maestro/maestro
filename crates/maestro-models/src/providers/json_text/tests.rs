@@ -102,3 +102,29 @@ fn unread_surrogate_names_do_not_hide_read_members() {
         );
     }
 }
+
+/// Zero signs normalize, while every nonzero report keeps its binary64 value.
+#[test]
+fn reported_usage_canonicalizes_only_missing_and_zero() {
+    let rows: Vec<serde_json::Value> = serde_json::from_str(include_str!(
+        "../../../tests/fixtures/provider_local_rules.json"
+    ))
+    .unwrap();
+    for row in rows.iter().filter(|row| row["kind"] == "usage") {
+        let raw = row["input"]["raw"]
+            .as_str()
+            .map(|text| serde_json::from_str::<Box<serde_json::value::RawValue>>(text).unwrap());
+        let actual = super::or_zero(raw.as_deref().and_then(super::raw_number));
+        let expected = &row["expected"];
+        if let Some(number) = expected["number"].as_f64() {
+            assert_eq!(actual.to_bits(), number.to_bits());
+        } else {
+            assert_eq!(actual.to_bits(), f64::INFINITY.to_bits());
+            assert_eq!(expected["number"], "Infinity");
+        }
+        assert_eq!(
+            actual == 0.0 && actual.is_sign_negative(),
+            expected["negativeZero"].as_bool().unwrap()
+        );
+    }
+}

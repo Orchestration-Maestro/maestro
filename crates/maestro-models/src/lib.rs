@@ -21,7 +21,7 @@ pub mod catalog_generation;
 mod options;
 pub use options::{
     AdjustedMaxTokens, adjust_max_tokens_for_thinking, build_base_options, clamp_reasoning,
-    is_context_overflow,
+    is_context_overflow, reasoning_from_thinking_level,
 };
 /// Conversation adaptation for the destination model.
 mod projection;
@@ -103,7 +103,7 @@ pub use providers::response_sessions::openai_codex_responses::{
     OpenAICodexResponsesOptions, OpenAICodexWebSocketDebugStats, stream_openai_codex_responses,
 };
 
-pub use providers::json_text::{compact_json, parsed_arguments};
+pub use providers::json_text::compact_json;
 
 #[cfg(test)]
 pub mod tests;

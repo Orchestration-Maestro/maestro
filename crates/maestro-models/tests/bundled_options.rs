@@ -468,3 +468,53 @@ fn simple_key_selection_stays_shared_across_existing_providers() -> TestResult {
         assert_selected_key,
     )
 }
+
+/// Later caller spelling wins, including when the model supplied two aliases.
+#[test]
+fn later_header_spelling_wins_over_older_alias() -> TestResult {
+    let _registry = bundled::registry();
+    let rows: Vec<Value> =
+        serde_json::from_str(include_str!("fixtures/provider_local_rules.json"))?;
+    for row in rows.iter().filter(|row| row["kind"] == "headers") {
+        for api in [
+            "openai-completions",
+            "anthropic-messages",
+            "openai-responses",
+            "azure-openai-responses",
+        ] {
+            reset_api_providers();
+            let layers = row["input"]["layers"].as_array().ok_or("layers")?;
+            let (mut common, requests) = common(api);
+            common.headers = Some(serde_json::from_value(layers[1].clone())?);
+            let model = description(api, &json!({"headers": layers[0]}))?;
+            let result = block_on(false, async {
+                Ok(stream(
+                    model,
+                    bundled::conversation()?,
+                    Some(ProviderStreamOptions {
+                        common,
+                        ..ProviderStreamOptions::default()
+                    }),
+                )?
+                .result()
+                .await)
+            })?;
+            assert!(
+                bundled::error_of(&result).is_none(),
+                "{api}: request failed"
+            );
+            let requests = bundled::recorded(&requests);
+            assert_eq!(requests.len(), 1);
+            let actual: Vec<_> = requests[0]
+                .headers
+                .iter()
+                .filter(|(name, _)| matches!(name.as_str(), "x-z" | "x-a" | "x-b" | "x-probe"))
+                .cloned()
+                .collect();
+            let expected: Vec<(String, String)> =
+                serde_json::from_value(row["expected"]["entries"].clone())?;
+            assert_eq!(actual, expected, "{api}: custom header order or value");
+        }
+    }
+    Ok(())
+}
