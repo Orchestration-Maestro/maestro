@@ -13,3 +13,6 @@ pub use selector::{
     SessionListProgress, SessionSelectorCallbacks, SessionSelectorComponent,
     SessionSelectorOptions, SessionsFuture, SessionsLoader,
 };
+
+mod delete_session_file;
+pub use delete_session_file::{SessionFileOperations, TrashResult};

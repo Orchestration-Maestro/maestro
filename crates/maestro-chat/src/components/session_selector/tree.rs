@@ -10,7 +10,7 @@ pub(super) struct FlatSessionNode {
 }
 /// Builds canonical links while retaining all eligible original occurrences.
 pub(super) fn build_session_tree(
-    sessions: &[SessionInfo],
+    sessions: &[std::rc::Rc<SessionInfo>],
     eligible: &[usize],
     paths: &dyn ResourceOperations,
 ) -> Vec<FlatSessionNode> {

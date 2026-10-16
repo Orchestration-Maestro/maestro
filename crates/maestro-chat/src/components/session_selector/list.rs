@@ -1,6 +1,7 @@
 //! Searchable session records with live row presentation.
 use super::tree::{FlatSessionNode, build_session_tree};
-use crate::{NameFilter, SortMode, filter_and_sort_sessions};
+use crate::components::session_selector_search::filter_session_records;
+use crate::{NameFilter, SortMode};
 use maestro_app::{ResourceOperations, SessionInfo, canonicalize_path, is_whitespace_scalar};
 use maestro_theme::{LiveTheme, Theme, ThemeBg, ThemeColor, paint};
 use maestro_tui::tui::{FocusFlag, Focusable, InputHandler};
@@ -10,9 +11,13 @@ use std::{
     rc::Rc,
 };
 mod controls;
+mod mutations;
 use controls::Controls;
+use mutations::Mutations;
 /// Constructor policies and supplied live observations.
 pub struct SessionListOptions {
+    /// Existing owner for asynchronous mutation work.
+    pub runtime: Rc<dyn maestro_tui::tui::TuiRuntime>,
     /// Show each record's working directory.
     pub show_cwd: bool,
     /// Initial ordering policy.
@@ -37,7 +42,7 @@ type Selection = Rc<dyn Fn(&str)>;
 /// Original session records and their selected display position.
 pub struct SessionList {
     /// Owned immutable record snapshot.
-    sessions: RefCell<Rc<Vec<SessionInfo>>>,
+    sessions: RefCell<Rc<Vec<Rc<SessionInfo>>>>,
     /// Original occurrences in visible order.
     visible: RefCell<Rc<Vec<FlatSessionNode>>>,
     /// Live membership policy.
@@ -58,6 +63,8 @@ pub struct SessionList {
     cancel: RefCell<Option<Rc<dyn Fn()>>>,
     /// Ordered controls and retained named-filter manager.
     controls: Controls,
+    /// Replaceable mutation notifications.
+    mutations: Mutations,
     /// Independent parent focus forwarding to Input.
     focus: FocusFlag,
     /// Selected visible position.
@@ -88,8 +95,9 @@ impl SessionList {
             select: RefCell::default(),
             cancel: RefCell::default(),
             controls: Controls::new(),
+            mutations: Mutations::default(),
             focus: FocusFlag::forwarding(input.clone()),
-            sessions: RefCell::new(Rc::new(sessions)),
+            sessions: RefCell::new(Rc::new(sessions.into_iter().map(Rc::new).collect())),
             selected: Cell::new(0),
             input,
             options,
@@ -124,10 +132,13 @@ impl SessionList {
     }
     /// Replaces records and working-directory display without clearing search.
     pub fn set_sessions(&self, sessions: Vec<SessionInfo>, show_cwd: bool) {
-        self.install_sessions(Rc::new(sessions), show_cwd);
+        self.install_sessions(
+            Rc::new(sessions.into_iter().map(Rc::new).collect()),
+            show_cwd,
+        );
     }
     /// Installs an immutable shared discovery snapshot.
-    pub(super) fn install_sessions(&self, sessions: Rc<Vec<SessionInfo>>, show_cwd: bool) {
+    pub(super) fn install_sessions(&self, sessions: Rc<Vec<Rc<SessionInfo>>>, show_cwd: bool) {
         let old = self.sessions.replace(sessions);
         drop(old);
         self.show_cwd.set(show_cwd);
@@ -166,12 +177,13 @@ impl SessionList {
         let identities: std::collections::HashMap<_, _> = sessions
             .iter()
             .enumerate()
-            .map(|(i, s)| (std::ptr::from_ref(s), i))
+            .map(|(i, s)| (std::ptr::from_ref(s.as_ref()), i))
             .collect();
-        let eligible: Vec<_> = filter_and_sort_sessions(&sessions, &query, sort, names)
-            .into_iter()
-            .map(|s| identities[&std::ptr::from_ref(s)])
-            .collect();
+        let eligible: Vec<_> =
+            filter_session_records(sessions.iter().map(AsRef::as_ref), &query, sort, names)
+                .into_iter()
+                .map(|s| identities[&std::ptr::from_ref(s)])
+                .collect();
         let visible =
             if sort == SortMode::Threaded && query.trim_matches(is_whitespace_scalar).is_empty() {
                 build_session_tree(&sessions, &eligible, self.options.paths.as_ref())
@@ -225,9 +237,7 @@ impl SessionList {
     /// Emits one record through the existing cell, style and clipping owners.
     fn row(&self, session: &SessionInfo, prefix: &str, selected: bool, width: usize) -> String {
         let confirming = self.confirming.borrow().as_deref() == Some(session.path.as_str());
-        let active = self.current.as_ref().is_some_and(|current| {
-            canonicalize_path(&session.path, self.options.paths.as_ref()) == *current
-        });
+        let active = self.is_current_path(&session.path);
         let message = display_text(session.name.as_deref().unwrap_or(&session.first_message));
         let right = self.metadata(session);
         let allowance = width
@@ -407,7 +417,7 @@ impl Focusable for SessionList {
 impl InputHandler for SessionList {
     fn handle_input(&self, data: &str) {
         let bindings = maestro_tui::get_keybindings();
-        if self.control_input(data) {
+        if self.confirmation_input(data) || self.control_input(data) || self.mutation_input(data) {
             return;
         }
         let last = self.visible.borrow().len().saturating_sub(1);

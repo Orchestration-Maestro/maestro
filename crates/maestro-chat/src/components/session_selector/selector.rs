@@ -1,4 +1,5 @@
 //! Retained scope discovery composed from the existing header and list.
+use super::delete_session_file::SessionFileOperations;
 use super::{
     SessionList, SessionListOptions, SessionScope, SessionSelectorHeader,
     SessionSelectorHeaderOptions, StatusMessage,
@@ -10,6 +11,7 @@ use maestro_tui::{
     Component, Container, FocusFlag, Focusable, KeybindingsManager, Spacer,
     tui::{InputHandler, TuiRuntime},
 };
+use maestro_tui::{Input, tui::LocalFuture};
 use std::{
     cell::{Cell, RefCell},
     error::Error,
@@ -18,6 +20,12 @@ use std::{
     rc::{Rc, Weak},
     time::Duration,
 };
+#[path = "mutations.rs"]
+mod mutations;
+#[path = "rename.rs"]
+mod rename;
+/// Owned asynchronous name-save callable.
+type RenameSession = Rc<dyn Fn(&str, &str) -> LocalFuture>;
 /// Owned discovery progress notification.
 pub type SessionListProgress = Rc<dyn Fn(usize, usize)>;
 /// Caller-owned asynchronous discovery result.
@@ -39,7 +47,11 @@ pub struct SessionSelectorOptions {
     /// Retained live manager for named filtering; omitted values load application defaults.
     pub keybindings: Option<KeybindingsManager>,
     /// Explicit rename help visibility.
-    pub show_rename_hint: bool,
+    pub show_rename_hint: Option<bool>,
+    /// Saves a new session name through caller-owned work.
+    pub rename_session: Option<RenameSession>,
+    /// Supplied deletion effects, or native effects when omitted.
+    pub file_operations: Option<Rc<dyn SessionFileOperations>>,
     /// Current authored session path.
     pub current_session_file_path: Option<String>,
     /// Published presentation palette.
@@ -60,11 +72,13 @@ pub struct SessionSelectorOptions {
 /// One scope's successful snapshot and pending discovery.
 struct Discovery {
     /// Successful result, distinct from unknown or failed discovery.
-    records: RefCell<Option<Rc<Vec<SessionInfo>>>>,
+    records: RefCell<Option<Rc<Vec<Rc<SessionInfo>>>>>,
     /// Whether the admitted future is unsettled.
     loading: Cell<bool>,
     /// Caller discovery effect.
     loader: SessionsLoader,
+    /// Identity of the latest admitted request.
+    token: RefCell<Rc<()>>,
 }
 /// Shared policy retained by list callbacks without a back-reference cycle.
 struct State {
@@ -88,11 +102,29 @@ struct State {
     cancel: Rc<dyn Fn()>,
     /// Whether empty discovery already delivered cancellation.
     cancelled: Cell<bool>,
+    /// Non-owning original layout destination.
+    container: Weak<Container>,
+    /// Stable rename editor shared across openings.
+    rename_input: Rc<Input>,
+    /// Authored target retained while rename is visible.
+    rename_target: RefCell<Option<String>>,
+    /// Caller-owned save operation.
+    rename: Option<RenameSession>,
+    /// Prepared text palette and live border owner.
+    theme: LiveTheme,
+    /// Live decoration policy for prepared text.
+    styles: Rc<dyn Fn() -> bool>,
+    /// Retained deletion effects.
+    file_operations: Option<Rc<dyn SessionFileOperations>>,
+    /// Existing existence and canonical identity owner.
+    paths: Rc<dyn ResourceOperations>,
 }
 /// Session discovery component with an editable inherited child array.
 pub struct SessionSelectorComponent {
     /// Original layout owner.
-    container: Container,
+    container: Rc<Container>,
+    /// Shared mode and discovery owner.
+    state: Rc<State>,
     /// Retained searchable list.
     list: Rc<SessionList>,
     /// Independent focus forwarding to the list.
@@ -113,46 +145,26 @@ impl SessionSelectorComponent {
             .keybindings
             .take()
             .map_or_else(default_keybindings, Ok)?;
-        let header = create_header(&options);
-        let list = SessionList::new(
-            Vec::new(),
-            SessionListOptions {
-                show_cwd: false,
-                sort_mode: SortMode::Threaded,
-                name_filter: NameFilter::All,
-                current_session_file_path: options.current_session_file_path,
-                theme: options.theme.clone(),
-                now_ms: options.now_ms,
-                home: options.home,
-                paths: options.paths,
-                styles_enabled: options.styles_enabled,
-            },
+        let container = Rc::new(Container::new());
+        let list = create_list(&mut options, keybindings);
+        let state = State::new(
+            options,
+            [current_sessions_loader, all_sessions_loader],
+            &list,
+            &container,
+            callbacks.on_cancel.clone(),
         );
-        list.configure_keybindings(keybindings);
-        let state = Rc::new(State {
-            scope: Cell::new(SessionScope::Current),
-            sort: Cell::new(SortMode::Threaded),
-            name: Cell::new(NameFilter::All),
-            discoveries: [current_sessions_loader, all_sessions_loader].map(|loader| Discovery {
-                records: RefCell::default(),
-                loading: Cell::new(false),
-                loader,
-            }),
-            list: Rc::downgrade(&list),
-            header: header.clone(),
-            runtime: options.runtime,
-            render: options.request_render,
-            cancel: callbacks.on_cancel.clone(),
-            cancelled: Cell::new(false),
-        });
         state.wire(&list, callbacks);
-        let container = layout(list.clone(), header, options.theme);
+        state.wire_rename(&list);
+        state.wire_mutations(&list);
+        state.build_layout(list.clone(), true);
         let component = Rc::new(Self {
             container,
-            focus: FocusFlag::forwarding(list.clone()),
+            focus: FocusFlag::forwarding_all(vec![list.clone(), state.rename_input.clone()]),
+            state: state.clone(),
             list,
         });
-        state.start(SessionScope::Current);
+        state.start(SessionScope::Current, LoadReason::Initial);
         Ok(component)
     }
     /// Returns the same retained list, including its mutable callback slots.
@@ -162,6 +174,43 @@ impl SessionSelectorComponent {
     }
 }
 impl State {
+    /// Retains discovery, presentation and mutation owners with weak layout edges.
+    fn new(
+        options: SessionSelectorOptions,
+        loaders: [SessionsLoader; 2],
+        list: &Rc<SessionList>,
+        container: &Rc<Container>,
+        cancel: Rc<dyn Fn()>,
+    ) -> Rc<Self> {
+        let header = create_header(&options);
+        let rename_input = Rc::new(Input::new());
+        Rc::new(Self {
+            scope: Cell::new(SessionScope::Current),
+            sort: Cell::new(SortMode::Threaded),
+            name: Cell::new(NameFilter::All),
+            discoveries: loaders.map(|loader| Discovery {
+                records: RefCell::default(),
+                loading: Cell::new(false),
+                loader,
+                token: RefCell::new(Rc::new(())),
+            }),
+            list: Rc::downgrade(list),
+            header,
+            runtime: options.runtime,
+            render: options.request_render,
+            cancel,
+            cancelled: Cell::new(false),
+            container: Rc::downgrade(container),
+            rename_input,
+            rename_target: RefCell::default(),
+            rename: options.rename_session,
+            theme: options.theme,
+            styles: options.styles_enabled,
+            file_operations: super::delete_session_file::operations(options.file_operations),
+            paths: options.paths,
+        })
+    }
+
     /// Retains each callback independently, with only a weak list edge.
     fn wire(self: &Rc<Self>, list: &SessionList, callbacks: SessionSelectorCallbacks) {
         let selected_header = self.header.clone();
@@ -228,44 +277,67 @@ impl State {
         }]
     }
     /// Publishes loading before invoking caller code and scheduling owned work.
-    fn start(self: &Rc<Self>, scope: SessionScope) {
+    fn start(self: &Rc<Self>, scope: SessionScope, reason: LoadReason) {
+        let future = self.load(scope, reason);
+        self.runtime.spawn_local(future);
+    }
+    /// Admits discovery synchronously, returning its owned completion.
+    fn load(self: &Rc<Self>, scope: SessionScope, reason: LoadReason) -> LocalFuture {
         let Some(list) = self.list.upgrade() else {
-            return;
+            return Box::pin(async { Ok(()) });
         };
         let discovery = self.discovery(scope);
+        let token = Rc::new(());
+        discovery.token.replace(token.clone());
         discovery.loading.set(true);
         self.header.set_scope(scope);
         self.header.set_loading(true);
         (self.render)();
         let weak = Rc::downgrade(self);
+        let progress_token = token.clone();
         let progress = Rc::new(move |loaded, total| {
-            if let Some(state) = weak.upgrade().filter(|state| state.scope.get() == scope) {
+            if let Some(state) = weak.upgrade().filter(|state| {
+                state.scope.get() == scope
+                    && Rc::ptr_eq(&state.discovery(scope).token.borrow(), &progress_token)
+            }) {
                 state.header.set_progress(loaded, total);
                 (state.render)();
             }
         });
         let future = (discovery.loader)(Some(progress));
         let state = self.clone();
-        self.runtime.spawn_local(Box::pin(async move {
-            state.complete(scope, &list, future.await);
+        let request = LoadRequest {
+            scope,
+            reason,
+            token,
+            list,
+        };
+        Box::pin(async move {
+            state.complete(request, future.await);
             Ok(())
-        }));
+        })
     }
     /// Records settled results before publishing only the active scope.
-    fn complete(
-        &self,
-        scope: SessionScope,
-        list: &SessionList,
-        result: Result<Vec<SessionInfo>, Box<dyn Error>>,
-    ) {
+    fn complete(&self, request: LoadRequest, result: Result<Vec<SessionInfo>, Box<dyn Error>>) {
+        let LoadRequest {
+            scope,
+            reason,
+            token,
+            list,
+        } = request;
         let discovery = self.discovery(scope);
+        if !Rc::ptr_eq(&discovery.token.borrow(), &token) {
+            return;
+        }
         discovery.loading.set(false);
         match result {
             Ok(records) => {
-                discovery.records.replace(Some(Rc::new(records)));
+                discovery
+                    .records
+                    .replace(Some(Rc::new(records.into_iter().map(Rc::new).collect())));
                 if scope == self.scope.get() {
                     self.header.set_loading(false);
-                    self.publish(list);
+                    self.publish(&list);
                     (self.render)();
                 }
                 if self.scope.get() == SessionScope::All
@@ -289,7 +361,7 @@ impl State {
                     ))),
                     Some(Duration::from_millis(4000)),
                 );
-                if scope == SessionScope::Current {
+                if matches!(reason, LoadReason::Initial) {
                     list.install_sessions(Rc::default(), false);
                 }
                 (self.render)();
@@ -319,7 +391,7 @@ impl State {
             && discovery.records.borrow().is_none()
             && !discovery.loading.get()
         {
-            self.start(scope);
+            self.start(scope, LoadReason::Toggle);
             return;
         }
         self.header.set_loading(discovery.loading.get());
@@ -330,30 +402,6 @@ impl State {
         }
         (self.render)();
     }
-}
-/// Composes original children through the toolkit's one container owner.
-fn layout(list: Rc<SessionList>, header: Rc<SessionSelectorHeader>, theme: LiveTheme) -> Container {
-    let container = Container::new();
-    container.add_child(Rc::new(Spacer::new(1)));
-    let border_theme = theme.clone();
-    let border = Rc::new(move |text: &str| {
-        paint(
-            border_theme.get().ok().as_deref(),
-            &ThemeColor::Accent,
-            text,
-        )
-    });
-    container.add_child(Rc::new(DynamicBorder::new(
-        theme.clone(),
-        Some(border.clone()),
-    )));
-    container.add_child(Rc::new(Spacer::new(1)));
-    container.add_child(header);
-    container.add_child(Rc::new(Spacer::new(1)));
-    container.add_child(list);
-    container.add_child(Rc::new(Spacer::new(1)));
-    container.add_child(Rc::new(DynamicBorder::new(theme, Some(border))));
-    container
 }
 impl Component for SessionSelectorComponent {
     fn render(&self, width: usize) -> Vec<String> {
@@ -374,7 +422,15 @@ impl Component for SessionSelectorComponent {
 }
 impl InputHandler for SessionSelectorComponent {
     fn handle_input(&self, data: &str) {
-        self.list.handle_input(data);
+        if self.state.rename_target.borrow().is_some() {
+            if maestro_tui::get_keybindings().matches(data, "tui.select.cancel") {
+                self.state.exit_rename();
+            } else {
+                self.state.rename_input.handle_input(data);
+            }
+        } else {
+            self.list.handle_input(data);
+        }
     }
 }
 impl Focusable for SessionSelectorComponent {
@@ -397,7 +453,11 @@ fn create_header(options: &SessionSelectorOptions) -> Rc<SessionSelectorHeader> 
             styles_enabled: options.styles_enabled.clone(),
         },
     );
-    header.set_show_rename_hint(options.show_rename_hint);
+    header.set_show_rename_hint(
+        options
+            .show_rename_hint
+            .unwrap_or(options.rename_session.is_some()),
+    );
     header
 }
 /// Loads a shared native manager, retaining in-memory defaults on browser targets.
@@ -413,4 +473,50 @@ fn default_keybindings() -> std::io::Result<KeybindingsManager> {
             &maestro_app::KeybindingsManager::default(),
         ))
     }
+}
+
+/// Why an admitted discovery is running.
+#[derive(Clone, Copy)]
+enum LoadReason {
+    /// First constructor population.
+    Initial,
+    /// Mutation reconciliation.
+    Refresh,
+    /// Uncached scope selection.
+    Toggle,
+}
+/// Owned request identity and publication destination.
+struct LoadRequest {
+    /// Discovery scope.
+    scope: SessionScope,
+    /// Failure publication policy.
+    reason: LoadReason,
+    /// Admission identity.
+    token: Rc<()>,
+    /// Retained publication destination.
+    list: Rc<SessionList>,
+}
+
+/// Builds the original list before mutation callbacks are installed.
+fn create_list(
+    options: &mut SessionSelectorOptions,
+    keybindings: KeybindingsManager,
+) -> Rc<SessionList> {
+    let list = SessionList::new(
+        Vec::new(),
+        SessionListOptions {
+            runtime: options.runtime.clone(),
+            show_cwd: false,
+            sort_mode: SortMode::Threaded,
+            name_filter: NameFilter::All,
+            current_session_file_path: options.current_session_file_path.take(),
+            theme: options.theme.clone(),
+            now_ms: options.now_ms.clone(),
+            home: options.home.clone(),
+            paths: options.paths.clone(),
+            styles_enabled: options.styles_enabled.clone(),
+        },
+    );
+    list.configure_keybindings(keybindings);
+    list
 }

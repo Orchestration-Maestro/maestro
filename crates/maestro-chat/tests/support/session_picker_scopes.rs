@@ -93,7 +93,9 @@ impl Harness {
         );
         let mut options = SessionSelectorOptions {
             keybindings: Some(manager(Vec::new())),
-            show_rename_hint: false,
+            show_rename_hint: Some(false),
+            rename_session: None,
+            file_operations: None,
             current_session_file_path: None,
             theme: world.theme.clone(),
             runtime: world.runtime.handle(),
@@ -304,7 +306,7 @@ pub fn rename_hint() {
     replay(
         "session_selector_rename_hint_accepts_explicit_policy",
         |i: Hint, e: Single| {
-            let h = Harness::configured(|o| o.show_rename_hint = i.show.unwrap_or(false));
+            let h = Harness::configured(|o| o.show_rename_hint = i.show);
             h.current_default();
             assert_eq!(h.frame(120), e.frame);
         },
@@ -1280,3 +1282,7 @@ fn assert_membership(h: &Harness, unnamed: bool) {
     assert_eq!(frame.contains("Unnamed marker"), unnamed);
     assert!(frame.contains("Named marker"));
 }
+
+/// Mutation replay shares controlled discovery and complete frame observations.
+#[path = "session_picker/mutations.rs"]
+pub mod mutations;
