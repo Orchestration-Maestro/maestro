@@ -1,18 +1,22 @@
 //! Source-derived document preparation observations.
 use super::document::insert_runtime;
-use base64::{Engine as _, engine::general_purpose::STANDARD};
-
-/// Decode the resource at the public document boundary for program assertions.
+/// Read parser-restored program text from the carrier envelopes.
 fn programs(html: &str) -> String {
-    html.split("data:text/javascript;charset=utf-8;base64,")
+    html.split("<svg")
         .skip(1)
-        .map(|resource| {
-            String::from_utf8(
-                STANDARD
-                    .decode(resource.split('"').next().unwrap())
-                    .unwrap(),
-            )
-            .unwrap()
+        .map(|part| {
+            part.split_once("<script")
+                .unwrap()
+                .1
+                .split_once('>')
+                .unwrap()
+                .1
+                .split_once("</script>")
+                .unwrap()
+                .0
+                .replace("&#13;", "\r")
+                .replace("&lt;", "<")
+                .replace("&amp;", "&")
         })
         .collect::<Vec<_>>()
         .join("\n")
@@ -40,7 +44,7 @@ fn repl_wrapper_treats_html_literals_as_code() {
     assert!(html.starts_with("<!DOCTYPE html>\n<html>\n<head>\n\tRUNTIME"));
     let program = programs(&html);
     assert!(program.contains(source));
-    assert!(html.contains("<script type=\"module\" src="));
+    assert!(html.contains("<svg display=\"none\"><script type=\"module\">"));
     assert!(program.contains("await window.complete(null, returnValue)"));
     assert!(program.contains("await window.complete({"));
     assert!(programs(&super::document::wrap("", "RUNTIME")).contains("const userCodeFunc"));
@@ -49,17 +53,24 @@ fn repl_wrapper_treats_html_literals_as_code() {
 }
 
 #[test]
-fn script_resources_preserve_literal_terminators() {
-    let source = "雪'</ScRiPt>\\x </scripted>";
-    let resource = super::document::script_resource(source);
-    let encoded = resource.split_once(',').unwrap().1;
+fn inline_carriers_preserve_text_and_exact_boot_scripts() {
+    let source = "&<\r>\"\0雪";
+    let encoded = "&amp;&lt;&#13;>\"\0雪";
+    let runtime = super::runtime::assemble("id", source, &[], true).unwrap();
+    assert!(runtime.contains(&format!("<template><svg><script>window.sandboxId = \"id\";\n{encoded}\n\n</script></svg></template><script>{{const t=document.currentScript.previousElementSibling,s=t.content.firstChild.firstChild;t.replaceWith(s);s.remove()}}</script>")));
+    let html = super::document::wrap(source, "RUNTIME");
+    let program = include_str!("repl.js")
+        .replacen("__USER_CODE__", source, 1)
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('\r', "&#13;");
     assert_eq!(
-        String::from_utf8(STANDARD.decode(encoded).unwrap()).unwrap(),
-        source
+        html,
+        format!(
+            "<!DOCTYPE html>\n<html>\n<head>\n\tRUNTIME\n</head>\n<body>\n\t<svg display=\"none\"><script type=\"module\">{program}</script></svg><script>document.currentScript.previousElementSibling.remove()</script>\n</body>\n</html>"
+        )
     );
-    let html = super::document::wrap("return '</SCRIPT>';", "RUNTIME");
-    assert!(programs(&html).contains("return '</SCRIPT>';"));
-    assert_eq!(html.matches("</script>").count(), 1);
+    assert!(programs(&html).contains(source));
 }
 
 #[test]
@@ -82,7 +93,10 @@ fn standalone_documents_omit_online_helpers() {
                 !standalone
             );
             assert!(html.contains("font-size: initial;"));
-            assert_eq!(html.contains("<script type=\"module\" src="), !artifact);
+            assert_eq!(
+                html.contains("<svg display=\"none\"><script type=\"module\">"),
+                !artifact
+            );
             assert!(!program.contains("window.console.log ="));
         }
     }

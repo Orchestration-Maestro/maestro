@@ -12,24 +12,20 @@ export function decode(value) {
 }
 export function finish() { document.querySelectorAll('[data-sandbox-test]').forEach(node => node.remove()); }
 const stripComments = text => text.split('\n').filter(line => !line.trimStart().startsWith('//')).join('\n');
-function programSources(html) {
-    return [...new DOMParser().parseFromString(html,'text/html').querySelectorAll('script')].map(script=>script.src ? new TextDecoder().decode(Uint8Array.from(atob(script.src.split(',')[1]), c=>c.charCodeAt(0))) : script.textContent);
+export function programSources(html) {
+    const parsed = new DOMParser().parseFromString(html,'text/html');
+    return [...parsed.querySelector('template').content.querySelectorAll('script'), ...parsed.querySelectorAll('svg script')].map(script=>script.textContent);
 }
 export async function observe_document(name, html, output) {
     const scripts = programSources(html);
-    let suffix = html.slice(html.indexOf('</script>') + 9);
-    const parsed = new DOMParser().parseFromString(html,'text/html');
-    [...parsed.querySelectorAll('script[src]')].forEach((script,index)=> {
-        const original = script.outerHTML;
-        const inline = index === 0 ? '<script>\n'+scripts[index]+'\n</script>' : '<script type="module">\n'+scripts[index]+'\t</script>';
-        html = html.replace(original,inline);
-        suffix = suffix.replace(original,inline);
-    });
+    html=html.replace(/<template><svg><script>[\s\S]*?<\/script><\/svg><\/template><script>[\s\S]*?<\/script>/,'<script></script>');
+    if(scripts[1])html=html.replace(/<svg display="none"><script type="module">[\s\S]*?<\/script><\/svg><script>[\s\S]*?<\/script>/,()=>'<script type="module">\n'+scripts[1]+'\t</script>');
+    const suffix = html.slice(html.indexOf('</script>') + 9);
     equal(html.slice(0,html.indexOf('<style>')), output.prefix, name + ' prefix');
     equal(stripComments(suffix), stripComments(output.suffix), name + ' suffix');
     equal(scripts.length, output.script_count, name + ' scripts');
-    equal(html.includes('window.sendRuntimeMessage'), output.bridge, name + ' bridge');
-    equal(html.includes("document.addEventListener('click'"), output.navigation, name + ' navigation');
+    equal(scripts[0].includes('window.sendRuntimeMessage'), output.bridge, name + ' bridge');
+    equal(scripts[0].includes("document.addEventListener('click'"), output.navigation, name + ' navigation');
     let parseError = false; try { new Function(scripts[0]); } catch { parseError = true; }
     equal(parseError, output.script_parse_error, name + ' program parse');
     const frame = await realm();
@@ -47,7 +43,7 @@ export async function observe_document(name, html, output) {
             equal([win['1'],win['2'],win.a], [undefined,undefined,3], name + ' native Window indexed setters');
             equal([...win.calls], ['fixture-id'], name + ' native provider');
         }
-        if (name === 'merge_order') { equal([win.a,win.b,win.c], [1,'new',3], name); assert(html.indexOf('window["a"]') < html.indexOf('window["b"]') && html.indexOf('window["b"]') < html.indexOf('window["c"]'), name + ' insertion order'); }
+        if (name === 'merge_order') { equal([win.a,win.b,win.c], [1,'new',3], name); assert(scripts[0].indexOf('window["a"]') < scripts[0].indexOf('window["b"]') && scripts[0].indexOf('window["b"]') < scripts[0].indexOf('window["c"]'), name + ' insertion order'); }
         if (name === 'provider_id_override') { equal(win.sandboxId, 'provider override', name); equal([...win.calls], ['fixture-id'], name + ' invocation id'); }
         const values = {value_null:null, value_string:'</ScRiPt>雪', value_number:0, value_nonfinite:null, value_boolean:true, value_object:{'1':'one','2':'two',b:1,a:2}, value_array:[null,'x',2], value_date:'2020-01-02T03:04:05.000Z', value_typed_array:{'0':1,'1':255}};
         if (name in values) equal(win.value, values[name], name + ' native value');
@@ -126,28 +122,4 @@ export async function navigation(html, inputText, expectedText) {
         equal(events,expected.events,'native resolved navigation '+input.kind);
         equal(event.defaultPrevented,expected.events.length > 0,'default action decision '+input.kind);
     } finally { window.postMessage = original; frame.remove(); }
-}
-
-export async function resource_values(html) {
-    const parsed = new DOMParser().parseFromString(html,'text/html');
-    equal(parsed.querySelectorAll('script').length,2,'both complete program resources survive HTML parsing');
-    assert(parsed.body,'closing wrapper survives');
-    const frame = document.createElement('iframe');
-    frame.setAttribute('sandbox','allow-scripts allow-modals');
-    const result = new Promise(resolve => {
-        const listener = event => {
-            if(event.source === frame.contentWindow && event.data?.type === 'resource-result') {
-                window.removeEventListener('message',listener); resolve(event.data);
-            }
-        };
-        window.addEventListener('message',listener);
-    });
-    frame.srcdoc = html; document.body.append(frame);
-    try {
-        const data = await result;
-        assert(data.error === null,'program completes successfully');
-        assert(data.value === '</ScRiPt>雪<!--<script>','exact raw user value');
-        assert(data.provider === '</ScRiPt>雪<!--<script>','exact raw provider value');
-        assert(data.body,'module sees the intact body');
-    } finally { frame.remove(); }
 }

@@ -1,5 +1,5 @@
 //! Assembly of already-serialized globals and complete provider functions.
-use super::document::script_resource;
+use super::document::head_program;
 use crate::components::sandbox::runtime_message_bridge::{
     RuntimeMessageBridge, RuntimeMessageBridgeOptions, RuntimeMessageContext,
 };
@@ -30,5 +30,5 @@ pub(super) fn assemble(
     if !standalone {
         script.push_str(include_str!("navigation.js"));
     }
-    Ok(include_str!("runtime.html").replacen("__SCRIPT__", &script_resource(&script), 1))
+    Ok(include_str!("runtime.html").replacen("__SCRIPT__", &head_program(&script), 1))
 }

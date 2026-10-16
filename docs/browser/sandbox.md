@@ -27,11 +27,25 @@ provider. Its module's `PrepareHtmlOptions` selects authored-HTML insertion or a
 asynchronous JavaScript wrapper. Standalone documents retain supplied provider
 helpers and data without parent messaging or navigation interception. Provider
 data uses native compact JSON serialization; unsupported values fail rather than
-becoming successful null assignments. Generated programs load from separate UTF-8 data resources, preserving literal
-values without interpreting program text as HTML. Quoted global keys produce valid programs; native Window indexed
+becoming successful null assignments. Programs run as inline parser-inserted
+scripts with their exact text: CR is kept, while U+0000 becomes U+FFFD on the HTML
+parser route. Quoted global keys produce valid programs; native Window indexed
 properties still ignore numeric assignments, as they do for any browser script.
-External HTML and vector-graphic links resolve through native document addresses
-before interception.
+HTML and vector links use native hyperlink state and effective resolved HTTP(S)
+targets, including namespaced and animated vector addresses.
+
+The runtime's inert template moves its parser-created script into the head before
+authored head content. The REPL module's non-rendering vector scaffold is removed
+before execution; no carrier template or vector element remains after loading.
+During runtime execution, `document.currentScript` is an `SVGScriptElement`; the built-in
+providers do not read it. Hosts pin four digests over decoded text content, not encoded
+markup: the runtime, module and these two constant boot scripts (SHA-256):
+
+- Head boot: `7lLUb+wLFQezr+10zcikIzRbnDaVQGyuZnkcXksV7J4=`
+- Body remover: `8q+8kOKrdFrQmwFljSnTFbN67/+QuOXbkIu3Fp6to98=`
+
+Hash policies still refuse unmatched scripts. The carrier adds no script-string
+sink, dynamic evaluation, program URL resource or policy relaxation.
 
 Native HTML parsing accepts recovered markup. Explicit validation errors appear
 as literal preformatted text, with the selected brand pack's background, text,

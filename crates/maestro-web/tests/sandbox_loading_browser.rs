@@ -513,35 +513,20 @@ pub async fn failed_load_releases_native_registration_and_frame() {
     finish();
 }
 
-/// External resources preserve raw template values and script document boundaries.
+/// Inline programs keep exact text, head semantics, policies and module ordering.
 #[wasm_bindgen::prelude::wasm_bindgen]
-pub async fn program_resources_preserve_raw_templates_and_document_boundaries() {
-    let mut sandbox = adapter();
-    let html = sandbox.prepare_html_document(
-        "resource-values",
-        "return String.raw`</ScRiPt>雪<!--<script>`;",
-        &[provider("function(){window.providerValue=String.raw`</ScRiPt>雪<!--<script>`;window.complete=(error,value)=>parent.postMessage({type:'resource-result',error,value,provider:window.providerValue,body:!!document.body},'*');}")],
-        Some(maestro_web::components::sandboxed_iframe::PrepareHtmlOptions {
-            is_html_artifact: false, is_standalone: true,
-        }),
-    ).unwrap();
-    wasm_bindgen_futures::JsFuture::from(resource_values(&html))
-        .await
-        .unwrap();
-    sandbox.remove().unwrap();
+pub async fn inline_programs_preserve_text_policies_and_order() {
+    sandbox_loading_support::programs::program_witness().await;
 }
 
-/// Vector links use their native resolved address during a bubbling click.
+/// Real pointer clicks follow native HTML and animated vector hyperlink state.
 #[wasm_bindgen::prelude::wasm_bindgen]
-pub async fn vector_links_dispatch_resolved_addresses() {
-    let mut sandbox = adapter();
-    let html = sandbox
-        .prepare_html_document("vector", "", &[], None)
-        .unwrap();
-    wasm_bindgen_futures::JsFuture::from(navigation(
-        &html,
-        r#"{"kind":"svg","href":"../diagram"}"#,
-        r#"{"events":[["prevent"],["stop"],["post",{"type":"open-external-url","url":"https://example.org/diagram"},"*"]]}"#,
-    )).await.unwrap();
-    sandbox.remove().unwrap();
+pub async fn effective_links_follow_native_hyperlink_state() {
+    sandbox_loading_support::programs::link_witness().await;
+}
+
+/// Authored policies remain in the head at every runtime insertion point.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn html_artifacts_keep_head_policies_at_each_insertion_point() {
+    sandbox_loading_support::programs::artifact_witness().await;
 }

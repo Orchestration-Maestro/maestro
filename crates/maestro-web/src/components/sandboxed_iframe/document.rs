@@ -1,11 +1,25 @@
-//! Document envelopes with separate program resources; authored HTML is otherwise unchanged.
-use base64::{Engine as _, engine::general_purpose::STANDARD};
+//! Document envelopes carrying parser-created inline programs.
 
-/// Deliver UTF-8 source as a separate resource without HTML interpretation.
-pub(super) fn script_resource(code: &str) -> String {
+/// Encode ampersands, less-than signs and CR for SVG foreign-content program text.
+fn encode_program(code: &str) -> String {
+    code.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('\r', "&#13;")
+}
+
+/// Move the admitted classic script out of an inert template and remove it after execution.
+pub(super) fn head_program(code: &str) -> String {
     format!(
-        "data:text/javascript;charset=utf-8;base64,{}",
-        STANDARD.encode(code)
+        "<template><svg><script>{}</script></svg></template><script>{{const t=document.currentScript.previousElementSibling,s=t.content.firstChild.firstChild;t.replaceWith(s);s.remove()}}</script>",
+        encode_program(code)
+    )
+}
+
+/// Keep the module parser-inserted while removing its non-rendering SVG scaffold.
+fn body_program(code: &str) -> String {
+    format!(
+        "<svg display=\"none\"><script type=\"module\">{}</script></svg><script>document.currentScript.previousElementSibling.remove()</script>",
+        encode_program(code)
     )
 }
 
@@ -26,7 +40,7 @@ pub(super) fn wrap(code: &str, runtime: &str) -> String {
     let program = include_str!("repl.js").replacen("__USER_CODE__", code, 1);
     include_str!("repl.html")
         .replacen("__RUNTIME__", runtime, 1)
-        .replacen("__PROGRAM__", &script_resource(&program), 1)
+        .replacen("__PROGRAM__", &body_program(&program), 1)
 }
 /// Select authored HTML injection independently of standalone runtime selection.
 pub(super) fn prepare(code: &str, runtime: &str, options: super::PrepareHtmlOptions) -> String {
