@@ -40,12 +40,13 @@ impl EndnotesPart {
 fn parse_notes(input: &OwnedXmlElement, name: &str) -> Result<Vec<WmlBaseNote>, DocxError> {
     let xml = parse_xml_string(input.source(), false)?;
     let selected = xml.selected(input)?;
-    Ok(xml
-        .elements(selected, Some(name))
-        .map(|note| WmlBaseNote {
-            id: xml.attr(note, "id").map(str::to_owned),
-            note_type: xml.attr(note, "type").map(str::to_owned),
-            children: parse_selected(&xml, note, input, Framing::Body),
+    xml.elements(selected, Some(name))
+        .map(|note| {
+            Ok(WmlBaseNote {
+                id: xml.attr(note, "id").map(str::to_owned),
+                note_type: xml.attr(note, "type").map(str::to_owned),
+                children: parse_selected(&xml, note, input, Framing::Body)?,
+            })
         })
-        .collect())
+        .collect()
 }

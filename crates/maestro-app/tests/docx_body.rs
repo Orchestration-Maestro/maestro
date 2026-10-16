@@ -230,11 +230,6 @@ fn run_foreign_branches_remain_owned() {
 }
 
 #[test]
-fn alternate_content_is_retained_for_drawing_parser() {
-    check("alternate_content_is_retained_for_drawing_parser");
-}
-
-#[test]
 fn malformed_xml_fails_before_tree_publication() {
     check("malformed_xml_fails_before_tree_publication");
 }
@@ -280,7 +275,7 @@ fn parsed_tree_survives_source_release() {
     use maestro_app::browser::docx_preview::OpenXmlElementData as Data;
     let tree = {
         let source =
-            "<w:p xmlns:w=\"urn:w\"><w:pPr><w:pStyle val=\"outer\"/></w:pPr><w:r><w:rPr><w:rStyle val=\"inner\"/></w:rPr><w:t>kept</w:t><w:drawing/></w:r></w:p>"
+            "<w:p xmlns:w=\"urn:w\"><w:pPr><w:pStyle val=\"outer\"/></w:pPr><w:r><w:rPr><w:rStyle val=\"inner\"/></w:rPr><w:t>kept</w:t><w:commentReference/></w:r></w:p>"
                 .to_owned();
         let xml = parse_xml_string(&source, false).unwrap();
         let input = OwnedXmlElement::new(xml.root());
@@ -295,7 +290,7 @@ fn parsed_tree_survives_source_release() {
     };
     assert_eq!(text, "kept");
     let Data::Unparsed { element, .. } = &tree.nodes[run.base.children[1]].data else {
-        panic!("drawing missing")
+        panic!("comment reference missing")
     };
     let Data::Paragraph { properties } = &paragraph.data else {
         panic!("paragraph missing")
@@ -311,7 +306,7 @@ fn parsed_tree_survives_source_release() {
         properties.style_name.as_ref().unwrap().as_deref(),
         Some("inner")
     );
-    assert_eq!(body_tree::raw(element)["local_name"], "drawing");
+    assert_eq!(body_tree::raw(element)["local_name"], "commentReference");
     assert_eq!(body_tree::raw(element)["namespace"], "urn:w");
 }
 

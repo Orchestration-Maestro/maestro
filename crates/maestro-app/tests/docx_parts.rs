@@ -295,3 +295,18 @@ fn settings_part_matches_direct_preparation() {
 fn borrowed_framing_matches_existing_public_body_routes() {
     check("borrowed_framing_matches_existing_public_body_routes");
 }
+
+/// Note parts propagate structural picture failures from the shared parser.
+#[test]
+fn notes_propagate_malformed_picture_errors() {
+    for (operation, tag) in [("footnotes", "footnote"), ("endnotes", "endnote")] {
+        let input = Input {
+            operation: operation.into(),
+            xml: format!(
+                "<notes><{tag}><p><r><drawing><inline><graphic/></inline></drawing></r></p></{tag}></notes>"
+            ),
+            ignore_width: false,
+        };
+        assert!(matches!(observe_body(input), Err(DocxError::Xml { .. })));
+    }
+}

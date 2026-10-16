@@ -125,8 +125,18 @@ of experimental positioning. Section parsing follows in
 [section properties](https://github.com/Orchestration-Maestro/maestro/issues/1059).
 
 Recognized foreign branches retain shared complete XML source with selected byte
-ranges, preserving ancestor namespaces. Tables, links, bookmarks, drawings, math
-and comments remain uninterpreted here.
+ranges, preserving ancestor namespaces. Tables, links, smart tags and comments
+remain uninterpreted here.
+
+Bookmarks retain nullable identifiers, names and independent column numbers in
+source order. Drawings retain inline/anchored wrapper geometry, wrapping and image
+relationships, crop sides and rotation. VML shapes retain ordered SVG attributes,
+raw style text, image metadata and nested textbox content in the same arena.
+Office math retains typed equation trees, optional property groups and formatted
+runs. Alternate content selects the first fallback's first element; unavailable
+fallbacks are skipped without losing surrounding run content. Missing required
+picture structure returns an XML error through the enclosing parse operation;
+no partial tree is returned. Drawings append to existing run content.
 The tree is a partial semantic parser, not a rendered preview or attachment-text
 extractor. Package loading remains separate from element parsing.
 

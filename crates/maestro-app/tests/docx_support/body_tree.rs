@@ -1,7 +1,7 @@
 //! Lossless observations of owned Word trees.
 #![cfg(test)]
 use maestro_app::browser::docx_preview::{
-    DomType, OpenXmlElementData as Data, OpenXmlElementTree, OwnedXmlElement,
+    OpenXmlElementData as Data, OpenXmlElementTree, OwnedXmlElement,
 };
 use serde_json::{Value, json};
 
@@ -35,6 +35,15 @@ fn payload(data: &Data) -> Value {
         Data::Text { text } | Data::DeletedText { text } | Data::Instruction { text } => {
             json!({"text":text})
         }
+        Data::BookmarkStart {
+            id,
+            name,
+            col_first,
+            col_last,
+        } => {
+            json!({"id":id,"name":name,"colFirst":col_first.map_or(Value::Null,number),"colLast":col_last.map_or(Value::Null,number)})
+        }
+        Data::BookmarkEnd { id } => json!({"id":id}),
         Data::Break { r#break } => json!({"break":r#break}),
         Data::Symbol { font, char } => json!({"font":font,"char":char}),
         Data::FootnoteReference { id } | Data::EndnoteReference { id } | Data::AltChunk { id } => {
@@ -79,7 +88,7 @@ fn visit(
         .parent
         .map(|parent| visit(tree, parent, positions, nodes, observe));
     let mut value = payload(&node.data);
-    value["type"] = json!(node.dom_type().map(DomType::as_str));
+    value["type"] = json!(node.dom_type().as_str());
     if matches!(
         node.data,
         Data::Paragraph { .. }
@@ -88,6 +97,10 @@ fn visit(
             | Data::Inserted
             | Data::Deleted
             | Data::AltChunk { .. }
+            | Data::Drawing { .. }
+            | Data::Math { .. }
+            | Data::VmlPicture
+            | Data::VmlElement(_)
     ) {
         value["children"] = json!(children);
     } else {
@@ -128,7 +141,7 @@ fn project(tree: &OpenXmlElementTree, observe: fn(&Data, &mut Value)) -> Value {
 pub fn foreign(tree: &OpenXmlElementTree, context: &str) -> Value {
     json!(tree.nodes.iter().filter_map(|node| if let Data::Unparsed { element, .. } = &node.data {
         let xml = raw(element);
-        Some(json!({"context":context,"name":xml["local_name"],"kind":node.dom_type().map(DomType::as_str),"xml":xml}))
+        Some(json!({"context":context,"name":xml["local_name"],"kind":node.dom_type().as_str(),"xml":xml}))
     } else { None }).collect::<Vec<_>>())
 }
 
@@ -159,47 +172,35 @@ pub(super) fn common(
 /// Observe every owned property, ordered styles and nullable record members.
 pub(super) fn formatting(data: &Data, out: &mut Value) {
     match data {
-        Data::Paragraph { properties: p } => {
-            common(&p.common, out);
-            styles(p.css_style.as_ref(), out);
-            member(out, "tabs", p.tabs.as_ref(), |tabs| {
-                json!(
-                    tabs.iter()
-                        .map(|t| json!({"position":t.position,"leader":t.leader,"style":t.style}))
-                        .collect::<Vec<_>>()
-                )
-            });
-            member(out, "numbering", p.numbering.as_ref(), |n| {
-                let mut value = json!({});
-                member(&mut value, "id", n.id.as_ref(), |v| json!(v));
-                member(&mut value, "level", n.level, |v| {
-                    v.map_or(Value::Null, number)
-                });
-                value
-            });
-            member(
-                out,
-                "lineSpacing",
-                p.line_spacing.as_ref(),
-                |l| json!({"before":l.before,"after":l.after,"line":l.line.map_or(Value::Null,number),"lineRule":l.line_rule}),
-            );
-            member(out, "textAlignment", p.text_alignment.as_ref(), |v| {
-                json!(v)
-            });
-            member(out, "keepLines", p.keep_lines, |v| json!(v));
-            member(out, "keepNext", p.keep_next, |v| json!(v));
-            member(out, "pageBreakBefore", p.page_break_before, |v| json!(v));
-            member(out, "outlineLevel", p.outline_level, |v| {
-                v.map_or(Value::Null, number)
-            });
-            member(out, "styleName", p.style_name.as_ref(), |v| json!(v));
-            member(out, "runProps", p.run_props.as_ref(), |p| {
-                let mut v = json!({});
-                common(p, &mut v);
-                v
-            });
-            member(out, "className", p.class_name.as_ref(), |v| json!(v));
+        Data::Paragraph { properties: p } => paragraph_properties(p, out),
+        Data::Image {
+            src,
+            css_style,
+            src_rect,
+            rotation,
+        } => {
+            out["src"] = json!(src);
+            styles(Some(css_style), out);
+            member(out, "srcRect", *src_rect, |v| json!(v.map(number)));
+            member(out, "rotation", *rotation, number);
         }
+        Data::Math { props, .. } => member(out, "props", props.as_ref(), |p| {
+            let mut v = json!({});
+            member(&mut v, "char", p.char.as_ref(), |v| json!(v));
+            member(
+                &mut v,
+                "verticalJustification",
+                p.vertical_justification.as_ref(),
+                |v| json!(v),
+            );
+            member(&mut v, "position", p.position.as_ref(), |v| json!(v));
+            member(&mut v, "hideDegree", p.hide_degree, |v| json!(v));
+            member(&mut v, "beginChar", p.begin_char.as_ref(), |v| json!(v));
+            member(&mut v, "endChar", p.end_char.as_ref(), |v| json!(v));
+            v
+        }),
+        Data::VmlElement(v) => vml(v, out),
+        Data::Drawing { css_style } => styles(Some(css_style), out),
         Data::Run { properties: p, .. } => {
             styles(p.css_style.as_ref(), out);
             member(out, "styleName", p.style_name.as_ref(), |v| json!(v));
@@ -218,4 +219,77 @@ fn styles(style: Option<&indexmap::IndexMap<String, Option<String>>>, out: &mut 
     member(out, "cssStyle", style, |v| {
         json!(v.iter().collect::<Vec<_>>())
     });
+}
+
+/// Observe paragraph metadata through the same graph projection.
+fn paragraph_properties(
+    p: &maestro_app::browser::docx_preview::ParagraphProperties,
+    out: &mut Value,
+) {
+    common(&p.common, out);
+    styles(p.css_style.as_ref(), out);
+    member(out, "tabs", p.tabs.as_ref(), |tabs| {
+        json!(
+            tabs.iter()
+                .map(|t| json!({"position":t.position,"leader":t.leader,"style":t.style}))
+                .collect::<Vec<_>>()
+        )
+    });
+    member(out, "numbering", p.numbering.as_ref(), |n| {
+        let mut value = json!({});
+        member(&mut value, "id", n.id.as_ref(), |v| json!(v));
+        member(&mut value, "level", n.level, |v| {
+            v.map_or(Value::Null, number)
+        });
+        value
+    });
+    member(
+        out,
+        "lineSpacing",
+        p.line_spacing.as_ref(),
+        |l| json!({"before":l.before,"after":l.after,"line":l.line.map_or(Value::Null,number),"lineRule":l.line_rule}),
+    );
+    member(out, "textAlignment", p.text_alignment.as_ref(), |v| {
+        json!(v)
+    });
+    member(out, "keepLines", p.keep_lines, |v| json!(v));
+    member(out, "keepNext", p.keep_next, |v| json!(v));
+    member(out, "pageBreakBefore", p.page_break_before, |v| json!(v));
+    member(out, "outlineLevel", p.outline_level, |v| {
+        v.map_or(Value::Null, number)
+    });
+    member(out, "styleName", p.style_name.as_ref(), |v| json!(v));
+    member(out, "runProps", p.run_props.as_ref(), |p| {
+        let mut v = json!({});
+        common(p, &mut v);
+        v
+    });
+    member(out, "className", p.class_name.as_ref(), |v| json!(v));
+}
+
+/// Observe ordered SVG attributes including unavailable coordinates.
+fn vml(v: &maestro_app::browser::docx_preview::VmlElement, out: &mut Value) {
+    use maestro_app::browser::docx_preview::VmlAttributeValue;
+    styles(Some(&v.css_style), out);
+    out["tagName"] = json!(v.tag_name.as_str());
+    out["attrs"] = json!(
+        v.attrs
+            .iter()
+            .map(|(k, v)| (
+                k,
+                match v {
+                    VmlAttributeValue::Text(v) => json!(v),
+                    VmlAttributeValue::Null => Value::Null,
+                    VmlAttributeValue::Undefined => json!({"$undefined":true}),
+                }
+            ))
+            .collect::<Vec<_>>()
+    );
+    member(out, "cssStyleText", v.css_style_text.as_ref(), |v| json!(v));
+    member(
+        out,
+        "imageHref",
+        v.image_href.as_ref(),
+        |v| json!({"id":v.id,"title":v.title}),
+    );
 }

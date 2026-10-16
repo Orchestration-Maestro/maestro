@@ -61,7 +61,6 @@ impl Default for Options {
 mod document_parser;
 pub use document::dom::{
     DomType, OpenXmlElement, OpenXmlElementBase, OpenXmlElementData, OpenXmlElementTree,
-    UnparsedKind,
 };
 pub use document_parser::{
     DefaultPropertiesOptions, TableStyle, parse_background, parse_body_elements,
@@ -84,3 +83,7 @@ mod notes;
 pub use notes::{EndnotesPart, FootnotesPart, WmlBaseNote, WmlEndnote, WmlFootnote};
 mod settings;
 pub use settings::{NoteProperties, SettingsPart, WmlSettings};
+mod vml;
+pub use vml::{VmlAttributeValue, VmlElement, VmlImageHref, VmlTag};
+
+pub use document_parser::MathProperties;
