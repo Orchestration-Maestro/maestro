@@ -85,11 +85,15 @@ async fn respond<E: ProviderExecution>(
         assert_eq!(selected.payload, serde_json::json!(22));
     }
     Ok(faux_assistant_message(
-        format!(
-            "{}:{}",
-            input.context.messages.len(),
-            input.state.call_count()
-        ),
+        if scenario == Scenario::Order {
+            "ok".into()
+        } else {
+            format!(
+                "{}:{}",
+                input.context.messages.len(),
+                input.state.call_count()
+            )
+        },
         FauxAssistantMessageOptions {
             timestamp: Some(0.0),
             ..Default::default()
@@ -301,7 +305,16 @@ fn assert_result(result: &AssistantMessage, events: &[&str], scenario: Scenario)
             events,
             ["start", "text_start", "text_delta", "text_end", "done"]
         );
-        assert_eq!(result.content, [AssistantContent::Text(faux_text("1:1"))]);
+        assert_eq!(
+            result.content,
+            [AssistantContent::Text(faux_text(
+                if scenario == Scenario::Order {
+                    "ok"
+                } else {
+                    "1:1"
+                }
+            ))]
+        );
     }
 }
 /// Replacing and appending responses keeps the original session cache and live count.
