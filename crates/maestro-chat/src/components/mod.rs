@@ -273,3 +273,6 @@ pub mod scoped_models_selector;
 pub use scoped_models_selector::{ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent};
 
 pub mod tool_execution;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub mod config_selector;

@@ -62,3 +62,5 @@ pub use components::{
 };
 
 pub use maestro_cancellation::Cancellation;
+
+pub use text::expand_tabs;

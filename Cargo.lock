@@ -3029,6 +3029,7 @@ dependencies = [
  "indexmap",
  "maestro-app",
  "maestro-dependencies",
+ "maestro-path",
  "maestro-theme",
  "maestro-tui",
  "regress",

@@ -44,6 +44,11 @@ and fullwidth characters, complete emoji sequences and regional indicators, alon
 or in flags, take two columns, and a cluster made only of marks, ignorable characters
 and control characters other than the tab takes none.
 
+`expand_tabs(text)` replaces displayed tab bytes with three spaces, preserving
+recognized escapes (including tabs inside their payloads). Unlike measuring or
+truncating a tab, it emits space bytes; it borrows text when no tab is present.
+Use it before clipping a painted row that must not contain terminal tab stops.
+
 `get_segmenter(text)` yields each grapheme cluster with its UTF-8 byte position.
 `extract_ansi_code(text, pos)` returns the recognized escape that starts at byte
 `pos` with its byte length, or `None`. `normalize_terminal_output(text)` rewrites

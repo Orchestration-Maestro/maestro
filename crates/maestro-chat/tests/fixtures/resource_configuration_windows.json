@@ -1,0 +1,603 @@
+[
+  {
+    "test": "resource_windows_paths_keep_authored_relative_patterns",
+    "input": {
+      "settings": {
+        "global": {
+          "packages": [
+            "npm:target"
+          ]
+        },
+        "project": {}
+      },
+      "width": 80,
+      "operations": [
+        {
+          "name": "input",
+          "value": "\r"
+        }
+      ],
+      "cwd": "C:\\work",
+      "agent_dir": "C:\\home\\.maestro\\agent",
+      "resolved": {
+        "extensions": [
+          {
+            "path": "C:\\home\\.maestro\\agent\\extensions\\a.wasm",
+            "enabled": true,
+            "metadata": {
+              "scope": "user",
+              "origin": "top-level",
+              "source": "auto"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    "expected": {
+      "frames": [
+        {
+          "package_keys": {
+            "global": [
+              []
+            ],
+            "project": []
+          },
+          "lines": [
+            "",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "",
+            "\u001b[1mResource Configuration\u001b[22m                                  \u001b[38;5;34mspace\u001b[39m\u001b[38;5;33m toggle\u001b[39m\u001b[38;5;33m · \u001b[39m\u001b[38;5;34mesc\u001b[39m\u001b[38;5;33m close\u001b[39m",
+            "\u001b[38;5;33mType to filter resources\u001b[39m",
+            "",
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  \u001b[38;5;32m\u001b[1mUser (~/.maestro/agent/)\u001b[22m\u001b[39m",
+            "    \u001b[38;5;33mExtensions\u001b[39m",
+            ">     \u001b[38;5;35m[x]\u001b[39m \u001b[1ma.wasm\u001b[22m",
+            "",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "list_lines": [
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  \u001b[38;5;32m\u001b[1mUser (~/.maestro/agent/)\u001b[22m\u001b[39m",
+            "    \u001b[38;5;33mExtensions\u001b[39m",
+            ">     \u001b[38;5;35m[x]\u001b[39m \u001b[1ma.wasm\u001b[22m"
+          ],
+          "global": {
+            "packages": [
+              "npm:target"
+            ]
+          },
+          "project": {},
+          "global_keys": [
+            "packages"
+          ],
+          "project_keys": [],
+          "events": []
+        },
+        {
+          "package_keys": {
+            "global": [
+              []
+            ],
+            "project": []
+          },
+          "lines": [
+            "",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "",
+            "\u001b[1mResource Configuration\u001b[22m                                  \u001b[38;5;34mspace\u001b[39m\u001b[38;5;33m toggle\u001b[39m\u001b[38;5;33m · \u001b[39m\u001b[38;5;34mesc\u001b[39m\u001b[38;5;33m close\u001b[39m",
+            "\u001b[38;5;33mType to filter resources\u001b[39m",
+            "",
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  \u001b[38;5;32m\u001b[1mUser (~/.maestro/agent/)\u001b[22m\u001b[39m",
+            "    \u001b[38;5;33mExtensions\u001b[39m",
+            ">     \u001b[38;5;34m[ ]\u001b[39m \u001b[1ma.wasm\u001b[22m",
+            "",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "list_lines": [
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  \u001b[38;5;32m\u001b[1mUser (~/.maestro/agent/)\u001b[22m\u001b[39m",
+            "    \u001b[38;5;33mExtensions\u001b[39m",
+            ">     \u001b[38;5;34m[ ]\u001b[39m \u001b[1ma.wasm\u001b[22m"
+          ],
+          "global": {
+            "packages": [
+              "npm:target"
+            ],
+            "extensions": [
+              "-extensions\\a.wasm"
+            ]
+          },
+          "project": {},
+          "global_keys": [
+            "packages",
+            "extensions"
+          ],
+          "project_keys": [],
+          "events": [
+            [
+              "render"
+            ]
+          ]
+        }
+      ],
+      "outcomes": [
+        "success"
+      ],
+      "persisted": {
+        "global": {
+          "packages": [
+            "npm:target"
+          ],
+          "extensions": [
+            "-extensions\\a.wasm"
+          ]
+        },
+        "project": {}
+      }
+    }
+  },
+  {
+    "test": "resource_windows_paths_keep_authored_relative_patterns",
+    "input": {
+      "settings": {
+        "global": {
+          "packages": [
+            "npm:target"
+          ]
+        },
+        "project": {}
+      },
+      "width": 80,
+      "operations": [
+        {
+          "name": "input",
+          "value": "\r"
+        }
+      ],
+      "cwd": "C:\\work",
+      "agent_dir": "C:\\home\\.maestro\\agent",
+      "resolved": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "C:\\work\\.maestro\\skills\\guide\\SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "scope": "project",
+              "origin": "top-level",
+              "source": "auto"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    "expected": {
+      "frames": [
+        {
+          "package_keys": {
+            "global": [
+              []
+            ],
+            "project": []
+          },
+          "lines": [
+            "",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "",
+            "\u001b[1mResource Configuration\u001b[22m                                  \u001b[38;5;34mspace\u001b[39m\u001b[38;5;33m toggle\u001b[39m\u001b[38;5;33m · \u001b[39m\u001b[38;5;34mesc\u001b[39m\u001b[38;5;33m close\u001b[39m",
+            "\u001b[38;5;33mType to filter resources\u001b[39m",
+            "",
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  \u001b[38;5;32m\u001b[1mProject (.maestro/)\u001b[22m\u001b[39m",
+            "    \u001b[38;5;33mSkills\u001b[39m",
+            ">     \u001b[38;5;35m[x]\u001b[39m \u001b[1mguide\u001b[22m",
+            "",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "list_lines": [
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  \u001b[38;5;32m\u001b[1mProject (.maestro/)\u001b[22m\u001b[39m",
+            "    \u001b[38;5;33mSkills\u001b[39m",
+            ">     \u001b[38;5;35m[x]\u001b[39m \u001b[1mguide\u001b[22m"
+          ],
+          "global": {
+            "packages": [
+              "npm:target"
+            ]
+          },
+          "project": {},
+          "global_keys": [
+            "packages"
+          ],
+          "project_keys": [],
+          "events": []
+        },
+        {
+          "package_keys": {
+            "global": [
+              []
+            ],
+            "project": []
+          },
+          "lines": [
+            "",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "",
+            "\u001b[1mResource Configuration\u001b[22m                                  \u001b[38;5;34mspace\u001b[39m\u001b[38;5;33m toggle\u001b[39m\u001b[38;5;33m · \u001b[39m\u001b[38;5;34mesc\u001b[39m\u001b[38;5;33m close\u001b[39m",
+            "\u001b[38;5;33mType to filter resources\u001b[39m",
+            "",
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  \u001b[38;5;32m\u001b[1mProject (.maestro/)\u001b[22m\u001b[39m",
+            "    \u001b[38;5;33mSkills\u001b[39m",
+            ">     \u001b[38;5;34m[ ]\u001b[39m \u001b[1mguide\u001b[22m",
+            "",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "list_lines": [
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  \u001b[38;5;32m\u001b[1mProject (.maestro/)\u001b[22m\u001b[39m",
+            "    \u001b[38;5;33mSkills\u001b[39m",
+            ">     \u001b[38;5;34m[ ]\u001b[39m \u001b[1mguide\u001b[22m"
+          ],
+          "global": {
+            "packages": [
+              "npm:target"
+            ]
+          },
+          "project": {
+            "skills": [
+              "-skills\\guide\\SKILL.md"
+            ]
+          },
+          "global_keys": [
+            "packages"
+          ],
+          "project_keys": [
+            "skills"
+          ],
+          "events": [
+            [
+              "render"
+            ]
+          ]
+        }
+      ],
+      "outcomes": [
+        "success"
+      ],
+      "persisted": {
+        "global": {
+          "packages": [
+            "npm:target"
+          ]
+        },
+        "project": {
+          "skills": [
+            "-skills\\guide\\SKILL.md"
+          ]
+        }
+      }
+    }
+  },
+  {
+    "test": "resource_windows_paths_keep_authored_relative_patterns",
+    "input": {
+      "settings": {
+        "global": {
+          "packages": [
+            "npm:target"
+          ]
+        },
+        "project": {}
+      },
+      "width": 80,
+      "operations": [
+        {
+          "name": "input",
+          "value": "\r"
+        }
+      ],
+      "cwd": "C:\\work",
+      "agent_dir": "C:\\home\\.maestro\\agent",
+      "resolved": {
+        "extensions": [
+          {
+            "path": "D:\\pkg\\extensions\\entry.wasm",
+            "enabled": true,
+            "metadata": {
+              "scope": "user",
+              "origin": "package",
+              "source": "npm:target",
+              "baseDir": "D:\\pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    "expected": {
+      "frames": [
+        {
+          "package_keys": {
+            "global": [
+              []
+            ],
+            "project": []
+          },
+          "lines": [
+            "",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "",
+            "\u001b[1mResource Configuration\u001b[22m                                  \u001b[38;5;34mspace\u001b[39m\u001b[38;5;33m toggle\u001b[39m\u001b[38;5;33m · \u001b[39m\u001b[38;5;34mesc\u001b[39m\u001b[38;5;33m close\u001b[39m",
+            "\u001b[38;5;33mType to filter resources\u001b[39m",
+            "",
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  \u001b[38;5;32m\u001b[1mnpm:target (user)\u001b[22m\u001b[39m",
+            "    \u001b[38;5;33mExtensions\u001b[39m",
+            ">     \u001b[38;5;35m[x]\u001b[39m \u001b[1mentry.wasm\u001b[22m",
+            "",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "list_lines": [
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  \u001b[38;5;32m\u001b[1mnpm:target (user)\u001b[22m\u001b[39m",
+            "    \u001b[38;5;33mExtensions\u001b[39m",
+            ">     \u001b[38;5;35m[x]\u001b[39m \u001b[1mentry.wasm\u001b[22m"
+          ],
+          "global": {
+            "packages": [
+              "npm:target"
+            ]
+          },
+          "project": {},
+          "global_keys": [
+            "packages"
+          ],
+          "project_keys": [],
+          "events": []
+        },
+        {
+          "package_keys": {
+            "global": [
+              [
+                "source",
+                "extensions"
+              ]
+            ],
+            "project": []
+          },
+          "lines": [
+            "",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "",
+            "\u001b[1mResource Configuration\u001b[22m                                  \u001b[38;5;34mspace\u001b[39m\u001b[38;5;33m toggle\u001b[39m\u001b[38;5;33m · \u001b[39m\u001b[38;5;34mesc\u001b[39m\u001b[38;5;33m close\u001b[39m",
+            "\u001b[38;5;33mType to filter resources\u001b[39m",
+            "",
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  \u001b[38;5;32m\u001b[1mnpm:target (user)\u001b[22m\u001b[39m",
+            "    \u001b[38;5;33mExtensions\u001b[39m",
+            ">     \u001b[38;5;34m[ ]\u001b[39m \u001b[1mentry.wasm\u001b[22m",
+            "",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "list_lines": [
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  \u001b[38;5;32m\u001b[1mnpm:target (user)\u001b[22m\u001b[39m",
+            "    \u001b[38;5;33mExtensions\u001b[39m",
+            ">     \u001b[38;5;34m[ ]\u001b[39m \u001b[1mentry.wasm\u001b[22m"
+          ],
+          "global": {
+            "packages": [
+              {
+                "source": "npm:target",
+                "extensions": [
+                  "-extensions\\entry.wasm"
+                ]
+              }
+            ]
+          },
+          "project": {},
+          "global_keys": [
+            "packages"
+          ],
+          "project_keys": [],
+          "events": [
+            [
+              "render"
+            ]
+          ]
+        }
+      ],
+      "outcomes": [
+        "success"
+      ],
+      "persisted": {
+        "global": {
+          "packages": [
+            {
+              "source": "npm:target",
+              "extensions": [
+                "-extensions\\entry.wasm"
+              ]
+            }
+          ]
+        },
+        "project": {}
+      }
+    }
+  },
+  {
+    "test": "resource_windows_paths_keep_authored_relative_patterns",
+    "input": {
+      "settings": {
+        "global": {
+          "packages": [
+            "npm:target"
+          ]
+        },
+        "project": {}
+      },
+      "width": 80,
+      "operations": [
+        {
+          "name": "input",
+          "value": "\r"
+        }
+      ],
+      "cwd": "C:\\work",
+      "agent_dir": "C:\\home\\.maestro\\agent",
+      "resolved": {
+        "extensions": [
+          {
+            "path": "\\\\host\\share\\pkg\\extensions\\entry.wasm",
+            "enabled": true,
+            "metadata": {
+              "scope": "user",
+              "origin": "package",
+              "source": "npm:target",
+              "baseDir": "\\\\host\\share\\pkg"
+            }
+          }
+        ],
+        "skills": [],
+        "prompts": [],
+        "themes": []
+      }
+    },
+    "expected": {
+      "frames": [
+        {
+          "package_keys": {
+            "global": [
+              []
+            ],
+            "project": []
+          },
+          "lines": [
+            "",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "",
+            "\u001b[1mResource Configuration\u001b[22m                                  \u001b[38;5;34mspace\u001b[39m\u001b[38;5;33m toggle\u001b[39m\u001b[38;5;33m · \u001b[39m\u001b[38;5;34mesc\u001b[39m\u001b[38;5;33m close\u001b[39m",
+            "\u001b[38;5;33mType to filter resources\u001b[39m",
+            "",
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  \u001b[38;5;32m\u001b[1mnpm:target (user)\u001b[22m\u001b[39m",
+            "    \u001b[38;5;33mExtensions\u001b[39m",
+            ">     \u001b[38;5;35m[x]\u001b[39m \u001b[1mentry.wasm\u001b[22m",
+            "",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "list_lines": [
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  \u001b[38;5;32m\u001b[1mnpm:target (user)\u001b[22m\u001b[39m",
+            "    \u001b[38;5;33mExtensions\u001b[39m",
+            ">     \u001b[38;5;35m[x]\u001b[39m \u001b[1mentry.wasm\u001b[22m"
+          ],
+          "global": {
+            "packages": [
+              "npm:target"
+            ]
+          },
+          "project": {},
+          "global_keys": [
+            "packages"
+          ],
+          "project_keys": [],
+          "events": []
+        },
+        {
+          "package_keys": {
+            "global": [
+              [
+                "source",
+                "extensions"
+              ]
+            ],
+            "project": []
+          },
+          "lines": [
+            "",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m",
+            "",
+            "\u001b[1mResource Configuration\u001b[22m                                  \u001b[38;5;34mspace\u001b[39m\u001b[38;5;33m toggle\u001b[39m\u001b[38;5;33m · \u001b[39m\u001b[38;5;34mesc\u001b[39m\u001b[38;5;33m close\u001b[39m",
+            "\u001b[38;5;33mType to filter resources\u001b[39m",
+            "",
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  \u001b[38;5;32m\u001b[1mnpm:target (user)\u001b[22m\u001b[39m",
+            "    \u001b[38;5;33mExtensions\u001b[39m",
+            ">     \u001b[38;5;34m[ ]\u001b[39m \u001b[1mentry.wasm\u001b[22m",
+            "",
+            "\u001b[38;5;31m────────────────────────────────────────────────────────────────────────────────\u001b[39m"
+          ],
+          "list_lines": [
+            "> \u001b[7m \u001b[27m                                                                             ",
+            "",
+            "  \u001b[38;5;32m\u001b[1mnpm:target (user)\u001b[22m\u001b[39m",
+            "    \u001b[38;5;33mExtensions\u001b[39m",
+            ">     \u001b[38;5;34m[ ]\u001b[39m \u001b[1mentry.wasm\u001b[22m"
+          ],
+          "global": {
+            "packages": [
+              {
+                "source": "npm:target",
+                "extensions": [
+                  "-extensions\\entry.wasm"
+                ]
+              }
+            ]
+          },
+          "project": {},
+          "global_keys": [
+            "packages"
+          ],
+          "project_keys": [],
+          "events": [
+            [
+              "render"
+            ]
+          ]
+        }
+      ],
+      "outcomes": [
+        "success"
+      ],
+      "persisted": {
+        "global": {
+          "packages": [
+            {
+              "source": "npm:target",
+              "extensions": [
+                "-extensions\\entry.wasm"
+              ]
+            }
+          ]
+        },
+        "project": {}
+      }
+    }
+  }
+]
