@@ -111,8 +111,8 @@ impl HtmlRenderer {
     pub(crate) fn render_default_style(&self, hide_wrapper_on_print: bool) -> String {
         let c = &self.class_name;
         let mut wrapper = format!(
-            r"
-.{c}-wrapper {{ background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; }} 
+            "
+.{c}-wrapper {{ background: gray; padding: 30px; padding-bottom: 0px; display: flex; flex-flow: column; align-items: center; }}\x20
 .{c}-wrapper>section.{c} {{ background: white; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); margin-bottom: 30px; }}"
         );
         if hide_wrapper_on_print {
