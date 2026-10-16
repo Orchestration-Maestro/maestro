@@ -5,6 +5,8 @@ const HEAD_BOOT = '{const t=document.currentScript.previousElementSibling,s=t.co
 const BODY_BOOT = 'document.currentScript.previousElementSibling.remove()';
 export function program_url() { return location.origin+'/sandbox.html'; }
 export function program_input(kind) {
+    if(kind === 'marker-provider') return `function(id){window.S={};S.literal='__PROGRAM__ __RUNTIME__ __SCRIPT__ __USER_CODE__';window.done=new Promise(r=>window.complete=async(error,value)=>{S.error=error;S.value=value;r()});}`;
+    if(kind === 'marker-user') return `return [window.sandboxId,window['__PROGRAM__ __RUNTIME__ __SCRIPT__ __USER_CODE__'],window.attachment.text,S.literal,'__PROGRAM__ __RUNTIME__ __SCRIPT__ __USER_CODE__'];`;
     if(kind === 'raw') return RAW;
     if(kind === 'provider') return `function(){window.S={dcl:false,started:false};S.runtime=document.currentScript.textContent;S.raw=String.raw\`</ScRiPt> <!--<script> </script> 雪\`;S.data=window.obsData;document.addEventListener('DOMContentLoaded',()=>S.dcl=true);window.done=new Promise(r=>window.complete=async(error,value)=>{S.error=error;S.value=value;r()});if(location.hash==='#tt'){const m=document.createElement('meta');m.httpEquiv='Content-Security-Policy';m.content="script-src 'self' 'unsafe-inline'; require-trusted-types-for 'script'; trusted-types 'none'";document.head.append(m);}}`;
     if(kind === 'user') return `S.started=true;S.ready=document.readyState;S.beforeDcl=!S.dcl;S.metaUrl=import.meta.url;S.base=document.baseURI;S.cr=(()=>{/*\r*/}).toString().includes('\\r');S.helper=(await import('./helper.js')).answer;return String.raw\`</ScRiPt> <!--<script> </script> <![CDATA[ ]]> &amp; &lt;x> 雪\`;`;
@@ -131,4 +133,20 @@ export async function loaded_artifact(url) {
     const s=await window.inspectSandbox(parent.id,'state');
     equal([s.before,s.metaParent,s.blocked,s.scaffold],[true,'head',true,0],'authored head policy and order');
     equal(s.head,'style,script,meta,title,script','head element order at public loading interface');
+}
+
+export async function marker_checks(html) {
+    const marker='__PROGRAM__ __RUNTIME__ __SCRIPT__ __USER_CODE__';
+    const parsed=new DOMParser().parseFromString(html,'text/html');
+    equal(parsed.head.querySelectorAll('template').length,1,'one head carrier');
+    equal(parsed.body.querySelectorAll('svg > script[type="module"]').length,1,'one body carrier');
+    const [runtime,module]=programSources(html);
+    assert(runtime.includes(program_input('marker-provider')),'provider source byte-exact');
+    assert(module.includes(program_input('marker-user')),'user source byte-exact');
+    const mounted=await mount(html,false);
+    try {
+        const s=await mounted.inspect();
+        equal(s.error,null,'successful marker completion');
+        equal(s.value,[marker,marker,marker,marker,marker],'id, key/value, attachment, provider and user literals');
+    } finally {mounted.remove();}
 }

@@ -10,7 +10,7 @@ fn encode_program(code: &str) -> String {
 /// Move the admitted classic script out of an inert template and remove it after execution.
 pub(super) fn head_program(code: &str) -> String {
     format!(
-        "<template><svg><script>{}</script></svg></template><script>{{const t=document.currentScript.previousElementSibling,s=t.content.firstChild.firstChild;t.replaceWith(s);s.remove()}}</script>",
+        "<style>\nhtml, body {{\n\tfont-size: initial;\n}}\n</style>\n<template><svg><script>{}</script></svg></template><script>{{const t=document.currentScript.previousElementSibling,s=t.content.firstChild.firstChild;t.replaceWith(s);s.remove()}}</script>",
         encode_program(code)
     )
 }
@@ -37,10 +37,17 @@ pub(super) fn insert_runtime(code: &str, runtime: &str) -> String {
 }
 /// Wrap JavaScript in the asynchronous completion envelope.
 pub(super) fn wrap(code: &str, runtime: &str) -> String {
-    let program = include_str!("repl.js").replacen("__USER_CODE__", code, 1);
-    include_str!("repl.html")
-        .replacen("__RUNTIME__", runtime, 1)
-        .replacen("__PROGRAM__", &body_program(&program), 1)
+    let program = [
+        include_str!("repl-prefix.js"),
+        "\n\t\t\t\t\t",
+        code,
+        include_str!("repl-suffix.js"),
+    ]
+    .concat();
+    let body = body_program(&program);
+    format!(
+        "<!DOCTYPE html>\n<html>\n<head>\n\t{runtime}\n</head>\n<body>\n\t{body}\n</body>\n</html>"
+    )
 }
 /// Select authored HTML injection independently of standalone runtime selection.
 pub(super) fn prepare(code: &str, runtime: &str, options: super::PrepareHtmlOptions) -> String {

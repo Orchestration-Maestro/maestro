@@ -59,11 +59,16 @@ fn inline_carriers_preserve_text_and_exact_boot_scripts() {
     let runtime = super::runtime::assemble("id", source, &[], true).unwrap();
     assert!(runtime.contains(&format!("<template><svg><script>window.sandboxId = \"id\";\n{encoded}\n\n</script></svg></template><script>{{const t=document.currentScript.previousElementSibling,s=t.content.firstChild.firstChild;t.replaceWith(s);s.remove()}}</script>")));
     let html = super::document::wrap(source, "RUNTIME");
-    let program = include_str!("repl.js")
-        .replacen("__USER_CODE__", source, 1)
-        .replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('\r', "&#13;");
+    let program = [
+        include_str!("repl-prefix.js"),
+        "\n\t\t\t\t\t",
+        source,
+        include_str!("repl-suffix.js"),
+    ]
+    .concat()
+    .replace('&', "&amp;")
+    .replace('<', "&lt;")
+    .replace('\r', "&#13;");
     assert_eq!(
         html,
         format!(
@@ -129,4 +134,19 @@ fn generated_scripts_preserve_provider_order() {
     .into();
     assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));
     assert!(program.contains("})(\"quoted\\\"雪\");"));
+}
+
+#[test]
+fn marker_looking_runtime_and_user_text_are_never_template_syntax() {
+    let markers = "__PROGRAM__ __RUNTIME__ __SCRIPT__ __USER_CODE__";
+    let runtime = super::runtime::assemble(markers, markers, &[markers.into()], true).unwrap();
+    let html = super::document::wrap(markers, &runtime);
+    assert_eq!(html.matches("<template><svg><script>").count(), 1);
+    assert_eq!(
+        html.matches("<svg display=\"none\"><script type=\"module\">")
+            .count(),
+        1
+    );
+    assert!(html.contains(&format!("<head>\n\t{runtime}\n</head>\n<body>\n\t<svg")));
+    assert_eq!(programs(&html).matches(markers).count(), 5);
 }

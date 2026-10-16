@@ -8,6 +8,8 @@ use wasm_bindgen::prelude::*;
 extern "C" {
     /// Run the exact-text, ordering and policy observations on a production frame's attributes.
     fn program_checks(html: &str, tt_html: &str, url: bool) -> js_sys::Promise;
+    /// Observe literal payload preservation and mounted completion.
+    fn marker_checks(html: &str) -> js_sys::Promise;
     /// Click parsed anchors through the browser driver and observe native routing.
     fn link_checks(html: &str) -> js_sys::Promise;
     /// Controlled HTTP bootstrap implementing the normal readiness handshake.
@@ -101,6 +103,28 @@ pub async fn artifact_witness() {
                 .unwrap();
         }
     }
+    sandbox.remove().unwrap();
+    finish();
+}
+
+/// Marker-looking identifiers, provider records and programs remain literal data.
+pub async fn marker_witness() {
+    let mut sandbox = adapter();
+    let marker = "__PROGRAM__ __RUNTIME__ __SCRIPT__ __USER_CODE__";
+    let providers = vec![Arc::new(Provider {
+        data: js_sys::JSON::parse(&serde_json::json!({marker: marker, "attachment": {"text": marker}}).to_string()).unwrap(),
+        runtime: program_input("marker-provider"),
+        failure: None,
+    }) as Arc<dyn maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider<super::BrowserSandboxValue>>];
+    let html = sandbox
+        .prepare_html_document(marker, &program_input("marker-user"), &providers, None)
+        .unwrap();
+    sandbox
+        .load_content("prototype", "<head></head>", vec![], vec![])
+        .unwrap();
+    wasm_bindgen_futures::JsFuture::from(marker_checks(&html))
+        .await
+        .unwrap();
     sandbox.remove().unwrap();
     finish();
 }

@@ -530,3 +530,9 @@ pub async fn effective_links_follow_native_hyperlink_state() {
 pub async fn html_artifacts_keep_head_policies_at_each_insertion_point() {
     sandbox_loading_support::programs::artifact_witness().await;
 }
+
+/// Public preparation preserves marker-looking payloads through mounted completion.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn marker_looking_payloads_survive_preparation_and_completion() {
+    sandbox_loading_support::programs::marker_witness().await;
+}

@@ -30,5 +30,5 @@ pub(super) fn assemble(
     if !standalone {
         script.push_str(include_str!("navigation.js"));
     }
-    Ok(include_str!("runtime.html").replacen("__SCRIPT__", &head_program(&script), 1))
+    Ok(head_program(&script))
 }

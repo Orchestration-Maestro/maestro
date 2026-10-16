@@ -1,7 +1,4 @@
-		(async () => {
-			try {
-				const userCodeFunc = async () => {
-					__USER_CODE__
+
 				};
 
 				const returnValue = await userCodeFunc();
