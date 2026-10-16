@@ -26,3 +26,17 @@ pub(crate) fn decode(base64: &str) -> io::Result<Vec<u8>> {
         .decode(framed)
         .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))
 }
+
+/// Decode the complete original artifact payload, including folded data URLs.
+pub(crate) fn original(content: &str) -> io::Result<Vec<u8>> {
+    let payload = content
+        .strip_prefix("data:")
+        .and_then(|s| s.split_once("base64,"))
+        .map(|(_, payload)| payload)
+        .filter(|payload| !payload.is_empty())
+        .unwrap_or(content);
+    decode(payload)
+}
+
+#[cfg(test)]
+mod tests;

@@ -44,7 +44,7 @@ pub enum TextView {
     /// Presentation slide text.
     Presentation,
 }
-mod reading;
+pub(crate) mod reading;
 pub use reading::{ReadingContent, ReadingLayout, ReadingPhase, ReadingPlacement};
 #[cfg(target_arch = "wasm32")]
 pub use reading::{ReadingMount, ReadingRoot};

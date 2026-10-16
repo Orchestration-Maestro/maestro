@@ -7,7 +7,7 @@ use std::fmt::Write;
 use std::{borrow::Cow, fmt};
 
 /// Native PDF text extraction and page rendering.
-pub(crate) mod pdf;
+pub mod pdf;
 
 /// Model-facing attachment classification.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

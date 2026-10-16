@@ -20,13 +20,17 @@ and close in that order, omitting unavailable toggle modes.
 
 The overlay shows original images, selectable literal text and presentation text.
 Only PDF, Word and spreadsheet attachments with nonempty extracted text have a
-preview/text toggle. Whitespace-only text is present. PDF, Word and spreadsheet
-preview containers are delivered, but their renderers remain in
-[#795](https://github.com/Orchestration-Maestro/maestro/issues/795),
+preview/text toggle. Whitespace-only text is present. PDF previews render ordered
+opaque pages through the application PDF adapter, one page per repaint frame.
+The native reading wrapper scrolls, bounds overlay pages to 1000 points and keeps
+completed page nodes across ordinary repaints. Selecting text, replacing content
+or closing cancels unfinished page work. Word and spreadsheet renderers remain in
 [#797](https://github.com/Orchestration-Maestro/maestro/issues/797) and
 [#798](https://github.com/Orchestration-Maestro/maestro/issues/798); no extracted-text
 fallback is substituted for them. A file-presentation failure replaces the body
-with an error panel while leaving download and close available.
+with centered, selectable native error text while leaving download and close
+available. A nonempty overlay failure stays dominant through record edits until
+a mode change clears it; an empty host-presentation diagnostic stays suppressed.
 
 ## Platform ownership
 

@@ -1,0 +1,26 @@
+.maestro-pdf {
+  box-sizing: border-box;
+  min-height: 100%;
+  width: 100%;
+  color: var(--maestro-color-text);
+  background: var(--maestro-color-background);
+}
+.maestro-pdf-artifact { padding: 16px; }
+.maestro-pdf > div { display: flow-root; }
+.maestro-pdf > div:not(:last-child) { margin-bottom: var(--maestro-spacing-md); }
+.maestro-pdf img {
+  display: block;
+  max-width: 100%;
+  width: 100%;
+  height: auto;
+  background: white;
+  border: 1px solid var(--maestro-color-border);
+  border-radius: var(--maestro-radii-panel);
+  box-shadow: 0 2px 4px color-mix(in srgb, var(--maestro-color-text) 10%, transparent);
+  box-sizing: border-box;
+}
+.maestro-pdf hr {
+  margin: var(--maestro-spacing-md) 0;
+  border: 0;
+  border-top: 1px solid var(--maestro-color-border);
+}

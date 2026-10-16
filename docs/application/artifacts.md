@@ -70,5 +70,5 @@ and tool cards in [#820](https://github.com/Orchestration-Maestro/maestro/issues
 Sandbox corrections remain in [#104](https://github.com/Orchestration-Maestro/maestro/issues/104)
 and [#105](https://github.com/Orchestration-Maestro/maestro/issues/105).
 
-The [generic-file view](../browser/artifacts.md) is embeddable independently of
-the panel shell and accepts the existing replaceable native host.
+The [generic-file and PDF views](../browser/artifacts.md) are embeddable
+independently of the panel shell and accept the existing replaceable native host.

@@ -4,7 +4,6 @@ use crate::{
     Attachment, I18n,
     browser::attachment_content::{
         AttachmentContent, AttachmentSurface, AttachmentUiError, FileType, ImageFit, TextView,
-        color, points,
     },
 };
 use maestro_app::browser::utils::attachment_utils::AttachmentType;
@@ -41,11 +40,23 @@ impl AttachmentOverlay {
         i: &I18n<F>,
         p: &BrandPresentation<'_>,
     ) -> Result<egui::Rect, AttachmentUiError> {
-        if let Some(rect) = self.error_panel(ui, i, p)? {
-            return Ok(rect);
+        if let Some(error) = self.error.as_ref().filter(|s| !s.is_empty()) {
+            return self.error_view.present(
+                self.host.as_ref(),
+                ui,
+                (self.id, Some(self.id), false),
+                ([i.text("Error loading file")?, error.clone()], p),
+            );
         }
         let (kind, name, source, text, reload) = self.content_data()?;
         self.changed = false;
+        if reload {
+            self.pdf.reset(false);
+        }
+        if kind == FileType::Pdf && !self.extracted {
+            return self.pdf_body(ui, i, p, reload);
+        }
+        self.pdf.reset(false);
         let text = if kind != FileType::Image
             && (self.extracted || matches!(kind, FileType::Text | FileType::Pptx))
         {
@@ -134,47 +145,50 @@ impl AttachmentOverlay {
             )
         })
     }
-    /// Render a document-display failure without removing header controls.
-    fn error_panel<F: ?Sized>(
-        &self,
-        ui: &mut egui::Ui,
+    /// Advance the shared owned document through the raw attachment byte domain.
+    fn pdf_body<F: ?Sized>(
+        &mut self,
+        ui: &egui::Ui,
         i: &I18n<F>,
         p: &BrandPresentation<'_>,
-    ) -> Result<Option<egui::Rect>, AttachmentUiError> {
-        let Some(error) = self.error.as_ref().filter(|s| !s.is_empty()) else {
-            return Ok(None);
+        reload: bool,
+    ) -> Result<egui::Rect, AttachmentUiError> {
+        let result = if reload {
+            let bytes = {
+                let attachment = self
+                    .attachment
+                    .try_borrow()
+                    .map_err(|_| AttachmentUiError::BorrowConflict)?;
+                crate::utils::base64::decode(&attachment.content).map_err(|e| e.to_string())
+            };
+            bytes.and_then(|bytes| self.pdf.open(bytes))
+        } else {
+            Ok(())
         };
-        self.host.remove(self.id);
-        let margin = points(p.spacing["md"]);
-        let spacing = points(p.spacing["xs"]);
-        let font = ui.style().text_styles[&egui::TextStyle::Body].clone();
-        let tint = color(p, "error")?;
-        let available = ui.available_rect_before_wrap();
-        let wrap = (available.width().min(672.) - 2. * margin).max(0.);
-        let heading = ui
-            .painter()
-            .layout(i.text("Error loading file")?, font.clone(), tint, wrap);
-        let detail = ui
-            .painter()
-            .layout(error.clone(), font, tint.gamma_multiply(0.9), wrap);
-        let size = egui::vec2(
-            heading.size().x.max(detail.size().x) + 2. * margin,
-            heading.size().y + detail.size().y + spacing + 2. * margin,
-        );
-        let rect = egui::Rect::from_center_size(available.center(), size);
-        ui.painter().rect(
-            rect,
-            egui::CornerRadius::from(points(p.radii["panel"])),
-            color(p, "panel")?,
-            egui::Stroke::new(1., tint),
-            egui::StrokeKind::Inside,
-        );
-        let origin = rect.min + egui::vec2(margin, margin);
-        let detail_origin = origin + egui::vec2(0., heading.size().y + spacing);
-        ui.painter().galley(origin, heading, tint);
-        ui.painter()
-            .galley(detail_origin, detail, tint.gamma_multiply(0.9));
-        Ok(Some(rect))
+        if let Err(message) = result.and_then(|()| self.pdf.advance(ui.ctx())) {
+            self.error = Some(super::pdf::detail(&message, i)?);
+            ui.ctx().request_repaint();
+            return Ok(ui.available_rect_before_wrap());
+        }
+        let mut rect = ui.available_rect_before_wrap();
+        rect.set_width(rect.width().min(1000.));
+        rect = rect.translate(egui::vec2((ui.available_width() - rect.width()) / 2., 0.));
+        match self.pdf.present(
+            self.host.as_ref(),
+            ui,
+            (self.id, rect, Some(self.id), false),
+            p,
+        ) {
+            Err(AttachmentUiError::Presentation(message)) => {
+                if !message.is_empty() {
+                    self.pdf.reset(false);
+                }
+                self.error = Some(message);
+                ui.ctx().request_repaint();
+                Ok(rect)
+            }
+            other => other.map(|()| rect),
+        }
     }
     /// Place selected content in its bounded viewport container.
     fn present(

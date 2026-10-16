@@ -8,6 +8,8 @@ use crate::{
 use maestro_theme::BrandPresentation;
 use std::{cell::RefCell, rc::Rc};
 mod content;
+pub(crate) mod error;
+pub(crate) mod pdf;
 /// A separately owned attachment overlay.
 pub struct AttachmentOverlay {
     /// Live original record.
@@ -22,6 +24,10 @@ pub struct AttachmentOverlay {
     extracted: bool,
     /// Last file-display failure.
     error: Option<String>,
+    /// Owned progressive document and native pages.
+    pdf: pdf::Pdf,
+    /// Native error panel, independent of the failure latch.
+    error_view: error::Error,
     /// Last rendered file operands.
     previous: Option<(FileType, String, String, String)>,
     /// A selected-mode change needs dispatch.
@@ -44,6 +50,8 @@ impl AttachmentOverlay {
             on_close,
             extracted: false,
             error: None,
+            pdf: pdf::Pdf::default(),
+            error_view: error::Error::default(),
             previous: None,
             changed: true,
             closed: false,
@@ -116,6 +124,7 @@ impl AttachmentOverlay {
         self.extracted = false;
         self.error = None;
         self.previous = None;
+        self.pdf.reset(false);
         if let Some(callback) = self.on_close.take() {
             callback();
         }

@@ -1,10 +1,7 @@
 //! Download-only artifact with a retained literal native reading body.
 use super::artifact_element::{ArtifactElement, ArtifactView};
 use crate::{
-    browser::attachment_content::{
-        self, AttachmentContent, AttachmentHost, AttachmentSurface, AttachmentUiError,
-        ReadingContent, ReadingPhase, ReadingPlacement,
-    },
+    browser::attachment_content::{self, AttachmentHost, AttachmentUiError, ReadingContent},
     components::download_button,
 };
 use std::{cell::RefCell, rc::Rc};
@@ -56,14 +53,7 @@ impl GenericArtifact {
     }
     /// Select complete original bytes, including folded data URL payloads.
     fn bytes(&self) -> Result<Vec<u8>, AttachmentUiError> {
-        let payload = self
-            .content
-            .strip_prefix("data:")
-            .and_then(|s| s.split_once("base64,"))
-            .map(|(_, payload)| payload)
-            .filter(|payload| !payload.is_empty())
-            .unwrap_or(&self.content);
-        Ok(crate::utils::base64::decode(payload)?)
+        Ok(crate::utils::base64::original(&self.content)?)
     }
     /// Select the explicitly supported download media types.
     fn mime(&self) -> &'static str {
@@ -168,26 +158,13 @@ impl ArtifactElement for GenericArtifact {
         let rect = ui
             .allocate_space(ui.available_size().max(egui::Vec2::ZERO))
             .1;
-        for phase in [ReadingPhase::Measure, ReadingPhase::Publish] {
-            self.host.present(
-                AttachmentSurface {
-                    id: self.id,
-                    rect,
-                    clip_rect: ui.clip_rect(),
-                    pixels_per_point: ui.ctx().pixels_per_point(),
-                    opacity: 1.,
-                    occluders: vec![],
-                    content: AttachmentContent::Reading(ReadingPlacement {
-                        content: Rc::clone(&reading),
-                        phase,
-                        sizes: &[],
-                        modal: None,
-                        context: ui.ctx(),
-                    }),
-                },
-                view.presentation,
-            )?;
-        }
+        attachment_content::reading::present(
+            self.host.as_ref(),
+            ui,
+            (self.id, rect, None),
+            &reading,
+            view.presentation,
+        )?;
         self.reading = Some(reading);
         Ok(())
     }
