@@ -1,6 +1,9 @@
 #![cfg(test)]
 #![cfg(unix)]
 
+#[path = "fixtures/toolchain_support.rs"]
+mod toolchain_support;
+
 #[path = "fixtures/recipe_support.rs"]
 mod recipe_support;
 use recipe_support::Workspace;
@@ -583,7 +586,6 @@ fn browser_build_rejects_missing_or_failing_inputs() {
 
 #[test]
 fn browser_wasm_closure_excludes_native_engines() {
-    use std::process::Command;
     let browser = Browser::new();
     let manifest = browser.fixture("Cargo.toml");
     let original = fs::read_to_string(&manifest).unwrap();
@@ -602,7 +604,7 @@ fn browser_wasm_closure_excludes_native_engines() {
     )
     .unwrap();
     assert!(
-        Command::new("cargo")
+        toolchain_support::command("cargo")
             .args(["generate-lockfile", "--offline", "--manifest-path"])
             .arg(&manifest)
             .status()
@@ -615,7 +617,7 @@ fn browser_wasm_closure_excludes_native_engines() {
     fs::write(&manifest, original).unwrap();
     fs::write(browser.fixture("Cargo.lock"), lock).unwrap();
     success(&browser.run("browser-library-build"));
-    let tree = Command::new("cargo")
+    let tree = toolchain_support::command("cargo")
         .args([
             "tree",
             "--locked",

@@ -44,13 +44,11 @@ impl Workspace {
                 .join("tests/fixtures/recipe_tools/Cargo.toml");
             let target = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/recipe-tools");
             assert!(
-                Command::new("cargo")
+                super::toolchain_support::command("cargo")
                     .args(["build", "--locked", "--manifest-path"])
                     .arg(manifest)
                     .arg("--target-dir")
                     .arg(&target)
-                    .env_remove("RUSTFLAGS")
-                    .env_remove("CARGO_ENCODED_RUSTFLAGS")
                     .status()
                     .unwrap()
                     .success()
@@ -65,7 +63,7 @@ impl Workspace {
     }
 
     pub fn command(&self, recipe: &str) -> Command {
-        let mut command = Command::new("just");
+        let mut command = super::toolchain_support::command("just");
         command
             .current_dir(&self.0)
             .arg(recipe)

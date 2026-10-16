@@ -74,7 +74,7 @@ impl Browser {
     }
 
     pub fn command(&self, recipe: &str) -> Command {
-        let mut command = Command::new("just");
+        let mut command = super::toolchain_support::command("just");
         command
             .current_dir(&self.workspace.0)
             .arg(recipe)
@@ -83,11 +83,6 @@ impl Browser {
                 "CARGO_TARGET_DIR",
                 Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/browser-author-tests"),
             )
-            .env_remove("RUSTFLAGS")
-            .env_remove("CARGO_ENCODED_RUSTFLAGS")
-            .env_remove("CARGO_LLVM_COV")
-            .env_remove("CARGO_LLVM_COV_TARGET_DIR")
-            .env_remove("LLVM_PROFILE_FILE")
             .env("TRUNK_SKIP_VERSION_CHECK", "true");
         command
     }
