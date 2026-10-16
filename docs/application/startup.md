@@ -58,9 +58,9 @@ first-line session header with a nonempty string cwd selects the existing
 is relocated using its native basename; transcript bytes are not rewritten.
 The scan captures headers and final link referents before moving any entry.
 Relative links are re-anchored because relocation changes their resolution base.
-If Windows denies replacement-link creation for lack of symbolic-link privilege,
-the original link is renamed unchanged instead; a relative link then keeps its
-original text, which may resolve differently. Other creation failures retain the source.
+On Windows without link privilege, a link whose target cannot be shown to resolve
+to the same file from its new place stays where it is and is retried.
+Other creation failures also retain the source.
 Absolute links are renamed first. After relative links are published, their final
 identities are checked against the captured referent's new location after a successful
 move, or its original location otherwise. An absolute link retains its original entry

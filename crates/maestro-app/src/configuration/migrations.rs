@@ -230,7 +230,16 @@ fn remove_link_entry(path: &Path) -> io::Result<()> {
     fs::remove_file(path)
 }
 
-/// Re-anchor a link, or rename it unchanged when Windows denies link privilege.
+/// Whether renaming the stored target preserves the captured referent.
+#[cfg(any(windows, test))]
+fn link_rename_preserves_referent(link: &Path, target: &Path, referent: &Path) -> bool {
+    link.is_absolute()
+        || target
+            .parent()
+            .is_some_and(|parent| parent.join(link) == referent)
+}
+
+/// Re-anchor a link, retaining its source if privilege-free rename changes identity.
 fn publish_link(path: &Path, target: &Path, referent: &Path) -> io::Result<()> {
     let mut temporary = path.as_os_str().to_os_string();
     temporary.push(".migrating");
@@ -249,7 +258,10 @@ fn publish_link(path: &Path, target: &Path, referent: &Path) -> io::Result<()> {
         .as_ref()
         .is_err_and(|error| error.raw_os_error() == Some(1314))
     {
-        return fs::rename(path, target);
+        if link_rename_preserves_referent(&fs::read_link(path)?, target, referent) {
+            return fs::rename(path, target);
+        }
+        return created;
     }
     created?;
     let result = fs::rename(&temporary, target);

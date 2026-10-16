@@ -1,16 +1,50 @@
-//! Native Windows directory-link relocation witnesses.
-#![cfg(windows)]
+//! Link-identity decisions and native Windows relocation witnesses.
 
+use super::link_rename_preserves_referent;
+use std::path::Path;
+
+#[cfg(windows)]
 use super::{migrate_tools_to_bin, publish_link};
+#[cfg(windows)]
 use std::{fs, os::windows::fs::symlink_dir, path::PathBuf};
 
+#[test]
+fn link_rename_preserves_captured_referent() {
+    let root = std::env::temp_dir();
+    let referent = root.join("agent/tools/lib/program");
+    let destination = root.join("agent/bin/fd");
+    assert!(link_rename_preserves_referent(
+        &referent,
+        &destination,
+        &referent
+    ));
+    assert!(link_rename_preserves_referent(
+        Path::new("lib/program"),
+        &root.join("agent/tools/rg"),
+        &referent
+    ));
+    // The same stored target dangles or selects a decoy after moving to bin.
+    assert!(!link_rename_preserves_referent(
+        Path::new("lib/program"),
+        &destination,
+        &referent
+    ));
+    assert!(!link_rename_preserves_referent(
+        Path::new("../tools/lib/program"),
+        &destination,
+        &referent
+    ));
+}
+
 /// Create an isolated directory for one Windows filesystem witness.
+#[cfg(windows)]
 fn scratch(name: &str) -> PathBuf {
     let root = std::env::temp_dir().join(format!("maestro-links-{}-{name}", std::process::id()));
     fs::create_dir(&root).unwrap();
     root
 }
 
+#[cfg(windows)]
 #[test]
 fn directory_link_publication_retires_source() {
     let root = scratch("retirement");
@@ -27,6 +61,7 @@ fn directory_link_publication_retires_source() {
     fs::remove_dir_all(root).unwrap();
 }
 
+#[cfg(windows)]
 #[test]
 fn failed_directory_link_publication_cleans_staging_and_retries() {
     let root = scratch("retry");
@@ -49,6 +84,7 @@ fn failed_directory_link_publication_cleans_staging_and_retries() {
     fs::remove_dir_all(root).unwrap();
 }
 
+#[cfg(windows)]
 #[test]
 fn directory_link_collision_removes_only_source_entry() {
     if std::env::var_os("MAESTRO_LINK_COLLISION_CHILD").is_some() {
