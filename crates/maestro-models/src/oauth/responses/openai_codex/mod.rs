@@ -2,7 +2,7 @@
 mod callback;
 mod token;
 
-use crate::oauth::callback::parse_authorization_input;
+use crate::oauth::callback::{parse_authorization_input, start_manual};
 use crate::oauth::native::{CallbackOutcome, CallbackServer};
 use crate::{
     BoxFuture, EventStream, Fetch, OAuthAuthInfo, OAuthCallbacks, OAuthCredentials, OAuthError,
@@ -168,19 +168,6 @@ fn validated_input(input: &str, expected: &str) -> Result<Option<String>, OAuthE
         return Err(OAuthError::message("State mismatch"));
     }
     Ok(fields.code)
-}
-/// Own manual work independently and publish its result before cancelling the wait.
-fn start_manual(
-    future: BoxFuture<Result<String, OAuthError>>,
-    wait: EventStream<CallbackOutcome, ()>,
-) -> EventStream<Result<String, OAuthError>, ()> {
-    let manual = EventStream::new(|_| true, |_| ());
-    let output = manual.clone();
-    crate::providers::http::spawn_detached(async move {
-        output.push(future.await);
-        wait.push(CallbackOutcome::Cancelled);
-    });
-    manual
 }
 
 /// Refresh response-account tokens without binding a listener or storing credentials.

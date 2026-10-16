@@ -113,7 +113,9 @@ Pasted input recognizes an absolute URL, then code/state separated by `#`, then
 query text containing `code=`, then a bare code. Nonempty mismatching state is
 rejected; absent state uses the verifier and explicitly empty state does not.
 Rejected callback requests leave the same wait available for later success.
-Manual input continues independently if a callback selects the code first.
+Both account flows publish the original manual result before cancelling callback
+waiting. Manual work remains independently owned even after a browser winner or
+the loss of all observation handles.
 
 Login binds a native listener at `127.0.0.1:53692`; a nonempty
 `MAESTRO_OAUTH_CALLBACK_HOST` changes only its binding host. A binding that
@@ -175,9 +177,9 @@ pasted state is accepted. Callback requests instead require exact matching
 state before accepting a nonempty code.
 
 Authorization notification precedes concurrent manual input. Settled manual
-errors are checked before selecting an available callback code; losing manual
-work continues independently. Progress, selector and callback signal are not
-consulted. The listener remains owned through token processing and account
+errors are checked before selecting an available callback code. Manual-work
+ownership follows the shared policy described above. Progress, selector and
+callback signal are not consulted. The listener remains owned through token processing and account
 extraction; explicit completion observes accepting-listener shutdown, while
 abandoning the future requests it. Admitted-peer shutdown uses the shared
 listener policy described above.

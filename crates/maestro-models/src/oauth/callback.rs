@@ -1,7 +1,28 @@
 //! Shared authorization input recognition and callback response records.
-use crate::oauth::authorization_whitespace;
+use crate::oauth::{authorization_whitespace, native::CallbackOutcome};
+use crate::providers::http::spawn_detached;
+use crate::{BoxFuture, EventStream, OAuthError};
 use serde::Deserialize;
 use url::Url;
+
+#[cfg(test)]
+#[cfg(not(target_arch = "wasm32"))]
+mod tests;
+
+/// Publish original manual input before cancelling the callback wait.
+/// Owned work continues independently of its observation handles.
+pub(super) fn start_manual(
+    future: BoxFuture<Result<String, OAuthError>>,
+    wait: EventStream<CallbackOutcome, ()>,
+) -> EventStream<Result<String, OAuthError>, ()> {
+    let manual = EventStream::new(|_| true, |_| ());
+    let output = manual.clone();
+    spawn_detached(async move {
+        output.push(future.await);
+        wait.push(CallbackOutcome::Cancelled);
+    });
+    manual
+}
 
 /// Optional authorization fields, retaining absent versus empty values.
 #[derive(Debug, Default, PartialEq, Eq, Deserialize)]
