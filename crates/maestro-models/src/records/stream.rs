@@ -100,7 +100,7 @@ pub fn stream_simple_for<E: ProviderExecution>(
         E::submission(options, E::provided(submit)),
     )
 }
-/// Start raw invocation now and return an independent, thread-safe result observation.
+/// Start raw invocation now and return an independent result observation, thread-safe on native targets.
 #[must_use]
 pub fn complete_for<E: ProviderExecution>(
     model: Model,
@@ -108,10 +108,9 @@ pub fn complete_for<E: ProviderExecution>(
     options: Option<ProviderStreamOptions<E>>,
     submit: ProviderSpawner<E>,
 ) -> BoxFuture<Result<SharedAssistantMessage, DiagnosticErrorInfo>> {
-    let invocation = stream_for::<E>(model, context, options, submit);
-    Box::pin(async move { Ok(invocation?.result().await) })
+    completion(stream_for::<E>(model, context, options, submit))
 }
-/// Start simple invocation now and return an independent, thread-safe result observation.
+/// Start simple invocation now and return an independent result observation, thread-safe on native targets.
 #[must_use]
 pub fn complete_simple_for<E: ProviderExecution>(
     model: Model,
@@ -119,6 +118,5 @@ pub fn complete_simple_for<E: ProviderExecution>(
     options: Option<SimpleStreamOptions<E>>,
     submit: ProviderSpawner<E>,
 ) -> BoxFuture<Result<SharedAssistantMessage, DiagnosticErrorInfo>> {
-    let invocation = stream_simple_for::<E>(model, context, options, submit);
-    Box::pin(async move { Ok(invocation?.result().await) })
+    completion(stream_simple_for::<E>(model, context, options, submit))
 }
