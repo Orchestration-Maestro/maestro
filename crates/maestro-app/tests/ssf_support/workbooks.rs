@@ -15,7 +15,7 @@ pub(super) fn observe(args: &Value) -> Value {
     let file = args["file"].as_str().unwrap();
     let mut ssf = Ssf::default();
     match ssf::read(&bytes(file), file, &mut ssf) {
-        Ok(book) => json!({"ok": project(book, &ssf, file == "legacy-states.xls")}),
+        Ok(book) => json!({"ok": project(book, &ssf, false)}),
         Err(error) => {
             assert!(matches!(error, ssf::WorkbookError::Reader(_)));
             assert!(error.to_string().contains(file));

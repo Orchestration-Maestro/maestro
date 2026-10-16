@@ -33,11 +33,15 @@ Derived format data and policy retain the
 values through its streaming reader and legacy XLS values through its owned
 range reader. The application reads style indices, raw
 error labels, dimensions and merges through the existing indexed ZIP/XML owners;
-it uses its own number-format evaluator, not the parser's display text. Legacy
-XLS reading reuses the scalar projection with General text, populated bounds,
-ordered sheets and merges. Raw style metadata, format-table effects, declared blank
-dimensions and binary formula metadata remain tracked in
-[legacy workbook metadata](https://github.com/Orchestration-Maestro/maestro/issues/1025).
+it uses its own number-format evaluator, not the parser's display text. The local
+[calamine patch](../../vendor/calamine/src/xls.rs) retains ordered raw FORMAT
+records, resolved per-cell format selections and exclusive declared dimensions.
+It reuses the existing binary, codepage and scalar decoders with no new dependency
+or optional feature. Legacy cells use the same shared formatter, live format table
+and detached snapshots as application callers. Declared blank bounds do not
+allocate blank cells. Binary formula expressions, arrays, rich text and hyperlinks
+remain tracked in
+[legacy workbook metadata](https://github.com/Orchestration-Maestro/maestro/issues/1175).
 
 The parser's dependency closure uses MIT or Apache-2.0 where offered, with
 BSD-3-Clause for encoding_rs, Unicode-3.0 for unicode-ident and Zlib for zlib-rs.

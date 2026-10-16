@@ -140,6 +140,7 @@ identical content after failure retries. Empty content retains a successful body
 but empty content after failure shows an empty body. Filename edits only update
 metadata. Errors use the shared selectable native panel with the localized
 `Error loading spreadsheet` heading and literal diagnostic or localized fallback.
-Legacy XLS reading and full formatting remain in
-[#1046](https://github.com/Orchestration-Maestro/maestro/issues/1046) and
-[#1025](https://github.com/Orchestration-Maestro/maestro/issues/1025).
+Legacy XLS cells use the [shared workbook reader](../application/document-formats.md)
+for formatted text and declared bounds. Binary formula, array, rich-text and
+hyperlink metadata remain in
+[legacy workbook metadata](https://github.com/Orchestration-Maestro/maestro/issues/1175).

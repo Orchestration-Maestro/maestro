@@ -111,7 +111,7 @@ pub use crate::de::{
 };
 pub use crate::errors::Error;
 pub use crate::ods::{Ods, OdsError};
-pub use crate::xls::{Xls, XlsError, XlsOptions};
+pub use crate::xls::{Xls, XlsCellFormat, XlsDimensions, XlsError, XlsOptions};
 pub use crate::xlsb::{Xlsb, XlsbError};
 pub use crate::xlsx::{
     expand_shared_formula, expand_shared_formula_into, Hyperlink, Xlsx, XlsxCellFormula,

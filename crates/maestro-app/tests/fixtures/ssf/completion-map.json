@@ -408,19 +408,8 @@
   "crates/maestro-app/tests/workbooks.rs::workbook_numeric_codes_and_custom_sections": [
     "encoded-formats.xlsx"
   ],
-  "crates/maestro-app/tests/workbooks.rs::workbook_legacy_values_use_general_and_populated_bounds": [
-    "legacy-basic.xls",
-    "legacy-custom.xls",
-    "legacy-dimensions.xls"
-  ],
-  "crates/maestro-app/tests/workbooks.rs::workbook_legacy_projection_preserves_order_merges_epoch_and_raw_text": [
-    "boundary-18"
-  ],
   "crates/maestro-app/tests/workbooks.rs::workbook_legacy_general_does_not_consume_active_format_zero": [
     "boundary-19"
-  ],
-  "crates/maestro-app/tests/workbooks.rs::workbook_legacy_reader_failure_keeps_workbook_context": [
-    "boundary-20"
   ],
   "crates/maestro-app/tests/workbooks.rs::workbook_format_code_escapes_share_one_decoder": [
     "format-escape-boundaries.xlsx"

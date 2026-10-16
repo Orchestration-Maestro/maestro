@@ -1,4 +1,4 @@
-//! XLSX values projected through workbook metadata and the shared formatter.
+//! Modern and legacy workbook values projected through metadata and the shared formatter.
 use super::super::docx_preview::{OpenXmlPackage, Options, Relationship, resolve_path};
 use super::{
     CellAddress, CellObject, CellValue, ExcelDataType, Range, Ssf, WorkBook, WorkSheet,
@@ -9,6 +9,7 @@ use calamine::{DataType, Reader, Xls, Xlsx, XlsxError};
 use indexmap::IndexMap;
 use std::{collections::BTreeMap, io::Cursor};
 /// Read supplied XLSX or compound-file XLS bytes into owned sheets with formatted cell text.
+/// Legacy sheets include declared blank bounds and load raw formats into the live table.
 ///
 /// # Errors
 /// Returns contextual archive, missing-part, XML, native-reader or address failures.
@@ -213,10 +214,7 @@ fn sheet_range(
         for address in result.cells.keys() {
             let p = decode_cell(address)?;
             let range = result.range.get_or_insert(Range { s: p, e: p });
-            range.s.r = range.s.r.min(p.r);
-            range.s.c = range.s.c.min(p.c);
-            range.e.r = range.e.r.max(p.r);
-            range.e.c = range.e.c.max(p.c);
+            grow_range(range, p);
         }
     }
     if let Some(parent) = xml.element(xml.root(), "mergeCells") {
@@ -227,6 +225,13 @@ fn sheet_range(
             .collect::<Result<_, _>>()?;
     }
     Ok(())
+}
+/// Include one observed cell in an inclusive rectangle.
+fn grow_range(range: &mut Range, position: CellAddress) {
+    range.s.r = range.s.r.min(position.r);
+    range.s.c = range.s.c.min(position.c);
+    range.e.r = range.e.r.max(position.r);
+    range.e.c = range.e.c.max(position.c);
 }
 /// Preserve raw errors and leave failed individual formats uncached.
 fn cell(
@@ -346,6 +351,9 @@ fn native_scalar(value: &impl DataType) -> Option<CellValue> {
 fn read_legacy(data: &[u8], name: &str, ssf: &Ssf) -> Result<WorkBook, WorkbookError> {
     let mut native = Xls::new(Cursor::new(data))
         .map_err(|error| WorkbookError::Reader(format!("{name}: {error}")))?;
+    for (id, code) in native.number_formats() {
+        let _ = ssf.load(code, Some(u32::from(*id)));
+    }
     let date1904 = native.has_1904_epoch();
     let mut sheets = IndexMap::new();
     for sheet_name in native.sheet_names() {
@@ -355,7 +363,16 @@ fn read_legacy(data: &[u8], name: &str, ssf: &Ssf) -> Result<WorkBook, WorkbookE
         let merges = native
             .merge_cells_by_sheet_name(&sheet_name)
             .map_err(|error| WorkbookError::Reader(format!("{name}: {sheet_name}: {error}")))?;
-        sheets.insert(sheet_name, legacy_sheet(&values, &merges)?);
+        let formats = native
+            .worksheet_cell_formats(&sheet_name)
+            .map_err(|error| WorkbookError::Reader(format!("{name}: {sheet_name}: {error}")))?;
+        let dimensions = native
+            .worksheet_dimensions(&sheet_name)
+            .map_err(|error| WorkbookError::Reader(format!("{name}: {sheet_name}: {error}")))?;
+        sheets.insert(
+            sheet_name,
+            legacy_sheet(&values, &merges, dimensions, (formats, ssf, date1904)),
+        );
     }
     Ok(WorkBook {
         sheets,
@@ -367,28 +384,38 @@ fn read_legacy(data: &[u8], name: &str, ssf: &Ssf) -> Result<WorkBook, WorkbookE
             .clone(),
     })
 }
-/// Preserve native populated bounds, absolute positions, merge order and raw text.
+/// Project native values in record order through the selected number formats.
 fn legacy_sheet(
     values: &calamine::Range<calamine::Data>,
     merges: &[calamine::Dimensions],
-) -> Result<WorkSheet, WorkbookError> {
+    dimensions: Option<calamine::XlsDimensions>,
+    format: (&[calamine::XlsCellFormat], &Ssf, bool),
+) -> WorkSheet {
     let mut cells = IndexMap::new();
-    let start = values.start().unwrap_or_default();
-    for (row, column, value) in values.used_cells() {
+    let (s, e) = dimensions.map_or(((0, 0), (0, 0)), |d| (d.start, d.end));
+    let mut range = Range {
+        s: CellAddress { r: s.0, c: s.1 },
+        e: CellAddress {
+            r: e.0.saturating_sub(1),
+            c: e.1.saturating_sub(1),
+        },
+    };
+    for metadata in format.0 {
+        let Some(value) = values.get_value(metadata.position) else {
+            continue;
+        };
         let error = value.get_error().map(ToString::to_string);
         if let Some(mut cell) = basic_cell(native_scalar(value), error, (None, None)) {
-            cell.w = cell.w.or_else(|| Some(super::general(cell.v.scalar())));
+            safe_format_xf(&mut cell, metadata.num_fmt_id, format.1, format.2);
             let position = CellAddress {
-                r: legacy_offset(start.0, row)?,
-                c: legacy_offset(start.1, column)?,
+                r: metadata.position.0,
+                c: metadata.position.1,
             };
+            grow_range(&mut range, position);
             cells.insert(encode_cell(position), cell);
         }
     }
-    let range = values.start().zip(values.end()).map(|(s, e)| Range {
-        s: CellAddress { r: s.0, c: s.1 },
-        e: CellAddress { r: e.0, c: e.1 },
-    });
+    let range = ((e.0 > 0 && e.1 > 0) || !cells.is_empty()).then_some(range);
     let merges = merges
         .iter()
         .map(|bounds| Range {
@@ -402,18 +429,33 @@ fn legacy_sheet(
             },
         })
         .collect();
-    Ok(WorkSheet {
+    WorkSheet {
         cells,
         range,
         merges,
-    })
+    }
 }
-/// Add a native relative cell offset without truncating its address.
-fn legacy_offset(start: u32, offset: usize) -> Result<u32, WorkbookError> {
-    u32::try_from(offset)
-        .ok()
-        .and_then(|n| start.checked_add(n))
-        .ok_or_else(|| WorkbookError::Address("legacy cell address outside numeric range".into()))
+/// Leave unresolved formats uncached and keep legacy General independent of slot zero.
+fn safe_format_xf(cell: &mut CellObject, id: Option<u16>, ssf: &Ssf, date1904: bool) {
+    let Some(id) = id else {
+        cell.w = None;
+        return;
+    };
+    cell.w = cell.w.take().or_else(|| {
+        if id == 0 {
+            Some(super::general(cell.v.scalar()))
+        } else {
+            ssf.format(
+                &super::NumberFormat::Id(u32::from(id)),
+                &cell.v,
+                &super::FormatOptions {
+                    date1904,
+                    ..Default::default()
+                },
+            )
+            .ok()
+        }
+    });
 }
 
 /// Decode raw spreadsheet string escapes in one pass over UTF-16 code units.

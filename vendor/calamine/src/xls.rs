@@ -152,10 +152,32 @@ pub struct XlsOptions {
     pub header_row: HeaderRow,
 }
 
+/// A resolved number-format selection for one emitted cell.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct XlsCellFormat {
+    /// Absolute zero-based row and column.
+    pub position: (u32, u32),
+    /// Selected number format, or absence of the referenced XF.
+    pub num_fmt_id: Option<u16>,
+}
+
+/// Declared sheet coordinates with exclusive ends, without materialized blank cells.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct XlsDimensions {
+    /// Absolute zero-based first row and column.
+    pub start: (u32, u32),
+    /// Exclusive row and column ends; zero-sized declarations remain distinguishable.
+    pub end: (u32, u32),
+}
+
 struct SheetData {
     range: Range<Data>,
     formula: Range<String>,
     merge_cells: Vec<Dimensions>,
+    /// Resolved selections in cell-emission order.
+    cell_formats: Vec<XlsCellFormat>,
+    /// Raw exclusive declaration, independent of populated bounds.
+    dimensions: Option<XlsDimensions>,
 }
 
 /// A struct representing an old xls format file (CFB)
@@ -166,6 +188,8 @@ pub struct Xls<RS> {
     reader: RS,
     options: XlsOptions,
     formats: Vec<CellFormat>,
+    /// Raw declarations in encounter order, including overwritten entries.
+    number_formats: Vec<(u16, String)>,
     is_1904: bool,
     #[cfg(feature = "picture")]
     pictures: Option<Vec<(String, Vec<u8>)>>,
@@ -179,6 +203,33 @@ fn cfb<RS: Seek + Read>(reader: &mut RS) -> Result<Cfb, XlsError> {
 }
 
 impl<RS: Read + Seek> Xls<RS> {
+    /// Return the raw declared rectangle, keeping absence distinct from zero-sized extents.
+    ///
+    /// # Errors
+    /// Returns `WorksheetNotFound` when the named sheet is absent.
+    pub fn worksheet_dimensions(&self, name: &str) -> Result<Option<XlsDimensions>, XlsError> {
+        self.sheets
+            .get(name)
+            .map(|sheet| sheet.dimensions)
+            .ok_or_else(|| XlsError::WorksheetNotFound(name.into()))
+    }
+
+    /// Borrow raw FORMAT records in encounter order, including duplicate identifiers.
+    pub fn number_formats(&self) -> &[(u16, String)] {
+        &self.number_formats
+    }
+
+    /// Borrow resolved formats in cell-emission order.
+    ///
+    /// # Errors
+    /// Returns `WorksheetNotFound` when the named sheet is absent.
+    pub fn worksheet_cell_formats(&self, name: &str) -> Result<&[XlsCellFormat], XlsError> {
+        self.sheets
+            .get(name)
+            .map(|sheet| sheet.cell_formats.as_slice())
+            .ok_or_else(|| XlsError::WorksheetNotFound(name.into()))
+    }
+
     /// Creates a new instance using `Options` to inform parsing.
     ///
     /// ```
@@ -207,6 +258,7 @@ impl<RS: Read + Seek> Xls<RS> {
             options,
             is_1904: false,
             formats: Vec::new(),
+            number_formats: Vec::new(),
             #[cfg(feature = "picture")]
             pictures: None,
         };
@@ -521,7 +573,8 @@ impl<RS: Read + Seek> Xls<RS> {
                     // Format (MS-XLS 2.4.126)
                     0x041E => match parse_format(&mut r, &encoding, biff) {
                         Ok((idx, format)) => {
-                            formats.insert(idx, format);
+                            formats.insert(idx, detect_custom_number_format(&format));
+                            self.number_formats.push((idx, format));
                         }
                         Err(e) => log::warn!("{e}"),
                     },
@@ -572,10 +625,10 @@ impl<RS: Read + Seek> Xls<RS> {
                 .collect();
         }
         self.formats = xfs
-            .into_iter()
-            .map(|fmt| match formats.get(&fmt) {
+            .iter()
+            .map(|fmt| match formats.get(fmt) {
                 Some(s) => *s,
-                _ => builtin_format_by_code(fmt),
+                _ => builtin_format_by_code(*fmt),
             })
             .collect();
 
@@ -606,18 +659,19 @@ impl<RS: Read + Seek> Xls<RS> {
             let sh = &stream[pos..];
             let records = RecordIter { stream: sh };
             let mut cells = Vec::new();
+            let mut cell_formats = Vec::new();
+            let mut dimensions = None;
             let mut formulas = Vec::new();
             let mut fmla_pos = (0, 0);
+            let mut fmla_format = None;
             let mut merge_cells = Vec::new();
             for record in records {
                 let r = record?;
+                let first_cell = cells.len();
                 match r.typ {
                     // 512: Dimensions
                     0x0200 => {
-                        let Dimensions { start, end } = parse_dimensions(r.data)?;
-                        let rows = (end.0 - start.0 + 1) as usize;
-                        let cols = (end.1 - start.1 + 1) as usize;
-                        cells.reserve(rows.saturating_mul(cols));
+                        dimensions = Some(parse_dimensions(r.data)?);
                     }
                     //0x0201 => cells.push(parse_blank(r.data)?), // 513: Blank
                     0x0203 => cells.push(parse_number(r.data, &self.formats, self.is_1904)?), // 515: Number
@@ -647,6 +701,7 @@ impl<RS: Read + Seek> Xls<RS> {
                         let col = read_u16(&r.data[2..]);
                         let format = self.formats.get(read_u16(&r.data[4..]) as usize);
                         fmla_pos = (row as u32, col as u32);
+                        fmla_format = xfs.get(usize::from(read_u16(&r.data[4..]))).copied();
                         if let Some(val) =
                             parse_formula_value(&r.data[6..14], format, self.is_1904)?
                         {
@@ -673,6 +728,7 @@ impl<RS: Read + Seek> Xls<RS> {
                     }
                     _ => (),
                 }
+                cell_formats.extend(emitted_formats(&cells[first_cell..], &r, &xfs, fmla_format));
             }
             let range = Range::from_sparse(cells);
             let formula = Range::from_sparse(formulas);
@@ -682,6 +738,8 @@ impl<RS: Read + Seek> Xls<RS> {
                     range,
                     formula,
                     merge_cells,
+                    cell_formats,
+                    dimensions,
                 },
             );
         }
@@ -699,6 +757,38 @@ impl<RS: Read + Seek> Xls<RS> {
 
         Ok(())
     }
+}
+
+/// Associate successfully decoded cells with the same record's XF selection.
+fn emitted_formats<'a>(
+    cells: &'a [Cell<Data>],
+    record: &'a Record<'_>,
+    xfs: &'a [u16],
+    formula_format: Option<u16>,
+) -> impl Iterator<Item = XlsCellFormat> + 'a {
+    cells.iter().enumerate().map(move |(index, cell)| {
+        let num_fmt_id = if record.typ == 0x0207 {
+            formula_format
+        } else {
+            let offset = if record.typ == 0x00BD {
+                4 + 6 * index
+            } else {
+                4
+            };
+            let id = xfs
+                .get(usize::from(read_u16(&record.data[offset..])))
+                .copied();
+            if record.typ == 0x0203 {
+                Some(id.unwrap_or(0))
+            } else {
+                id
+            }
+        };
+        XlsCellFormat {
+            position: cell.get_position(),
+            num_fmt_id,
+        }
+    })
 }
 
 /// <https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-xls/4d6a3d1e-d7c5-405f-bbae-d01e9cb79366>
@@ -1060,8 +1150,8 @@ fn parse_label_sst(r: &[u8], strings: &[String]) -> Result<Option<Cell<Data>>, X
     Ok(None)
 }
 
-fn parse_dimensions(r: &[u8]) -> Result<Dimensions, XlsError> {
-    let (rf, rl, mut cf, cl) = match r.len() {
+fn parse_dimensions(r: &[u8]) -> Result<XlsDimensions, XlsError> {
+    let (rf, rl, cf, cl) = match r.len() {
         10 => (
             read_u16(&r[0..2]) as u32,
             read_u16(&r[2..4]) as u32,
@@ -1082,23 +1172,10 @@ fn parse_dimensions(r: &[u8]) -> Result<Dimensions, XlsError> {
             });
         }
     };
-    // 2.5.53 ColU must be <= 0xFF, if larger, reasonable to assume
-    // starts at 0
-    // tests/OOM_alloc2.xls
-    if 0xFF < cf || cl < cf {
-        cf = 0;
-    }
-    if 1 <= rl && 1 <= cl {
-        Ok(Dimensions {
-            start: (rf, cf),
-            end: (rl - 1, cl - 1),
-        })
-    } else {
-        Ok(Dimensions {
-            start: (rf, cf),
-            end: (rf, cf),
-        })
-    }
+    Ok(XlsDimensions {
+        start: (rf, cf),
+        end: (rl, cl),
+    })
 }
 
 // Parse the Excel xls Shared String Table (SST). See [MS-XLS] 2.4.265.
@@ -1146,7 +1223,7 @@ fn parse_format(
     r: &mut Record<'_>,
     encoding: &XlsEncoding,
     biff: Biff,
-) -> Result<(u16, CellFormat), XlsError> {
+) -> Result<(u16, String), XlsError> {
     if r.data.len() < 2 {
         return Err(XlsError::Len {
             typ: "format",
@@ -1155,13 +1232,13 @@ fn parse_format(
         });
     }
     let ifmt = read_u16(r.data);
-    match ifmt {
-        5..=8 | 23..=26 | 41..=44 | 63..=66 | 164..=382 => (),
-        _ => return Err(XlsError::InvalidFormat { ifmt }),
-    }
-
-    let s = parse_string(&r.data[2..], encoding, biff)?;
-    Ok((ifmt, detect_custom_number_format(&s)))
+    r.data = &r.data[2..];
+    let s = if matches!(biff, Biff::Biff8) {
+        parse_string(r.data, encoding, biff)?
+    } else {
+        parse_short_string(r, encoding, biff)?
+    };
+    Ok((ifmt, s))
 }
 
 /// Decode `XLUnicodeRichExtendedString` [MS-XLS 2.5.293].

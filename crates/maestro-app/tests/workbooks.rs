@@ -307,16 +307,21 @@ fn workbook_string_escapes_decode_once_without_redecoding_shared_text() {
     }
 }
 
+mod legacy_workbook_support;
 mod ssf_support;
 
 #[test]
-fn workbook_legacy_values_use_general_and_populated_bounds() {
-    ssf_support::run("workbook_legacy_values_use_general_and_populated_bounds");
+fn workbook_legacy_values_follow_formats_and_declared_bounds() {
+    legacy_workbook_support::run(&[
+        "legacy-basic.xls",
+        "legacy-custom.xls",
+        "legacy-dimensions.xls",
+    ]);
 }
 
 #[test]
 fn workbook_legacy_projection_preserves_order_merges_epoch_and_raw_text() {
-    ssf_support::run("workbook_legacy_projection_preserves_order_merges_epoch_and_raw_text");
+    legacy_workbook_support::run(&["legacy-states.xls"]);
 }
 
 #[test]
@@ -326,7 +331,7 @@ fn workbook_legacy_general_does_not_consume_active_format_zero() {
 
 #[test]
 fn workbook_legacy_reader_failure_keeps_workbook_context() {
-    ssf_support::run("workbook_legacy_reader_failure_keeps_workbook_context");
+    legacy_workbook_support::run(&["legacy-truncated.xls"]);
 }
 
 #[test]
