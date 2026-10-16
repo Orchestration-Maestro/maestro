@@ -199,9 +199,17 @@ pub fn filter_and_sort_sessions<'a>(
     sort_mode: SortMode,
     name_filter: NameFilter,
 ) -> Vec<&'a maestro_app::SessionInfo> {
-    let eligible = sessions
-        .iter()
-        .filter(|session| name_filter == NameFilter::All || has_session_name(session));
+    filter_session_records(sessions.iter(), query, sort_mode, name_filter)
+}
+/// Filters borrowed records through the single query and ordering owner.
+pub(crate) fn filter_session_records<'a>(
+    sessions: impl Iterator<Item = &'a maestro_app::SessionInfo>,
+    query: &str,
+    sort_mode: SortMode,
+    name_filter: NameFilter,
+) -> Vec<&'a maestro_app::SessionInfo> {
+    let eligible =
+        sessions.filter(|session| name_filter == NameFilter::All || has_session_name(session));
     if query.trim_matches(is_whitespace_scalar).is_empty() {
         return eligible.collect();
     }

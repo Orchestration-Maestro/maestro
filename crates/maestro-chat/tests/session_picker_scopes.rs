@@ -126,8 +126,7 @@ fn session_scope_action_definitions_keep_default_keys_and_descriptions() {
 }
 
 #[cfg(unix)]
-#[path = "../../maestro-app/tests/support/child.rs"]
-mod keybinding_child;
+use session_picker::native_child as keybinding_child;
 
 #[cfg(unix)]
 #[test]

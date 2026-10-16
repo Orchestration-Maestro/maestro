@@ -54,6 +54,9 @@ synchronously sets the target's flag, even when the value is unchanged. Changing
 only the target does not change the parent getter. A composed input can therefore
 retain independent parent focus while forwarding cursor placement to its editor.
 The retained target still receives focus after removal from a container.
+`FocusFlag::forwarding_all(targets)` uses the same owner for multiple targets,
+forwarding each update synchronously in supplied order. The parent flag remains
+independent of direct changes to any target.
 
 `Component` has `std::any::Any` as a supertrait, so whoever holds a component handle can
 downcast the borrowed component to its concrete type, as a tool renderer does to update

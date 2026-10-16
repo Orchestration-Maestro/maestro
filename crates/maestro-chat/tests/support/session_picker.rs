@@ -511,6 +511,7 @@ pub fn age(name: &str) {
         let list = maestro_chat::SessionList::new(
             vec![record],
             maestro_chat::SessionListOptions {
+                runtime: manual_runtime::ManualRuntime::new().handle(),
                 show_cwd: false,
                 sort_mode: SortMode::Threaded,
                 name_filter: NameFilter::All,
@@ -696,6 +697,7 @@ impl World {
         maestro_chat::SessionList::new(
             records,
             maestro_chat::SessionListOptions {
+                runtime: self.runtime.handle(),
                 show_cwd: policies.0,
                 sort_mode: policies.1,
                 name_filter: policies.2,
@@ -1403,3 +1405,8 @@ pub fn status_drop() {
     reason = "Scope witnesses run in their own integration target."
 )]
 pub mod session_picker_scopes;
+
+/// Shared subprocess isolation for native picker observations.
+#[cfg(unix)]
+#[path = "../../../maestro-app/tests/support/child.rs"]
+pub mod native_child;

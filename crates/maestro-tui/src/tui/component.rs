@@ -29,16 +29,22 @@ pub struct FocusFlag {
     /// This component's own focus state.
     focused: Cell<bool>,
     /// Child receiving each focus change immediately.
-    target: Option<Rc<dyn Focusable>>,
+    targets: Vec<Rc<dyn Focusable>>,
 }
 
 impl FocusFlag {
     /// Creates an independent flag that forwards focus changes to a child.
     #[must_use]
     pub fn forwarding(target: Rc<dyn Focusable>) -> Self {
+        Self::forwarding_all(vec![target])
+    }
+
+    /// Creates an independent flag forwarding updates to each target in order.
+    #[must_use]
+    pub fn forwarding_all(targets: Vec<Rc<dyn Focusable>>) -> Self {
         Self {
             focused: Cell::new(false),
-            target: Some(target),
+            targets,
         }
     }
 
@@ -51,7 +57,7 @@ impl FocusFlag {
     /// Records own state, then synchronously forwards to the optional child.
     pub fn set(&self, focused: bool) {
         self.focused.set(focused);
-        if let Some(target) = &self.target {
+        for target in &self.targets {
             target.focus_flag().set(focused);
         }
     }
