@@ -3,7 +3,7 @@ use super::super::{XmlElement, XmlParser};
 use super::common::{CommonProperties, LengthUsage, WORDML_NAMESPACE, parse_common_property};
 use super::section::{SectionProperties, parse_section_properties};
 /// One tab stop, including nullable attributes.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct TabStop {
     /// Converted tab position.
     pub position: Option<String>,
@@ -13,7 +13,7 @@ pub struct TabStop {
     pub style: Option<String>,
 }
 /// Numbering reference metadata.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Numbering {
     /// Encountered raw numbering identifier.
     pub id: Option<Option<String>>,
@@ -21,7 +21,7 @@ pub struct Numbering {
     pub level: Option<Option<f64>>,
 }
 /// Encountered line spacing metadata.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct LineSpacing {
     /// Converted spacing before the paragraph.
     pub before: Option<String>,
@@ -33,7 +33,7 @@ pub struct LineSpacing {
     pub line_rule: Option<String>,
 }
 /// Owned paragraph properties; outer options record property encounters.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct ParagraphProperties {
     /// Common raw paragraph metadata.
     pub common: CommonProperties,

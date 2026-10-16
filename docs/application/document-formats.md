@@ -217,4 +217,29 @@ Header/footer roots have static Rust kinds and initially empty CSS maps. Note
 records retain raw nullable IDs/types and repeated IDs in source order. Note
 parts select their own immediate note kind using one admitted source per call.
 Package-to-part composition and preview rendering remain separate from these
-factories; no inherited-style resolution or document rendering occurs here.
+factories; no inherited-style resolution or document rendering occurs in the
+application factories.
+
+## Word stylesheet preparation
+
+The browser library's private stylesheet renderer prepares owned style records
+from those factories. Lookup selects the last occurrence of an exact nonempty
+identifier; CSS emission retains every occurrence in document order. Linked
+styles append their resolved declarations without merging metadata. Class names
+retain the caller's namespace, and the wrapper escapes that namespace while
+preserving trusted child markup.
+
+Inheritance fills only missing declarations and metadata, keeping child values,
+including explicit nulls, false flags and empty tab arrays. Missing property
+groups inherit owned values. Each chain reads unchanged definitions and stops on
+its first repeated occurrence, retaining the formatting gathered before that
+revisit. This corrects overwritten child metadata, missing inherited groups,
+forward-chain formatting loss and cyclic formatting loss. A present spacing
+group retains its nullable fields rather than inheriting over them.
+
+The renderer emits ordered stylesheet text with CRLF rule delimiters, default
+document CSS with an explicit print-wrapper policy, and wrapper HTML. It does not
+mount a preview. [Numbering and element styling](https://github.com/Orchestration-Maestro/maestro/issues/781),
+[element and page construction](https://github.com/Orchestration-Maestro/maestro/issues/782)
+and [complete preview composition](https://github.com/Orchestration-Maestro/maestro/issues/784)
+remain separate consumers of these retained styles.

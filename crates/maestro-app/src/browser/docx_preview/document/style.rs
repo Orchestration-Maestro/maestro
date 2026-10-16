@@ -1,7 +1,7 @@
 //! Owned style definitions before inheritance resolution.
 use super::{common::CommonProperties, paragraph::ParagraphProperties};
 /// One named style or document-default definition.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct IDomStyle {
     /// Raw style identifier.
     pub id: Option<String>,
@@ -27,7 +27,7 @@ pub struct IDomStyle {
     pub run_props: Option<CommonProperties>,
 }
 /// One CSS target, optional modifier and ordered declaration map.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct IDomSubStyle {
     /// CSS target selector.
     pub target: String,
