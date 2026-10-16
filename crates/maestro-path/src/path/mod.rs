@@ -7,11 +7,6 @@ pub mod posix;
 mod segments;
 pub mod win32;
 
-#[cfg(not(windows))]
-use posix::{resolve, try_resolve};
-#[cfg(windows)]
-use win32::{resolve, try_resolve};
-
 /// Working-directory snapshot supplied by the caller, never read from the process.
 ///
 /// `current` is spelled in the flavor it is passed to. The Windows flavor also
@@ -73,6 +68,37 @@ where
     C: AsRef<str>,
     D: AsRef<[(char, String)]>,
 {
+    resolve_with_flavor(groups, cfg!(windows), drive_directories, current_directory)
+}
+
+/// Resolve operand groups in a supplied flavor, independently of the compile target.
+///
+/// `windows` selects Windows semantics; otherwise POSIX semantics apply.
+/// Directory callbacks, ordering and owned results follow [`resolve_with`].
+///
+/// # Errors
+/// Returns the original current-directory error when an open group needs it.
+pub fn resolve_with_flavor<C, D, E>(
+    groups: &[&[&str]],
+    windows: bool,
+    drive_directories: impl FnOnce() -> D,
+    current_directory: impl FnOnce() -> Result<C, E>,
+) -> Result<Vec<String>, E>
+where
+    C: AsRef<str>,
+    D: AsRef<[(char, String)]>,
+{
+    let (try_resolve, resolve) = if windows {
+        (
+            win32::try_resolve as fn(&[&str], &[(char, &str)]) -> _,
+            win32::resolve as fn(&[&str], &Cwd<'_>) -> _,
+        )
+    } else {
+        (
+            posix::try_resolve as fn(&[&str], &[(char, &str)]) -> _,
+            posix::resolve as fn(&[&str], &Cwd<'_>) -> _,
+        )
+    };
     if let Ok(paths) = groups.iter().map(|g| try_resolve(g, &[])).collect() {
         return Ok(paths);
     }

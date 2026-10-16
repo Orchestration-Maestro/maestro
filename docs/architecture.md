@@ -107,8 +107,9 @@ root re-exports the flavor of the compile target. Nothing reads the process
 working directory or the environment: `resolve` and `relative` take a `Cwd`
 snapshot from the caller, and `try_resolve` resolves what the operands anchor and
 fails with `CwdUnavailable` where the runtime would have read the working
-directory. `resolve_with` resolves several operand groups in the target flavor
-from callbacks the caller supplies: it calls the drive callback once, and the
+directory. `resolve_with` delegates to `resolve_with_flavor` using the target
+flavor; callers can select either flavor explicitly with `resolve_with_flavor`.
+Both resolve several operand groups from callbacks the caller supplies: it calls the drive callback once, and the
 working-directory callback once, only for the groups the operands and drives
 leave open, and returns that callback's error unchanged. `homedir` returns a
 supplied home, empty included, and calls its account callback only when none

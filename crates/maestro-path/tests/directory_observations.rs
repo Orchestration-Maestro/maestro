@@ -76,21 +76,7 @@ fn supplied_resolution_matches_native_flavor_corpus() {
     let flavor = if cfg!(windows) { "win32" } else { "posix" };
     let mut checked = 0;
     for case in cases.iter().filter(|case| case.flavor == flavor) {
-        let groups: Vec<Vec<&str>> = case
-            .groups
-            .iter()
-            .map(|group| group.iter().map(String::as_str).collect())
-            .collect();
-        let groups: Vec<&[&str]> = groups.iter().map(Vec::as_slice).collect();
-        let drives = case
-            .drives
-            .iter()
-            .map(|(name, directory)| (name.chars().nth(1).unwrap(), directory.clone()))
-            .collect();
-        let actual = match run(&groups, case.cwd.as_deref(), drives) {
-            Ok(paths) => Expected::Ok(paths),
-            Err(error) => Expected::Error(error),
-        };
+        let actual = resolve_case(case, false);
         assert_eq!(actual, case.expected, "{}", case.id);
         checked += 1;
     }
@@ -175,5 +161,145 @@ fn drive_complete_groups_skip_cwd_observation() {
             Ok("C:\\work")
         });
         assert_eq!(calls.get(), 1, "{open:?}");
+    }
+}
+
+/// Adapt recorded inputs without changing native-entry assertions.
+fn resolve_case(case: &Case, explicit: bool) -> Expected {
+    let groups: Vec<Vec<&str>> = case
+        .groups
+        .iter()
+        .map(|group| group.iter().map(String::as_str).collect())
+        .collect();
+    let groups: Vec<&[&str]> = groups.iter().map(Vec::as_slice).collect();
+    let drives = case
+        .drives
+        .iter()
+        .map(|(name, directory)| (name.chars().nth(1).unwrap(), directory.clone()))
+        .collect();
+    let result = if explicit {
+        maestro_path::resolve_with_flavor(
+            &groups,
+            case.flavor == "win32",
+            || drives,
+            || case.cwd.as_deref().ok_or("cwd unavailable".to_owned()),
+        )
+    } else {
+        run(&groups, case.cwd.as_deref(), drives)
+    };
+    match result {
+        Ok(paths) => Expected::Ok(paths),
+        Err(error) => Expected::Error(error),
+    }
+}
+
+#[test]
+fn supplied_resolution_matches_both_flavor_corpora() {
+    let cases: Vec<Case> = serde_json::from_str(FIXTURE).unwrap();
+    assert_eq!(cases.len(), 24);
+    for case in cases {
+        assert_eq!(resolve_case(&case, true), case.expected, "{}", case.id);
+    }
+}
+
+/// Check an explicit flavor's output and shared directory observations.
+fn assert_observations(case: &Case, expected_reads: &[&str]) {
+    let groups: Vec<Vec<&str>> = case
+        .groups
+        .iter()
+        .map(|group| group.iter().map(String::as_str).collect())
+        .collect();
+    let groups: Vec<&[&str]> = groups.iter().map(Vec::as_slice).collect();
+    let reads = RefCell::new(Vec::new());
+    let result = maestro_path::resolve_with_flavor(
+        &groups,
+        case.flavor == "win32",
+        || {
+            reads.borrow_mut().push("drives");
+            case.drives
+                .iter()
+                .map(|(key, value)| (key.chars().nth(1).unwrap(), value.clone()))
+                .collect::<Vec<_>>()
+        },
+        || {
+            reads.borrow_mut().push("cwd");
+            case.cwd.as_deref().ok_or("cwd unavailable".to_owned())
+        },
+    );
+    let actual = match result {
+        Ok(paths) => Expected::Ok(paths),
+        Err(error) => Expected::Error(error),
+    };
+    assert_eq!(actual, case.expected, "{}", case.id);
+    assert_eq!(*reads.borrow(), expected_reads, "{}", case.id);
+}
+
+#[test]
+fn explicit_flavors_keep_lazy_directory_order() {
+    let cases: Vec<Case> = serde_json::from_str(FIXTURE).unwrap();
+    for case in cases {
+        let reads: &[&str] = match case.id.as_str() {
+            "p-anchored"
+            | "p-empty-groups"
+            | "p-spelling"
+            | "w-absolute"
+            | "w-unc"
+            | "w-namespace"
+            | "w-drive-operand"
+            | "w-device-precedence" => &[],
+            "w-drive-supplied" | "w-drive-mismatch" => &["drives"],
+            _ => &["drives", "cwd"],
+        };
+        assert_observations(&case, reads);
+    }
+    for (groups, drives, expected, reads) in [
+        (vec![], BTreeMap::new(), vec![], vec![]),
+        (
+            vec![vec!["D:leaf".into()], vec!["D:leaf".into()]],
+            BTreeMap::from([("=D:".into(), "D:\\drive".into())]),
+            vec!["D:\\drive\\leaf".into(), "D:\\drive\\leaf".into()],
+            vec!["drives"],
+        ),
+    ] {
+        assert_observations(
+            &Case {
+                id: "additional-windows-boundary".into(),
+                flavor: "win32".into(),
+                groups,
+                cwd: None,
+                drives,
+                expected: Expected::Ok(expected),
+            },
+            &reads,
+        );
+    }
+}
+
+#[test]
+fn explicit_flavors_return_original_cwd_errors() {
+    for (windows, groups) in [
+        (false, vec![&["relative"][..]]),
+        (false, vec![&["/complete"][..], &["relative"][..]]),
+        (true, vec![&["D:relative"][..]]),
+        (true, vec![&["C:\\complete"][..], &["relative"][..]]),
+    ] {
+        let sentinel = Box::new(7_u32);
+        let identity = std::ptr::from_ref(sentinel.as_ref());
+        let reads = RefCell::new(Vec::new());
+        let result = maestro_path::resolve_with_flavor(
+            &groups,
+            windows,
+            || {
+                reads.borrow_mut().push("drives");
+                Vec::<(char, String)>::new()
+            },
+            || {
+                reads.borrow_mut().push("cwd");
+                Err::<String, _>(sentinel)
+            },
+        );
+        let error = result.unwrap_err();
+        assert_eq!(std::ptr::from_ref(error.as_ref()), identity);
+        assert_eq!(*reads.borrow(), ["drives", "cwd"]);
     }
 }

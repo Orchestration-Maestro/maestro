@@ -1,7 +1,7 @@
 //! Owned update commands selected from installation evidence.
 
 use super::installation::{InstallMethod, Installation, detect_install_method};
-use maestro_path::{Cwd, posix, win32};
+use maestro_path::{posix, win32};
 use maestro_process::SpawnSyncError;
 use maestro_resources::ResourceOperations;
 use maestro_text::is_whitespace_scalar;
@@ -298,32 +298,13 @@ fn global_roots(
 /// Resolve authored paths lazily using the supplied path flavor.
 fn resolve(context: &SelfUpdateContext<'_>, path: &str) -> io::Result<String> {
     let resources = context.operations.resource_operations();
-    if !context.operations.is_windows() {
-        return maestro_path::resolve_with(
-            &[&[path]],
-            || resources.drive_directories(),
-            || resources.current_directory(),
-        )
-        .map(|paths| paths.concat());
-    }
-    if let Ok(path) = win32::try_resolve(&[path], &[]) {
-        return Ok(path);
-    }
-    let directories = resources.drive_directories();
-    let drives: Vec<_> = directories
-        .iter()
-        .map(|(drive, path)| (*drive, path.as_str()))
-        .collect();
-    if let Ok(path) = win32::try_resolve(&[path], &drives) {
-        return Ok(path);
-    }
-    Ok(win32::resolve(
-        &[path],
-        &Cwd {
-            current: &resources.current_directory()?,
-            drive_directories: &drives,
-        },
-    ))
+    maestro_path::resolve_with_flavor(
+        &[&[path]],
+        context.operations.is_windows(),
+        || resources.drive_directories(),
+        || resources.current_directory(),
+    )
+    .map(|paths| paths.concat())
 }
 /// Compare existing canonical paths, not authored spelling or mere prefixes.
 fn normalized(context: &SelfUpdateContext<'_>, path: &str) -> io::Result<Option<String>> {

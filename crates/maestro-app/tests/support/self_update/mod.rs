@@ -42,6 +42,7 @@ pub struct Input {
     pub cwd: Option<String>,
     pub cwd_error: Option<bool>,
     pub existing: Option<Vec<String>>,
+    pub drive_directories: BTreeMap<String, String>,
     pub canonical: BTreeMap<String, String>,
     pub canonical_errors: Vec<String>,
     pub access_errors: Vec<String>,
@@ -172,7 +173,11 @@ impl ResourceOperations for Operations<'_> {
             .into())
     }
     fn drive_directories(&self) -> Vec<(char, String)> {
-        Vec::new()
+        self.input
+            .drive_directories
+            .iter()
+            .map(|(name, directory)| (name.chars().nth(1).unwrap(), directory.clone()))
+            .collect()
     }
     fn read_dir(&self, _: &Path) -> io::Result<Vec<ResourceEntry>> {
         unreachable!()

@@ -139,3 +139,13 @@ fn writable_checks_gate_automatic_updates() {
         false,
     );
 }
+
+#[test]
+fn supplied_path_flavors_reach_update_evidence() {
+    support::run(
+        include_str!(
+            "fixtures/configuration/self_update/supplied_path_flavors_reach_update_evidence.json"
+        ),
+        false,
+    );
+}

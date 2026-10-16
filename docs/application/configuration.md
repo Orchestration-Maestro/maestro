@@ -71,7 +71,10 @@ It supports npm, pnpm, Yarn and Bun; unconfigured npm can infer a matching
 uses existing canonical paths with a separator-delimited strict descendant
 comparison, case-folded only on Windows. Supplied `SelfUpdateOperations` control
 filesystem, host flavor, home, access and read-only query effects. Required
-configured-query errors retain the native cause and command context.
+configured-query errors retain the native cause and command context. Authored
+paths use the shared flavor-explicit resolver, so supplied POSIX and Windows
+observations work independently of the compilation host. Directory observations
+remain lazy: anchored paths need neither drives nor the working directory.
 
 `get_update_instruction` returns a manual command without ownership/access
 probes. `get_self_update_unavailable_instruction` explains unmanaged or unwritable

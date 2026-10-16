@@ -15,7 +15,7 @@ mod os;
 mod path;
 
 pub use os::homedir;
-pub use path::{Cwd, CwdUnavailable, posix, resolve_with, win32};
+pub use path::{Cwd, CwdUnavailable, posix, resolve_with, resolve_with_flavor, win32};
 
 #[cfg(not(windows))]
 pub use path::posix::{
