@@ -648,7 +648,7 @@
     {
       "id": "unknown-unit",
       "source": "~A1:A1+?B2*A1",
-      "expected": "~B2:B2+?B2*B2",
+      "expected": "~A1:B2+?B2*B2",
       "start": "B2",
       "end": "C3"
     },
@@ -718,7 +718,7 @@
     {
       "id": "unquoted-sheet-punctuation",
       "source": "SUM(Q1#part!A1)+Q1~part!B2",
-      "expected": "SUM(R2#part!B2)+R2~part!C3",
+      "expected": "SUM(Q1#part!B2)+Q1~part!C3",
       "start": "B2",
       "end": "C3"
     },
@@ -882,6 +882,34 @@
       "end": "C3",
       "source": "aB1+z1",
       "expected": "aC2+aa2"
+    },
+    {
+      "id": "decomposed-name",
+      "start": "B2",
+      "end": "C3",
+      "source": "éA1+A1",
+      "expected": "éA1+B2"
+    },
+    {
+      "id": "overflow-row",
+      "start": "B2",
+      "end": "B3",
+      "source": "A1048576",
+      "expected": "A1048577"
+    },
+    {
+      "id": "overflow-column",
+      "start": "B2",
+      "end": "C2",
+      "source": "XFD1",
+      "expected": "XFE1"
+    },
+    {
+      "id": "overflow-range",
+      "start": "B2",
+      "end": "B3",
+      "source": "SUM(A2:A1048576)",
+      "expected": "SUM(A3:A1048577)"
     }
   ]
 }

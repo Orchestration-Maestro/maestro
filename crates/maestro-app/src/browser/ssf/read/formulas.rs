@@ -1,5 +1,5 @@
 //! Sheet-local formula metadata with lexical coordinate displacement.
-use super::super::{CellAddress, Range, WorkbookError, decode_range};
+use super::super::{CellAddress, Range, WorkbookError, decode_cell, decode_range, encode_col};
 use crate::browser::docx_preview::{XmlElement, XmlParser};
 use std::collections::BTreeMap;
 
@@ -32,69 +32,74 @@ pub(super) fn formula(
     Ok((!text.is_empty()).then_some(text))
 }
 
-/// Advance lexical coordinate matches outside opaque spans.
+/// Advance complete coordinate runs outside opaque spans.
 fn expand(text: &str, start: CellAddress, end: CellAddress) -> Result<String, WorkbookError> {
     let mut result = String::with_capacity(text.len());
     let mut cursor = 0;
     while cursor < text.len() {
         let rest = &text[cursor..];
-        let previous = text[..cursor].chars().next_back();
-        if let Some(length) = opaque_length(rest, previous) {
+        let length = match rest.as_bytes()[0] {
+            b'\'' | b'"' => quoted_length(rest, rest.as_bytes()[0]),
+            b'[' => bracket_length(rest),
+            _ => 0,
+        };
+        if length > 0 {
             result.push_str(&rest[..length]);
             cursor += length;
             continue;
         }
-        if previous.is_none_or(|c| !identifier(c))
-            && let Some(length) = coordinate_length(rest)
-            && rest[length..]
-                .chars()
-                .next()
-                .is_none_or(|c| !identifier(c) && c != '(')
-        {
-            result.push_str(&displace(&rest[..length], start, end)?);
+        let length = run_length(rest);
+        if length == 0 {
+            if let Some(c) = rest.chars().next() {
+                result.push(c);
+                cursor += c.len_utf8();
+            }
+            continue;
+        }
+        let run = &rest[..length];
+        let following = &rest[length..];
+        let qualifier = if run.starts_with('#') {
+            0
+        } else {
+            qualifier_length(rest, length, text[..cursor].ends_with('!'))
+        };
+        if run.starts_with('#') || qualifier > 0 || following.starts_with('(') {
+            let length = length.max(qualifier);
+            result.push_str(&rest[..length]);
             cursor += length;
             continue;
         }
-        if let Some(c) = rest.chars().next() {
-            result.push(c);
-            cursor += c.len_utf8();
+        let coordinate = run.strip_suffix('#').unwrap_or(run);
+        if coordinate_length(coordinate) == Some(coordinate.len()) {
+            result.push_str(&displace(coordinate, start, end)?);
+            result.push_str(&run[coordinate.len()..]);
+        } else {
+            result.push_str(run);
         }
+        cursor += length;
     }
     Ok(result)
 }
 
-/// Identifier neighbours prevent coordinate-shaped substrings from matching.
-fn identifier(c: char) -> bool {
-    c.is_alphanumeric() || matches!(c, '_' | '.' | '\\' | '?')
+/// Maximal operand runs end at operators, whitespace or operand punctuation.
+fn run_length(text: &str) -> usize {
+    text.find(|c: char| c.is_whitespace() || ":,^*/+-&=<>%(){}[]!\"';@".contains(c))
+        .unwrap_or(text.len())
 }
 
-/// Quotes/brackets and complete unquoted qualifiers retain their source bytes.
-fn opaque_length(text: &str, previous: Option<char>) -> Option<usize> {
-    match text.as_bytes()[0] {
-        b'\'' | b'"' => return Some(quoted_length(text, text.as_bytes()[0])),
-        b'[' => return Some(bracket_length(text)),
-        _ => {}
-    }
-    if previous.is_some_and(identifier) {
-        return None;
-    }
-    let length = text.find(|c| !identifier(c)).unwrap_or(text.len());
-    if length == 0 {
-        return None;
-    }
+/// A colon joins unquoted sheet qualifiers unless the first run follows a bang.
+fn qualifier_length(text: &str, length: usize, after_bang: bool) -> usize {
     let rest = &text[length..];
     if rest.starts_with('!') {
-        return Some(length + 1);
+        return length + 1;
     }
-    if previous != Some('!')
-        && let Some(right) = rest.strip_prefix(':')
-    {
-        let second = right.find(|c| !identifier(c)).unwrap_or(right.len());
+    if !after_bang && let Some(right) = rest.strip_prefix(':') {
+        let second = run_length(right);
         if second > 0 && right[second..].starts_with('!') {
-            return Some(length + 1 + second + 1);
+            return length + 1 + second + 1;
         }
     }
-    None
+    0
 }
 
 /// Match the bounded coordinate core without consuming either neighbour.
@@ -131,12 +136,34 @@ fn displace(text: &str, start: CellAddress, end: CellAddress) -> Result<String, 
     if (text.starts_with('$') || start.c == end.c) && (row.starts_with('$') || start.r == end.r) {
         return Ok(text.to_owned());
     }
-    let shifted = calamine::expand_shared_formula(
-        &text.to_ascii_uppercase(),
-        (start.r, start.c),
-        (end.r, end.c),
-    )
-    .map_err(|e| WorkbookError::Reader(e.to_string()))?;
+    let upper = text.to_ascii_uppercase();
+    let address = decode_cell(&upper)?;
+    let c = i64::from(address.c)
+        + if text.starts_with('$') {
+            0
+        } else {
+            i64::from(end.c) - i64::from(start.c)
+        };
+    let r = i64::from(address.r)
+        + if row.starts_with('$') {
+            0
+        } else {
+            i64::from(end.r) - i64::from(start.r)
+        };
+    let shifted = if (0..16_384).contains(&c) && (0..1_048_576).contains(&r) {
+        calamine::expand_shared_formula(&upper, (start.r, start.c), (end.r, end.c))
+            .map_err(|e| WorkbookError::Reader(e.to_string()))?
+    } else {
+        let column =
+            u32::try_from(c).map_err(|_| WorkbookError::Reader(format!("invalid column {c}")))?;
+        format!(
+            "{}{}{}{}",
+            if text.starts_with('$') { "$" } else { "" },
+            encode_col(column),
+            if row.starts_with('$') { "$" } else { "" },
+            r + 1
+        )
+    };
     Ok(retain_column_case(text, &shifted))
 }
 

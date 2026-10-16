@@ -116,21 +116,24 @@ coordinates and zero applicable displacement retain their authored spelling.
 Changed coordinates retain column case. Whole-column/whole-row pairs remain
 unchanged, as do out-of-grid names such as `XFE1` and `A1048577`.
 
-Coordinate matching checks adjacent Unicode letters, digits, `_`, `.`, `\` and
-`?`; a directly adjacent `(` protects function names such as `LOG10`, but a space
-before `(` remains an intersection operator. Quotes with doubled escapes and
-nested brackets with apostrophe escapes are opaque; an unterminated quote or
-bracket protects the remainder. Unquoted identifier qualifiers ending in `!` are
-opaque too. Operators, errors and grouping need no grammar recognizer or stack.
+Coordinate matching classifies maximal runs between operator characters,
+whitespace and operand punctuation. All other characters belong to a run, including
+combining marks, `#`, `~`, `\`, `?`, `.`, `_` and `$`. Quotes with doubled escapes
+and nested brackets with apostrophe escapes are opaque; an unterminated quote or
+bracket protects the remainder. Runs starting with `#`, sheet qualifiers ending in
+`!` and function names immediately followed by `(` are opaque, in that order.
+An exact bounded coordinate advances, as does a coordinate with one trailing spill
+`#`; other runs remain unchanged. A space before `(` remains an intersection.
 
 The operand-blind displacement defect is corrected at this single reader owner:
-opaque spans and Unicode-aware identifier boundaries prevent coordinate-shaped
-text from being rewritten. Lowercase references retain case when advanced;
-unquoted sheet qualifiers and `\`/`?` name boundaries stay unchanged. A colon
-qualifier `identifier:identifier!` is opaque unless immediately preceded by `!`:
+opaque spans and the grammar's identifier class prevent coordinate-shaped text
+inside names from being rewritten. Lowercase references retain case when advanced.
+A colon qualifier `run:run!` is opaque unless immediately preceded by `!`:
 `Q1:Q3!A1` protects the sheet range while `Sheet1!A1:Sheet1!B2` advances both cells.
 The ambiguous `A1:Sheet2!B2` is read as a 3-D qualifier and protects `A1:Sheet2!`.
-Isolated coordinate arithmetic reuses the native workbook library. Formula
+Input coordinate bounds do not constrain displaced output: `A1048576` moved down
+becomes `A1048577`, and `XFD1` moved right becomes `XFE1`. Isolated in-grid arithmetic
+reuses the native workbook library; out-of-grid text uses the address owner. Formula
 decoding, missing-cache retention and CSV quoting stay separate. R1C1 conversion
 belongs to SpreadsheetML/SYLK readers, not this XLSX path; identifier boundaries
 and brackets protect XLSX `RC`, `R1C1` and bracketed spellings.

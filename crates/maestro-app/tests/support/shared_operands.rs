@@ -216,6 +216,11 @@ named! {
     workbook_shared_quarterly_qualifier => "quarterly-qualifier",
     workbook_shared_ambiguous_colon_qualifier => "ambiguous-colon-qualifier",
     workbook_shared_mixed_case_coordinate => "mixed-case-coordinate",
+    workbook_shared_sheet_punctuation => "unquoted-sheet-punctuation",
+    workbook_shared_decomposed_name => "decomposed-name",
+    workbook_shared_overflow_row => "overflow-row",
+    workbook_shared_overflow_column => "overflow-column",
+    workbook_shared_overflow_range => "overflow-range",
 }
 
 #[test]
