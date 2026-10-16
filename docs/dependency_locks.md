@@ -78,7 +78,11 @@ Declared metadata alone does not prove redistribution compliance.
 The shared dependency check owns licence, source and advisory validation;
 shared unused-dependency checks and local feature-unification/conventions checks
 keep their existing responsibilities. There is no second lock validator or
-local licence policy here. Native assets and browser/component author tools stay
+local licence policy here. The dated `yanked_crate_exceptions` in
+[the caller declaration](../.github/ci.toml) temporarily allow only `zip 6.0.0`
+and `zip 8.6.0` until 2026-10-23, pending [the dependency upgrade](https://github.com/Orchestration-Maestro/maestro/issues/1134).
+They do not waive advisories, licences, sources or other yanked versions.
+Native assets and browser/component author tools stay
 with their existing library, asset and packaging owners; lock verification does
 not enable network retrieval or broaden dependency features.
 
