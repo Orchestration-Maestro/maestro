@@ -188,6 +188,7 @@ fn native_windows_update_access_matches_directory_rule() {
             .check_write_access(scratch.0.join("absent").to_str().unwrap())
             .is_err()
     );
+    windows_selection_uses_native_access(&scratch);
     assert_eq!(fs::read(&file).unwrap(), b"");
     assert_eq!(fs::read_dir(&dir).unwrap().count(), 0);
 }
@@ -207,5 +208,77 @@ impl Scratch {
 impl Drop for Scratch {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+#[cfg(windows)]
+fn windows_selection_uses_native_access(scratch: &Scratch) {
+    use maestro_app::configuration::config::installation::{Installation, PackageLayout};
+    use maestro_app::configuration::config::{SelfUpdateContext, get_self_update_command};
+    let package = scratch.0.join("directory").join("agent");
+    std::fs::create_dir(&package).unwrap();
+    let operations = WindowsQuery {
+        root: scratch.0.join("directory").to_string_lossy().into_owned(),
+    };
+    let installation = Installation {
+        module_dir: r"C:\source".into(),
+        executable: r"C:\runtime\npm\node.exe".into(),
+        layout: PackageLayout::Package,
+    };
+    let context = SelfUpdateContext {
+        installation: &installation,
+        package_dir: package.to_str().unwrap(),
+        operations: &operations,
+    };
+    let configured = vec!["query-only".into()];
+    assert!(
+        get_self_update_command(&context, "agent", Some(&configured), None)
+            .unwrap()
+            .is_some()
+    );
+    let mut permissions = std::fs::metadata(&package).unwrap().permissions();
+    permissions.set_readonly(true);
+    std::fs::set_permissions(&package, permissions.clone()).unwrap();
+    assert!(
+        get_self_update_command(&context, "agent", Some(&configured), None)
+            .unwrap()
+            .is_some()
+    );
+    permissions.set_readonly(false);
+    std::fs::set_permissions(&package, permissions).unwrap();
+    std::fs::remove_dir(&package).unwrap();
+}
+
+#[cfg(windows)]
+struct WindowsQuery {
+    root: String,
+}
+#[cfg(windows)]
+impl SelfUpdateOperations for WindowsQuery {
+    fn resource_operations(&self) -> &dyn maestro_resources::ResourceOperations {
+        &maestro_resources::NativeResourceOperations
+    }
+    fn is_windows(&self) -> bool {
+        true
+    }
+    fn home_dir(&self) -> std::io::Result<String> {
+        unreachable!()
+    }
+    fn check_write_access(&self, path: &str) -> std::io::Result<()> {
+        NativeSelfUpdateOperations.check_write_access(path)
+    }
+    fn run_command_sync(
+        &self,
+        command: &str,
+        args: &[String],
+    ) -> Result<std::process::Output, maestro_process::SpawnSyncError> {
+        use std::os::windows::process::ExitStatusExt;
+        assert_eq!(command, "query-only");
+        assert_eq!(args, ["root", "-g"]);
+        Ok(std::process::Output {
+            status: std::process::ExitStatus::from_raw(0),
+            stdout: self.root.as_bytes().to_vec(),
+            stderr: Vec::new(),
+        })
     }
 }
