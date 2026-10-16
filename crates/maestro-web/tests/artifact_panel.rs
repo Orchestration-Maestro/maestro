@@ -1137,6 +1137,7 @@ fn artifact_panel_cold_selection_centers_after_header_sizing() {
                 harness.caller.show_artifact("long-artifact-name-12.zip");
             }
             let mut output = harness.draw().unwrap();
+            assert_first_frame_controls(&harness, &output);
             for _ in 0..120 {
                 output = harness.draw().unwrap();
             }
@@ -1145,4 +1146,31 @@ fn artifact_panel_cold_selection_centers_after_header_sizing() {
             assert!((target.center().x - 164.).abs() < 1., "{target:?}");
         }
     }
+}
+
+/// First returned header geometry is visible and accepts a download pointer.
+fn assert_first_frame_controls(harness: &Harness, output: &egui::FullOutput) {
+    let icons: Vec<_> = output
+        .shapes
+        .iter()
+        .filter_map(|shape| match &shape.shape {
+            egui::Shape::Mesh(mesh) if mesh.calc_bounds().center().y < 40. => {
+                Some((shape.clip_rect, mesh.calc_bounds()))
+            }
+            _ => None,
+        })
+        .collect();
+    let (clip, download) = icons[icons.len() - 2];
+    let (close_clip, close) = icons[icons.len() - 1];
+    assert!(clip.intersect(download).is_positive(), "{icons:?}");
+    assert!(close_clip.contains_rect(close), "{icons:?}");
+    assert!(
+        (close.center().x - (harness.frame.size.x - 16.)).abs() < 1.,
+        "{icons:?}"
+    );
+    harness.click(download.center());
+    assert_eq!(
+        harness.host.downloads.borrow().last().unwrap().0,
+        "long-artifact-name-12.zip"
+    );
 }

@@ -97,10 +97,12 @@ impl ArtifactsPanel {
         );
         let width_id = self.id.with("controls-width");
         let spacing = points(view.presentation.spacing["xs"]);
+        let minimum = GHOST_SIZE.x + spacing + crate::components::download_button::SIZE.x;
         let width = ui
             .ctx()
-            .data_mut(|data| data.get_temp::<f32>(width_id))
-            .unwrap_or(GHOST_SIZE.x + spacing + crate::components::download_button::SIZE.x);
+            .data_mut(|data| data.get_temp::<(Option<String>, f32)>(width_id))
+            .filter(|(name, _)| name.as_deref() == active)
+            .map_or(minimum, |(_, measured)| measured.max(minimum));
         let controls_left = (header.right() - width).max(header.left());
         let mut tab_ui = ui.new_child(
             egui::UiBuilder::new()
@@ -111,9 +113,9 @@ impl ArtifactsPanel {
         let clicked = tabs(self, &mut tab_ui, names, active, view)?;
         let (close, measured) =
             self.controls(ui, header.with_min_x(controls_left), active, view)?;
-        if (measured - width).abs() > 0.5 {
-            ui.ctx()
-                .data_mut(|data| data.insert_temp(width_id, measured));
+        ui.ctx()
+            .data_mut(|data| data.insert_temp(width_id, (active.map(str::to_owned), measured)));
+        if (measured.max(minimum) - width).abs() > 0.5 {
             *self.scroll.borrow_mut() = scroll;
             ui.ctx()
                 .request_discard("artifact header controls changed width");
