@@ -112,94 +112,209 @@ fn default_sdk_futures_remain_thread_safe() {
 }
 
 #[test]
-fn chat_direct_local_submission_preserves_hook_phases() -> crate::TestResult {
-    use crate::{chat, transport};
-    use maestro_models::{ProviderSpawner, stream_openai_completions_for};
-    use serde_json::json;
-    use std::cell::RefCell;
-    chat::block_on(
+fn direct_local_submission_preserves_hook_phases() -> crate::TestResult {
+    crate::chat::block_on(
         false,
         tokio::task::LocalSet::new().run_until(async {
-            let transport = transport::transport(vec![transport::Attempt::success()]);
-            let phases = Rc::new(RefCell::new(Vec::new()));
-            let tasks = Rc::new(RefCell::new(Vec::new()));
-            let admitted_tasks = Rc::clone(&tasks);
-            let admissions = Rc::new(Cell::new(0));
-            let counted = Rc::clone(&admissions);
-            let spawn: ProviderSpawner<Local> = Rc::new(move |task| {
-                counted.set(counted.get() + 1);
-                admitted_tasks
-                    .borrow_mut()
-                    .push(tokio::task::spawn_local(task));
-                true
-            });
-            let options = local_chat_options(Rc::clone(&phases), transport.fetch.clone());
-            let stream = stream_openai_completions_for(
-                chat::model(&json!({}))?,
-                chat::context(&json!({"messages": []}))?,
-                Some(options),
-                spawn,
-            );
-            assert_eq!(admissions.get(), 1);
-            assert!(phases.borrow().is_empty());
-            let (events, result) = transport::drain(&stream).await?;
-            let admitted = tasks.take();
-            for task in admitted {
-                task.await?;
+            for protocol in [
+                "openai-completions",
+                "anthropic-messages",
+                "openai-responses",
+                "azure-openai-responses",
+            ] {
+                for simple in [false, true] {
+                    direct_local_case(protocol, simple).await?;
+                }
             }
-            assert_eq!(events, ["start", "done"]);
-            assert_eq!(result.stop_reason, maestro_models::StopReason::Stop);
-            assert_eq!(
-                *phases.borrow(),
-                [
-                    "payload-before",
-                    "payload-after",
-                    "response-before",
-                    "response-after"
-                ]
-            );
-            let (_, body) = transport.first_request()?;
-            let body: serde_json::Value = serde_json::from_slice(&body)?;
-            assert_eq!(body["temperature"], json!(0.25));
             Ok(())
         }),
     )
 }
 
+/// Drive each invocation to completion before checking its closed phase transcript.
+async fn direct_local_case(protocol: &str, simple: bool) -> crate::TestResult {
+    use crate::{chat, transport};
+    use maestro_models::ProviderCall;
+    use serde_json::json;
+    use std::cell::RefCell;
+    let transport = transport::transport(vec![match protocol {
+        "anthropic-messages" => {
+            transport::Attempt::body(200, &[], crate::messages::STOP.as_bytes().to_vec())
+        }
+        "openai-responses" | "azure-openai-responses" => transport::Attempt::body(
+            200,
+            &[],
+            crate::response_endpoint::COMPLETE.as_bytes().to_vec(),
+        ),
+        _ => transport::Attempt::success(),
+    }]);
+    let phases = Rc::new(RefCell::new(Vec::new()));
+    let tasks = Rc::new(RefCell::new(Vec::new()));
+    let admissions = Rc::new(Cell::new(0));
+    let spawn = local_submission(Rc::clone(&tasks), Rc::clone(&admissions));
+    let input = ProviderCall {
+        model: chat::model(&json!({"api": protocol}))?,
+        context: chat::context(&json!({"messages": []}))?,
+        options: Some(local_common_options(
+            Rc::clone(&phases),
+            transport.fetch.clone(),
+        )),
+        submit: spawn,
+    };
+    let stream = if simple {
+        direct_simple_local_stream(protocol, input)
+    } else {
+        direct_local_stream(protocol, input)
+    };
+    assert_eq!(admissions.get(), 1);
+    assert!(phases.borrow().is_empty());
+    let (events, result) = transport::drain(&stream).await?;
+    for task in tasks.take() {
+        task.await?;
+    }
+    assert_eq!(events, ["start", "done"]);
+    assert_eq!(result.stop_reason, maestro_models::StopReason::Stop);
+    assert_eq!(
+        *phases.borrow(),
+        [
+            "payload-before",
+            "payload-after",
+            "response-before",
+            "response-after"
+        ]
+    );
+    let (_, body) = transport.first_request()?;
+    let body: serde_json::Value = serde_json::from_slice(&body)?;
+    assert_eq!(body["temperature"], json!(0.25));
+    Ok(())
+}
+
+/// Record and retain every admitted local task until its producer completes.
+fn local_submission(
+    tasks: Rc<std::cell::RefCell<Vec<tokio::task::JoinHandle<()>>>>,
+    admissions: Rc<Cell<usize>>,
+) -> maestro_models::ProviderSpawner<Local> {
+    Rc::new(move |task| {
+        admissions.set(admissions.get() + 1);
+        let task = tokio::task::spawn_local(task);
+        tasks.borrow_mut().push(task);
+        true
+    })
+}
+
+/// Use the public raw direct entry for each protocol.
+fn direct_local_stream(
+    protocol: &str,
+    input: maestro_models::ProviderCall<Local, StreamOptions<Local>>,
+) -> maestro_models::AssistantMessageEventStream {
+    use maestro_models::*;
+    let ProviderCall {
+        model,
+        context,
+        options,
+        submit,
+    } = input;
+    match protocol {
+        "anthropic-messages" => stream_anthropic_for::<Local>(
+            model,
+            context,
+            options.map(|common| AnthropicOptions {
+                common,
+                ..Default::default()
+            }),
+            submit,
+        ),
+        "openai-responses" => stream_openai_responses_for::<Local>(
+            model,
+            context,
+            options.map(|common| OpenAIResponsesOptions {
+                common,
+                ..Default::default()
+            }),
+            submit,
+        ),
+        "azure-openai-responses" => stream_azure_openai_responses_for::<Local>(
+            model,
+            context,
+            options.map(|common| AzureOpenAIResponsesOptions {
+                common,
+                ..Default::default()
+            }),
+            submit,
+        ),
+        _ => stream_openai_completions_for::<Local>(
+            model,
+            context,
+            options.map(|common| OpenAICompletionsOptions {
+                common,
+                ..Default::default()
+            }),
+            submit,
+        ),
+    }
+}
+
+/// Root simple entries preserve their settled-stream boundary in either family.
+fn direct_simple_local_stream(
+    protocol: &str,
+    input: maestro_models::ProviderCall<Local, StreamOptions<Local>>,
+) -> maestro_models::AssistantMessageEventStream {
+    use maestro_models::*;
+    let ProviderCall {
+        model,
+        context,
+        options,
+        submit,
+    } = input;
+    let options = options.map(|common| SimpleStreamOptions {
+        common,
+        ..Default::default()
+    });
+    match protocol {
+        "anthropic-messages" => {
+            stream_simple_anthropic_for::<Local>(model, context, options, submit)
+        }
+        "openai-responses" => {
+            stream_simple_openai_responses_for::<Local>(model, context, options, submit)
+        }
+        "azure-openai-responses" => {
+            stream_simple_azure_openai_responses_for::<Local>(model, context, options, submit)
+        }
+        _ => stream_simple_openai_completions_for::<Local>(model, context, options, submit),
+    }
+}
+
 /// Local hooks retain their original phase log across real suspension.
-fn local_chat_options(
+fn local_common_options(
     phases: Rc<std::cell::RefCell<Vec<&'static str>>>,
     fetch: maestro_models::Fetch,
-) -> maestro_models::OpenAICompletionsOptions<Local> {
+) -> StreamOptions<Local> {
     use serde_json::json;
     let payload_phases = Rc::clone(&phases);
     let response_phases = phases;
-    maestro_models::OpenAICompletionsOptions::<Local> {
-        common: StreamOptions {
-            api_key: Some("fixture-key".into()),
-            fetch: Some(fetch),
-            on_payload: Some(Rc::new(move |mut input, _| {
-                let phases = Rc::clone(&payload_phases);
-                Box::pin(async move {
-                    phases.borrow_mut().push("payload-before");
-                    tokio::task::yield_now().await;
-                    phases.borrow_mut().push("payload-after");
-                    input.payload["temperature"] = json!(0.25);
-                    Ok(input)
-                })
-            })),
-            on_response: Some(Rc::new(move |response, _| {
-                let phases = Rc::clone(&response_phases);
-                Box::pin(async move {
-                    assert_eq!(response.status.to_bits(), 200.0_f64.to_bits());
-                    phases.borrow_mut().push("response-before");
-                    tokio::task::yield_now().await;
-                    phases.borrow_mut().push("response-after");
-                    Ok(())
-                })
-            })),
-            ..Default::default()
-        },
+    StreamOptions {
+        api_key: Some("fixture-key".into()),
+        fetch: Some(fetch),
+        on_payload: Some(Rc::new(move |mut input, _| {
+            let phases = Rc::clone(&payload_phases);
+            Box::pin(async move {
+                phases.borrow_mut().push("payload-before");
+                tokio::task::yield_now().await;
+                phases.borrow_mut().push("payload-after");
+                input.payload["temperature"] = json!(0.25);
+                Ok(input)
+            })
+        })),
+        on_response: Some(Rc::new(move |response, _| {
+            let phases = Rc::clone(&response_phases);
+            Box::pin(async move {
+                assert_eq!(response.status.to_bits(), 200.0_f64.to_bits());
+                phases.borrow_mut().push("response-before");
+                tokio::task::yield_now().await;
+                phases.borrow_mut().push("response-after");
+                Ok(())
+            })
+        })),
         ..Default::default()
     }
 }
@@ -229,7 +344,7 @@ fn chat_local_simple_entries_keep_setup_and_admission_errors() -> crate::TestRes
     assert_eq!(error.message, "No API key for provider: fixture");
     assert_eq!(admissions.get(), 0);
     let options = SimpleStreamOptions {
-        common: local_chat_options(Rc::clone(&phases), transport.fetch.clone()).common,
+        common: local_common_options(Rc::clone(&phases), transport.fetch.clone()),
         ..Default::default()
     };
     let stream =

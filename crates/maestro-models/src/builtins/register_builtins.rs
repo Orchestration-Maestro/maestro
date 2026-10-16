@@ -166,6 +166,24 @@ pub fn stream_simple_anthropic(
     settle_simple(messages::stream_simple_anthropic, model, context, options)
 }
 
+/// Start a simple message invocation with caller-owned admission, settling setup errors.
+#[must_use]
+pub fn stream_simple_anthropic_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> AssistantMessageEventStream {
+    settle_simple(
+        move |model, context, options| {
+            messages::stream_simple_anthropic_for::<E>(model, context, options, submit)
+        },
+        model,
+        context,
+        options,
+    )
+}
+
 /// Start a chat-protocol simple invocation; a missing key ends the stream with an error.
 #[must_use]
 pub fn stream_simple_openai_completions(
@@ -294,4 +312,40 @@ pub fn stream_simple_google(
     options: Option<SimpleStreamOptions>,
 ) -> AssistantMessageEventStream {
     settle_simple(content::stream_simple_google, model, context, options)
+}
+
+/// Start a simple response invocation with caller-owned admission, settling setup errors.
+#[must_use]
+pub fn stream_simple_openai_responses_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> AssistantMessageEventStream {
+    settle_simple(
+        move |model, context, options| {
+            responses::stream_simple_openai_responses_for::<E>(model, context, options, submit)
+        },
+        model,
+        context,
+        options,
+    )
+}
+
+/// Start a simple response invocation with caller-owned admission, settling setup errors.
+#[must_use]
+pub fn stream_simple_azure_openai_responses_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> AssistantMessageEventStream {
+    settle_simple(
+        move |model, context, options| {
+            cloud::stream_simple_azure_openai_responses_for::<E>(model, context, options, submit)
+        },
+        model,
+        context,
+        options,
+    )
 }

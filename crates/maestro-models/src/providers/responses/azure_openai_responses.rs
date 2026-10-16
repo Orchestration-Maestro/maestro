@@ -8,7 +8,7 @@ use super::openai_responses_shared::{
 use crate::arguments::json_parse::whitespace;
 use crate::options::resolve_api_key;
 use crate::providers::assistant_output::conclude;
-use crate::providers::assistant_output::{fail, initial_message, start_producer};
+use crate::providers::assistant_output::{fail, initial_message, start_producer_for};
 use crate::providers::chat::openai_completions::scope_headers;
 use crate::providers::http::{
     HttpRequest, RequestFailure, SseMessages, copied, layer, sdk_status_failure,
@@ -16,9 +16,10 @@ use crate::providers::http::{
 };
 use crate::providers::json_text::compact_json;
 use crate::{
-    AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Model,
-    SharedAssistantMessage, SimpleStreamOptions, StreamOptions, ThinkingLevel, build_base_options,
-    clamp_thinking_level, get_env_api_key,
+    AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Local, Model,
+    ProviderExecution, ProviderInvocation, ProviderSpawner, SharedAssistantMessage,
+    SimpleStreamOptions, StreamOptions, StreamOptionsFamily, ThinkingLevel, Threaded,
+    build_base_options_for, clamp_thinking_level, get_env_api_key,
 };
 use futures_util::stream;
 use indexmap::IndexMap;
@@ -32,9 +33,9 @@ use url::Url;
 
 /// Common and cloud-specific response inputs.
 #[derive(Clone, Default)]
-pub struct AzureOpenAIResponsesOptions {
+pub struct AzureOpenAIResponsesOptions<E: ProviderExecution = Threaded> {
     /// Common request settings.
-    pub common: StreamOptions,
+    pub common: StreamOptions<E>,
     /// Requested reasoning effort.
     pub reasoning_effort: Option<ThinkingLevel>,
     /// Requested reasoning summary style.
@@ -59,9 +60,9 @@ fn environment(name: &str) -> Option<String> {
     std::env::var(name).ok().filter(|s| !s.is_empty())
 }
 /// Select an endpoint and its API version without falling back after parsing fails.
-fn resolve_azure_config(
+fn resolve_azure_config<E: ProviderExecution>(
     model: &Model,
-    options: &AzureOpenAIResponsesOptions,
+    options: &AzureOpenAIResponsesOptions<E>,
 ) -> Result<String, RequestFailure> {
     let base = options.azure_base_url.as_deref().map(|s| s.trim_matches(whitespace)).filter(|s| !s.is_empty()).map(Cow::Borrowed)
         .or_else(|| environment("AZURE_OPENAI_BASE_URL").map(|s| s.trim_matches(whitespace).to_owned()).filter(|s| !s.is_empty()).map(Cow::Owned))
@@ -130,9 +131,9 @@ fn parse_deployment_name_map(value: &str) -> IndexMap<&str, &str> {
         .collect()
 }
 /// Select the explicit deployment, environment mapping, or descriptor ID.
-fn resolve_deployment_name<'a>(
+fn resolve_deployment_name<'a, E: ProviderExecution>(
     model: &'a Model,
-    options: &'a AzureOpenAIResponsesOptions,
+    options: &'a AzureOpenAIResponsesOptions<E>,
 ) -> Cow<'a, str> {
     options
         .azure_deployment_name
@@ -155,24 +156,93 @@ pub fn stream_azure_openai_responses(
     context: Context,
     options: Option<AzureOpenAIResponsesOptions>,
 ) -> AssistantMessageEventStream {
+    dispatch(model, context, ProviderInvocation::Threaded(options, None))
+}
+
+/// Start a response request with the caller's producer admission and hook family.
+#[must_use]
+pub fn stream_azure_openai_responses_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<AzureOpenAIResponsesOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> AssistantMessageEventStream {
+    dispatch(model, context, E::submission(options, E::provided(submit)))
+}
+
+impl StreamOptionsFamily for AzureOpenAIResponsesOptions {
+    type Options<E: ProviderExecution> = AzureOpenAIResponsesOptions<E>;
+}
+
+/// Select concrete future erasure before starting the shared producer.
+fn dispatch(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<AzureOpenAIResponsesOptions>,
+) -> AssistantMessageEventStream {
+    match invocation {
+        ProviderInvocation::Local(options, submit) => {
+            produce::<Local>(model, context, options, submit)
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            produce::<Threaded>(model, context, options, submit)
+        }
+    }
+}
+
+/// Box the same producer with this concrete family's future bounds.
+trait Producer: ProviderExecution {
+    /// Erase the retained producer without changing its work.
+    fn drive(
+        model: Arc<Model>,
+        context: Context,
+        options: AzureOpenAIResponsesOptions<Self>,
+        stream: AssistantMessageEventStream,
+        output: SharedAssistantMessage,
+    ) -> Self::Future<'static, ()>;
+}
+
+/// Only the concrete future auto-trait bounds differ.
+macro_rules! producer {
+    ($mode:ty) => {
+        impl Producer for $mode {
+            fn drive(
+                model: Arc<Model>,
+                context: Context,
+                options: AzureOpenAIResponsesOptions<Self>,
+                stream: AssistantMessageEventStream,
+                output: SharedAssistantMessage,
+            ) -> Self::Future<'static, ()> {
+                Box::pin(run::<Self>(model, context, options, stream, output))
+            }
+        }
+    };
+}
+producer!(Local);
+producer!(Threaded);
+
+/// Prepare one retained invocation and submit its producer once.
+fn produce<E: Producer>(
+    model: Model,
+    context: Context,
+    options: Option<AzureOpenAIResponsesOptions<E>>,
+    submit: E::Submission,
+) -> AssistantMessageEventStream {
     let stream = AssistantMessageEventStream::new();
     let output = Arc::new(RwLock::new(initial_message(&model)));
     let options = options.unwrap_or_default();
     let signal = options.common.signal.clone();
-    start_producer(
-        &stream,
-        &output,
-        signal.as_ref(),
-        Box::pin(run(
-            Arc::new(model),
-            context,
-            options,
-            stream.clone(),
-            Arc::clone(&output),
-        )),
+    let task = E::drive(
+        Arc::new(model),
+        context,
+        options,
+        stream.clone(),
+        Arc::clone(&output),
     );
+    start_producer_for::<E>(&stream, &output, signal.as_ref(), task, submit);
     stream
 }
+
 /// Start a cloud invocation using simple budgets and reasoning support.
 ///
 /// # Errors
@@ -182,6 +252,36 @@ pub fn stream_simple_azure_openai_responses(
     context: Context,
     options: Option<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    simple::<Threaded>(model, context, options, None)
+}
+
+/// Start a simple response request with caller-owned producer admission.
+///
+/// # Errors
+/// Returns the existing missing-key failure before creating a stream.
+pub fn stream_simple_azure_openai_responses_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    match E::submission::<SimpleStreamOptions>(options, E::provided(submit)) {
+        ProviderInvocation::Local(options, submit) => {
+            simple::<Local>(model, context, options, submit)
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            simple::<Threaded>(model, context, options, submit)
+        }
+    }
+}
+
+/// Resolve shared simple options before starting the same producer.
+fn simple<E: Producer>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: E::Submission,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
     let key = resolve_api_key(
         &model.provider,
         options
@@ -190,7 +290,7 @@ pub fn stream_simple_azure_openai_responses(
             .map(Cow::Borrowed),
     )
     .ok_or_else(|| diagnostic(format!("No API key for provider: {}", model.provider)))?;
-    let common = build_base_options(&model, options.as_ref(), Some(&key));
+    let common = build_base_options_for(&model, options.as_ref(), Some(&key));
     let reasoning_effort = options
         .as_ref()
         .and_then(|o| o.reasoning)
@@ -199,7 +299,7 @@ pub fn stream_simple_azure_openai_responses(
         });
     drop(key);
     drop(options);
-    Ok(stream_azure_openai_responses(
+    Ok(produce::<E>(
         model,
         context,
         Some(AzureOpenAIResponsesOptions {
@@ -207,6 +307,7 @@ pub fn stream_simple_azure_openai_responses(
             reasoning_effort,
             ..Default::default()
         }),
+        submit,
     ))
 }
 /// Serialization-only cloud request body.
@@ -238,10 +339,10 @@ struct Payload<'a> {
     include: Option<[&'a str; 1]>,
 }
 /// Build protocol selections at the payload hook boundary.
-fn build_params(
+fn build_params<E: ProviderExecution>(
     model: &Model,
     context: &Context,
-    options: &AzureOpenAIResponsesOptions,
+    options: &AzureOpenAIResponsesOptions<E>,
 ) -> Result<Value, RequestFailure> {
     let deployment = resolve_deployment_name(model, options);
     let reasoning = reasoning(model, options.reasoning_effort, options.reasoning_summary);
@@ -280,10 +381,10 @@ fn build_params(
     .map_err(|e| RequestFailure::new(e.to_string()))
 }
 /// Prepare the endpoint-specific request before transport and hooks.
-async fn send(
+async fn send<E: ProviderExecution>(
     model: &Arc<Model>,
     context: &Context,
-    options: &AzureOpenAIResponsesOptions,
+    options: &AzureOpenAIResponsesOptions<E>,
 ) -> Result<Prepared, RequestFailure> {
     let key = options.common.api_key.as_ref().filter(|s| !s.is_empty()).cloned().or_else(|| get_env_api_key(&model.provider)).or_else(|| environment("AZURE_OPENAI_API_KEY"))
         .ok_or_else(|| RequestFailure::new("Azure OpenAI API key is required. Set AZURE_OPENAI_API_KEY environment variable or pass it as an argument."))?;
@@ -329,10 +430,10 @@ async fn send(
     Ok(prepared)
 }
 /// Reduce one invocation into its existing shared output handle.
-async fn run(
+async fn run<E: ProviderExecution>(
     model: Arc<Model>,
     context: Context,
-    options: AzureOpenAIResponsesOptions,
+    options: AzureOpenAIResponsesOptions<E>,
     events: AssistantMessageEventStream,
     output: SharedAssistantMessage,
 ) {

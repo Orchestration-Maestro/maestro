@@ -15,7 +15,13 @@ Other detected failures end the returned stream as on the raw entry. The simple 
 [common option and budget helpers](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/model-options.md)
 and does not forward its `tool_choice`.
 
-On native targets the call must run inside a Tokio runtime. A request through the shared HTTP sender
+The direct `_for` counterparts take a fourth `ProviderSpawner<E>` argument and
+accept `AnthropicOptions<E>` or `SimpleStreamOptions<E>`. `Local` hooks and their
+futures may retain caller-local state; admission uses the supplied task facility.
+The root simple `_for` export still settles setup errors as a stream. Default
+entry points retain `Threaded` options and three-argument calls.
+
+On native targets the default call must run inside a Tokio runtime. A request through the shared HTTP sender
 needs the runtime's time driver (`enable_time`, or `enable_all`) for its setup timeout and retry
 delays, and the default HTTP client also needs the I/O driver; an injected client reads the body
 without timers, so a call that uses one needs neither driver. The request work is owned by the
