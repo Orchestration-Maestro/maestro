@@ -67,6 +67,9 @@ Application attachment loading reuses already-landed native libraries: serde
 (defaults off/std/sink, MIT). The existing model Fetch port owns HTTP transport;
 there is no second client or document parser dependency. The application uses
 the already-allowed agent dependency for standard-message projection.
+Native application tests explicitly enable futures-util's `async-await` feature
+for the prompt-token example's `poll!` assertions, rather than relying on
+platform-dependent transitive feature unification. This adds no package.
 
 Native tests enable `egui/default_fonts` through a dev-dependency, resolving
 `epaint_default_fonts =0.36.2` (MIT, OFL-1.1 and Ubuntu-font-1.0). The exact-version
