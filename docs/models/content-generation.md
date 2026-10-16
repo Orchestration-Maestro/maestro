@@ -341,12 +341,17 @@ assert!(prepared.request.signal.is_none());
 ## Public invocation
 
 [`stream_google`](../../crates/maestro-models/src/providers/content/google.rs) takes
-`GoogleOptions` and returns an independently produced event stream. Native callers need a
+`GoogleOptions` and returns an independently produced event stream. Default native callers need a
 running Tokio runtime. Dropping the event reader does not cancel the producer; its retained
 result still observes completion. The module's `stream_simple_google` first selects
 [simple options](#request-preparation) and returns a missing-key error before creating a
 stream. The [root simple wrapper](module-linkage.md#root-entry-points) settles that error
 into a stream.
+
+`stream_google_for` and `stream_simple_google_for` accept an explicit execution
+family and producer submitter, with `GoogleOptions<E>` retaining that family's
+hooks. Content generation invokes the payload hook, not the response hook.
+The public preparation helpers retain their default signatures and do not invoke hooks.
 
 On native targets, the raw entry captures `GOOGLE_GEMINI_BASE_URL` synchronously into
 owned client settings; browser targets supply no environment fallback.

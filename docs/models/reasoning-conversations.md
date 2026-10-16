@@ -5,7 +5,10 @@ reasoning effort. The options are available from `maestro_models` and
 `maestro_models::providers::reasoning::mistral`, together with `stream_mistral`
 and `stream_simple_mistral`. These operations expose cumulative updates from
 independently owned work: dropping the reader does not cancel the producer.
-Native calls need a running Tokio runtime.
+Default native calls need a running Tokio runtime.
+`stream_mistral_for` and `stream_simple_mistral_for` take an explicit execution
+family and producer submitter; `MistralOptions<E>` retains that family's hooks.
+The conversation protocol invokes the payload hook, not the response hook.
 Missing credentials produce a terminal error for raw calls and an immediate
 error for simple calls made through this module (the root export settles it as an error
 stream; see the [linkage guide](https://github.com/Orchestration-Maestro/maestro/blob/main/docs/models/module-linkage.md)). Text, thinking and tool updates retain the same message
@@ -15,7 +18,7 @@ handle through the terminal result.
 use maestro_models::{MistralOptions, MistralPromptMode, MistralReasoningEffort,
     MistralToolChoice};
 
-let options = MistralOptions {
+let options: MistralOptions = MistralOptions {
     tool_choice: Some(MistralToolChoice::Function { name: "lookup".into() }),
     prompt_mode: Some(MistralPromptMode::Reasoning),
     reasoning_effort: Some(MistralReasoningEffort::High),

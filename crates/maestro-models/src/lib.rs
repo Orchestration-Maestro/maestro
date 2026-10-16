@@ -9,10 +9,10 @@ pub use builtins::{
     BedrockProviderModule, find_env_keys, get_env_api_key, register_built_in_api_providers,
     reset_api_providers, set_bedrock_provider_module, stream_simple_anthropic,
     stream_simple_anthropic_for, stream_simple_azure_openai_responses,
-    stream_simple_azure_openai_responses_for, stream_simple_google, stream_simple_mistral,
-    stream_simple_openai_codex_responses, stream_simple_openai_completions,
-    stream_simple_openai_completions_for, stream_simple_openai_responses,
-    stream_simple_openai_responses_for,
+    stream_simple_azure_openai_responses_for, stream_simple_google, stream_simple_google_for,
+    stream_simple_mistral, stream_simple_mistral_for, stream_simple_openai_codex_responses,
+    stream_simple_openai_completions, stream_simple_openai_completions_for,
+    stream_simple_openai_responses, stream_simple_openai_responses_for,
 };
 
 pub mod cancellation;
@@ -40,7 +40,7 @@ pub use providers::chat::openai_completions::{
     OpenAICompletionsOptions, stream_openai_completions, stream_openai_completions_for,
 };
 pub use providers::cloud::amazon_bedrock::{BedrockOptions, BedrockThinkingDisplay};
-pub use providers::content::google::{GoogleOptions, stream_google};
+pub use providers::content::google::{GoogleOptions, stream_google, stream_google_for};
 pub use providers::content::google_shared::GoogleThinkingLevel;
 pub use providers::http::{Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch};
 pub use providers::messages::anthropic::{
@@ -49,6 +49,7 @@ pub use providers::messages::anthropic::{
 };
 pub use providers::reasoning::mistral::{
     MistralOptions, MistralPromptMode, MistralReasoningEffort, MistralToolChoice, stream_mistral,
+    stream_mistral_for,
 };
 pub use providers::responses::azure_openai_responses::{
     AzureOpenAIResponsesOptions, stream_azure_openai_responses, stream_azure_openai_responses_for,

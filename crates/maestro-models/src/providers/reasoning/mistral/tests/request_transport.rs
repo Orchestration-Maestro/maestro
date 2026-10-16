@@ -9,7 +9,7 @@ fn request_hooks_keep_phase_and_response_hook_is_unused() {
         .build()
         .unwrap()
         .block_on(async {
-            let mut options = crate::MistralOptions::default();
+            let mut options = crate::MistralOptions::<crate::Threaded>::default();
             options.common.api_key = Some(String::new());
             let mut model = super::request_corpus::model(&serde_json::json!({}));
             model.provider = "missing-synthetic-provider".into();

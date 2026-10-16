@@ -10,7 +10,7 @@ fn request_payload_preserves_raw_options() {
         r#"{"systemPrompt":" sys ","messages":[{"role":"user","content":"Hi","timestamp":0}]}"#,
     )
     .unwrap();
-    let mut options = MistralOptions::default();
+    let mut options = MistralOptions::<crate::Threaded>::default();
     options.common.temperature = Some(-0.0);
     options.common.max_tokens = Some(0.0);
     let payload = build_chat_payload(&model, &context, &options, None).unwrap();

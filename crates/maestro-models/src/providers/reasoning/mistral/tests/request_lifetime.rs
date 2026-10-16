@@ -36,7 +36,7 @@ async fn pending<T>(mut operation: Pin<&mut impl Future<Output = T>>) {
 async fn prepared(fetch: crate::Fetch, signal: Option<crate::Cancellation>) -> request::Prepared {
     let model = super::request_corpus::model(&serde_json::json!({}));
     let context = serde_json::from_value(serde_json::json!({"messages":[]})).unwrap();
-    let options = crate::MistralOptions {
+    let options: crate::MistralOptions = crate::MistralOptions {
         common: crate::StreamOptions {
             api_key: Some("synthetic".into()),
             signal,
@@ -139,7 +139,7 @@ async fn hook_lifetime() {
     for aborted in [false, true] {
         let (release, wait) = tokio::sync::oneshot::channel();
         let slot = Arc::new(Mutex::new(Some(wait)));
-        let mut options = crate::MistralOptions::default();
+        let mut options = crate::MistralOptions::<crate::Threaded>::default();
         options.common.api_key = Some("synthetic".into());
         let signal = crate::Cancellation::new();
         if aborted {

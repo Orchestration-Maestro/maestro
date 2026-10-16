@@ -227,6 +227,24 @@ pub fn stream_simple_mistral(
     settle_simple(conversation::stream_simple_mistral, model, context, options)
 }
 
+/// Start a simple conversation with caller-owned producer admission.
+#[must_use]
+pub fn stream_simple_mistral_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> AssistantMessageEventStream {
+    settle_simple(
+        move |model, context, options| {
+            conversation::stream_simple_mistral_for::<E>(model, context, options, submit)
+        },
+        model,
+        context,
+        options,
+    )
+}
+
 /// Start a response-protocol simple invocation; a missing key ends the stream with an error.
 #[must_use]
 pub fn stream_simple_openai_responses(
@@ -312,6 +330,24 @@ pub fn stream_simple_google(
     options: Option<SimpleStreamOptions>,
 ) -> AssistantMessageEventStream {
     settle_simple(content::stream_simple_google, model, context, options)
+}
+
+/// Start simple content generation using caller-owned admission, settling setup errors.
+#[must_use]
+pub fn stream_simple_google_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> AssistantMessageEventStream {
+    settle_simple(
+        move |model, context, options| {
+            content::stream_simple_google_for::<E>(model, context, options, submit)
+        },
+        model,
+        context,
+        options,
+    )
 }
 
 /// Start a simple response invocation with caller-owned admission, settling setup errors.

@@ -121,6 +121,8 @@ fn direct_local_submission_preserves_hook_phases() -> crate::TestResult {
                 "anthropic-messages",
                 "openai-responses",
                 "azure-openai-responses",
+                "mistral-conversations",
+                "google-generative-ai",
             ] {
                 for simple in [false, true] {
                     direct_local_case(protocol, simple).await?;
@@ -131,13 +133,10 @@ fn direct_local_submission_preserves_hook_phases() -> crate::TestResult {
     )
 }
 
-/// Drive each invocation to completion before checking its closed phase transcript.
-async fn direct_local_case(protocol: &str, simple: bool) -> crate::TestResult {
-    use crate::{chat, transport};
-    use maestro_models::ProviderCall;
-    use serde_json::json;
-    use std::cell::RefCell;
-    let transport = transport::transport(vec![match protocol {
+/// Protocol-shaped empty success bodies remain independent of the renderer.
+fn direct_response(protocol: &str) -> crate::transport::Attempt {
+    use crate::transport;
+    match protocol {
         "anthropic-messages" => {
             transport::Attempt::body(200, &[], crate::messages::STOP.as_bytes().to_vec())
         }
@@ -146,15 +145,28 @@ async fn direct_local_case(protocol: &str, simple: bool) -> crate::TestResult {
             &[],
             crate::response_endpoint::COMPLETE.as_bytes().to_vec(),
         ),
+        "google-generative-ai" => transport::Attempt::body(200, &[], b"data: {\"candidates\":[{\"content\":{\"parts\":[]},\"finishReason\":\"STOP\"}]}\n\n".to_vec()),
+        "mistral-conversations" => transport::Attempt::body(200, &[("content-type", "text/event-stream")], b"data: {\"id\":\"controlled\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n".to_vec()),
         _ => transport::Attempt::success(),
-    }]);
+    }
+}
+
+/// Drive each invocation to completion before checking its closed phase transcript.
+async fn direct_local_case(protocol: &str, simple: bool) -> crate::TestResult {
+    use crate::{chat, transport};
+    use maestro_models::ProviderCall;
+    use serde_json::json;
+    use std::cell::RefCell;
+    let transport = transport::transport(vec![direct_response(protocol)]);
     let phases = Rc::new(RefCell::new(Vec::new()));
     let tasks = Rc::new(RefCell::new(Vec::new()));
     let admissions = Rc::new(Cell::new(0));
     let spawn = local_submission(Rc::clone(&tasks), Rc::clone(&admissions));
     let input = ProviderCall {
         model: chat::model(&json!({"api": protocol}))?,
-        context: chat::context(&json!({"messages": []}))?,
+        context: chat::context(
+            &json!({"messages": [{"role":"user", "content":"controlled", "timestamp":0}]}),
+        )?,
         options: Some(local_common_options(
             Rc::clone(&phases),
             transport.fetch.clone(),
@@ -172,21 +184,38 @@ async fn direct_local_case(protocol: &str, simple: bool) -> crate::TestResult {
     for task in tasks.take() {
         task.await?;
     }
+    assert_eq!(result.error_message, None);
     assert_eq!(events, ["start", "done"]);
     assert_eq!(result.stop_reason, maestro_models::StopReason::Stop);
-    assert_eq!(
-        *phases.borrow(),
-        [
+    let expected: &[&str] = if matches!(protocol, "mistral-conversations" | "google-generative-ai")
+    {
+        &["payload-before", "payload-after"]
+    } else {
+        &[
             "payload-before",
             "payload-after",
             "response-before",
-            "response-after"
+            "response-after",
         ]
-    );
+    };
+    assert_eq!(*phases.borrow(), expected);
     let (_, body) = transport.first_request()?;
     let body: serde_json::Value = serde_json::from_slice(&body)?;
-    assert_eq!(body["temperature"], json!(0.25));
+    assert_sent_temperature(protocol, &body);
     Ok(())
+}
+
+/// Inspect the protocol's actual post-hook wire field.
+fn assert_sent_temperature(protocol: &str, body: &serde_json::Value) {
+    use serde_json::json;
+    assert_eq!(
+        if protocol == "google-generative-ai" {
+            &body["generationConfig"]["temperature"]
+        } else {
+            &body["temperature"]
+        },
+        &json!(0.25)
+    );
 }
 
 /// Record and retain every admitted local task until its producer completes.
@@ -208,48 +237,61 @@ fn direct_local_stream(
     input: maestro_models::ProviderCall<Local, StreamOptions<Local>>,
 ) -> maestro_models::AssistantMessageEventStream {
     use maestro_models::*;
-    let ProviderCall {
-        model,
-        context,
-        options,
-        submit,
-    } = input;
+    let common = input.options.unwrap_or_default();
     match protocol {
-        "anthropic-messages" => stream_anthropic_for::<Local>(
-            model,
-            context,
-            options.map(|common| AnthropicOptions {
+        "google-generative-ai" => stream_google_for::<Local>(
+            input.model,
+            input.context,
+            Some(GoogleOptions {
                 common,
                 ..Default::default()
             }),
-            submit,
+            input.submit,
+        ),
+        "mistral-conversations" => stream_mistral_for::<Local>(
+            input.model,
+            input.context,
+            Some(MistralOptions {
+                common,
+                ..Default::default()
+            }),
+            input.submit,
+        ),
+        "anthropic-messages" => stream_anthropic_for::<Local>(
+            input.model,
+            input.context,
+            Some(AnthropicOptions {
+                common,
+                ..Default::default()
+            }),
+            input.submit,
         ),
         "openai-responses" => stream_openai_responses_for::<Local>(
-            model,
-            context,
-            options.map(|common| OpenAIResponsesOptions {
+            input.model,
+            input.context,
+            Some(OpenAIResponsesOptions {
                 common,
                 ..Default::default()
             }),
-            submit,
+            input.submit,
         ),
         "azure-openai-responses" => stream_azure_openai_responses_for::<Local>(
-            model,
-            context,
-            options.map(|common| AzureOpenAIResponsesOptions {
+            input.model,
+            input.context,
+            Some(AzureOpenAIResponsesOptions {
                 common,
                 ..Default::default()
             }),
-            submit,
+            input.submit,
         ),
         _ => stream_openai_completions_for::<Local>(
-            model,
-            context,
-            options.map(|common| OpenAICompletionsOptions {
+            input.model,
+            input.context,
+            Some(OpenAICompletionsOptions {
                 common,
                 ..Default::default()
             }),
-            submit,
+            input.submit,
         ),
     }
 }
@@ -271,6 +313,12 @@ fn direct_simple_local_stream(
         ..Default::default()
     });
     match protocol {
+        "google-generative-ai" => {
+            stream_simple_google_for::<Local>(model, context, options, submit)
+        }
+        "mistral-conversations" => {
+            stream_simple_mistral_for::<Local>(model, context, options, submit)
+        }
         "anthropic-messages" => {
             stream_simple_anthropic_for::<Local>(model, context, options, submit)
         }
@@ -301,7 +349,11 @@ fn local_common_options(
                 phases.borrow_mut().push("payload-before");
                 tokio::task::yield_now().await;
                 phases.borrow_mut().push("payload-after");
-                input.payload["temperature"] = json!(0.25);
+                if let Some(config) = input.payload.get_mut("config") {
+                    config["temperature"] = json!(0.25);
+                } else {
+                    input.payload["temperature"] = json!(0.25);
+                }
                 Ok(input)
             })
         })),
