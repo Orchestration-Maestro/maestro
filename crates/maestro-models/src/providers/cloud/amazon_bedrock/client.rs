@@ -83,8 +83,8 @@ fn standard_region(endpoint: &str) -> Option<String> {
 
 /// The nonempty `region` option, otherwise nonempty `AWS_REGION`, otherwise nonempty
 /// `AWS_DEFAULT_REGION`.
-pub(super) fn configured_region<'a>(
-    options: &'a BedrockOptions,
+pub(super) fn configured_region<'a, E: crate::ProviderExecution>(
+    options: &'a BedrockOptions<E>,
     env: &'a Environment,
 ) -> Option<&'a str> {
     options
@@ -100,9 +100,9 @@ impl Settings {
     ///
     /// # Errors
     /// Fails when the endpoint the SDK must use is not a URL.
-    pub(super) fn resolve(
+    pub(super) fn resolve<E: crate::ProviderExecution>(
         model: &Model,
-        options: &BedrockOptions,
+        options: &BedrockOptions<E>,
         env: &Environment,
     ) -> Result<Self, RequestFailure> {
         let region = configured_region(options, env).map(str::to_owned);
@@ -296,9 +296,9 @@ fn bridge(
 
 /// Build the SDK client from the settings. The region is looked up while the shared
 /// configuration loads; credentials are looked up by the SDK on the first send.
-pub(super) async fn connect(
+pub(super) async fn connect<E: crate::ProviderExecution>(
     settings: &Settings,
-    options: &BedrockOptions,
+    options: &BedrockOptions<E>,
     env: Environment,
 ) -> Service {
     let observed = Arc::new(Mutex::new(None));

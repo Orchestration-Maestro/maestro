@@ -388,7 +388,7 @@ async fn converse(row: &Row, supplied: bool) -> TestResult {
         region: Some("us-east-1".to_owned()),
         profile: (row.input.route == "explicit" || row.input.route == "named")
             .then(|| "selected".to_owned()),
-        common: StreamOptions {
+        common: StreamOptions::<maestro_models::Threaded> {
             fetch,
             on_response: Some(Arc::new(move |response: ProviderResponse, _| {
                 captured

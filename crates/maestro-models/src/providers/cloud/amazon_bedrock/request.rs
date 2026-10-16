@@ -197,10 +197,10 @@ pub(super) struct Prepared {
 /// # Errors
 /// Propagates [`messages`] conversion failures or fails when the conversation cannot be
 /// written as JSON.
-pub(super) fn payload(
+pub(super) fn payload<E: crate::ProviderExecution>(
     model: &Model,
     context: Context,
-    options: &BedrockOptions,
+    options: &BedrockOptions<E>,
     env: &Environment,
 ) -> Result<Value, RequestFailure> {
     let cache = cache_point(

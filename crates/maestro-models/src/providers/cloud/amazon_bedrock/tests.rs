@@ -322,7 +322,7 @@ fn european_model() -> Result<Model, &'static str> {
 #[test]
 fn http1_follows_the_proxy_gate_and_the_force_flag() -> Result<(), Box<dyn std::error::Error>> {
     let model = european_model()?;
-    let options = BedrockOptions::default();
+    let options = BedrockOptions::<crate::Threaded>::default();
     let cases: &[FlagRow] = &[
         (&[], false, false),
         (&[("HTTP_PROXY", "http://p")], true, true),
@@ -357,9 +357,9 @@ fn http1_follows_the_proxy_gate_and_the_force_flag() -> Result<(), Box<dyn std::
 fn skip_flag_replaces_both_bearer_sources_and_only_the_exact_spelling_counts()
 -> Result<(), Box<dyn std::error::Error>> {
     let model = european_model()?;
-    let options = BedrockOptions {
+    let options: BedrockOptions = BedrockOptions {
         bearer_token: Some("explicit".into()),
-        ..BedrockOptions::default()
+        ..BedrockOptions::<crate::Threaded>::default()
     };
     let skipped = [
         ("AWS_BEDROCK_SKIP_AUTH", "1"),
@@ -368,8 +368,12 @@ fn skip_flag_replaces_both_bearer_sources_and_only_the_exact_spelling_counts()
     let settings = Settings::resolve(&model, &options, &environment(&skipped))
         .map_err(|failure| failure.message)?;
     assert_eq!(settings.auth, Auth::Placeholder);
-    let settings = Settings::resolve(&model, &BedrockOptions::default(), &environment(&skipped))
-        .map_err(|failure| failure.message)?;
+    let settings = Settings::resolve(
+        &model,
+        &BedrockOptions::<crate::Threaded>::default(),
+        &environment(&skipped),
+    )
+    .map_err(|failure| failure.message)?;
     assert_eq!(settings.auth, Auth::Placeholder);
     let other = [
         ("AWS_BEDROCK_SKIP_AUTH", "true"),

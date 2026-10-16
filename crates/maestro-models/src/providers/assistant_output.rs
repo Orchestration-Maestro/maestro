@@ -67,16 +67,6 @@ pub fn publish_failure(
     });
 }
 
-/// Launch an owned producer, or publish the existing native runtime failure synchronously.
-pub(crate) fn start_producer(
-    stream: &AssistantMessageEventStream,
-    output: &SharedAssistantMessage,
-    signal: Option<&Cancellation>,
-    task: BoxFuture<()>,
-) {
-    start_producer_for::<crate::Threaded>(stream, output, signal, task, None);
-}
-
 /// Admit the family's producer without changing the provider's native fallback.
 pub(crate) fn start_producer_for<E: crate::ProviderExecution>(
     stream: &AssistantMessageEventStream,

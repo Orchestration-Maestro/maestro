@@ -202,7 +202,7 @@ fn producer_completion_outlives_observers() {
                 let (complete, completed) = tokio::sync::oneshot::channel();
                 let retained = Arc::clone(&output);
                 let producer = stream.clone();
-                start_producer(
+                start_producer_for::<crate::Threaded>(
                     &stream,
                     &output,
                     None,
@@ -213,6 +213,7 @@ fn producer_completion_outlives_observers() {
                         producer.end(Some(Arc::clone(&retained)));
                         complete.send(retained).unwrap();
                     }),
+                    None,
                 );
                 ready.await.unwrap();
                 drop(stream);

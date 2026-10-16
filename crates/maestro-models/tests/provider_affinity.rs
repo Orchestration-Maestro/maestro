@@ -395,7 +395,9 @@ fn local_common_options(
                 phases.borrow_mut().push("payload-before");
                 tokio::task::yield_now().await;
                 phases.borrow_mut().push("payload-after");
-                if let Some(config) = input.payload.get_mut("config") {
+                if let Some(config) = input.payload.get_mut("inferenceConfig") {
+                    config["temperature"] = json!(0.25);
+                } else if let Some(config) = input.payload.get_mut("config") {
                     config["temperature"] = json!(0.25);
                 } else {
                     input.payload["temperature"] = json!(0.25);
@@ -457,4 +459,118 @@ fn chat_local_simple_entries_keep_setup_and_admission_errors() -> crate::TestRes
     assert!(phases.borrow().is_empty());
     assert_eq!(transport.attempts(), 0);
     Ok(())
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn direct_cloud_local_submission_preserves_hook_phases() -> crate::TestResult {
+    if crate::child_process::child_case().is_none() {
+        return crate::child_process::rerun(
+            "direct_cloud_local_submission_preserves_hook_phases",
+            "local-cloud",
+            &[
+                ("AWS_BEARER_TOKEN_BEDROCK", "fixture-token"),
+                ("AWS_REGION", "us-east-1"),
+            ],
+        );
+    }
+    crate::chat::block_on(
+        false,
+        tokio::task::LocalSet::new().run_until(async {
+            for simple in [false, true] {
+                direct_cloud_local_case(simple).await?;
+            }
+            Ok(())
+        }),
+    )
+}
+
+/// Exercise the native SDK and response-admission path with genuinely local hooks.
+#[cfg(not(target_arch = "wasm32"))]
+async fn direct_cloud_local_case(simple: bool) -> crate::TestResult {
+    use crate::{bedrock, transport};
+    use serde_json::json;
+    use std::cell::RefCell;
+    let transport = bedrock::serve(vec![
+        bedrock::event("messageStart", &json!({"role":"assistant"}))?,
+        bedrock::event("messageStop", &json!({"stopReason":"end_turn"}))?,
+    ]);
+    let phases = Rc::new(RefCell::new(Vec::new()));
+    let tasks = Rc::new(RefCell::new(Vec::new()));
+    let admissions = Rc::new(Cell::new(0));
+    let spawn = local_submission(Rc::clone(&tasks), Rc::clone(&admissions));
+    let model = bedrock::model("https://bedrock-runtime.us-east-1.amazonaws.com")?;
+    let context = bedrock::context("controlled")?;
+    let common = local_common_options(Rc::clone(&phases), transport.fetch.clone());
+    let stream = direct_cloud_local_stream(
+        simple,
+        maestro_models::ProviderCall {
+            model,
+            context,
+            options: Some(common),
+            submit: spawn,
+        },
+    );
+    assert_eq!(admissions.get(), 1);
+    assert!(phases.borrow().is_empty());
+    let (events, result) = transport::drain(&stream).await?;
+    for task in tasks.take() {
+        task.await?;
+    }
+    assert_eq!(result.error_message, None);
+    assert_eq!(events, ["start", "done"]);
+    assert_eq!(
+        *phases.borrow(),
+        [
+            "payload-before",
+            "payload-after",
+            "response-before",
+            "response-after"
+        ]
+    );
+    let (_, body) = transport.first_request()?;
+    let body: serde_json::Value = serde_json::from_slice(&body)?;
+    assert_eq!(body["inferenceConfig"]["temperature"], json!(0.25));
+    Ok(())
+}
+
+/// Use the existing raw and simple cloud entry points with the same supplied admission.
+#[cfg(not(target_arch = "wasm32"))]
+fn direct_cloud_local_stream(
+    simple: bool,
+    call: maestro_models::ProviderCall<Local, StreamOptions<Local>>,
+) -> maestro_models::AssistantMessageEventStream {
+    use maestro_models::providers::cloud::amazon_bedrock::{
+        stream_bedrock_for, stream_simple_bedrock_for,
+    };
+    use maestro_models::{BedrockOptions, SimpleStreamOptions};
+    let maestro_models::ProviderCall {
+        model,
+        context,
+        options,
+        submit: spawn,
+    } = call;
+    let common = options.unwrap_or_default();
+    if simple {
+        stream_simple_bedrock_for::<Local>(
+            model,
+            context,
+            Some(SimpleStreamOptions {
+                common,
+                ..Default::default()
+            }),
+            spawn,
+        )
+    } else {
+        stream_bedrock_for::<Local>(
+            model,
+            context,
+            Some(BedrockOptions {
+                common,
+                bearer_token: Some("controlled".into()),
+                ..Default::default()
+            }),
+            spawn,
+        )
+    }
 }

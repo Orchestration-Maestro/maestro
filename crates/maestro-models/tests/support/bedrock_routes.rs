@@ -75,7 +75,7 @@ fn converse() -> TestResult {
         let hooked = Arc::new(AtomicBool::new(false));
         let seen = Arc::clone(&hooked);
         let options = BedrockOptions {
-            common: StreamOptions {
+            common: StreamOptions::<maestro_models::Threaded> {
                 on_response: Some(Arc::new(move |_, _| {
                     seen.store(true, Ordering::SeqCst);
                     Box::pin(async { Ok(()) })

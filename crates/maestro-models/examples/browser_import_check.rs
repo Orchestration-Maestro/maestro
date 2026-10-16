@@ -38,7 +38,10 @@ fn local_client() -> (
 fn main() {
     response_session_surface();
     bedrock_surface();
-    std::hint::black_box((stream_bedrock, BedrockOptions::default()));
+    std::hint::black_box((
+        stream_bedrock,
+        BedrockOptions::<maestro_models::Threaded>::default(),
+    ));
     let model = get_model("google", "gemini-2.5-flash");
     std::hint::black_box((
         model,
