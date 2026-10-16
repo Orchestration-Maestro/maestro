@@ -1,11 +1,160 @@
 #![cfg(test)]
 
+#[path = "fixtures/toolchain_support.rs"]
+mod toolchain_support;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use maestro_tooling as tooling;
+
+#[cfg(unix)]
+#[test]
+fn child_toolchain_preserves_parent_profile_destination() {
+    const PROBE: &str = "MAESTRO_TOOLCHAIN_ENV_PROBE";
+    if std::env::var_os(PROBE).is_some() {
+        let before: Vec<_> = std::env::vars_os().collect();
+        let mut child = toolchain_support::command("sh");
+        let output = child
+            .args(["-c", "test -z \"${LLVM_PROFILE_FILE+x}${RUSTFLAGS+x}${CARGO_ENCODED_RUSTFLAGS+x}${__CARGO_LLVM_COV_RUSTC_WRAPPER+x}\" && test \"$RUSTC_WRAPPER\" = original-wrapper"])
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        assert_eq!(
+            std::env::var("LLVM_PROFILE_FILE").unwrap(),
+            "parent-%p.profraw"
+        );
+        assert!(
+            std::env::vars_os().collect::<Vec<_>>() == before,
+            "parent environment changed"
+        );
+        return;
+    }
+    let output = Command::new(std::env::current_exe().unwrap())
+        .current_dir(std::env::temp_dir())
+        .args([
+            "--exact",
+            "child_toolchain_preserves_parent_profile_destination",
+            "--nocapture",
+        ])
+        .env(PROBE, "1")
+        .env("LLVM_PROFILE_FILE", "parent-%p.profraw")
+        .env("RUSTFLAGS", "-C instrument-coverage")
+        .env("CARGO_ENCODED_RUSTFLAGS", "-Cinstrument-coverage")
+        .env("__CARGO_LLVM_COV_RUSTC_WRAPPER", "1")
+        .env(
+            "__CARGO_LLVM_COV_RUSTC_WRAPPER_PRE_EXISTING",
+            "original-wrapper",
+        )
+        .env("RUSTC_WRAPPER", "coverage-wrapper")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
+fn child_toolchain_keeps_parent_counters_while_building_wasm() {
+    let fixture = Fixture::new();
+    fs::write(
+        fixture.root.join("Cargo.toml"),
+        "[package]\nname = 'wasm-child'\nversion = '0.0.0'\nedition = '2024'\n[workspace]\n",
+    )
+    .unwrap();
+    fs::create_dir(fixture.root.join("src")).unwrap();
+    fs::write(
+        fixture.root.join("src/lib.rs"),
+        "pub fn value() -> u32 { 7 }\n",
+    )
+    .unwrap();
+    let binary = compile_toolchain_probe(&fixture);
+    let profile = fixture.root.join("parent.profraw");
+    let parent = Command::new(&binary)
+        .current_dir(&fixture.root)
+        .env("MAESTRO_PROBE_CARGO", env!("CARGO"))
+        .env("CARGO_TARGET_DIR", fixture.root.join("target"))
+        .env("RUSTFLAGS", "-C instrument-coverage")
+        .env("CARGO_ENCODED_RUSTFLAGS", "-Cinstrument-coverage")
+        .env("LLVM_PROFILE_FILE", &profile)
+        .output()
+        .unwrap();
+    assert!(
+        parent.status.success(),
+        "{}",
+        String::from_utf8_lossy(&parent.stderr)
+    );
+    assert!(
+        fixture
+            .root
+            .join("target/wasm32-unknown-unknown/debug/libwasm_child.rlib")
+            .is_file()
+    );
+    assert_profile_counters(&profile);
+}
+
+/// Compile an instrumented parent independently of the integration runner's instrumentation.
+fn compile_toolchain_probe(fixture: &Fixture) -> PathBuf {
+    let lock = toolchain_support::command(env!("CARGO"))
+        .current_dir(&fixture.root)
+        .arg("generate-lockfile")
+        .output()
+        .unwrap();
+    assert!(lock.status.success());
+    fs::write(
+        fixture.root.join("toolchain_support.rs"),
+        include_str!("fixtures/toolchain_support.rs"),
+    )
+    .unwrap();
+    let source = fixture.root.join("parent.rs");
+    fs::write(&source, include_str!("fixtures/child_toolchain_probe.rs")).unwrap();
+    let binary = fixture.root.join("parent");
+    let compile = toolchain_support::command("rustc")
+        .args(["--cfg", "test", "-C", "instrument-coverage"])
+        .arg(&source)
+        .arg("-o")
+        .arg(&binary)
+        .output()
+        .unwrap();
+    assert!(
+        compile.status.success(),
+        "{}",
+        String::from_utf8_lossy(&compile.stderr)
+    );
+    binary
+}
+
+/// Inspect actual parent counters after the instrumented process exits normally.
+fn assert_profile_counters(profile: &Path) {
+    let directory = toolchain_support::command("rustc")
+        .args(["--print", "target-libdir"])
+        .output()
+        .unwrap();
+    assert!(directory.status.success());
+    let tools = Path::new(std::str::from_utf8(&directory.stdout).unwrap().trim())
+        .parent()
+        .unwrap()
+        .join("bin");
+    let counts = Command::new(tools.join("llvm-profdata"))
+        .args(["show", "--all-functions", "--counts"])
+        .arg(profile)
+        .output()
+        .unwrap();
+    assert!(
+        counts.status.success(),
+        "{}",
+        String::from_utf8_lossy(&counts.stderr)
+    );
+    assert!(String::from_utf8_lossy(&counts.stdout).lines().any(|line| {
+        line.trim()
+            .strip_prefix("Function count: ")
+            .is_some_and(|value| value.parse::<u64>().unwrap() > 0)
+    }));
+}
 
 struct Fixture {
     root: PathBuf,
@@ -65,7 +214,7 @@ fn main() {
 "#).unwrap();
         let child = root.join(format!("just{}", std::env::consts::EXE_SUFFIX));
         assert!(
-            Command::new("rustc")
+            toolchain_support::command("rustc")
                 .arg(source)
                 .arg("-o")
                 .arg(&child)
@@ -796,7 +945,7 @@ fn maestro_standalone_assets_preserve_recursive_layout() {
     )
     .unwrap();
     assert!(
-        Command::new(env!("CARGO"))
+        toolchain_support::command(env!("CARGO"))
             .arg("generate-lockfile")
             .current_dir(&fixture.root)
             .status()

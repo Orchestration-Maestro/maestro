@@ -1,5 +1,8 @@
 #![cfg(test)]
 
+#[path = "fixtures/toolchain_support.rs"]
+mod toolchain_support;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
@@ -38,7 +41,7 @@ impl Workspace {
         fs::write(&source, include_str!("fixtures/recipe_command.rs")).unwrap();
         let tool = root.join("bin/cargo");
         assert!(
-            Command::new("rustc")
+            toolchain_support::command("rustc")
                 .arg(source)
                 .arg("-o")
                 .arg(&tool)
@@ -53,7 +56,7 @@ impl Workspace {
     }
 
     fn command(&self, recipe: &str) -> Command {
-        let mut command = Command::new("just");
+        let mut command = toolchain_support::command("just");
         command
             .current_dir(&self.0)
             .arg(recipe)
@@ -308,7 +311,7 @@ fn native_workspace(workspace: &Workspace) {
     .unwrap();
     install_executable(Path::new(env!("CARGO")), &workspace.0.join("bin/cargo"));
     assert!(
-        Command::new(env!("CARGO"))
+        toolchain_support::command(env!("CARGO"))
             .current_dir(&workspace.0)
             .arg("generate-lockfile")
             .status()
@@ -728,7 +731,7 @@ fn prepare_profile_writer(workspace: &Workspace) -> PathBuf {
     fs::write(&source, include_str!("fixtures/profile_writer.rs")).unwrap();
     let binary = workspace.0.join("profile_writer");
     assert!(
-        Command::new("rustc")
+        toolchain_support::command("rustc")
             .arg("-C")
             .arg("instrument-coverage")
             .arg(source)
@@ -808,7 +811,7 @@ fn prepare_watch_workspace(workspace: &Workspace) {
     ).unwrap();
     fs::write(workspace.0.join("crates/maestro-models/Cargo.toml"), "[package]\nname = 'maestro-models'\nversion = '0.1.0'\nedition = '2024'\n[dependencies]\nmaestro-agent = { path = '../maestro-agent' }\n").unwrap();
     assert!(
-        Command::new(env!("CARGO"))
+        toolchain_support::command(env!("CARGO"))
             .current_dir(&workspace.0)
             .arg("generate-lockfile")
             .status()
@@ -866,7 +869,7 @@ fn prepare_tooling_owner(workspace: &Workspace) {
     )
     .unwrap();
     assert!(
-        Command::new(env!("CARGO"))
+        toolchain_support::command(env!("CARGO"))
             .current_dir(&workspace.0)
             .args(["build", "-p", "maestro-tooling", "--bin", "development"])
             .status()
@@ -1159,7 +1162,7 @@ fn assert_native_doctests(workspace: &Workspace) {
             .any(|line| line.contains("PASS") && line.contains("ignored_behavior"))
     );
     assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
-    let output = Command::new(env!("CARGO"))
+    let output = toolchain_support::command(env!("CARGO"))
         .current_dir(&workspace.0)
         .args(["test", "-p", "maestro-models", "--locked", "--doc"])
         .output()
