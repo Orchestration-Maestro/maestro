@@ -1,7 +1,7 @@
 # Artifact panels and views
 
 `maestro_web::tools::artifacts::create_artifact_element` constructs an owned
-`Box<dyn maestro_web::ArtifactElement>` for PDF or an unrecognized filename suffix.
+`Box<dyn maestro_web::ArtifactElement>` for PDF, spreadsheets or an unrecognized filename suffix.
 Other recognized specialized formats return a presentation error until their
 viewers are installed; they never silently become generic downloads.
 
@@ -90,7 +90,6 @@ or partial content-only dimming is included.
 
 Specialized viewers remain in
 [#797](https://github.com/Orchestration-Maestro/maestro/issues/797),
-[#798](https://github.com/Orchestration-Maestro/maestro/issues/798),
 [#816](https://github.com/Orchestration-Maestro/maestro/issues/816),
 [#818](https://github.com/Orchestration-Maestro/maestro/issues/818) and
 [#819](https://github.com/Orchestration-Maestro/maestro/issues/819).
@@ -118,3 +117,29 @@ owns panel placement; leaving overlay mode does not release the PDF or error bod
 Errors use selectable literal native text with the localized `Error loading PDF`
 heading, distinct from the overlay's `Error loading file` heading. Caller branding
 styles page chrome and error text, not document pixels.
+
+## Spreadsheet artifacts
+
+`tools::artifacts::excel_artifact::ExcelArtifact` shares modern workbook/table
+preparation with attachment previews. Sheets keep workbook order; multiple sheets
+have canvas tabs above selectable native tables. Keyboard traversal includes offscreen
+tabs and reveals the focused tab; clipped pointer hits do not select a sheet.
+Workbook links use the live accent role, including visited links. Table bodies retain their nodes
+and independent scrolling across tab switches. The native registry owns placement;
+the feature root keeps bounded height while the registry measures control slots.
+No spreadsheet timer or worker is installed.
+
+The original-byte header uses the same complete decoder as other artifact headers.
+The final literal dot-delimited filename segment selects `application/vnd.ms-excel`
+only when Unicode lowercasing produces exactly `xls`; all other names use the
+modern spreadsheet MIME. Preview failure does not disable valid-byte downloads.
+
+Identical successful content preserves tables and sheet selection. Changed content
+clears the load error and prepares replacement tables on the next repaint;
+identical content after failure retries. Empty content retains a successful body,
+but empty content after failure shows an empty body. Filename edits only update
+metadata. Errors use the shared selectable native panel with the localized
+`Error loading spreadsheet` heading and literal diagnostic or localized fallback.
+Legacy XLS reading and full formatting remain in
+[#1046](https://github.com/Orchestration-Maestro/maestro/issues/1046) and
+[#1025](https://github.com/Orchestration-Maestro/maestro/issues/1025).

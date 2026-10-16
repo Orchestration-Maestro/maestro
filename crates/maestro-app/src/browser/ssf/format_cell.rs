@@ -45,6 +45,12 @@ pub enum ExcelDataType {
     /// Blank stub.
     Stub,
 }
+/// Owned authored hyperlink target.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Hyperlink {
+    /// Literal relationship target, including any location fragment.
+    pub target: String,
+}
 /// Retained raw scalar and optional formatted cache.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct CellObject {
@@ -54,6 +60,10 @@ pub struct CellObject {
     pub v: CellValue,
     /// Present formatted text, including empty text.
     pub w: Option<String>,
+    /// Generated cell markup when present.
+    pub h: Option<String>,
+    /// Authored hyperlink metadata.
+    pub l: Option<Hyperlink>,
     /// Explicit authored or numeric format selector.
     pub z: Option<super::NumberFormat>,
     /// Native extended-format identifier fallback.
@@ -155,7 +165,7 @@ fn safe_format(
     ssf.format(&super::NumberFormat::Id(id), value, &options)
 }
 /// Preserve readable raw scalar spelling when neither format is supported.
-fn raw_text(value: &CellValue) -> String {
+pub(super) fn raw_text(value: &CellValue) -> String {
     match value {
         CellValue::Number(n) => super::write_num::spelling(*n),
         CellValue::Date(date) => date.to_rfc3339_opts(chrono::SecondsFormat::Millis, true),

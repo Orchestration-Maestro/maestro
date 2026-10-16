@@ -30,10 +30,18 @@ native placement clips decoration to the viewport rectangle; restoring the shado
 is tracked in [#1156](https://github.com/Orchestration-Maestro/maestro/issues/1156).
 Artifact padding/background remain separate.
 Selecting text, replacing content or closing cancels unfinished page work.
-Word and spreadsheet renderers remain in
-[#797](https://github.com/Orchestration-Maestro/maestro/issues/797) and
-[#798](https://github.com/Orchestration-Maestro/maestro/issues/798); no extracted-text
-fallback is substituted for them. A file-presentation failure replaces the body
+Modern spreadsheet previews share the artifact table owner: workbook-order sheet
+controls select retained native tables with formatted text, merged cells, rich
+emphasis and non-executable links styled with the live accent role. Keyboard
+traversal reaches and reveals offscreen sheet tabs; clipped pointer hits do not
+select sheets. One sheet omits the tab strip. Each multi-sheet
+body retains its own scroll offsets; ordinary repaints retain the table nodes.
+The registry owns position and scaling, while the spreadsheet root keeps its
+bounded height during measurement. Selecting text, replacing content or closing
+releases that workbook view. Word rendering remains in
+[#797](https://github.com/Orchestration-Maestro/maestro/issues/797); no extracted-text
+fallback is substituted for it. Legacy spreadsheet reading remains in
+[#1046](https://github.com/Orchestration-Maestro/maestro/issues/1046). A file-presentation failure replaces the body
 with centered, selectable native error text while leaving download and close
 available. A nonempty overlay failure stays dominant through record edits until
 a mode change clears it; an empty host-presentation diagnostic stays suppressed.

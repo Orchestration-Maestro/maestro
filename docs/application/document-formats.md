@@ -1,8 +1,8 @@
 # Spreadsheet values and workbooks
 
 The application library exposes `maestro_app::browser::ssf` for scalar spreadsheet
-formatting and in-memory XLSX/XLS reading. These operations do not render a workbook
-preview or write files.
+formatting, in-memory XLSX/XLS reading and HTML table projection. These operations
+prepare owned data and markup; they do not mount a native preview or write files.
 
 - `init_table` overwrites built-in format IDs in the supplied table, retains other
   entries and returns that table. `default_map` and `default_str` independently
@@ -73,7 +73,8 @@ prepare `z` from `CellFormatOptions::date_nf`; standalone table/epoch options
 are not accepted by this helper. Raw values remain unchanged. If both formats
 fail, fallback uses unrounded scalar text without caching: booleans use `true` or
 `false`, null uses `null`, and a missing value uses `undefined`. UTC Dates use
-readable RFC3339 text with milliseconds, not host-dependent date spelling. Standard error
+readable RFC3339 text with milliseconds, not host-dependent date spelling; HTML
+raw-value attributes reuse this spelling. Standard error
 codes use their labels; an unknown numeric error stays numeric. Unknown XLSX error labels survive
 native conversion, and no-cache formula cells are omitted without evaluation.
 Malformed archives, required missing parts, XML, reader and address failures have
@@ -267,3 +268,24 @@ mount a preview. [Numbering and element styling](https://github.com/Orchestratio
 [element and page construction](https://github.com/Orchestration-Maestro/maestro/issues/782)
 and [complete preview composition](https://github.com/Orchestration-Maestro/maestro/issues/784)
 remain separate consumers of these retained styles.
+
+## Worksheet tables
+
+`sheet_to_html(&mut worksheet, id, &ssf)` returns a table fragment over the declared
+range. It preserves absolute cell addresses, first-match merge order, spans and
+formatted caches. Missing/null scalars have empty display content. Generated `h`
+markup precedes escaped formatted text; fallback formatting uses the existing
+formatter without caching error labels. Nonfinite numeric cells use temporary
+error projections without changing the stored cell.
+
+Modern reading retains generated rich/plain string markup in `CellObject::h` and
+literal hyperlink targets in `CellObject::l`. `Hyperlink::target` preserves source
+spelling, including embedded tabs/newlines; URL parsing at the table writer rejects
+executable schemes while keeping ordinary links unchanged. Rich literal text and
+identifier/format attributes are escaped at their writing boundary. Explicit XML
+off-values leave rich flags disabled.
+
+`CellObject::z` stores an optional authored number-format code or numeric selector
+for explicitly supplied cells; HTML metadata retains either spelling. Default
+workbook reading leaves it absent. General typed format options remain separate
+from this projection.

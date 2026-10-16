@@ -351,3 +351,19 @@ pub fn tab(output: &egui::FullOutput, name: &str) -> egui::Rect {
         .unwrap();
     text.galley.rect.translate(text.pos.to_vec2())
 }
+
+/// Actual icon geometry identifies close (zero) and download (one) controls.
+/// # Panics
+/// Panics if the requested icon is absent from the observed panel.
+#[must_use]
+pub fn control(output: &egui::FullOutput, index: usize) -> egui::Pos2 {
+    output
+        .shapes
+        .iter()
+        .filter_map(|shape| match &shape.shape {
+            egui::Shape::Mesh(mesh) => Some(mesh.calc_bounds().center()),
+            _ => None,
+        })
+        .nth(1 - index)
+        .unwrap()
+}

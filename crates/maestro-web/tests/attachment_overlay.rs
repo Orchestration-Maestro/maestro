@@ -83,9 +83,17 @@ fn overlay_file_detection_preserves_priority_and_case() {
         serde_json::from_str(include_str!("fixtures/attachment_types.json")).unwrap();
     for c in cases {
         let host = Rc::new(Host::default());
-        let mut overlay = AttachmentOverlay::open(valid_pdf(c.input.record()), None, host.clone());
+        let record = valid_pdf(c.input.record());
+        if c.expected.r#type == "excel" {
+            record.borrow_mut().content = excel_bytes(false);
+        }
+        let mut overlay = AttachmentOverlay::open(record, None, host.clone());
         let mut frame = Frame::default();
         frame.overlay(&mut overlay, vec![]).unwrap();
+        if c.expected.r#type == "excel" {
+            assert_reading(&host);
+            continue;
+        }
         assert_eq!(
             kind(&host.surfaces.borrow().last().unwrap().content),
             c.expected.r#type,
@@ -301,6 +309,11 @@ fn overlay_preview_reload_obeys_state_changes() {
         let host = Rc::new(Host::default());
         let mut overlay = AttachmentOverlay::open(record.clone(), None, host.clone());
         let mut frame = Frame::default();
+        if c.expected.kind == "excel" {
+            record.borrow_mut().content = excel_bytes(false);
+            assert_excel_reload(&mut frame, &mut overlay, &record, &host, &c);
+            continue;
+        }
         frame.overlay(&mut overlay, vec![]).unwrap();
         assert_initial_preview(&host, &record, &c);
         frame.overlay(&mut overlay, vec![]).unwrap();
@@ -684,14 +697,51 @@ fn valid_pdf(
     }
     record
 }
-/// Observe native admission without echoing document text into canvas shapes.
-fn reading_factory(host: &Host) -> Rc<maestro_web::browser::attachment_content::ReadingContent> {
-    match &host.surfaces.borrow().last().unwrap().content {
-        Content::Reading(factory, _) => factory.clone(),
-        _ => panic!("expected native reading content"),
-    }
-}
 /// Exact text and geometry are observed by the real native document witness.
 fn assert_reading(host: &Host) {
     let _ = reading_factory(host);
+}
+
+/// Real spreadsheet bytes for retained and replacement observations.
+fn excel_bytes(replacement: bool) -> String {
+    use base64::Engine as _;
+    base64::engine::general_purpose::STANDARD.encode(if replacement {
+        include_bytes!("../../maestro-app/tests/fixtures/spreadsheet_html/one-sheet.xlsx")
+            .as_slice()
+    } else {
+        include_bytes!("../../maestro-app/tests/fixtures/spreadsheet_html/two-sheets.xlsx")
+            .as_slice()
+    })
+}
+/// Spreadsheet native factories replace the former pending-container observations.
+fn assert_excel_reload(
+    frame: &mut Frame,
+    overlay: &mut AttachmentOverlay,
+    record: &Rc<std::cell::RefCell<maestro_web::Attachment>>,
+    host: &Host,
+    case: &ContentCase,
+) {
+    frame.overlay(overlay, vec![]).unwrap();
+    let factory = reading_factory(host);
+    assert!((host.surfaces.borrow().last().unwrap().rect.width() - 800.).abs() < f32::EPSILON);
+    assert!(!case.show_text);
+    assert!(!case.expected.small);
+    assert!(case.expected.source.is_none() && case.expected.text.is_none());
+    frame.overlay(overlay, vec![]).unwrap();
+    assert!(Rc::ptr_eq(&factory, &reading_factory(host)));
+    record.borrow_mut().content = excel_bytes(true);
+    frame.overlay(overlay, vec![]).unwrap();
+    assert!(!Rc::ptr_eq(&factory, &reading_factory(host)));
+    let pos = frame.label("Text").center();
+    frame.overlay(overlay, click(pos)).unwrap();
+    assert!(matches!(
+        host.surfaces.borrow().last().unwrap().content,
+        Content::Text(_, TextView::Extracted)
+    ));
+    let pos = frame.label("Spreadsheet").center();
+    frame.overlay(overlay, click(pos)).unwrap();
+    let factory = reading_factory(host);
+    frame.overlay(overlay, click(pos)).unwrap();
+    assert!(Rc::ptr_eq(&factory, &reading_factory(host)));
+    assert_retained_text_mode(frame, overlay, record, host);
 }

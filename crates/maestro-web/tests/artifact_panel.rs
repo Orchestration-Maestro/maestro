@@ -3,7 +3,7 @@
 pub mod artifact_support;
 pub mod session_header_support;
 pub mod support;
-use artifact_support::panel::{Harness, Input, corpus, tab, text};
+use artifact_support::panel::{Harness, Input, control, corpus, tab, text};
 use std::rc::Rc;
 
 /// Disconnected and empty panels do not paint or admit a modal.
@@ -185,19 +185,6 @@ fn artifact_panel_active_header_comes_from_selected_view() {
         );
         assert!(harness.visible().is_empty());
     }
-}
-
-/// Actual icon geometry identifies close (zero) and download (one) controls.
-fn control(output: &egui::FullOutput, index: usize) -> egui::Pos2 {
-    output
-        .shapes
-        .iter()
-        .filter_map(|shape| match &shape.shape {
-            egui::Shape::Mesh(mesh) => Some(mesh.calc_bounds().center()),
-            _ => None,
-        })
-        .nth(1 - index)
-        .unwrap()
 }
 
 /// Source operation cases distinguish selecting, host opening and optional close.

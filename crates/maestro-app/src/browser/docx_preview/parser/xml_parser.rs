@@ -140,6 +140,29 @@ impl<'input> XmlParser<'input> {
             .find(|a| a.local_name == local_name)
             .map(|a| a.value)
     }
+    /// Decode an attribute once while preserving authored literal XML whitespace.
+    ///
+    /// Unlike ordinary XML attributes, spreadsheet relationship targets retain tabs
+    /// and newlines for URL parsing at their consuming boundary.
+    pub(crate) fn literal_attr(
+        &self,
+        element: XmlElement<'_, 'input>,
+        name: &str,
+    ) -> Result<Option<String>, DocxError> {
+        let Some(attribute) = element.node.attributes().find(|a| a.name() == name) else {
+            return Ok(None);
+        };
+        let range = attribute.range_value();
+        let source = self.document.input_text();
+        let quote = &source[range.start - 1..range.start];
+        let literal = source[range]
+            .replace('\r', "&#13;")
+            .replace('\n', "&#10;")
+            .replace('\t', "&#9;");
+        let text = format!("<v a={quote}{literal}{quote}/>");
+        let xml = parse_xml_string(&text, false)?;
+        Ok(xml.attr(xml.root(), "a").map(str::to_owned))
+    }
     /// Read a signed integer prefix, using the default for absent or empty text.
     #[must_use]
     pub fn int_attr(

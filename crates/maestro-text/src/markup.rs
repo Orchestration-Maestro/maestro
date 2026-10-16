@@ -5,6 +5,8 @@
 pub enum EscapeMode {
     /// Apostrophe as the named entity `&apos;`.
     Xml,
+    /// Spreadsheet text with line breaks and hexadecimal control references.
+    SpreadsheetHtml,
     /// XML entities with character references for tab, LF and CR in attributes.
     XmlAttribute,
     /// Apostrophe as a decimal numeric character reference.
@@ -32,7 +34,9 @@ pub fn escape_into(text: &str, out: &mut String, mode: EscapeMode) {
             '>' => out.push_str("&gt;"),
             '"' => out.push_str("&quot;"),
             '\'' => out.push_str(match mode {
-                EscapeMode::Xml | EscapeMode::XmlAttribute => "&apos;",
+                EscapeMode::Xml | EscapeMode::XmlAttribute | EscapeMode::SpreadsheetHtml => {
+                    "&apos;"
+                }
                 EscapeMode::HtmlDecimal => "&#39;",
                 EscapeMode::HtmlDecimalPadded => "&#039;",
                 EscapeMode::HtmlHex => "&#x27;",
@@ -40,6 +44,11 @@ pub fn escape_into(text: &str, out: &mut String, mode: EscapeMode) {
             '\t' if mode == EscapeMode::XmlAttribute => out.push_str("&#9;"),
             '\n' if mode == EscapeMode::XmlAttribute => out.push_str("&#10;"),
             '\r' if mode == EscapeMode::XmlAttribute => out.push_str("&#13;"),
+            '\n' if mode == EscapeMode::SpreadsheetHtml => out.push_str("<br/>"),
+            c if mode == EscapeMode::SpreadsheetHtml && c <= '\u{1f}' => {
+                use std::fmt::Write as _;
+                let _ = write!(out, "&#x{:04x};", u32::from(c));
+            }
             c => out.push(c),
         }
     }

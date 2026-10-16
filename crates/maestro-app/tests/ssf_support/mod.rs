@@ -251,6 +251,7 @@ fn observe_cell(args: &Value) -> Value {
         xf: input.get("XF").map(|xf| Xf {
             num_fmt_id: u32::try_from(xf["numFmtId"].as_u64().unwrap()).unwrap(),
         }),
+        ..Default::default()
     };
     let value = scalar(&args["value"]);
     let date_nf = args["options"].get("dateNF").map(selector);

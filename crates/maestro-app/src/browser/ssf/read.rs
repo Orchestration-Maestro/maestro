@@ -31,15 +31,15 @@ fn read_xlsx(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook
         .elements(xml.root(), None)
         .filter_map(|node| Some((xml.attr(node, "ContentType")?, xml.attr(node, "PartName")?)))
         .collect();
-    let workbook = parts
-        .iter()
-        .find(|(kind, _)| kind.ends_with("main+xml"))
-        .map_or("xl/workbook.xml", |(_, part)| part.trim_start_matches('/'));
-    let styles = parts
-        .iter()
-        .find(|(kind, _)| kind.ends_with("styles+xml"))
-        .map(|(_, part)| part.trim_start_matches('/'));
-    let xfs = package.styles(styles, ssf)?;
+    let part = |suffix: &str| {
+        parts
+            .iter()
+            .find(|(kind, _)| kind.ends_with(suffix))
+            .map(|(_, part)| part.trim_start_matches('/'))
+    };
+    let workbook = part("main+xml").unwrap_or("xl/workbook.xml");
+    let xfs = package.styles(part("styles+xml"), ssf)?;
+    let shared = super::rich_text::shared(&package, part("sharedStrings+xml"))?;
     let text = package.text(workbook)?;
     let xml = package.xml(&text, workbook)?;
     let date1904 = xml
@@ -66,7 +66,7 @@ fn read_xlsx(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook
             let values = values(&mut native, name, &package)?;
             sheets.insert(
                 name.to_owned(),
-                sheet(&package, &path, values, (&xfs, ssf, date1904))?,
+                sheet(&package, &path, values, (&xfs, ssf, date1904), &shared)?,
             );
         }
     }
@@ -116,6 +116,7 @@ fn sheet(
     path: &str,
     mut values: BTreeMap<(u32, u32), CellValue>,
     format: (&[u32], &Ssf, bool),
+    shared: &[String],
 ) -> Result<WorkSheet, WorkbookError> {
     let text = package.text(path)?;
     let xml = package.xml(&text, path)?;
@@ -157,18 +158,20 @@ fn sheet(
                 value
             };
             let error = (xml.attr(node, "t") == Some("e")).then_some(raw).flatten();
-            if let Some(cell) = cell(
+            if let Some(mut cell) = cell(
                 value,
                 error,
                 xml.attr(node, "s").and_then(|s| s.parse().ok()),
                 format,
             ) {
+                super::rich_text::adopt(&xml, node, &mut cell, shared);
                 result.cells.insert(encode_cell(position), cell);
             }
             position.c = position.c.saturating_add(1);
         }
     }
     sheet_range(&xml, &mut result)?;
+    super::hyperlinks::adopt(package, path, &xml, &mut result)?;
     Ok(result)
 }
 /// Retain declared bounds and merge order, falling back to observed cells.
@@ -373,4 +376,28 @@ fn legacy_offset(start: u32, offset: usize) -> Result<u32, WorkbookError> {
         .ok()
         .and_then(|n| start.checked_add(n))
         .ok_or_else(|| WorkbookError::Address("legacy cell address outside numeric range".into()))
+}
+
+/// Decode raw spreadsheet string escapes in one pass over UTF-16 code units.
+pub(super) fn string_cell(value: &str) -> String {
+    let mut rest = value;
+    let mut units = Vec::new();
+    while let Some(c) = rest.chars().next() {
+        let escaped = rest
+            .get(..7)
+            .filter(|s| {
+                (s.starts_with("_x") || s.starts_with("_X"))
+                    && s.ends_with('_')
+                    && s[2..6].bytes().all(|b| b.is_ascii_hexdigit())
+            })
+            .and_then(|s| u16::from_str_radix(&s[2..6], 16).ok());
+        if let Some(unit) = escaped {
+            units.push(unit);
+            rest = &rest[7..];
+        } else {
+            units.extend_from_slice(c.encode_utf16(&mut [0; 2]));
+            rest = &rest[c.len_utf8()..];
+        }
+    }
+    String::from_utf16_lossy(&units)
 }

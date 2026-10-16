@@ -17,7 +17,9 @@ pub use workbook::{WorkBook, WorkSheet, WorkbookError};
 mod format;
 mod format_cell;
 pub use format::{FormatOptions, FormatTable, NumberFormat, Ssf};
-pub use format_cell::{CellFormatOptions, CellObject, CellValue, ExcelDataType, Xf, format_cell};
+pub use format_cell::{
+    CellFormatOptions, CellObject, CellValue, ExcelDataType, Hyperlink, Xf, format_cell,
+};
 mod chkcond;
 mod eval_fmt;
 mod general;
@@ -205,3 +207,10 @@ impl std::error::Error for FormatError {}
 
 #[cfg(test)]
 mod tests;
+
+mod sheet_to_html;
+pub use sheet_to_html::sheet_to_html;
+
+mod rich_text;
+
+mod hyperlinks;

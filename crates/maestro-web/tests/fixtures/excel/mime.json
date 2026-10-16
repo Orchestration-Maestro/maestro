@@ -1,0 +1,42 @@
+[
+  {
+    "filename": "a.xls",
+    "expected": "application/vnd.ms-excel"
+  },
+  {
+    "filename": "a.XLS",
+    "expected": "application/vnd.ms-excel"
+  },
+  {
+    "filename": "xls",
+    "expected": "application/vnd.ms-excel"
+  },
+  {
+    "filename": "a.xlsx",
+    "expected": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  },
+  {
+    "filename": "a.xls?download",
+    "expected": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  },
+  {
+    "filename": "folder.xls/a.xlsx",
+    "expected": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  },
+  {
+    "filename": "a.İXLS",
+    "expected": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  },
+  {
+    "filename": "a.KLS",
+    "expected": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  },
+  {
+    "filename": "雪.xls",
+    "expected": "application/vnd.ms-excel"
+  },
+  {
+    "filename": "",
+    "expected": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  }
+]

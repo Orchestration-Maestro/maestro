@@ -1,0 +1,452 @@
+[
+  {
+    "file": "active-links.xlsx",
+    "expected": [
+      {
+        "name": "Links",
+        "cells": {
+          "!ref": "A1:H1",
+          "A1": {
+            "t": "s",
+            "v": "script",
+            "h": "script",
+            "w": "script",
+            "l": {
+              "Target": "javascript:window.__sheet_exec=1"
+            }
+          },
+          "B1": {
+            "t": "s",
+            "v": "mixed",
+            "h": "mixed",
+            "w": "mixed",
+            "l": {
+              "Target": " \tJaVaScRiPt:window.__sheet_exec=2"
+            }
+          },
+          "C1": {
+            "t": "s",
+            "v": "line",
+            "h": "line",
+            "w": "line",
+            "l": {
+              "Target": "java\nscript:window.__sheet_exec=3"
+            }
+          },
+          "D1": {
+            "t": "s",
+            "v": "vb",
+            "h": "vb",
+            "w": "vb",
+            "l": {
+              "Target": "vbscript:msgbox(1)"
+            }
+          },
+          "E1": {
+            "t": "s",
+            "v": "datahtml",
+            "h": "datahtml",
+            "w": "datahtml",
+            "l": {
+              "Target": "data:text/html,<script>1</script>"
+            }
+          },
+          "F1": {
+            "t": "s",
+            "v": "datasvg",
+            "h": "datasvg",
+            "w": "datasvg",
+            "l": {
+              "Target": "data:image/svg+xml,<svg onload=\"1\"/>"
+            }
+          },
+          "G1": {
+            "t": "s",
+            "v": "data_text",
+            "h": "data_text",
+            "w": "data_text",
+            "l": {
+              "Target": "data:text/plain,hello"
+            }
+          },
+          "H1": {
+            "t": "s",
+            "v": "negative",
+            "h": "negative",
+            "w": "negative",
+            "l": {
+              "Target": "https://example.test/?q=javascript:1"
+            }
+          }
+        },
+        "table": "<table id=\"sheet-Links\"><tr><td data-t=\"s\" data-v=\"script\" id=\"sheet-Links-A1\">script</td><td data-t=\"s\" data-v=\"mixed\" id=\"sheet-Links-B1\">mixed</td><td data-t=\"s\" data-v=\"line\" id=\"sheet-Links-C1\">line</td><td data-t=\"s\" data-v=\"vb\" id=\"sheet-Links-D1\">vb</td><td data-t=\"s\" data-v=\"datahtml\" id=\"sheet-Links-E1\">datahtml</td><td data-t=\"s\" data-v=\"datasvg\" id=\"sheet-Links-F1\">datasvg</td><td data-t=\"s\" data-v=\"data_text\" id=\"sheet-Links-G1\"><a href=\"data:text/plain,hello\">data_text</a></td><td data-t=\"s\" data-v=\"negative\" id=\"sheet-Links-H1\"><a href=\"https://example.test/?q=javascript:1\">negative</a></td></tr></table>"
+      }
+    ]
+  },
+  {
+    "file": "blank-sheet.xlsx",
+    "expected": [
+      {
+        "name": "Blank",
+        "cells": {},
+        "table": "<table id=\"sheet-Blank\"></table>"
+      }
+    ]
+  },
+  {
+    "file": "inline-rich.xlsx",
+    "expected": [
+      {
+        "name": "Inline",
+        "cells": {
+          "A1": {
+            "t": "s",
+            "v": "inline",
+            "h": "<span style=\"\"><b>inline</b></span>",
+            "w": "inline"
+          },
+          "!ref": "A1"
+        },
+        "table": "<table id=\"sheet-Inline\"><tr><td data-t=\"s\" data-v=\"inline\" id=\"sheet-Inline-A1\"><span style=\"\"><b>inline</b></span></td></tr></table>"
+      }
+    ]
+  },
+  {
+    "file": "link-ranges.xlsx",
+    "expected": [
+      {
+        "name": "Links",
+        "cells": {
+          "!ref": "A1:D3",
+          "A1": {
+            "t": "s",
+            "v": "range",
+            "h": "range",
+            "w": "range",
+            "l": {
+              "Target": "#A1"
+            }
+          },
+          "C1": {
+            "t": "s",
+            "v": "fragment",
+            "h": "fragment",
+            "w": "fragment",
+            "l": {
+              "Target": "#Sheet2!A1"
+            }
+          },
+          "D1": {
+            "t": "s",
+            "v": "external",
+            "h": "external",
+            "w": "external",
+            "l": {
+              "Target": "https://example.test/report#part"
+            }
+          },
+          "B1": {
+            "t": "z",
+            "l": {
+              "Target": "#A1"
+            }
+          },
+          "A2": {
+            "t": "z",
+            "l": {
+              "Target": "#A1"
+            }
+          },
+          "B2": {
+            "t": "z",
+            "l": {
+              "Target": "#A1"
+            }
+          }
+        },
+        "table": "<table id=\"sheet-Links\"><tr><td data-t=\"s\" data-v=\"range\" id=\"sheet-Links-A1\">range</td><td data-t=\"z\" id=\"sheet-Links-B1\"></td><td data-t=\"s\" data-v=\"fragment\" id=\"sheet-Links-C1\">fragment</td><td data-t=\"s\" data-v=\"external\" id=\"sheet-Links-D1\"><a href=\"https://example.test/report#part\">external</a></td></tr><tr><td data-t=\"z\" id=\"sheet-Links-A2\"></td><td data-t=\"z\" id=\"sheet-Links-B2\"></td><td id=\"sheet-Links-C2\"></td><td id=\"sheet-Links-D2\"></td></tr><tr><td id=\"sheet-Links-A3\"></td><td id=\"sheet-Links-B3\"></td><td id=\"sheet-Links-C3\"></td><td id=\"sheet-Links-D3\"></td></tr></table>"
+      }
+    ]
+  },
+  {
+    "file": "links.xlsx",
+    "expected": [
+      {
+        "name": "Links",
+        "cells": {
+          "!ref": "A1:E1",
+          "A1": {
+            "t": "s",
+            "v": "web",
+            "h": "web",
+            "w": "web",
+            "l": {
+              "Target": "https://example.test/?a=1&b=\"q\""
+            }
+          },
+          "B1": {
+            "t": "s",
+            "v": "local",
+            "h": "local",
+            "w": "local",
+            "l": {
+              "Target": "#A1"
+            }
+          },
+          "C1": {
+            "t": "s",
+            "v": "empty",
+            "h": "empty",
+            "w": "empty"
+          },
+          "D1": {
+            "t": "s",
+            "v": "missing",
+            "h": "missing",
+            "w": "missing"
+          },
+          "E1": {
+            "t": "s",
+            "v": "email",
+            "h": "email",
+            "w": "email",
+            "l": {
+              "Target": "mailto:user@example.test"
+            }
+          }
+        },
+        "table": "<table id=\"sheet-Links\"><tr><td data-t=\"s\" data-v=\"web\" id=\"sheet-Links-A1\"><a href=\"https://example.test/?a=1&amp;b=&quot;q&quot;\">web</a></td><td data-t=\"s\" data-v=\"local\" id=\"sheet-Links-B1\">local</td><td data-t=\"s\" data-v=\"empty\" id=\"sheet-Links-C1\">empty</td><td data-t=\"s\" data-v=\"missing\" id=\"sheet-Links-D1\">missing</td><td data-t=\"s\" data-v=\"email\" id=\"sheet-Links-E1\"><a href=\"mailto:user@example.test\">email</a></td></tr></table>"
+      }
+    ]
+  },
+  {
+    "file": "literal-rich.xlsx",
+    "expected": [
+      {
+        "name": "Literal",
+        "cells": {
+          "A1": {
+            "t": "s",
+            "v": "<img src=x onerror=alert(1)> & tail",
+            "h": "<span style=\"\"><b>&lt;img src=x onerror=alert(1)&gt; &amp; tail</b></span>",
+            "w": "<img src=x onerror=alert(1)> & tail"
+          },
+          "!ref": "A1"
+        },
+        "table": "<table id=\"sheet-Literal\"><tr><td data-t=\"s\" data-v=\"&lt;img src=x onerror=alert(1)&gt; &amp; tail\" id=\"sheet-Literal-A1\"><span style=\"\"><b>&lt;img src=x onerror=alert(1)&gt; &amp; tail</b></span></td></tr></table>"
+      }
+    ]
+  },
+  {
+    "file": "merged.xlsx",
+    "expected": [
+      {
+        "name": "Merged",
+        "cells": {
+          "!ref": "A1:D3",
+          "A1": {
+            "t": "s",
+            "v": "anchor",
+            "h": "anchor",
+            "w": "anchor"
+          },
+          "B2": {
+            "t": "s",
+            "v": "covered",
+            "h": "covered",
+            "w": "covered"
+          },
+          "C2": {
+            "t": "n",
+            "v": 3,
+            "w": "3"
+          },
+          "D3": {
+            "t": "s",
+            "v": "tail",
+            "h": "tail",
+            "w": "tail"
+          },
+          "!merges": [
+            {
+              "s": {
+                "c": 0,
+                "r": 0
+              },
+              "e": {
+                "c": 1,
+                "r": 1
+              }
+            },
+            {
+              "s": {
+                "c": 2,
+                "r": 1
+              },
+              "e": {
+                "c": 3,
+                "r": 1
+              }
+            }
+          ]
+        },
+        "table": "<table id=\"sheet-Merged\"><tr><td rowspan=\"2\" colspan=\"2\" data-t=\"s\" data-v=\"anchor\" id=\"sheet-Merged-A1\">anchor</td><td id=\"sheet-Merged-C1\"></td><td id=\"sheet-Merged-D1\"></td></tr><tr><td colspan=\"2\" data-t=\"n\" data-v=\"3\" id=\"sheet-Merged-C2\">3</td></tr><tr><td id=\"sheet-Merged-A3\"></td><td id=\"sheet-Merged-B3\"></td><td id=\"sheet-Merged-C3\"></td><td data-t=\"s\" data-v=\"tail\" id=\"sheet-Merged-D3\">tail</td></tr></table>"
+      }
+    ]
+  },
+  {
+    "file": "one-sheet.xlsx",
+    "expected": [
+      {
+        "name": "Only",
+        "cells": {
+          "!ref": "A1:A2",
+          "A1": {
+            "t": "s",
+            "v": "Header",
+            "h": "Header",
+            "w": "Header"
+          },
+          "A2": {
+            "t": "s",
+            "v": "body",
+            "h": "body",
+            "w": "body"
+          }
+        },
+        "table": "<table id=\"sheet-Only\"><tr><td data-t=\"s\" data-v=\"Header\" id=\"sheet-Only-A1\">Header</td></tr><tr><td data-t=\"s\" data-v=\"body\" id=\"sheet-Only-A2\">body</td></tr></table>"
+      }
+    ]
+  },
+  {
+    "file": "quoted-sheet.xlsx",
+    "expected": [
+      {
+        "name": "Quarter \"A\" & 雪",
+        "cells": {
+          "A1": {
+            "t": "s",
+            "v": "safe",
+            "h": "safe",
+            "w": "safe"
+          },
+          "!ref": "A1"
+        },
+        "table": "<table id=\"sheet-Quarter &quot;A&quot; &amp; 雪\"><tr><td data-t=\"s\" data-v=\"safe\" id=\"sheet-Quarter &quot;A&quot; &amp; 雪-A1\">safe</td></tr></table>"
+      }
+    ]
+  },
+  {
+    "file": "rich-false-flags.xlsx",
+    "expected": [
+      {
+        "name": "Flags",
+        "cells": {
+          "A1": {
+            "t": "s",
+            "v": "plain",
+            "h": "<span style=\"\">plain</span>",
+            "w": "plain"
+          },
+          "!ref": "A1"
+        },
+        "table": "<table id=\"sheet-Flags\"><tr><td data-t=\"s\" data-v=\"plain\" id=\"sheet-Flags-A1\"><span style=\"\">plain</span></td></tr></table>"
+      }
+    ]
+  },
+  {
+    "file": "rich-styles.xlsx",
+    "expected": [
+      {
+        "name": "Styles",
+        "cells": {
+          "A1": {
+            "t": "s",
+            "v": "offdoubleaccountingbaseignored",
+            "h": "<span style=\"\">off</span><span style=\"text-decoration: underline;font-size:9pt;\"><sub>double</sub></span><span style=\"text-decoration: underline;\">accounting</span><span style=\"text-decoration: underline;\">base</span><span style=\"\">ignored</span>",
+            "w": "offdoubleaccountingbaseignored"
+          },
+          "!ref": "A1"
+        },
+        "table": "<table id=\"sheet-Styles\"><tr><td data-t=\"s\" data-v=\"offdoubleaccountingbaseignored\" id=\"sheet-Styles-A1\"><span style=\"\">off</span><span style=\"text-decoration: underline;font-size:9pt;\"><sub>double</sub></span><span style=\"text-decoration: underline;\">accounting</span><span style=\"text-decoration: underline;\">base</span><span style=\"\">ignored</span></td></tr></table>"
+      }
+    ]
+  },
+  {
+    "file": "rich.xlsx",
+    "expected": [
+      {
+        "name": "Rich",
+        "cells": {
+          "!ref": "A1:B1",
+          "A1": {
+            "t": "s",
+            "v": "BoldItalic",
+            "h": "<span style=\"text-decoration: underline;font-size:18pt;\"><b><i>Bold</b></i></span><span style=\"\"><s><sup>Italic</s></sup></span>",
+            "w": "BoldItalic"
+          },
+          "B1": {
+            "t": "s",
+            "v": "line\nbreak",
+            "h": "line<br/>break",
+            "w": "line\nbreak"
+          }
+        },
+        "table": "<table id=\"sheet-Rich\"><tr><td data-t=\"s\" data-v=\"BoldItalic\" id=\"sheet-Rich-A1\"><span style=\"text-decoration: underline;font-size:18pt;\"><b><i>Bold</b></i></span><span style=\"\"><s><sup>Italic</s></sup></span></td><td data-t=\"s\" data-v=\"line<br/>break\" id=\"sheet-Rich-B1\">line<br/>break</td></tr></table>"
+      }
+    ]
+  },
+  {
+    "file": "two-sheets.xlsx",
+    "expected": [
+      {
+        "name": "Zulu",
+        "cells": {
+          "!ref": "A1:B2",
+          "A1": {
+            "t": "s",
+            "v": "Header",
+            "h": "Header",
+            "w": "Header"
+          },
+          "B1": {
+            "t": "s",
+            "v": "Amount",
+            "h": "Amount",
+            "w": "Amount"
+          },
+          "A2": {
+            "t": "s",
+            "v": "First",
+            "h": "First",
+            "w": "First"
+          },
+          "B2": {
+            "t": "n",
+            "v": 12.5,
+            "w": "12.50"
+          }
+        },
+        "table": "<table id=\"sheet-Zulu\"><tr><td data-t=\"s\" data-v=\"Header\" id=\"sheet-Zulu-A1\">Header</td><td data-t=\"s\" data-v=\"Amount\" id=\"sheet-Zulu-B1\">Amount</td></tr><tr><td data-t=\"s\" data-v=\"First\" id=\"sheet-Zulu-A2\">First</td><td data-t=\"n\" data-v=\"12.5\" id=\"sheet-Zulu-B2\">12.50</td></tr></table>"
+      },
+      {
+        "name": "Alpha 雪",
+        "cells": {
+          "!ref": "B2:C3",
+          "B2": {
+            "t": "s",
+            "v": "Second",
+            "h": "Second",
+            "w": "Second"
+          },
+          "C3": {
+            "t": "b",
+            "v": true,
+            "w": "TRUE"
+          }
+        },
+        "table": "<table id=\"sheet-Alpha 雪\"><tr><td data-t=\"s\" data-v=\"Second\" id=\"sheet-Alpha 雪-B2\">Second</td><td id=\"sheet-Alpha 雪-C2\"></td></tr><tr><td id=\"sheet-Alpha 雪-B3\"></td><td data-t=\"b\" data-v=\"true\" id=\"sheet-Alpha 雪-C3\">TRUE</td></tr></table>"
+      }
+    ]
+  }
+]

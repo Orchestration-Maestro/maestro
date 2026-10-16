@@ -1,0 +1,891 @@
+[
+  {
+    "name": "no_range",
+    "input": {
+      "worksheet": {},
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"></table>",
+      "cache": {}
+    }
+  },
+  {
+    "name": "empty_range",
+    "input": {
+      "worksheet": {
+        "!ref": "A1:B2"
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td id=\"sheet-Values-A1\"></td><td id=\"sheet-Values-B1\"></td></tr><tr><td id=\"sheet-Values-A2\"></td><td id=\"sheet-Values-B2\"></td></tr></table>",
+      "cache": {}
+    }
+  },
+  {
+    "name": "offset_sparse",
+    "input": {
+      "worksheet": {
+        "!ref": "D9:F10",
+        "D9": {
+          "t": "s",
+          "v": "first",
+          "w": "first"
+        },
+        "F10": {
+          "t": "n",
+          "v": 42,
+          "w": "42.00"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"s\" data-v=\"first\" id=\"sheet-Values-D9\">first</td><td id=\"sheet-Values-E9\"></td><td id=\"sheet-Values-F9\"></td></tr><tr><td id=\"sheet-Values-D10\"></td><td id=\"sheet-Values-E10\"></td><td data-t=\"n\" data-v=\"42\" id=\"sheet-Values-F10\">42.00</td></tr></table>",
+      "cache": {
+        "D9": "first",
+        "F10": "42.00"
+      }
+    }
+  },
+  {
+    "name": "typed_scalars",
+    "input": {
+      "worksheet": {
+        "!ref": "A1:F1",
+        "A1": {
+          "t": "n",
+          "v": 12.5,
+          "w": "12.50"
+        },
+        "B1": {
+          "t": "b",
+          "v": true
+        },
+        "C1": {
+          "t": "b",
+          "v": false
+        },
+        "D1": {
+          "t": "s",
+          "v": "zero",
+          "w": ""
+        },
+        "E1": {
+          "t": "e",
+          "v": 7,
+          "w": "#DIV/0!"
+        },
+        "F1": {
+          "t": "n",
+          "v": {
+            "$number": "-0"
+          }
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"n\" data-v=\"12.5\" id=\"sheet-Values-A1\">12.50</td><td data-t=\"b\" data-v=\"true\" id=\"sheet-Values-B1\">TRUE</td><td data-t=\"b\" data-v=\"false\" id=\"sheet-Values-C1\">FALSE</td><td data-t=\"s\" data-v=\"zero\" id=\"sheet-Values-D1\"></td><td data-t=\"e\" data-v=\"7\" id=\"sheet-Values-E1\">#DIV/0!</td><td data-t=\"n\" data-v=\"0\" id=\"sheet-Values-F1\">0</td></tr></table>",
+      "cache": {
+        "A1": "12.50",
+        "B1": "TRUE",
+        "C1": "FALSE",
+        "D1": "",
+        "E1": "#DIV/0!",
+        "F1": "0"
+      }
+    }
+  },
+  {
+    "name": "missing_and_null",
+    "input": {
+      "worksheet": {
+        "!ref": "A1:D1",
+        "A1": {
+          "t": "z"
+        },
+        "B1": {
+          "t": "s",
+          "v": null,
+          "w": "invisible"
+        },
+        "C1": {
+          "t": "s",
+          "v": "",
+          "w": "shown"
+        },
+        "D1": {
+          "v": 3
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"z\" id=\"sheet-Values-A1\"></td><td data-t=\"s\" id=\"sheet-Values-B1\"></td><td data-t=\"s\" data-v=\"\" id=\"sheet-Values-C1\">shown</td><td data-t=\"z\" data-v=\"3\" id=\"sheet-Values-D1\"></td></tr></table>",
+      "cache": {
+        "A1": null,
+        "B1": "invisible",
+        "C1": "shown",
+        "D1": null
+      }
+    }
+  },
+  {
+    "name": "uncached_error",
+    "input": {
+      "worksheet": {
+        "!ref": "A1:B1",
+        "A1": {
+          "t": "e",
+          "v": 7
+        },
+        "B1": {
+          "t": "e",
+          "v": 999
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"e\" data-v=\"7\" id=\"sheet-Values-A1\"></td><td data-t=\"e\" data-v=\"999\" id=\"sheet-Values-B1\"></td></tr></table>",
+      "cache": {
+        "A1": null,
+        "B1": null
+      }
+    }
+  },
+  {
+    "name": "formatted_and_raw",
+    "input": {
+      "worksheet": {
+        "!ref": "A1:D1",
+        "A1": {
+          "t": "n",
+          "v": 0.125,
+          "w": "12.5%"
+        },
+        "B1": {
+          "t": "s",
+          "v": "raw",
+          "w": "cached"
+        },
+        "C1": {
+          "t": "n",
+          "v": 1e-07
+        },
+        "D1": {
+          "t": "n",
+          "v": 1e+21
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"n\" data-v=\"0.125\" id=\"sheet-Values-A1\">12.5%</td><td data-t=\"s\" data-v=\"raw\" id=\"sheet-Values-B1\">cached</td><td data-t=\"n\" data-v=\"1e-7\" id=\"sheet-Values-C1\">0.0000001</td><td data-t=\"n\" data-v=\"1e+21\" id=\"sheet-Values-D1\">1E+21</td></tr></table>",
+      "cache": {
+        "A1": "12.5%",
+        "B1": "cached",
+        "C1": "0.0000001",
+        "D1": "1E+21"
+      }
+    }
+  },
+  {
+    "name": "escape_entities",
+    "input": {
+      "worksheet": {
+        "!ref": "A1",
+        "A1": {
+          "t": "s",
+          "v": "&<>\"'\n\r\t\u0000\u000b\u001f雪"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"s\" data-v=\"&amp;&lt;&gt;&quot;&apos;<br/>&#x000d;&#x0009;&#x0000;&#x000b;&#x001f;雪\" id=\"sheet-Values-A1\">&amp;&lt;&gt;&quot;&apos;<br/>&#x000d;&#x0009;&#x0000;&#x000b;&#x001f;雪</td></tr></table>",
+      "cache": {
+        "A1": "&<>\"'\n\r\t\u0000\u000b\u001f雪"
+      }
+    }
+  },
+  {
+    "name": "leading_space",
+    "input": {
+      "worksheet": {
+        "!ref": "A1",
+        "A1": {
+          "t": "s",
+          "v": " x"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"s\" data-v=\" x\" id=\"sheet-Values-A1\" xml:space=\"preserve\"> x</td></tr></table>",
+      "cache": {
+        "A1": " x"
+      }
+    }
+  },
+  {
+    "name": "trailing_space",
+    "input": {
+      "worksheet": {
+        "!ref": "A1",
+        "A1": {
+          "t": "s",
+          "v": "x "
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"s\" data-v=\"x \" id=\"sheet-Values-A1\" xml:space=\"preserve\">x </td></tr></table>",
+      "cache": {
+        "A1": "x "
+      }
+    }
+  },
+  {
+    "name": "bom",
+    "input": {
+      "worksheet": {
+        "!ref": "A1",
+        "A1": {
+          "t": "s",
+          "v": "﻿x"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"s\" data-v=\"﻿x\" id=\"sheet-Values-A1\" xml:space=\"preserve\">﻿x</td></tr></table>",
+      "cache": {
+        "A1": "﻿x"
+      }
+    }
+  },
+  {
+    "name": "nel",
+    "input": {
+      "worksheet": {
+        "!ref": "A1",
+        "A1": {
+          "t": "s",
+          "v": "x"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"s\" data-v=\"x\" id=\"sheet-Values-A1\">x</td></tr></table>",
+      "cache": {
+        "A1": "x"
+      }
+    }
+  },
+  {
+    "name": "nbsp",
+    "input": {
+      "worksheet": {
+        "!ref": "A1",
+        "A1": {
+          "t": "s",
+          "v": " x"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"s\" data-v=\" x\" id=\"sheet-Values-A1\" xml:space=\"preserve\"> x</td></tr></table>",
+      "cache": {
+        "A1": " x"
+      }
+    }
+  },
+  {
+    "name": "line_separator",
+    "input": {
+      "worksheet": {
+        "!ref": "A1",
+        "A1": {
+          "t": "s",
+          "v": " x"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"s\" data-v=\" x\" id=\"sheet-Values-A1\" xml:space=\"preserve\"> x</td></tr></table>",
+      "cache": {
+        "A1": " x"
+      }
+    }
+  },
+  {
+    "name": "middle_space",
+    "input": {
+      "worksheet": {
+        "!ref": "A1",
+        "A1": {
+          "t": "s",
+          "v": "x y"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"s\" data-v=\"x y\" id=\"sheet-Values-A1\">x y</td></tr></table>",
+      "cache": {
+        "A1": "x y"
+      }
+    }
+  },
+  {
+    "name": "escape_all_controls",
+    "input": {
+      "worksheet": {
+        "!ref": "A1",
+        "A1": {
+          "t": "s",
+          "v": "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\f\r\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"s\" data-v=\"&#x0000;&#x0001;&#x0002;&#x0003;&#x0004;&#x0005;&#x0006;&#x0007;&#x0008;&#x0009;<br/>&#x000b;&#x000c;&#x000d;&#x000e;&#x000f;&#x0010;&#x0011;&#x0012;&#x0013;&#x0014;&#x0015;&#x0016;&#x0017;&#x0018;&#x0019;&#x001a;&#x001b;&#x001c;&#x001d;&#x001e;&#x001f;\" id=\"sheet-Values-A1\">&#x0000;&#x0001;&#x0002;&#x0003;&#x0004;&#x0005;&#x0006;&#x0007;&#x0008;&#x0009;<br/>&#x000b;&#x000c;&#x000d;&#x000e;&#x000f;&#x0010;&#x0011;&#x0012;&#x0013;&#x0014;&#x0015;&#x0016;&#x0017;&#x0018;&#x0019;&#x001a;&#x001b;&#x001c;&#x001d;&#x001e;&#x001f;</td></tr></table>",
+      "cache": {
+        "A1": "\u0000\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\u000b\f\r\u000e\u000f\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001a\u001b\u001c\u001d\u001e\u001f"
+      }
+    }
+  },
+  {
+    "name": "executable_url_boundaries",
+    "input": {
+      "worksheet": {
+        "!ref": "A1:H1",
+        "A1": {
+          "t": "s",
+          "v": "tab",
+          "l": {
+            "Target": "java\tscript:1"
+          }
+        },
+        "B1": {
+          "t": "s",
+          "v": "cr",
+          "l": {
+            "Target": "java\rscript:1"
+          }
+        },
+        "C1": {
+          "t": "s",
+          "v": "xml",
+          "l": {
+            "Target": "data:application/xhtml+xml,<html/>"
+          }
+        },
+        "D1": {
+          "t": "s",
+          "v": "js",
+          "l": {
+            "Target": "data:text/javascript,1"
+          }
+        },
+        "E1": {
+          "t": "s",
+          "v": "xml2",
+          "l": {
+            "Target": "data:application/xml,<x/>"
+          }
+        },
+        "F1": {
+          "t": "s",
+          "v": "relative",
+          "l": {
+            "Target": "folder/javascript:note"
+          }
+        },
+        "G1": {
+          "t": "s",
+          "v": "near",
+          "l": {
+            "Target": "javascriptish:note"
+          }
+        },
+        "H1": {
+          "t": "s",
+          "v": "frag",
+          "l": {
+            "Target": "#javascript:1"
+          }
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"s\" data-v=\"tab\" id=\"sheet-Values-A1\">tab</td><td data-t=\"s\" data-v=\"cr\" id=\"sheet-Values-B1\">cr</td><td data-t=\"s\" data-v=\"xml\" id=\"sheet-Values-C1\">xml</td><td data-t=\"s\" data-v=\"js\" id=\"sheet-Values-D1\">js</td><td data-t=\"s\" data-v=\"xml2\" id=\"sheet-Values-E1\">xml2</td><td data-t=\"s\" data-v=\"relative\" id=\"sheet-Values-F1\"><a href=\"folder/javascript:note\">relative</a></td><td data-t=\"s\" data-v=\"near\" id=\"sheet-Values-G1\"><a href=\"javascriptish:note\">near</a></td><td data-t=\"s\" data-v=\"frag\" id=\"sheet-Values-H1\">frag</td></tr></table>",
+      "cache": {
+        "A1": "tab",
+        "B1": "cr",
+        "C1": "xml",
+        "D1": "js",
+        "E1": "xml2",
+        "F1": "relative",
+        "G1": "near",
+        "H1": "frag"
+      }
+    }
+  },
+  {
+    "name": "merge_both_axes",
+    "input": {
+      "worksheet": {
+        "!ref": "A1:D3",
+        "!merges": [
+          {
+            "s": {
+              "r": 0,
+              "c": 0
+            },
+            "e": {
+              "r": 1,
+              "c": 1
+            }
+          },
+          {
+            "s": {
+              "r": 1,
+              "c": 2
+            },
+            "e": {
+              "r": 1,
+              "c": 3
+            }
+          }
+        ],
+        "A1": {
+          "t": "s",
+          "v": "anchor"
+        },
+        "B2": {
+          "t": "s",
+          "v": "covered"
+        },
+        "C2": {
+          "t": "n",
+          "v": 3
+        },
+        "D3": {
+          "t": "s",
+          "v": "tail"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td rowspan=\"2\" colspan=\"2\" data-t=\"s\" data-v=\"anchor\" id=\"sheet-Values-A1\">anchor</td><td id=\"sheet-Values-C1\"></td><td id=\"sheet-Values-D1\"></td></tr><tr><td colspan=\"2\" data-t=\"n\" data-v=\"3\" id=\"sheet-Values-C2\">3</td></tr><tr><td id=\"sheet-Values-A3\"></td><td id=\"sheet-Values-B3\"></td><td id=\"sheet-Values-C3\"></td><td data-t=\"s\" data-v=\"tail\" id=\"sheet-Values-D3\">tail</td></tr></table>",
+      "cache": {
+        "A1": "anchor",
+        "B2": null,
+        "C2": "3",
+        "D3": "tail"
+      }
+    }
+  },
+  {
+    "name": "merge_overlap_order",
+    "input": {
+      "worksheet": {
+        "!ref": "A1:C2",
+        "!merges": [
+          {
+            "s": {
+              "r": 0,
+              "c": 0
+            },
+            "e": {
+              "r": 1,
+              "c": 1
+            }
+          },
+          {
+            "s": {
+              "r": 0,
+              "c": 1
+            },
+            "e": {
+              "r": 0,
+              "c": 2
+            }
+          }
+        ],
+        "A1": {
+          "t": "s",
+          "v": "a"
+        },
+        "B1": {
+          "t": "s",
+          "v": "b"
+        },
+        "C1": {
+          "t": "s",
+          "v": "c"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td rowspan=\"2\" colspan=\"2\" data-t=\"s\" data-v=\"a\" id=\"sheet-Values-A1\">a</td></tr><tr><td id=\"sheet-Values-C2\"></td></tr></table>",
+      "cache": {
+        "A1": "a",
+        "B1": null,
+        "C1": null
+      }
+    }
+  },
+  {
+    "name": "merge_outside_view",
+    "input": {
+      "worksheet": {
+        "!ref": "B2:C3",
+        "!merges": [
+          {
+            "s": {
+              "r": 0,
+              "c": 0
+            },
+            "e": {
+              "r": 1,
+              "c": 1
+            }
+          }
+        ],
+        "B2": {
+          "t": "s",
+          "v": "covered"
+        },
+        "C3": {
+          "t": "s",
+          "v": "visible"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td id=\"sheet-Values-C2\"></td></tr><tr><td id=\"sheet-Values-B3\"></td><td data-t=\"s\" data-v=\"visible\" id=\"sheet-Values-C3\">visible</td></tr></table>",
+      "cache": {
+        "B2": null,
+        "C3": "visible"
+      }
+    }
+  },
+  {
+    "name": "rich_over_cached",
+    "input": {
+      "worksheet": {
+        "!ref": "A1:B1",
+        "A1": {
+          "t": "s",
+          "v": "raw",
+          "w": "cached",
+          "h": "<b>rich</b>"
+        },
+        "B1": {
+          "t": "s",
+          "v": "plain",
+          "w": "",
+          "h": ""
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"s\" data-v=\"raw\" id=\"sheet-Values-A1\"><b>rich</b></td><td data-t=\"s\" data-v=\"plain\" id=\"sheet-Values-B1\"></td></tr></table>",
+      "cache": {
+        "A1": "cached",
+        "B1": ""
+      }
+    }
+  },
+  {
+    "name": "links",
+    "input": {
+      "worksheet": {
+        "!ref": "A1:E1",
+        "A1": {
+          "t": "s",
+          "v": "web",
+          "l": {
+            "Target": "https://example.test/?a=1&b=\"q\""
+          }
+        },
+        "B1": {
+          "t": "s",
+          "v": "local",
+          "l": {
+            "Target": "#A1"
+          }
+        },
+        "C1": {
+          "t": "s",
+          "v": "empty",
+          "l": {
+            "Target": ""
+          }
+        },
+        "D1": {
+          "t": "s",
+          "v": "missing",
+          "l": {}
+        },
+        "E1": {
+          "t": "s",
+          "v": "email",
+          "l": {
+            "Target": "mailto:user@example.test"
+          }
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"s\" data-v=\"web\" id=\"sheet-Values-A1\"><a href=\"https://example.test/?a=1&amp;b=&quot;q&quot;\">web</a></td><td data-t=\"s\" data-v=\"local\" id=\"sheet-Values-B1\">local</td><td data-t=\"s\" data-v=\"empty\" id=\"sheet-Values-C1\">empty</td><td data-t=\"s\" data-v=\"missing\" id=\"sheet-Values-D1\">missing</td><td data-t=\"s\" data-v=\"email\" id=\"sheet-Values-E1\"><a href=\"mailto:user@example.test\">email</a></td></tr></table>",
+      "cache": {
+        "A1": "web",
+        "B1": "local",
+        "C1": "empty",
+        "D1": "missing",
+        "E1": "email"
+      }
+    }
+  },
+  {
+    "name": "executable_links",
+    "input": {
+      "worksheet": {
+        "!ref": "A1:H1",
+        "A1": {
+          "t": "s",
+          "v": "script",
+          "l": {
+            "Target": "javascript:window.__sheet_exec=1"
+          }
+        },
+        "B1": {
+          "t": "s",
+          "v": "mixed",
+          "l": {
+            "Target": " \tJaVaScRiPt:window.__sheet_exec=2"
+          }
+        },
+        "C1": {
+          "t": "s",
+          "v": "line",
+          "l": {
+            "Target": "java\nscript:window.__sheet_exec=3"
+          }
+        },
+        "D1": {
+          "t": "s",
+          "v": "vb",
+          "l": {
+            "Target": "vbscript:msgbox(1)"
+          }
+        },
+        "E1": {
+          "t": "s",
+          "v": "datahtml",
+          "l": {
+            "Target": "data:text/html,<script>1</script>"
+          }
+        },
+        "F1": {
+          "t": "s",
+          "v": "datasvg",
+          "l": {
+            "Target": "data:image/svg+xml,<svg onload=\"1\"/>"
+          }
+        },
+        "G1": {
+          "t": "s",
+          "v": "data_text",
+          "l": {
+            "Target": "data:text/plain,hello"
+          }
+        },
+        "H1": {
+          "t": "s",
+          "v": "negative",
+          "l": {
+            "Target": "https://example.test/?q=javascript:1"
+          }
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"s\" data-v=\"script\" id=\"sheet-Values-A1\">script</td><td data-t=\"s\" data-v=\"mixed\" id=\"sheet-Values-B1\">mixed</td><td data-t=\"s\" data-v=\"line\" id=\"sheet-Values-C1\">line</td><td data-t=\"s\" data-v=\"vb\" id=\"sheet-Values-D1\">vb</td><td data-t=\"s\" data-v=\"datahtml\" id=\"sheet-Values-E1\">datahtml</td><td data-t=\"s\" data-v=\"datasvg\" id=\"sheet-Values-F1\">datasvg</td><td data-t=\"s\" data-v=\"data_text\" id=\"sheet-Values-G1\"><a href=\"data:text/plain,hello\">data_text</a></td><td data-t=\"s\" data-v=\"negative\" id=\"sheet-Values-H1\"><a href=\"https://example.test/?q=javascript:1\">negative</a></td></tr></table>",
+      "cache": {
+        "A1": "script",
+        "B1": "mixed",
+        "C1": "line",
+        "D1": "vb",
+        "E1": "datahtml",
+        "F1": "datasvg",
+        "G1": "data_text",
+        "H1": "negative"
+      }
+    }
+  },
+  {
+    "name": "empty_id",
+    "input": {
+      "worksheet": {
+        "!ref": "A1",
+        "A1": {
+          "t": "s",
+          "v": "x"
+        }
+      },
+      "id": ""
+    },
+    "expected": {
+      "table": "<table><tr><td data-t=\"s\" data-v=\"x\" id=\"sjs-A1\">x</td></tr></table>",
+      "cache": {
+        "A1": "x"
+      }
+    }
+  },
+  {
+    "name": "literal_sheet_id",
+    "input": {
+      "worksheet": {
+        "!ref": "A1",
+        "A1": {
+          "t": "s",
+          "v": "x"
+        }
+      },
+      "id": "sheet-Quarter \"A\" & 雪"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Quarter &quot;A&quot; &amp; 雪\"><tr><td data-t=\"s\" data-v=\"x\" id=\"sheet-Quarter &quot;A&quot; &amp; 雪-A1\">x</td></tr></table>",
+      "cache": {
+        "A1": "x"
+      }
+    }
+  },
+  {
+    "name": "format_attribute",
+    "input": {
+      "worksheet": {
+        "!ref": "A1",
+        "A1": {
+          "t": "n",
+          "v": 12,
+          "w": "12.00",
+          "z": "0.00"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"n\" data-v=\"12\" data-z=\"0.00\" id=\"sheet-Values-A1\">12.00</td></tr></table>",
+      "cache": {
+        "A1": "12.00"
+      }
+    }
+  },
+  {
+    "name": "quoted_format_attribute",
+    "input": {
+      "worksheet": {
+        "!ref": "A1",
+        "A1": {
+          "t": "n",
+          "v": 12,
+          "w": "USD 12",
+          "z": "\"USD \"0"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"n\" data-v=\"12\" data-z=\"&quot;USD &quot;0\" id=\"sheet-Values-A1\">USD 12</td></tr></table>",
+      "cache": {
+        "A1": "USD 12"
+      }
+    }
+  },
+  {
+    "name": "nan",
+    "input": {
+      "worksheet": {
+        "!ref": "A1",
+        "A1": {
+          "t": "n",
+          "v": {
+            "$number": "NaN"
+          },
+          "w": "stale"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"e\" data-v=\"36\" id=\"sheet-Values-A1\">#NUM!</td></tr></table>",
+      "cache": {
+        "A1": "stale"
+      }
+    }
+  },
+  {
+    "name": "infinity",
+    "input": {
+      "worksheet": {
+        "!ref": "A1",
+        "A1": {
+          "t": "n",
+          "v": {
+            "$number": "Infinity"
+          },
+          "w": "stale"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"e\" data-v=\"7\" id=\"sheet-Values-A1\">#DIV/0!</td></tr></table>",
+      "cache": {
+        "A1": "stale"
+      }
+    }
+  },
+  {
+    "name": "negative_infinity",
+    "input": {
+      "worksheet": {
+        "!ref": "A1",
+        "A1": {
+          "t": "n",
+          "v": {
+            "$number": "-Infinity"
+          },
+          "w": "stale"
+        }
+      },
+      "id": "sheet-Values"
+    },
+    "expected": {
+      "table": "<table id=\"sheet-Values\"><tr><td data-t=\"e\" data-v=\"7\" id=\"sheet-Values-A1\">#DIV/0!</td></tr></table>",
+      "cache": {
+        "A1": "stale"
+      }
+    }
+  }
+]

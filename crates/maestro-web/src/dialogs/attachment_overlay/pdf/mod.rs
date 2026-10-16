@@ -114,20 +114,15 @@ impl Pdf {
         reading
     }
 }
-/// Preserve literal diagnostics, using the localized fallback only for absence.
-fn failure_detail(message: Option<&str>, fallback: String) -> String {
-    message
-        .filter(|s| !s.is_empty())
-        .map_or(fallback, str::to_owned)
-}
-/// Select a PDF failure detail without changing overlay host-error suppression.
-pub(crate) fn detail<F: ?Sized>(
-    message: &str,
-    i: &crate::I18n<F>,
-) -> Result<String, AttachmentUiError> {
-    Ok(failure_detail(Some(message), i.text("Failed to load PDF")?))
-}
 #[cfg(target_arch = "wasm32")]
 mod browser;
 #[cfg(test)]
 mod tests;
+
+/// Select a PDF failure detail without changing overlay suppression.
+pub(crate) fn detail<F: ?Sized>(
+    message: &str,
+    i: &crate::I18n<F>,
+) -> Result<String, AttachmentUiError> {
+    super::error::detail(message, i, "Failed to load PDF")
+}
