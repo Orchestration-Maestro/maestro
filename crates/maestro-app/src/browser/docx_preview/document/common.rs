@@ -120,7 +120,7 @@ pub(crate) fn float_prefix(value: &str) -> f64 {
 }
 
 /// Common paragraph and nested run metadata.
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct CommonProperties {
     /// Encountered raw color, including a missing attribute.
     pub color: Option<Option<String>>,
