@@ -27,7 +27,7 @@ impl SelfUpdateOperations for NativeSelfUpdateOperations {
     }
     fn run_command_sync(&self, command: &str, args: &[String]) -> Result<Output, SpawnSyncError> {
         spawn_sync(
-            &mut query_command(command, args),
+            &mut query_command(command, args).map_err(SpawnSyncError::Spawn)?,
             SpawnSyncOptions::Capture {
                 stdout: OutputMode::Capture,
                 stderr: OutputMode::Capture,
@@ -57,33 +57,12 @@ fn check_write_access(path: &str) -> io::Result<()> {
 }
 
 /// Prepare an operation-owned builder so shell settings cannot leak to later calls.
-fn query_command(command: &str, args: &[String]) -> Command {
-    if maestro_tools::process::child_process::should_use_windows_shell(command) {
-        let text = std::iter::once(command)
-            .chain(args.iter().map(String::as_str))
-            .collect::<Vec<_>>()
-            .join(" ");
-        let launch =
-            maestro_process::windows_shell_launch(&text, std::env::var("ComSpec").ok().as_deref());
-        let mut process = Command::new(&launch.executable);
-        configure_shell_args(&mut process, &launch);
-        process
-    } else {
-        let mut process = Command::new(command);
-        process.args(args);
-        process
+fn query_command(command: &str, args: &[String]) -> io::Result<Command> {
+    Ok(maestro_process::Launch {
+        executable: command.into(),
+        args: args.into(),
+        verbatim: false,
     }
-}
-
-/// Preserve the shared launch owner's Windows verbatim-argument policy.
-fn configure_shell_args(command: &mut Command, launch: &maestro_process::Launch) {
-    #[cfg(windows)]
-    if launch.verbatim {
-        use std::os::windows::process::CommandExt;
-        for arg in &launch.args {
-            command.as_std_mut().raw_arg(arg);
-        }
-        return;
-    }
-    command.args(&launch.args);
+    .command()?
+    .into())
 }

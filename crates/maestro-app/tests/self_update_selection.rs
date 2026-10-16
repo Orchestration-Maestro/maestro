@@ -149,3 +149,76 @@ fn supplied_path_flavors_reach_update_evidence() {
         false,
     );
 }
+
+#[test]
+#[cfg(unix)]
+fn native_queries_preserve_literal_executable_and_arguments() {
+    literal_query();
+}
+
+#[test]
+#[cfg(windows)]
+fn windows_native_queries_preserve_literal_executable_and_arguments() {
+    literal_query();
+}
+
+/// Runs the native query conversion against a real executable under a spaced path.
+fn literal_query() {
+    use maestro_app::configuration::config::{NativeSelfUpdateOperations, SelfUpdateOperations};
+    let directory = std::env::temp_dir().join(format!("maestro query {}", std::process::id()));
+    std::fs::create_dir(&directory).unwrap();
+    let executable = directory.join(format!("npm{}", std::env::consts::EXE_SUFFIX));
+    std::fs::copy(std::env::current_exe().unwrap(), &executable).unwrap();
+    // Omitting the Windows suffix exercises the package-manager command spelling.
+    let commands = vec![directory.join("npm")];
+    #[cfg(windows)]
+    let commands = {
+        let mut commands = commands;
+        std::fs::write(directory.join("custom.cmd"), "@\"%~dp0npm.exe\" %*\r\n").unwrap();
+        commands.extend([directory.join("custom.cmd"), directory.join("custom")]);
+        commands
+    };
+    let args = [
+        "--exact",
+        "native_query_child",
+        "--nocapture",
+        "--skip",
+        "argument with spaces",
+        "--skip",
+        "literal & | ; $HOME %PATH% ^ < >",
+    ]
+    .map(String::from);
+    for command in commands {
+        let output = NativeSelfUpdateOperations
+            .run_command_sync(command.to_str().unwrap(), &args)
+            .unwrap();
+        assert!(output.status.success(), "{command:?}: {output:?}");
+        assert!(
+            String::from_utf8(output.stdout)
+                .unwrap()
+                .contains("literal argv received")
+        );
+    }
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn native_query_child() {
+    let args: Vec<_> = std::env::args().collect();
+    if std::path::Path::new(&args[0])
+        .file_stem()
+        .is_none_or(|name| name != "npm")
+    {
+        return;
+    }
+    assert_eq!(
+        &args[4..],
+        [
+            "--skip",
+            "argument with spaces",
+            "--skip",
+            "literal & | ; $HOME %PATH% ^ < >"
+        ]
+    );
+    println!("literal argv received");
+}

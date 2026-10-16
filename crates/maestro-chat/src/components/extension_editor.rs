@@ -144,7 +144,9 @@ impl ExtensionEditorComponent {
     }
     /// Replaces the buffer only after a successfully observed zero exit.
     fn edit_file(&self, command: &str, path: &Path) -> io::Result<()> {
-        let mut command = native_command(command, path, self.runtime.as_ref());
+        let Ok(mut command) = native_command(command, path, self.runtime.as_ref()) else {
+            return Ok(());
+        };
         match maestro_app::spawn_sync(&mut command, maestro_app::SpawnSyncOptions::Inherit) {
             Ok(output) if output.status.success() => {
                 let bytes = fs::read(path)?;
@@ -208,31 +210,29 @@ fn native_command(
     command: &str,
     path: &Path,
     _runtime: &dyn TuiRuntime,
-) -> tokio::process::Command {
+) -> io::Result<tokio::process::Command> {
     #[cfg(not(windows))]
     {
         let mut tokens = command.split(' ');
-        let mut command = tokio::process::Command::new(tokens.next().unwrap_or_default());
-        command.args(tokens).arg(path);
-        command
+        let mut command = maestro_app::Launch {
+            executable: tokens.next().unwrap_or_default().into(),
+            args: tokens.map(str::to_owned).collect(),
+            verbatim: false,
+        }
+        .command()?;
+        command.arg(path);
+        Ok(command.into())
     }
     #[cfg(windows)]
     {
-        use std::os::windows::process::CommandExt;
-        let (mut launch, env) = windows_command(
+        let (launch, env) = windows_command(
             command,
             &path.to_string_lossy(),
             _runtime.environment("comspec").as_deref(),
         );
-        let mut command = std::process::Command::new(launch.executable);
+        let mut command = launch.command()?;
         command.env(env.0, env.1);
-        if launch.verbatim {
-            let text = launch.args.pop().unwrap_or_default();
-            command.args(launch.args).raw_arg(text);
-        } else {
-            command.args(launch.args);
-        }
-        command.into()
+        Ok(command.into())
     }
 }
 

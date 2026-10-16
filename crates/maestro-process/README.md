@@ -8,6 +8,16 @@ have already been delivered.
 
 See the [process contract](../../docs/specs/maestro-port.md#crates-and-delivery-order).
 
+## Command preparation
+
+`Launch::command` builds a standard process command from its executable and
+arguments. On Windows it resolves extensionless commands in the current directory
+then `PATH`, trying `PATHEXT` in order (default `.EXE;.COM;.BAT;.CMD` when absent).
+Explicit extensions pass through unchanged. The standard library handles batch
+file argument quoting. For a verbatim Windows shell launch, only the final
+command-text argument bypasses quoting; interpreter flags remain ordinary arguments.
+Callers retain environment, creation flags and capture policy.
+
 ## Synchronous capture
 
 `spawn_sync(&mut command, SpawnSyncOptions::Capture { input, timeout, stdout, stderr, max_buffer_bytes })`

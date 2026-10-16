@@ -82,7 +82,10 @@ installations and gives standalone release-download guidance. These functions
 select descriptions only: no installation, removal or release lookup is run.
 
 `NativeSelfUpdateOperations` delegates query capture to the process owner without
-a deadline or buffer limit. Unix access uses the OS write-access operation;
+a deadline or buffer limit. Queries pass the executable and literal argument
+vector to the native process API, not through joined shell text. On Windows,
+extensionless commands resolve using the current directory, `PATH` and `PATHEXT`;
+explicit extensions pass through unchanged. Unix access uses the OS write-access operation;
 Windows checks existence and read-only attributes, not directory ACLs, so a later
 update may still fail with a permissions error. See the
 [configuration library notes](../libraries/application-configuration.md).
