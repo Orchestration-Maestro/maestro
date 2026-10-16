@@ -382,6 +382,13 @@ file-level import aliases. Production deadlines remain allowed. The scan does no
 model local shadowing, expand macros, infer receiver types, resolve arbitrary
 re-exports/function values or evaluate compound configurations; those forms and
 sleep-based watchdogs require source review.
+Optional `futures_util::poll!` invocations are also rejected in those test scopes,
+including qualified/raw paths, known imports and literal nested macro tokens.
+Pin the future and call `std::future::Future::poll` once with
+`std::task::Context::from_waker(std::task::Waker::noop())` instead; this needs no
+optional dependency feature. Macro aliases use the same file-wide scope and
+limits as timer aliases. Comments, literal contents and ordinary function calls
+are not macro invocations; no compiler expansion is performed.
 
 Integration tests in `maestro-agent`, `maestro-models`, `maestro-tools` and `maestro-tui` share `tests/integration.rs`. Add new
 `tests/*.rs` files as unconditional out-of-line modules in that root; support

@@ -18,7 +18,7 @@ mod quality;
 mod repetition;
 /// Workspace Rust source loading and lexical helpers.
 mod source;
-/// Test-owned timed-wait checks.
+/// Test-owned timed-wait and optional polling checks.
 mod time_limits;
 
 /// Checks names, membership, dependencies and bounded source/build ownership.
@@ -28,7 +28,11 @@ mod time_limits;
 /// Complete direct sets are checked over both passes; absent future owners are
 /// inactive. Source/WIT checks are structural and do not replace semantic review.
 ///
-/// Recognized test-owned timer calls receive file/line diagnostics. Timer aliases
+/// Recognized test-owned timer calls and optional `futures_util::poll!` macros
+/// receive file/line diagnostics. Use pinned futures with standard `Future::poll`
+/// and `Context::from_waker(Waker::noop())` instead of the optional macro.
+/// Qualified/imported macro paths and literal nested invocations are checked,
+/// without expanding macros; ordinary function calls remain allowed. Known aliases
 /// apply file-wide; local shadowing is not modelled. Production deadlines remain
 /// allowed. This scan does not expand macros, infer receiver types, resolve
 /// arbitrary re-exports/function values or evaluate compound configurations.

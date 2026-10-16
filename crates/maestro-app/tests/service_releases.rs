@@ -417,12 +417,13 @@ async fn deadline(timeout: Option<u64>, mode: &str) {
         fetch: Some(t.fetch.clone()),
     };
     let mut work = std::pin::pin!(get_latest_maestro_release("1.2.3", ORIGIN, &options));
-    assert!(futures_util::poll!(work.as_mut()).is_pending());
+    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
     assert_eq!(t.count(), 1);
     tokio::time::advance(std::time::Duration::from_millis(5)).await;
     if mode == "HEADERS_DELAYED" {
         t.headers.notify_one();
-        assert!(futures_util::poll!(work.as_mut()).is_pending());
+        assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
         assert_eq!(t.body_polls.load(std::sync::atomic::Ordering::SeqCst), 1);
     }
     expire(work.as_mut(), &t, timeout.unwrap_or(10_000) - 6).await;
@@ -496,10 +497,12 @@ async fn expire(
     remaining: u64,
 ) {
     tokio::time::advance(std::time::Duration::from_millis(remaining)).await;
-    assert!(futures_util::poll!(work.as_mut()).is_pending());
+    let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+    assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
     assert_eq!(t.dropped.load(std::sync::atomic::Ordering::SeqCst), 0);
     tokio::time::advance(std::time::Duration::from_millis(1)).await;
-    let std::task::Poll::Ready(result) = futures_util::poll!(work.as_mut()) else {
+    let std::task::Poll::Ready(result) = std::future::Future::poll(work.as_mut(), &mut context)
+    else {
         panic!("deadline did not settle");
     };
     assert_eq!(result.unwrap_err().kind(), std::io::ErrorKind::TimedOut);

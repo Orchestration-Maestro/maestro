@@ -524,10 +524,11 @@ mod tests {
             .block_on(async {
                 let work = run("controlled", &fetch, &formatter, &mut stdout, &mut stderr);
                 let mut work = std::pin::pin!(work);
-                assert!(futures_util::poll!(work.as_mut()).is_pending());
+                let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+                assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
                 assert_eq!(calls.load(Ordering::SeqCst), 1);
                 headers.notify_one();
-                assert!(futures_util::poll!(work.as_mut()).is_pending());
+                assert!(std::future::Future::poll(work.as_mut(), &mut context).is_pending());
                 assert_eq!(calls.load(Ordering::SeqCst), 1);
                 body.notify_one();
                 work.await.unwrap();

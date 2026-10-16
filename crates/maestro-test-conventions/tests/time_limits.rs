@@ -28,10 +28,11 @@ fn check(member: &str, files: &[(&str, &str)], expected: &[(&str, usize, &str)])
         Err(expected
             .iter()
             .map(|(file, line, api)| {
-                format!(
-                    "{}:{line}: test-owned time limit: {api}; wait for completion instead",
-                    directory.join(file).display()
-                )
+                if *api == "optional-poll" {
+                    format!("{}:{line}: optional futures_util::poll! in test source; pin the future and call std::future::Future::poll once with std::task::Context::from_waker(std::task::Waker::noop())", directory.join(file).display())
+                } else {
+                    format!("{}:{line}: test-owned time limit: {api}; wait for completion instead", directory.join(file).display())
+                }
             })
             .collect::<Vec<_>>()
             .join("\n"))
@@ -654,4 +655,115 @@ fn namespace_aliases_do_not_replace_direct_timer_paths() {
             ("src/tests.rs", 7, "tokio::time::timeout_at"),
         ],
     );
+}
+
+/// Complete authored source and expected public diagnostics.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PollCase {
+    test: String,
+    member: String,
+    files: std::collections::BTreeMap<String, String>,
+    expected: Vec<PollDiagnostic>,
+}
+
+/// One expected occurrence in an authored source.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PollDiagnostic {
+    file: String,
+    line: usize,
+    kind: String,
+    api: Option<String>,
+}
+
+/// Replay every complete input assigned to this public behavior witness.
+fn check_optional_poll(test: &str) {
+    let cases: Vec<PollCase> =
+        serde_json::from_str(include_str!("fixtures/optional_poll.json")).unwrap();
+    let selected: Vec<_> = cases.iter().filter(|case| case.test == test).collect();
+    assert!(!selected.is_empty());
+    for case in selected {
+        let files: Vec<_> = case
+            .files
+            .iter()
+            .map(|(file, source)| (file.as_str(), source.as_str()))
+            .collect();
+        let expected: Vec<_> = case
+            .expected
+            .iter()
+            .map(|diagnostic| {
+                let api = match diagnostic.kind.as_str() {
+                    "optional-poll" => {
+                        assert!(diagnostic.api.is_none());
+                        "optional-poll"
+                    }
+                    "time-limit" => diagnostic.api.as_deref().unwrap(),
+                    _ => panic!("unknown diagnostic kind"),
+                };
+                (diagnostic.file.as_str(), diagnostic.line, api)
+            })
+            .collect();
+        check(&case.member, &files, &expected);
+    }
+}
+
+#[test]
+fn qualified_optional_poll_macros_are_rejected() {
+    check_optional_poll("qualified_optional_poll_macros_are_rejected");
+}
+
+#[test]
+fn imported_optional_poll_macros_keep_their_identity() {
+    check_optional_poll("imported_optional_poll_macros_keep_their_identity");
+}
+
+#[test]
+fn assertion_tokens_do_not_hide_optional_poll_macros() {
+    check_optional_poll("assertion_tokens_do_not_hide_optional_poll_macros");
+}
+
+#[test]
+fn optional_poll_checks_follow_existing_test_layouts() {
+    check_optional_poll("optional_poll_checks_follow_existing_test_layouts");
+}
+
+#[test]
+fn optional_poll_test_scopes_restore_production_ownership() {
+    check_optional_poll("optional_poll_test_scopes_restore_production_ownership");
+}
+
+#[test]
+fn unrelated_source_does_not_trigger_optional_poll_rule() {
+    check_optional_poll("unrelated_source_does_not_trigger_optional_poll_rule");
+}
+
+#[test]
+fn optional_poll_diagnostics_keep_order_and_occurrence_count() {
+    check_optional_poll("optional_poll_diagnostics_keep_order_and_occurrence_count");
+}
+
+#[test]
+fn optional_poll_keeps_timer_diagnostics_unchanged() {
+    check_optional_poll("optional_poll_keeps_timer_diagnostics_unchanged");
+}
+
+#[test]
+fn optional_poll_alias_candidates_do_not_hide_direct_paths() {
+    check_optional_poll("optional_poll_alias_candidates_do_not_hide_direct_paths");
+}
+
+#[test]
+fn optional_poll_aliases_keep_the_file_wide_scope() {
+    check_optional_poll("optional_poll_aliases_keep_the_file_wide_scope");
+}
+
+#[test]
+fn optional_poll_locations_survive_source_normalization() {
+    check_optional_poll("optional_poll_locations_survive_source_normalization");
+}
+
+#[test]
+fn standard_library_single_poll_is_allowed() {
+    check_optional_poll("standard_library_single_poll_is_allowed");
 }

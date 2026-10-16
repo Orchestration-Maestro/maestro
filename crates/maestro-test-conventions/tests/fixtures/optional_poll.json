@@ -1,0 +1,462 @@
+[
+  {
+    "test": "qualified_optional_poll_macros_are_rejected",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "fn sample() {\n    let _ = futures_util::poll!(future);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "qualified_optional_poll_macros_are_rejected",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "fn sample() {\n    let _ = ::futures_util::poll!(future);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "qualified_optional_poll_macros_are_rejected",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "fn sample() {\n    let _ = futures_util::r#poll!(future);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "imported_optional_poll_macros_keep_their_identity",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "use futures_util::poll;\nfn sample() {\n    let _ = poll!(future);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 3,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "imported_optional_poll_macros_keep_their_identity",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "use futures_util::poll as once;\nfn sample() {\n    let _ = once!(future);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 3,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "imported_optional_poll_macros_keep_their_identity",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "use futures_util::{poll as once, FutureExt};\nfn sample() {\n    let _ = once!(future);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 3,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "imported_optional_poll_macros_keep_their_identity",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "use futures_util as futures;\nfn sample() {\n    let _ = futures::poll!(future);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 3,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "imported_optional_poll_macros_keep_their_identity",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "use futures_util::{self as futures};\nfn sample() {\n    let _ = futures::poll!(future);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 3,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "imported_optional_poll_macros_keep_their_identity",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "use futures_util::*;\nfn sample() {\n    let _ = poll!(future);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 3,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "assertion_tokens_do_not_hide_optional_poll_macros",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "fn sample() {\n    assert!(futures_util::poll!(future).is_pending());\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "assertion_tokens_do_not_hide_optional_poll_macros",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "use futures_util::poll as once;\nfn sample() {\n    assert_eq!(once!(future), expected);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 3,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "assertion_tokens_do_not_hide_optional_poll_macros",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "fn sample() {\n    assert!(matches!(futures_util::poll!{future}, Poll::Pending));\n    let _ = futures_util::poll![future];\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      },
+      {
+        "file": "src/tests.rs",
+        "line": 3,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "optional_poll_checks_follow_existing_test_layouts",
+    "member": "maestro-tui",
+    "files": {
+      "tests/polls.rs": "fn sample() {\n    let _ = futures_util::poll!(future);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "tests/polls.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "optional_poll_checks_follow_existing_test_layouts",
+    "member": "maestro-tui",
+    "files": {
+      "tests/support/polls.rs": "fn sample() {\n    let _ = futures_util::poll!(future);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "tests/support/polls.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "optional_poll_checks_follow_existing_test_layouts",
+    "member": "maestro-tui",
+    "files": {
+      "src/nested/tests.rs": "fn sample() {\n    let _ = futures_util::poll!(future);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/nested/tests.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "optional_poll_checks_follow_existing_test_layouts",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests/polls.rs": "fn sample() {\n    let _ = futures_util::poll!(future);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests/polls.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "optional_poll_checks_follow_existing_test_layouts",
+    "member": "maestro-test-conventions",
+    "files": {
+      "src/lib.rs": "fn sample() {\n    let _ = futures_util::poll!(future);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/lib.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "optional_poll_checks_follow_existing_test_layouts",
+    "member": "maestro-test-terminal",
+    "files": {
+      "src/lib.rs": "fn sample() {\n    let _ = futures_util::poll!(future);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/lib.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "optional_poll_checks_follow_existing_test_layouts",
+    "member": "maestro-tui",
+    "files": {
+      "examples/polls.rs": "#![cfg(test)]\nfn sample() { let _ = futures_util::poll!(future); }\n"
+    },
+    "expected": [
+      {
+        "file": "examples/polls.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "optional_poll_test_scopes_restore_production_ownership",
+    "member": "maestro-tui",
+    "files": {
+      "src/lib.rs": "fn before() { let _ = futures_util::poll!(future); }\n#[cfg(test)]\nfn test_only() { let _ = futures_util::poll!(future); }\nstruct W;\nimpl W {\n    #[cfg(test)]\n    fn check() { assert!(futures_util::poll!(future).is_pending()); }\n    #[cfg(test)]\n    const TEST: () = { let _ = futures_util::poll!(future); };\n    fn after() { let _ = futures_util::poll!(future); }\n}\ntrait T {\n    #[cfg(test)]\n    fn check() { let _ = futures_util::poll!(future); }\n    #[cfg(test)]\n    const TEST: () = { let _ = futures_util::poll!(future); };\n    fn after() { let _ = futures_util::poll!(future); }\n}\n#[cfg(test)]\nmod tests { mod nested { fn check() { let _ = futures_util::poll!(future); } } }\nfn after() { let _ = futures_util::poll!(future); }\n"
+    },
+    "expected": [
+      {
+        "file": "src/lib.rs",
+        "line": 3,
+        "kind": "optional-poll"
+      },
+      {
+        "file": "src/lib.rs",
+        "line": 7,
+        "kind": "optional-poll"
+      },
+      {
+        "file": "src/lib.rs",
+        "line": 9,
+        "kind": "optional-poll"
+      },
+      {
+        "file": "src/lib.rs",
+        "line": 14,
+        "kind": "optional-poll"
+      },
+      {
+        "file": "src/lib.rs",
+        "line": 16,
+        "kind": "optional-poll"
+      },
+      {
+        "file": "src/lib.rs",
+        "line": 20,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "unrelated_source_does_not_trigger_optional_poll_rule",
+    "member": "maestro-tui",
+    "files": {
+      "src/lib.rs": "fn production() { let _ = futures_util::poll!(future); }\n#[cfg(any(test))]\nfn compound() { let _ = futures_util::poll!(future); }\n"
+    },
+    "expected": []
+  },
+  {
+    "test": "unrelated_source_does_not_trigger_optional_poll_rule",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "// futures_util::poll!(future)\n/* futures_util::poll!(future) */\nuse futures_util::poll as unused;\nfn sample() {\n    let _ = \"futures_util::poll!(future)\";\n    let _ = r#\"futures_util::poll!(future)\"#;\n    let _ = b\"futures_util::poll!(future)\";\n    println!(\"futures_util::poll!(future)\");\n    let _ = other::poll!(future);\n    let _ = poll!(future);\n    let _ = futures_util::poll(future);\n}\n"
+    },
+    "expected": []
+  },
+  {
+    "test": "unrelated_source_does_not_trigger_optional_poll_rule",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "futures_util::poll!(future) +\n"
+    },
+    "expected": []
+  },
+  {
+    "test": "optional_poll_diagnostics_keep_order_and_occurrence_count",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "fn sample() {\n    let _ = futures_util::poll!(a); let _ = futures_util::poll!(b);\n}\n",
+      "src/tests/another.rs": "fn sample() {\n    let _ = futures_util::poll!(c);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      },
+      {
+        "file": "src/tests.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      },
+      {
+        "file": "src/tests/another.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "optional_poll_keeps_timer_diagnostics_unchanged",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "fn sample() {\n    tokio::time::timeout(d,f);\n    let _ = futures_util::poll!(future);\n    receiver.recv_timeout(d);\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 2,
+        "kind": "time-limit",
+        "api": "tokio::time::timeout"
+      },
+      {
+        "file": "src/tests.rs",
+        "line": 3,
+        "kind": "optional-poll"
+      },
+      {
+        "file": "src/tests.rs",
+        "line": 4,
+        "kind": "time-limit",
+        "api": "recv_timeout"
+      }
+    ]
+  },
+  {
+    "test": "optional_poll_alias_candidates_do_not_hide_direct_paths",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "use other as futures_util;\nfn sample() { let _ = ::futures_util::poll!(future); }\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "optional_poll_alias_candidates_do_not_hide_direct_paths",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "mod first { use tokio::time as api; }\nmod second { use futures_util as api; }\nfn sample() { let _ = api::poll!(future); api::timeout(d,f); }\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 3,
+        "kind": "optional-poll"
+      },
+      {
+        "file": "src/tests.rs",
+        "line": 3,
+        "kind": "time-limit",
+        "api": "tokio::time::timeout"
+      }
+    ]
+  },
+  {
+    "test": "optional_poll_aliases_keep_the_file_wide_scope",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "mod first {\n    fn sample() { let _ = once!(future); }\n    use futures_util::poll as once;\n}\nmod second {\n    use other::once;\n    fn sample() { let _ = once!(future); }\n}\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 2,
+        "kind": "optional-poll"
+      },
+      {
+        "file": "src/tests.rs",
+        "line": 7,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "optional_poll_locations_survive_source_normalization",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "﻿fn sample() {\r\n    let _ = \"futures_util::poll!(future)\";\r\n    assert!(::futures_util :: r#poll ! (\r\n        future\r\n    ).is_pending());\r\n}\r\n"
+    },
+    "expected": [
+      {
+        "file": "src/tests.rs",
+        "line": 3,
+        "kind": "optional-poll"
+      }
+    ]
+  },
+  {
+    "test": "standard_library_single_poll_is_allowed",
+    "member": "maestro-tui",
+    "files": {
+      "src/tests.rs": "use std::{future::Future, task::{Context, Waker}};\nfn sample() {\n    let mut future = std::pin::pin!(std::future::pending::<()>());\n    assert!(future.as_mut().poll(&mut Context::from_waker(Waker::noop())).is_pending());\n    let mut future = std::pin::pin!(std::future::ready(()));\n    assert!(Future::poll(future.as_mut(), &mut Context::from_waker(Waker::noop())).is_ready());\n}\n"
+    },
+    "expected": []
+  }
+]
