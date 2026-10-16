@@ -59,7 +59,8 @@ Preparation creates route-specific inputs and `Trunk.json` configurations under
 distributions. Checks may create these directories without creating distributions.
 The generated configuration uses absolute original HTML/watch paths and retains
 the authored asset paths and tool pins. Trunk
-invokes the same locked native exporter through a pre-build hook on each rebuild.
+invokes the same locked native exporter through a pre-build hook on each rebuild,
+retaining authored hooks alongside it.
 The initial watch configuration retains the fixture and default
 brand roots and adds the containing directories of both the authored paths and
 symlink-resolved targets of the selected pack and mark template, including

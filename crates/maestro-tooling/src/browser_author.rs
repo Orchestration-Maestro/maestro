@@ -232,23 +232,44 @@ fn configuration(
     identity: (&Path, &OsStr),
     prepared: &Prepared,
 ) -> io::Result<()> {
-    let (pack, mode) = identity;
     let inputs = &prepared.inputs;
     let fixture = checkout.join(FIXTURE);
-    let mut value: serde_json::Value =
+    let mut value: serde_json::Map<String, serde_json::Value> =
         serde_json::from_slice(&fs::read(fixture.join("Trunk.json"))?)?;
     let target = if route == "debug" {
         "debug.html"
     } else {
         "index.html"
     };
-    value["build"]["target"] = serde_json::to_value(fixture.join(target))?;
-    value["build"]["dist"] =
-        serde_json::to_value(checkout.join("target/maestro-browser").join(route))?;
+    let build = value
+        .entry("build")
+        .or_insert_with(|| serde_json::json!({}));
+    build["target"] = serde_json::to_value(fixture.join(target))?;
+    build["dist"] = serde_json::to_value(checkout.join("target/maestro-browser").join(route))?;
     let mut roots: Vec<PathBuf> =
         serde_json::from_slice(&fs::read(inputs.join("watch-dirs.json"))?)?;
     roots.extend([fixture, checkout.join("assets/brand")]);
-    value["watch"]["watch"] = serde_json::to_value(roots)?;
+    value
+        .entry("watch")
+        .or_insert_with(|| serde_json::json!({}))["watch"] = serde_json::to_value(roots)?;
+    let hook = projection_hook(cargo, checkout, identity, inputs)?;
+    value
+        .entry("hooks")
+        .or_insert_with(|| serde_json::json!([]))
+        .as_array_mut()
+        .ok_or_else(|| io::Error::other("Trunk hooks must be an array"))?
+        .push(hook);
+    fs::write(&prepared.config, serde_json::to_vec_pretty(&value)?)
+}
+
+/// Add the native projection without replacing authored Trunk hooks.
+fn projection_hook(
+    cargo: &Path,
+    checkout: &Path,
+    identity: (&Path, &OsStr),
+    inputs: &Path,
+) -> io::Result<serde_json::Value> {
+    let (pack, mode) = identity;
     let manifest = checkout.join("Cargo.toml");
     let arguments = [
         OsStr::new("run"),
@@ -271,10 +292,9 @@ fn configuration(
                 .ok_or_else(|| io::Error::other("Trunk configuration requires UTF-8 paths"))
         })
         .collect::<io::Result<Vec<_>>>()?;
-    value["hooks"] = serde_json::json!([{
+    Ok(serde_json::json!({
         "stage": "pre_build", "command": cargo, "command_arguments": arguments
-    }]);
-    fs::write(&prepared.config, serde_json::to_vec_pretty(&value)?)
+    }))
 }
 
 /// Start Trunk as the sole build/watch/server owner with a child-local metadata guard.
