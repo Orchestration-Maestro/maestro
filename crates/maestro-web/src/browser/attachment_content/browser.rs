@@ -236,6 +236,12 @@ impl AttachmentHost for BrowserAttachmentHost {
         let result: Result<(), AttachmentUiError> = (|| {
             let was_reading = surface.reading.take().is_some();
             drop(surface.pending.take());
+            if was_reading {
+                surface
+                    .wrapper
+                    .remove_attribute("class")
+                    .map_err(|e| host_error(&e))?;
+            }
             if surface.tag != tag || was_reading {
                 drop(surface.input.take());
                 let child = self

@@ -97,7 +97,7 @@ fn panel() -> web_sys::Element {
 /// # Panics
 /// Panics when the observed browser behavior differs from the required result.
 #[wasm_bindgen]
-pub fn header_trailing_spacing_precedes_following_widget() {
+pub async fn header_trailing_spacing_precedes_following_widget() {
     let mut header = Header::new();
     let following = header.draw(egui::vec2(800., 600.));
     let bottom = panel().get_bounding_client_rect().bottom();
@@ -106,6 +106,7 @@ pub fn header_trailing_spacing_precedes_following_widget() {
         (f64::from(following) - bottom - presentation.spacing["lg"]).abs() < 0.1,
         "following widget at {following}, panel bottom {bottom}; trailing spacing must be allocated exactly once"
     );
+    support::reading_paint::observe("neighbors-header").await;
 }
 /// Fractional native offsets on both axes survive the repaint's measurement.
 /// # Panics
@@ -259,7 +260,7 @@ pub fn header_native_dates_use_browser_locale() {
 
 mod session_header_browser_support;
 mod session_header_support;
-use maestro_web::browser::attachment_content::ReadingPhase;
+use maestro_web::browser::attachment_content::{AttachmentHost as _, ReadingPhase};
 use num_traits::ToPrimitive as _;
 use session_header_browser_support::{Slots, js, snapshot, unchanged};
 
@@ -375,7 +376,7 @@ fn slot_failure(route: Route, kind: &str, cleanup: bool) {
     slots
         .place(ReadingPhase::Measure, egui::vec2(300., 40.), &sizes)
         .unwrap();
-    if kind == "publish" {
+    if kind.starts_with("publish") {
         slots.layout().unwrap();
     }
     let root = slots.root();
@@ -387,13 +388,15 @@ fn slot_failure(route: Route, kind: &str, cleanup: bool) {
             include_str!("session_header_browser_support/faults.js")
         ),
     );
-    let result = if kind == "publish" {
+    let result = if kind.starts_with("publish") {
         slots.place(ReadingPhase::Publish, egui::vec2(300., 40.), &sizes)
     } else {
         slots.layout().map(|_| ())
     };
     let evidence = js(&hook, "return value.stop()");
-    let error = result.unwrap_err().to_string();
+    let error = result
+        .expect_err(&format!("native {kind} fault must be reached"))
+        .to_string();
     assert!(
         error.contains(if kind == "cleanup" {
             "cleanup marker"
@@ -402,14 +405,14 @@ fn slot_failure(route: Route, kind: &str, cleanup: bool) {
         }),
         "original failure must win for {kind}"
     );
-    assert!(js(&evidence, "return [0,1,2,3].every(i=>value.restored.includes(i)) && value.offsets.includes('scrollLeft') && value.offsets.includes('scrollTop')").as_bool().unwrap());
+    assert!(js(&evidence, "return [0,1,2,3,4].every(i=>value.restored.includes(i)) && value.offsets.includes('scrollLeft') && value.offsets.includes('scrollTop')").as_bool().unwrap());
     if replacement {
         unchanged(&old);
         assert!(!wrapper.is_connected());
     } else if !cleanup {
         unchanged(&old);
-    } else {
-        assert!(js(&old, "return value.styles.slice(1).every((s,i)=>[...value.slots,value.wrapper][i+1].getAttribute('style')===s) && value.wrapper.scrollLeft===value.left && value.wrapper.scrollTop===value.top").as_bool().unwrap());
+    } else if !kind.contains("axis") {
+        assert!(js(&old, "return value.styles.slice(1).every((s,i)=>[...value.slots,value.wrapper,value.frame][i+1].getAttribute('style')===s) && value.wrapper.scrollLeft===value.left && value.wrapper.scrollTop===value.top").as_bool().unwrap());
     }
 }
 
@@ -603,4 +606,232 @@ pub fn reading_geometry_accepts_second_realm_rectangle() {
         .call0(&JsValue::NULL)
         .unwrap();
     result.unwrap();
+}
+
+/// One viewport retains native offsets and selection across all placement phases.
+/// # Panics
+/// Panics if a second element scrolls or retained browser state changes.
+#[wasm_bindgen]
+pub fn reading_frame_repaint_preserves_single_scroller_and_native_state() {
+    let slots = Slots::new();
+    let sizes = Slots::sizes([(40., 20.), (70., 30.), (100., 40.)]);
+    slots.publish(egui::vec2(300., 40.), &sizes);
+    js(
+        &slots.root(),
+        "const v=value.parentElement,f=v.parentElement;const r=document.createRange();r.selectNodeContents(value.querySelector('h1'));getSelection().removeAllRanges();getSelection().addRange(r);for(const e of [f,v,value,document.scrollingElement]){e.scrollLeft=17.6;e.scrollTop=25.6}",
+    );
+    assert!(js(&slots.root(), "const v=value.parentElement;return v.scrollLeft>0&&v.scrollTop>0&&[v.parentElement,value,document.scrollingElement].every(e=>e.scrollLeft===0&&e.scrollTop===0)").as_bool().unwrap());
+    let saved = snapshot(&slots.root());
+    slots.publish(egui::vec2(300., 40.), &sizes);
+    unchanged(&saved);
+    slots.publish(egui::vec2(300., 600.), &sizes);
+    assert_eq!(
+        slots.wrapper().get_bounding_client_rect().height(),
+        slots.frame().get_bounding_client_rect().height()
+    );
+    let unbounded = slots.publish(egui::vec2(260., f32::INFINITY), &sizes);
+    assert!(unbounded.height > 40.);
+    slots.publish(egui::vec2(300., 0.), &sizes);
+    assert_eq!(slots.wrapper().get_bounding_client_rect().height(), 0.);
+    let root = slots.root();
+    let frame = slots.frame();
+    let calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let observed = std::sync::Arc::clone(&calls);
+    slots.context.set_request_repaint_callback(move |_| {
+        observed.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    });
+    js(&slots.wrapper(), "value.dispatchEvent(new Event('scroll'))");
+    assert!(calls.load(std::sync::atomic::Ordering::SeqCst) > 0);
+    slots.host.remove(slots.id);
+    calls.store(0, std::sync::atomic::Ordering::SeqCst);
+    js(
+        &root,
+        "value.parentElement.dispatchEvent(new Event('scroll'))",
+    );
+    assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
+    assert!(!frame.is_connected());
+}
+
+/// Both placement nodes participate in rollback for retained and pending roots.
+/// # Panics
+/// Panics if a native fault loses the published owner or skips restoration.
+#[wasm_bindgen]
+pub fn reading_frame_transitions_restore_both_nodes_after_failure() {
+    reading_candidate_setup_failures_keep_the_published_root();
+    reading_input_transition_keeps_caller_class_and_native_events();
+    for route in [Route::Retained, Route::Replacement] {
+        for node in ["frame", "viewport", "slot0", "slot1", "slot2"] {
+            for moment in ["before", "after"] {
+                for phase in ["", "publish-"] {
+                    let kind = format!("{phase}{node}-{moment}");
+                    slot_failure(route, &kind, false);
+                    slot_failure(route, &kind, true);
+                }
+            }
+        }
+        slot_failure(route, "readback-axis", true);
+    }
+    for style in [None, Some(""), Some("opacity:0.7")] {
+        let slots = Slots::new();
+        slots.publish(egui::vec2(300., 40.), &[]);
+        for element in [slots.wrapper(), slots.frame()] {
+            if let Some(style) = style {
+                element.set_attribute("style", style).unwrap();
+            } else {
+                element.remove_attribute("style").unwrap();
+            }
+        }
+        let saved = snapshot(&slots.root());
+        slots
+            .place(ReadingPhase::Measure, egui::vec2(300., 40.), &[])
+            .unwrap();
+        slots.layout().unwrap();
+        unchanged(&saved);
+    }
+}
+
+/// Paint and native hit testing respect the viewport, ancestor and control holes.
+/// # Panics
+/// Panics when captured sentinel pixels or native hit targets escape their clips.
+#[wasm_bindgen]
+pub async fn reading_viewport_keeps_content_and_occluders_clipped() {
+    let mut slots = Slots::new();
+    slots.origin = egui::pos2(100., 100.);
+    slots.density = js(&JsValue::NULL, "return devicePixelRatio")
+        .as_f64()
+        .unwrap()
+        .to_f32()
+        .unwrap();
+    let bounds = egui::Rect::from_min_size(slots.origin, egui::vec2(300., 80.));
+    slots.holes = vec![
+        egui::Rect::from_min_max(egui::pos2(200., 125.), egui::pos2(240., 150.)),
+        egui::Rect::from_min_max(egui::pos2(90., 170.), egui::pos2(120., 200.)),
+        egui::Rect::from_min_max(egui::pos2(600., 400.), egui::pos2(650., 450.)),
+    ];
+    for (index, (clip, size, origin)) in [
+        (egui::Rect::EVERYTHING, bounds.size(), bounds.min),
+        (
+            egui::Rect::from_min_max(egui::pos2(70., 70.), egui::pos2(500., 300.)),
+            bounds.size(),
+            bounds.min,
+        ),
+        (bounds, bounds.size(), bounds.min),
+        (
+            egui::Rect::from_min_max(egui::pos2(150., 110.), egui::pos2(500., 300.)),
+            bounds.size(),
+            bounds.min,
+        ),
+        (egui::Rect::NOTHING, bounds.size(), bounds.min),
+        (
+            egui::Rect::from_min_max(egui::pos2(700., 400.), egui::pos2(800., 500.)),
+            bounds.size(),
+            bounds.min,
+        ),
+        (egui::Rect::EVERYTHING, egui::vec2(0., 80.), bounds.min),
+        (egui::Rect::EVERYTHING, egui::vec2(300., 0.), bounds.min),
+        (
+            egui::Rect::EVERYTHING,
+            bounds.size(),
+            egui::pos2(-20.5, 80.25),
+        ),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        slots.clip = clip;
+        slots.origin = origin;
+        slots.publish(size, &[]);
+        js(
+            &slots.root(),
+            "value.style.cssText='width:700px;height:500px;background:rgb(255,0,0)';if(!value.querySelector('.sentinel')){const e=document.createElement('div');e.className='sentinel';e.style.cssText='position:absolute;left:305px;top:10px;width:15px;height:20px;background:rgb(0,255,0)';value.append(e)}value.parentElement.parentElement.style.boxShadow='0 0 0 90px rgb(255,0,255)'",
+        );
+        support::reading_paint::observe(&format!("viewport-{index}")).await;
+    }
+}
+
+/// Factory and native setup failures discard only the unpublished candidate.
+fn reading_candidate_setup_failures_keep_the_published_root() {
+    let mut slots = Slots::new();
+    slots.publish(egui::vec2(300., 40.), &[]);
+    let old = snapshot(&slots.root());
+    slots.content = Rc::new(maestro_web::browser::attachment_content::ReadingContent {
+        mount: Rc::new(|_| {
+            Err(
+                maestro_web::browser::attachment_content::AttachmentUiError::Host(
+                    "factory marker".into(),
+                ),
+            )
+        }),
+    });
+    assert!(
+        slots
+            .place(ReadingPhase::Measure, egui::vec2(300., 40.), &[])
+            .unwrap_err()
+            .to_string()
+            .contains("factory marker")
+    );
+    unchanged(&old);
+    slots.content = Slots::factory(Rc::clone(&slots.root));
+    let stop = js(
+        &JsValue::NULL,
+        "const set=Element.prototype.setAttribute;Element.prototype.setAttribute=function(k,v){set.call(this,k,v);if(this.className==='maestro-reading-frame'&&k==='style'&&v.includes('visibility:hidden'))throw Error('setup marker')};return ()=>Element.prototype.setAttribute=set",
+    );
+    let result = slots.place(ReadingPhase::Measure, egui::vec2(300., 40.), &[]);
+    stop.dyn_into::<js_sys::Function>()
+        .unwrap()
+        .call0(&JsValue::NULL)
+        .unwrap();
+    assert!(result.unwrap_err().to_string().contains("setup marker"));
+    unchanged(&old);
+    slots.publish(egui::vec2(300., 40.), &[]);
+    assert!(!js(&old, "return value.root.isConnected").as_bool().unwrap());
+}
+
+/// A direct-child input replacement clears reading markers without losing its own class.
+fn reading_input_transition_keeps_caller_class_and_native_events() {
+    use maestro_web::browser::attachment_content::{AttachmentContent, AttachmentSurface};
+    use maestro_web::components::input::InputProps;
+    let slots = Slots::new();
+    slots.publish(egui::vec2(300., 40.), &[]);
+    let old = slots.root();
+    let reference = Rc::new(std::cell::RefCell::new(None));
+    let calls = Rc::new(std::cell::Cell::new(0));
+    let observed = Rc::clone(&calls);
+    let props = InputProps {
+        class_name: "caller-input".into(),
+        input_ref: Some(Rc::clone(&reference)),
+        on_input: Some(Rc::new(move |_| observed.set(observed.get() + 1))),
+        ..Default::default()
+    };
+    slots
+        .host
+        .present(
+            AttachmentSurface {
+                id: slots.id,
+                rect: egui::Rect::from_min_size(slots.origin, egui::vec2(300., 40.)),
+                clip_rect: egui::Rect::EVERYTHING,
+                pixels_per_point: 1.,
+                opacity: 1.,
+                occluders: vec![],
+                content: AttachmentContent::Input {
+                    props: &props,
+                    accessible_label: "native input",
+                    value_changed: true,
+                    modal: None,
+                    context: &slots.context,
+                },
+            },
+            &slots.pack.presentation(BrandMode::Dark).unwrap(),
+        )
+        .unwrap();
+    assert!(!old.is_connected());
+    let input = reference.borrow().as_ref().unwrap().clone();
+    assert_eq!(input.parent_element().unwrap().class_name(), "caller-input");
+    js(&input, "value.dispatchEvent(new Event('input'))");
+    assert_eq!(calls.get(), 1);
+    slots.publish(egui::vec2(300., 40.), &[]);
+    assert!(!input.is_connected());
+    assert!(reference.borrow().is_none());
+    js(&input, "value.dispatchEvent(new Event('input'))");
+    assert_eq!(calls.get(), 1);
 }

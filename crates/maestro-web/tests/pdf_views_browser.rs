@@ -5,6 +5,7 @@ use maestro_web::{
     AttachmentOverlay, browser::attachment_content::*, tools::artifacts::create_artifact_element,
 };
 use std::{cell::RefCell, rc::Rc};
+use num_traits::ToPrimitive as _;
 use wasm_bindgen::prelude::*;
 /// Evaluate document observations without shipping test bindings.
 fn js(code: &str) -> JsValue {
@@ -573,4 +574,63 @@ fn assert_empty_error_and_save_failure(view: &View, record: &Rc<RefCell<maestro_
     check(
         "!document.querySelector('.maestro-file-error')&&!document.querySelector('.maestro-pdf')",
     );
+}
+
+/// The bounded overlay paints its outer shadow without scrolling its chrome.
+/// # Panics
+/// Panics when the browser's painted output differs from the required result.
+#[wasm_bindgen]
+pub async fn reading_frame_shadow_paints_outside_clipped_viewport() {
+    let mut view = View::new("current.pdf", &encoded(true));
+    view.density = js("devicePixelRatio").as_f64().unwrap().to_f32().unwrap();
+    view.overlay_size = egui::vec2(1200., 600.);
+    let mut overlay = AttachmentOverlay::open(record(), None, view.host.clone());
+    view.overlay(&mut overlay, vec![]);
+    view.overlay(&mut overlay, vec![]);
+    support::reading_paint::observe("overlay-shadow").await;
+    for path in ["brand.json", "signal.json"] {
+        view.pack = maestro_theme::load_brand_pack(path, &support::brand::Pack).unwrap();
+        for mode in [
+            maestro_theme::BrandMode::Dark,
+            maestro_theme::BrandMode::Light,
+        ] {
+            view.mode = mode;
+            view.overlay(&mut overlay, vec![]);
+            support::reading_paint::observe("overlay-shadow").await;
+        }
+    }
+    drop(overlay);
+    check("!document.querySelector('.maestro-pdf')");
+}
+
+/// Neighboring artifact pages and error bodies retain their actual native paint.
+/// # Panics
+/// Panics when capture loses existing paint or adds an outer frame shadow.
+#[wasm_bindgen]
+pub async fn reading_frame_neighbors_keep_existing_paint() {
+    let mut view = View::new("current.pdf", &encoded(true));
+    view.density = js("devicePixelRatio").as_f64().unwrap().to_f32().unwrap();
+    for pack in ["brand.json", "signal.json"] {
+        view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
+        for mode in [
+            maestro_theme::BrandMode::Dark,
+            maestro_theme::BrandMode::Light,
+        ] {
+            view.mode = mode;
+            view.element.set_content(encoded(true));
+            for _ in 0..4 {
+                view.draw(false, vec![]);
+            }
+            support::reading_paint::observe("neighbors-artifact").await;
+            view.element.set_content("invalid pdf".into());
+            view.draw(false, vec![]);
+            support::reading_paint::observe("neighbors-error").await;
+        }
+    }
+    let record = record();
+    record.borrow_mut().mime_type = "text/plain".into();
+    let mut overlay = AttachmentOverlay::open(record.clone(), None, view.host.clone());
+    record.borrow_mut().content = "literal text".into();
+    view.overlay(&mut overlay, vec![]);
+    support::reading_paint::observe("neighbors-text").await;
 }

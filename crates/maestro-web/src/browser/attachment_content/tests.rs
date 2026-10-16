@@ -198,6 +198,11 @@ fn reading_modal_style_targets_keep_reading_identity() {
         super::style_targets(ids.into_iter(), Some(reading), None, None).collect::<Vec<_>>(),
         [reading]
     );
+}
+
+#[test]
+fn reading_frame_clip_extents_keep_finite_bounds() {
+    let reading = egui::Id::new("finite-reading");
     let content = super::ReadingContent {
         #[cfg(target_arch = "wasm32")]
         mount: std::rc::Rc::new(|_| unreachable!()),
@@ -214,12 +219,41 @@ fn reading_modal_style_targets_keep_reading_identity() {
             content: std::rc::Rc::new(content),
             phase: super::ReadingPhase::Publish,
             sizes: &[],
-            modal: Some(modal),
+            modal: None,
             context: &repaint,
         }),
     };
+    let drawable = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800., 600.));
     assert_eq!(
-        clip_path(&surface, (1., 1.)),
-        "path(evenodd,\"M0 0H50V40H0Z\")"
+        super::placement::frame_clip_path(&surface, drawable),
+        "path(evenodd,\"M0 0H800V600H0Z\")"
     );
+    let mut surface = surface;
+    surface.rect = egui::Rect::from_min_size(egui::pos2(-12.5, 18.25), egui::vec2(50., 40.));
+    surface.occluders = vec![
+        egui::Rect::from_min_max(egui::pos2(10., 20.), egui::pos2(30., 40.)),
+        egui::Rect::from_min_max(egui::pos2(900., 700.), egui::pos2(950., 750.)),
+    ];
+    assert_eq!(
+        super::placement::frame_clip_path(&surface, drawable),
+        "path(evenodd,\"M12.5 -18.25H812.5V581.75H12.5ZM22.5 1.75H42.5V21.75H22.5Z\")"
+    );
+    surface.clip_rect = surface.rect;
+    assert_eq!(
+        super::placement::frame_clip_path(&surface, drawable),
+        "path(evenodd,\"M12.5 0H50V40H12.5ZM22.5 1.75H42.5V21.75H22.5Z\")"
+    );
+    surface.clip_rect = egui::Rect::NOTHING;
+    assert_eq!(
+        super::placement::frame_clip_path(&surface, drawable),
+        "path(evenodd,\"M0 0H0V0H0Z\")"
+    );
+    surface.clip_rect = egui::Rect::EVERYTHING;
+    for size in [egui::vec2(0., 40.), egui::vec2(50., 0.)] {
+        surface.rect = egui::Rect::from_min_size(egui::Pos2::ZERO, size);
+        assert_eq!(
+            super::placement::frame_clip_path(&surface, drawable),
+            "path(evenodd,\"M0 0H0V0H0Z\")"
+        );
+    }
 }

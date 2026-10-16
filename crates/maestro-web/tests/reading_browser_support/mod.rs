@@ -120,6 +120,8 @@ pub struct View {
     pub i18n: I18n,
     /// Body viewport in canvas points.
     pub size: egui::Vec2,
+    /// Overlay screen geometry independent of the artifact body.
+    pub overlay_size: egui::Vec2,
     /// Physical density for projection.
     pub density: f32,
 }
@@ -135,6 +137,7 @@ impl View {
             mode: maestro_theme::BrandMode::Dark,
             size: egui::vec2(400., 300.),
             density: 1.,
+            overlay_size: egui::vec2(800., 600.),
             i18n: I18n::new(Rc::new(support::Host::default())).unwrap(),
         }
     }
@@ -175,14 +178,16 @@ impl View {
         overlay: &mut AttachmentOverlay,
         events: Vec<egui::Event>,
     ) -> Result<bool, AttachmentUiError> {
-        self.context.begin_pass(egui::RawInput {
+        let mut input = egui::RawInput {
             screen_rect: Some(egui::Rect::from_min_size(
                 egui::Pos2::ZERO,
-                egui::vec2(800., 600.),
+                self.overlay_size,
             )),
             events,
             ..Default::default()
-        });
+        };
+        input.viewports.get_mut(&egui::ViewportId::ROOT).unwrap().native_pixels_per_point = Some(self.density);
+        self.context.begin_pass(input);
         let result = overlay.render(
             &self.context,
             &self.i18n,

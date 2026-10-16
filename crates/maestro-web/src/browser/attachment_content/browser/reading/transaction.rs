@@ -14,17 +14,18 @@ pub(super) struct Scroll {
 }
 impl Scroll {
     /// Observe both native axes before mutation.
-    pub(super) fn read(wrapper: &Element) -> Result<Self, AttachmentUiError> {
+    pub(super) fn read(viewport: &Element) -> Result<Self, AttachmentUiError> {
         Ok(Self {
-            left: Reflect::get(wrapper, &"scrollLeft".into()).map_err(|e| host_error(&e))?,
-            top: Reflect::get(wrapper, &"scrollTop".into()).map_err(|e| host_error(&e))?,
+            left: Reflect::get(viewport, &"scrollLeft".into()).map_err(|e| host_error(&e))?,
+            top: Reflect::get(viewport, &"scrollTop".into()).map_err(|e| host_error(&e))?,
         })
     }
     /// Attempt both axes even when the first write fails.
-    pub(super) fn apply(&self, wrapper: &Element) -> Result<(), AttachmentUiError> {
+    pub(super) fn apply(&self, viewport: &Element) -> Result<(), AttachmentUiError> {
         let left =
-            Reflect::set(wrapper, &"scrollLeft".into(), &self.left).map_err(|e| host_error(&e));
-        let top = Reflect::set(wrapper, &"scrollTop".into(), &self.top).map_err(|e| host_error(&e));
+            Reflect::set(viewport, &"scrollLeft".into(), &self.left).map_err(|e| host_error(&e));
+        let top =
+            Reflect::set(viewport, &"scrollTop".into(), &self.top).map_err(|e| host_error(&e));
         left.and(top).map(|_| ())
     }
 }
@@ -49,9 +50,9 @@ fn restore(element: &Element, style: Option<&str>) -> Result<(), AttachmentUiErr
     }
     .map_err(|e| host_error(&e))
 }
-/// Restore every saved operand after a read or a failed publication.
+/// Restore frame, viewport and slot styles plus both viewport axes after failure or readback.
 pub(super) fn transaction<T>(
-    wrapper: &Element,
+    nodes: (&Element, &Element),
     slots: &[(egui::Id, Element)],
     phase: ReadingPhase,
     operation: impl FnOnce(&Scroll) -> Result<T, AttachmentUiError>,
@@ -59,10 +60,10 @@ pub(super) fn transaction<T>(
     let saved: Vec<_> = slots
         .iter()
         .map(|(_, e)| e)
-        .chain(std::iter::once(wrapper))
+        .chain([nodes.1, nodes.0])
         .map(|e| (e, e.get_attribute("style")))
         .collect();
-    let scroll = Scroll::read(wrapper)?;
+    let scroll = Scroll::read(nodes.1)?;
     let result = operation(&scroll);
     if phase == ReadingPhase::Publish && result.is_ok() {
         return result;
@@ -72,6 +73,6 @@ pub(super) fn transaction<T>(
         let current = restore(element, style.as_deref());
         restored = restored.and(current);
     }
-    let offsets = scroll.apply(wrapper);
+    let offsets = scroll.apply(nodes.1);
     result.and_then(|value| restored.and(offsets).map(|()| value))
 }

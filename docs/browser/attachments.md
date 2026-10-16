@@ -22,13 +22,12 @@ The overlay shows original images, selectable literal text and presentation text
 Only PDF, Word and spreadsheet attachments with nonempty extracted text have a
 preview/text toggle. Whitespace-only text is present. PDF previews render ordered
 opaque pages through the application PDF adapter, one page per repaint frame.
-The native reading wrapper scrolls, bounds overlay pages to 1000 points and keeps
-completed page nodes across ordinary repaints. The bounded scrolling PDF wrapper
-owns its panel background and outer border; the frame stays at the visible
-viewport edges while pages scroll. The overlay viewport has no outer shadow because
-native placement clips decoration to the viewport rectangle; restoring the shadow
-is tracked in [#1156](https://github.com/Orchestration-Maestro/maestro/issues/1156).
-Artifact padding/background remain separate.
+The native reading viewport scrolls, bounds overlay pages to 1000 points and keeps
+completed page nodes across ordinary repaints. The bounded PDF viewport owns its
+panel background and border; its fixed outer frame owns the two-layer shadow.
+Both stay at the visible viewport edges while pages scroll. Ancestor/canvas clipping
+and control holes constrain the shadow; a viewport without ancestor margin cannot
+paint its shadow in that direction. Artifact padding/background remain separate.
 Selecting text, replacing content or closing cancels unfinished page work.
 Modern spreadsheet previews share the artifact table owner: workbook-order sheet
 controls select retained native tables with formatted text, merged cells, rich
@@ -101,20 +100,27 @@ raw-markup or template interface. The host retains the complete returned owner.
 `ReadingPhase::Measure` stages a hidden candidate without replacing the published
 root. Placements supply actual canvas control sizes by identity.
 `reading_layout(id)` reads unclipped natural height and full slot rectangles in
-wrapper-local canvas points after bounded layout and native scroll clamping;
+frame-local canvas points after bounded layout and native viewport scroll clamping;
 `ReadingPhase::Publish` installs complete placement. Zero-sized final viewports
 are valid. Failed measurement/publication discards the candidate and retains the
 previous root, native selection, scroll and placement without remounting it.
-One shared transaction restores exact optional wrapper/slot style attributes and
-fractional scroll positions on both axes after measurement or failed publication.
+The host retains a fixed frame, its host-created scrolling viewport and the feature
+root beneath that viewport. The frame owns placement and external clipping; the
+viewport explicitly clips its own border box. The feature stylesheet owns decoration,
+not the growing root. One shared transaction restores exact optional
+frame/viewport/slot style attributes and fractional viewport scroll positions on both
+axes after measurement or failed publication.
 All restoration attempts run: the original operation error takes precedence,
 otherwise the first cleanup error is returned. A failed native restoration write
 cannot itself be guaranteed recovered. Publication applies the staged sizes and
 clamped offsets before committing placement. Feature roots must contain their trailing flow spacing within
 the measured root, rather than leaving an external margin outside its bounds.
 
-The full viewport, including typography, uses the existing canvas's separate
-axis scales exactly once. Native resize and scroll callbacks request repaint
+The frame, including typography, uses the existing canvas's separate
+axis scales exactly once. Its external clip intersects the ancestor clip with finite
+drawable canvas bounds and subtracts control holes, without clipping outer decoration
+to the frame's own rectangle. Zero-sized viewports remain empty. Measurement uses
+bounded auto-height frame/viewport placement, without assigning height to feature roots. Native resize and scroll callbacks request repaint
 through the shared event-subscription owner, with no root backedge, polling or
 new timer. Observer disconnection precedes callable release. Existing modal
 visibility is shared with attachments. Features paint controls at their full

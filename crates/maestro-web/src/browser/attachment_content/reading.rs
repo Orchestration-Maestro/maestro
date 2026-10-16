@@ -33,7 +33,7 @@ pub struct ReadingPlacement<'a> {
 pub struct ReadingLayout {
     /// Unclipped natural height.
     pub height: f32,
-    /// Full native slot rectangles in wrapper-local canvas points.
+    /// Full native slot rectangles relative to the fixed frame in canvas points.
     pub controls: Vec<(egui::Id, egui::Rect)>,
 }
 /// Feature factory returning the whole retained native owner.
