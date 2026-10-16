@@ -58,7 +58,11 @@ The selected installed view
 supplies the original-byte download header. A close activation calls the optional
 notification without changing selection or disposing views. Header controls run
 once per toolkit render pass, which can run more than once in one presentation
-when layout needs another pass.
+when layout needs another pass. The initial reservation uses the download and
+close components' sizes; close keeps its own right-edge rectangle even if a
+caller header overflows. Oversized caller controls are clipped until a later
+layout pass measures their width. Selected-tab scrolling is repeated when that
+measurement changes the available tab viewport.
 
 `set_collapsed` and `set_overlay` request repaint. Rendering reconciles native
 visibility. Empty, collapsed and disconnected panels paint no shell; selected

@@ -295,13 +295,16 @@ pub(crate) fn identity() -> egui::Id {
     ))
 }
 
+/// Default icon-control extent in logical points.
+pub(crate) const GHOST_SIZE: egui::Vec2 = egui::vec2(32., 32.);
+
 /// Draw an icon-only ghost control with the supplied hover and focus roles.
 pub(crate) fn ghost(
     ui: &mut egui::Ui,
     p: &BrandPresentation<'_>,
     name: &str,
 ) -> Result<egui::Response, AttachmentUiError> {
-    ghost_sized(ui, p, name, egui::vec2(32., 32.))
+    ghost_sized(ui, p, name, GHOST_SIZE)
 }
 /// Draw a ghost control with a centered sixteen-point glyph.
 pub(crate) fn ghost_sized(

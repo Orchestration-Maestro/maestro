@@ -1024,6 +1024,7 @@ fn artifact_panel_keyboard_traverses_tabs_header_then_close() {
                 ("b.zip".into(), "b.zip".into()),
             ],
             active: Some("a.zip".into()),
+            close: true,
             ..Default::default()
         });
         harness
@@ -1033,10 +1034,10 @@ fn artifact_panel_keyboard_traverses_tabs_header_then_close() {
         let output = harness.draw().unwrap();
         let download = control(&output, 1);
         let close = control(&output, 0);
-        if max_passes == 2 {
-            assert!((close.x - (harness.frame.size.x - 16.)).abs() < 1.);
-        }
+        assert!((close.x - (harness.frame.size.x - 16.)).abs() < 1.);
         assert!(download.x < close.x);
+        harness.click(close);
+        assert_eq!(harness.closed.get(), 1);
         for index in 0..4 {
             let mut current = harness.draw().unwrap();
             for pressed in [true, false] {
@@ -1074,7 +1075,7 @@ fn artifact_panel_keyboard_traverses_tabs_header_then_close() {
 
 /// Header evaluation follows toolkit passes, without a separate measuring call.
 #[test]
-fn artifact_panel_header_runs_once_per_pass_and_width_cache_is_local() {
+fn artifact_panel_header_runs_once_per_pass_and_sizing_is_local() {
     let mut harness = Harness::new(&Input {
         entries: vec![("a.zip".into(), "a.zip".into())],
         active: Some("a.zip".into()),
@@ -1091,13 +1092,13 @@ fn artifact_panel_header_runs_once_per_pass_and_width_cache_is_local() {
         .unwrap()
         .borrow_mut()
         .shift_remove("Download");
-    for changed in [true, false] {
+    for _ in 0..2 {
         language.diagnostics.borrow_mut().clear();
         let before = harness.frame.context.cumulative_pass_nr();
         let output = harness.draw().unwrap();
         let passes = harness.frame.context.cumulative_pass_nr() - before;
         assert_eq!(language.diagnostics.borrow().len() as u64, passes);
-        assert_eq!(passes, if changed { 2 } else { 1 });
+        assert_eq!(passes, 1);
         assert!((control(&output, 0).x - (harness.frame.size.x - 16.)).abs() < 1.);
     }
     let mut other = Harness::new(&Input {
@@ -1109,4 +1110,39 @@ fn artifact_panel_header_runs_once_per_pass_and_width_cache_is_local() {
     let before = harness.frame.context.cumulative_pass_nr();
     harness.draw().unwrap();
     assert_eq!(harness.frame.context.cumulative_pass_nr() - before, 1);
+}
+
+/// Cold overflow uses the actual remaining viewport, including a changed header width.
+#[test]
+fn artifact_panel_cold_selection_centers_after_header_sizing() {
+    for max_passes in [1, 2] {
+        for warm_empty_header in [false, true] {
+            let entries: Vec<_> = (0..25)
+                .map(|index| {
+                    let name = format!("long-artifact-name-{index}.zip");
+                    (name.clone(), name)
+                })
+                .collect();
+            let harness = Harness::new(&Input {
+                entries,
+                active: (!warm_empty_header).then(|| "long-artifact-name-12.zip".into()),
+                ..Default::default()
+            });
+            harness.frame.context.options_mut(|options| {
+                options.max_passes = max_passes.try_into().unwrap();
+            });
+            if warm_empty_header {
+                harness.draw().unwrap();
+                harness.draw().unwrap();
+                harness.caller.show_artifact("long-artifact-name-12.zip");
+            }
+            let mut output = harness.draw().unwrap();
+            for _ in 0..120 {
+                output = harness.draw().unwrap();
+            }
+            let target = tab(&output, "long-artifact-name-12.zip");
+            // The source centers within the tab viewport, not the whole panel.
+            assert!((target.center().x - 164.).abs() < 1., "{target:?}");
+        }
+    }
 }

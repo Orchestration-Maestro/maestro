@@ -4,7 +4,7 @@ use crate::browser::attachment_content::*;
 use std::{cell::RefCell, rc::Rc};
 /// Byte-only controlled effect boundary.
 #[derive(Default)]
-struct Host(RefCell<Vec<(String, String, Vec<u8>)>>);
+pub(crate) struct Host(RefCell<Vec<(String, String, Vec<u8>)>>);
 impl AttachmentHost for Host {
     fn download_bytes(
         &self,
@@ -36,7 +36,7 @@ impl AttachmentHost for Host {
         Ok(())
     }
     fn set_overlay(&self, _: egui::Id, _: bool) -> Result<(), AttachmentUiError> {
-        unreachable!()
+        Ok(())
     }
     fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
         unreachable!()
@@ -116,7 +116,7 @@ fn download_control_preserves_original_bytes_and_slice_bounds() {
     }
 }
 /// English-only host for the byte-control title.
-struct Language;
+pub(crate) struct Language;
 impl crate::LanguageHost for Language {
     fn stored_language(&self) -> Result<Option<String>, crate::I18nError> {
         Ok(None)

@@ -1,6 +1,6 @@
 //! Panel shell, ordered tabs and selected-view drawing.
 use super::{ArtifactPresentation, ArtifactView, ArtifactsPanel, AttachmentUiError, with_element};
-use crate::browser::attachment_content::{color, ghost, points, style};
+use crate::browser::attachment_content::{GHOST_SIZE, color, ghost, points, style};
 impl ArtifactsPanel {
     /// Draw retained views using the caller's current map and selected filename.
     /// # Errors
@@ -96,22 +96,25 @@ impl ArtifactsPanel {
             egui::pos2(bounds.right(), bounds.top() + 40.),
         );
         let width_id = self.id.with("controls-width");
+        let spacing = points(view.presentation.spacing["xs"]);
         let width = ui
             .ctx()
             .data_mut(|data| data.get_temp::<f32>(width_id))
-            .unwrap_or(32.);
+            .unwrap_or(GHOST_SIZE.x + spacing + crate::components::download_button::SIZE.x);
         let controls_left = (header.right() - width).max(header.left());
         let mut tab_ui = ui.new_child(
             egui::UiBuilder::new()
                 .max_rect(header.with_max_x(controls_left))
                 .layout(egui::Layout::left_to_right(egui::Align::Center)),
         );
+        let scroll = self.scroll.borrow().clone();
         let clicked = tabs(self, &mut tab_ui, names, active, view)?;
-        let close = self.controls(ui, header.with_min_x(controls_left), active, view)?;
-        let measured = close.rect.right() - controls_left;
+        let (close, measured) =
+            self.controls(ui, header.with_min_x(controls_left), active, view)?;
         if (measured - width).abs() > 0.5 {
             ui.ctx()
                 .data_mut(|data| data.insert_temp(width_id, measured));
+            *self.scroll.borrow_mut() = scroll;
             ui.ctx()
                 .request_discard("artifact header controls changed width");
         }
@@ -145,20 +148,30 @@ impl ArtifactsPanel {
         rect: egui::Rect,
         active: Option<&str>,
         view: ArtifactView<'_>,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<(egui::Response, f32), AttachmentUiError> {
+        let gap = points(view.presentation.spacing["xs"]);
+        let close_rect = rect.with_min_x((rect.right() - GHOST_SIZE.x).max(rect.left()));
+        let header_rect = rect.with_max_x((close_rect.left() - gap).max(rect.left()));
         let mut bar = ui.new_child(
             egui::UiBuilder::new()
-                .max_rect(rect)
+                .max_rect(header_rect)
                 .layout(egui::Layout::left_to_right(egui::Align::Center)),
         );
-        bar.spacing_mut().item_spacing.x = points(view.presentation.spacing["xs"]);
+        bar.set_clip_rect(header_rect.intersect(ui.clip_rect()));
+        bar.spacing_mut().item_spacing.x = gap;
         self.header(&mut bar, active, view)?;
-        let close = ghost(&mut bar, view.presentation, "X")?;
+        let measured = bar.min_rect().width() + gap + GHOST_SIZE.x;
+        let mut close_ui = ui.new_child(
+            egui::UiBuilder::new()
+                .max_rect(close_rect)
+                .layout(egui::Layout::left_to_right(egui::Align::Center)),
+        );
+        let close = ghost(&mut close_ui, view.presentation, "X")?;
         let title = view.i18n.text("Close artifacts")?;
         close.widget_info(|| {
             egui::WidgetInfo::labeled(egui::WidgetType::Button, bar.is_enabled(), &title)
         });
-        Ok(close.on_hover_text(title))
+        Ok((close.on_hover_text(title), measured))
     }
     /// Draw opaque panel paint and two visible shadow casters, never a backdrop.
     fn background(
@@ -273,3 +286,6 @@ fn tab_button(
     })
     .inner
 }
+
+#[cfg(test)]
+mod tests;
