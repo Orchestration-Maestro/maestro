@@ -15,7 +15,7 @@ impl Launch {
     /// Builds a native command, preserving literal argv unless shell text is verbatim.
     ///
     /// # Errors
-    /// Returns `NotFound` when a Windows extensionless command cannot be resolved.
+    /// Returns `NotFound` when a Windows command cannot be resolved.
     pub fn command(self) -> std::io::Result<std::process::Command> {
         #[cfg(windows)]
         let executable = native_windows_executable(&self.executable)
@@ -70,15 +70,15 @@ fn resolve_windows_executable(
     exists: impl Fn(&std::path::Path) -> bool,
 ) -> Option<std::path::PathBuf> {
     let name = command.rsplit(['\\', '/']).next()?;
-    if name.contains('.') {
-        return Some(command.into());
-    }
     let candidates = if command.contains(['\\', '/', ':']) {
         vec![std::path::PathBuf::from(command)]
     } else {
         directories.iter().map(|dir| dir.join(command)).collect()
     };
     candidates.into_iter().find_map(|candidate| {
+        if name.contains('.') {
+            return exists(&candidate).then_some(candidate);
+        }
         extensions
             .split(';')
             .filter(|ext| !ext.is_empty())

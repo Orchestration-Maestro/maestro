@@ -26,9 +26,18 @@ fn extensionless_commands_follow_directory_and_extension_order() {
             .contains(&p.to_path_buf())),
         None
     );
+}
+
+#[test]
+fn explicit_script_names_prefer_current_directory_over_path_decoys() {
+    let directories = [PathBuf::from("current"), PathBuf::from("bin")];
+    let current = Path::new("current").join("wrapper.cmd");
+    let decoy = Path::new("bin").join("wrapper.cmd");
     assert_eq!(
-        resolve_windows_executable("custom.CMD", &directories, ".EXE", |_| unreachable!()),
-        Some(PathBuf::from("custom.CMD"))
+        resolve_windows_executable("wrapper.cmd", &directories, ".EXE", |p| {
+            p == current || p == decoy
+        }),
+        Some(current)
     );
 }
 
