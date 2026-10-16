@@ -1,0 +1,383 @@
+{
+  "common": {
+    "model": {
+      "id": "meta.llama-controlled",
+      "name": "Controlled text",
+      "api": "bedrock-converse-stream",
+      "provider": "amazon-bedrock",
+      "baseUrl": "",
+      "reasoning": false,
+      "input": [
+        "text"
+      ],
+      "cost": {
+        "input": 1,
+        "output": 2,
+        "cacheRead": 3,
+        "cacheWrite": 4
+      },
+      "contextWindow": 8192,
+      "maxTokens": 1024
+    },
+    "context": {
+      "messages": [
+        {
+          "role": "user",
+          "content": "question",
+          "timestamp": 1
+        }
+      ]
+    }
+  },
+  "rows": [
+    {
+      "input": {
+        "id": "force_absent",
+        "test": "bedrock_force_http1_changes_tls_protocol",
+        "env": {}
+      },
+      "observations": {
+        "origin": [
+          {
+            "sni": "localhost",
+            "protocol": "h2"
+          }
+        ],
+        "proxy": [],
+        "decoy": 0
+      },
+      "returned": {
+        "counts": {
+          "payload": 1,
+          "response": 0
+        },
+        "events": [
+          "error"
+        ],
+        "result": {
+          "content": [],
+          "stopReason": "error"
+        }
+      }
+    },
+    {
+      "input": {
+        "id": "force_empty",
+        "test": "bedrock_force_http1_changes_tls_protocol",
+        "env": {
+          "AWS_BEDROCK_FORCE_HTTP1": ""
+        }
+      },
+      "observations": {
+        "origin": [
+          {
+            "sni": "localhost",
+            "protocol": "h2"
+          }
+        ],
+        "proxy": [],
+        "decoy": 0
+      },
+      "returned": {
+        "counts": {
+          "payload": 1,
+          "response": 0
+        },
+        "events": [
+          "error"
+        ],
+        "result": {
+          "content": [],
+          "stopReason": "error"
+        }
+      }
+    },
+    {
+      "input": {
+        "id": "force_zero",
+        "test": "bedrock_force_http1_changes_tls_protocol",
+        "env": {
+          "AWS_BEDROCK_FORCE_HTTP1": "0"
+        }
+      },
+      "observations": {
+        "origin": [
+          {
+            "sni": "localhost",
+            "protocol": "h2"
+          }
+        ],
+        "proxy": [],
+        "decoy": 0
+      },
+      "returned": {
+        "counts": {
+          "payload": 1,
+          "response": 0
+        },
+        "events": [
+          "error"
+        ],
+        "result": {
+          "content": [],
+          "stopReason": "error"
+        }
+      }
+    },
+    {
+      "input": {
+        "id": "force_word",
+        "test": "bedrock_force_http1_changes_tls_protocol",
+        "env": {
+          "AWS_BEDROCK_FORCE_HTTP1": "true"
+        }
+      },
+      "observations": {
+        "origin": [
+          {
+            "sni": "localhost",
+            "protocol": "h2"
+          }
+        ],
+        "proxy": [],
+        "decoy": 0
+      },
+      "returned": {
+        "counts": {
+          "payload": 1,
+          "response": 0
+        },
+        "events": [
+          "error"
+        ],
+        "result": {
+          "content": [],
+          "stopReason": "error"
+        }
+      }
+    },
+    {
+      "input": {
+        "id": "force_one",
+        "test": "bedrock_force_http1_changes_tls_protocol",
+        "env": {
+          "AWS_BEDROCK_FORCE_HTTP1": "1"
+        }
+      },
+      "observations": {
+        "origin": [
+          {
+            "sni": "localhost",
+            "protocol": "HTTP/1.1",
+            "requestLine": "POST /model/meta.llama-controlled/converse-stream HTTP/1.1"
+          }
+        ],
+        "proxy": [],
+        "decoy": 0
+      },
+      "returned": {
+        "counts": {
+          "payload": 1,
+          "response": 1
+        },
+        "events": [
+          "start",
+          "text_start",
+          "text_delta",
+          "text_end",
+          "done"
+        ],
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "controlled answer"
+            }
+          ],
+          "stopReason": "stop"
+        }
+      }
+    },
+    {
+      "input": {
+        "id": "http_tunnel",
+        "test": "bedrock_https_destination_routes_use_selected_proxy",
+        "env": {
+          "HTTPS_PROXY": "HTTP_PROXY_URL",
+          "HTTP_PROXY": "DECOY_URL"
+        }
+      },
+      "observations": {
+        "origin": [
+          {
+            "sni": "localhost",
+            "protocol": "HTTP/1.1",
+            "requestLine": "POST /model/meta.llama-controlled/converse-stream HTTP/1.1"
+          }
+        ],
+        "proxy": [
+          {
+            "secure": false,
+            "target": "$ORIGIN_AUTHORITY"
+          }
+        ],
+        "decoy": 0
+      },
+      "returned": {
+        "counts": {
+          "payload": 1,
+          "response": 1
+        },
+        "events": [
+          "start",
+          "text_start",
+          "text_delta",
+          "text_end",
+          "done"
+        ],
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "controlled answer"
+            }
+          ],
+          "stopReason": "stop"
+        }
+      }
+    },
+    {
+      "input": {
+        "id": "https_tunnel",
+        "test": "bedrock_https_destination_routes_use_selected_proxy",
+        "env": {
+          "HTTPS_PROXY": "HTTPS_PROXY_URL",
+          "HTTP_PROXY": "DECOY_URL"
+        }
+      },
+      "observations": {
+        "origin": [
+          {
+            "sni": "localhost",
+            "protocol": "HTTP/1.1",
+            "requestLine": "POST /model/meta.llama-controlled/converse-stream HTTP/1.1"
+          }
+        ],
+        "proxy": [
+          {
+            "secure": true,
+            "target": "$ORIGIN_AUTHORITY"
+          }
+        ],
+        "decoy": 0
+      },
+      "returned": {
+        "counts": {
+          "payload": 1,
+          "response": 1
+        },
+        "events": [
+          "start",
+          "text_start",
+          "text_delta",
+          "text_end",
+          "done"
+        ],
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "controlled answer"
+            }
+          ],
+          "stopReason": "stop"
+        }
+      }
+    },
+    {
+      "input": {
+        "id": "http_only_decoy",
+        "test": "bedrock_https_destination_routes_use_selected_proxy",
+        "env": {
+          "HTTP_PROXY": "DECOY_URL"
+        }
+      },
+      "observations": {
+        "origin": [
+          {
+            "sni": "localhost",
+            "protocol": "HTTP/1.1",
+            "requestLine": "POST /model/meta.llama-controlled/converse-stream HTTP/1.1"
+          }
+        ],
+        "proxy": [],
+        "decoy": 0
+      },
+      "returned": {
+        "counts": {
+          "payload": 1,
+          "response": 1
+        },
+        "events": [
+          "start",
+          "text_start",
+          "text_delta",
+          "text_end",
+          "done"
+        ],
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "controlled answer"
+            }
+          ],
+          "stopReason": "stop"
+        }
+      }
+    },
+    {
+      "input": {
+        "id": "destination_excluded",
+        "test": "bedrock_https_destination_routes_use_selected_proxy",
+        "env": {
+          "HTTPS_PROXY": "HTTP_PROXY_URL",
+          "NO_PROXY": "localhost"
+        }
+      },
+      "observations": {
+        "origin": [
+          {
+            "sni": "localhost",
+            "protocol": "HTTP/1.1",
+            "requestLine": "POST /model/meta.llama-controlled/converse-stream HTTP/1.1"
+          }
+        ],
+        "proxy": [],
+        "decoy": 0
+      },
+      "returned": {
+        "counts": {
+          "payload": 1,
+          "response": 1
+        },
+        "events": [
+          "start",
+          "text_start",
+          "text_delta",
+          "text_end",
+          "done"
+        ],
+        "result": {
+          "content": [
+            {
+              "type": "text",
+              "text": "controlled answer"
+            }
+          ],
+          "stopReason": "stop"
+        }
+      }
+    }
+  ]
+}
