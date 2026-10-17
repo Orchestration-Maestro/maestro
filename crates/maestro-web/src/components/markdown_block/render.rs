@@ -355,7 +355,7 @@ impl Writer<'_, '_> {
             if formulas.is_empty() {
                 self.inline(children, None, out);
             } else {
-                self.piece(scope, 0..scope.text().len(), (&formulas, false, true), out);
+                self.piece(scope, 0..scope.text().len(), (&formulas, false, false), out);
             }
         } else {
             self.inline(children, None, out);

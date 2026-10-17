@@ -286,6 +286,49 @@ mod tests {
         check("maestro.root().querySelector('.katex') !== null");
     }
 
+    /// Block-looking label punctuation stays literal beside a formula inside its anchor.
+    #[wasm_bindgen]
+    pub fn markdown_formula_labels_use_inline_grammar() {
+        let mut surface = Surface::new();
+        for (label, href, prefix) in [
+            ("1. $x$", "#equation", "1. "),
+            ("# $x$", "u", "# "),
+            ("> $x$", "u", "> "),
+            ("# Results $x$", "/docs", "# Results "),
+            ("$a[b$ c]", "/docs", ""),
+            ("a $x$\nb", "/docs", "a "),
+            (r"\[ $x$ \]", "/docs", "[ "),
+            (r"\\[ $x$ ]", "/docs", r"\[ "),
+            (r"\\\[ $x$ \]", "/docs", r"\[ "),
+            (" $x$ ", "/docs", " "),
+        ] {
+            let block = surface.markdown(&format!("[{label}]({href} \"tip\")"));
+            publish("labelHref", &href.into());
+            publish("labelPrefix", &prefix.into());
+            assert_eq!(
+                js("maestro.root().querySelectorAll('a').length").as_f64(),
+                Some(1.0),
+                "label {label}"
+            );
+            check("maestro.root().querySelector('a').getAttribute('href') === labelHref");
+            check("maestro.root().querySelector('a').title === 'tip'");
+            check("maestro.root().querySelector('a').textContent.startsWith(labelPrefix)");
+            check("maestro.root().querySelectorAll('a .katex').length === 1");
+            check("maestro.root().querySelector('a h1, a ol, a ul, a blockquote') === null");
+            if label == "$a[b$ c]" {
+                check("maestro.root().querySelector('a').textContent.endsWith(' c]')");
+            }
+            if label == " $x$ " {
+                check("maestro.root().querySelector('a').firstChild.textContent === ' '");
+                check("maestro.root().querySelector('a').lastChild.textContent === ' '");
+            }
+            if label.contains('\n') {
+                check("maestro.root().querySelector('a').textContent.endsWith('\\nb')");
+            }
+            drop(block);
+        }
+    }
+
     /// Resolved shortcut and collapsed references retain their identity while labels render math.
     #[wasm_bindgen]
     pub fn markdown_formula_labels_keep_reference_identity() {

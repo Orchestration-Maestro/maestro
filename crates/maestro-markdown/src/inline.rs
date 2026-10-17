@@ -5,6 +5,9 @@ use std::{collections::HashMap, ops::Range};
 /// Native scope identity: start, end and whether this is an authored link label.
 pub(crate) type ScopeKey = (usize, usize, bool);
 
+/// Inline HTML whose generated extent identifies an opaque atom or label boundary.
+const ATOM: &str = "<m></m>";
+
 /// A document's inline scopes, indexed once after mapped link selection.
 pub struct InlineContext<'a> {
     /// Container and label scopes keyed by native extent and label classification.
@@ -14,6 +17,8 @@ pub struct InlineContext<'a> {
 pub struct InlineScope<'a> {
     /// Authored container bytes and their native provenance.
     source: &'a ScopeSource,
+    /// Authored link labels admit only inline grammar.
+    label: bool,
     /// Native opaque operands, in authored order.
     pub operands: Vec<(Range<usize>, &'a Node)>,
     /// Code, image, HTML and autolink barriers, including those inside authored labels.
@@ -61,6 +66,7 @@ impl<'a> InlineContext<'a> {
         if let Some(source) = document.scopes.get(&(range.start, range.end, label)) {
             let mut scope = InlineScope {
                 source,
+                label,
                 operands: Vec::new(),
                 opaque: Vec::new(),
             };
@@ -152,7 +158,9 @@ impl<'a> InlineScope<'a> {
             .map(|(id, span)| (span.clone(), InlineAtom::Opaque(id)))
             .collect();
         let mut next = 0;
-        for (span, node) in &self.operands {
+        for (span, node) in self.within(&range) {
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| work.operand_examinations += 1);
             while opaque.get(next).is_some_and(|atom| atom.end <= span.start) {
                 next += 1;
             }
@@ -162,25 +170,59 @@ impl<'a> InlineScope<'a> {
             }
         }
         selected.sort_by_key(|(span, _)| span.start);
-        let mut generated = String::new();
+        // An inert inline atom prevents block recognition at the label start.
+        let mut generated = if self.label {
+            ATOM.to_owned()
+        } else {
+            String::new()
+        };
         let mut slots = Vec::new();
         let mut atoms = Vec::new();
         let mut end = range.start;
         for (span, atom) in selected {
             generated.push_str(&self.text()[end..span.start]);
             let start = generated.len();
-            generated.push_str("<m></m>");
+            generated.push_str(ATOM);
             slots.push(start..generated.len());
             atoms.push(atom);
             end = span.end;
         }
         generated.push_str(&self.text()[end..range.end]);
-        let mut document = crate::parse::native(generated, None);
-        lower(&mut document.nodes, &slots);
         InlineRun {
-            nodes: document.nodes,
+            nodes: self.nodes(generated, &slots),
             atoms,
         }
+    }
+
+    /// Select source-ordered operands by start offset before examining overlaps.
+    fn within(&self, range: &Range<usize>) -> &[(Range<usize>, &'a Node)] {
+        let boundary = |offset| {
+            self.operands.partition_point(|(span, _)| {
+                #[cfg(test)]
+                crate::tests::WORK.with_borrow_mut(|work| work.operand_examinations += 1);
+                span.start < offset
+            })
+        };
+        &self.operands[boundary(range.start)..boundary(range.end)]
+    }
+
+    /// Preserve label edge spaces inside paragraph grammar, then remove generated boundaries.
+    fn nodes(&self, mut generated: String, slots: &[Range<usize>]) -> Vec<Node> {
+        let end = generated.len();
+        if self.label {
+            generated.push_str(ATOM);
+        }
+        let mut document = crate::parse::native(generated, None);
+        if self.label
+            && let Some(Node {
+                kind: Kind::Paragraph(children),
+                ..
+            }) = document.nodes.first_mut()
+        {
+            children.retain(|node| node.range.start >= ATOM.len() && node.range.end <= end);
+        }
+        lower(&mut document.nodes, slots);
+        document.nodes
     }
 }
 /// Decode only generated spans, never authored marker-looking HTML.

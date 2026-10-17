@@ -32,7 +32,9 @@ syntax engine and containing-modal identity and is never retained.
 Markdown parsing and scoped inline interpretation use the shared
 [Markdown owner](../markdown.md), reached through `maestro_app::markdown`.
 One document-scoped context retains resolved operands and original label scopes;
-formula atoms precede ordinary inline grammar without resolving rewritten labels. Tag-like text outside code and angle autolinks is
+formula atoms precede ordinary inline grammar without resolving rewritten labels.
+Link labels use inline-only grammar, keeping list, heading and quote punctuation literal.
+Tag-like text outside code and angle autolinks is
 shown literally when escaping is on. Formulas written with `$…$`, `\(…\)`,
 `$$…$$` and `\[…\]` render through the math library as HTML with errors shown
 inline; display delimiters open a block in paragraphs, quotes and loose items,

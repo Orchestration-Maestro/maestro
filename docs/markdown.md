@@ -10,9 +10,10 @@ resolved operands and opaque ranges without parsing a fragment for admission.
 `InlineScope::interpret` applies native inline grammar locally with caller spans
 and resolved operands as typed atoms. The caller supplies ordered, disjoint spans
 within the selected UTF-8 source range. Link hrefs, titles and reference identities
-remain those of the original document; label interpretation does not resolve them
-again. Captured table-pipe provenance also keeps mapped URLs separate from their
-neighboring inline source.
+remain those of the original document; label interpretation uses inline-only grammar
+and does not resolve them again. Subrange lookup selects source-ordered operands by
+start offset rather than scanning the entire scope. Captured table-pipe provenance
+also keeps mapped URLs separate from their neighboring inline source.
 
 Parsing preserves native structure before extended links are selected. Call
 `autolinks(&mut document)` separately to map bare URL, www and email spans.
