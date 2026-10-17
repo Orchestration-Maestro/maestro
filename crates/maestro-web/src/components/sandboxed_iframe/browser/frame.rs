@@ -31,7 +31,7 @@ impl Owner {
                 consumers,
             )
         })?;
-        let html = self.prepare_html_document(
+        let html = Self::prepare_html_document(
             id,
             code,
             &providers,

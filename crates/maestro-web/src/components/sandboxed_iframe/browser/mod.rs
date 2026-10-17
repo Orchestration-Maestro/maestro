@@ -97,8 +97,7 @@ impl SandboxIframe {
         providers: &[Provider],
         options: Option<PrepareHtmlOptions>,
     ) -> Result<String, DiagnosticErrorInfo> {
-        self.owner
-            .prepare_html_document(sandbox_id, user_code, providers, options)
+        Owner::prepare_html_document(sandbox_id, user_code, providers, options)
     }
     /// Replace the retained load, registering before the frame can emit messages.
     /// # Errors
@@ -182,7 +181,6 @@ impl Owner {
     /// # Errors
     /// Returns the provider or native serialization diagnostic.
     pub fn prepare_html_document(
-        &self,
         sandbox_id: &str,
         user_code: &str,
         providers: &[Provider],
