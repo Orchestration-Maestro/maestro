@@ -3,6 +3,7 @@
 use std::fs::File;
 use std::io::{self, Read, Seek, SeekFrom};
 use std::process::{Child, ChildStderr, ChildStdin, ChildStdout, ExitStatus, Output};
+use std::sync::MutexGuard;
 
 use crate::TestProcessError;
 
@@ -95,13 +96,19 @@ pub struct CheckedChild {
     child: Child,
     /// Full libtest identity the launch selected.
     test: String,
+    /// Keeps sibling launches from forking while this child's pipes are live.
+    spawning: Option<MutexGuard<'static, ()>>,
 }
 
 impl CheckedChild {
     /// Read only the prologue from the child's standard output and prove it.
     ///
     /// On failure the direct child is closed and reaped.
-    pub(crate) fn start(test: &str, mut child: Child) -> Result<Self, TestProcessError> {
+    pub(crate) fn start(
+        test: &str,
+        mut child: Child,
+        spawning: MutexGuard<'static, ()>,
+    ) -> Result<Self, TestProcessError> {
         let stdin = child.stdin.take();
         let stderr = child.stderr.take();
         let mut seen = Vec::new();
@@ -143,6 +150,7 @@ impl CheckedChild {
             stderr,
             child,
             test: test.to_owned(),
+            spawning: Some(spawning),
         })
     }
 
@@ -172,9 +180,11 @@ impl CheckedChild {
     /// Fails when the operating system cannot wait for the child.
     pub fn wait(&mut self) -> Result<ExitStatus, TestProcessError> {
         drop(self.stdin.take());
-        self.child.wait().map_err(|error| {
+        let status = self.child.wait().map_err(|error| {
             TestProcessError::new(&self.test, "cannot wait for the child").caused_by(error)
-        })
+        });
+        drop(self.spawning.take());
+        status
     }
 
     /// Close the child's input and collect its exit status and the bytes the caller has not

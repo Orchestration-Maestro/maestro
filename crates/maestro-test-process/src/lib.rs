@@ -16,6 +16,7 @@ mod error;
 mod legacy;
 mod proof;
 mod selection;
+mod spawn_lock;
 mod test_process;
 
 pub use error::TestProcessError;

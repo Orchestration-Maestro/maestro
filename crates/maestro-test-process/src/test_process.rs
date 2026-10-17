@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Output, Stdio};
 
 use crate::proof::{check_file, check_output};
-use crate::{CheckedChild, TestProcessError, selection};
+use crate::{CheckedChild, TestProcessError, selection, spawn_lock};
 
 /// Variable the coverage runtime reads; kept when the environment is cleared.
 const PROFILE: &str = "LLVM_PROFILE_FILE";
@@ -252,6 +252,7 @@ impl TestProcess {
     /// Fails when the test is not eligible, the child cannot run, or its output does not
     /// begin with the start prologue.
     pub fn output(mut self) -> Result<Output, TestProcessError> {
+        let _spawning = spawn_lock::acquire();
         let output = self.run_captured()?;
         check_output(&self.name, &output)?;
         Ok(output)
@@ -266,6 +267,7 @@ impl TestProcess {
     ///
     /// As [`TestProcess::output`], and when the replay cannot be written.
     pub fn status(mut self) -> Result<ExitStatus, TestProcessError> {
+        let _spawning = spawn_lock::acquire();
         self.stdin.get_or_insert_with(Stdio::inherit);
         let output = self.run_captured()?;
         check_output(&self.name, &output)?;
@@ -288,6 +290,7 @@ impl TestProcess {
     ///
     /// As [`TestProcess::output`], and when the file cannot be shared or inspected.
     pub fn status_with_stdout(mut self, file: File) -> Result<ExitStatus, TestProcessError> {
+        let _spawning = spawn_lock::acquire();
         let inspect = file.try_clone().map_err(|error| {
             self.failure("cannot share the standard output file")
                 .caused_by(error)
@@ -313,12 +316,13 @@ impl TestProcess {
     /// Fails when the test is not eligible, the child cannot start, or it does not begin
     /// with the start prologue.
     pub fn spawn(mut self) -> Result<CheckedChild, TestProcessError> {
+        let spawning = spawn_lock::acquire();
         self.stdout.get_or_insert_with(Stdio::piped);
         let child = self.prepare()?.spawn().map_err(|error| {
             self.failure("cannot start the selected test")
                 .caused_by(error)
         })?;
-        CheckedChild::start(&self.name, child)
+        CheckedChild::start(&self.name, child, spawning)
     }
 
     /// Run through the caller's own invoker and prove the returned output started the test.
@@ -337,6 +341,7 @@ impl TestProcess {
         F: FnOnce(&[String]) -> Result<Output, E>,
         E: std::error::Error + 'static,
     {
+        let _spawning = spawn_lock::acquire();
         let plain = self.envs.is_empty()
             && self.dir.is_none()
             && self.shell.is_none()
