@@ -309,12 +309,3 @@ Integration tests in `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro
 modules stay in their existing directories. When top-level integration-test
 sources exist, the conventions check requires `autotests = false` and one
 runnable `integration` target for these crates.
-
-Exact child runs in these crates use a module-qualified literal test name or the
-shared `child_process::selector`, with `child_process::assert_executed` or an
-asserted stdout success line. The bounded syntax check recognizes `.args` arrays,
-local selection bindings, and `assert!(String::from_utf8_lossy(&output.stdout)
-.contains(...))` with either a literal `test module::name ... ok` or
-`format!("test {name} ... ok")`. The shared models `tests/support/child_process.rs`
-owner is exempt. Macros are not expanded; aliases, control-flow guarantees and
-output-to-process association still require review.
