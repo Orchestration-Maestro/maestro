@@ -42,6 +42,11 @@ const WIDTH_POLICY: &[(&str, usize)] = &[
     ("\u{ff76}\u{ff9e}", 2),
     ("\u{a9}", 1),
     ("\u{a9}\u{fe0f}", 2),
+    ("\u{25fd}", 2),
+    ("\u{25fe}", 2),
+    ("\u{2b1b}", 2),
+    ("\u{2b1c}", 2),
+    ("\u{2b50}", 2),
 ];
 
 /// A recognized escape: its text and byte length.

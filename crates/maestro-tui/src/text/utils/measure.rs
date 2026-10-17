@@ -62,6 +62,22 @@ fn trailing_cells(scalar: char) -> usize {
     }
 }
 
+/// Whether a cluster can be an emoji at all: its first scalar lies in an emoji or symbol block,
+/// or it carries an emoji presentation selector, or it spans more than two UTF-16 units.
+/// This cheap check spares the emoji expression, by far the costliest test, for other text.
+fn could_be_emoji(segment: &str) -> bool {
+    matches!(
+        segment.chars().next(),
+        Some(
+            '\u{1f000}'..='\u{1fbff}'
+            | '\u{2300}'..='\u{23ff}'
+            | '\u{2600}'..='\u{27bf}'
+            | '\u{2b50}'..='\u{2b55}',
+        )
+    ) || segment.contains('\u{fe0f}')
+        || segment.chars().map(char::len_utf16).sum::<usize>() > 2
+}
+
 /// Cells of one grapheme cluster, counting a tab as zero.
 pub(super) fn grapheme_cells(segment: &str) -> usize {
     let mut scalars = segment.chars();
@@ -73,7 +89,7 @@ pub(super) fn grapheme_cells(segment: &str) -> usize {
     if matches(&ZERO_WIDTH, segment) {
         return 0;
     }
-    if matches(&RGI_EMOJI, segment) {
+    if could_be_emoji(segment) && matches(&RGI_EMOJI, segment) {
         return 2;
     }
     let skipped = LEADING_NON_PRINTING
