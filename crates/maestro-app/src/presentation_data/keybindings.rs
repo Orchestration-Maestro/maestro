@@ -369,7 +369,7 @@ impl KeybindingsManager {
     #[must_use]
     pub fn new(user_bindings: KeybindingsConfig, config_path: Option<String>) -> Self {
         #[cfg(target_arch = "wasm32")]
-        let _ = config_path;
+        drop(config_path);
         Self {
             manager: TuiKeybindingsManager::new(KEYBINDINGS.clone(), user_bindings),
             #[cfg(not(target_arch = "wasm32"))]

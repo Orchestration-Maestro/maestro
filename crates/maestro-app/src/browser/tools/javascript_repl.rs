@@ -7,6 +7,7 @@ use crate::browser::components::sandboxed_iframe::{
 };
 use base64::Engine;
 use maestro_agent::{AgentTool, AgentToolResult, SharedAgentTool};
+use maestro_models::SharedHandle;
 use maestro_models::{Cancellation, DiagnosticErrorInfo, TextContent, Tool, UserBlock};
 use maestro_text::is_whitespace_scalar;
 use serde::{Deserialize, Serialize};
@@ -113,13 +114,13 @@ fn format_output<V: SandboxValue>(
 
 /// Native retained factory of runtime providers.
 #[cfg(not(target_arch = "wasm32"))]
-pub type RuntimeProvidersFactory<V> = Arc<
+pub type RuntimeProvidersFactory<V> = SharedHandle<
     dyn Fn() -> Result<Vec<Arc<dyn SandboxRuntimeProvider<V>>>, DiagnosticErrorInfo> + Send + Sync,
 >;
 /// Browser-local retained factory of runtime providers.
 #[cfg(target_arch = "wasm32")]
 pub type RuntimeProvidersFactory<V> =
-    Arc<dyn Fn() -> Result<Vec<Arc<dyn SandboxRuntimeProvider<V>>>, DiagnosticErrorInfo>>;
+    SharedHandle<dyn Fn() -> Result<Vec<Arc<dyn SandboxRuntimeProvider<V>>>, DiagnosticErrorInfo>>;
 /// Required arguments for execution.
 #[derive(Deserialize, Serialize)]
 pub struct JavaScriptReplParams {
@@ -152,20 +153,20 @@ pub struct JavaScriptReplTool<V: SandboxValue = serde_json::Value> {
     /// Shared tool registration handle.
     pub tool: SharedAgentTool,
     /// Factory read afresh for descriptions and execution.
-    pub runtime_providers_factory: Arc<RwLock<Option<RuntimeProvidersFactory<V>>>>,
+    pub runtime_providers_factory: SharedHandle<RwLock<Option<RuntimeProvidersFactory<V>>>>,
     /// Callback forwarded unchanged to the host.
-    pub sandbox_url_provider: Arc<RwLock<Option<SandboxUrlProvider>>>,
+    pub sandbox_url_provider: SharedHandle<RwLock<Option<SandboxUrlProvider>>>,
 }
 /// Create an executable tool retaining the supplied sandbox owner.
 #[must_use]
 pub fn create_javascript_repl_tool<V: SandboxValue>(
     host: Arc<dyn SandboxHost<V>>,
 ) -> JavaScriptReplTool<V> {
-    let default: RuntimeProvidersFactory<V> = Arc::new(|| Ok(vec![]));
-    let runtime_providers_factory = Arc::new(RwLock::new(Some(default)));
-    let sandbox_url_provider = Arc::new(RwLock::new(None));
-    let factory = Arc::clone(&runtime_providers_factory);
-    let url = Arc::clone(&sandbox_url_provider);
+    let default: RuntimeProvidersFactory<V> = SharedHandle::new(|| Ok(vec![]));
+    let runtime_providers_factory = SharedHandle::new(RwLock::new(Some(default)));
+    let sandbox_url_provider = SharedHandle::new(RwLock::new(None));
+    let factory = SharedHandle::clone(&runtime_providers_factory);
+    let url = SharedHandle::clone(&sandbox_url_provider);
     let mut tool = AgentTool::typed(
         Tool {
             name: "javascript_repl".into(),
@@ -173,7 +174,7 @@ pub fn create_javascript_repl_tool<V: SandboxValue>(
             parameters: serde_json::json!({"type":"object","required":["title","code"],"properties":{"title":{"type":"string","description":"Brief title describing what the code snippet tries to achieve in active form, e.g. 'Calculating sum'"},"code":{"type":"string","description":"JavaScript code to execute"}}}),
         },
         "JavaScript REPL".into(),
-        Arc::new(move |_, args: JavaScriptReplParams, signal, _| {
+        SharedHandle::new(move |_, args: JavaScriptReplParams, signal, _| {
             let providers = runtime_providers(&factory);
             let url = url
                 .read()
@@ -190,8 +191,8 @@ pub fn create_javascript_repl_tool<V: SandboxValue>(
             ))
         }),
     );
-    let factory = Arc::clone(&runtime_providers_factory);
-    tool.description = Some(Arc::new(move || {
+    let factory = SharedHandle::clone(&runtime_providers_factory);
+    tool.description = Some(SharedHandle::new(move || {
         let descriptions = runtime_providers(&factory)?
             .iter()
             .map(|provider| provider.get_description())
@@ -203,7 +204,7 @@ pub fn create_javascript_repl_tool<V: SandboxValue>(
         Ok(javascript_repl_tool_description(&descriptions))
     }));
     JavaScriptReplTool {
-        tool: Arc::new(RwLock::new(tool)),
+        tool: SharedHandle::new(RwLock::new(tool)),
         runtime_providers_factory,
         sandbox_url_provider,
     }

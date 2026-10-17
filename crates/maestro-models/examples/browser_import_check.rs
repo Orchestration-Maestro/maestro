@@ -171,7 +171,7 @@ fn bedrock_surface() {
         let calls = std::rc::Rc::new(std::cell::Cell::new(0_u8));
         let seen = std::rc::Rc::clone(&calls);
         let mut module = maestro_models::bedrock_provider::bedrock_provider_module();
-        module.stream_bedrock = std::sync::Arc::new(move |_, _, _| {
+        module.stream_bedrock = maestro_models::SharedHandle::new(move |_, _, _| {
             seen.set(seen.get() + 1);
             Err(maestro_models::DiagnosticErrorInfo {
                 name: None,

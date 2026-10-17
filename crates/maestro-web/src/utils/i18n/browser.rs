@@ -12,16 +12,18 @@ fn window() -> Result<web_sys::Window, I18nError> {
 fn storage() -> Result<web_sys::Storage, I18nError> {
     window()?
         .local_storage()
-        .map_err(host_error)?
+        .map_err(|error| host_error(&error))?
         .ok_or_else(|| I18nError::Host("No browser storage".into()))
 }
 /// Convert the browser's thrown value at the host error boundary.
-fn host_error(error: JsValue) -> I18nError {
+fn host_error(error: &JsValue) -> I18nError {
     I18nError::Host(format!("Browser operation failed: {error:?}"))
 }
 impl LanguageHost for BrowserLanguageHost {
     fn stored_language(&self) -> Result<Option<String>, I18nError> {
-        storage()?.get_item("language").map_err(host_error)
+        storage()?
+            .get_item("language")
+            .map_err(|error| host_error(&error))
     }
     fn browser_language(&self) -> Result<Option<String>, I18nError> {
         Ok(window()?.navigator().language())
@@ -29,13 +31,18 @@ impl LanguageHost for BrowserLanguageHost {
     fn legacy_language(&self) -> Result<Option<String>, I18nError> {
         js_sys::Reflect::get(&window()?.navigator(), &JsValue::from_str("userLanguage"))
             .map(|value| value.as_string())
-            .map_err(host_error)
+            .map_err(|error| host_error(&error))
     }
     fn store_language(&self, code: &str) -> Result<(), I18nError> {
-        storage()?.set_item("language", code).map_err(host_error)
+        storage()?
+            .set_item("language", code)
+            .map_err(|error| host_error(&error))
     }
     fn reload(&self) -> Result<(), I18nError> {
-        window()?.location().reload().map_err(host_error)
+        window()?
+            .location()
+            .reload()
+            .map_err(|error| host_error(&error))
     }
     fn unknown_translation(&self, diagnostic: &I18nDiagnostic) {
         let message = match diagnostic {

@@ -64,18 +64,23 @@ impl SessionManager {
             Some(cwd) => cwd.to_owned(),
             None => std::env::current_dir()?.to_string_lossy().into_owned(),
         };
-        let mut manager = Self::base(cwd, String::new(), false)?;
+        let mut manager = Self::empty(cwd, String::new(), false);
         manager.new_session(NewSessionOptions::default());
         Ok(manager)
     }
 
     /// Initialize empty retained state, creating a native directory when configured.
+    #[cfg(not(target_arch = "wasm32"))]
     fn base(cwd: String, session_dir: String, persist: bool) -> std::io::Result<Self> {
-        #[cfg(not(target_arch = "wasm32"))]
         if persist && !session_dir.is_empty() && !std::path::Path::new(&session_dir).exists() {
             std::fs::create_dir_all(&session_dir)?;
         }
-        Ok(Self {
+        Ok(Self::empty(cwd, session_dir, persist))
+    }
+
+    /// Initialize retained state without filesystem effects.
+    fn empty(cwd: String, session_dir: String, persist: bool) -> Self {
+        Self {
             cwd,
             session_dir,
             persist,
@@ -87,7 +92,7 @@ impl SessionManager {
             leaf_id: None,
             labels: Map::new(),
             label_timestamps: Map::new(),
-        })
+        }
     }
 
     /// Replace history without writing; native mode selects a fresh filename.

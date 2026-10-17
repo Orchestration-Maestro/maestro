@@ -141,10 +141,19 @@ impl SessionSelectorComponent {
         callbacks: SessionSelectorCallbacks,
         mut options: SessionSelectorOptions,
     ) -> std::io::Result<Rc<Self>> {
-        let keybindings = options
-            .keybindings
-            .take()
-            .map_or_else(default_keybindings, Ok)?;
+        let keybindings = options.keybindings.take().map_or_else(
+            || {
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    default_keybindings()
+                }
+                #[cfg(target_arch = "wasm32")]
+                {
+                    Ok::<_, std::io::Error>(default_keybindings())
+                }
+            },
+            Ok,
+        )?;
         let container = Rc::new(Container::new());
         let list = create_list(&mut options, keybindings);
         let state = State::new(
@@ -460,19 +469,16 @@ fn create_header(options: &SessionSelectorOptions) -> Rc<SessionSelectorHeader> 
     );
     header
 }
-/// Loads a shared native manager, retaining in-memory defaults on browser targets.
+/// Load the shared native manager.
+#[cfg(not(target_arch = "wasm32"))]
 fn default_keybindings() -> std::io::Result<KeybindingsManager> {
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        let manager = maestro_app::KeybindingsManager::create(None)?;
-        Ok(KeybindingsManager::clone(&manager))
-    }
-    #[cfg(target_arch = "wasm32")]
-    {
-        Ok(KeybindingsManager::clone(
-            &maestro_app::KeybindingsManager::default(),
-        ))
-    }
+    let manager = maestro_app::KeybindingsManager::create(None)?;
+    Ok(KeybindingsManager::clone(&manager))
+}
+/// Retain in-memory defaults on browser targets.
+#[cfg(target_arch = "wasm32")]
+fn default_keybindings() -> KeybindingsManager {
+    KeybindingsManager::clone(&maestro_app::KeybindingsManager::default())
 }
 
 /// Why an admitted discovery is running.

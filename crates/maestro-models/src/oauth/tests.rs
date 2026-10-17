@@ -1,7 +1,7 @@
 //! Numeric expiry and lazy clock selection through the production operation.
 #![cfg(test)]
 use super::*;
-use std::sync::{Mutex, MutexGuard};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 /// Serialize observations of this binary's registry.
 static ADMISSION: Mutex<()> = Mutex::new(());

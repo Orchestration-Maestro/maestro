@@ -1,10 +1,11 @@
 //! Closed ownership and future representations shared by callable owners.
+#[cfg(not(target_arch = "wasm32"))]
+use std::sync::{Arc, Weak as ThreadedWeak};
 use std::{
     future::Future,
     ops::Deref,
     pin::Pin,
     rc::{Rc, Weak as LocalWeak},
-    sync::{Arc, Weak as ThreadedWeak},
 };
 /// Caller-local owning pointers and futures.
 #[derive(Default)]
@@ -47,4 +48,4 @@ family!(Local, Rc, LocalWeak, []);
 #[cfg(not(target_arch = "wasm32"))]
 family!(Threaded,Arc,ThreadedWeak,[+Send]);
 #[cfg(target_arch = "wasm32")]
-family!(Threaded, Arc, ThreadedWeak, []);
+family!(Threaded, Rc, LocalWeak, []);

@@ -4,8 +4,9 @@
 
 UI-entering interactive work uses a caller-owned local executor. Local callbacks
 and their futures may retain single-thread UI objects, including the editor and
-live theme. The embedding SDK defaults to thread-safe callables; independent
-native I/O retains its existing execution behavior.
+live theme. The embedding SDK defaults to thread-safe callables on native targets and
+browser-local `Rc` callables on browser targets; independent native I/O retains
+its existing execution behavior.
 
 The sealed `Local` and `Threaded` representations belong to `maestro-models`, the
 lowest existing callback owner. They select future, shared and weak pointer types.

@@ -3,6 +3,7 @@ use super::prompts::EXTRACT_DOCUMENT_DESCRIPTION;
 use crate::browser::utils::attachment_utils::{Attachment, AttachmentSource, load_attachment};
 use futures_util::TryStreamExt;
 use maestro_agent::{AgentTool, AgentToolResult, SharedAgentTool};
+use maestro_models::SharedHandle;
 use maestro_models::{
     BoxFuture, Cancellation, DiagnosticErrorInfo, Fetch, FetchError, HttpRequest, TextContent,
     Tool, UserBlock, default_fetch,
@@ -38,13 +39,13 @@ pub struct ExtractDocumentTool {
 }
 /// Native attachment operation retained by the executable callback.
 #[cfg(not(target_arch = "wasm32"))]
-type LoadAttachment = Arc<
+type LoadAttachment = SharedHandle<
     dyn Fn(Vec<u8>, String) -> BoxFuture<Result<Attachment, DiagnosticErrorInfo>> + Send + Sync,
 >;
 /// Browser-local attachment operation retained by the executable callback.
 #[cfg(target_arch = "wasm32")]
 type LoadAttachment =
-    Arc<dyn Fn(Vec<u8>, String) -> BoxFuture<Result<Attachment, DiagnosticErrorInfo>>>;
+    SharedHandle<dyn Fn(Vec<u8>, String) -> BoxFuture<Result<Attachment, DiagnosticErrorInfo>>>;
 /// Create a tool using the supplied transport or the default HTTP adapter.
 #[must_use]
 pub fn create_extract_document_tool(fetch: Option<Fetch>) -> ExtractDocumentTool {
@@ -52,7 +53,7 @@ pub fn create_extract_document_tool(fetch: Option<Fetch>) -> ExtractDocumentTool
     let loader_fetch = Arc::clone(&fetch);
     build_tool(
         fetch,
-        Arc::new(move |bytes, name| {
+        SharedHandle::new(move |bytes, name| {
             let fetch = Arc::clone(&loader_fetch);
             Box::pin(async move {
                 load_attachment(AttachmentSource::Buffer(&bytes), Some(&name), &fetch)
@@ -73,13 +74,17 @@ fn build_tool(fetch: Fetch, load: LoadAttachment) -> ExtractDocumentTool {
             parameters: serde_json::json!({"type":"object","required":["url"],"properties":{"url":{"type":"string","description":"URL of the document to extract text from (PDF, DOCX, XLSX, or PPTX)"}}}),
         },
         "Extract Document".into(),
-        Arc::new(move |_, args: ExtractDocumentParams, signal, _| {
-            let (fetch, load, proxy) = (Arc::clone(&fetch), Arc::clone(&load), Arc::clone(&proxy));
+        SharedHandle::new(move |_, args: ExtractDocumentParams, signal, _| {
+            let (fetch, load, proxy) = (
+                Arc::clone(&fetch),
+                SharedHandle::clone(&load),
+                Arc::clone(&proxy),
+            );
             Box::pin(async move { execute(args, signal, &fetch, &load, &proxy).await })
         }),
     );
     ExtractDocumentTool {
-        tool: Arc::new(RwLock::new(tool)),
+        tool: SharedHandle::new(RwLock::new(tool)),
         cors_proxy_url,
     }
 }

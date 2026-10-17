@@ -50,22 +50,23 @@ pub fn is_cors_error(error: &(dyn std::error::Error + 'static)) -> bool {
 }
 
 use maestro_agent::StreamFn;
+use maestro_models::SharedHandle;
 use maestro_models::{BoxFuture, DiagnosticErrorInfo};
-use std::sync::Arc;
 
 /// Read current proxy settings for one invocation.
 #[cfg(not(target_arch = "wasm32"))]
 pub type GetProxyUrl =
-    Arc<dyn Fn() -> BoxFuture<Result<Option<String>, DiagnosticErrorInfo>> + Send + Sync>;
+    SharedHandle<dyn Fn() -> BoxFuture<Result<Option<String>, DiagnosticErrorInfo>> + Send + Sync>;
 /// Read browser-local proxy settings for one invocation.
 #[cfg(target_arch = "wasm32")]
-pub type GetProxyUrl = Arc<dyn Fn() -> BoxFuture<Result<Option<String>, DiagnosticErrorInfo>>>;
+pub type GetProxyUrl =
+    SharedHandle<dyn Fn() -> BoxFuture<Result<Option<String>, DiagnosticErrorInfo>>>;
 
 /// Create a simple-stream adapter that reads proxy settings on each invocation.
 #[must_use]
 pub fn create_stream_fn(get_proxy_url: GetProxyUrl) -> StreamFn {
-    Arc::new(move |model, context, options, _| {
-        let get_proxy_url = Arc::clone(&get_proxy_url);
+    SharedHandle::new(move |model, context, options, _| {
+        let get_proxy_url = SharedHandle::clone(&get_proxy_url);
         Box::pin(async move {
             let proxy_url = get_proxy_url().await?;
             let model = match options

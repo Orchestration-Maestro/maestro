@@ -1,9 +1,9 @@
 //! Ordered protocol registration retaining checked invocation callbacks.
 use super::diagnostics::DiagnosticErrorInfo;
 use super::types::{Api, ProviderStreamOptions, SimpleStreamOptions, StreamFunction};
+use crate::SharedHandle;
 use crate::builtins::built_in_providers;
 use indexmap::IndexMap;
-use std::sync::Arc;
 
 /// Raw invocation callback retained by registration.
 pub type ApiStreamFunction = StreamFunction<ProviderStreamOptions>;
@@ -40,7 +40,7 @@ crate::records::platform_store_accessor!(
 );
 /// Wrap a stream callback with an API-identity check.
 fn checked<O: 'static>(api: String, callback: StreamFunction<O>) -> StreamFunction<O> {
-    Arc::new(move |model, context, options| {
+    SharedHandle::new(move |model, context, options| {
         if model.api != api {
             return Err(DiagnosticErrorInfo::error(format!(
                 "Mismatched api: {} expected {api}",

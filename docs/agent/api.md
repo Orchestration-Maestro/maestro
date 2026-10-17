@@ -24,8 +24,8 @@ The runnable examples also use `tokio` for the task facility the caller must sup
 
 Use `Agent::<C, Local>::new_local` inside a caller-owned local task facility when
 callbacks retain single-thread objects. `AgentTool`, `AgentContext`,
-`AgentLoopConfig` and `AgentLoopOptions` keep their thread-safe struct-literal
-aliases; the corresponding `LocalAgent*` aliases select local callables. Generic
+`AgentLoopConfig` and `AgentLoopOptions` keep their native thread-safe struct-literal
+aliases (browser targets use `Rc` callbacks and local futures); the corresponding `LocalAgent*` aliases select local callables. Generic
 code can use their `*Record` owners. Agent hooks borrow mutable arguments across
 awaits in either representation. Model payload/response hooks remain thread-safe.
 
@@ -52,7 +52,7 @@ assert!(agent.signal().is_none());
 ```
 
 The caller must drive the local task facility for admitted work to finish, just
-as the thread-safe examples below require a running task facility. See
+as the native thread-safe examples below require a running task facility. See
 [owned runs](../agent.md) and [raw local operations](../loop.md).
 
 ## Quick start

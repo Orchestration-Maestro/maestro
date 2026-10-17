@@ -15,6 +15,12 @@ pub type BoxFuture<T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + 
 /// Owned browser-local callback future.
 #[cfg(target_arch = "wasm32")]
 pub type BoxFuture<T> = std::pin::Pin<Box<dyn std::future::Future<Output = T> + 'static>>;
+/// Shared native callback or retained operation handle.
+#[cfg(not(target_arch = "wasm32"))]
+pub type SharedHandle<T> = std::sync::Arc<T>;
+/// Shared browser-local callback or retained operation handle.
+#[cfg(target_arch = "wasm32")]
+pub type SharedHandle<T> = std::rc::Rc<T>;
 /// Provider payload with its selectable request cancellation handle.
 pub struct PayloadHookInput {
     /// JSON parameters selected for projection and dispatch.
@@ -60,13 +66,13 @@ pub type OnResponse = std::sync::Arc<
 >;
 /// Adapter invocation with an owned model, conversation and unchanged options.
 #[cfg(not(target_arch = "wasm32"))]
-pub type StreamFunction<O = ProviderStreamOptions> = std::sync::Arc<
+pub type StreamFunction<O = ProviderStreamOptions> = SharedHandle<
     dyn Fn(Model, Context, Option<O>) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo>
         + Send
         + Sync,
 >;
 /// Browser-local adapter invocation with unchanged options.
 #[cfg(target_arch = "wasm32")]
-pub type StreamFunction<O = ProviderStreamOptions> = std::sync::Arc<
+pub type StreamFunction<O = ProviderStreamOptions> = SharedHandle<
     dyn Fn(Model, Context, Option<O>) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo>,
 >;

@@ -82,7 +82,7 @@ pub(super) fn select(sheets: &Sheets, selected: usize) -> Result<(), AttachmentU
 
 /// Keep inner scrolling bounded while the registry measures natural root geometry.
 pub(super) fn bound(sheets: &Sheets, height: f32) -> Result<(), AttachmentUiError> {
-    if sheets.height.get() == height {
+    if sheets.height.get().partial_cmp(&height) == Some(std::cmp::Ordering::Equal) {
         return Ok(());
     }
     sheets.height.set(height);

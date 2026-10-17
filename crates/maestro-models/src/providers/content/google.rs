@@ -331,7 +331,7 @@ async fn invoke(
         .and_then(serde_json::Value::as_f64)
         .is_some_and(|value| value != 0.0);
     let owned_signal = (signal.is_some() || has_timeout_control).then(crate::Cancellation::new);
-    prepared.request.signal = owned_signal.clone();
+    prepared.request.signal.clone_from(&owned_signal);
     let fetch = options
         .common
         .fetch

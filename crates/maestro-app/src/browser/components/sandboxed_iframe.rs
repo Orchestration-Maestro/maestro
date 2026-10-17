@@ -73,10 +73,12 @@ pub struct SandboxResult<V: SandboxValue = Value> {
 }
 /// Native callback retaining URL selection and its failure.
 #[cfg(not(target_arch = "wasm32"))]
-pub type SandboxUrlProvider = Arc<dyn Fn() -> Result<String, DiagnosticErrorInfo> + Send + Sync>;
+pub type SandboxUrlProvider =
+    maestro_models::SharedHandle<dyn Fn() -> Result<String, DiagnosticErrorInfo> + Send + Sync>;
 /// Browser-local callback retaining URL selection and its failure.
 #[cfg(target_arch = "wasm32")]
-pub type SandboxUrlProvider = Arc<dyn Fn() -> Result<String, DiagnosticErrorInfo>>;
+pub type SandboxUrlProvider =
+    maestro_models::SharedHandle<dyn Fn() -> Result<String, DiagnosticErrorInfo>>;
 /// Owned arguments passed to a hidden sandbox.
 pub struct SandboxExecution<V: SandboxValue = Value> {
     /// Distinguishing execution identifier.

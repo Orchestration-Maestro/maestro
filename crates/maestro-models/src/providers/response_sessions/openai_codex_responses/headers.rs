@@ -42,6 +42,7 @@ pub(super) fn build_sse_headers(
 
 /// Derive socket headers from validated request headers: the upgrade carries no content
 /// negotiation, selects the socket beta and identifies the request in both affinity fields.
+#[cfg(not(target_arch = "wasm32"))]
 pub(super) fn build_web_socket_headers(
     prepared: &IndexMap<String, String>,
     request_id: &str,

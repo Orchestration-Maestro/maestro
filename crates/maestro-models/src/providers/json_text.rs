@@ -14,7 +14,9 @@ use crate::JsonObject;
 pub(crate) use crate::arguments::parsed_arguments;
 
 pub use maestro_json::compact_json;
-pub(crate) use maestro_json::{BorrowedJson, array_index, compact_members, compact_object};
+pub(crate) use maestro_json::compact_object;
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) use maestro_json::{BorrowedJson, array_index, compact_members};
 
 /// Containers a value may nest when [`json_value`] decodes it: the most that the parser's
 /// recursion limit of 128 accepts.

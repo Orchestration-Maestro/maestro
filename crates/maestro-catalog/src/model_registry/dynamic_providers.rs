@@ -3,6 +3,7 @@ use super::provider_config::{RegisteredOAuth, nonempty};
 use super::request_auth::ProviderRequestConfig;
 use super::{CatalogError, ModelRegistry, ProviderConfigInput, ProviderModelInput};
 use maestro_credentials::AuthCredential;
+use maestro_models::SharedHandle;
 use maestro_models::{
     ApiProvider, Model, OAuthProviderHandle, StreamOptionsInput, register_api_provider,
     register_oauth_provider,
@@ -174,27 +175,29 @@ fn install_operations(provider: &str, config: &Arc<RwLock<ProviderConfigInput>>)
         .oauth
         .clone();
     if let Some(inner) = oauth {
-        register_oauth_provider(Arc::new(RegisteredOAuth {
+        register_oauth_provider(SharedHandle::new(RegisteredOAuth {
             id: provider.into(),
             inner,
         }));
     }
     let callback = {
         let config = config.read().unwrap_or_else(PoisonError::into_inner);
-        config
-            .stream_simple
-            .as_ref()
-            .map(|callback| (config.api.clone().unwrap_or_default(), Arc::clone(callback)))
+        config.stream_simple.as_ref().map(|callback| {
+            (
+                config.api.clone().unwrap_or_default(),
+                SharedHandle::clone(callback),
+            )
+        })
     };
     if let Some((api, callback)) = callback {
-        let raw = Arc::clone(&callback);
+        let raw = SharedHandle::clone(&callback);
         register_api_provider(
             ApiProvider {
                 api,
-                stream: Arc::new(move |model, context, options| {
+                stream: SharedHandle::new(move |model, context, options| {
                     raw(model, context, options.map(StreamOptionsInput::Raw))
                 }),
-                stream_simple: Arc::new(move |model, context, options| {
+                stream_simple: SharedHandle::new(move |model, context, options| {
                     callback(model, context, options.map(StreamOptionsInput::Simple))
                 }),
             },

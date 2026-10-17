@@ -60,7 +60,10 @@ macro_rules! entry {
 }
 use std::rc::Rc;
 entry!(crate::Local, Rc);
+#[cfg(not(target_arch = "wasm32"))]
 entry!(Threaded, Arc);
+#[cfg(target_arch = "wasm32")]
+entry!(Threaded, Rc);
 impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Agent<C, E> {
     /// Validate continuation under the shared reservation before consuming input.
     fn continue_start(agent: &E::Shared<Self>) -> BoxFuture<Result<(), DiagnosticErrorInfo>> {

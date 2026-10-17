@@ -6,7 +6,8 @@ const elements = [...slots, wrapper, frame];
 const styles = elements.map(e => e.getAttribute('style'));
 const set = Element.prototype.setAttribute;
 const remove = Element.prototype.removeAttribute;
-const rect = Element.prototype.getBoundingClientRect;
+const rectDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'getBoundingClientRect');
+const rect = rectDescriptor.value;
 const scroll = ['scrollLeft', 'scrollTop'].map(k => Object.getOwnPropertyDescriptor(Element.prototype, k));
 let fired = false, cleanupFired = false;
 const restored = [], offsets = [];
@@ -50,6 +51,18 @@ Element.prototype.getBoundingClientRect = function() {
   }
   return result;
 };
+if (kind === 'readback-getter') {
+  Object.defineProperty(Element.prototype, 'getBoundingClientRect', {
+    configurable: true,
+    get() {
+      if (!fired && this === frame) {
+        fired = true;
+        throw new Error('operation marker');
+      }
+      return rect;
+    }
+  });
+}
 ['scrollLeft', 'scrollTop'].forEach((key, i) => {
   Object.defineProperty(wrapper, key, {
     configurable: true,
@@ -67,7 +80,7 @@ Element.prototype.getBoundingClientRect = function() {
 return { restored, offsets, stop() {
   Element.prototype.setAttribute = set;
   Element.prototype.removeAttribute = remove;
-  Element.prototype.getBoundingClientRect = rect;
+  Object.defineProperty(Element.prototype, 'getBoundingClientRect', rectDescriptor);
   delete wrapper.scrollLeft; delete wrapper.scrollTop;
   return { fired, cleanupFired, restored, offsets };
 }};
