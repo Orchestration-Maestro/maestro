@@ -86,8 +86,11 @@ AI can help group duplicates, summarize reports, and spot missing information. I
 
 No. It is a guardrail against burnout and tracker spam. Short, concrete, reproducible issues are welcome. Thoughtful contributions are welcome. Automated slop, entitlement, and large volumes of low-effort reports are not.
 
-Integration tests in `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`, `maestro-models`, `maestro-packages`, `maestro-resources`, `maestro-session`, `maestro-test-conventions`, `maestro-text`, `maestro-theme`, `maestro-tools` and `maestro-tui` share `tests/integration.rs`. Add new
-`tests/*.rs` files as unconditional out-of-line modules in that root; support
-modules stay in their existing directories. When top-level integration-test
-sources exist, the conventions check requires `autotests = false` and one
-runnable `integration` target for these crates.
+Crates whose `Cargo.toml` sets `autotests = false` build their integration
+tests as one program from `tests/integration.rs`. Add new `tests/*.rs` files as
+unconditional out-of-line modules in that root; support modules stay in their
+existing directories. The conventions check covers every crate whose
+`Cargo.toml` sets `autotests = false` or declares an `integration` test target.
+When such a crate has top-level integration-test sources, the check requires
+`autotests = false` and exactly one test target: the runnable `integration`
+target at `tests/integration.rs`.
