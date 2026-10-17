@@ -155,7 +155,10 @@ pub(crate) fn built_in_providers() -> [ApiProvider; 8] {
         provider("azure-openai-responses", SharedHandle::new(CloudResponses)),
         provider("openai-codex-responses", SharedHandle::new(Sessions)),
         provider("google-generative-ai", SharedHandle::new(Content)),
-        provider("bedrock-converse-stream", SharedHandle::new(SelectedBedrock)),
+        provider(
+            "bedrock-converse-stream",
+            SharedHandle::new(SelectedBedrock),
+        ),
     ]
 }
 

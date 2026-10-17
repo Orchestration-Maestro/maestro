@@ -308,7 +308,8 @@ pub fn register_faux_provider(options: RegisterFauxProviderOptions) -> FauxProvi
             options.tokens_per_second,
         ),
     });
-    let callback = crate::SharedHandle::new(FauxProvider(crate::SharedHandle::clone(&registration)));
+    let callback =
+        crate::SharedHandle::new(FauxProvider(crate::SharedHandle::clone(&registration)));
     register_api_provider(
         ApiProvider {
             api: api.clone(),
