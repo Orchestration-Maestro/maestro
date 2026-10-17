@@ -90,7 +90,10 @@ macro_rules! entry {
 }
 use std::rc::Rc;
 entry!(crate::Local, Rc);
+#[cfg(not(target_arch = "wasm32"))]
 entry!(Threaded, Arc);
+#[cfg(target_arch = "wasm32")]
+entry!(Threaded, Rc);
 impl<C: CustomAgentMessages + 'static, E: AgentExecution> Agent<C, E> {
     /// Reduce and invoke the first listener now; await live successors without guards.
     pub(crate) fn emit(

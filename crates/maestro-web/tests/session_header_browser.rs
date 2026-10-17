@@ -342,7 +342,14 @@ pub fn reading_slot_sizing_preserves_fractional_scroll_and_selection() {
 #[wasm_bindgen]
 pub fn reading_slot_failures_restore_native_state() {
     for route in [Route::Retained, Route::Replacement] {
-        for kind in ["slot0", "slot1", "slot2", "readback", "publish"] {
+        for kind in [
+            "slot0",
+            "slot1",
+            "slot2",
+            "readback",
+            "readback-getter",
+            "publish",
+        ] {
             for cleanup in [false, true] {
                 slot_failure(route, kind, cleanup);
             }

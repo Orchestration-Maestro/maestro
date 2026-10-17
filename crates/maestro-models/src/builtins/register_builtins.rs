@@ -1,5 +1,6 @@
 #![doc = include_str!("../../../../docs/models/module-linkage.md")]
 use super::raw_options;
+use crate::SharedHandle;
 use crate::providers::assistant_output::{fail, initial_message};
 use crate::providers::chat::openai_completions as chat;
 use crate::providers::content::google as content;
@@ -54,7 +55,7 @@ pub(crate) fn raw_callback<T: 'static>(
     decode: fn(ProviderStreamOptions) -> Result<T, serde_json::Error>,
     start: RawStart<T>,
 ) -> ApiStreamFunction {
-    Arc::new(move |model, context, options| {
+    SharedHandle::new(move |model, context, options| {
         Ok(match decode(options.unwrap_or_default()) {
             Ok(typed) => start(model, context, Some(typed)),
             Err(error) => settled(
@@ -75,7 +76,9 @@ fn provider<T: 'static>(
     ApiProvider {
         api: api.to_owned(),
         stream: raw_callback(decode, raw),
-        stream_simple: Arc::new(move |model, context, options| Ok(simple(model, context, options))),
+        stream_simple: SharedHandle::new(move |model, context, options| {
+            Ok(simple(model, context, options))
+        }),
     }
 }
 
@@ -126,13 +129,13 @@ pub(crate) fn built_in_providers() -> [ApiProvider; 8] {
         ),
         ApiProvider {
             api: "bedrock-converse-stream".into(),
-            stream: Arc::new(|model, context, options| {
+            stream: SharedHandle::new(|model, context, options| {
                 let callback = selected_bedrock().stream_bedrock;
                 let identity = initial_message(&model);
                 Ok(callback(model, context, options)
                     .unwrap_or_else(|error| settled(identity, error.into())))
             }),
-            stream_simple: Arc::new(|model, context, options| {
+            stream_simple: SharedHandle::new(|model, context, options| {
                 let callback = selected_bedrock().stream_simple_bedrock;
                 let identity = initial_message(&model);
                 Ok(callback(model, context, options)

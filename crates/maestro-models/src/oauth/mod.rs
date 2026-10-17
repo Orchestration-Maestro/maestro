@@ -15,11 +15,11 @@ pub use device::github_copilot::{
 
 pub(crate) use maestro_text::is_whitespace_scalar as authorization_whitespace;
 
+use crate::SharedHandle;
 use indexmap::IndexMap;
 pub use responses::openai_codex::{
     OPENAI_CODEX_OAUTH_PROVIDER, login_openai_codex, refresh_openai_codex_token,
 };
-use std::sync::Arc;
 pub use subscription::anthropic::{
     ANTHROPIC_OAUTH_PROVIDER, login_anthropic, refresh_anthropic_token,
 };
@@ -30,17 +30,17 @@ pub use types::{
 
 /// Shared provider implementation on native targets.
 #[cfg(not(target_arch = "wasm32"))]
-pub type OAuthProviderHandle = Arc<dyn OAuthProviderInterface + Send + Sync>;
+pub type OAuthProviderHandle = SharedHandle<dyn OAuthProviderInterface + Send + Sync>;
 /// Shared provider implementation on browser targets.
 #[cfg(target_arch = "wasm32")]
-pub type OAuthProviderHandle = Arc<dyn OAuthProviderInterface>;
+pub type OAuthProviderHandle = SharedHandle<dyn OAuthProviderInterface>;
 
 /// Original account implementations in their registration order.
 fn builtin_providers() -> IndexMap<OAuthProviderId, OAuthProviderHandle> {
     let providers: [OAuthProviderHandle; 3] = [
-        Arc::new(subscription::anthropic::AnthropicOAuthProvider),
-        Arc::new(device::github_copilot::GitHubCopilotOAuthProvider),
-        Arc::new(responses::openai_codex::OpenAICodexOAuthProvider),
+        SharedHandle::new(subscription::anthropic::AnthropicOAuthProvider),
+        SharedHandle::new(device::github_copilot::GitHubCopilotOAuthProvider),
+        SharedHandle::new(responses::openai_codex::OpenAICodexOAuthProvider),
     ];
     providers
         .into_iter()

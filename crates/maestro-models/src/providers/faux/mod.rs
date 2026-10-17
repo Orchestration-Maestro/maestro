@@ -224,7 +224,7 @@ pub struct FauxProviderRegistration {
     /// Live request count.
     pub state: FauxProviderState,
     /// Retained producer state.
-    registration: Arc<Registration>,
+    registration: crate::SharedHandle<Registration>,
     /// Registry ownership identity used for explicit cleanup.
     source_id: String,
 }
@@ -260,18 +260,18 @@ impl FauxProviderRegistration {
     }
 }
 impl Registration {
-    /// Consume a queued response synchronously and launch its independent producer.
-    fn invoke(
-        self: &Arc<Self>,
+    /// Consume a queued response synchronously and prepare its independent producer.
+    fn invocation(
+        self: &crate::SharedHandle<Self>,
         model: Model,
         context: Context,
         options: Option<FauxResponseOptions>,
-    ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    ) -> (AssistantMessageEventStream, crate::BoxFuture<()>) {
         let step = lock(&self.pending).responses.pop_front();
         self.state.0.fetch_add(1, Ordering::AcqRel);
         let outer = AssistantMessageEventStream::new();
         let producer = outer.clone();
-        let registration = Arc::clone(self);
+        let registration = crate::SharedHandle::clone(self);
         let model = Arc::new(model);
         let future = Box::pin(async move {
             if let Err(error) = registration
@@ -281,11 +281,59 @@ impl Registration {
                 streaming::terminal(&producer, registration.error(&model, error.message));
             }
         });
-        #[cfg(not(target_arch = "wasm32"))]
+        (outer, future)
+    }
+    /// Launch the native producer while preserving setup failure.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn invoke(
+        self: &crate::SharedHandle<Self>,
+        model: Model,
+        context: Context,
+        options: Option<FauxResponseOptions>,
+    ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+        let (outer, future) = self.invocation(model, context, options);
         streaming::spawn(future)?;
-        #[cfg(target_arch = "wasm32")]
-        streaming::spawn(future);
         Ok(outer)
+    }
+    /// Launch the browser-local producer.
+    #[cfg(target_arch = "wasm32")]
+    fn invoke(
+        self: &crate::SharedHandle<Self>,
+        model: Model,
+        context: Context,
+        options: Option<FauxResponseOptions>,
+    ) -> AssistantMessageEventStream {
+        let (outer, future) = self.invocation(model, context, options);
+        streaming::spawn(future);
+        outer
+    }
+    /// Retain raw and simple callbacks over this registration.
+    fn provider(self: &crate::SharedHandle<Self>) -> ApiProvider {
+        let raw = crate::SharedHandle::clone(self);
+        let simple = crate::SharedHandle::clone(self);
+        ApiProvider {
+            api: self.api.clone(),
+            stream: crate::SharedHandle::new(move |model, context, options| {
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    raw.invoke(model, context, options.map(FauxResponseOptions::Raw))
+                }
+                #[cfg(target_arch = "wasm32")]
+                {
+                    Ok(raw.invoke(model, context, options.map(FauxResponseOptions::Raw)))
+                }
+            }),
+            stream_simple: crate::SharedHandle::new(move |model, context, options| {
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    simple.invoke(model, context, options.map(FauxResponseOptions::Simple))
+                }
+                #[cfg(target_arch = "wasm32")]
+                {
+                    Ok(simple.invoke(model, context, options.map(FauxResponseOptions::Simple)))
+                }
+            }),
+        }
     }
     /// Construct a zero-usage failure with invocation identity.
     fn error(&self, model: &Model, text: String) -> AssistantMessage {
@@ -378,7 +426,7 @@ pub fn register_faux_provider(options: RegisterFauxProviderOptions) -> FauxProvi
         .into_iter()
         .map(|definition| builders::model(definition, &api, &provider))
         .collect();
-    let registration = Arc::new(Registration {
+    let registration = crate::SharedHandle::new(Registration {
         api: api.clone(),
         provider,
         state: state.clone(),
@@ -391,20 +439,7 @@ pub fn register_faux_provider(options: RegisterFauxProviderOptions) -> FauxProvi
             options.tokens_per_second,
         ),
     });
-    let raw = Arc::clone(&registration);
-    let simple = Arc::clone(&registration);
-    register_api_provider(
-        ApiProvider {
-            api: api.clone(),
-            stream: Arc::new(move |model, context, options| {
-                raw.invoke(model, context, options.map(FauxResponseOptions::Raw))
-            }),
-            stream_simple: Arc::new(move |model, context, options| {
-                simple.invoke(model, context, options.map(FauxResponseOptions::Simple))
-            }),
-        },
-        Some(source_id.clone()),
-    );
+    register_api_provider(registration.provider(), Some(source_id.clone()));
     FauxProviderRegistration {
         api,
         models,

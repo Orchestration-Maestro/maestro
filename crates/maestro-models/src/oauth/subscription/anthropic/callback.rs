@@ -82,10 +82,10 @@ pub(super) async fn bind(
 }
 /// Refuse unavailable subscription callback serving.
 #[cfg(any(test, target_arch = "wasm32"))]
-pub(super) async fn unavailable(
+pub(super) fn unavailable(
     _state: String,
-) -> Result<crate::oauth::native::CallbackServer, crate::OAuthError> {
-    Err(crate::OAuthError::message(
+) -> std::future::Ready<Result<crate::oauth::native::CallbackServer, crate::OAuthError>> {
+    std::future::ready(Err(crate::OAuthError::message(
         "Anthropic OAuth requires a native callback listener",
-    ))
+    )))
 }

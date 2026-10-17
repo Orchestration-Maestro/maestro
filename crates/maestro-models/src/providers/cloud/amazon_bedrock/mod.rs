@@ -84,7 +84,10 @@ pub fn stream_bedrock(
     let stream = AssistantMessageEventStream::new();
     let output: SharedAssistantMessage = Arc::new(RwLock::new(initial_message(&model)));
     let options = options.unwrap_or_default();
+    #[cfg(not(target_arch = "wasm32"))]
     start(model, context, options, &stream, &output);
+    #[cfg(target_arch = "wasm32")]
+    start(model, context, &options, &stream, &output);
     stream
 }
 
@@ -142,7 +145,7 @@ fn fit_budget(model: &Model, raw: &mut BedrockOptions, level: ThinkingLevel) {
 fn start(
     _model: Model,
     _context: Context,
-    options: BedrockOptions,
+    options: &BedrockOptions,
     stream: &AssistantMessageEventStream,
     output: &SharedAssistantMessage,
 ) {

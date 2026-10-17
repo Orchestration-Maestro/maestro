@@ -200,7 +200,10 @@ macro_rules! caller {
         }
     };
 }
+#[cfg(not(target_arch = "wasm32"))]
 caller!(SharedArtifactPresentation, new, AgentTool, sync, Arc);
+#[cfg(target_arch = "wasm32")]
+caller!(SharedArtifactPresentation, new, AgentTool, rc, Rc);
 caller!(
     std::rc::Rc<dyn ArtifactPresentation>,
     new_local,

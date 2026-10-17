@@ -3,7 +3,9 @@ mod callback;
 mod token;
 
 use crate::oauth::callback::{parse_authorization_input, start_manual};
-use crate::oauth::native::{CallbackOutcome, CallbackServer};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::oauth::native::CallbackOutcome;
+use crate::oauth::native::CallbackServer;
 use crate::{
     BoxFuture, EventStream, Fetch, OAuthAuthInfo, OAuthCallbacks, OAuthCredentials, OAuthError,
     OAuthPrompt, Pkce,

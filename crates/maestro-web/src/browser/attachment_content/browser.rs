@@ -65,23 +65,13 @@ impl Drop for DomSurface {
 pub(crate) fn host_error(error: &wasm_bindgen::JsValue) -> AttachmentUiError {
     AttachmentUiError::Host(format!("{error:?}"))
 }
-#[wasm_bindgen::prelude::wasm_bindgen]
-extern "C" {
-    /// Element view for catchable native geometry without realm-local casts.
-    #[wasm_bindgen(extends = Element)]
-    type GeometryElement;
-
-    /// Read a native rectangle, preserving thrown browser errors.
-    #[wasm_bindgen(method, catch, js_name = getBoundingClientRect)]
-    fn bounding_rect(this: &GeometryElement) -> Result<web_sys::DomRect, wasm_bindgen::JsValue>;
-}
 /// Read native geometry through a catchable operation so transactions can restore state.
 fn bounds(element: &Element) -> Result<web_sys::DomRect, AttachmentUiError> {
     use wasm_bindgen::JsCast as _;
-    element
-        .unchecked_ref::<GeometryElement>()
-        .bounding_rect()
-        .map_err(|e| host_error(&e))
+    js_sys::Reflect::get(element, &"getBoundingClientRect".into())
+        .and_then(|method| method.unchecked_into::<js_sys::Function>().call0(element))
+        .map(wasm_bindgen::JsCast::unchecked_into)
+        .map_err(|error| host_error(&error))
 }
 impl BrowserAttachmentHost {
     /// Retain the caller's canvas and its owning document.
@@ -214,6 +204,69 @@ impl BrowserAttachmentHost {
             .map_err(|error| host_error(&error))
     }
 }
+impl BrowserAttachmentHost {
+    /// Update content before reinsertion and final visibility publication.
+    fn present_content(
+        &self,
+        surface: &mut DomSurface,
+        tag: &'static str,
+        s: &AttachmentSurface<'_>,
+        p: &BrandPresentation<'_>,
+    ) -> Result<(), AttachmentUiError> {
+        let was_reading = surface.reading.take().is_some();
+        drop(surface.pending.take());
+        if was_reading {
+            surface
+                .wrapper
+                .remove_attribute("class")
+                .map_err(|e| host_error(&e))?;
+        }
+        if surface.tag != tag || was_reading {
+            drop(surface.input.take());
+            let child = self
+                .document
+                .create_element(tag)
+                .map_err(|error| host_error(&error))?;
+            surface
+                .wrapper
+                .replace_child(&child, &surface.child)
+                .map_err(|error| host_error(&error))?;
+            surface.child = child;
+            surface.tag = tag;
+        }
+        surface.style = self.placement(s)?;
+        crate::browser::append_brand_properties(&mut surface.style, p);
+        if tag == "img" {
+            surface.style.push_str(
+                "pointer-events:none;display:flex;align-items:center;justify-content:center;",
+            );
+        }
+        let presentation = matches!(
+            &s.content,
+            AttachmentContent::Text {
+                view: TextView::Presentation,
+                ..
+            }
+        );
+        self.content(surface, &s.content)
+            .map_err(|error| match error {
+                AttachmentUiError::Host(message) if presentation => {
+                    AttachmentUiError::Presentation(message)
+                }
+                other => other,
+            })?;
+        let body = self
+            .document
+            .body()
+            .ok_or_else(|| AttachmentUiError::Host("Document has no body".into()))?;
+        if !surface.wrapper.is_connected() {
+            body.append_child(&surface.wrapper)
+                .map_err(|error| host_error(&error))?;
+        }
+        Ok(())
+    }
+}
+
 impl AttachmentHost for BrowserAttachmentHost {
     fn reading_layout(&self, id: egui::Id) -> Result<super::ReadingLayout, AttachmentUiError> {
         self.measure_reading(id)
@@ -232,59 +285,7 @@ impl AttachmentHost for BrowserAttachmentHost {
         };
         let retained = self.surfaces.borrow_mut().remove(&s.id);
         let mut surface = retained.map_or_else(|| self.create(tag), Ok)?;
-        let result: Result<(), AttachmentUiError> = (|| {
-            let was_reading = surface.reading.take().is_some();
-            drop(surface.pending.take());
-            if was_reading {
-                surface
-                    .wrapper
-                    .remove_attribute("class")
-                    .map_err(|e| host_error(&e))?;
-            }
-            if surface.tag != tag || was_reading {
-                drop(surface.input.take());
-                let child = self
-                    .document
-                    .create_element(tag)
-                    .map_err(|error| host_error(&error))?;
-                surface
-                    .wrapper
-                    .replace_child(&child, &surface.child)
-                    .map_err(|error| host_error(&error))?;
-                surface.child = child;
-                surface.tag = tag;
-            }
-            surface.style = self.placement(&s)?;
-            crate::browser::append_brand_properties(&mut surface.style, p);
-            if tag == "img" {
-                surface.style.push_str(
-                    "pointer-events:none;display:flex;align-items:center;justify-content:center;",
-                );
-            }
-            let presentation = matches!(
-                &s.content,
-                AttachmentContent::Text {
-                    view: TextView::Presentation,
-                    ..
-                }
-            );
-            self.content(&mut surface, &s.content)
-                .map_err(|error| match error {
-                    AttachmentUiError::Host(message) if presentation => {
-                        AttachmentUiError::Presentation(message)
-                    }
-                    other => other,
-                })?;
-            let body = self
-                .document
-                .body()
-                .ok_or_else(|| AttachmentUiError::Host("Document has no body".into()))?;
-            if !surface.wrapper.is_connected() {
-                body.append_child(&surface.wrapper)
-                    .map_err(|error| host_error(&error))?;
-            }
-            Ok(())
-        })();
+        let result = self.present_content(&mut surface, tag, &s, p);
         let displaced = self.surfaces.borrow_mut().insert(s.id, surface);
         drop(displaced);
         result?;

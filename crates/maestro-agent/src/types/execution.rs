@@ -180,7 +180,7 @@ family!(Local, Rc, []);
 #[cfg(not(target_arch = "wasm32"))]
 family!(Threaded,Arc,[+ Send + Sync]);
 #[cfg(target_arch = "wasm32")]
-family!(Threaded, Arc, []);
+family!(Threaded, Rc, []);
 /// Concrete callable-erasure and task-submission glue.
 pub trait ExecutionFor<C: CustomAgentMessages + 'static>: AgentExecution {
     /// Concurrently polled admitted observations.
@@ -299,7 +299,7 @@ run_glue!(Threaded,Arc,[+crate::agent::Native],boxed,futures_util::stream::BoxSt
 #[cfg(target_arch = "wasm32")]
 run_glue!(
     Threaded,
-    Arc,
+    Rc,
     [],
     boxed_local,
     futures_util::stream::LocalBoxStream<'static, Result<(), DiagnosticErrorInfo>>

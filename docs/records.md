@@ -81,7 +81,7 @@ supply ID normalization; projection owns content conversion and missing results.
 
 ```rust
 use maestro_models::{
-    ApiProvider, AssistantMessage, AssistantMessageEvent, Context, DoneReason,
+    SharedHandle, ApiProvider, AssistantMessage, AssistantMessageEvent, Context, DoneReason,
     Model, clear_api_providers, complete, create_assistant_message_event_stream,
     register_api_provider,
 };
@@ -111,8 +111,8 @@ let raw = producer.clone();
 let simple = producer.clone();
 register_api_provider(ApiProvider {
     api: "fixture".into(),
-    stream: Arc::new(move |_, _, _| Ok(raw.clone())),
-    stream_simple: Arc::new(move |_, _, _| Ok(simple.clone())),
+    stream: SharedHandle::new(move |_, _, _| Ok(raw.clone())),
+    stream_simple: SharedHandle::new(move |_, _, _| Ok(simple.clone())),
 }, Some("controlled-example".into()));
 let completion = complete(model, Context {
     system_prompt: None, messages: vec![], tools: None,
@@ -131,7 +131,9 @@ assert!(matches!(event.as_mut().poll(&mut context),
 
 `Execution`, `Local` and `Threaded` select erased futures and shared/weak pointer
 representations for callable owners. They do not create tasks. Local uses `Rc`;
-thread-safe uses `Arc` and native `Send` futures. Browser futures remain local.
+`Threaded` uses `Arc` and `Send` futures natively, and `Rc` with local futures
+on browser targets. `SharedHandle<T>` selects the same native/browser pointer
+family for registered stream callbacks and account-provider handles.
 `EventStream::new_local_items` admits local retained items through the same FIFO;
 `new` keeps its existing native thread-safety bounds. Classifier and extractor
 callbacks retain their existing target-specific bounds.

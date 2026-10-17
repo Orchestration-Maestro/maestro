@@ -3,9 +3,10 @@
 use crate::types::{ToolContextFactory, ToolDefinition};
 use maestro_agent::ExecuteTool;
 use maestro_models::DiagnosticErrorInfo;
+use maestro_models::SharedHandle;
 use maestro_models::{Local, Threaded};
 use serde::{Serialize, de::DeserializeOwned};
-use std::{rc::Rc, sync::Arc};
+use std::rc::Rc;
 /// Default executable agent tool.
 type AgentTool = maestro_agent::AgentTool;
 
@@ -85,7 +86,7 @@ macro_rules! wrappers {
         }
     };
 }
-wrappers!(Threaded, Arc);
+wrappers!(Threaded, SharedHandle);
 /// Caller-local bridges over the existing typed agent boundary.
 pub mod local {
     use super::{DeserializeOwned, DiagnosticErrorInfo, ExecuteTool, Local, Rc, Serialize};

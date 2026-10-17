@@ -29,8 +29,10 @@ pub(crate) use failure::{
     RequestFailure, endpoint_url, envelope_failure, sdk_status_failure, sdk_stream_failure,
     stream_failure,
 };
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) use headers::client_pairs;
 pub(crate) use headers::{
-    client_pairs, copied, edge_whitespace, layer, layer_request_headers, normalize_request,
+    copied, edge_whitespace, layer, layer_request_headers, normalize_request,
 };
 pub(crate) use maestro_text::decode_utf8;
 pub(crate) use retry::{send, send_with_status_error};

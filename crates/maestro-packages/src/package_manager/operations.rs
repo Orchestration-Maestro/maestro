@@ -1,6 +1,8 @@
 //! Replaceable native effects for package source lookup.
 use super::PackageFuture;
-use std::io::{self, Write};
+use std::io;
+#[cfg(not(target_arch = "wasm32"))]
+use std::io::Write;
 /// A completed child status and independently decoded streams.
 pub struct CommandOutput {
     /// Exit status; absent when terminated without an exit code.

@@ -7,7 +7,8 @@ The [Agent guide](agent/api.md) walks through installation, events, options and 
 entries, and independent steering and follow-up input queues.
 The [conversation operations](loop.md) accept turn controls and tool-batch
 execution preferences.
-The default `Agent<C, Threaded>` uses `Arc` callbacks and native `Send` futures.
+The default `Agent<C, Threaded>` uses `Arc` callbacks and `Send` futures natively,
+and `Rc` callbacks and local futures on browser targets.
 `Agent::<C, Local>::new_local` uses `Rc` callbacks and local futures instead;
 prompt, continuation and subscription receivers are `Rc<Agent<C, Local>>`.
 Both representations use the same driver and lifecycle. The caller supplies the

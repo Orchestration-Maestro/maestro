@@ -252,6 +252,24 @@ top-level module, integration test and example restores the groups with
 `forbid`, nested files inherit it from their parent module, and the crate root
 stays wiring-only.
 
+Browser geometry uses installed `js-sys` host calls rather than a handwritten
+binding macro: `Reflect::get` catches method lookup failures, `Function::call0`
+retains the element receiver and catches invocation failures. Unchecked handle
+conversion admits rectangles from a second same-origin realm. Both failure
+phases reach the existing host error and restoration path; lint levels and the
+generated-guest exception above are unchanged.
+
+The 27 browser-library roots are declared in `.github/ci.toml`'s `wasm_crates`,
+including `maestro-path`. Check each declared library locally with:
+
+```sh
+CARGO_BUILD_JOBS=3 capped mise exec -- cargo clippy --no-deps -p <crate> --target wasm32-unknown-unknown --locked -- -D warnings
+```
+
+The current shared wasm job builds these roots; it does not yet run this lint
+command. The [shared wasm-lint rollout](https://github.com/Orchestration-Maestro/maestro-rust-workflows/issues/73)
+tracks that separate extension. Native strict checks remain unchanged.
+
 ## Commands and failure evidence
 
 Run `just check`, `just test` and `just ci` with pinned tools. `just check` includes

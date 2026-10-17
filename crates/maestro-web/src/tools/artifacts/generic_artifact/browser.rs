@@ -26,6 +26,36 @@ pub(super) fn mount(
     style.set_text_content(Some(include_str!("../generic_artifact.css")));
     root.append_child(&style).map_err(|e| host_error(&e))?;
     let body = create("div")?;
+    let icon = icon(document)?;
+    body.append_child(&icon).map_err(|e| host_error(&e))?;
+    let nodes = [create("div")?, create("span")?, create("span")?];
+    body.append_child(&nodes[0]).map_err(|e| host_error(&e))?;
+    let guidance = create("p")?;
+    guidance
+        .append_child(&nodes[1])
+        .map_err(|e| host_error(&e))?;
+    let separator = create("span")?;
+    separator.set_text_content(Some(" "));
+    guidance
+        .append_child(&separator)
+        .map_err(|e| host_error(&e))?;
+    guidance
+        .append_child(&nodes[2])
+        .map_err(|e| host_error(&e))?;
+    body.append_child(&guidance).map_err(|e| host_error(&e))?;
+    root.append_child(&body).map_err(|e| host_error(&e))?;
+    let mut text = text.borrow_mut();
+    text.nodes = Some(nodes);
+    sync(&text);
+    Ok(ReadingRoot {
+        owner: None,
+        element: root,
+        slots: vec![],
+    })
+}
+
+/// Create the literal document mark without changing the mounted body.
+fn icon(document: &web_sys::Document) -> Result<web_sys::Element, AttachmentUiError> {
     let icon = document
         .create_element_ns(Some("http://www.w3.org/2000/svg"), "svg")
         .map_err(|e| host_error(&e))?;
@@ -54,29 +84,5 @@ pub(super) fn mount(
             .map_err(|e| host_error(&e))?;
     }
     icon.append_child(&path).map_err(|e| host_error(&e))?;
-    body.append_child(&icon).map_err(|e| host_error(&e))?;
-    let nodes = [create("div")?, create("span")?, create("span")?];
-    body.append_child(&nodes[0]).map_err(|e| host_error(&e))?;
-    let guidance = create("p")?;
-    guidance
-        .append_child(&nodes[1])
-        .map_err(|e| host_error(&e))?;
-    let separator = create("span")?;
-    separator.set_text_content(Some(" "));
-    guidance
-        .append_child(&separator)
-        .map_err(|e| host_error(&e))?;
-    guidance
-        .append_child(&nodes[2])
-        .map_err(|e| host_error(&e))?;
-    body.append_child(&guidance).map_err(|e| host_error(&e))?;
-    root.append_child(&body).map_err(|e| host_error(&e))?;
-    let mut text = text.borrow_mut();
-    text.nodes = Some(nodes);
-    sync(&text);
-    Ok(ReadingRoot {
-        owner: None,
-        element: root,
-        slots: vec![],
-    })
+    Ok(icon)
 }

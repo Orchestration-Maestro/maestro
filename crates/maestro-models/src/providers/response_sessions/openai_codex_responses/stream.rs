@@ -192,16 +192,16 @@ async fn invoke_socket(
 
 /// Browsers cannot emit authenticated socket headers.
 #[cfg(target_arch = "wasm32")]
-async fn invoke_socket(
+fn invoke_socket(
     _prepared: &super::request::PreparedRequest,
     _model: &Arc<Model>,
     _options: &OpenAICodexResponsesOptions,
     _output: (&SharedAssistantMessage, &AssistantMessageEventStream),
     _started: &mut bool,
-) -> Result<(), super::CodexError> {
-    Err(super::CodexError::Transport(diagnostic(
+) -> std::future::Ready<Result<(), super::CodexError>> {
+    std::future::ready(Err(super::CodexError::Transport(diagnostic(
         "WebSocket transport is not available in this runtime",
-    )))
+    ))))
 }
 
 /// Attribute a socket failure to the configured transport and the full edited request.
