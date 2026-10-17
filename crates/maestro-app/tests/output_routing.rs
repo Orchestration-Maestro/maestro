@@ -44,9 +44,9 @@ fn child(name: &str, mode: &str) -> Command {
         .stderr(Stdio::piped());
     command
 }
-/// Serializes child launches so no sibling's fork holds another transaction's pipe ends open.
+/// Orders this file's child launches; a fork elsewhere in the test program can still hold a pipe end until it execs.
 static LAUNCH: Mutex<()> = Mutex::new(());
-/// Hold the launch gate for one whole pipe transaction.
+/// Acquire the launch lock; it stays held until the returned guard is dropped.
 fn launch_gate() -> MutexGuard<'static, ()> {
     LAUNCH.lock().unwrap_or_else(PoisonError::into_inner)
 }
