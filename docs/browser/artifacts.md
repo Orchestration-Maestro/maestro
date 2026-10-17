@@ -1,13 +1,13 @@
 # Artifact panels and views
 
 `maestro_web::tools::artifacts::create_artifact_element` constructs an owned
-`Box<dyn maestro_web::ArtifactElement>` for PDF, spreadsheets or an unrecognized filename suffix.
+`Box<dyn maestro_web::ArtifactElement>` for text, images, PDF, spreadsheets or an unrecognized filename suffix.
 Other recognized specialized formats return a presentation error until their
 viewers are installed; they never silently become generic downloads.
 
 The element exposes literal filename/content getters and setters, independent
 `get_header_buttons` and `render` operations, and call-scoped `ArtifactView`
-localization and brand operands. Retain the element across frames. Setters request
+localization, brand and borrowed `SyntaxHighlighter` operands. Retain the element across frames. Setters request
 repaint after drawing; they do not retain borrowed rendering inputs.
 
 The generic body is selectable native text in the supplied bounded viewport:
@@ -90,7 +90,6 @@ or partial content-only dimming is included.
 
 Specialized viewers remain in
 [#797](https://github.com/Orchestration-Maestro/maestro/issues/797),
-[#816](https://github.com/Orchestration-Maestro/maestro/issues/816),
 [#818](https://github.com/Orchestration-Maestro/maestro/issues/818) and
 [#819](https://github.com/Orchestration-Maestro/maestro/issues/819).
 HTML runtime-provider composition remains in
@@ -144,3 +143,38 @@ Legacy XLS cells use the [shared workbook reader](../application/document-format
 for formatted text and declared bounds. Binary formula, array, rich-text and
 hyperlink metadata remain in
 [legacy workbook metadata](https://github.com/Orchestration-Maestro/maestro/issues/1175).
+
+## Text artifacts
+
+`maestro_web::TextArtifact` starts with empty fields and retains one native
+monospace listing. The last filename segment, lowercased with Unicode semantics,
+selects the source language. Known code extensions request shared HTML
+highlighting; unsupported languages and engine failures still show the complete
+literal source. Other extensions render plain text. Markup remains literal unless
+it is escaped output from the shared highlighter. Long lines scroll rather than
+wrap. Only filename/content edits prepare the body again; unchanged redraws keep
+its nodes and scroll position.
+
+The header retains one copy control with two-second success feedback, followed by
+the original-byte download control. Copy and download both consume the original
+text; even base64-looking text saves as UTF-8. The last extension selects
+`image/svg+xml` for `svg`, `text/markdown` for `md`/`markdown`, otherwise `text/plain`.
+
+## Image artifacts
+
+`maestro_web::ImageArtifact` starts with empty fields. A case-sensitive `data:`
+prefix preserves the authored source URL; other content is framed as base64 using
+the filename-selected image MIME. The native image is centred and contained inside
+the padded reading viewport, without a radius or disabled pointer interaction.
+Its alternative text is the literal filename.
+
+A load failure replaces the source once with an SVG labelled `Image Error` in the
+selected pack's muted colour. Redraws retain that fallback; a changed source retries
+the image, and pack changes recolour the fallback. Edits retain the mounted root.
+Dropping either view removes only its own surface and native listeners.
+
+The image header decodes the complete base64 payload on each draw. Data URLs with
+no nonempty `base64,` payload save zero bytes. Folded payloads keep every line;
+invalid base64 fails before saving and never prevents the independent body from
+rendering. Image MIME follows the final extension: JPEG, GIF, WebP, SVG, BMP and
+ICO have their standard types, with PNG as the default.

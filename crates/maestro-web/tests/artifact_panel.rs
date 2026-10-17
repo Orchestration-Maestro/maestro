@@ -508,6 +508,7 @@ fn draw_underlying(harness: &Harness, events: Vec<egui::Event>) -> (bool, egui::
                     ui,
                     &harness.caller,
                     maestro_web::tools::artifacts::artifact_element::ArtifactView {
+                        highlighter: &crate::highlighter_support::NoHighlight,
                         i18n: &harness.frame.i18n,
                         presentation: &presentation,
                     },
@@ -1161,3 +1162,5 @@ fn assert_first_frame_controls(harness: &Harness, output: &egui::FullOutput) {
         "long-artifact-name-12.zip"
     );
 }
+
+pub mod highlighter_support;

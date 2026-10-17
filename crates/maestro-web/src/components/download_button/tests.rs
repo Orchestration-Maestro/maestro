@@ -121,6 +121,7 @@ fn download_control_preserves_original_bytes_and_slice_bounds() {
                 &context,
                 events,
                 ArtifactView {
+                    highlighter: &highlighter::NoHighlight,
                     i18n: &i18n,
                     presentation: &presentation,
                 },
@@ -244,3 +245,6 @@ fn activation(index: usize) -> Vec<Vec<egui::Event>> {
         ]]
     }
 }
+
+#[path = "../../../tests/highlighter_support/mod.rs"]
+pub(crate) mod highlighter;

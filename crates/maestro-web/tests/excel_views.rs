@@ -13,12 +13,21 @@ use std::rc::Rc;
 #[test]
 fn excel_factory_and_fields_follow_current_artifact() {
     let host = Rc::new(session_header_support::Host::default());
-    for name in ["a.xlsx", "a.XLSX", "a.xls", "a.XLS", "a.pdf", "a.unknown"] {
+    for name in [
+        "a.xlsx",
+        "a.XLSX",
+        "a.xls",
+        "a.XLS",
+        "a.pdf",
+        "a.unknown",
+        "a.txt",
+        "a.png",
+    ] {
         let view = create_artifact_element(name, "", host.clone()).unwrap();
         assert_eq!(view.filename(), name);
         assert_eq!(view.content(), "");
     }
-    for name in ["a.html", "a.svg", "a.md", "a.png", "a.docx", "a.txt"] {
+    for name in ["a.html", "a.svg", "a.md", "a.docx"] {
         assert!(create_artifact_element(name, "", host.clone()).is_err());
     }
     let mut view = ExcelArtifact::new(host);
@@ -301,3 +310,5 @@ fn excel_tool_commands_retain_and_update_live_view() {
     .unwrap();
     assert!(harness.host.published.borrow().is_empty());
 }
+
+pub mod highlighter_support;

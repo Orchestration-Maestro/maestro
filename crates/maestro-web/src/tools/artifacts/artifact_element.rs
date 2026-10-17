@@ -3,6 +3,8 @@ use crate::browser::attachment_content::AttachmentUiError;
 /// Call-scoped localization and branding, never retained by a native factory.
 #[derive(Clone, Copy)]
 pub struct ArtifactView<'a> {
+    /// Classifies code for this frame, never retained by the view.
+    pub highlighter: &'a dyn maestro_theme::SyntaxHighlighter,
     /// Caller localization.
     pub i18n: &'a crate::I18n,
     /// Caller brand projection.

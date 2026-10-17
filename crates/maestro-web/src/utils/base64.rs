@@ -29,13 +29,16 @@ pub(crate) fn decode(base64: &str) -> io::Result<Vec<u8>> {
 
 /// Decode the complete original artifact payload, including folded data URLs.
 pub(crate) fn original(content: &str) -> io::Result<Vec<u8>> {
-    let payload = content
+    decode(data_payload(content).unwrap_or(content))
+}
+
+/// Select a nonempty complete data URL payload without decoding it.
+pub(crate) fn data_payload(content: &str) -> Option<&str> {
+    content
         .strip_prefix("data:")
         .and_then(|s| s.split_once("base64,"))
         .map(|(_, payload)| payload)
         .filter(|payload| !payload.is_empty())
-        .unwrap_or(content);
-    decode(payload)
 }
 
 #[cfg(test)]

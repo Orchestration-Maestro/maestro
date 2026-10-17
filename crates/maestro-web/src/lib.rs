@@ -69,3 +69,5 @@ pub use maestro_app::{
 };
 #[cfg(target_arch = "wasm32")]
 pub use tools::javascript_repl::JAVASCRIPT_REPL_TOOL;
+
+pub use tools::artifacts::{image_artifact::ImageArtifact, text_artifact::TextArtifact};

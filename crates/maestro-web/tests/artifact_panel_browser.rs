@@ -450,3 +450,5 @@ pub fn artifact_panel_browser_body_leaves_shell_dividers_visible() {
         assert_ne!(body.tag_name(), "CANVAS");
     }
 }
+
+pub mod highlighter_support;

@@ -26,6 +26,8 @@ struct Entry {
 /// Deterministic clock; no toolkit frame or wall clock is involved.
 #[derive(Default)]
 pub struct Host {
+    /// Original byte download operands.
+    pub downloads: RefCell<Vec<(String, String, Vec<u8>)>>,
     /// Exact clipboard admissions.
     pub copies: RefCell<Vec<String>>,
     /// Separately resolved native operations.
@@ -177,8 +179,16 @@ impl AttachmentHost for Host {
     fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
         Ok(false)
     }
-    fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentUiError> {
-        unreachable!("unexpected byte download")
+    fn download_bytes(
+        &self,
+        bytes: &[u8],
+        name: &str,
+        mime: &str,
+    ) -> Result<(), AttachmentUiError> {
+        self.downloads
+            .borrow_mut()
+            .push((name.into(), mime.into(), bytes.to_vec()));
+        Ok(())
     }
     fn download(&self, _: Rc<RefCell<Attachment>>) -> Result<(), AttachmentUiError> {
         unreachable!()

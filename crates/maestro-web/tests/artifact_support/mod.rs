@@ -107,6 +107,8 @@ pub fn corpus() -> Corpus {
 }
 /// Owned native drawing operands.
 pub struct Frame {
+    /// Caller-owned classifier reused across frames.
+    pub highlighter: std::rc::Rc<dyn maestro_theme::SyntaxHighlighter>,
     /// Retained drawing context.
     pub context: egui::Context,
     /// Logical drawing viewport.
@@ -121,6 +123,7 @@ pub struct Frame {
 impl Default for Frame {
     fn default() -> Self {
         Self {
+            highlighter: std::rc::Rc::new(crate::highlighter_support::NoHighlight),
             context: egui::Context::default(),
             size: egui::vec2(400., 300.),
             pack: super::session_header_support::pack(),
@@ -152,11 +155,13 @@ impl Frame {
             },
             |ui| {
                 let operands = ArtifactView {
+                    highlighter: self.highlighter.as_ref(),
                     i18n: &self.i18n,
                     presentation: &presentation,
                 };
                 result = if header {
-                    view.get_header_buttons(ui, operands)
+                    ui.horizontal(|ui| view.get_header_buttons(ui, operands))
+                        .inner
                 } else {
                     view.render(ui, operands)
                 };
@@ -224,6 +229,7 @@ impl Frame {
                     ui,
                     caller,
                     ArtifactView {
+                        highlighter: self.highlighter.as_ref(),
                         i18n: &self.i18n,
                         presentation: &presentation,
                     },

@@ -1,0 +1,1337 @@
+{
+  "textLanguage": [
+    {
+      "input": {
+        "filename": "main.js"
+      },
+      "output": "javascript"
+    },
+    {
+      "input": {
+        "filename": "MAIN.JS"
+      },
+      "output": "javascript"
+    },
+    {
+      "input": {
+        "filename": "main.javascript"
+      },
+      "output": "javascript"
+    },
+    {
+      "input": {
+        "filename": "MAIN.JAVASCRIPT"
+      },
+      "output": "javascript"
+    },
+    {
+      "input": {
+        "filename": "main.ts"
+      },
+      "output": "typescript"
+    },
+    {
+      "input": {
+        "filename": "MAIN.TS"
+      },
+      "output": "typescript"
+    },
+    {
+      "input": {
+        "filename": "main.typescript"
+      },
+      "output": "typescript"
+    },
+    {
+      "input": {
+        "filename": "MAIN.TYPESCRIPT"
+      },
+      "output": "typescript"
+    },
+    {
+      "input": {
+        "filename": "main.jsx"
+      },
+      "output": "jsx"
+    },
+    {
+      "input": {
+        "filename": "MAIN.JSX"
+      },
+      "output": "jsx"
+    },
+    {
+      "input": {
+        "filename": "main.tsx"
+      },
+      "output": "tsx"
+    },
+    {
+      "input": {
+        "filename": "MAIN.TSX"
+      },
+      "output": "tsx"
+    },
+    {
+      "input": {
+        "filename": "main.py"
+      },
+      "output": "python"
+    },
+    {
+      "input": {
+        "filename": "MAIN.PY"
+      },
+      "output": "python"
+    },
+    {
+      "input": {
+        "filename": "main.python"
+      },
+      "output": "python"
+    },
+    {
+      "input": {
+        "filename": "MAIN.PYTHON"
+      },
+      "output": "python"
+    },
+    {
+      "input": {
+        "filename": "main.java"
+      },
+      "output": "java"
+    },
+    {
+      "input": {
+        "filename": "MAIN.JAVA"
+      },
+      "output": "java"
+    },
+    {
+      "input": {
+        "filename": "main.c"
+      },
+      "output": "c"
+    },
+    {
+      "input": {
+        "filename": "MAIN.C"
+      },
+      "output": "c"
+    },
+    {
+      "input": {
+        "filename": "main.cpp"
+      },
+      "output": "cpp"
+    },
+    {
+      "input": {
+        "filename": "MAIN.CPP"
+      },
+      "output": "cpp"
+    },
+    {
+      "input": {
+        "filename": "main.cs"
+      },
+      "output": "cs"
+    },
+    {
+      "input": {
+        "filename": "MAIN.CS"
+      },
+      "output": "cs"
+    },
+    {
+      "input": {
+        "filename": "main.php"
+      },
+      "output": "php"
+    },
+    {
+      "input": {
+        "filename": "MAIN.PHP"
+      },
+      "output": "php"
+    },
+    {
+      "input": {
+        "filename": "main.rb"
+      },
+      "output": "ruby"
+    },
+    {
+      "input": {
+        "filename": "MAIN.RB"
+      },
+      "output": "ruby"
+    },
+    {
+      "input": {
+        "filename": "main.ruby"
+      },
+      "output": "ruby"
+    },
+    {
+      "input": {
+        "filename": "MAIN.RUBY"
+      },
+      "output": "ruby"
+    },
+    {
+      "input": {
+        "filename": "main.go"
+      },
+      "output": "go"
+    },
+    {
+      "input": {
+        "filename": "MAIN.GO"
+      },
+      "output": "go"
+    },
+    {
+      "input": {
+        "filename": "main.rust"
+      },
+      "output": "rust"
+    },
+    {
+      "input": {
+        "filename": "MAIN.RUST"
+      },
+      "output": "rust"
+    },
+    {
+      "input": {
+        "filename": "main.swift"
+      },
+      "output": "swift"
+    },
+    {
+      "input": {
+        "filename": "MAIN.SWIFT"
+      },
+      "output": "swift"
+    },
+    {
+      "input": {
+        "filename": "main.kotlin"
+      },
+      "output": "kotlin"
+    },
+    {
+      "input": {
+        "filename": "MAIN.KOTLIN"
+      },
+      "output": "kotlin"
+    },
+    {
+      "input": {
+        "filename": "main.scala"
+      },
+      "output": "scala"
+    },
+    {
+      "input": {
+        "filename": "MAIN.SCALA"
+      },
+      "output": "scala"
+    },
+    {
+      "input": {
+        "filename": "main.dart"
+      },
+      "output": "dart"
+    },
+    {
+      "input": {
+        "filename": "MAIN.DART"
+      },
+      "output": "dart"
+    },
+    {
+      "input": {
+        "filename": "main.html"
+      },
+      "output": "html"
+    },
+    {
+      "input": {
+        "filename": "MAIN.HTML"
+      },
+      "output": "html"
+    },
+    {
+      "input": {
+        "filename": "main.css"
+      },
+      "output": "css"
+    },
+    {
+      "input": {
+        "filename": "MAIN.CSS"
+      },
+      "output": "css"
+    },
+    {
+      "input": {
+        "filename": "main.scss"
+      },
+      "output": "scss"
+    },
+    {
+      "input": {
+        "filename": "MAIN.SCSS"
+      },
+      "output": "scss"
+    },
+    {
+      "input": {
+        "filename": "main.sass"
+      },
+      "output": "sass"
+    },
+    {
+      "input": {
+        "filename": "MAIN.SASS"
+      },
+      "output": "sass"
+    },
+    {
+      "input": {
+        "filename": "main.less"
+      },
+      "output": "less"
+    },
+    {
+      "input": {
+        "filename": "MAIN.LESS"
+      },
+      "output": "less"
+    },
+    {
+      "input": {
+        "filename": "main.json"
+      },
+      "output": "json"
+    },
+    {
+      "input": {
+        "filename": "MAIN.JSON"
+      },
+      "output": "json"
+    },
+    {
+      "input": {
+        "filename": "main.xml"
+      },
+      "output": "xml"
+    },
+    {
+      "input": {
+        "filename": "MAIN.XML"
+      },
+      "output": "xml"
+    },
+    {
+      "input": {
+        "filename": "main.yaml"
+      },
+      "output": "yaml"
+    },
+    {
+      "input": {
+        "filename": "MAIN.YAML"
+      },
+      "output": "yaml"
+    },
+    {
+      "input": {
+        "filename": "main.yml"
+      },
+      "output": "yaml"
+    },
+    {
+      "input": {
+        "filename": "MAIN.YML"
+      },
+      "output": "yaml"
+    },
+    {
+      "input": {
+        "filename": "main.toml"
+      },
+      "output": "toml"
+    },
+    {
+      "input": {
+        "filename": "MAIN.TOML"
+      },
+      "output": "toml"
+    },
+    {
+      "input": {
+        "filename": "main.sql"
+      },
+      "output": "sql"
+    },
+    {
+      "input": {
+        "filename": "MAIN.SQL"
+      },
+      "output": "sql"
+    },
+    {
+      "input": {
+        "filename": "main.sh"
+      },
+      "output": "sh"
+    },
+    {
+      "input": {
+        "filename": "MAIN.SH"
+      },
+      "output": "sh"
+    },
+    {
+      "input": {
+        "filename": "main.bash"
+      },
+      "output": "bash"
+    },
+    {
+      "input": {
+        "filename": "MAIN.BASH"
+      },
+      "output": "bash"
+    },
+    {
+      "input": {
+        "filename": "main.ps1"
+      },
+      "output": "powershell"
+    },
+    {
+      "input": {
+        "filename": "MAIN.PS1"
+      },
+      "output": "powershell"
+    },
+    {
+      "input": {
+        "filename": "main.bat"
+      },
+      "output": "batch"
+    },
+    {
+      "input": {
+        "filename": "MAIN.BAT"
+      },
+      "output": "batch"
+    },
+    {
+      "input": {
+        "filename": "main.r"
+      },
+      "output": "r"
+    },
+    {
+      "input": {
+        "filename": "MAIN.R"
+      },
+      "output": "r"
+    },
+    {
+      "input": {
+        "filename": "main.matlab"
+      },
+      "output": "matlab"
+    },
+    {
+      "input": {
+        "filename": "MAIN.MATLAB"
+      },
+      "output": "matlab"
+    },
+    {
+      "input": {
+        "filename": "main.julia"
+      },
+      "output": "julia"
+    },
+    {
+      "input": {
+        "filename": "MAIN.JULIA"
+      },
+      "output": "julia"
+    },
+    {
+      "input": {
+        "filename": "main.lua"
+      },
+      "output": "lua"
+    },
+    {
+      "input": {
+        "filename": "MAIN.LUA"
+      },
+      "output": "lua"
+    },
+    {
+      "input": {
+        "filename": "main.perl"
+      },
+      "output": "perl"
+    },
+    {
+      "input": {
+        "filename": "MAIN.PERL"
+      },
+      "output": "perl"
+    },
+    {
+      "input": {
+        "filename": "main.vue"
+      },
+      "output": "vue"
+    },
+    {
+      "input": {
+        "filename": "MAIN.VUE"
+      },
+      "output": "vue"
+    },
+    {
+      "input": {
+        "filename": "main.svelte"
+      },
+      "output": "svelte"
+    },
+    {
+      "input": {
+        "filename": "MAIN.SVELTE"
+      },
+      "output": "svelte"
+    },
+    {
+      "input": {
+        "filename": "notes.txt"
+      },
+      "output": null
+    },
+    {
+      "input": {
+        "filename": "data.csv"
+      },
+      "output": null
+    },
+    {
+      "input": {
+        "filename": "header.h"
+      },
+      "output": null
+    },
+    {
+      "input": {
+        "filename": "README.md"
+      },
+      "output": null
+    },
+    {
+      "input": {
+        "filename": "icon.svg"
+      },
+      "output": null
+    },
+    {
+      "input": {
+        "filename": "Makefile"
+      },
+      "output": null
+    },
+    {
+      "input": {
+        "filename": "rust"
+      },
+      "output": "rust"
+    },
+    {
+      "input": {
+        "filename": ".py"
+      },
+      "output": "python"
+    },
+    {
+      "input": {
+        "filename": "a.py."
+      },
+      "output": null
+    },
+    {
+      "input": {
+        "filename": ""
+      },
+      "output": null
+    },
+    {
+      "input": {
+        "filename": "a.tar.gz"
+      },
+      "output": null
+    },
+    {
+      "input": {
+        "filename": "archive.JS.txt"
+      },
+      "output": null
+    },
+    {
+      "input": {
+        "filename": "x.Kotlin"
+      },
+      "output": "kotlin"
+    },
+    {
+      "input": {
+        "filename": "x.KOTLIN"
+      },
+      "output": "kotlin"
+    },
+    {
+      "input": {
+        "filename": "x.jsonc"
+      },
+      "output": null
+    },
+    {
+      "input": {
+        "filename": "x.mjs"
+      },
+      "output": null
+    },
+    {
+      "input": {
+        "filename": "x.htm"
+      },
+      "output": null
+    }
+  ],
+  "textMime": [
+    {
+      "input": {
+        "filename": "icon.svg"
+      },
+      "output": "image/svg+xml"
+    },
+    {
+      "input": {
+        "filename": "ICON.SVG"
+      },
+      "output": "image/svg+xml"
+    },
+    {
+      "input": {
+        "filename": "a.md"
+      },
+      "output": "text/markdown"
+    },
+    {
+      "input": {
+        "filename": "a.markdown"
+      },
+      "output": "text/markdown"
+    },
+    {
+      "input": {
+        "filename": "A.MARKDOWN"
+      },
+      "output": "text/markdown"
+    },
+    {
+      "input": {
+        "filename": "notes.txt"
+      },
+      "output": "text/plain"
+    },
+    {
+      "input": {
+        "filename": "data.json"
+      },
+      "output": "text/plain"
+    },
+    {
+      "input": {
+        "filename": "main.py"
+      },
+      "output": "text/plain"
+    },
+    {
+      "input": {
+        "filename": ""
+      },
+      "output": "text/plain"
+    },
+    {
+      "input": {
+        "filename": "Makefile"
+      },
+      "output": "text/plain"
+    },
+    {
+      "input": {
+        "filename": "a.md.txt"
+      },
+      "output": "text/plain"
+    },
+    {
+      "input": {
+        "filename": "a.txt.md"
+      },
+      "output": "text/markdown"
+    },
+    {
+      "input": {
+        "filename": "x.svgz"
+      },
+      "output": "text/plain"
+    }
+  ],
+  "textHeader": [
+    {
+      "input": {
+        "filename": "notes.txt",
+        "content": "hello world\n"
+      },
+      "output": {
+        "copy": {
+          "text": "hello world\n",
+          "title": "Copy",
+          "showText": false
+        },
+        "download": {
+          "filename": "notes.txt",
+          "mimeType": "text/plain",
+          "title": "Download",
+          "bytes": [
+            104,
+            101,
+            108,
+            108,
+            111,
+            32,
+            119,
+            111,
+            114,
+            108,
+            100,
+            10
+          ]
+        }
+      }
+    },
+    {
+      "input": {
+        "filename": "notes.txt",
+        "content": "test"
+      },
+      "output": {
+        "copy": {
+          "text": "test",
+          "title": "Copy",
+          "showText": false
+        },
+        "download": {
+          "filename": "notes.txt",
+          "mimeType": "text/plain",
+          "title": "Download",
+          "bytes": [
+            116,
+            101,
+            115,
+            116
+          ]
+        }
+      }
+    },
+    {
+      "input": {
+        "filename": "notes.txt",
+        "content": "Zg=="
+      },
+      "output": {
+        "copy": {
+          "text": "Zg==",
+          "title": "Copy",
+          "showText": false
+        },
+        "download": {
+          "filename": "notes.txt",
+          "mimeType": "text/plain",
+          "title": "Download",
+          "bytes": [
+            90,
+            103,
+            61,
+            61
+          ]
+        }
+      }
+    },
+    {
+      "input": {
+        "filename": "a.md",
+        "content": ""
+      },
+      "output": {
+        "copy": {
+          "text": "",
+          "title": "Copy",
+          "showText": false
+        },
+        "download": {
+          "filename": "a.md",
+          "mimeType": "text/markdown",
+          "title": "Download",
+          "bytes": []
+        }
+      }
+    },
+    {
+      "input": {
+        "filename": "icon.svg",
+        "content": "<svg/>"
+      },
+      "output": {
+        "copy": {
+          "text": "<svg/>",
+          "title": "Copy",
+          "showText": false
+        },
+        "download": {
+          "filename": "icon.svg",
+          "mimeType": "image/svg+xml",
+          "title": "Download",
+          "bytes": [
+            60,
+            115,
+            118,
+            103,
+            47,
+            62
+          ]
+        }
+      }
+    },
+    {
+      "input": {
+        "filename": "main.py",
+        "content": "é🙂\r\n"
+      },
+      "output": {
+        "copy": {
+          "text": "é🙂\r\n",
+          "title": "Copy",
+          "showText": false
+        },
+        "download": {
+          "filename": "main.py",
+          "mimeType": "text/plain",
+          "title": "Download",
+          "bytes": [
+            195,
+            169,
+            240,
+            159,
+            153,
+            130,
+            13,
+            10
+          ]
+        }
+      }
+    },
+    {
+      "input": {
+        "filename": "data.json",
+        "content": "abcd"
+      },
+      "output": {
+        "copy": {
+          "text": "abcd",
+          "title": "Copy",
+          "showText": false
+        },
+        "download": {
+          "filename": "data.json",
+          "mimeType": "text/plain",
+          "title": "Download",
+          "bytes": [
+            97,
+            98,
+            99,
+            100
+          ]
+        }
+      }
+    },
+    {
+      "input": {
+        "filename": "main.js",
+        "content": "const x = 1;"
+      },
+      "output": {
+        "copy": {
+          "text": "const x = 1;",
+          "title": "Copy",
+          "showText": false
+        },
+        "download": {
+          "filename": "main.js",
+          "mimeType": "text/plain",
+          "title": "Download",
+          "bytes": [
+            99,
+            111,
+            110,
+            115,
+            116,
+            32,
+            120,
+            32,
+            61,
+            32,
+            49,
+            59
+          ]
+        }
+      }
+    }
+  ],
+  "textRender": [
+    {
+      "input": {
+        "filename": "app.js",
+        "content": "const x = 1; // é <b>&</b>\n"
+      },
+      "output": {
+        "class": "hljs language-javascript",
+        "text": "const x = 1; // é <b>&</b>\n"
+      }
+    },
+    {
+      "input": {
+        "filename": "APP.TS",
+        "content": "let a: number = 2;"
+      },
+      "output": {
+        "class": "hljs language-typescript",
+        "text": "let a: number = 2;"
+      }
+    },
+    {
+      "input": {
+        "filename": "notes.txt",
+        "content": "<script>alert(1)</script> & é\n\tTabbed"
+      },
+      "output": {
+        "class": null,
+        "text": "<script>alert(1)</script> & é\n\tTabbed"
+      }
+    },
+    {
+      "input": {
+        "filename": "header.h",
+        "content": "int main(void);"
+      },
+      "output": {
+        "class": null,
+        "text": "int main(void);"
+      }
+    },
+    {
+      "input": {
+        "filename": "style.sass",
+        "content": "$c: red\nbody\n  color: $c"
+      },
+      "output": {
+        "class": "hljs language-sass",
+        "text": "$c: red\nbody\n  color: $c"
+      }
+    },
+    {
+      "input": {
+        "filename": "run.bat",
+        "content": "@echo off"
+      },
+      "output": {
+        "class": "hljs language-batch",
+        "text": "@echo off"
+      }
+    },
+    {
+      "input": {
+        "filename": "App.vue",
+        "content": "<template><p/></template>"
+      },
+      "output": {
+        "class": "hljs language-vue",
+        "text": "<template><p/></template>"
+      }
+    },
+    {
+      "input": {
+        "filename": "App.svelte",
+        "content": "<script>let a</script>"
+      },
+      "output": {
+        "class": "hljs language-svelte",
+        "text": "<script>let a</script>"
+      }
+    },
+    {
+      "input": {
+        "filename": "script.ps1",
+        "content": "Write-Host \"hi\""
+      },
+      "output": {
+        "class": "hljs language-powershell",
+        "text": "Write-Host \"hi\""
+      }
+    },
+    {
+      "input": {
+        "filename": "empty.py",
+        "content": ""
+      },
+      "output": {
+        "class": "hljs language-python",
+        "text": ""
+      }
+    }
+  ],
+  "imageMime": [
+    {
+      "input": {
+        "filename": "a.jpg"
+      },
+      "output": "image/jpeg"
+    },
+    {
+      "input": {
+        "filename": "A.JPG"
+      },
+      "output": "image/jpeg"
+    },
+    {
+      "input": {
+        "filename": "a.jpeg"
+      },
+      "output": "image/jpeg"
+    },
+    {
+      "input": {
+        "filename": "a.gif"
+      },
+      "output": "image/gif"
+    },
+    {
+      "input": {
+        "filename": "a.webp"
+      },
+      "output": "image/webp"
+    },
+    {
+      "input": {
+        "filename": "a.svg"
+      },
+      "output": "image/svg+xml"
+    },
+    {
+      "input": {
+        "filename": "a.bmp"
+      },
+      "output": "image/bmp"
+    },
+    {
+      "input": {
+        "filename": "a.ico"
+      },
+      "output": "image/x-icon"
+    },
+    {
+      "input": {
+        "filename": "a.png"
+      },
+      "output": "image/png"
+    },
+    {
+      "input": {
+        "filename": "A.PNG"
+      },
+      "output": "image/png"
+    },
+    {
+      "input": {
+        "filename": "a.tiff"
+      },
+      "output": "image/png"
+    },
+    {
+      "input": {
+        "filename": ""
+      },
+      "output": "image/png"
+    },
+    {
+      "input": {
+        "filename": "image"
+      },
+      "output": "image/png"
+    },
+    {
+      "input": {
+        "filename": "a.jpg.png"
+      },
+      "output": "image/png"
+    },
+    {
+      "input": {
+        "filename": "a.png.jpg"
+      },
+      "output": "image/jpeg"
+    }
+  ],
+  "imageUrl": [
+    {
+      "input": {
+        "filename": "a.png",
+        "content": "iVBORw0KGgo="
+      },
+      "output": "data:image/png;base64,iVBORw0KGgo="
+    },
+    {
+      "input": {
+        "filename": "a.jpg",
+        "content": "iVBORw0KGgo="
+      },
+      "output": "data:image/jpeg;base64,iVBORw0KGgo="
+    },
+    {
+      "input": {
+        "filename": "a.ico",
+        "content": "AAAB"
+      },
+      "output": "data:image/x-icon;base64,AAAB"
+    },
+    {
+      "input": {
+        "filename": "image",
+        "content": "AAAB"
+      },
+      "output": "data:image/png;base64,AAAB"
+    },
+    {
+      "input": {
+        "filename": "a.png",
+        "content": "data:image/png;base64,AAAB"
+      },
+      "output": "data:image/png;base64,AAAB"
+    },
+    {
+      "input": {
+        "filename": "a.jpg",
+        "content": "data:image/gif;base64,R0lG"
+      },
+      "output": "data:image/gif;base64,R0lG"
+    },
+    {
+      "input": {
+        "filename": "a.png",
+        "content": "DATA:image/png;base64,AAAB"
+      },
+      "output": "data:image/png;base64,DATA:image/png;base64,AAAB"
+    },
+    {
+      "input": {
+        "filename": "a.png",
+        "content": ""
+      },
+      "output": "data:image/png;base64,"
+    },
+    {
+      "input": {
+        "filename": "a.png",
+        "content": " data:image/png;base64,AAAB"
+      },
+      "output": "data:image/png;base64, data:image/png;base64,AAAB"
+    },
+    {
+      "input": {
+        "filename": "a.webp",
+        "content": "data:image/svg+xml,%3Csvg/%3E"
+      },
+      "output": "data:image/svg+xml,%3Csvg/%3E"
+    }
+  ],
+  "imageBytes": [
+    {
+      "input": {
+        "content": "AAEC//79"
+      },
+      "output": {
+        "bytes": [
+          0,
+          1,
+          2,
+          255,
+          254,
+          253
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "Zg"
+      },
+      "output": {
+        "bytes": [
+          102
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "Zg=="
+      },
+      "output": {
+        "bytes": [
+          102
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": " Zg==\n"
+      },
+      "output": {
+        "bytes": [
+          102
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": ""
+      },
+      "output": {
+        "bytes": []
+      }
+    },
+    {
+      "input": {
+        "content": "data:image/png;base64,Zm8="
+      },
+      "output": {
+        "bytes": [
+          102,
+          111
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "data:base64,AAAA"
+      },
+      "output": {
+        "bytes": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "data:image/png,abc"
+      },
+      "output": {
+        "bytes": []
+      }
+    },
+    {
+      "input": {
+        "content": "data:image/png;base64,"
+      },
+      "output": {
+        "bytes": []
+      }
+    },
+    {
+      "input": {
+        "content": "data:image/png;base64,Zm9v\nYmFy"
+      },
+      "output": {
+        "bytes": [
+          102,
+          111,
+          111,
+          98,
+          97,
+          114
+        ]
+      }
+    },
+    {
+      "input": {
+        "content": "data:image/png;base64,\nZm8="
+      },
+      "output": {
+        "bytes": [
+          102,
+          111
+        ]
+      }
+    }
+  ],
+  "imageInvalid": [
+    {
+      "content": "Zg="
+    },
+    {
+      "content": "not base64"
+    },
+    {
+      "content": "data:x;base64,!!!!"
+    },
+    {
+      "content": "DATA:image/png;base64,AAAA"
+    }
+  ],
+  "imageRender": [
+    {
+      "input": {
+        "filename": "a.png",
+        "content": "AAAB"
+      },
+      "output": {
+        "src": "data:image/png;base64,AAAB",
+        "alt": "a.png",
+        "fallback": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='50' text-anchor='middle' dominant-baseline='middle' fill='%23{muted}'%3EImage Error%3C/text%3E%3C/svg%3E"
+      }
+    },
+    {
+      "input": {
+        "filename": "photo <1>.jpg",
+        "content": "data:image/jpeg;base64,AAAB"
+      },
+      "output": {
+        "src": "data:image/jpeg;base64,AAAB",
+        "alt": "photo <1>.jpg",
+        "fallback": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='50' y='50' text-anchor='middle' dominant-baseline='middle' fill='%23{muted}'%3EImage Error%3C/text%3E%3C/svg%3E"
+      }
+    }
+  ]
+}

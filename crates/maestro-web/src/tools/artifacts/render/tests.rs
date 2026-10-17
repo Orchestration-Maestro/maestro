@@ -73,6 +73,8 @@ fn artifact_panel_wide_header_cannot_displace_close() {
                     bounds.with_min_x(328.),
                     Some("wide"),
                     ArtifactView {
+                        highlighter:
+                            &crate::components::download_button::tests::highlighter::NoHighlight,
                         i18n: &i18n,
                         presentation: &presentation,
                     },

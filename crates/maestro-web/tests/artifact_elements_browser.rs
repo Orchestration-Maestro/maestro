@@ -55,6 +55,7 @@ impl View {
             },
             |ui| {
                 let view = ArtifactView {
+                    highlighter: &crate::highlighter_support::NoHighlight,
                     i18n: &self.i18n,
                     presentation: &presentation,
                 };
@@ -207,3 +208,5 @@ pub fn generic_download_saves_original_blob_bytes() {
             .unwrap()
     );
 }
+
+pub mod highlighter_support;

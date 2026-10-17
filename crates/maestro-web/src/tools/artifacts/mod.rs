@@ -2,7 +2,9 @@
 pub mod artifact_element;
 pub mod excel_artifact;
 pub mod generic_artifact;
+pub mod image_artifact;
 pub mod pdf_artifact;
+pub mod text_artifact;
 use crate::browser::attachment_content::{AttachmentHost, AttachmentUiError};
 use artifact_element::ArtifactElement;
 use artifact_element::ArtifactView;
@@ -234,6 +236,8 @@ pub fn create_artifact_element(
     host: Rc<dyn AttachmentHost>,
 ) -> Result<Box<dyn ArtifactElement>, AttachmentUiError> {
     let mut element: Box<dyn ArtifactElement> = match get_file_type(filename) {
+        FileType::Text => Box::new(text_artifact::TextArtifact::new(host)),
+        FileType::Image => Box::new(image_artifact::ImageArtifact::new(host)),
         FileType::Excel => Box::new(excel_artifact::ExcelArtifact::new(host)),
         FileType::Pdf => Box::new(pdf_artifact::PdfArtifact::new(host)),
         FileType::Generic => Box::new(generic_artifact::GenericArtifact::new(host)),
@@ -246,4 +250,13 @@ pub fn create_artifact_element(
     element.set_filename(filename.into());
     element.set_content(content.into());
     Ok(element)
+}
+
+/// Select the Unicode-lowercased last literal dot-delimited filename segment.
+fn extension(filename: &str) -> String {
+    filename
+        .rsplit('.')
+        .next()
+        .unwrap_or_default()
+        .to_lowercase()
 }

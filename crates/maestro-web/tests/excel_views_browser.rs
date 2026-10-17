@@ -463,3 +463,5 @@ pub fn excel_keyboard_reveals_offscreen_sheet_tabs() {
         "getComputedStyle(document.querySelectorAll('.maestro-excel-sheet')[1]).display!=='none'&&document.querySelectorAll('.maestro-excel-sheet')[1].querySelector('td').textContent==='1000'",
     );
 }
+
+pub mod highlighter_support;
