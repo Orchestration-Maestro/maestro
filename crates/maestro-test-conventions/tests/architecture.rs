@@ -677,7 +677,7 @@ fn permitted_downward_edges_pass_without_absent_crates() {
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        140
+        143
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
@@ -708,6 +708,7 @@ const UTILITY_EXCLUDED: &[&str] = &[
     "maestro-lock",
     "maestro-process",
     "maestro-pattern",
+    "maestro-markdown",
     "maestro-cancellation",
     "maestro-request",
     "maestro-extensions-wasm",
