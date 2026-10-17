@@ -169,7 +169,7 @@ fn callback_lifetimes_end_after_last_retained_owner() {
     let released = Arc::new(AtomicBool::new(false));
     let capture = Capture(Arc::clone(&released));
     let source: SourceInfo = serde_json::from_value(serde_json::json!({"path":"/owned", "source":"cli", "scope":"temporary", "origin":"top-level"})).unwrap();
-    let owner = Arc::new(RwLock::new(Extension::<(), String>::new(
+    let owner = Arc::new(RwLock::new(Extension::<String>::new(
         "/owned".into(),
         "/resolved".into(),
         Arc::new(RwLock::new(source)),
@@ -192,9 +192,10 @@ fn callback_lifetimes_end_after_last_retained_owner() {
         },
     )
     .unwrap();
-    let runner = ExtensionRunner::<(), String>::new(
+    let runner = ExtensionRunner::<String>::new(
         Arc::clone(&owners),
         runtime,
+        support::session::runner_session("/workspace").0,
         Arc::new(|_| {}),
         maestro_theme::LiveTheme::default(),
     );
@@ -240,10 +241,12 @@ mod tests {
         ExtensionFlagOptions, ExtensionHandle, ExtensionRuntimeState, ExtensionShortcutOptions,
         FlagType, FlagValue, RegisteredCommandOptions,
     };
-    use maestro_extensions::{Extension, ExtensionAPI, SourceInfo, create_event_bus};
+    use maestro_extensions::{
+        Extension, ExtensionAPI, ExtensionContext, ExtensionRunner, SourceInfo, create_event_bus,
+    };
     use std::sync::{Arc, RwLock};
 
-    fn live_facade() -> (ExtensionHandle<(), ()>, ExtensionAPI<(), ()>) {
+    fn live_facade() -> (ExtensionHandle<()>, ExtensionAPI<()>) {
         let source: SourceInfo = serde_json::from_value(serde_json::json!({
             "path":"/captured", "source":"cli", "scope":"temporary", "origin":"top-level"
         }))
@@ -319,10 +322,22 @@ mod tests {
         );
     }
 
+    /// A context from a runner without registrations.
+    fn context() -> ExtensionContext {
+        ExtensionRunner::<()>::new(
+            Arc::new(RwLock::new(Vec::new())),
+            Arc::new(ExtensionRuntimeState::new()),
+            crate::support::session::runner_session("/workspace").0,
+            Arc::new(|_| {}),
+            maestro_theme::LiveTheme::default(),
+        )
+        .create_context()
+    }
+
     async fn install_and_invoke(
         kind: &str,
-        owner: &ExtensionHandle<(), ()>,
-        api: &ExtensionAPI<(), ()>,
+        owner: &ExtensionHandle<()>,
+        api: &ExtensionAPI<()>,
         read_flag: impl Fn() + Send + Sync + 'static,
     ) {
         if kind == "shortcut" {
@@ -330,7 +345,7 @@ mod tests {
                 "ctrl+y".into(),
                 ExtensionShortcutOptions {
                     description: None,
-                    handler: Arc::new(move |()| {
+                    handler: Arc::new(move |_: ExtensionContext| {
                         read_flag();
                         Box::pin(std::future::ready(Ok(())))
                     }),
@@ -343,7 +358,7 @@ mod tests {
                     .unwrap()
                     .handler,
             );
-            handler(()).await.unwrap();
+            handler(context()).await.unwrap();
             return;
         }
         let options: RegisteredCommandOptions<()> = if kind == "command" {

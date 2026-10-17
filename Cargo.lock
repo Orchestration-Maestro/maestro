@@ -3146,6 +3146,8 @@ name = "maestro-extensions"
 version = "0.1.0"
 dependencies = [
  "indexmap",
+ "maestro-catalog",
+ "maestro-credentials",
  "maestro-dependencies",
  "maestro-models",
  "maestro-resources",

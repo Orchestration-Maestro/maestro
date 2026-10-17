@@ -204,7 +204,10 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
 ];
 
 /// Internal development edges permitted beyond the production table.
-pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[("maestro-tui-crossterm", "maestro-brand")];
+pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
+    ("maestro-tui-crossterm", "maestro-brand"),
+    ("maestro-extensions", "maestro-credentials"),
+];
 
 /// Foundation utility that native crates may use beyond their table row.
 pub(crate) const UTILITY: &str = "maestro-path";

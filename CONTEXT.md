@@ -108,6 +108,7 @@ are later scope, not active foundation concepts.
 - **EventBus:** Shared literal event channels with ordered listener snapshots, explicit unsubscribe and callback-scoped foreign delivery; asynchronous listener tails are independently owned.
 - **Registration:** A host-admitted declaration of an owned capability.
 - **Extension UI context:** An owned handle to the UI host current when it was obtained; without an installed host its operations return the defined headless results.
+- **Extension context:** The single-thread handle callbacks receive; each operation fails with the stale error once its runner is invalidated, otherwise it reads the runner's current session, UI and bound operations, except the model reader fixed at creation.
 - **Message renderer:** An extension callback that renders a custom message type; the first extension in load order that registered the type supplies it.
 - **Package:** An npm, Git or local source containing extension components or resources; consumer installation does not compile Rust code.
 - **File pattern:** A glob or ignore rule matched against relative file paths.
@@ -138,7 +139,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Overlay:** A retained component layered over the frame, with live placement/visibility options and a public handle for focus, temporary hiding and removal.
 - **Retained frame:** The lines the terminal currently shows, kept so the next update writes only the rows that changed.
 - **Terminal runtime:** The host effects a frame writer asks for: monotonic time, deferred callbacks, local future execution, environment queries and log files.
-- **Terminal adapter:** The real-terminal connection in `maestro-tui-crossterm`, whose normal/build dependencies are limited to the toolkit, the text leaf and, optionally, the foundation utility; it requires the toolkit and text directly. Its examples may use the brand owner through the sole permitted internal development edge; that edge does not satisfy either runtime requirement.
+- **Terminal adapter:** The real-terminal connection in `maestro-tui-crossterm`, whose normal/build dependencies are limited to the toolkit, the text leaf and, optionally, the foundation utility; it requires the toolkit and text directly. Its examples may use the brand owner through a permitted internal development edge; that edge does not satisfy either runtime requirement.
 - **File mutation queue:** The native per-file ordering in `maestro-tools` that runs file-changing tool operations on one file one at a time, in call order, while different files proceed independently; files are identified by canonical path, or by lexical absolute path when canonicalization fails.
 - **OutputAccumulator:** A native tool-output stream that owns decoded snapshot accounting and an optional raw overflow artifact.
 - **ToolsManager:** The native owner of the fd and rg search programs in maestro-tools: it looks in the supplied binary directory and on PATH, then applies call-time offline and Android policy before attempting a missing program's latest-release installation.

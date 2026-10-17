@@ -1425,8 +1425,8 @@ fn policy_edge_matrix(dev: bool) {
     for &(from, targets) in support::policy::POLICY {
         for &(to, _) in support::policy::POLICY {
             let utility_edge = to == "maestro-path" && !UTILITY_EXCLUDED.contains(&from);
-            let example_brand = dev && from == "maestro-tui-crossterm" && to == "maestro-brand";
-            if from == to || example_brand || (!dev && (targets.contains(&to) || utility_edge)) {
+            let approved = dev && support::policy::DEVELOPMENT.contains(&(from, to));
+            if from == to || approved || (!dev && (targets.contains(&to) || utility_edge)) {
                 continue;
             }
             let mut declared = valid.clone();
@@ -1640,6 +1640,39 @@ fn terminal_example_brand_edge_is_development_only() {
         assert_eq!(
             check_workspace(&workspace.root),
             Err("forbidden production dependency: maestro-tui-crossterm -> maestro-brand".into()),
+            "{kind}{extra}"
+        );
+    }
+}
+
+#[test]
+fn extension_credentials_edge_is_development_only() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions", "maestro-credentials"]);
+    for kind in [
+        "dev-dependencies",
+        "target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies",
+    ] {
+        workspace.member(
+            "maestro-extensions",
+            "maestro-extensions",
+            &format!("[{kind}]\nmaestro-credentials = {{ path = \"../maestro-credentials\" }}"),
+        );
+        assert_eq!(check_workspace(&workspace.root), Ok(()), "{kind}");
+    }
+    for (kind, extra) in DECLARATIONS {
+        workspace.member(
+            "maestro-extensions",
+            "maestro-extensions",
+            &format!(
+                "[{kind}]\nmaestro-credentials = {{ path = \"../maestro-credentials\"{extra} }}"
+            ),
+        );
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err(
+                "forbidden production dependency: maestro-extensions -> maestro-credentials".into()
+            ),
             "{kind}{extra}"
         );
     }

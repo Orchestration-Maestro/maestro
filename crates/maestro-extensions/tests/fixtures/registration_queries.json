@@ -247,10 +247,7 @@
         },
         {
           "op": "invoke_shortcut",
-          "key": "ctrl+z",
-          "ctx": {
-            "marker": "current"
-          }
+          "key": "ctrl+z"
         }
       ],
       "observe": [
@@ -275,9 +272,7 @@
       "trace": [
         {
           "tag": "replacement",
-          "ctx": {
-            "marker": "current"
-          }
+          "ctx": "/workspace"
         }
       ],
       "observations": [
@@ -1451,9 +1446,6 @@
         {
           "op": "invoke_shortcut",
           "key": "ctrl+x",
-          "ctx": {
-            "value": 43
-          },
           "error": "shortcut failed"
         }
       ],
@@ -1481,9 +1473,7 @@
         },
         {
           "tag": "ctrl+x",
-          "ctx": {
-            "value": 43
-          }
+          "ctx": "/workspace"
         }
       ]
     }

@@ -1,8 +1,9 @@
 # Owned extension registration
 
 `maestro-extensions` registers commands, flags, shortcuts and message renderers on
-caller-supplied extension owners. It does not load extension artifacts or create
-application contexts. The caller supplies provenance, an existing event bus,
+caller-supplied extension owners, and creates the base [contexts](#contexts) their
+callbacks receive. It does not load extension artifacts or own application policy.
+The caller supplies provenance, an existing event bus, the served session,
 effective keybindings and the live theme the headless UI fallback reports; the
 [UI capabilities](ui.md) guide covers UI hosts and renderers. The loader or runtime retains a strong extension
 owner. API clones hold weak owner handles, so callbacks may capture them without
@@ -12,19 +13,23 @@ registration and facade flag reads return the stale-context error.
 ## Register and query
 
 ```rust
+use maestro_catalog::ModelRegistry;
+use maestro_credentials::AuthStorage;
 use maestro_extensions::{create_event_bus, Extension, ExtensionAPI, ExtensionRunner, SourceInfo};
+use maestro_extensions::runner::ExtensionRunnerSession;
 use maestro_extensions::types::{
     ExtensionRuntimeState, RegisteredCommandOptions, ExtensionFlagOptions,
     ExtensionShortcutOptions, FlagType, FlagValue,
 };
-use std::sync::{Arc, RwLock};
+use maestro_session::SessionManager;
+use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
 
 # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 let source: SourceInfo = serde_json::from_value(serde_json::json!({
     "path": "/extensions/example", "source": "cli",
     "scope": "temporary", "origin": "top-level"
 }))?;
-let owner = Arc::new(RwLock::new(Extension::<(), ()>::new(
+let owner = Arc::new(RwLock::new(Extension::<()>::new(
     source.path.clone(), "/resolved/example".into(), Arc::new(RwLock::new(source)),
 )));
 let owners = Arc::new(RwLock::new(vec![Arc::clone(&owner)]));
@@ -47,16 +52,30 @@ api.register_flag("quiet".into(), ExtensionFlagOptions {
     default: Some(FlagValue::Boolean(false)),
 })?;
 api.register_shortcut("ctrl+x".into(), ExtensionShortcutOptions {
-    description: None, handler: Arc::new(|()| Box::pin(async { Ok(()) })),
+    description: None,
+    handler: Arc::new(|ctx| {
+        let cwd = ctx.cwd().map(str::to_owned);
+        Box::pin(async move { assert_eq!(cwd?, "/work"); Ok(()) })
+    }),
 })?;
-let runner = ExtensionRunner::<(), ()>::new(
-    owners, runtime, Arc::new(|line| eprint!("{line}")), maestro_theme::LiveTheme::default(),
+let auth = Arc::new(AuthStorage::in_memory(Default::default()));
+let session = ExtensionRunnerSession {
+    cwd: "/work".into(),
+    session_manager: Rc::new(RefCell::new(SessionManager::in_memory(Some("/work"))?)),
+    model_registry: Rc::new(RefCell::new(ModelRegistry::in_memory(auth)?)),
+};
+let runner = ExtensionRunner::<()>::new(
+    owners, runtime, session, Arc::new(|line| eprint!("{line}")),
+    maestro_theme::LiveTheme::default(),
 );
 assert_eq!(api.get_flag("quiet")?, Some(FlagValue::Boolean(false)));
 assert!(runner.get_shortcuts(&vec![]).contains_key("ctrl+x"));
 let command = runner.get_command("hello").ok_or("command missing")?;
 let executor = tokio::runtime::Builder::new_current_thread().build()?;
 executor.block_on((command.handler)("raw arguments".into(), ()))?;
+let shortcuts = runner.get_shortcuts(&vec![]);
+let shortcut = Arc::clone(&shortcuts["ctrl+x"].read().map_err(|e| e.to_string())?.handler);
+executor.block_on(shortcut(runner.create_context()))?;
 # Ok(())
 # }
 ```
@@ -83,7 +102,7 @@ fn local_callback_registration_example() -> Result<(), Box<dyn std::error::Error
         "path": "/extensions/rename", "source": "cli",
         "scope": "temporary", "origin": "top-level"
     }))?;
-    let owner = Rc::new(RwLock::new(Extension::<(), Rc<Input>, Local>::new(
+    let owner = Rc::new(RwLock::new(Extension::<Rc<Input>, Local>::new(
         source.path.clone(), "/resolved/rename".into(), Arc::new(RwLock::new(source)),
     )));
     let owners = Rc::new(RwLock::new(vec![Rc::clone(&owner)]));
@@ -101,8 +120,15 @@ fn local_callback_registration_example() -> Result<(), Box<dyn std::error::Error
             Ok(())
         })),
     })?;
-    let runner = ExtensionRunner::<(), Rc<Input>, Local>::new(
-        owners, runtime, Rc::new(|line| eprint!("{line}")), maestro_theme::LiveTheme::default(),
+#   let auth = Arc::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
+#   let session = maestro_extensions::runner::ExtensionRunnerSession {
+#       cwd: "/work".into(),
+#       session_manager: Rc::new(std::cell::RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
+#       model_registry: Rc::new(std::cell::RefCell::new(maestro_catalog::ModelRegistry::in_memory(auth)?)),
+#   };
+    let runner = ExtensionRunner::<Rc<Input>, Local>::new(
+        owners, runtime, session, Rc::new(|line| eprint!("{line}")),
+        maestro_theme::LiveTheme::default(),
     );
     let command = runner.get_command("rename").ok_or("command missing")?;
     let input = Rc::new(Input::new());
@@ -120,7 +146,7 @@ The family is a type parameter resolved through associated pointer types, so
 the compiler cannot infer it from a callback alone. Name it where nothing else
 fixes it: a struct literal bound before registration
 (`RegisteredCommandOptions::<()> { .. }`) or a runner built from a collection
-(`ExtensionRunner::<C, CC>::new`). Literals passed directly to a facade method
+(`ExtensionRunner::<CC>::new`). Literals passed directly to a facade method
 infer the facade's family.
 
 ## Commands
@@ -146,10 +172,11 @@ and empty strings remain present. An owner can read only names it registered;
 the runner can set any name. Value snapshots are independent ordered maps, while
 returned flag records retain their owners.
 
-Invalidation retains the first message, including an empty string. Registration
-and facade flag reads then return that error before effects. Runner queries and
-its flag setter remain available. Omitting the message uses guidance about stale
-contexts after session replacement or reload.
+Invalidation, through `ExtensionRunner::invalidate` or the shared runtime state,
+retains the first message, including an empty string. Registration, facade flag
+reads and every context operation then return that error before effects. Runner
+queries and its flag setter remain available. Omitting the message uses guidance
+about stale contexts after session replacement or reload.
 
 ## Shortcuts and diagnostics
 
@@ -163,3 +190,64 @@ is not cleared. An installed UI context suppresses only warning output, not
 diagnostics or selection; with the headless fallback each warning is reported. A warning reporter receives one complete line, including its final
 newline, outside registration locks. Flag and shortcut paths are captured when
 registered; changing an owner's current path does not rewrite them.
+
+## Contexts
+
+`ExtensionRunner::create_context` returns the `ExtensionContext` callbacks
+receive. It shares its runner's state and reads it on each call: the UI context,
+the working directory, session history and model catalog of the
+`ExtensionRunnerSession` given to `ExtensionRunner::new`, and the application
+operations last given to `bind_core`. The model reader is the exception: a
+context keeps the `get_model` operation that was bound when it was created, and
+calls it on every access. Before any binding, a context reports no model, idle,
+no cancellation, no pending messages, no usage and an empty system prompt, and
+its abort, shutdown and compaction requests do nothing.
+
+Each operation returns its bound operation's value or error unchanged.
+`compact` passes its options, callbacks included, unchanged and returns without
+waiting for compaction. Once the runner is invalidated, every operation returns
+the stale error before reading state or calling an operation. Values returned
+earlier (UI context, session history, catalog, cancellation and model) keep
+working; nothing is revoked or retargeted. Creating contexts, the runner's
+queries and `ExtensionRunner::shutdown`, which calls the bound shutdown
+operation, stay available.
+
+A context is a single-thread handle. A thread-safe shortcut callback receives it
+by value and returns a `Send` future, so it reads the context before its first
+suspension; a `Local` callback may keep it across suspensions.
+
+```rust
+use maestro_catalog::ModelRegistry;
+use maestro_credentials::AuthStorage;
+use maestro_extensions::runner::ExtensionRunnerSession;
+use maestro_extensions::types::ExtensionRuntimeState;
+use maestro_extensions::{ExtensionContextActions, ExtensionRunner};
+use maestro_session::SessionManager;
+use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
+
+# fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+# const STALE: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
+let auth = Arc::new(AuthStorage::in_memory(Default::default()));
+let session = ExtensionRunnerSession {
+    cwd: "/work".into(),
+    session_manager: Rc::new(RefCell::new(SessionManager::in_memory(Some("/work"))?)),
+    model_registry: Rc::new(RefCell::new(ModelRegistry::in_memory(auth)?)),
+};
+let runner = ExtensionRunner::<()>::new(
+    Arc::new(RwLock::new(Vec::new())), Arc::new(ExtensionRuntimeState::new()), session,
+    Arc::new(|line| eprint!("{line}")), maestro_theme::LiveTheme::default(),
+);
+let ctx = runner.create_context();
+assert!(ctx.is_idle()?);
+runner.bind_core(ExtensionContextActions {
+    is_idle: Rc::new(|| Ok(false)),
+    ..ExtensionContextActions::default()
+});
+assert!(!ctx.is_idle()?);
+let history = ctx.session_manager()?;
+runner.invalidate(None);
+assert_eq!(ctx.cwd().unwrap_err().to_string(), STALE);
+assert_eq!(history.borrow().get_cwd(), "/work");
+# Ok(())
+# }
+```

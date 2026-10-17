@@ -16,6 +16,10 @@ use std::{
 };
 use tokio::task::JoinHandle;
 
+/// Real in-memory session operands.
+#[path = "session.rs"]
+pub mod session;
+
 /// The complete default stale-context guidance.
 pub const STALE: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
 
@@ -48,11 +52,11 @@ pub fn source(path: &str) -> Arc<RwLock<SourceInfo>> {
 /// A loaded owner with its facade, current collection and runtime state.
 pub struct Loaded<C> {
     /// The strong registration owner.
-    pub owner: ExtensionHandle<C, C, Local>,
+    pub owner: ExtensionHandle<C, Local>,
     /// The weak registration facade.
-    pub api: ExtensionAPI<C, C, Local>,
+    pub api: ExtensionAPI<C, Local>,
     /// Current load order containing the owner.
-    pub owners: ExtensionCollection<C, C, Local>,
+    pub owners: ExtensionCollection<C, Local>,
     /// Shared flag values and activity.
     pub runtime: Arc<ExtensionRuntimeState>,
 }
@@ -73,11 +77,12 @@ pub fn loaded<C>(path: &str, events: EventBus<Local>) -> Loaded<C> {
     }
 }
 
-/// Creates a local runner over the supplied collection.
-pub fn runner<C>(owners: &ExtensionCollection<C, C, Local>) -> ExtensionRunner<C, C, Local> {
-    ExtensionRunner::<C, C, Local>::new(
+/// Creates a local runner over the supplied collection, serving `/work`.
+pub fn runner<C>(owners: &ExtensionCollection<C, Local>) -> ExtensionRunner<C, Local> {
+    ExtensionRunner::<C, Local>::new(
         owners.clone(),
         Arc::new(ExtensionRuntimeState::new()),
+        session::runner_session("/work").0,
         Rc::new(|_| {}),
         LiveTheme::default(),
     )

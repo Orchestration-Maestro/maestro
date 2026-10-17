@@ -14,7 +14,7 @@ use std::sync::{Arc, RwLock};
 /// Guidance for an invalidated or released registration facade.
 const STALE_MESSAGE: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
 
-impl<C, CC, E: ExtensionExecution> Extension<C, CC, E> {
+impl<CC, E: ExtensionExecution> Extension<CC, E> {
     /// Creates an empty owner with supplied paths and provenance.
     #[must_use]
     pub fn new(path: String, resolved_path: String, source_info: Arc<RwLock<SourceInfo>>) -> Self {
@@ -59,12 +59,12 @@ impl Default for ExtensionRuntimeState {
         Self::new()
     }
 }
-impl<C, CC, E: ExtensionExecution> ExtensionAPI<C, CC, E> {
+impl<CC, E: ExtensionExecution> ExtensionAPI<CC, E> {
     /// Borrows a registration owner, retaining shared state and event capability.
     /// The loader or runtime must keep a strong owner while the extension is live.
     #[must_use]
     pub fn new(
-        extension: &ExtensionHandle<C, CC, E>,
+        extension: &ExtensionHandle<CC, E>,
         runtime: Arc<ExtensionRuntimeState>,
         events: EventBus<E>,
     ) -> Self {
@@ -75,7 +75,7 @@ impl<C, CC, E: ExtensionExecution> ExtensionAPI<C, CC, E> {
         }
     }
     /// Upgrades the live registration owner after checking invalidation.
-    fn owner(&self) -> Result<ExtensionHandle<C, CC, E>, EventError> {
+    fn owner(&self) -> Result<ExtensionHandle<CC, E>, EventError> {
         self.runtime.assert_active()?;
         E::upgrade(&self.extension).ok_or_else(|| STALE_MESSAGE.into())
     }
@@ -110,7 +110,7 @@ impl<C, CC, E: ExtensionExecution> ExtensionAPI<C, CC, E> {
     pub fn register_shortcut(
         &self,
         shortcut: KeyId,
-        options: ExtensionShortcutOptions<C, E>,
+        options: ExtensionShortcutOptions<E>,
     ) -> Result<(), EventError> {
         let extension = self.owner()?;
         let replaced = {

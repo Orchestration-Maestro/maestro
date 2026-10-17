@@ -1,8 +1,10 @@
 //! Owned extension registration records.
+mod contexts;
 mod execution;
 mod registration;
 mod renderers;
 mod ui;
+pub use contexts::*;
 pub use execution::ExtensionExecution;
 pub use registration::*;
 pub use renderers::*;

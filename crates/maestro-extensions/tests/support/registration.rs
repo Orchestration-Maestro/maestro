@@ -3,8 +3,8 @@
 use indexmap::IndexMap;
 use maestro_extensions::types::*;
 use maestro_extensions::{
-    EventBusController, EventError, Extension, ExtensionAPI, ExtensionFlag, ExtensionRunner,
-    ExtensionUIContext, ResolvedCommand, SourceInfo, create_event_bus_for,
+    EventBusController, EventError, Extension, ExtensionAPI, ExtensionContext, ExtensionFlag,
+    ExtensionRunner, ExtensionUIContext, ResolvedCommand, SourceInfo, create_event_bus_for,
 };
 use maestro_models::Local;
 use maestro_resources::ResourceDiagnostic;
@@ -16,6 +16,10 @@ use std::{
     rc::Rc,
     sync::{Arc, Mutex, RwLock},
 };
+
+/// Real in-memory session operands.
+#[path = "session.rs"]
+pub mod session;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -100,10 +104,10 @@ struct Step {
     source_info: Option<Provenance>,
 }
 struct Replay {
-    owners: ExtensionCollection<Value, Value, Local>,
-    apis: Vec<ExtensionAPI<Value, Value, Local>>,
+    owners: ExtensionCollection<Value, Local>,
+    apis: Vec<ExtensionAPI<Value, Local>>,
     runtime: Arc<ExtensionRuntimeState>,
-    runner: Rc<ExtensionRunner<Value, Value, Local>>,
+    runner: Rc<ExtensionRunner<Value, Local>>,
     bus: EventBusController<Local>,
     trace: Arc<Mutex<Vec<Value>>>,
     warnings: Arc<Mutex<Vec<String>>>,
@@ -179,7 +183,7 @@ fn assert_error(error: &EventError, expected: Option<&str>) {
         None => (),
     }
 }
-fn shortcut_view(key: &str, record: &maestro_extensions::ExtensionShortcut<Value, Local>) -> Value {
+fn shortcut_view(key: &str, record: &maestro_extensions::ExtensionShortcut<Local>) -> Value {
     let mut v =
         json!({"key":key,"shortcut":record.shortcut,"extension_path":record.extension_path});
     if let Some(d) = &record.description {
@@ -200,7 +204,7 @@ fn diagnostic_view(d: &Arc<RwLock<Vec<ResourceDiagnostic>>>) -> Value {
             .collect::<Vec<_>>()
     )
 }
-fn assert_registration_locks_released(owners: &ExtensionCollection<Value, Value, Local>) {
+fn assert_registration_locks_released(owners: &ExtensionCollection<Value, Local>) {
     let owners = owners.try_write().unwrap();
     for owner in owners.iter() {
         let owner = owner.try_write().unwrap();
@@ -229,29 +233,28 @@ impl Replay {
                 Ok(None)
             }),
         );
-        let owners: ExtensionCollection<Value, Value, Local> = Rc::new(RwLock::new(Vec::new()));
+        let owners: ExtensionCollection<Value, Local> = Rc::new(RwLock::new(Vec::new()));
         let output = Arc::clone(&warnings);
-        let runner = Rc::new_cyclic(
-            |runner: &std::rc::Weak<ExtensionRunner<Value, Value, Local>>| {
-                let runner = runner.clone();
-                let owners = Rc::clone(&owners);
-                ExtensionRunner::<Value, Value, Local>::new(
-                    Rc::clone(&owners),
-                    Arc::clone(&runtime),
-                    Rc::new(move |s: &str| {
-                        let runner = runner.upgrade().unwrap();
-                        assert!(runner.get_shortcut_diagnostics().try_write().is_ok());
-                        assert_registration_locks_released(&owners);
-                        assert!(s.ends_with('\n'));
-                        output
-                            .lock()
-                            .unwrap()
-                            .push(s.strip_suffix('\n').unwrap().to_owned());
-                    }),
-                    LiveTheme::default(),
-                )
-            },
-        );
+        let runner = Rc::new_cyclic(|runner: &std::rc::Weak<ExtensionRunner<Value, Local>>| {
+            let runner = runner.clone();
+            let owners = Rc::clone(&owners);
+            ExtensionRunner::<Value, Local>::new(
+                Rc::clone(&owners),
+                Arc::clone(&runtime),
+                session::runner_session("/workspace").0,
+                Rc::new(move |s: &str| {
+                    let runner = runner.upgrade().unwrap();
+                    assert!(runner.get_shortcut_diagnostics().try_write().is_ok());
+                    assert_registration_locks_released(&owners);
+                    assert!(s.ends_with('\n'));
+                    output
+                        .lock()
+                        .unwrap()
+                        .push(s.strip_suffix('\n').unwrap().to_owned());
+                }),
+                LiveTheme::default(),
+            )
+        });
         let mut r = Self {
             owners,
             apis: Vec::new(),
@@ -379,11 +382,12 @@ impl Replay {
             key,
             ExtensionShortcutOptions {
                 description: s.description,
-                handler: Rc::new(move |ctx| {
+                handler: Rc::new(move |ctx: ExtensionContext| {
                     let trace = Arc::clone(&trace);
                     let tag = tag.clone();
                     let fail = fail.clone();
                     Box::pin(async move {
+                        let ctx = ctx.cwd()?;
                         trace.lock().unwrap().push(json!({"tag":tag,"ctx":ctx}));
                         fail.map_or(Ok(()), |message| Err(message.into()))
                     })
@@ -483,7 +487,7 @@ impl Replay {
                 let selected = self.runner.get_shortcuts(&bindings(&s.bindings, &[]));
                 let handler =
                     Rc::clone(&selected[s.key.as_deref().unwrap()].read().unwrap().handler);
-                handler(s.ctx.unwrap()).await?;
+                handler(self.runner.create_context()).await?;
                 self.observations.push(json!({"invoked":true}));
             }
             _ => panic!("unknown fixture operation"),

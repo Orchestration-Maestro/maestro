@@ -50,7 +50,7 @@ fn builtin_keybindings(config: &KeybindingsConfig) -> (IndexSet<KeyId>, IndexMap
     }
     (reserved, ordinary)
 }
-impl<C, CC, E: ExtensionExecution> ExtensionRunner<C, CC, E> {
+impl<CC, E: ExtensionExecution> ExtensionRunner<CC, E> {
     /// Selects current shortcuts using supplied effective bindings.
     ///
     /// Reserved keys are blocked; ordinary and extension collisions warn but
@@ -60,7 +60,7 @@ impl<C, CC, E: ExtensionExecution> ExtensionRunner<C, CC, E> {
     pub fn get_shortcuts(
         &self,
         resolved_keybindings: &KeybindingsConfig,
-    ) -> IndexMap<KeyId, E::Shared<RwLock<ExtensionShortcut<C, E>>>> {
+    ) -> IndexMap<KeyId, E::Shared<RwLock<ExtensionShortcut<E>>>> {
         let diagnostics = Arc::new(RwLock::new(Vec::new()));
         *write(&self.shortcut_diagnostics) = Arc::clone(&diagnostics);
         let (reserved, ordinary) = builtin_keybindings(resolved_keybindings);
@@ -74,7 +74,7 @@ impl<C, CC, E: ExtensionExecution> ExtensionRunner<C, CC, E> {
                     .collect::<Vec<_>>()
             })
             .collect();
-        let mut selected = IndexMap::<KeyId, E::Shared<RwLock<ExtensionShortcut<C, E>>>>::new();
+        let mut selected = IndexMap::<KeyId, E::Shared<RwLock<ExtensionShortcut<E>>>>::new();
         for (key, shortcut) in registrations {
             let normalized = key.to_lowercase();
             let path = read(&shortcut).extension_path.clone();
