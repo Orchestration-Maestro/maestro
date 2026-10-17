@@ -3,7 +3,6 @@
 use std::fs::File;
 use std::io::{self, Read, Seek, SeekFrom};
 use std::process::{Child, ChildStderr, ChildStdin, ChildStdout, ExitStatus, Output};
-use std::sync::MutexGuard;
 
 use crate::TestProcessError;
 
@@ -12,8 +11,7 @@ pub(crate) const START: &[u8] = b"\nrunning 1 test\n";
 
 /// Report whether `seen` already contradicts the start prologue.
 fn diverges(seen: &[u8]) -> bool {
-    let shared = seen.len().min(START.len());
-    seen[..shared] != START[..shared]
+    !START.starts_with(seen) && !seen.starts_with(START)
 }
 
 /// Require a complete start prologue at byte zero of captured output.
@@ -28,7 +26,7 @@ pub(crate) fn check_prefix(
     stderr: &[u8],
     status: ExitStatus,
 ) -> Result<(), TestProcessError> {
-    if seen.len() >= START.len() && !diverges(seen) {
+    if seen.starts_with(START) {
         return Ok(());
     }
     Err(TestProcessError::new(
@@ -38,7 +36,8 @@ pub(crate) fn check_prefix(
     .with_streams(seen, stderr))
 }
 
-/// Inspect the start prologue through the shared open file, leaving its cursor untouched.
+/// Inspect the start prologue through the initially empty shared open file, leaving its
+/// cursor untouched.
 pub(crate) fn check_file(
     test: &str,
     mut file: &File,
@@ -59,7 +58,7 @@ pub(crate) fn check_file(
 
 /// Standard output of a live child whose start prologue was read and is replayed first.
 ///
-/// It owns the only read end of the pipe; dropping it closes the pipe.
+/// Dropping it closes the parent's read end of the pipe.
 #[derive(Debug)]
 pub struct CheckedStdout {
     /// How much of the prologue the caller has already read.
@@ -96,19 +95,13 @@ pub struct CheckedChild {
     child: Child,
     /// Full libtest identity the launch selected.
     test: String,
-    /// Keeps sibling launches from forking while this child's pipes are live.
-    spawning: Option<MutexGuard<'static, ()>>,
 }
 
 impl CheckedChild {
     /// Read only the prologue from the child's standard output and prove it.
     ///
     /// On failure the direct child is closed and reaped.
-    pub(crate) fn start(
-        test: &str,
-        mut child: Child,
-        spawning: MutexGuard<'static, ()>,
-    ) -> Result<Self, TestProcessError> {
+    pub(crate) fn start(test: &str, mut child: Child) -> Result<Self, TestProcessError> {
         let stdin = child.stdin.take();
         let stderr = child.stderr.take();
         let mut seen = Vec::new();
@@ -136,7 +129,7 @@ impl CheckedChild {
                 break;
             }
         }
-        if seen.len() < START.len() || diverges(&seen) {
+        if !seen.starts_with(START) {
             let message = "the child did not start exactly this test";
             return Err(Self::reap(test, child, stdin, &seen, message));
         }
@@ -150,7 +143,6 @@ impl CheckedChild {
             stderr,
             child,
             test: test.to_owned(),
-            spawning: Some(spawning),
         })
     }
 
@@ -164,12 +156,13 @@ impl CheckedChild {
     ) -> TestProcessError {
         drop(stdin);
         let _ = child.kill();
-        let error = TestProcessError::new(test, message).with_streams(seen, &[]);
         match child.wait() {
             Ok(status) => {
                 TestProcessError::new(test, format!("{message} ({status})")).with_streams(seen, &[])
             }
-            Err(cause) => error.caused_by(cause),
+            Err(cause) => TestProcessError::new(test, message)
+                .with_streams(seen, &[])
+                .caused_by(cause),
         }
     }
 
@@ -180,11 +173,9 @@ impl CheckedChild {
     /// Fails when the operating system cannot wait for the child.
     pub fn wait(&mut self) -> Result<ExitStatus, TestProcessError> {
         drop(self.stdin.take());
-        let status = self.child.wait().map_err(|error| {
+        self.child.wait().map_err(|error| {
             TestProcessError::new(&self.test, "cannot wait for the child").caused_by(error)
-        });
-        drop(self.spawning.take());
-        status
+        })
     }
 
     /// Close the child's input and collect its exit status and the bytes the caller has not

@@ -1955,7 +1955,7 @@ const OWNER: &str = "maestro-test-process";
 const NATIVE_DEV: &str = "target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies";
 
 /// Callers allowed to declare the test-process owner as a native development dependency.
-const OWNER_CALLERS: [&str; 15] = [
+const OWNER_CALLERS: [&str; 16] = [
     "maestro-agent",
     "maestro-app",
     "maestro-catalog",
@@ -1964,6 +1964,7 @@ const OWNER_CALLERS: [&str; 15] = [
     "maestro-models",
     "maestro-packages",
     "maestro-process",
+    "maestro-resources",
     "maestro-session",
     "maestro-settings",
     "maestro-test-conventions",
@@ -2162,6 +2163,23 @@ fn test_process_inventory_matches_foundation_contract() {
     assert_eq!(support::policy::POLICY.len(), 38);
     assert_eq!(support::class(OWNER), "dedicated");
     assert!(UTILITY_EXCLUDED.contains(&OWNER));
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let specification = std::fs::read_to_string(root.join("docs/specs/maestro-port.md")).unwrap();
+    let documented: Vec<_> = specification
+        .split_once("from `maestro-agent`")
+        .unwrap()
+        .1
+        .split_once("; a\ncaller declares it only")
+        .unwrap()
+        .0
+        .split('`')
+        .skip(1)
+        .step_by(2)
+        .collect();
+    let declared: Vec<_> = std::iter::once("maestro-agent")
+        .chain(documented.iter().copied())
+        .collect();
+    assert_eq!(declared, support::policy::TEST_PROCESS_CALLERS);
     let workspace = Workspace::new();
     workspace.foundation(&[OWNER]);
     assert_eq!(check_workspace(&workspace.root), Ok(()));

@@ -308,7 +308,7 @@ fn native_local_repository_installs_checks_out_and_removes() {
         "{}",
         String::from_utf8_lossy(&output.stdout)
     );
-    crate::child_process::assert_executed(&output, &test);
+    crate::child_process::assert_executed(&output, &test).unwrap();
 }
 
 #[test]

@@ -3,17 +3,18 @@
 use std::collections::BTreeSet;
 use std::ffi::{OsStr, OsString};
 use std::fs::File;
-use std::io::Write;
+use std::io::{Seek, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Output, Stdio};
 
 use crate::proof::{check_file, check_output};
-use crate::{CheckedChild, TestProcessError, selection, spawn_lock};
+use crate::{CheckedChild, TestProcessError, selection};
 
 /// Variable the coverage runtime reads; kept when the environment is cleared.
 const PROFILE: &str = "LLVM_PROFILE_FILE";
 
 /// One ordered environment edit.
+#[derive(Debug)]
 enum EnvEdit {
     /// Drop the inherited environment, keeping the coverage profile path.
     Clear,
@@ -44,7 +45,7 @@ impl EnvEdit {
 }
 
 /// A harness presentation or selection flag, in command-line order.
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum Flag {
     /// Print test output as it happens.
     Nocapture,
@@ -74,6 +75,7 @@ impl Flag {
 /// and requires the child's standard output to begin with the one-test start prologue.
 /// It does not require the test to pass. Environment edits apply in call order and never
 /// touch this process.
+#[derive(Debug)]
 pub struct TestProcess {
     /// Full libtest identity.
     name: String,
@@ -252,14 +254,13 @@ impl TestProcess {
     /// Fails when the test is not eligible, the child cannot run, or its output does not
     /// begin with the start prologue.
     pub fn output(mut self) -> Result<Output, TestProcessError> {
-        let _spawning = spawn_lock::acquire();
         let output = self.run_captured()?;
         check_output(&self.name, &output)?;
         Ok(output)
     }
 
-    /// Run to completion with inherited standard input, then replay the captured standard
-    /// output and standard error separately to this process's own streams.
+    /// Run to completion, then replay the captured standard output and standard error
+    /// separately to this process's own streams. The standard input is inherited unless set.
     ///
     /// Not a live route: use [`TestProcess::spawn`] when the parent must interact.
     ///
@@ -267,7 +268,6 @@ impl TestProcess {
     ///
     /// As [`TestProcess::output`], and when the replay cannot be written.
     pub fn status(mut self) -> Result<ExitStatus, TestProcessError> {
-        let _spawning = spawn_lock::acquire();
         self.stdin.get_or_insert_with(Stdio::inherit);
         let output = self.run_captured()?;
         check_output(&self.name, &output)?;
@@ -282,7 +282,8 @@ impl TestProcess {
     }
 
     /// Run to completion with standard output sent to `file`, then prove the start through
-    /// the same open file, leaving its shared cursor where the child left it.
+    /// the same open file, leaving its shared cursor where the child left it. The file
+    /// must be empty with its cursor at zero, so existing bytes cannot prove startup.
     ///
     /// The standard input is inherited unless set.
     ///
@@ -290,13 +291,25 @@ impl TestProcess {
     ///
     /// As [`TestProcess::output`], and when the file cannot be shared or inspected.
     pub fn status_with_stdout(mut self, file: File) -> Result<ExitStatus, TestProcessError> {
-        let _spawning = spawn_lock::acquire();
-        let inspect = file.try_clone().map_err(|error| {
+        let mut inspect = file.try_clone().map_err(|error| {
             self.failure("cannot share the standard output file")
                 .caused_by(error)
         })?;
+        let position = inspect.stream_position().map_err(|error| {
+            self.failure("cannot inspect the standard output file")
+                .caused_by(error)
+        })?;
+        let length = inspect
+            .metadata()
+            .map_err(|error| {
+                self.failure("cannot inspect the standard output file")
+                    .caused_by(error)
+            })?
+            .len();
+        if position != 0 || length != 0 {
+            return Err(self.failure("standard output file must be empty with its cursor at zero"));
+        }
         self.stdout = Some(file.into());
-        self.stdin.get_or_insert_with(Stdio::inherit);
         let status = self.prepare()?.status().map_err(|error| {
             self.failure("cannot run the selected test")
                 .caused_by(error)
@@ -316,13 +329,12 @@ impl TestProcess {
     /// Fails when the test is not eligible, the child cannot start, or it does not begin
     /// with the start prologue.
     pub fn spawn(mut self) -> Result<CheckedChild, TestProcessError> {
-        let spawning = spawn_lock::acquire();
         self.stdout.get_or_insert_with(Stdio::piped);
         let child = self.prepare()?.spawn().map_err(|error| {
             self.failure("cannot start the selected test")
                 .caused_by(error)
         })?;
-        CheckedChild::start(&self.name, child, spawning)
+        CheckedChild::start(&self.name, child)
     }
 
     /// Run through the caller's own invoker and prove the returned output started the test.
@@ -339,9 +351,8 @@ impl TestProcess {
     pub fn output_with<F, E>(self, invoke: F) -> Result<Output, TestProcessError>
     where
         F: FnOnce(&[String]) -> Result<Output, E>,
-        E: std::error::Error + 'static,
+        E: std::error::Error + Send + Sync + 'static,
     {
-        let _spawning = spawn_lock::acquire();
         let plain = self.envs.is_empty()
             && self.dir.is_none()
             && self.shell.is_none()

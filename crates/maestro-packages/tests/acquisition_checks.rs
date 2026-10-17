@@ -620,7 +620,7 @@ fn explicit_install_does_not_obey_offline_resolution_policy() {
         "{}",
         String::from_utf8_lossy(&output.stdout)
     );
-    crate::child_process::assert_executed(&output, &test);
+    crate::child_process::assert_executed(&output, &test).unwrap();
 }
 
 #[test]

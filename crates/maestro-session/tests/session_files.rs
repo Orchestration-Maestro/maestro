@@ -160,7 +160,7 @@ fn default_directory_encodes_authored_cwd_before_joining() {
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
-        crate::child_process::assert_executed(&output, &test);
+        crate::child_process::assert_executed(&output, &test).unwrap();
         return;
     }
     for case in cases("default_directory_encodes_authored_cwd_before_joining") {
@@ -777,7 +777,7 @@ fn removed_cwd_child(name: &str) -> bool {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    crate::child_process::assert_executed(&output, &test);
+    crate::child_process::assert_executed(&output, &test).unwrap();
     false
 }
 

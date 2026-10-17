@@ -235,10 +235,14 @@ assertions in the test.
 
 Choose the route by stream use. `output` captures both streams and returns them
 unchanged. `spawn` reads only the prologue from a piped standard output and replays
-it, so a live protocol with the child (a ready line, an acknowledgement, a closed
-reader) is unaffected. `status` replays captured streams afterwards and is not a
-live route. `status_with_stdout` sends standard output to a regular file you hold
-and checks the prefix through that same open file. `output_with` hands the final
+it, preserving ready lines and acknowledgements. A test that depends on closing
+a live pipe end must first call `run_alone(test)` and return when it returns
+`true`: the transaction then runs in a fresh process with no sibling tests that
+could fork and inherit its pipe ends. `status` replays captured streams afterwards and is not a
+live route. `status_with_stdout` requires an empty regular file with its cursor at
+zero, sends standard output there and checks the prefix through that same open
+file. Nonempty files or nonzero cursors are rejected before launch, including
+append-mode files containing earlier output. `output_with` hands the final
 argument list to production code under test and accepts no environment, directory,
 descriptor or shell setting. `shell_setup` (Unix) runs shell text before the
 executable replaces the shell. `capture`, `rerun` and `assert_executed` remain for

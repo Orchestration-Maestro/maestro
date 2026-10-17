@@ -6,7 +6,7 @@ use maestro_app::output_guard::{
     flush_raw_stdout, is_stdout_taken_over, restore_stdout, take_over_stdout, write_raw_stdout,
     write_stdout,
 };
-use maestro_test_process::{CheckedChild, TestProcess};
+use maestro_test_process::{CheckedChild, TestProcess, run_alone};
 use serde::Deserialize;
 use std::{
     io::{self, BufRead, BufReader, Read, Write},
@@ -235,6 +235,9 @@ fn raw_stdout_preserves_unterminated_text_and_flushes() {
 /// Actual pipe closure propagates the native flush failure in both ownership states.
 #[test]
 fn raw_stdout_reports_flush_failure() {
+    if run_alone("raw_stdout_reports_flush_failure").unwrap() {
+        return;
+    }
     let cases = fixtures::cases::<FlushInput, FlushExpected>("flush-");
     if let Ok(mode) = std::env::var("MAESTRO_OUTPUT_PROBE") {
         pipe_probe(PipeCase {
@@ -265,6 +268,9 @@ fn raw_stdout_reports_flush_failure() {
 /// A healthy sibling pipe cannot hide a selected stream's write error.
 #[test]
 fn ordinary_stdout_reports_write_failure() {
+    if run_alone("ordinary_stdout_reports_write_failure").unwrap() {
+        return;
+    }
     if let Ok(mode) = std::env::var("MAESTRO_OUTPUT_PROBE") {
         let operation = if mode.starts_with("raw") {
             PipeOperation::Raw
