@@ -6,7 +6,8 @@ mod support;
 use maestro_test_conventions::check_workspace;
 use support::Workspace;
 
-const OWNERS: [&str; 4] = [
+const OWNERS: [&str; 5] = [
+    "maestro-catalog",
     "maestro-models",
     "maestro-tui",
     "maestro-tools",
@@ -165,4 +166,54 @@ fn unmigrated_test_layout_is_unchanged() {
     std::fs::create_dir_all(&tests).unwrap();
     std::fs::write(tests.join("standalone.rs"), "").unwrap();
     check_workspace(&workspace.root).unwrap();
+}
+
+/// Install a child-runner source without executing the fixture itself.
+fn child_fixture(owner: &str, body: &str) -> Workspace {
+    let workspace = workspace(owner);
+    let tests = workspace.root.join(format!("crates/{owner}/tests"));
+    std::fs::write(tests.join("integration.rs"), "mod child;\n").unwrap();
+    std::fs::write(tests.join("child.rs"), format!("fn rerun() {{ {body} }}")).unwrap();
+    workspace
+}
+
+#[test]
+fn exact_children_require_qualified_selection_and_execution_witness() {
+    for owner in OWNERS {
+        for body in [
+            r#"command.args(["--exact", "unqualified"]);"#,
+            r#"command.args(["--exact", "unqualified"]); child_process::assert_executed(&output, "unqualified");"#,
+            r#"command.args(["--exact", "child::case"]); assert!(output.status.success());"#,
+            r#"let name = child_process::selector("case").unwrap(); command.args(["--exact", &name]);"#,
+            r#"command.args(["--exact", "child::case"]); // assert_executed(&output, "child::case");
+                let decoy = "assert_executed";"#,
+            r#"command.args(["--exact", "child::case"]); assert!(String::from_utf8_lossy(&output.stderr).contains("test child::case ... ok"));"#,
+            r#"command.args(["--exact", "child::case"]); assert!(String::from_utf8_lossy(&output.stdout).contains("test child::other ... ok"));"#,
+            r#"command.args(["--exact", "child::case"]); String::from_utf8_lossy(&output.stdout).contains("test child::case ... ok");"#,
+            r#"let name = child_process::selector("case").unwrap(); command.args(["--exact", &name]); child_process::assert_executed(&output, "child::other");"#,
+            r#"command.args(["--exact", "child::case"]); command.arg("--exact"); child_process::assert_executed(&output, "child::case");"#,
+            r#"command.args(["--exact", "child::case"]); fn unrelated() { child_process::assert_executed(&output, "child::case"); }"#,
+        ] {
+            let workspace = child_fixture(owner, body);
+            let error = check_workspace(&workspace.root).unwrap_err();
+            assert!(
+                error.contains("child.rs") && error.contains("--exact"),
+                "{error}"
+            );
+        }
+    }
+}
+
+#[test]
+fn qualified_children_accept_shared_and_explicit_stdout_witnesses() {
+    for owner in OWNERS {
+        for body in [
+            r#"let name = child_process::selector("case").unwrap(); command.args(["--exact", &name]); child_process::assert_executed(&output, &name);"#,
+            r#"command.args(["--exact", "child::case"]); child_process::assert_executed(&output, "child::case");"#,
+            r#"command.args(["--exact", "child::case"]); assert!(String::from_utf8_lossy(&output.stdout).contains("test child::case ... ok"));"#,
+            r#"let name = "child::case"; command.args(["--exact", name]); assert!(String::from_utf8_lossy(&output.stdout).contains(&format!("test {name} ... ok")));"#,
+        ] {
+            check_workspace(&child_fixture(owner, body).root).unwrap();
+        }
+    }
 }

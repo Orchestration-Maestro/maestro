@@ -39,6 +39,9 @@ mod time_limits;
 ///
 /// Migrated integration-test roots are checked structurally for one runnable
 /// target and unconditional out-of-line declarations of top-level test files.
+/// Exact child selection and execution witnesses receive a bounded syntax check;
+/// see the integration-test section of `docs/architecture.md` for accepted forms
+/// and limitations.
 ///
 /// Reads workspace manifests and Rust files, invoking Cargo and the compiler
 /// for metadata. Emits no output. Legal included fragments are counted without

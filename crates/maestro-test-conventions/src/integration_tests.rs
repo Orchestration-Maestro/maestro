@@ -2,6 +2,9 @@
 
 use crate::source::{Member, read_manifest};
 
+/// Exact-child selection and execution-witness checks.
+mod children;
+
 /// Check migrated members with top-level integration sources.
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
     for member in members.iter().filter(|member| {
@@ -65,6 +68,16 @@ fn check_member(member: &Member) -> Result<(), String> {
         return Ok(());
     }
     check_manifest(member)?;
+    for source in member.sources.iter().filter(|source| {
+        source.path.starts_with(&tests)
+            && !(member.name == "maestro-models"
+                && source.path == tests.join("support/child_process.rs"))
+    }) {
+        if let Some(syntax) = &source.syntax {
+            children::check(syntax)
+                .map_err(|error| format!("{}: {error}", source.path.display()))?;
+        }
+    }
     let root_path = tests.join("integration.rs");
     let root = files
         .iter()
