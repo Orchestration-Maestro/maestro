@@ -1,10 +1,6 @@
 //! Historical session conversion through the public operation.
 #![cfg(test)]
-/// Strict corpus support.
-mod support {
-    pub mod session_files;
-    pub mod value;
-}
+use crate::support;
 use maestro_request::presence::Presence;
 use maestro_session::parse_session_entries;
 use maestro_session::{build_session_context, migrate_session_entries};
@@ -72,12 +68,12 @@ fn converted_context_uses_existing_local_timestamp_policy() {
         return;
     }
     for zone in ["UTC", "America/New_York"] {
+        let test = crate::child_process::selector(
+            "converted_context_uses_existing_local_timestamp_policy",
+        )
+        .unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args([
-                "--exact",
-                "converted_context_uses_existing_local_timestamp_policy",
-                "--nocapture",
-            ])
+            .args(["--exact", &test, "--nocapture"])
             .env("TZ", zone)
             .env("MAESTRO_CONVERSION_TIME_CHILD", zone)
             .output()
@@ -88,6 +84,7 @@ fn converted_context_uses_existing_local_timestamp_policy() {
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
+        crate::child_process::assert_executed(&output, &test);
     }
 }
 

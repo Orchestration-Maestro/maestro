@@ -2,10 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-/// Disposable native histories.
-mod support {
-    pub mod scratch;
-}
+use crate::support;
 use maestro_session::SessionManager;
 use maestro_session::session_cwd::{
     MissingSessionCwdError, SessionCwdIssue, assert_session_cwd_exists,

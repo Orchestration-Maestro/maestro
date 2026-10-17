@@ -2,11 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-/// Recorded listing cases and disposable histories.
-mod support {
-    pub mod discovery;
-    pub mod scratch;
-}
+use crate::support;
 use maestro_request::presence::Presence;
 use maestro_session::{SessionInfo, SessionManager, parse_session_entries};
 use serde_json::{Value, json};
@@ -164,13 +160,15 @@ fn discovery_missing_timestamp_uses_parsed_entry_time() {
 fn discovery_local_dates_use_native_local_zone() {
     let name = "discovery_local_dates_use_native_local_zone";
     if std::env::var("MAESTRO_DATE_CHILD").as_deref() != Ok(name) {
-        let status = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", name, "--nocapture"])
+        let test = crate::child_process::selector(name).unwrap();
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", &test, "--nocapture"])
             .env("TZ", "America/New_York")
             .env("MAESTRO_DATE_CHILD", name)
-            .status()
+            .output()
             .unwrap();
-        assert!(status.success());
+        assert!(output.status.success());
+        crate::child_process::assert_executed(&output, &test);
         return;
     }
     // Midnight local time in January is five hours after midnight UTC.
