@@ -32,8 +32,11 @@ impl Workspace {
             NEXT.fetch_add(1, Ordering::Relaxed)
         ));
         fs::create_dir_all(root.join("bin")).unwrap();
-        super::toolchain_support::declare_toolchain(&root, include_str!("../../../../rust-toolchain.toml"))
-            .unwrap();
+        super::toolchain_support::declare_toolchain(
+            &root,
+            include_str!("../../../../rust-toolchain.toml"),
+        )
+        .unwrap();
         fs::copy(
             Path::new(env!("CARGO_MANIFEST_DIR")).join("../../justfile"),
             root.join("justfile"),
