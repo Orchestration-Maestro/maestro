@@ -3,10 +3,11 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
+use super::failure::Ending;
 use super::failure::status_failure;
 use super::headers::normalize_request;
 use super::runtime::{Raced, race, sleep, unit_random};
-use super::{FetchError, HttpRequest, HttpResponse, RequestFailure, client, decode_utf8};
+use super::{FetchError, HttpRequest, HttpResponse, RequestFailure, decode_utf8};
 use crate::{Cancellation, ProviderExecution, StreamOptions};
 
 /// Milliseconds a response may take to start before the attempt times out.
@@ -19,6 +20,40 @@ const BACKOFF_BASE_SECONDS: f64 = 0.5;
 const BACKOFF_CAP_SECONDS: f64 = 8.0;
 /// Largest share of the backoff that jitter may remove.
 const JITTER_SHARE: f64 = 0.25;
+
+/// Response-status admission for the selected protocol.
+#[derive(Clone, Copy)]
+pub(crate) enum RetryStatuses {
+    /// Legacy provider headers and status admission.
+    Legacy,
+    /// Authentication library status ranges, independent of retry headers.
+    #[cfg(not(target_arch = "wasm32"))]
+    Authentication,
+}
+
+/// Per-operation policy consumed by the shared attempt loop.
+#[derive(Clone, Copy)]
+pub(crate) struct RequestPolicy {
+    /// Headers deadline; a buffered adapter also includes body collection.
+    pub(crate) timeout: Option<Duration>,
+    /// Global retry budget, including all preceding failures.
+    pub(crate) retries: u64,
+    /// Maximum preceding retries that permit a no-response retry.
+    pub(crate) no_response_retries: u64,
+    /// Status admission policy.
+    pub(crate) statuses: RetryStatuses,
+}
+
+impl RetryStatuses {
+    /// Decide admission without replacing the global retry counter.
+    fn admits(self, response: &HttpResponse) -> bool {
+        match self {
+            Self::Legacy => should_retry(response),
+            #[cfg(not(target_arch = "wasm32"))]
+            Self::Authentication => matches!(response.status, 100..=199 | 408 | 429 | 500..=599),
+        }
+    }
+}
 
 /// The failure for a setting that is not a usable whole number.
 fn not_an_integer(name: &str) -> RequestFailure {
@@ -120,11 +155,13 @@ async fn pause(delay: Duration, signal: Option<&Cancellation>) -> Result<(), Req
 
 /// Describe the last failed attempt after retries are exhausted.
 fn exhausted(error: &FetchError) -> RequestFailure {
-    if matches!(error, FetchError::Timeout) {
+    let mut failure = if matches!(error, FetchError::Timeout) {
         RequestFailure::new(error.to_string())
     } else {
         RequestFailure::new("Connection error.")
-    }
+    };
+    failure.ending = Some(Ending::NoResponse);
+    failure
 }
 
 /// Read a failed response body as text, reporting a read failure as that text.
@@ -132,23 +169,11 @@ async fn read_text(
     response: HttpResponse,
     signal: Option<&Cancellation>,
 ) -> Result<String, RequestFailure> {
-    use futures_util::StreamExt;
-
-    let mut body = response.body;
-    let mut bytes = Vec::new();
-    let reading = async {
-        while let Some(chunk) = body.next().await {
-            match chunk {
-                Ok(chunk) => bytes.extend_from_slice(&chunk),
-                Err(error) => return Some(error.to_string()),
-            }
-        }
-        None
-    };
-    match race(reading, None, signal).await {
+    match race(super::collect_body(response.body), None, signal).await {
         Raced::Cancelled => Err(RequestFailure::aborted()),
-        Raced::Done(Some(failure)) => Ok(failure),
-        Raced::Done(None) | Raced::TimedOut => Ok(decode_utf8(&bytes).into_owned()),
+        Raced::Done(Err(error)) => Ok(error.to_string()),
+        Raced::Done(Ok(bytes)) => Ok(decode_utf8(&bytes).into_owned()),
+        Raced::TimedOut => Ok(String::new()),
     }
 }
 
@@ -175,25 +200,45 @@ pub(crate) async fn send<E: ProviderExecution>(
 /// # Errors
 /// Fails as [`send`] does.
 pub(crate) async fn send_with_status_error<E: ProviderExecution>(
-    mut request: HttpRequest,
+    request: HttpRequest,
     options: &StreamOptions<E>,
     format_error: fn(u16, &str) -> RequestFailure,
 ) -> Result<HttpResponse, RequestFailure> {
-    normalize_request(&mut request.headers).map_err(RequestFailure::new)?;
     let timeout_ms = whole_number("timeout", options.timeout_ms.unwrap_or(DEFAULT_TIMEOUT_MS))?;
     let budget = retry_budget(options.max_retries.unwrap_or(DEFAULT_RETRIES))?;
     let timeout = Duration::try_from_secs_f64(timeout_ms / 1000.0).unwrap_or(Duration::MAX);
+    let policy = RequestPolicy {
+        timeout: Some(timeout),
+        retries: budget,
+        no_response_retries: budget,
+        statuses: RetryStatuses::Legacy,
+    };
+    send_with_policy(
+        request,
+        options.fetch.clone().unwrap_or_else(super::default_fetch),
+        policy,
+        format_error,
+    )
+    .await
+}
+
+/// Send through the single attempt loop with the caller's protocol policy.
+pub(crate) async fn send_with_policy(
+    mut request: HttpRequest,
+    fetch: super::Fetch,
+    policy: RequestPolicy,
+    format_error: fn(u16, &str) -> RequestFailure,
+) -> Result<HttpResponse, RequestFailure> {
+    normalize_request(&mut request.headers).map_err(RequestFailure::new)?;
+    let budget = policy.retries;
     let signal = request.signal.clone();
     let mut remaining = budget;
     loop {
         if signal.as_ref().is_some_and(Cancellation::is_aborted) {
             return Err(RequestFailure::aborted());
         }
-        let attempt = match &options.fetch {
-            Some(fetch) => fetch(request.clone()),
-            None => client::fetch(request.clone()),
-        };
-        let failure = match race(attempt, Some(timeout), signal.as_ref()).await {
+        let attempt = fetch(request.clone());
+        let failure = match race(attempt, policy.timeout, signal.as_ref()).await {
             Raced::Cancelled | Raced::Done(Err(FetchError::Aborted)) => {
                 return Err(RequestFailure::aborted());
             }
@@ -203,7 +248,7 @@ pub(crate) async fn send_with_status_error<E: ProviderExecution>(
                 return Ok(response);
             }
             Raced::Done(Ok(response)) => {
-                if should_retry(&response)
+                if policy.statuses.admits(&response)
                     && let Some(left) = remaining.checked_sub(1)
                 {
                     let delay = hinted_delay(&response.headers)
@@ -215,9 +260,14 @@ pub(crate) async fn send_with_status_error<E: ProviderExecution>(
                 }
                 let status = response.status;
                 let text = read_text(response, signal.as_ref()).await?;
-                return Err(format_error(status, &text));
+                let mut failure = format_error(status, &text);
+                failure.ending = Some(Ending::Status(status));
+                return Err(failure);
             }
         };
+        if budget - remaining >= policy.no_response_retries {
+            return Err(exhausted(&failure));
+        }
         let Some(left) = remaining.checked_sub(1) else {
             return Err(exhausted(&failure));
         };
@@ -225,3 +275,6 @@ pub(crate) async fn send_with_status_error<E: ProviderExecution>(
         remaining = left;
     }
 }
+
+#[cfg(test)]
+mod tests;

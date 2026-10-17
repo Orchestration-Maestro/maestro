@@ -242,7 +242,9 @@ pub fn create_client(
     ApiClient {
         base_url,
         api_version,
-        api_key: api_key.to_owned(),
+        authentication: super::google_shared::api_client::Authentication::ApiKey(
+            api_key.to_owned(),
+        ),
         headers,
     }
 }
@@ -425,7 +427,7 @@ async fn invoke<E: ProviderExecution>(
         .and_then(serde_json::Value::as_object_mut)
         .and_then(|config| config.shift_remove("httpOptions"));
     let projected = project_content_request(payload)?;
-    let mut prepared = client.prepare_request(projected, controls.as_ref())?;
+    let mut prepared = client.prepare_request(projected, controls.as_ref()).await?;
     if signal.is_some_and(crate::Cancellation::is_aborted) {
         return Err(RequestFailure::new("Request aborted"));
     }

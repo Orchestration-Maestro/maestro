@@ -1,0 +1,51 @@
+[
+  {
+    "case": "certificate:explicit-config",
+    "expected": {
+      "result": "success",
+      "chain": [
+        "ef3641909dc1966e84cfc82eabd7a3c41c669e65aae94f018eb22abd69578e56"
+      ]
+    }
+  },
+  {
+    "case": "certificate:chain-prepends-leaf",
+    "expected": {
+      "result": "success",
+      "chain": [
+        "ef3641909dc1966e84cfc82eabd7a3c41c669e65aae94f018eb22abd69578e56",
+        "b694b750e51a6ef479038078c93f7ce95deec26d2e82d1bfa7d6ab1b35307f2a"
+      ]
+    }
+  },
+  {
+    "case": "certificate:chain-keeps-first-leaf",
+    "expected": {
+      "result": "success",
+      "chain": [
+        "ef3641909dc1966e84cfc82eabd7a3c41c669e65aae94f018eb22abd69578e56",
+        "b694b750e51a6ef479038078c93f7ce95deec26d2e82d1bfa7d6ab1b35307f2a"
+      ]
+    }
+  },
+  {
+    "case": "certificate:chain-keeps-duplicates",
+    "expected": {
+      "result": "success",
+      "chain": [
+        "ef3641909dc1966e84cfc82eabd7a3c41c669e65aae94f018eb22abd69578e56",
+        "b694b750e51a6ef479038078c93f7ce95deec26d2e82d1bfa7d6ab1b35307f2a",
+        "b694b750e51a6ef479038078c93f7ce95deec26d2e82d1bfa7d6ab1b35307f2a"
+      ]
+    }
+  },
+  {
+    "case": "certificate:chain-without-certificates",
+    "expected": {
+      "result": "success",
+      "chain": [
+        "ef3641909dc1966e84cfc82eabd7a3c41c669e65aae94f018eb22abd69578e56"
+      ]
+    }
+  }
+]

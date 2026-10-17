@@ -16,6 +16,15 @@ pub(super) fn fetch(request: HttpRequest) -> BoxFuture<Result<HttpResponse, Fetc
     Box::pin(async move { send(build()?, request).await })
 }
 
+/// Reuse request and response conversion with a caller-configured native client.
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn supplied_fetch(client: reqwest::Client) -> super::Fetch {
+    Arc::new(move |request| {
+        let client = client.clone();
+        Box::pin(async move { send(client, request).await })
+    })
+}
+
 /// Send one attempt with `client`.
 async fn send(
     client: impl Borrow<reqwest::Client>,

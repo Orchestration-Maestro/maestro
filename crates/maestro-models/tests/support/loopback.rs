@@ -254,6 +254,14 @@ pub fn answer_connection(
         return Ok(());
     };
     let reply = handler(&request);
+    answer_connection_reply(connection, &reply)
+}
+
+/// Write an already-selected response after a caller-owned handshake or observation.
+///
+/// # Errors
+/// Returns response write failures.
+pub fn answer_connection_reply(mut connection: impl Write, reply: &Reply) -> std::io::Result<()> {
     if reply.close {
         return Ok(());
     }

@@ -1,6 +1,8 @@
 /// Provider credential discovery from the process environment.
 mod env_api_keys;
 
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) use env_api_keys::env_value;
 pub use env_api_keys::{find_env_keys, get_env_api_key};
 
 /// Typed decoding of the JSON extras of each bundled raw protocol.
