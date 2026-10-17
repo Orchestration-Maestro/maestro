@@ -186,8 +186,12 @@ no placeholder crates. Frontends require the application edge and may declare
 only the other edges in their allowed sets, when used. The terminal adapter
 requires toolkit and text, and the scenario harness requires toolkit only. The
 utility edge never supplies a required edge. Other non-leaves permit subsets.
-Production and test graphs are separately acyclic. The only internal development
-edge is `maestro-tui-crossterm` to `maestro-brand`, for terminal examples. Brand and
+Production and test graphs are separately acyclic. The internal development
+edges are `maestro-tui-crossterm` to `maestro-brand`, for terminal examples, and
+the native, non-optional dev-dependencies of the fifteen declared callers on
+`maestro-test-process`, the dependency-free owner of checked child tests (see
+[the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
+only when it uses it. Brand and
 theme remain forbidden as adapter normal/build dependencies; the development edge
 never satisfies the required toolkit/text set. The scenario harness is not a
 general dev-dependency target.

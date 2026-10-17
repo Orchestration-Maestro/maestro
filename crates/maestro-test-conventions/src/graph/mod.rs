@@ -10,7 +10,7 @@ pub(crate) mod metadata;
 mod policy;
 use metadata::{canonical, check_kind, members};
 pub(crate) use policy::UNIFIER;
-use policy::{UTILITY, rule, uses_utility};
+use policy::{TEST_PROCESS, TEST_PROCESS_CALLERS, UTILITY, rule, uses_utility};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -169,6 +169,12 @@ fn declared_edges(metadata: &Metadata) -> Result<BTreeSet<Edge>, String> {
                     package.name
                 ));
             }
+            if member == Some(TEST_PROCESS) && !native_development(dependency, &kind) {
+                return Err(format!(
+                    "{}: {TEST_PROCESS} must be a native, non-optional development dependency",
+                    package.name
+                ));
+            }
             if names.values().any(|member| *member == name) && member != Some(name) {
                 return Err(format!(
                     "dependency {} -> {name} must use a path to that workspace member",
@@ -190,6 +196,18 @@ fn declared_edges(metadata: &Metadata) -> Result<BTreeSet<Edge>, String> {
 /// Report whether a declaration is a non-optional normal dependency outside WebAssembly targets.
 fn native_normal(dependency: &cargo_metadata::Dependency, kind: &Kind) -> bool {
     *kind == Kind::Normal
+        && !dependency.optional
+        && dependency
+            .target
+            .as_ref()
+            .map(ToString::to_string)
+            .as_deref()
+            == Some(NATIVE)
+}
+
+/// Report whether a declaration is a non-optional development dependency on native targets.
+fn native_development(dependency: &cargo_metadata::Dependency, kind: &Kind) -> bool {
+    *kind == Kind::Development
         && !dependency.optional
         && dependency
             .target
@@ -240,6 +258,18 @@ fn validate_edge(edge: &Edge) -> Result<(), String> {
     let to = rule(&edge.to).ok_or("unknown scoped target")?;
     if edge.to == UNIFIER {
         return Ok(());
+    }
+    if edge.to == TEST_PROCESS {
+        return if edge.kind == Kind::Development
+            && TEST_PROCESS_CALLERS.contains(&edge.from.as_str())
+        {
+            Ok(())
+        } else {
+            Err(format!(
+                "{TEST_PROCESS} is reachable only as a native development dependency of its declared callers: {} -> {}",
+                edge.from, edge.to
+            ))
+        };
     }
     if edge.to == UTILITY && edge.kind != Kind::Development && uses_utility(&edge.from) {
         return Ok(());
