@@ -80,3 +80,7 @@ fn bezier(t: f32, first: f32, second: f32) -> f32 {
 }
 
 pub(crate) mod copy_feedback;
+
+/// Math stylesheet and fonts.
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod math_assets;

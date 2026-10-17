@@ -66,6 +66,22 @@ impl Drop for DomSurface {
 pub(crate) fn host_error(error: &wasm_bindgen::JsValue) -> AttachmentUiError {
     AttachmentUiError::Host(format!("{error:?}"))
 }
+/// Create one feature-owned element with its class in the supplied document.
+pub(crate) fn element(
+    document: &Document,
+    tag: &str,
+    class: &str,
+) -> Result<Element, AttachmentUiError> {
+    let node = document.create_element(tag).map_err(|e| host_error(&e))?;
+    node.set_attribute("class", class)
+        .map_err(|e| host_error(&e))?;
+    Ok(node)
+}
+/// Append an owned node through the native effect boundary.
+pub(crate) fn append(parent: &Element, child: &Element) -> Result<(), AttachmentUiError> {
+    parent.append_child(child).map_err(|e| host_error(&e))?;
+    Ok(())
+}
 /// Read native geometry through a catchable operation so transactions can restore state.
 fn bounds(element: &Element) -> Result<web_sys::DomRect, AttachmentUiError> {
     use wasm_bindgen::JsCast as _;

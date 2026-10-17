@@ -12,3 +12,8 @@ pub mod sandboxed_iframe;
 
 /// Original-text copy control.
 pub mod copy_button;
+
+/// Native highlighted code listing.
+pub mod code_block;
+/// Native Markdown with highlighted code and math.
+pub mod markdown_block;

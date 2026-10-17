@@ -1,0 +1,698 @@
+[
+  {
+    "id": "empty",
+    "test": "markdown_empty_and_structural_blocks_preserve_content",
+    "content": "",
+    "escape_html": true,
+    "thinking": false,
+    "html": ""
+  },
+  {
+    "id": "whitespace",
+    "test": "markdown_empty_and_structural_blocks_preserve_content",
+    "content": " \t\n\n",
+    "escape_html": true,
+    "thinking": false,
+    "html": ""
+  },
+  {
+    "id": "blocks",
+    "test": "markdown_empty_and_structural_blocks_preserve_content",
+    "content": "# Heading\n\nA **bold** *em* ~~gone~~ ~single~ `code`.\n\n---\n\n> quote\n\n1. first\n2. second\n\n- [x] checked\n- [ ] unchecked",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<h1>Heading</h1>\n<p>A <strong>bold</strong> <em>em</em> <del>gone</del> <del>single</del> <code>code</code>.</p>\n<hr>\n<blockquote>\n<p>quote</p>\n</blockquote>\n<ol>\n<li>first</li>\n<li>second</li>\n</ol>\n<ul>\n<li><input checked=\"\" disabled=\"\" type=\"checkbox\"> checked</li>\n<li><input disabled=\"\" type=\"checkbox\"> unchecked</li>\n</ul>\n"
+  },
+  {
+    "id": "paragraph-breaks",
+    "test": "markdown_empty_and_structural_blocks_preserve_content",
+    "content": "one\ntwo\n\nthree  \nfour",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p>one\ntwo</p>\n<p>three<br>four</p>\n"
+  },
+  {
+    "id": "newlines-tabs-null",
+    "test": "markdown_preserves_browser_whitespace_and_replacement",
+    "content": "a\r\nb\rc\n\n\tindent\n\nA\u0000B",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p>a\nb\nc</p>\n<div class=\"mt-2\"><code-block language=\"text\" code=\"aW5kZW50Cg==\"></code-block></div>\n<p>A\u0000B</p>\n"
+  },
+  {
+    "id": "unicode",
+    "test": "markdown_escapes_html_without_losing_unicode",
+    "content": "雪😀 é <&> \" '",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p>雪😀 é &lt;&amp;&gt; &quot; &#39;</p>\n"
+  },
+  {
+    "id": "escape-tags",
+    "test": "markdown_escapes_html_without_losing_unicode",
+    "content": "<script>alert(1)</script>\n\n<div data-a=\"<&>\">x</div><img src=x/>\n\n< text >",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>\n<p>&lt;div data-a=&quot;&lt;&amp;&gt;&quot;&gt;x&lt;/div&gt;&lt;img src=x/&gt;</p>\n<p>&lt; text &gt;</p>\n"
+  },
+  {
+    "id": "raw-html",
+    "test": "markdown_raw_html_option_preserves_native_markup",
+    "content": "<div id=\"kept\">**raw** &amp;</div>",
+    "escape_html": false,
+    "thinking": false,
+    "html": "<div id=\"kept\">**raw** &amp;</div>"
+  },
+  {
+    "id": "inline-html",
+    "test": "markdown_escapes_html_without_losing_unicode",
+    "content": "text <b>bold</b> after",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p>text &lt;b&gt;bold&lt;/b&gt; after</p>\n"
+  },
+  {
+    "id": "code-tags",
+    "test": "markdown_code_entities_decode_exactly_once",
+    "content": "`<b>&amp;</b>`\n\n```html\n<script>&amp;\"'</script>\n```",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><code>&lt;b&gt;&amp;amp;&lt;/b&gt;</code></p>\n<div class=\"mt-2\"><code-block language=\"html\" code=\"PHNjcmlwdD4mYW1wOyInPC9zY3JpcHQ+Cg==\"></code-block></div>\n"
+  },
+  {
+    "id": "placeholder-collision",
+    "test": "markdown_code_preservation_keeps_literal_placeholder_text",
+    "content": "__CODE_BLOCK_0__ before `<b>`",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><strong>CODE_BLOCK_0</strong> before <code>&lt;b&gt;</code></p>\n"
+  },
+  {
+    "id": "autolinks",
+    "test": "markdown_links_open_separately_with_safe_relation",
+    "content": "https://example.test/a?q=1&x=2 www.example.test a.b+c@example.test <https://example.test> <a@example.test>",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://example.test/a?q=1&x=2\">https://example.test/a?q=1&amp;x=2</a> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"http://www.example.test\">www.example.test</a> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"mailto:a.b+c@example.test\">a.b+c@example.test</a> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://example.test\">https://example.test</a> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"mailto:a@example.test\">a@example.test</a></p>\n"
+  },
+  {
+    "id": "authored-links",
+    "test": "markdown_links_open_separately_with_safe_relation",
+    "content": "[a **bold** label](https://example.test/a?x=1&y=2 \"a title\") ![alt](https://example.test/image.png \"image\")",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://example.test/a?x=1&y=2\" title=\"a title\">a <strong>bold</strong> label</a> <img src=\"https://example.test/image.png\" alt=\"alt\" title=\"image\"></p>\n"
+  },
+  {
+    "id": "schemes",
+    "test": "markdown_link_targets_keep_authored_behavior",
+    "content": "[script](javascript:alert%281%29) [relative](../file) [fragment](#part) [mail](mailto:a@example.test)",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"javascript:alert%281%29\">script</a> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"../file\">relative</a> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"#part\">fragment</a> <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"mailto:a@example.test\">mail</a></p>\n"
+  },
+  {
+    "id": "table",
+    "test": "markdown_tables_keep_native_overflow_and_cell_content",
+    "content": "| h | align |\n| :- | -: |\n| a & b | `x` |\n| <b>x</b> | $x$ |",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"overflow-x-auto my-2 border border-border rounded\"><table>\n<thead>\n<tr>\n<th align=\"left\">h</th>\n<th align=\"right\">align</th>\n</tr>\n</thead>\n<tbody><tr>\n<td align=\"left\">a &amp; b</td>\n<td align=\"right\"><code>x</code></td>\n</tr>\n<tr>\n<td align=\"left\">&lt;b&gt;x&lt;/b&gt;</td>\n<td align=\"right\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span></td>\n</tr>\n</tbody></table>\n</div>"
+  },
+  {
+    "id": "nested-link",
+    "test": "markdown_commonmark_corrections_keep_valid_structure",
+    "content": "[outer [inner](https://inner.test)](https://outer.test)",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p>&#91;outer <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://inner.test\">inner</a>&#93;(<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://outer.test\">https://outer.test</a>)</p>\n"
+  },
+  {
+    "id": "list-interruption",
+    "test": "markdown_commonmark_corrections_keep_valid_structure",
+    "content": "- alpha\n2. beta",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<ul>\n<li>alpha</li>\n</ul>\n<ol start=\"2\">\n<li>beta</li>\n</ol>\n"
+  },
+  {
+    "id": "label-folding",
+    "test": "markdown_commonmark_corrections_keep_valid_structure",
+    "content": "[x][K]\n\n[K]: https://example.test",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://example.test\">x</a></p>\n"
+  },
+  {
+    "id": "thinking",
+    "test": "markdown_thinking_changes_only_text_presentation",
+    "content": "**thought** and $x$",
+    "escape_html": true,
+    "thinking": true,
+    "html": "<p><strong>thought</strong> and <span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span></p>\n"
+  },
+  {
+    "id": "ordinary-thought",
+    "test": "markdown_thinking_changes_only_text_presentation",
+    "content": "**thought** and $x$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><strong>thought</strong> and <span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span></p>\n"
+  },
+  {
+    "id": "fence-js",
+    "test": "markdown_code_fences_keep_labels_text_and_copy_slots",
+    "content": "```javascript\nconst x = \"<&>\";\n```",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"mt-2\"><code-block language=\"javascript\" code=\"Y29uc3QgeCA9ICI8Jj4iOwo=\"></code-block></div>\n"
+  },
+  {
+    "id": "fence-empty-label",
+    "test": "markdown_code_fences_keep_labels_text_and_copy_slots",
+    "content": "```\nconst x = 1;\n```",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"mt-2\"><code-block language=\"text\" code=\"Y29uc3QgeCA9IDE7Cg==\"></code-block></div>\n"
+  },
+  {
+    "id": "fence-unknown",
+    "test": "markdown_code_fences_keep_labels_text_and_copy_slots",
+    "content": "```madeup\n<opaque>&amp;\n```",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"mt-2\"><code-block language=\"madeup\" code=\"PG9wYXF1ZT4mYW1wOwo=\"></code-block></div>\n"
+  },
+  {
+    "id": "fence-cpp",
+    "test": "markdown_code_fences_keep_labels_text_and_copy_slots",
+    "content": "```c++\nint x = 1;\n```",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"mt-2\"><code-block language=\"c++\" code=\"aW50IHggPSAxOwo=\"></code-block></div>\n"
+  },
+  {
+    "id": "fence-hyphen",
+    "test": "markdown_code_fences_keep_labels_text_and_copy_slots",
+    "content": "```objective-c\nvoid f();\n```",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"mt-2\"><code-block language=\"objective-c\" code=\"dm9pZCBmKCk7Cg==\"></code-block></div>\n"
+  },
+  {
+    "id": "fence-extra-info",
+    "test": "markdown_code_fences_keep_labels_text_and_copy_slots",
+    "content": "```javascript title=file\nlet x = 2;\n```",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"mt-2\"><code-block language=\"javascript\" code=\"bGV0IHggPSAyOwo=\"></code-block></div>\n"
+  },
+  {
+    "id": "fence-empty",
+    "test": "markdown_code_fences_keep_labels_text_and_copy_slots",
+    "content": "```javascript\n\n```",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"mt-2\"><code-block language=\"javascript\" code=\"Cg==\"></code-block></div>\n"
+  },
+  {
+    "id": "fence-tildes",
+    "test": "markdown_code_fences_keep_labels_text_and_copy_slots",
+    "content": "~~~\n<tag>\n~~~",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"mt-2\"><code-block language=\"text\" code=\"PHRhZz4K\"></code-block></div>\n"
+  },
+  {
+    "id": "indented-code",
+    "test": "markdown_code_fences_keep_labels_text_and_copy_slots",
+    "content": "    <a>&amp;\n    雪",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"mt-2\"><code-block language=\"text\" code=\"PGE+JmFtcDsK6ZuqCg==\"></code-block></div>\n"
+  },
+  {
+    "id": "unclosed-fence",
+    "test": "markdown_code_fences_keep_labels_text_and_copy_slots",
+    "content": "```python\nprint(\"<x>\")",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"mt-2\"><code-block language=\"python\" code=\"cHJpbnQoIjx4PiIpCg==\"></code-block></div>\n"
+  },
+  {
+    "id": "nested-fence",
+    "test": "markdown_code_fences_keep_labels_text_and_copy_slots",
+    "content": "> ```json\n> {\"a\":1}\n> ```",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<blockquote>\n<div class=\"mt-2\"><code-block language=\"json\" code=\"eyJhIjoxfQo=\"></code-block></div>\n</blockquote>\n"
+  },
+  {
+    "id": "dollar-inline-simple",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$x^2+1$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8974em;vertical-align:-0.0833em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8141em;\"><span style=\"top:-3.063em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">2</span></span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6444em;\"></span><span class=\"mord\">1</span></span></span></span></p>\n"
+  },
+  {
+    "id": "dollar-inline-trim",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$ ﻿ x ﻿ $",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span></p>\n"
+  },
+  {
+    "id": "dollar-inline-nel",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$x$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord\"></span><span class=\"mord mathnormal\">x</span><span class=\"mord\"></span></span></span></span></p>\n"
+  },
+  {
+    "id": "dollar-inline-space",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$   $",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"></span></span></p>\n"
+  },
+  {
+    "id": "dollar-inline-multiline",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$x\ny$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p>$x\ny$</p>\n"
+  },
+  {
+    "id": "dollar-inline-incomplete",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$\\frac{$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex-error\" title=\"ParseError: KaTeX parse error: Unexpected end of input in a macro argument, expected &#x27;}&#x27; at end of input: \\frac{\" style=\"color:#cc0000\">\\frac{</span></p>\n"
+  },
+  {
+    "id": "dollar-inline-unknown",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$\\unknowncommand$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord text\" style=\"color:#cc0000;\"><span class=\"mord\" style=\"color:#cc0000;\">\\unknowncommand</span></span></span></span></span></p>\n"
+  },
+  {
+    "id": "dollar-inline-throw",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$\\begin{\\foo}x\\end{\\foo}$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"text-red-500 font-mono\">$\\begin{\\foo}x\\end{\\foo}$</span></p>\n",
+    "current_html": "<p><span class=\"katex-error\" style=\"color: #cc0000\" title=\"KaTeX parse error: Invalid environment nameOrdGroup(ParseNodeOrdGroup { mode: Math, loc: Some(SourceLocation { input: &quot;\\\\begin{\\\\foo}x\\\\end{\\\\foo}&quot;, start: 6, end: 12 }), body: [Color(ParseNodeColor { mode: Text, loc: None, color: &quot;#cc0000&quot;, body: [Text(ParseNodeText { mode: Text, loc: None, body: [TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;\\\\&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;f&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;o&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;o&quot;) })], font: None })] })], semisimple: None })\">\\begin{\\foo}x\\end{\\foo}</span></p>\n"
+  },
+  {
+    "id": "dollar-display-simple",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$$x^2+1$$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.9474em;vertical-align:-0.0833em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8641em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">2</span></span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6444em;\"></span><span class=\"mord\">1</span></span></span></span></span></div>"
+  },
+  {
+    "id": "dollar-display-trim",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$$ ﻿ x ﻿ $$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span></span></div>"
+  },
+  {
+    "id": "dollar-display-nel",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$$x$$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord\"></span><span class=\"mord mathnormal\">x</span><span class=\"mord\"></span></span></span></span></span></div>"
+  },
+  {
+    "id": "dollar-display-space",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$$   $$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"></span></span></span></div>"
+  },
+  {
+    "id": "dollar-display-multiline",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$$x\ny$$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.625em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\">x</span><span class=\"mord mathnormal\" style=\"margin-right:0.0359em;\">y</span></span></span></span></span></div>"
+  },
+  {
+    "id": "dollar-display-incomplete",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$$\\frac{$$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"my-4\"><span class=\"katex-error\" title=\"ParseError: KaTeX parse error: Unexpected end of input in a macro argument, expected &#x27;}&#x27; at end of input: \\frac{\" style=\"color:#cc0000\">\\frac{</span></div>"
+  },
+  {
+    "id": "dollar-display-unknown",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$$\\unknowncommand$$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord text\" style=\"color:#cc0000;\"><span class=\"mord\" style=\"color:#cc0000;\">\\unknowncommand</span></span></span></span></span></span></div>"
+  },
+  {
+    "id": "dollar-display-throw",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$$\\begin{\\foo}x\\end{\\foo}$$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"my-4 text-red-500 font-mono\">$$\\begin{\\foo}x\\end{\\foo}$$</div>",
+    "current_html": "<div class=\"my-4\"><span class=\"katex-error\" title=\"KaTeX parse error: Invalid environment nameOrdGroup(ParseNodeOrdGroup { mode: Math, loc: Some(SourceLocation { input: &quot;\\\\begin{\\\\foo}x\\\\end{\\\\foo}&quot;, start: 6, end: 12 }), body: [Color(ParseNodeColor { mode: Text, loc: None, color: &quot;#cc0000&quot;, body: [Text(ParseNodeText { mode: Text, loc: None, body: [TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;\\\\&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;f&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;o&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;o&quot;) })], font: None })] })], semisimple: None })\" style=\"color: #cc0000\">\\begin{\\foo}x\\end{\\foo}</span></div>"
+  },
+  {
+    "id": "slash-inline-simple",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "\\(x^2+1\\)",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.8974em;vertical-align:-0.0833em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8141em;\"><span style=\"top:-3.063em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">2</span></span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6444em;\"></span><span class=\"mord\">1</span></span></span></span></p>\n"
+  },
+  {
+    "id": "slash-inline-trim",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "\\( ﻿ x ﻿ \\)",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span></p>\n"
+  },
+  {
+    "id": "slash-inline-nel",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "\\(x\\)",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord\"></span><span class=\"mord mathnormal\">x</span><span class=\"mord\"></span></span></span></span></p>\n"
+  },
+  {
+    "id": "slash-inline-space",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "\\(   \\)",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"></span></span></p>\n"
+  },
+  {
+    "id": "slash-inline-multiline",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "\\(x\ny\\)",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.625em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\">x</span><span class=\"mord mathnormal\" style=\"margin-right:0.0359em;\">y</span></span></span></span></p>\n"
+  },
+  {
+    "id": "slash-inline-incomplete",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "\\(\\frac{\\)",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex-error\" title=\"ParseError: KaTeX parse error: Unexpected end of input in a macro argument, expected &#x27;}&#x27; at end of input: \\frac{\" style=\"color:#cc0000\">\\frac{</span></p>\n"
+  },
+  {
+    "id": "slash-inline-unknown",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "\\(\\unknowncommand\\)",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord text\" style=\"color:#cc0000;\"><span class=\"mord\" style=\"color:#cc0000;\">\\unknowncommand</span></span></span></span></span></p>\n"
+  },
+  {
+    "id": "slash-inline-throw",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "\\(\\begin{\\foo}x\\end{\\foo}\\)",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"text-red-500 font-mono\">\\(\\begin{\\foo}x\\end{\\foo}\\)</span></p>\n",
+    "current_html": "<p><span class=\"katex-error\" style=\"color: #cc0000\" title=\"KaTeX parse error: Invalid environment nameOrdGroup(ParseNodeOrdGroup { mode: Math, loc: Some(SourceLocation { input: &quot;\\\\begin{\\\\foo}x\\\\end{\\\\foo}&quot;, start: 6, end: 12 }), body: [Color(ParseNodeColor { mode: Text, loc: None, color: &quot;#cc0000&quot;, body: [Text(ParseNodeText { mode: Text, loc: None, body: [TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;\\\\&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;f&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;o&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;o&quot;) })], font: None })] })], semisimple: None })\">\\begin{\\foo}x\\end{\\foo}</span></p>\n"
+  },
+  {
+    "id": "slash-display-simple",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "\\[x^2+1\\]",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.9474em;vertical-align:-0.0833em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">x</span><span class=\"msupsub\"><span class=\"vlist-t\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8641em;\"><span style=\"top:-3.113em;margin-right:0.05em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\">2</span></span></span></span></span></span></span></span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span><span class=\"mbin\">+</span><span class=\"mspace\" style=\"margin-right:0.2222em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.6444em;\"></span><span class=\"mord\">1</span></span></span></span></span></div>"
+  },
+  {
+    "id": "slash-display-trim",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "\\[ ﻿ x ﻿ \\]",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span></span></div>"
+  },
+  {
+    "id": "slash-display-nel",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "\\[x\\]",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord\"></span><span class=\"mord mathnormal\">x</span><span class=\"mord\"></span></span></span></span></span></div>"
+  },
+  {
+    "id": "slash-display-space",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "\\[   \\]",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"></span></span></span></div>"
+  },
+  {
+    "id": "slash-display-multiline",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "\\[x\ny\\]",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.625em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\">x</span><span class=\"mord mathnormal\" style=\"margin-right:0.0359em;\">y</span></span></span></span></span></div>"
+  },
+  {
+    "id": "slash-display-incomplete",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "\\[\\frac{\\]",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"my-4\"><span class=\"katex-error\" title=\"ParseError: KaTeX parse error: Unexpected end of input in a macro argument, expected &#x27;}&#x27; at end of input: \\frac{\" style=\"color:#cc0000\">\\frac{</span></div>"
+  },
+  {
+    "id": "slash-display-unknown",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "\\[\\unknowncommand\\]",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord text\" style=\"color:#cc0000;\"><span class=\"mord\" style=\"color:#cc0000;\">\\unknowncommand</span></span></span></span></span></span></div>"
+  },
+  {
+    "id": "slash-display-throw",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "\\[\\begin{\\foo}x\\end{\\foo}\\]",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"my-4 text-red-500 font-mono\">\\[\\begin{\\foo}x\\end{\\foo}\\]</div>",
+    "current_html": "<div class=\"my-4\"><span class=\"katex-error\" title=\"KaTeX parse error: Invalid environment nameOrdGroup(ParseNodeOrdGroup { mode: Math, loc: Some(SourceLocation { input: &quot;\\\\begin{\\\\foo}x\\\\end{\\\\foo}&quot;, start: 6, end: 12 }), body: [Color(ParseNodeColor { mode: Text, loc: None, color: &quot;#cc0000&quot;, body: [Text(ParseNodeText { mode: Text, loc: None, body: [TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;\\\\&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;f&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;o&quot;) }), TextOrd(ParseNodeTextOrd { mode: Text, loc: None, text: Owned(&quot;o&quot;) })], font: None })] })], semisimple: None })\" style=\"color: #cc0000\">\\begin{\\foo}x\\end{\\foo}</span></div>"
+  },
+  {
+    "id": "unclosed-dollar",
+    "test": "markdown_math_recognition_keeps_nonmath_neighbors",
+    "content": "$x",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p>$x</p>\n"
+  },
+  {
+    "id": "empty-dollar",
+    "test": "markdown_math_recognition_keeps_nonmath_neighbors",
+    "content": "$$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p>$$</p>\n"
+  },
+  {
+    "id": "embedded-dollar",
+    "test": "markdown_math_recognition_keeps_nonmath_neighbors",
+    "content": "$$x$y$$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p>$<span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span>y$$</p>\n",
+    "original_html": "<p>$<span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span>y\n$$</p>\n"
+  },
+  {
+    "id": "empty-slash",
+    "test": "markdown_math_recognition_keeps_nonmath_neighbors",
+    "content": "\\(\\)",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p>()</p>\n"
+  },
+  {
+    "id": "embedded-inline",
+    "test": "markdown_math_recognition_keeps_nonmath_neighbors",
+    "content": "before $x$ after",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p>before <span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span> after</p>\n"
+  },
+  {
+    "id": "inline-double",
+    "test": "markdown_math_recognition_keeps_nonmath_neighbors",
+    "content": "before $$x$$ after",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p>before </p>\n<div class=\"my-4\"><span class=\"katex-display\"><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span></span></div><p> after</p>\n"
+  },
+  {
+    "id": "escaped-dollar",
+    "test": "markdown_math_recognition_keeps_nonmath_neighbors",
+    "content": "\\$x$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p>$x$</p>\n"
+  },
+  {
+    "id": "code-math",
+    "test": "markdown_math_recognition_keeps_nonmath_neighbors",
+    "content": "`$x$`\n\n```text\n\\(x\\) $$y$$\n```",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><code>$x$</code></p>\n<div class=\"mt-2\"><code-block language=\"text\" code=\"XCh4XCkgJCR5JCQK\"></code-block></div>\n"
+  },
+  {
+    "id": "two-math",
+    "test": "markdown_math_recognition_keeps_nonmath_neighbors",
+    "content": "$x$ and \\(y\\)",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span> and <span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.625em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.0359em;\">y</span></span></span></span></p>\n"
+  },
+  {
+    "id": "dollar-adjacent",
+    "test": "markdown_math_recognition_keeps_nonmath_neighbors",
+    "content": "a$x$b",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p>a<span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span></span></span></span>b</p>\n"
+  },
+  {
+    "id": "math-sqrt-bare",
+    "test": "markdown_math_tracks_qualified_library_gaps",
+    "content": "$\\sqrt x$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1.04em;vertical-align:-0.2397em;\"></span><span class=\"mord sqrt\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8003em;\"><span class=\"svg-align\" style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord mathnormal\" style=\"padding-left:0.833em;\">x</span></span><span style=\"top:-2.7603em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"hide-tail\" style=\"min-width:0.853em;height:1.08em;\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400em\" height=\"1.08em\" viewBox=\"0 0 400000 1080\" preserveAspectRatio=\"xMinYMin slice\"><path d=\"M95,702\nc-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14\nc0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54\nc44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10\ns173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429\nc69,-144,104.5,-217.7,106.5,-221\nl0 -0\nc5.3,-9.3,12,-14,20,-14\nH400000v40H845.2724\ns-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7\nc-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z\nM834 80h400000v40h-400000z\"/></svg></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2397em;\"><span></span></span></span></span></span></span></span></span></p>\n",
+    "current_html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"katex-base\"><span class=\"katex-strut\" style=\"height:1.04em;vertical-align:-0.2397em;\"></span><span class=\"mord sqrt\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8003em;\"><span class=\"svg-align\" style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord mathnormal\">x</span></span><span style=\"top:-2.7603em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"hide-tail\" style=\"min-width:0.853em;height:1.08em;\"><svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 400000 1080\" height=\"1.08em\" preserveAspectRatio=\"xMinYMin slice\" width=\"400em\"><path d=\"M95,702\nc-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14\nc0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54\nc44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10\ns173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429\nc69,-144,104.5,-217.7,106.5,-221\nl0 -0\nc5.3,-9.3,12,-14,20,-14\nH400000v40H845.2724\ns-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7\nc-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z\nM834 80h400000v40h-400000z\"/></svg></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2397em;\"><span></span></span></span></span></span></span></span></span></p>\n"
+  },
+  {
+    "id": "math-sqrt-braced",
+    "test": "markdown_math_tracks_qualified_library_gaps",
+    "content": "$\\sqrt{x}$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1.04em;vertical-align:-0.2397em;\"></span><span class=\"mord sqrt\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.8003em;\"><span class=\"svg-align\" style=\"top:-3em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\" style=\"padding-left:0.833em;\"><span class=\"mord mathnormal\">x</span></span></span><span style=\"top:-2.7603em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"hide-tail\" style=\"min-width:0.853em;height:1.08em;\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400em\" height=\"1.08em\" viewBox=\"0 0 400000 1080\" preserveAspectRatio=\"xMinYMin slice\"><path d=\"M95,702\nc-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14\nc0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54\nc44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10\ns173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429\nc69,-144,104.5,-217.7,106.5,-221\nl0 -0\nc5.3,-9.3,12,-14,20,-14\nH400000v40H845.2724\ns-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7\nc-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z\nM834 80h400000v40h-400000z\"/></svg></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.2397em;\"><span></span></span></span></span></span></span></span></span></p>\n"
+  },
+  {
+    "id": "math-arrow",
+    "test": "markdown_math_tracks_qualified_library_gaps",
+    "content": "$\\xrightarrow x$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.9344em;vertical-align:-0.011em;\"></span><span class=\"mrel x-arrow\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.9234em;\"><span style=\"top:-3.322em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"sizing reset-size6 size3 mtight x-arrow-pad\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span></span></span></span><span class=\"svg-align\" style=\"top:-2.689em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"hide-tail\" style=\"height:0.522em;min-width:1.469em;\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400em\" height=\"0.522em\" viewBox=\"0 0 400000 522\" preserveAspectRatio=\"xMaxYMin slice\"><path d=\"M0 241v40h399891c-47.3 35.3-84 78-110 128\n-16.7 32-27.7 63.7-33 95 0 1.3-.2 2.7-.5 4-.3 1.3-.5 2.3-.5 3 0 7.3 6.7 11 20\n 11 8 0 13.2-.8 15.5-2.5 2.3-1.7 4.2-5.5 5.5-11.5 2-13.3 5.7-27 11-41 14.7-44.7\n 39-84.5 73-119.5s73.7-60.2 119-75.5c6-2 9-5.7 9-11s-3-9-9-11c-45.3-15.3-85\n-40.5-119-75.5s-58.3-74.8-73-119.5c-4.7-14-8.3-27.3-11-40-1.3-6.7-3.2-10.8-5.5\n-12.5-2.3-1.7-7.5-2.5-15.5-2.5-14 0-21 3.7-21 11 0 2 2 10.3 6 25 20.7 83.3 67\n 151.7 139 205zm0 0v40h399900v-40z\"/></svg></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.011em;\"><span></span></span></span></span></span></span></span></span></p>\n",
+    "current_html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"katex-base\"><span class=\"katex-strut\" style=\"height:0.9344em;vertical-align:-0.011em;\"></span><span class=\"mrel x-arrow\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.9234em;\"><span style=\"top:-3.322em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"katex-sizing reset-size6 size3 mtight x-arrow-pad\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">x</span></span></span></span><span style=\"top:-2.689em;\"><span class=\"pstrut\" style=\"height:2.7em;\"></span><span class=\"hide-tail\" style=\"height:0.522em;min-width:1.469em;\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400em\" preserveAspectRatio=\"xMaxYMin slice\" height=\"0.522em\" viewBox=\"0 0 400000 522\"><path d=\"M0 241v40h399891c-47.3 35.3-84 78-110 128\n-16.7 32-27.7 63.7-33 95 0 1.3-.2 2.7-.5 4-.3 1.3-.5 2.3-.5 3 0 7.3 6.7 11 20\n 11 8 0 13.2-.8 15.5-2.5 2.3-1.7 4.2-5.5 5.5-11.5 2-13.3 5.7-27 11-41 14.7-44.7\n 39-84.5 73-119.5s73.7-60.2 119-75.5c6-2 9-5.7 9-11s-3-9-9-11c-45.3-15.3-85\n-40.5-119-75.5s-58.3-74.8-73-119.5c-4.7-14-8.3-27.3-11-40-1.3-6.7-3.2-10.8-5.5\n-12.5-2.3-1.7-7.5-2.5-15.5-2.5-14 0-21 3.7-21 11 0 2 2 10.3 6 25 20.7 83.3 67\n 151.7 139 205zm0 0v40h399900v-40z\"/></svg></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.011em;\"><span></span></span></span></span></span></span></span></span></p>\n"
+  },
+  {
+    "id": "math-arrow-neighbor",
+    "test": "markdown_math_tracks_qualified_library_gaps",
+    "content": "$x\\rightarrow y$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\">x</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span><span class=\"mrel\">→</span><span class=\"mspace\" style=\"margin-right:0.2778em;\"></span></span><span class=\"base\"><span class=\"strut\" style=\"height:0.625em;vertical-align:-0.1944em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.0359em;\">y</span></span></span></span></p>\n"
+  },
+  {
+    "id": "math-char-error",
+    "test": "markdown_math_tracks_qualified_library_gaps",
+    "content": "$\\char$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex-error\" title=\"ParseError: KaTeX parse error: Invalid base-10 digit EOF\" style=\"color:#cc0000\">\\char</span></p>\n",
+    "current_html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"katex-base\"><span class=\"katex-strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord text\" style=\"color:#cc0000;\"><span class=\"mord\" style=\"color:#cc0000;\">\\char</span></span></span></span></span></p>\n"
+  },
+  {
+    "id": "math-fraction-good",
+    "test": "markdown_math_tracks_qualified_library_gaps",
+    "content": "$\\frac{a}{b}$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1.0404em;vertical-align:-0.345em;\"></span><span class=\"mord\"><span class=\"mopen nulldelimiter\"></span><span class=\"mfrac\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.6954em;\"><span style=\"top:-2.655em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">b</span></span></span></span><span style=\"top:-3.23em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"frac-line\" style=\"border-bottom-width:0.04em;\"></span></span><span style=\"top:-3.394em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"sizing reset-size6 size3 mtight\"><span class=\"mord mtight\"><span class=\"mord mathnormal mtight\">a</span></span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.345em;\"><span></span></span></span></span></span><span class=\"mclose nulldelimiter\"></span></span></span></span></span></p>\n"
+  },
+  {
+    "id": "math-matrix",
+    "test": "markdown_math_tracks_qualified_library_gaps",
+    "content": "$\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:2.4em;vertical-align:-0.95em;\"></span><span class=\"minner\"><span class=\"mopen delimcenter\" style=\"top:0em;\"><span class=\"delimsizing size3\">(</span></span><span class=\"mord\"><span class=\"mtable\"><span class=\"col-align-c\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.45em;\"><span style=\"top:-3.61em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">a</span></span></span><span style=\"top:-2.41em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">c</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.95em;\"><span></span></span></span></span></span><span class=\"arraycolsep\" style=\"width:0.5em;\"></span><span class=\"arraycolsep\" style=\"width:0.5em;\"></span><span class=\"col-align-c\"><span class=\"vlist-t vlist-t2\"><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:1.45em;\"><span style=\"top:-3.61em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">b</span></span></span><span style=\"top:-2.41em;\"><span class=\"pstrut\" style=\"height:3em;\"></span><span class=\"mord\"><span class=\"mord mathnormal\">d</span></span></span></span><span class=\"vlist-s\">​</span></span><span class=\"vlist-r\"><span class=\"vlist\" style=\"height:0.95em;\"><span></span></span></span></span></span></span></span><span class=\"mclose delimcenter\" style=\"top:0em;\"><span class=\"delimsizing size3\">)</span></span></span></span></span></span></p>\n"
+  },
+  {
+    "id": "macro-settings-are-per-formula",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$\\gdef\\scopedvalue{z}\\scopedvalue$ $\\scopedvalue$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:0.4306em;\"></span><span class=\"mord mathnormal\" style=\"margin-right:0.044em;\">z</span></span></span></span> <span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord text\" style=\"color:#cc0000;\"><span class=\"mord\" style=\"color:#cc0000;\">\\scopedvalue</span></span></span></span></span></p>\n"
+  },
+  {
+    "id": "macro-settings-do-not-survive-render",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "content": "$\\scopedvalue$",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<p><span class=\"katex\"><span class=\"katex-html\" aria-hidden=\"true\"><span class=\"base\"><span class=\"strut\" style=\"height:1em;vertical-align:-0.25em;\"></span><span class=\"mord text\" style=\"color:#cc0000;\"><span class=\"mord\" style=\"color:#cc0000;\">\\scopedvalue</span></span></span></span></span></p>\n"
+  },
+  {
+    "id": "heading-and-paragraph-positions",
+    "test": "markdown_empty_and_structural_blocks_preserve_content",
+    "content": "# one\n\n## two\n\n### three\n\n#### four\n\n##### five\n\n###### six\n\nfirst paragraph\n\nlast paragraph",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<h1>one</h1>\n<h2>two</h2>\n<h3>three</h3>\n<h4>four</h4>\n<h5>five</h5>\n<h6>six</h6>\n<p>first paragraph</p>\n<p>last paragraph</p>\n"
+  },
+  {
+    "id": "loose-and-nested-list-positions",
+    "test": "markdown_empty_and_structural_blocks_preserve_content",
+    "content": "- parent\n\n  paragraph before a child\n\n  - child\n\n    1. ordered child\n\n  last paragraph\n\n> quote\n>\n> next paragraph",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<ul>\n<li><p>parent</p>\n<p>paragraph before a child</p>\n<ul>\n<li><p>child</p>\n<ol>\n<li>ordered child</li>\n</ol>\n</li>\n</ul>\n<p>last paragraph</p>\n</li>\n</ul>\n<blockquote>\n<p>quote</p>\n<p>next paragraph</p>\n</blockquote>\n"
+  },
+  {
+    "id": "fence-info-bom-boundary",
+    "test": "markdown_code_fences_keep_labels_text_and_copy_slots",
+    "content": "```javascript﻿title=file\nlet x = 1;\n```",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"mt-2\"><code-block language=\"javascript\" code=\"bGV0IHggPSAxOwo=\"></code-block></div>\n"
+  },
+  {
+    "id": "fence-info-nel-boundary",
+    "test": "markdown_code_fences_keep_labels_text_and_copy_slots",
+    "content": "```javascripttitle=file\nlet x = 1;\n```",
+    "escape_html": true,
+    "thinking": false,
+    "html": "<div class=\"mt-2\"><code-block language=\"javascripttitle=file\" code=\"bGV0IHggPSAxOwo=\"></code-block></div>\n"
+  }
+]
