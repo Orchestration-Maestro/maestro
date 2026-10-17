@@ -35,8 +35,7 @@ impl BrandPack {
     /// terminal or export key whose role the mode does not define.
     pub fn theme_json(&self, mode: BrandMode) -> Result<String, ThemeError> {
         let presentation = self.presentation(mode)?;
-        let roles: Roles = serde_json::from_str(ROLES)
-            .map_err(|cause| ThemeError::caused_by(cause.to_string(), cause))?;
+        let roles = roles()?;
         let aliases = |table: Vec<(String, String)>| -> Result<Map<String, Value>, ThemeError> {
             table
                 .into_iter()
@@ -69,4 +68,21 @@ fn declared(colors: &BTreeMap<&str, &str>, role: &str) -> Result<(), ThemeError>
         return Ok(());
     }
     role_color(colors, role).map(drop).map_err(ThemeError::from)
+}
+
+/// Parse the single shipped role table for all projections.
+fn roles() -> Result<Roles, ThemeError> {
+    serde_json::from_str(ROLES).map_err(|cause| ThemeError::caused_by(cause.to_string(), cause))
+}
+
+/// Project emitted syntax classes through the existing brand-role aliases.
+pub(crate) fn syntax_css() -> Result<String, ThemeError> {
+    use std::fmt::Write as _;
+    let mut css = String::new();
+    for (key, role) in roles()?.colors {
+        if let Some(class) = crate::theme::code::syntax_class(&key) {
+            let _ = write!(css, ".hljs-{class}{{color:var(--maestro-color-{role});}}");
+        }
+    }
+    Ok(css)
 }

@@ -9,3 +9,6 @@ pub mod sandbox;
 pub(crate) mod download_button;
 /// Retained sandbox loading and document preparation.
 pub mod sandboxed_iframe;
+
+/// Original-text copy control.
+pub mod copy_button;

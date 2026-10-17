@@ -2,7 +2,7 @@
 use super::{
     Renderer,
     inline::Style,
-    parse::{Cells, Table},
+    nodes::{Cells, Table},
 };
 use crate::text::utils::{
     extract_ansi_code, is_whitespace_scalar, visible_width, wrap_text_with_ansi,
@@ -44,7 +44,10 @@ impl Renderer<'_> {
 impl Renderer<'_> {
     /// Renders each cell of one row in source order.
     fn row(&self, cells: &Cells, style: Style<'_>) -> Vec<String> {
-        cells.iter().map(|cell| self.inline(cell, style)).collect()
+        cells
+            .iter()
+            .map(|cell| self.inline(&cell.children, style))
+            .collect()
     }
 
     /// Measures every cell once, header first, and fits the columns to `available`.

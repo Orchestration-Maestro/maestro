@@ -1,10 +1,18 @@
 #![doc = include_str!("../../../../../docs/terminal/markdown.md")]
 
-mod autolinks;
 mod blocks;
 mod inline;
 mod lists;
-mod parse;
+use maestro_markdown as nodes;
+
+/// Applies terminal text policy before shared parsing and mapped links.
+fn parse(text: &str) -> Vec<nodes::Node> {
+    let source =
+        maestro_text::normalize_to_lf(&text.replace('\t', "   ")).replace('\0', "\u{fffd}");
+    let mut document = nodes::parse(source);
+    nodes::autolinks(&mut document);
+    document.nodes
+}
 mod tables;
 
 use super::background::fill_row;
@@ -158,7 +166,7 @@ impl Markdown {
             default_prefix: std::cell::OnceCell::new(),
         };
         let content: Vec<String> = renderer
-            .blocks(&parse::parse(text), content_width, inline::Style::Default)
+            .blocks(&parse(text), content_width, inline::Style::Default)
             .into_iter()
             .flat_map(|line| {
                 if crate::is_image_line(&line) {

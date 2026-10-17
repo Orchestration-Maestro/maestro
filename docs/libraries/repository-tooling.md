@@ -13,7 +13,7 @@ matching Unicode tables; the hold lifts when `unicode-properties` publishes
 the newer tables.
 
 Documentation parsing and the toolkit Markdown component use
-`pulldown-cmark =0.13.4` with defaults off (MIT). The toolkit enables only
+`pulldown-cmark =0.13.4` with defaults off (MIT). The shared Markdown parser enables only
 strikethrough and task-list parsing; task markers do not add checkbox rendering.
 Its additional dependencies are `bitflags =2.13.2` and `unicase =2.10.0`
 (MIT OR Apache-2.0).
