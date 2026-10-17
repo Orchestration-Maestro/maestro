@@ -244,6 +244,12 @@ descriptor or shell setting. `shell_setup` (Unix) runs shell text before the
 executable replaces the shell. `capture`, `rerun` and `assert_executed` remain for
 launches still built outside the builder.
 
+Every owner launch holds one process-wide lock while it forks, and a live child
+holds it until it is waited for, so no sibling test in the same program forks
+while a live pipe transaction is open (a forked child inherits open pipe ends
+until it execs). Do not start another owner launch on the same thread while a
+live child is unwaited; launches built outside the owner are not covered.
+
 ## Package commands and roles
 
 `models-`, `agent-`, `tui-` and `app-` each offer `clean`, `build`, `dev`, `test` and

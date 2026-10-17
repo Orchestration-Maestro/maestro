@@ -937,3 +937,30 @@ fn checked_child_waits_keep_exit_and_raw_streams() {
     assert!(contains(&output.stdout, b"out\0\xff") && contains(&output.stderr, b"err\0\xfe"));
     assert!(output.status.success());
 }
+
+#[test]
+fn live_child_holds_back_sibling_launches_until_waited() {
+    let name = left_name();
+    let mut live = probe(&name, "live").stdin(Stdio::piped()).spawn().unwrap();
+    let (events, observed) = std::sync::mpsc::channel();
+    let sibling = std::thread::spawn({
+        move || {
+            events.send("started").unwrap();
+            probe(&name, "idle").output().unwrap();
+            events.send("launched").unwrap();
+        }
+    });
+    assert_eq!(observed.recv().unwrap(), "started");
+    assert!(
+        observed.try_recv().is_err(),
+        "a sibling launched while a live child held the lock"
+    );
+    live.stdin
+        .as_mut()
+        .unwrap()
+        .write_all(b"continue\n")
+        .unwrap();
+    assert!(live.wait().unwrap().success());
+    assert_eq!(observed.recv().unwrap(), "launched");
+    sibling.join().unwrap();
+}
