@@ -42,7 +42,11 @@ fn runtime_dependencies_stay_in_the_runtime_adapter() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro", "maestro-extensions-wasmtime"]);
     workspace.external("wasmtime");
-    workspace.member("maestro", "maestro", "[dependencies]\nmaestro-extensions-wasmtime = { path = \"../maestro-extensions-wasmtime\" }");
+    let manifest = workspace.root.join("crates/maestro/Cargo.toml");
+    let baseline = std::fs::read_to_string(&manifest).unwrap();
+    std::fs::write(manifest, format!(
+        "{baseline}maestro-extensions-wasmtime = {{ path = \"../maestro-extensions-wasmtime\" }}\n"
+    )).unwrap();
     workspace.member(
         "maestro-extensions-wasmtime",
         "maestro-extensions-wasmtime",

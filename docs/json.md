@@ -2,7 +2,9 @@
 
 `maestro-json` is a core leaf below layer 0 with no workspace dependencies. It holds
 stateless decisions at the edge of JSON data; each caller keeps its own preprocessing,
-default values, selection policy and error wording.
+default values, selection policy and error wording. The [workspace daemon
+contract](specs/maestro-port.md#workspace-daemon) also assigns shared JSONL line
+framing to this leaf; that codec is not implemented yet.
 
 - **Truth.** `is_truthy` classifies a `serde_json::Value`; `is_raw_truthy` classifies
   valid raw JSON without reading a container. Null, `false`, zero of either sign and

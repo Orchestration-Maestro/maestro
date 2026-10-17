@@ -9,6 +9,9 @@ use crate::source::{Member, Source, read_manifest as read};
 /// Crate that generates the extension bindings and holds their only lint exception.
 pub(crate) const GUEST: &str = "maestro-extensions-wasm";
 
+/// Terminal engine adapter with a manifest-scoped unsafe exception.
+pub(crate) const ENGINE: &str = "maestro-terminal-ghostty";
+
 /// Lints the manifest lowers from `forbid` to `deny` so the generated bindings can compile.
 const LOWERED: &[&str] = &["pedantic", "too_many_arguments", "excessive_nesting"];
 
@@ -18,35 +21,44 @@ const ALLOWED: &str = "clippy::same_length_and_capacity";
 /// Lint level and priority of one manifest entry.
 type Level = (String, i64);
 
-/// Require the guest to declare the workspace lint table with only the lowered lints at `deny`.
-pub(crate) fn check_manifest(manifest: &Path, root: &Path) -> Result<(), String> {
+/// Require an exceptional crate to preserve every unrelated workspace lint.
+pub(crate) fn check_manifest(name: &str, manifest: &Path, root: &Path) -> Result<(), String> {
     let workspace = read(&root.join("Cargo.toml"))?;
-    let guest = read(manifest)?;
-    let own = guest.get("lints").and_then(toml::Value::as_table);
+    let member = read(manifest)?;
+    let own = member.get("lints").and_then(toml::Value::as_table);
     if own.is_none_or(|lints| lints.contains_key("workspace")) {
+        return Err(format!("{name}: must declare its own lint table"));
+    }
+    let groups = workspace
+        .get("workspace")
+        .and_then(|w| w.get("lints"))
+        .and_then(toml::Value::as_table)
+        .ok_or("missing workspace lint table")?;
+    if own.is_none_or(|own| !own.keys().eq(groups.keys())) {
         return Err(format!(
-            "{GUEST}: must declare its own lint table: the workspace table with pedantic, \
-             too_many_arguments and excessive_nesting at deny"
+            "{name}: lint groups must equal the workspace table"
         ));
     }
-    for group in ["rust", "clippy"] {
+    for group in groups.keys().map(String::as_str) {
         let mut expected = levels(
             workspace
                 .get("workspace")
                 .and_then(|w| w.get("lints")?.get(group)),
         );
-        if group == "clippy" {
-            for name in LOWERED {
-                expected
-                    .entry((*name).to_owned())
-                    .and_modify(|level| "deny".clone_into(&mut level.0));
-            }
+        let (changed, level): (&[&str], &str) = match (name, group) {
+            (GUEST, "clippy") => (LOWERED, "deny"),
+            (ENGINE, "rust") => (&["unsafe_code"], "allow"),
+            _ => (&[], ""),
+        };
+        for lint in changed {
+            expected
+                .entry((*lint).to_owned())
+                .and_modify(|entry| level.clone_into(&mut entry.0));
         }
         let actual = levels(own.and_then(|lints| lints.get(group)));
         if expected != actual {
             return Err(format!(
-                "{GUEST}: lints.{group} must equal the workspace table with only pedantic, \
-                 too_many_arguments and excessive_nesting at deny"
+                "{name}: lints.{group} must equal the workspace table except its named binding lints"
             ));
         }
     }

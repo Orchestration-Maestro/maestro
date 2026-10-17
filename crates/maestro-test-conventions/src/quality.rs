@@ -16,8 +16,8 @@ pub(crate) fn check(root: &Path, members: &[Member]) -> Result<(), String> {
     check_json_dependencies(root, members)?;
     for member in members {
         let manifest = member.directory.join("Cargo.toml");
-        if member.name == generated::GUEST {
-            generated::check_manifest(&manifest, root)?;
+        if matches!(member.name.as_str(), generated::GUEST | generated::ENGINE) {
+            generated::check_manifest(&member.name, &manifest, root)?;
         } else {
             check_inheritance(&member.name, &manifest)?;
         }

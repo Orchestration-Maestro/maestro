@@ -57,7 +57,7 @@ pub(crate) fn check(root: &Path) -> Result<Metadata, String> {
     let resolved = metadata::load(root, Some(&host))?;
     edges.extend(metadata::resolved(&resolved, &declared)?);
     validate(&declared, &edges)?;
-    complete(&declared, &edges)?;
+    complete(&declared, &edges, &resolved)?;
     Ok(declared)
 }
 
@@ -294,9 +294,56 @@ fn validate_edge(edge: &Edge) -> Result<(), String> {
     Ok(())
 }
 
+/// Require the executable's mandatory wiring to exist as native runtime dependencies.
+fn complete_runtime(metadata: &Metadata, resolved: &Metadata) -> Result<(), String> {
+    let Some(root) = members(metadata).find(|package| package.name == "maestro") else {
+        return Ok(());
+    };
+    let native = resolved
+        .resolve
+        .as_ref()
+        .and_then(|resolve| resolve.nodes.iter().find(|node| node.id == root.id));
+    for required in policy::required("maestro") {
+        let target = members(metadata).find(|package| package.name == *required);
+        let active = target
+            .zip(native)
+            .is_some_and(|(target, node)| runtime_required(root, node, target));
+        if !active {
+            return Err(format!(
+                "maestro: missing required direct dependency {required}"
+            ));
+        }
+    }
+    Ok(())
+}
+
+/// Match a non-optional normal declaration to the same active native dependency kind.
+fn runtime_required(
+    root: &cargo_metadata::Package,
+    native: &cargo_metadata::Node,
+    target: &cargo_metadata::Package,
+) -> bool {
+    root.dependencies.iter().any(|dependency| {
+        dependency.name == target.name.as_str()
+            && dependency.kind == cargo_metadata::DependencyKind::Normal
+            && !dependency.optional
+            && native
+                .deps
+                .iter()
+                .filter(|edge| edge.pkg == target.id)
+                .flat_map(|edge| &edge.dep_kinds)
+                .any(|kind| kind.kind == dependency.kind && kind.target == dependency.target)
+    })
+}
+
 /// Require each crate's currently required direct dependencies.
-fn complete(metadata: &Metadata, edges: &BTreeSet<Edge>) -> Result<(), String> {
-    for package in members(metadata) {
+fn complete(
+    metadata: &Metadata,
+    edges: &BTreeSet<Edge>,
+    resolved: &Metadata,
+) -> Result<(), String> {
+    complete_runtime(metadata, resolved)?;
+    for package in members(metadata).filter(|package| package.name != "maestro") {
         let name = package.name.as_str();
         for required in policy::required(name) {
             if !edges.iter().any(|edge| {

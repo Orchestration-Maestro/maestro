@@ -32,8 +32,9 @@ fn invalid_crate_name_is_rejected_and_corrected_name_passes() {
         ("maestro-test-conventions", "dedicated"),
         ("maestro-tooling", "dedicated"),
     ] {
-        workspace.member("models", name, "");
-        workspace.list(&[(name, class)]);
+        let workspace = Workspace::new();
+        workspace.foundation(&[name]);
+        assert_eq!(support::class(name), class);
         assert_eq!(check_workspace(&workspace.root), Ok(()));
     }
     for name in [
@@ -243,7 +244,7 @@ fn leaf_internal_dependencies_are_rejected() {
 
 fn core_to_dedicated_dependency_is_rejected() {
     let workspace = Workspace::new();
-    workspace.member("app", "maestro-app", "");
+    workspace.member("maestro-app", "maestro-app", "");
     workspace.list(&[
         ("maestro-agent", "core"),
         ("maestro-app", "core"),
@@ -273,17 +274,28 @@ fn core_to_dedicated_dependency_is_rejected() {
         };
         assert_eq!(check_workspace(&workspace.root), expected);
         workspace.member("root", "maestro", "");
-        workspace.member("app", "maestro-app", "");
+        workspace.member("maestro-app", "maestro-app", "");
         workspace.list(&[
             ("maestro-agent", "core"),
             ("maestro-app", "core"),
             ("maestro", "dedicated"),
         ]);
-        workspace.member(
-            "root",
-            "maestro",
-            &format!("[{kind}]\nmaestro-app = {{ path = \"../app\" }}"),
-        );
+        workspace.foundation(&["maestro-multiplexer", "maestro-terminal-ghostty"]);
+        workspace.list(&[
+            ("maestro-agent", "core"),
+            ("maestro-app", "core"),
+            ("maestro", "dedicated"),
+            ("maestro-multiplexer", "core"),
+            ("maestro-terminal-ghostty", "core"),
+        ]);
+        let wiring_kind = if kind == "build-dependencies" {
+            "dependencies"
+        } else {
+            kind
+        };
+        workspace.member("root", "maestro", &format!(
+            "[{wiring_kind}]\nmaestro-app = {{ path = \"../maestro-app\" }}\nmaestro-multiplexer = {{ path = \"../maestro-multiplexer\" }}\nmaestro-terminal-ghostty = {{ path = \"../maestro-terminal-ghostty\" }}"
+        ));
         let expected = if kind == "dev-dependencies" {
             Err("internal dev dependency requires declared dependency-free test support: maestro -> maestro-app".into())
         } else {
@@ -659,13 +671,13 @@ fn theme_shared_records_edge_is_scoped() {
 #[test]
 fn permitted_downward_edges_pass_without_absent_crates() {
     documented_foundation_graph_matches_policy();
-    assert_eq!(support::policy::POLICY.len(), 38);
+    assert_eq!(support::policy::POLICY.len(), 46);
     assert_eq!(
         support::policy::POLICY
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        115
+        140
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
@@ -744,9 +756,9 @@ fn path_utility_edges_preserve_native_layer_rules() {
         .map(|row| row.0)
         .filter(|name| *name != "maestro-path" && !UTILITY_EXCLUDED.contains(name))
         .collect();
-    assert_eq!(rows.len(), 38);
-    assert_eq!(consumers.len(), 22);
-    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 11);
+    assert_eq!(rows.len(), 46);
+    assert_eq!(consumers.len(), 30);
+    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 12);
     for from in consumers {
         native_consumer_may_declare_the_utility(from);
     }
@@ -844,7 +856,13 @@ fn path_utility_has_no_outbound_edges() {
 
 /// Verify that the optional utility edge cannot replace the required application edge.
 fn path_utility_does_not_replace_the_application() {
-    for frontend in ["maestro-cli", "maestro-chat", "maestro-rpc", "maestro-web"] {
+    for frontend in [
+        "maestro-cli",
+        "maestro-chat",
+        "maestro-rpc",
+        "maestro-web",
+        "maestro-multiplexer",
+    ] {
         let required = required_targets(frontend);
         let workspace = Workspace::new();
         workspace.foundation(&[&[frontend, "maestro-path"], required].concat());
@@ -916,7 +934,13 @@ fn sparse_inventory_does_not_create_product_crates() {
 
 #[test]
 fn frontends_require_application_without_unused_allowed_edges() {
-    for frontend in ["maestro-cli", "maestro-chat", "maestro-rpc", "maestro-web"] {
+    for frontend in [
+        "maestro-cli",
+        "maestro-chat",
+        "maestro-rpc",
+        "maestro-web",
+        "maestro-multiplexer",
+    ] {
         let required = support::policy::POLICY
             .iter()
             .find(|row| row.0 == frontend)
@@ -1298,20 +1322,42 @@ fn check_permitted_declarations(workspace: &Workspace, from: &str, to: &str, tar
         } else {
             std::slice::from_ref(&to)
         };
+        let selected: std::collections::BTreeSet<_> = selected
+            .iter()
+            .chain(support::required(from))
+            .copied()
+            .collect();
         let mut declarations = format!("[{kind}]\n");
         for (index, target) in selected.iter().enumerate() {
+            if from == "maestro" && required_targets(from).contains(target) {
+                continue;
+            }
             writeln!(
                 declarations,
                 "renamed{index} = {{ package = {target:?}, path = \"../{target}\"{extra} }}"
             )
             .unwrap();
         }
+        append_required_root_wiring(&mut declarations, from, kind);
         workspace.member(from, from, &declarations);
         assert_eq!(
             check_workspace(&workspace.root),
             Ok(()),
             "{from} -> {to} ({kind}{extra})"
         );
+    }
+}
+
+/// Keep mandatory root wiring normal while varying other allowed declarations.
+fn append_required_root_wiring(declarations: &mut String, from: &str, kind: &str) {
+    if from != "maestro" {
+        return;
+    }
+    if kind != "dependencies" {
+        declarations.push_str("[dependencies]\n");
+    }
+    for target in required_targets(from) {
+        writeln!(declarations, "{target} = {{ path = \"../{target}\" }}").unwrap();
     }
 }
 
@@ -1788,13 +1834,20 @@ fn complete_permitted_graph_is_acyclic() {
             let mut declarations = format!("[{kind}]\n");
             let utility = (from != "maestro-path" && !UTILITY_EXCLUDED.contains(&from))
                 .then_some("maestro-path");
-            for (index, target) in targets.iter().copied().chain(utility).enumerate() {
+            for (index, target) in targets
+                .iter()
+                .copied()
+                .chain(utility)
+                .filter(|target| from != "maestro" || !required_targets(from).contains(target))
+                .enumerate()
+            {
                 writeln!(
                     declarations,
                     "edge{index} = {{ package = {target:?}, path = \"../{target}\"{extra} }}"
                 )
                 .unwrap();
             }
+            append_required_root_wiring(&mut declarations, from, kind);
             workspace.member(from, from, &declarations);
         }
         assert_eq!(check_workspace(&workspace.root), Ok(()), "{kind}{extra}");
@@ -2160,7 +2213,7 @@ fn test_process_policy_keeps_existing_domain_edges() {
 
 #[test]
 fn test_process_inventory_matches_foundation_contract() {
-    assert_eq!(support::policy::POLICY.len(), 38);
+    assert_eq!(support::policy::POLICY.len(), 46);
     assert_eq!(support::class(OWNER), "dedicated");
     assert!(UTILITY_EXCLUDED.contains(&OWNER));
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
@@ -2197,4 +2250,118 @@ fn test_process_inventory_matches_foundation_contract() {
             "workspace crate is not listed in workspace-crates.json: {OWNER}"
         ))
     );
+}
+
+#[test]
+fn workspace_daemon_owners_are_core() {
+    for name in [
+        "maestro-protocol",
+        "maestro-ipc",
+        "maestro-terminal",
+        "maestro-workspace",
+        "maestro-detection",
+        "maestro-daemon",
+        "maestro-terminal-ghostty",
+        "maestro-multiplexer",
+    ] {
+        let workspace = Workspace::new();
+        workspace.foundation(&[name]);
+        assert_eq!(check_workspace(&workspace.root), Ok(()), "{name}");
+        let path = workspace.root.join("workspace-crates.json");
+        let mut inventory: serde_json::Value =
+            serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+        inventory[name] = "dedicated".into();
+        std::fs::write(&path, serde_json::to_vec_pretty(&inventory).unwrap()).unwrap();
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err(format!("invalid scoped layer for {name}: expected core"))
+        );
+    }
+}
+
+#[test]
+fn workspace_root_rejects_optional_wiring() {
+    check_root_dependency_form("dependencies", ", optional = true");
+}
+
+#[test]
+fn workspace_root_rejects_build_only_wiring() {
+    check_root_dependency_form("build-dependencies", "");
+}
+
+#[test]
+fn workspace_root_rejects_inactive_target_wiring() {
+    check_root_dependency_form("target.'cfg(target_os = \"none\")'.dependencies", "");
+}
+
+/// Reject each runtime dependency's invalid form while retaining its neighbours.
+fn check_root_dependency_form(kind: &str, extra: &str) {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro"]);
+    for target in required_targets("maestro") {
+        let mut declarations = String::from("[dependencies]\n");
+        for other in required_targets("maestro")
+            .iter()
+            .filter(|other| *other != target)
+        {
+            writeln!(declarations, "{other} = {{ path = \"../{other}\" }}").unwrap();
+        }
+        if kind != "dependencies" {
+            writeln!(declarations, "[{kind}]").unwrap();
+        }
+        writeln!(
+            declarations,
+            "renamed = {{ package = {target:?}, path = \"../{target}\"{extra} }}"
+        )
+        .unwrap();
+        workspace.member("maestro", "maestro", &declarations);
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err(format!(
+                "maestro: missing required direct dependency {target}"
+            )),
+            "{target} ({kind}{extra})"
+        );
+    }
+    workspace.foundation(&["maestro"]);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn workspace_root_accepts_native_target_wiring() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro"]);
+    let mut declarations =
+        String::from("[target.'cfg(not(target_arch = \"wasm32\"))'.dependencies]\n");
+    for target in required_targets("maestro") {
+        writeln!(declarations, "{target} = {{ path = \"../{target}\" }}").unwrap();
+    }
+    workspace.member("maestro", "maestro", &declarations);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn workspace_root_requires_core_wiring() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro"]);
+    let targets = [
+        "maestro-app",
+        "maestro-multiplexer",
+        "maestro-terminal-ghostty",
+    ];
+    for omitted in targets {
+        let mut declarations = String::from("[dependencies]\n");
+        for target in targets.iter().filter(|target| **target != omitted) {
+            writeln!(declarations, "{target} = {{ path = \"../{target}\" }}").unwrap();
+        }
+        workspace.member("maestro", "maestro", &declarations);
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err(format!(
+                "maestro: missing required direct dependency {omitted}"
+            ))
+        );
+    }
+    workspace.foundation(&["maestro"]);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
 }

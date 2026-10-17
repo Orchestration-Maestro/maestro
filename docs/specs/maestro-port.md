@@ -11,12 +11,12 @@ Approved adaptations are Rust implementation and idioms; the specified UI toolki
 ## Common semantic and boundary contract
 
 1. **Mapped files, idiomatic Rust, preserved observations.** Each named reference file maps to its Rust module, with exported/domain names in Rust casing. Rewrite each file internally using Rust ownership, typed records and enums, pattern matching, `Result`/`?`, iterators, traits, the standard library and the best native crates; do not mirror private helpers or statements. Observable behavior and results match the reference exactly: inputs, defaults, outputs, messages, formats, events, retained-object observations, cancellation points, persistence timing and mode-specific control flow. Choose Rust libraries and standard-library facilities that match; where a library result differs, Rust code produces the reference result without imitating engine internals, foreign engine limits or library internals. Only corrected reference defects, including engine artifacts that are themselves bugs, differ; list each correction once in the owning delivery. Preserve meaningful wire omission/presence rules with typed Rust data. Test application behavior at its owning API.
-2. **One owner per behavior.** Small capability ports hide providers, files, processes, clocks, random sources, terminals, browser operations and component engines. Production and controlled adapters obey the same public conformance cases. No frontend imports another frontend, drives a model directly, owns application policy or selects an implementation behind a caller's back. Every frontend calls `maestro-app`. Allowed internal dependency sets are CLI and chat: app, tui, tui-crossterm, theme; RPC and web: app, theme. Each frontend must depend on app; other allowed edges are declared only when used. The toolkit and theme are presentation libraries, not sibling frontends. Configuration/session/session-search selectors remain chat-owned; pure retained session-tree ordering, geometry, content extraction/search and raw-record ancestry belong to `maestro-session`, re-exported through `maestro-app`; CLI reaches their injected presenter through the app interface wired by the executable. No other internal frontend dependency is allowed. The executable only wires adapters and starts a frontend.
+2. **One owner per behavior.** Small capability ports hide providers, files, processes, clocks, random sources, terminals, browser operations and component engines. Production and controlled adapters obey the same public conformance cases. No frontend imports another frontend, drives a model directly, owns application policy or selects an implementation behind a caller's back. Every frontend calls `maestro-app`. Allowed internal dependency sets are CLI, chat and multiplexer: app, tui, tui-crossterm, theme; RPC and web: app, theme. Each frontend must depend on app; other allowed edges are declared only when used. The toolkit and theme are presentation libraries, not sibling frontends. Configuration/session/session-search selectors remain chat-owned; pure retained session-tree ordering, geometry, content extraction/search and raw-record ancestry belong to `maestro-session`, re-exported through `maestro-app`; CLI reaches their injected presenter through the app interface wired by the executable. No other internal frontend dependency is allowed. The executable only wires adapters and starts a frontend.
 3. **Preserve operational boundaries.** Dropping a result handle is not a universal abort. Cancellation is cooperative where callbacks are cooperative; it does not force all authentication, retry waits or guest work into a new race. Persistent writes are not upgraded into transactions. Do not add rollback, poisoned-session states, admission batches, restrictions, budgets or timeouts where none exist.
 4. **Keep current data plus the existing conversions only.** Support the established session, settings, startup and keybinding conversions and accepted edit inputs. Add no general migration/refusal/archive/rollback layer. Model/provider names, resource kinds, extension registrations and vocabularies remain extensible data, not closed code enums used as policy.
 5. **Verify before completion.** Each ticket maintains a per-file manifest mapping application behaviors, exports, source test declarations, parameterized cases and fixtures to Rust behaviors/tests, not a one-to-one inventory of private statements or helpers. Many-to-one internal implementation mappings are valid when they cover all required behaviors. Preserve live-only and skipped-test reasons without using them to avoid deterministic tests. Require red-first public-interface tests, strict rustdoc, formatting, Clippy, convention checks, two-axis review and shared CI. Runtime module-resolution probes have an explicit non-applicability row under static Rust linkage; they are inventoried, not claimed as passing runtime tests. Numerical inventory coverage is not evidence that runtime parity passes. Require at least 80% line coverage from tests that each prove real behavior, with names stating that behavior; no fake, tautological, prose-snapshot, duplicate or implementation-detail tests.
 6. **No debt.** Every review finding, Minor included, blocks landing and is resolved in the same pull request. Delete slop rather than defer it to follow-up, polish or later-release issues. Existing polish items are resolved in their owning fix or closed as obsolete. Explicitly owner-scheduled platform checks are not debt.
-7. **Mechanically enforced quality.** Each function has at most five parameters, including at most one boolean parameter, at most 60 lines, cognitive complexity at most 15 and nesting at most four levels. Each Rust file has at most 500 production lines; a longer reference file becomes a folder module while retaining its file mapping. Keep pedantic lints clean. Production code uses no `unwrap`, `expect` or `panic`; forbid unsafe code. Enforce this bar mechanically through the repository lint configuration and conventions checks.
+7. **Mechanically enforced quality.** Each function has at most five parameters, including at most one boolean parameter, at most 60 lines, cognitive complexity at most 15 and nesting at most four levels. Each Rust file has at most 500 production lines; a longer reference file becomes a folder module while retaining its file mapping. Keep pedantic lints clean. Production code uses no `unwrap`, `expect` or `panic`; forbid unsafe code except the terminal engine bindings described under [Workspace daemon](#workspace-daemon). Enforce this bar mechanically through the repository lint configuration and conventions checks.
 8. **Source-sized production code.** State the reference lines ported and planned production size before implementation; aim at no more than 1.5 times those lines. Above 1.5 times, map every extra block to a reference line or named Rust necessity and delete unmapped blocks. Larger deliveries are acceptable when every extra block is fully justified in the delivery report.
 
 9. **Port with judgement.** Port everything that contributes to the reference's good behavior. Do not port pieces that do not work or add no value: dead or unreachable code, unused exports, stale or wrong comments and documentation, broken example flags and valueless quirks. List each omission once with its reason.
@@ -250,7 +250,7 @@ from the optional foundation utility described below.
 | Crate | One job | Allowed internal dependencies | Layer |
 |---|---|---|---|
 | `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, CSS string serialization, locale construction and number formatting) | — | below 0 |
-| `maestro-json` | implement JSON boundary semantics (object acceptance, canonical keys, truth, compact and pretty text) | — | below 0 |
+| `maestro-json` | implement JSON boundary semantics (object acceptance, canonical keys, truth, compact and pretty text, JSONL line framing) | — | below 0 |
 | `maestro-cancellation` | signal cooperative cancellation | — | below 0 |
 | `maestro-request` | define shared message and model-request records | — | below 0 |
 | `maestro-entry` | define session interchange records | `maestro-request` | below 0 |
@@ -260,6 +260,8 @@ from the optional foundation utility described below.
 | `maestro-lock` | acquire file-write locks | — | below 0 |
 | `maestro-process` | own native child-process lifecycles | — | below 0 |
 | `maestro-pattern` | match file patterns | `maestro-text` | below 0 |
+| `maestro-protocol` | define the daemon protocol | `maestro-json` | below 0 |
+| `maestro-ipc` | connect local sockets | — | below 0 |
 | `maestro-extensions-wasm` | provide guest authoring | `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json` | 0 |
 | `maestro-models` | supply model invocations | `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-brand` | 0 |
 | `maestro-resources` | discover instruction resources | `maestro-request`, `maestro-pattern`, `maestro-text` | 0 |
@@ -268,24 +270,30 @@ from the optional foundation utility described below.
 | `maestro-test-process` | run one named test in a checked child process | — | 0 |
 | `maestro-tooling` | automate repository development | — | 0 |
 | `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process` | 0 |
+| `maestro-terminal` | emulate terminal screens | `maestro-text` | 0 |
+| `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text` | 0 |
+| `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text` | 0 |
 | `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool` | 1 |
 | `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-lock`, `maestro-text`, `maestro-process` | 1 |
 | `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-process` | 1 |
 | `maestro-test-terminal` | exercise terminal scenarios | `maestro-tui` | 1 |
 | `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-brand` | 1 |
 | `maestro-tui-crossterm` | connect a real terminal | `maestro-tui`, `maestro-text` | 1 |
+| `maestro-terminal-ghostty` | run the Ghostty terminal engine | `maestro-terminal` | 1 |
+| `maestro-daemon` | run the workspace daemon | `maestro-protocol`, `maestro-ipc`, `maestro-process`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`, `maestro-settings`, `maestro-tui`, `maestro-json`, `maestro-text` | 1 |
 | `maestro-catalog` | resolve the usable model catalog | `maestro-models`, `maestro-credentials`, `maestro-pattern`, `maestro-request`, `maestro-text`, `maestro-json` | 2 |
 | `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-request`, `maestro-entry`, `maestro-text`, `maestro-json` | 2 |
 | `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-tool`, `maestro-text`, `maestro-json`, `maestro-process` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-json`, `maestro-text` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources` | 3 |
-| `maestro-app` | coordinate application operations | `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process` | 4 |
+| `maestro-app` | coordinate application operations | `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-daemon` | 4 |
 | `maestro-extensions-wasmtime` | execute artifacts | `maestro-extensions` | 4 |
 | `maestro-chat` | present interactive conversations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
 | `maestro-cli` | present command-line operations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
-| `maestro-rpc` | present the RPC contract | `maestro-app`, `maestro-theme` | 5 |
+| `maestro-rpc` | present JSONL RPC contracts | `maestro-app`, `maestro-theme` | 5 |
 | `maestro-web` | present browser interactions | `maestro-app`, `maestro-theme` | 5 |
-| `maestro` | compose executable entry points | `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime` | 6 |
+| `maestro-multiplexer` | present the workspace multiplexer | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
+| `maestro` | compose executable entry points | `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer`, `maestro-terminal-ghostty` | 6 |
 
 The sealed local/thread-safe callable representation (future, shared and weak pointer types) belongs to `maestro-models`, the lowest existing callback owner. Models also owns the provider callable, payload/response hook and options family, and provider submission representation. One retained provider or scripted factory is callable in both families with a family-associated return. Agent-specific callback signatures, conversion from existing task admission and typed local entry belong to `maestro-agent`; both representations reuse its single driver and lifecycle. Local registered dispatch requires caller-supplied submission; replacement-stream dispatch requires none. Native registered objects remain thread-safe even when accepting local request hooks. No crate edge changes. See [agent execution affinity](../adr/agent-execution-affinity.md).
 
@@ -296,7 +304,7 @@ internal dependencies. Only models and the terminal toolkit may depend on it.
 dependencies, including `maestro-path`. Text owns common text operations: whitespace,
 lexical comparison, markup escaping, CSS string serialization, locale construction and optional locale-number
 formatting shared by transcript components. JSON owns JSON boundary
-semantics: object acceptance, canonical keys, truth, and compact and pretty text.
+semantics: object acceptance, canonical keys, truth, compact and pretty text, and JSONL line framing.
 `maestro-entry` and `maestro-tool` are core record contracts below layer 0 that depend
 only on `maestro-request`: entry defines session interchange records, including the
 generic `CompactionResult<T>` shared by native generation and guest authoring; tool defines
@@ -372,7 +380,7 @@ deleted lines; moving lines is not a code saving.
 including the path and cancellation leaves. It owns native child-process lifecycles:
 captured-child creation, raw pipe transfer and collection, child-exit and
 pipe-completion observation, termination (including a caller-selected post-exit grace and TERM-then-KILL escalation) and reaping. Only tools, packages, credentials, the application and the
-terminal toolkit may depend on it, and only on native targets; callers keep their
+terminal toolkit and the daemon may depend on it, and only on native targets; callers keep their
 cancellation, termination and settlement policies. Shell discovery, environment
 construction, command prefixes, tool definitions, output decoding, sanitization and
 truncation, artifact files, presentation, result mapping and user-facing errors stay
@@ -468,16 +476,34 @@ checks the table against the enforced dependency policy, including permitted
 utility edges and leaves. The below-layer-0 owners are delivered before their
 consumers; the utility is delivered before its first consumer.
 
+### Workspace daemon
+
+The workspace daemon is core design. The executable always wires the daemon,
+the multiplexer and the terminal engine adapter: it requires direct application,
+multiplexer and engine-adapter dependencies, with daemon operations reached through
+`maestro-app`. There is no Cargo feature, optional dependency or separate install.
+Defaults belong to the daemon. The daemon and multiplexer are native-only; browser
+builds already exclude native process crates. Every frontend calls `maestro-app`.
+
+`maestro-terminal-ghostty` alone may use unsafe code, confined to its engine
+bindings. The workspace retains `unsafe_code = "forbid"`; the adapter declares
+its own lint table equal to the workspace table except `unsafe_code = "allow"`.
+The existing guest-authoring generated-binding lint exception is unchanged.
+Conventions enforce the adapter's manifest exception even before the crate exists;
+source confinement remains a binding-implementation review requirement.
+
 ### Crate order
 
 A crate is reached when every crate it depends on has its first tickets landed. Each crate's tickets are written when that crate is reached, and each ticket links to this specification. Tickets are not planned in advance for all crates. Same-layer crates run in parallel (at most 4 compiling lanes).
 
-1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-conventions`, `maestro-test-process`, `maestro-tooling`, `maestro-tui`
-2. **Layer 1:** `maestro-agent`, `maestro-credentials`, `maestro-packages`, `maestro-test-terminal`, `maestro-theme`, `maestro-tui-crossterm`
+**Below layer 0:** `maestro-protocol`, `maestro-ipc` join the existing foundation leaves.
+
+1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-conventions`, `maestro-test-process`, `maestro-tooling`, `maestro-tui`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`
+2. **Layer 1:** `maestro-agent`, `maestro-credentials`, `maestro-packages`, `maestro-test-terminal`, `maestro-theme`, `maestro-tui-crossterm`, `maestro-daemon`, `maestro-terminal-ghostty`
 3. **Layer 2:** `maestro-catalog`, `maestro-session`, `maestro-tools`
 4. **Layer 3:** `maestro-export`, `maestro-extensions`
 5. **Layer 4:** `maestro-app`, `maestro-extensions-wasmtime`
-6. **Layer 5:** `maestro-chat`, `maestro-cli`, `maestro-rpc`, `maestro-web`
+6. **Layer 5:** `maestro-chat`, `maestro-cli`, `maestro-rpc`, `maestro-web`, `maestro-multiplexer`
 7. **Layer 6:** `maestro`
 
 ## Completion and explicit later scope

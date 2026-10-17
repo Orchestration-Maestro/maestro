@@ -103,7 +103,7 @@ teardown semantics; it introduces no generic executor or scheduling policy.
 
 The process leaf `maestro-process` is declared core below layer 0 with no workspace
 dependencies, including path and cancellation. Only tools, packages, credentials,
-the application and the toolkit may consume it, on native targets. It owns child-process lifecycles through its `child_process` module
+the application, the daemon and the toolkit may consume it, on native targets. It owns child-process lifecycles through its `child_process` module
 (captured spawn, raw pipe collection, exit and EOF observation, termination and
 reaping, with a caller-selected post-exit grace and TERM-then-KILL escalation); callers keep cancellation, termination, settlement and output policy.
 Synchronous capture follows the timeout handling in the
@@ -244,7 +244,8 @@ Under `crates/*/src`, files carrying `#![cfg(test)]` must be named `tests.rs` or
 Duplicate assertions are a review judgement.
 
 The root manifest must forbid every protected quality lint; member manifests
-are parsed as TOML and must set the boolean `lints.workspace` to `true`.
+are parsed as TOML and must set the boolean `lints.workspace` to `true`,
+except for the two named binding manifests below.
 The compiler rejects protected-lint allowances, including attributes emitted by
 macros and conditional attributes. Lint-group allowances fail because the
 workspace also forbids `forbidden_lint_groups`, which ignores warnings denial.
@@ -258,7 +259,7 @@ counts. Ordinary comments and string contents count. Blank lines are excluded.
 A trailing test item's comment-only suffix is excluded only when no production
 item follows. Rust validity belongs to the compiler.
 
-The guest-authoring crate alone declares its own lint table: the workspace table
+The guest-authoring crate declares its own lint table: the workspace table
 with `pedantic`, `too_many_arguments` and `excessive_nesting` lowered from
 `forbid` to `deny`, because generated bindings cannot compile under `forbid`.
 Only that crate's generated `bindings.rs` may carry a lint attribute, the single
@@ -266,6 +267,20 @@ allowance `clippy::same_length_and_capacity`. Every handwritten
 top-level module, integration test and example restores the groups with
 `forbid`, nested files inherit it from their parent module, and the crate root
 stays wiring-only.
+
+`maestro-terminal-ghostty` declares its own lint table equal to the workspace
+one except `unsafe_code = "allow"`. Unsafe code is confined to its terminal engine
+bindings; the workspace keeps `unsafe_code = "forbid"`. The checker enforces the
+manifest exception; binding source confinement requires implementation review.
+No other member may declare its own lint table.
+
+The workspace daemon is core design: the root always wires the daemon,
+multiplexer and engine adapter. Required direct edges are root → application,
+multiplexer and engine adapter, and multiplexer → application. The required root
+edges must be non-optional normal dependencies active on native builds. Like the
+CLI and chat, the multiplexer may use only application, toolkit, terminal adapter and
+theme, plus the foundation utility and native feature-unifier exceptions.
+Declared-but-absent core owners require no placeholder crates.
 
 Browser geometry uses installed `js-sys` host calls rather than a handwritten
 binding macro: `Reflect::get` catches method lookup failures, `Function::call0`
