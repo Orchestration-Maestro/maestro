@@ -26,6 +26,10 @@ struct Entry {
 /// Deterministic clock; no toolkit frame or wall clock is involved.
 #[derive(Default)]
 pub struct Host {
+    /// Exact clipboard admissions.
+    pub copies: RefCell<Vec<String>>,
+    /// Separately resolved native operations.
+    pub results: RefCell<Vec<Rc<Cell<Option<bool>>>>>,
     /// Current instant.
     now: Cell<i32>,
     /// Stable registration slots, revoked by the real Timer owner.
@@ -68,12 +72,14 @@ impl Host {
     pub fn run_work(&self) {
         let work = self.work.take();
         for mut future in work {
-            assert!(matches!(
+            if matches!(
                 future
                     .as_mut()
                     .poll(&mut Context::from_waker(Waker::noop())),
-                Poll::Ready(())
-            ));
+                Poll::Pending
+            ) {
+                self.work.borrow_mut().push(future);
+            }
         }
     }
     /// Count live native registrations, not historical admissions.
@@ -86,6 +92,14 @@ impl Host {
     }
 }
 impl AttachmentHost for Host {
+    fn copy_to_clipboard(&self, text: &str) -> Pin<Box<dyn Future<Output = bool>>> {
+        self.copies.borrow_mut().push(text.into());
+        let result = Rc::new(Cell::new(None));
+        self.results.borrow_mut().push(result.clone());
+        Box::pin(std::future::poll_fn(move |_| {
+            result.get().map_or(Poll::Pending, Poll::Ready)
+        }))
+    }
     fn reading_layout(
         &self,
         _: egui::Id,

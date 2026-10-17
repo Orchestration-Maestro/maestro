@@ -12,6 +12,7 @@ font bundle; native tests enable the dev-only egui default fonts.
 | resvg | 0.48.1 | defaults off; native rendering; tiny-skia re-export | MIT |
 | base64 | 0.23.1 | defaults off/std; offline export and generic-artifact payload decoding | MIT |
 | url | 2.5.8 | default; form-urlencoded deep-link parsing | MIT |
+| percent-encoding | 2.3.2 | default; opaque query-key encoding | MIT |
 | indexmap | 2.14.2 | serde, default/std | MIT |
 | ryu-js | 1.0.3 | workspace number formatting | Apache-2.0 |
 | num-traits | 0.2.19 | workspace checked canvas-size conversion | MIT |
@@ -28,7 +29,7 @@ BlobPropertyBag, Url, MediaQueryList, HtmlCanvasElement, DomRect, DomException,
 DomStringList, IdbDatabase, IdbFactory, IdbIndex, IdbIndexParameters, IdbObjectStore,
 IdbObjectStoreParameters, IdbOpenDbRequest, IdbRequest, IdbTransaction,
 IdbTransactionMode, IdbKeyRange, IdbCursor, IdbCursorWithValue, IdbCursorDirection,
-StorageManager, StorageEstimate, HtmlInputElement, Event, EventTarget and KeyboardEvent.
+StorageManager, StorageEstimate, HtmlInputElement, HtmlTextAreaElement, Event, EventTarget and KeyboardEvent.
 Storage and reload errors remain fallible. Legacy locale access uses the platform property
 adapter only on the fallback branch. The real library is built for WebAssembly,
 not replaced with a test-only host.
@@ -125,3 +126,9 @@ licence. Native HTML parsing owns recovery and validation; iframe sandbox/style
 attributes need no additional binding features. Document preparation embeds only
 the runtime and navigation programs required by the sandbox, not a JavaScript
 frontend. See [retained HTML loading](../browser/sandbox.md#retained-html-loading).
+
+Message links directly declare the already-locked percent-encoding library and
+add only `web-sys/HtmlTextAreaElement`. Its implied Element, EventTarget,
+HtmlElement and Node features were already enabled. Clipboard discovery, Promise
+settlement and fallback invocation reuse existing reflection and bindings; no
+package version, license closure or clipboard runtime is added.

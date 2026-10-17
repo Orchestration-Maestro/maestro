@@ -268,6 +268,12 @@ impl BrowserAttachmentHost {
 }
 
 impl AttachmentHost for BrowserAttachmentHost {
+    fn copy_to_clipboard(
+        &self,
+        text: &str,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
+        crate::utils::clipboard::copy_to_clipboard(&self.document, text)
+    }
     fn reading_layout(&self, id: egui::Id) -> Result<super::ReadingLayout, AttachmentUiError> {
         self.measure_reading(id)
     }

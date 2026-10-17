@@ -3539,6 +3539,7 @@ dependencies = [
  "maestro-dependencies",
  "maestro-theme",
  "num-traits",
+ "percent-encoding",
  "resvg",
  "ryu-js",
  "serde",

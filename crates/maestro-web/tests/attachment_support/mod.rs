@@ -58,6 +58,13 @@ pub struct Host {
     pub fail_download: Cell<bool>,
 }
 impl AttachmentHost for Host {
+    fn copy_to_clipboard(
+        &self,
+        _: &str,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
+        unreachable!("unexpected clipboard operation")
+    }
+
     fn reading_layout(
         &self,
         _: egui::Id,
