@@ -54,8 +54,10 @@ The published calamine 0.36.1 source is retained in
 [vendor/calamine](../../vendor/calamine), outside workspace membership, under
 its [MIT licence](../../vendor/calamine/LICENSE-MIT.md). The published archive's
 SHA-256 is `5fa68281b1a76b54a62156474adb06bb380a67e07dd60656e3217152b42183f3`.
-The root crates-io patch changes only the ZIP requirement to `=9.0.3`
+The root crates-io patch pins the ZIP requirement to `=9.0.3`
 (defaults off, `deflate`) and propagates fallible archive names through the
 existing path cache and XLSX/XLSB constructors, including its unit-test setup.
-No name is skipped or decoded with a fallback, and no workbook metadata policy
-changes. The original manifest and source revision metadata remain alongside it.
+No name is skipped or decoded with a fallback. The same copy also retains raw
+legacy FORMAT strings, resolved cell-format selections and exclusive-end declared
+dimensions in the existing XLS parser. Older FORMAT strings reuse its codepage
+decoder. The original manifest and source revision metadata remain alongside it.

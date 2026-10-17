@@ -655,7 +655,9 @@ manifest and source revision metadata. The source archive from
 `5fa68281b1a76b54a62156474adb06bb380a67e07dd60656e3217152b42183f3`.
 Local changes pin ZIP to 9.0.3 and propagate its fallible archive-name API through
 the path cache and both workbook constructors, including the internal test setup.
-No parser feature or workbook projection is changed.
+The XLS metadata delta retains raw FORMAT strings in encounter order, per-cell
+format selections and exclusive-end declared dimensions. Older FORMAT strings
+reuse the parser's codepage decoder. No dependency or optional feature is added.
 
 ZIP 9.0.3 uses MIT. Its reused closure retains the MIT/Apache-2.0 alternatives,
 BSD-3-Clause for encoding_rs, Unicode-3.0 for unicode-ident and Zlib for zlib-rs.
