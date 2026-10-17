@@ -61,10 +61,12 @@ may not import text.
 
 Completeness is the union of declared normal/build dependencies across features
 and targets plus host-resolved dependencies. Transitive and dev dependencies do
-not satisfy a direct requirement. The sole permitted internal development edge is
-`maestro-tui-crossterm` to `maestro-brand` for the terminal examples. The exception
+not satisfy a direct requirement. Two internal development edges are permitted.
+`maestro-tui-crossterm` to `maestro-brand` serves the terminal examples; it
 permits neither a normal/build brand dependency nor a theme dependency, and does
-not satisfy the adapter's required toolkit/text dependencies. The scenario harness
+not satisfy the adapter's required toolkit/text dependencies. The native-only
+`maestro-extensions` to `maestro-credentials` edge lets extension tests build a
+real model catalog; it permits no normal/build credentials dependency. The scenario harness
 is not a reusable test-support dependency. Both production
 (normal/build) and test (all kinds) graphs must be acyclic before individual edge
 policy is checked.

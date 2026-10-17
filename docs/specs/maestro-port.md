@@ -426,16 +426,19 @@ The terminal adapter (`maestro-tui-crossterm`) requires the toolkit and
 `maestro-text` as direct dependencies; an absent required dependency fails, and the
 terminal scenario harness remains forbidden from importing text.
 
-The only permitted internal development edge is `maestro-tui-crossterm` to
-`maestro-brand`, for the terminal examples' shared brand projection. It does not
+Two internal development edges are permitted. `maestro-tui-crossterm` to
+`maestro-brand` serves the terminal examples' shared brand projection. It does not
 permit a normal or build dependency on brand or theme, satisfy either required
 toolkit/text dependency, or make the scenario harness a development target.
-The edge remains subject to test-graph cycle checks, including aliases and
+`maestro-extensions` to `maestro-credentials`, declared for native targets only,
+lets extension tests and doctests build a real model catalog over in-memory
+credential storage; it permits no normal or build dependency on credentials.
+Both edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
 
 The graph consists of the table entries, the foundation utility, the native
-feature unifier and this development-only exception. The
+feature unifier and these development-only exceptions. The
 [architecture conventions test](../../crates/maestro-test-conventions/tests/architecture.rs)
 checks the table against the enforced dependency policy, including permitted
 utility edges and leaves. The below-layer-0 owners are delivered before their
