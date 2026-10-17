@@ -1,4 +1,5 @@
 #![doc = include_str!("../../../docs/extensions/registration.md")]
+#![doc = include_str!("../../../docs/extensions/ui.md")]
 //! Shared event channels with callback-scoped extension delivery.
 //!
 //! Supply a serial cooperative spawner that never polls inline or concurrently
@@ -42,13 +43,17 @@ pub use event_bus::{
     Subscription, TailSpawner, create_event_bus, create_event_bus_for,
 };
 
+/// The read-only footer metadata extension footers receive.
+pub mod footer_data_provider;
 mod loader;
 /// Owned registration records and callback types.
 pub mod types;
 pub use maestro_resources::SourceInfo;
 pub use types::{
-    Extension, ExtensionAPI, ExtensionExecution, ExtensionFlag, ExtensionShortcut,
-    RegisteredCommand, ResolvedCommand,
+    AutocompleteProviderFactory, EditorFactory, Extension, ExtensionAPI, ExtensionExecution,
+    ExtensionFlag, ExtensionShortcut, ExtensionUIContext, ExtensionUIDialogOptions,
+    ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer, RegisteredCommand,
+    ResolvedCommand, TerminalInputHandler, WidgetPlacement, WorkingIndicatorOptions,
 };
 /// Queries over current extension registrations.
 pub mod runner;

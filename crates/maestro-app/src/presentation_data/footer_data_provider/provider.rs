@@ -1,12 +1,13 @@
-//! The footer metadata owner and its read-only interface.
+//! The footer metadata owner.
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use super::ExtensionStatuses;
+use maestro_extensions::footer_data_provider::live::Live;
+
 use super::git::{GitPaths, find_git_paths, resolve_branch};
-use super::live::Live;
 use super::operations::FooterOperations;
+use super::{ExtensionStatuses, ReadonlyFooterDataProvider};
 
 /// Branch-change callbacks keyed by the identity of their `Rc`.
 pub(super) type Callbacks = Live<usize, Rc<dyn Fn()>>;
@@ -14,23 +15,6 @@ pub(super) type Callbacks = Live<usize, Rc<dyn Fn()>>;
 /// The identity a callback is registered and unsubscribed by.
 fn identity(callback: &Rc<dyn Fn()>) -> usize {
     Rc::as_ptr(callback).addr()
-}
-
-/// What frontends and extensions may read of the footer metadata.
-pub trait ReadonlyFooterDataProvider {
-    /// The current branch: `None` outside a repository, `detached` for a
-    /// detached HEAD. Reads are cached until a refresh or working-directory change.
-    fn get_git_branch(&self) -> Option<String>;
-    /// The extension status texts; the result stays live.
-    fn get_extension_statuses(&self) -> ExtensionStatuses;
-    /// The supplied count of providers with available models.
-    fn get_available_provider_count(&self) -> f64;
-    /// Call `callback` on working-directory changes and changed cached branches.
-    ///
-    /// Registering the same `Rc` twice keeps one registration. The returned
-    /// function removes that registration; dropping it does not. Holding the
-    /// function retains the watch lifecycle.
-    fn on_branch_change(&self, callback: Rc<dyn Fn()>) -> Box<dyn Fn()>;
 }
 
 /// Whether the branch has been looked up since the working directory changed.
@@ -130,7 +114,7 @@ impl FooterDataProvider {
         self.watch.changed_cwd();
         *self.state.borrow_mut() = State::new(self.operations.as_ref(), cwd);
         self.watch.setup();
-        for (_, callback) in self.callbacks.iter() {
+        for (_, callback) in &self.callbacks {
             callback();
         }
     }

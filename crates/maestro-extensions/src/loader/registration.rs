@@ -4,7 +4,7 @@ use crate::{
     types::{
         Extension, ExtensionAPI, ExtensionFlag, ExtensionFlagOptions, ExtensionHandle,
         ExtensionRuntimeState, ExtensionShortcut, ExtensionShortcutOptions, FlagValue,
-        RegisteredCommand, RegisteredCommandOptions, read, write,
+        MessageRenderer, RegisteredCommand, RegisteredCommandOptions, read, write,
     },
 };
 use indexmap::IndexMap;
@@ -25,6 +25,7 @@ impl<C, CC, E: ExtensionExecution> Extension<C, CC, E> {
             commands: IndexMap::new(),
             flags: IndexMap::new(),
             shortcuts: IndexMap::new(),
+            message_renderers: IndexMap::new(),
         }
     }
 }
@@ -124,6 +125,22 @@ impl<C, CC, E: ExtensionExecution> ExtensionAPI<C, CC, E> {
                 .shortcuts
                 .insert(shortcut, E::share(RwLock::new(record)))
         };
+        drop(replaced);
+        Ok(())
+    }
+    /// Registers or replaces a custom-message renderer in its original ordered slot.
+    ///
+    /// # Errors
+    /// Returns the stale error if invalidated or released, before registration.
+    pub fn register_message_renderer<T: 'static>(
+        &self,
+        custom_type: String,
+        renderer: MessageRenderer<T, E>,
+    ) -> Result<(), EventError> {
+        let extension = self.owner()?;
+        let replaced = write(&extension)
+            .message_renderers
+            .insert(custom_type, E::erase_message_renderer(renderer));
         drop(replaced);
         Ok(())
     }

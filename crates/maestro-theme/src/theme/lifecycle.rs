@@ -34,6 +34,11 @@ pub(super) struct Lifecycle {
 pub struct LiveTheme(Rc<RefCell<Option<Rc<Theme>>>>);
 
 impl LiveTheme {
+    /// Retain a prepared instance through an independently fixed live view.
+    #[must_use]
+    pub fn from_theme(theme: Rc<Theme>) -> Self {
+        Self(Rc::new(RefCell::new(Some(theme))))
+    }
     /// Return the currently published theme.
     ///
     /// # Errors

@@ -9,6 +9,8 @@ repository.workspace = true
 indexmap = "=2.14.2"
 maestro-models = { path = "../maestro-models" }
 maestro-resources = { path = "../maestro-resources" }
+maestro-session = { path = "../maestro-session" }
+maestro-theme = { path = "../maestro-theme" }
 maestro-tui = { path = "../maestro-tui" }
 serde_json.workspace = true
 

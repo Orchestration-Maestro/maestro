@@ -152,7 +152,7 @@ impl Watching {
             changed
         };
         if changed {
-            for (_, callback) in self.callbacks.iter() {
+            for (_, callback) in &self.callbacks {
                 callback();
             }
         }

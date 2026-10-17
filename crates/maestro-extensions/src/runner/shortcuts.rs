@@ -51,15 +51,15 @@ fn builtin_keybindings(config: &KeybindingsConfig) -> (IndexSet<KeyId>, IndexMap
     (reserved, ordinary)
 }
 impl<C, CC, E: ExtensionExecution> ExtensionRunner<C, CC, E> {
-    /// Selects current shortcuts using supplied effective bindings and UI presence.
+    /// Selects current shortcuts using supplied effective bindings.
     ///
     /// Reserved keys are blocked; ordinary and extension collisions warn but
-    /// retain the later extension in the first key's slot. Reporting runs outside locks.
+    /// retain the later extension in the first key's slot. Warnings are reported
+    /// outside locks only when no UI context is installed.
     #[must_use]
     pub fn get_shortcuts(
         &self,
         resolved_keybindings: &KeybindingsConfig,
-        has_ui: bool,
     ) -> IndexMap<KeyId, E::Shared<RwLock<ExtensionShortcut<C, E>>>> {
         let diagnostics = Arc::new(RwLock::new(Vec::new()));
         *write(&self.shortcut_diagnostics) = Arc::clone(&diagnostics);
@@ -79,15 +79,15 @@ impl<C, CC, E: ExtensionExecution> ExtensionRunner<C, CC, E> {
             let normalized = key.to_lowercase();
             let path = read(&shortcut).extension_path.clone();
             if reserved.contains(&normalized) {
-                self.add_shortcut_diagnostic(&diagnostics, format!("Extension shortcut '{key}' from {path} conflicts with built-in shortcut. Skipping."), &path, has_ui);
+                self.add_shortcut_diagnostic(&diagnostics, format!("Extension shortcut '{key}' from {path} conflicts with built-in shortcut. Skipping."), &path);
                 continue;
             }
             if let Some(action) = ordinary.get(&normalized) {
-                self.add_shortcut_diagnostic(&diagnostics, format!("Extension shortcut conflict: '{key}' is built-in shortcut for {action} and {path}. Using {path}."), &path, has_ui);
+                self.add_shortcut_diagnostic(&diagnostics, format!("Extension shortcut conflict: '{key}' is built-in shortcut for {action} and {path}. Using {path}."), &path);
             }
             if let Some(previous) = selected.get(&normalized) {
                 let previous_path = read(previous).extension_path.clone();
-                self.add_shortcut_diagnostic(&diagnostics, format!("Extension shortcut conflict: '{key}' registered by both {previous_path} and {path}. Using {path}."), &path, has_ui);
+                self.add_shortcut_diagnostic(&diagnostics, format!("Extension shortcut conflict: '{key}' registered by both {previous_path} and {path}. Using {path}."), &path);
             }
             selected.insert(normalized, shortcut);
         }
@@ -99,9 +99,8 @@ impl<C, CC, E: ExtensionExecution> ExtensionRunner<C, CC, E> {
         diagnostics: &Arc<RwLock<Vec<ResourceDiagnostic>>>,
         message: String,
         path: &str,
-        has_ui: bool,
     ) {
-        let report = (!has_ui).then(|| format!("{message}\n"));
+        let report = (!self.has_ui()).then(|| format!("{message}\n"));
         write(diagnostics).push(ResourceDiagnostic {
             r#type: DiagnosticType::Warning,
             message,

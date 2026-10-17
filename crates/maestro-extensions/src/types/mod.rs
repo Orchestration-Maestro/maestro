@@ -1,8 +1,12 @@
 //! Owned extension registration records.
 mod execution;
 mod registration;
+mod renderers;
+mod ui;
 pub use execution::ExtensionExecution;
 pub use registration::*;
+pub use renderers::*;
+pub use ui::*;
 
 use std::sync::{PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};
 /// Borrows retained state, recovering ownership after poisoning.

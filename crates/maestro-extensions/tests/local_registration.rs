@@ -3,159 +3,33 @@
 #![cfg(not(target_arch = "wasm32"))]
 use maestro_extensions::{
     EventBus, EventBusController, EventError, EventListener, Extension, ExtensionAPI,
-    ExtensionRunner, SourceInfo, create_event_bus_for,
+    ExtensionRunner,
     types::{
         ExtensionCollection, ExtensionFlagOptions, ExtensionHandle, ExtensionRuntimeState,
         ExtensionShortcutOptions, FlagType, RegisteredCommandOptions, ResolvedCommand,
     },
 };
 use maestro_models::{Execution, Local};
+use maestro_theme::LiveTheme;
 use maestro_tui::{AutocompleteItem, Input};
 use serde_json::{Value, json};
 use std::{
     cell::{Cell, RefCell},
-    future::Future,
     rc::Rc,
     sync::{Arc, RwLock},
 };
-use tokio::{sync::oneshot, task::JoinHandle, task::yield_now};
+use tokio::{sync::oneshot, task::yield_now};
+
+#[path = "support/local.rs"]
+mod local_support;
+use local_support::{
+    Loaded, LocalBus, Released, STALE, Trace, listener, loaded, local, mark, runner, source,
+};
 
 /// The terminal object every local callback shares.
 type Ui = Rc<Input>;
-/// A local registration owner whose callbacks take the terminal object.
-type Owner = ExtensionHandle<Ui, Ui, Local>;
-/// A local single-thread trace.
-type Trace = Rc<RefCell<Vec<String>>>;
 /// A local callback future.
 type LocalFuture<T> = <Local as Execution>::Future<'static, T>;
-
-/// The complete default stale-context guidance.
-const STALE: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
-
-/// Runs a local test on one thread with a local task set.
-fn local<F: Future<Output = ()>>(test: F) {
-    let runtime = tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap();
-    tokio::task::LocalSet::new().block_on(&runtime, test);
-}
-
-/// Appends one observation.
-fn mark(trace: &Trace, value: impl Into<String>) {
-    trace.borrow_mut().push(value.into());
-}
-
-/// Supplies a temporary command-line source record.
-fn source(path: &str) -> Arc<RwLock<SourceInfo>> {
-    Arc::new(RwLock::new(
-        serde_json::from_value(json!({
-            "path": path, "source": "cli", "scope": "temporary", "origin": "top-level"
-        }))
-        .unwrap(),
-    ))
-}
-
-/// A loaded owner with its facade, current collection and runtime state.
-struct Loaded {
-    /// The strong registration owner.
-    owner: Owner,
-    /// The weak registration facade.
-    api: ExtensionAPI<Ui, Ui, Local>,
-    /// Current load order containing the owner.
-    owners: ExtensionCollection<Ui, Ui, Local>,
-    /// Shared flag values and activity.
-    runtime: Arc<ExtensionRuntimeState>,
-}
-
-/// Creates a loaded owner using the supplied bus identity.
-fn loaded(path: &str, events: EventBus<Local>) -> Loaded {
-    let owner = Rc::new(RwLock::new(Extension::new(
-        path.into(),
-        format!("{path}/index"),
-        source(path),
-    )));
-    let runtime = Arc::new(ExtensionRuntimeState::new());
-    Loaded {
-        api: ExtensionAPI::new(&owner, Arc::clone(&runtime), events),
-        owners: Rc::new(RwLock::new(vec![owner.clone()])),
-        owner,
-        runtime,
-    }
-}
-
-/// Creates a local runner over the supplied collection.
-fn runner(owners: &ExtensionCollection<Ui, Ui, Local>) -> ExtensionRunner<Ui, Ui, Local> {
-    ExtensionRunner::<Ui, Ui, Local>::new(
-        owners.clone(),
-        Arc::new(ExtensionRuntimeState::new()),
-        Rc::new(|_| {}),
-    )
-}
-
-/// A local bus whose spawner, reporter and tails capture single-thread state.
-struct LocalBus {
-    /// The shared bus.
-    controller: EventBusController<Local>,
-    /// Admitted tail tasks.
-    tasks: Rc<RefCell<Vec<JoinHandle<()>>>>,
-    /// Reported diagnostics.
-    errors: Trace,
-    /// Number of spawner calls.
-    spawned: Rc<Cell<usize>>,
-}
-
-impl LocalBus {
-    /// Creates a bus that enqueues each tail once on the local task set.
-    fn new() -> Self {
-        let tasks = Rc::new(RefCell::new(Vec::new()));
-        let errors = Trace::default();
-        let spawned = Rc::new(Cell::new(0));
-        let (queue, count, report) = (tasks.clone(), spawned.clone(), errors.clone());
-        Self {
-            controller: create_event_bus_for::<Local>(
-                Rc::new(move |task| {
-                    count.set(count.get() + 1);
-                    queue.borrow_mut().push(tokio::task::spawn_local(task));
-                }),
-                Rc::new(move |line| mark(&report, line)),
-            ),
-            tasks,
-            errors,
-            spawned,
-        }
-    }
-
-    /// Waits for every admitted tail, including tails admitted while waiting.
-    async fn settle(&self) {
-        loop {
-            let tasks = std::mem::take(&mut *self.tasks.borrow_mut());
-            if tasks.is_empty() {
-                return;
-            }
-            for task in tasks {
-                task.await.unwrap();
-            }
-        }
-    }
-}
-
-/// A listener recording one label.
-fn listener(trace: &Trace, label: &'static str) -> EventListener<Local> {
-    let trace = trace.clone();
-    Rc::new(move |_, _| {
-        mark(&trace, label);
-        Ok(None)
-    })
-}
-
-/// Records its label when its last owner releases it.
-struct Released(Rc<Cell<bool>>);
-
-impl Drop for Released {
-    fn drop(&mut self) {
-        self.0.set(true);
-    }
-}
 
 /// One ordered completion candidate.
 fn item(value: &str, label: &str, description: Option<&str>) -> AutocompleteItem {
@@ -287,7 +161,7 @@ fn local_registered_callbacks_retain_terminal_objects() {
         register_edit_shortcut(&loaded.api, &input);
         let runner = runner(&loaded.owners);
         check_edit_command(&runner, &input).await;
-        let shortcuts = runner.get_shortcuts(&Vec::new(), true);
+        let shortcuts = runner.get_shortcuts(&Vec::new());
         let (description, handler) = {
             let shortcut = shortcuts["ctrl+y"].read().unwrap();
             (shortcut.description.clone(), shortcut.handler.clone())
@@ -348,7 +222,7 @@ async fn invoke_current(runner: &ExtensionRunner<Ui, Ui, Local>, input: &Ui) {
         (command.handler)(name.into(), input.clone()).await.unwrap();
         assert_eq!(input.get_value(), format!("{label}:{name}"));
     }
-    let shortcuts = runner.get_shortcuts(&Vec::new(), true);
+    let shortcuts = runner.get_shortcuts(&Vec::new());
     assert_eq!(shortcuts.keys().collect::<Vec<_>>(), ["ctrl+k", "ctrl+j"]);
     let handler = shortcuts["ctrl+k"].read().unwrap().handler.clone();
     handler(input.clone()).await.unwrap();
@@ -374,7 +248,7 @@ fn local_registration_keeps_order_and_retained_callbacks() {
             .unwrap();
         let runner = runner(&a.owners);
         let old = runner.get_command("dup").unwrap();
-        let old_key = runner.get_shortcuts(&Vec::new(), true)["ctrl+k"]
+        let old_key = runner.get_shortcuts(&Vec::new())["ctrl+k"]
             .read()
             .unwrap()
             .handler
@@ -419,7 +293,7 @@ fn local_registration_keeps_order_and_retained_callbacks() {
 
 /// Edits and replaces the owner's source after a command was resolved.
 fn retained_sources_follow_owner(
-    a: &Loaded,
+    a: &Loaded<Ui>,
     runner: &ExtensionRunner<Ui, Ui, Local>,
     old: &ResolvedCommand<Ui, Local>,
 ) {
@@ -441,7 +315,7 @@ fn retained_sources_follow_owner(
 type Invoke = Box<dyn Fn() -> LocalFuture<Result<(), EventError>>>;
 
 /// Registers a callback that captures the facade and retains its alias.
-fn capture_facade(kind: &str, loaded: &Loaded, released: Released) -> Invoke {
+fn capture_facade(kind: &str, loaded: &Loaded<Ui>, released: Released) -> Invoke {
     let captured = loaded.api.clone();
     let probe = Rc::new(move || {
         let _keep = &released;
@@ -1007,7 +881,6 @@ fn default_bounds() {
     send_sync::<ExtensionHandle<String, String>>();
     send_sync::<ExtensionCollection<String, String>>();
     send_sync::<ExtensionAPI<String, String>>();
-    send_sync::<ExtensionRunner<String, String>>();
     let _ = send::<EventTail>;
 }
 
@@ -1040,9 +913,14 @@ fn default_callbacks_run_on_another_thread(bus: &EventBusController) {
         handler: Arc::new(|ctx: String| Box::pin(async move { Err(ctx.into()) })),
     };
     api.register_shortcut("ctrl+y".into(), options).unwrap();
-    let runner = ExtensionRunner::<String, String>::new(owners, runtime, Arc::new(|_| {}));
+    let runner = ExtensionRunner::<String, String>::new(
+        owners,
+        runtime,
+        Arc::new(|_| {}),
+        LiveTheme::default(),
+    );
     let command = runner.get_command("hello").unwrap();
-    let shortcuts = runner.get_shortcuts(&Vec::new(), true);
+    let shortcuts = runner.get_shortcuts(&Vec::new());
     let shortcut = shortcuts["ctrl+y"].read().unwrap().handler.clone();
     let invoked = send((command.handler)("same".into(), "same".into()));
     let pressed = send(shortcut("pressed".into()));
