@@ -207,6 +207,8 @@ pub struct Frame {
     pub screen: Rect,
     /// Native viewport density.
     pub density: f32,
+    /// Optional explicit animation clock in seconds.
+    pub time: Option<f64>,
 }
 impl Default for Frame {
     fn default() -> Self {
@@ -224,6 +226,7 @@ impl Default for Frame {
             images: vec![],
             screen: Rect::from_min_size(Pos2::ZERO, Vec2::new(800., 600.)),
             density: 1.,
+            time: None,
         }
     }
 }
@@ -238,6 +241,7 @@ impl Frame {
     ) -> T {
         let mut input = RawInput {
             screen_rect: Some(self.screen),
+            time: self.time,
             events,
             ..Default::default()
         };

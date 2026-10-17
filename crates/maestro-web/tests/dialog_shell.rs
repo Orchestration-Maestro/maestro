@@ -488,6 +488,9 @@ fn geometry(filename: &str, mode: maestro_theme::BrandMode) {
         .ctx
         .memory_mut(|memory| memory.request_focus(modal.get().with("close")));
     frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    for _ in 0..12 {
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    }
     let focus: Vec<_> = frame
         .shapes
         .iter()
@@ -530,6 +533,7 @@ fn dialog_close_focus_paint_has_whole_control_opacity_and_transition() {
         vec![egui::Event::PointerMoved(egui::pos2(475., 125.))],
         |_, i, p| dialogs.render(i, p).unwrap(),
     );
+    frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
     let intermediate = focus_alpha(&frame);
     // The independent cubic-bezier sample at 1/9 progress is 0.032800723766655.
     assert_eq!(
@@ -563,7 +567,7 @@ fn focus_alpha(frame: &attachment_support::Frame) -> u8 {
     let shapes: Vec<_> = frame
         .shapes
         .iter()
-        .filter(|s| matches!(&s.shape, egui::Shape::Rect(r) if (r.stroke.width - 2.).abs() < f32::EPSILON))
+        .filter(|s| matches!(&s.shape, egui::Shape::Rect(r) if r.rect.width() < 40.))
         .cloned()
         .collect();
     frame
@@ -653,15 +657,316 @@ fn control_paint(
 fn focus_fade(frame: &mut attachment_support::Frame, dialogs: &DialogContext, id: egui::Id) {
     frame.ctx.memory_mut(|m| m.surrender_focus(id));
     frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    let ring = ring_paint(frame);
     assert_eq!(
-        focus_alpha(frame),
+        ring[1].stroke.color.a(),
         247,
-        "focus shadow fades through the same curve"
+        "outer shadow fades through the same curve"
     );
+    assert!((ring[0].stroke.width - 1.934_399).abs() < 0.000_01);
     for _ in 0..12 {
         frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
     }
-    assert!(!frame.shapes.iter().any(
-        |s| matches!(&s.shape, egui::Shape::Rect(r) if (r.stroke.width-2.).abs() < f32::EPSILON)
-    ));
+    assert!(ring_paint(frame).is_empty());
+}
+
+#[test]
+fn dialog_interrupted_hover_paint_is_continuous() {
+    for (milliseconds, alpha, rgb, duration, next, half) in [
+        (37.5, 197, [223, 177, 130], 0.035_488_084, 183, 183),
+        (75., 238, [236, 216, 194], 0.116_334_197, 234, 192),
+        (112.5, 252, [241, 229, 215], 0.143_905_161, 249, 195),
+    ] {
+        let mut frame = attachment_support::Frame::default();
+        let host = input_support::Host::new(|_, _| {});
+        let dialogs = DialogContext::new(frame.ctx.clone(), host);
+        let _owner = dialog(&dialogs, DialogProps::new(true, body(Rc::default()))).unwrap();
+        frame.time = Some(0.);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        frame.time = Some(1.);
+        frame.run(
+            vec![egui::Event::PointerMoved(egui::pos2(475., 125.))],
+            |_, i, p| dialogs.render(i, p).unwrap(),
+        );
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        frame.time = Some(1. + milliseconds / 1000.);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        assert_eq!(glyph_alpha(&frame), alpha, "enter at {milliseconds} ms");
+        let tint = glyph_tint(&frame);
+        assert_eq!(tint, rgb);
+        let before = glyph_alpha(&frame);
+        frame.run(
+            vec![egui::Event::PointerMoved(egui::pos2(20., 20.))],
+            |_, i, p| dialogs.render(i, p).unwrap(),
+        );
+        assert_eq!(
+            glyph_alpha(&frame),
+            before,
+            "same-time reversal must not jump"
+        );
+        assert_eq!(glyph_tint(&frame), tint, "same-time colour reversal");
+        let origin = 1. + milliseconds / 1000.;
+        for (elapsed, expected) in [
+            (1. / 60., next),
+            (duration / 2., half),
+            (duration + 0.000_001, 179),
+        ] {
+            frame.time = Some(origin + elapsed);
+            frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+            assert_eq!(glyph_alpha(&frame), expected);
+        }
+    }
+}
+
+/// Read the fully covered glyph pixel from the submitted tinted texture.
+fn glyph_tint(frame: &attachment_support::Frame) -> [u8; 3] {
+    let pixel = frame
+        .images
+        .iter()
+        .flat_map(|image| &image.pixels)
+        .max_by_key(|p| p.a())
+        .unwrap();
+    [pixel.r(), pixel.g(), pixel.b()]
+}
+
+/// Observe the submitted glyph mesh's group opacity.
+fn glyph_alpha(frame: &attachment_support::Frame) -> u8 {
+    frame
+        .shapes
+        .iter()
+        .filter_map(|s| match &s.shape {
+            egui::Shape::Mesh(mesh) => mesh.vertices.iter().map(|v| v.color.a()).max(),
+            _ => None,
+        })
+        .max()
+        .unwrap()
+}
+
+#[test]
+fn dialog_interrupted_focus_paint_is_continuous() {
+    for (milliseconds, spread, duration, next, half) in [
+        (37.5, 0.473_174, 0.035_488_084, 0.125_703_6, 0.106_198_6),
+        (75., 1.551_123, 0.116_334_197, 1.459_396, 0.348_132),
+        (112.5, 1.918_735, 0.143_905_161, 1.849_56, 0.430_638),
+    ] {
+        let mut frame = attachment_support::Frame::default();
+        let host = input_support::Host::new(|_, _| {});
+        let dialogs = DialogContext::new(frame.ctx.clone(), host);
+        let id = Rc::new(Cell::new(egui::Id::NULL));
+        let saved = id.clone();
+        let mut children = body(Rc::default());
+        children.render_content = Rc::new(move |_, modal, _, _| {
+            saved.set(modal.with("close"));
+            Ok(())
+        });
+        let _owner = dialog(&dialogs, DialogProps::new(true, children)).unwrap();
+        frame.time = Some(0.);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        frame.ctx.memory_mut(|m| m.request_focus(id.get()));
+        frame.time = Some(1.);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        frame.time = Some(1. + milliseconds / 1000.);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        let before = ring_paint(&frame);
+        assert!(
+            (before[0].stroke.width - spread).abs() < 0.000_01,
+            "shadow spread follows paint at {milliseconds}"
+        );
+        frame.ctx.memory_mut(|m| m.surrender_focus(id.get()));
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        assert_eq!(ring_paint(&frame), before, "focus reversal must not jump");
+        assert_eq!(glyph_alpha(&frame), 179);
+        if milliseconds.total_cmp(&75.).is_eq() {
+            assert_eq!(
+                before[0].stroke.color.a(),
+                170,
+                "overlap composited before group opacity"
+            );
+            assert_eq!(before[1].stroke.color.a(), 138);
+        }
+        let origin = 1. + milliseconds / 1000.;
+        for (elapsed, expected) in [(1. / 60., next), (duration / 2., half)] {
+            frame.time = Some(origin + elapsed);
+            frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+            let rings = ring_paint(&frame);
+            assert!((rings[0].stroke.width - expected).abs() < 0.000_01);
+            assert_eq!(glyph_alpha(&frame), 179);
+        }
+    }
+}
+
+/// Read the two painted annuli, excluding the panel border.
+fn ring_paint(frame: &attachment_support::Frame) -> Vec<egui::epaint::RectShape> {
+    frame
+        .shapes
+        .iter()
+        .filter_map(|s| match &s.shape {
+            egui::Shape::Rect(r) if r.rect.width() < 40. => Some(r.clone()),
+            _ => None,
+        })
+        .collect()
+}
+
+#[test]
+fn dialog_reopen_starts_with_resting_paint() {
+    for (focused, milliseconds, closed_frame) in [false, true].into_iter().flat_map(|f| {
+        [75., 150.]
+            .into_iter()
+            .flat_map(move |t| [false, true].map(move |c| (f, t, c)))
+    }) {
+        let mut frame = attachment_support::Frame::default();
+        let host = input_support::Host::new(|_, _| {});
+        let dialogs = DialogContext::new(frame.ctx.clone(), host.clone());
+        let id = Rc::new(Cell::new(egui::Id::NULL));
+        let saved = id.clone();
+        let mut children = body(Rc::default());
+        children.render_content = Rc::new(move |_, modal, _, _| {
+            saved.set(modal.with("close"));
+            Ok(())
+        });
+        let previous = egui::Id::new("previous-focus");
+        frame.ctx.memory_mut(|m| m.request_focus(previous));
+        let owner = dialog(&dialogs, DialogProps::new(true, children)).unwrap();
+        frame.time = Some(0.);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        let resting = glyph_alpha(&frame);
+        if focused {
+            frame.ctx.memory_mut(|m| m.request_focus(id.get()));
+        }
+        frame.time = Some(1.);
+        let events = if focused {
+            vec![]
+        } else {
+            vec![egui::Event::PointerMoved(egui::pos2(475., 125.))]
+        };
+        frame.run(events, |_, i, p| dialogs.render(i, p).unwrap());
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        frame.time = Some(1. + milliseconds / 1000.);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        owner.close().unwrap();
+        if closed_frame {
+            frame.run(
+                vec![egui::Event::PointerMoved(egui::pos2(20., 20.))],
+                |_, i, p| dialogs.render(i, p).unwrap(),
+            );
+            (host.frame.borrow_mut().take().unwrap())().unwrap();
+            assert_eq!(frame.ctx.memory(egui::Memory::focused), Some(previous));
+        }
+        owner.open().unwrap();
+        frame.run(
+            vec![egui::Event::PointerMoved(egui::pos2(20., 20.))],
+            |_, i, p| dialogs.render(i, p).unwrap(),
+        );
+        assert_eq!(glyph_alpha(&frame), resting, "reopened hover paint");
+        assert!(ring_paint(&frame).is_empty(), "reopened focus paint");
+        frame.time = Some(2.);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        assert_eq!(glyph_alpha(&frame), resting);
+        assert!(ring_paint(&frame).is_empty());
+    }
+}
+
+#[test]
+fn dialog_repeated_reversal_keeps_painted_progress() {
+    for focused in [false, true] {
+        let mut frame = attachment_support::Frame::default();
+        let host = input_support::Host::new(|_, _| {});
+        let dialogs = DialogContext::new(frame.ctx.clone(), host);
+        let id = Rc::new(Cell::new(egui::Id::NULL));
+        let saved = id.clone();
+        let mut children = body(Rc::default());
+        children.render_content = Rc::new(move |_, modal, _, _| {
+            saved.set(modal.with("close"));
+            Ok(())
+        });
+        let _owner = dialog(&dialogs, DialogProps::new(true, children)).unwrap();
+        frame.time = Some(0.);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        transition_input(&mut frame, &dialogs, id.get(), [focused, true], 1.);
+        frame.time = Some(1.075);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        transition_input(&mut frame, &dialogs, id.get(), [focused, false], 1.075);
+        let time = 1.075 + 0.116_334_196_668_009 / 2.;
+        frame.time = Some(time);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        let before = if focused {
+            ring_paint(&frame)[0].stroke.width
+        } else {
+            f32::from(glyph_alpha(&frame))
+        };
+        transition_input(&mut frame, &dialogs, id.get(), [focused, true], time);
+        let after = if focused {
+            ring_paint(&frame)[0].stroke.width
+        } else {
+            f32::from(glyph_alpha(&frame))
+        };
+        assert_eq!(before.to_bits(), after.to_bits());
+        frame.time = Some(time + 0.123_890_105_427_931 / 2.);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        if focused {
+            assert!((ring_paint(&frame)[0].stroke.width - 1.629_257).abs() < 0.000_01);
+        } else {
+            assert_eq!(glyph_alpha(&frame), 241);
+        }
+    }
+}
+
+/// Change a real pointer or canvas-focus input at one explicit timestamp.
+fn transition_input(
+    frame: &mut attachment_support::Frame,
+    dialogs: &DialogContext,
+    id: egui::Id,
+    state: [bool; 2],
+    time: f64,
+) {
+    let [focused, active] = state;
+    frame.time = Some(time);
+    let events = if focused {
+        frame.ctx.memory_mut(|m| {
+            if active {
+                m.request_focus(id);
+            } else {
+                m.surrender_focus(id);
+            }
+        });
+        vec![]
+    } else {
+        vec![egui::Event::PointerMoved(if active {
+            egui::pos2(475., 125.)
+        } else {
+            egui::pos2(20., 20.)
+        })]
+    };
+    frame.run(events, |_, i, p| dialogs.render(i, p).unwrap());
+    frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+}
+
+#[test]
+fn dialog_unmount_preserves_another_controls_focus() {
+    let mut frame = attachment_support::Frame::default();
+    let host = input_support::Host::new(|_, _| {});
+    let dialogs = DialogContext::new(frame.ctx.clone(), host);
+    let owner = dialog(&dialogs, DialogProps::new(true, body(Rc::default()))).unwrap();
+    let other = Rc::new(Cell::new(egui::Id::NULL));
+    let captured = other.clone();
+    let mut children = body(Rc::default());
+    children.render_content = Rc::new(move |_, modal, _, _| {
+        captured.set(modal.with("close"));
+        Ok(())
+    });
+    let _sibling = dialog(&dialogs, DialogProps::new(true, children)).unwrap();
+    frame.time = Some(0.);
+    frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    frame.ctx.memory_mut(|m| m.request_focus(other.get()));
+    frame.time = Some(1.);
+    frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    frame.time = Some(1.075);
+    frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    let before = ring_paint(&frame);
+    owner.close().unwrap();
+    assert_eq!(frame.ctx.memory(egui::Memory::focused), Some(other.get()));
+    frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    assert_eq!(ring_paint(&frame), before);
 }

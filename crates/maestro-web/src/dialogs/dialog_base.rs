@@ -38,6 +38,8 @@ pub(super) struct State {
     focus: RefCell<Option<Rc<FocusTarget>>>,
     /// Last admitted pointer gesture, independent of stale toolkit clicks.
     pub(super) pressed: RefCell<Option<bool>>,
+    /// Mounted Close properties, discarded before any removal effects.
+    pub(super) transitions: RefCell<Option<super::dialog::close::CloseTransitions>>,
     /// Non-owning aliases for the existing reading transaction.
     #[cfg(target_arch = "wasm32")]
     pub(super) native: RefCell<super::dialog::browser::Native>,
@@ -120,6 +122,7 @@ impl DialogBase {
                 props: RefCell::new(props),
                 focus: RefCell::default(),
                 pressed: RefCell::default(),
+                transitions: RefCell::default(),
                 #[cfg(target_arch = "wasm32")]
                 native: RefCell::default(),
             }),
@@ -191,6 +194,11 @@ impl State {
             props.is_open = false;
             props.on_close.clone()
         };
+        self.transitions.take();
+        self.context
+            .inner
+            .drawing
+            .memory_mut(|memory| memory.surrender_focus(self.id.with("close")));
         self.context
             .inner
             .owners

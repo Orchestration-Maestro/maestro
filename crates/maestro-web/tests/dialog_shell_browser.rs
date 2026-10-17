@@ -114,7 +114,12 @@ impl View {
     }
     /// Complete one real frame, retaining emitted paint.
     fn draw(&self) {
+        self.draw_at(None);
+    }
+    /// Drive the existing frame with an optional controlled animation clock.
+    fn draw_at(&self, time: Option<f64>) {
         self.context.begin_pass(egui::RawInput {
+            time,
             screen_rect: Some(egui::Rect::from_min_size(
                 egui::Pos2::ZERO,
                 egui::vec2(800., 600.),
@@ -823,4 +828,55 @@ fn intrinsic_geometry(view: &View, values: &js_sys::Array) {
             "native intrinsic sizing must be evaluated before the single frame scale"
         );
     }
+}
+
+/// Native keyboard focus follows continuous shortened shadow paint and resets on reopen.
+#[wasm_bindgen]
+pub async fn dialog_native_focus_transition_retargets_and_resets() {
+    for (time, width, next_width) in [
+        (0.0375, 0.473_174, 0.125_703_6),
+        (0.075, 1.551_123, 1.459_396),
+        (0.1125, 1.918_735, 1.849_56),
+    ] {
+        let view = View::new();
+        view.draw_at(Some(0.));
+        support::reading_paint::observe("dialog-keyboard-focus").await;
+        view.draw_at(Some(1.));
+        view.draw_at(Some(1. + time));
+        let before = native_rings(&view);
+        assert!((before[0].stroke.width - width).abs() < 0.000_01);
+        for ring in &before {
+            assert!(visible(
+                &view,
+                &egui::epaint::ClippedShape {
+                    clip_rect: view.context.content_rect(),
+                    shape: egui::Shape::Rect(ring.clone())
+                },
+                None
+            ));
+        }
+        js("document.querySelector('.maestro-dialog-semantic-close').blur()");
+        view.draw_at(Some(1. + time));
+        assert_eq!(native_rings(&view), before);
+        view.draw_at(Some(1. + time + 1. / 60.));
+        assert!((native_rings(&view)[0].stroke.width - next_width).abs() < 0.000_01);
+        view.owner.close().unwrap();
+        view.owner.open().unwrap();
+        view.draw_at(Some(2.));
+        assert!(native_rings(&view).is_empty());
+        view.draw_at(Some(2. + 1. / 60.));
+        assert!(native_rings(&view).is_empty());
+    }
+}
+
+/// Collect only the Close shadow annuli from the actual submitted paint.
+fn native_rings(view: &View) -> Vec<egui::epaint::RectShape> {
+    view.shapes
+        .borrow()
+        .iter()
+        .filter_map(|s| match &s.shape {
+            egui::Shape::Rect(r) if r.rect.width() < 40. => Some(r.clone()),
+            _ => None,
+        })
+        .collect()
 }

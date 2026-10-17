@@ -187,7 +187,7 @@ impl Placement<'_> {
         *self.state.pressed.borrow_mut() = pressed;
         Ok(clicked || (response.clicked() && !response.clicked_by(egui::PointerButton::Primary)))
     }
-    /// Animate glyph and focus decoration through the shared canvas animation owner.
+    /// Sample mounted properties once, then paint without retaining their borrow.
     fn paint_control(
         &self,
         ui: &mut egui::Ui,
@@ -195,33 +195,15 @@ impl Placement<'_> {
         response: &egui::Response,
         native_focus: bool,
     ) -> Result<(), AttachmentUiError> {
-        use crate::browser::attachment_content as content;
-        let hover = ui.ctx().animate_bool_with_time_and_easing(
-            self.state.id.with("hover"),
-            response.hovered(),
-            0.15,
-            crate::browser::transition_easing,
-        );
-        let focus = ui.ctx().animate_bool_with_time_and_easing(
-            self.state.id.with("focus"),
-            response.has_focus() || native_focus,
-            0.15,
-            crate::browser::transition_easing,
-        );
-        let tint = egui::lerp(
-            egui::Rgba::from(content::color(self.presentation, "muted")?)
-                ..=egui::Rgba::from(content::color(self.presentation, "text")?),
-            hover,
-        )
-        .into();
-        let mut child = ui.new_child(egui::UiBuilder::new().max_rect(close));
-        child.set_opacity(egui::lerp(0.7..=1., hover));
-        content::glyph(&child, close, "X", tint)?;
-        if focus > 0. {
-            child.multiply_opacity(focus);
-            paint_focus(&child, close, self.presentation)?;
-        }
-        Ok(())
+        let operands = close::Operands::resolve(self.presentation, response, native_focus)?;
+        let now = ui.input(|input| input.time);
+        let paint = {
+            let mut mounted = self.state.transitions.borrow_mut();
+            mounted
+                .get_or_insert_with(|| close::CloseTransitions::new(&operands))
+                .sample(now, &operands)
+        };
+        paint.draw(ui, close, self.presentation)
     }
 }
 /// Paint one retained shell without borrowing its live props across effects.
@@ -325,20 +307,5 @@ fn outside_rects(screen: egui::Rect, rect: egui::Rect) -> [egui::Rect; 4] {
     ]
 }
 
-/// Paint the background offset and the outer ring without enlarging the control target.
-fn paint_focus(
-    ui: &egui::Ui,
-    close: egui::Rect,
-    p: &BrandPresentation<'_>,
-) -> Result<(), AttachmentUiError> {
-    use crate::browser::attachment_content::{color, points};
-    for (rect, role) in [(close, "background"), (close.expand(2.), "accent")] {
-        ui.painter().rect_stroke(
-            rect,
-            points(p.radii["control"] / 2.),
-            egui::Stroke::new(2., color(p, role)?),
-            egui::StrokeKind::Outside,
-        );
-    }
-    Ok(())
-}
+/// Mounted Close property values and shadow composition.
+pub(super) mod close;

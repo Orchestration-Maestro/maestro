@@ -4,6 +4,9 @@ pub mod attachment_content;
 /// Cancel-on-drop browser timers.
 pub mod timer;
 
+/// Mounted CSS-property interpolation shared by canvas controls.
+pub(crate) mod transition;
+
 /// Native sandbox values.
 #[cfg(target_arch = "wasm32")]
 pub mod sandbox_value;
@@ -51,15 +54,15 @@ pub(crate) fn install_stylesheet(
     Ok(())
 }
 
-/// Map linear progress through the default cubic-bezier(0.4, 0, 0.2, 1) transition.
-pub(crate) fn transition_easing(progress: f32) -> f32 {
+/// Map linear progress through the supplied cubic-bezier timing curve.
+pub(crate) fn transition_easing(progress: f32, curve: [f32; 4]) -> f32 {
     if progress <= 0. || progress >= 1. {
         return progress;
     }
     let (mut low, mut high) = (0., 1.);
     for _ in 0..24 {
         let t = f32::midpoint(low, high);
-        let x = ((1.6 * t - 1.8) * t + 1.2) * t;
+        let x = bezier(t, curve[0], curve[2]);
         if x < progress {
             low = t;
         } else {
@@ -67,5 +70,11 @@ pub(crate) fn transition_easing(progress: f32) -> f32 {
         }
     }
     let t = f32::midpoint(low, high);
-    (3. - 2. * t) * t * t
+    bezier(t, curve[1], curve[3])
+}
+
+/// Evaluate one axis of a unit-endpoint cubic bezier.
+fn bezier(t: f32, first: f32, second: f32) -> f32 {
+    let inverse = 1. - t;
+    3. * inverse * inverse * t * first + 3. * inverse * t * t * second + t * t * t
 }

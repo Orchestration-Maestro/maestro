@@ -83,8 +83,10 @@ The canvas draws the panel, outer shadow and sixteen-point localized Close glyph
 One non-painting native Close button supplies keyboard/accessibility activation
 and forwards native focus to the canvas focus ring. The entire Close control,
 including its focus ring, has seventy-percent resting opacity and full hover
-opacity; colour, opacity and focus decoration transition over 150 ms through the
-canvas animation owner. Reading text remains native,
+opacity; colour, opacity and focus decoration use mounted property transitions
+with the 150-ms cubic-bezier(0.4, 0, 0.2, 1) curve. Interrupted transitions
+continue from their current paint with shortened reversals; reopening starts
+with the current resting style. Reading text remains native,
 selectable, findable and accessible; no second hidden text tree or focus trap is
 added. Platform failures remain `AttachmentUiError`.
 
