@@ -10,6 +10,7 @@ use serde::Deserialize;
 use std::{
     io::{self, BufRead, BufReader, Read, Write},
     process::{Command, Stdio},
+    sync::{Mutex, MutexGuard, PoisonError},
 };
 /// Caller text, including empty and control-character inputs.
 #[derive(Deserialize)]
@@ -43,6 +44,12 @@ fn child(name: &str, mode: &str) -> Command {
         .stderr(Stdio::piped());
     command
 }
+/// Orders this file's child launches; a fork elsewhere in the test program can still hold a pipe end until it execs.
+static LAUNCH: Mutex<()> = Mutex::new(());
+/// Acquire the launch lock; it stays held until the returned guard is dropped.
+fn launch_gate() -> MutexGuard<'static, ()> {
+    LAUNCH.lock().unwrap_or_else(PoisonError::into_inner)
+}
 /// The harness prologue is separate from product bytes.
 fn product(bytes: &[u8]) -> &[u8] {
     let prefix = b"\nrunning 1 test\n";
@@ -74,6 +81,7 @@ fn takeover_routes_diagnostics_without_polluting_raw_stdout() {
         assert_eq!(states, case.expected.states);
         std::process::exit(0);
     }
+    let _gate = launch_gate();
     for case in cases {
         let output = child(
             "takeover_routes_diagnostics_without_polluting_raw_stdout",
@@ -178,6 +186,7 @@ fn pipe_case(name: &str, case: PipeCase) {
     if std::env::var("MAESTRO_OUTPUT_PROBE").is_ok() {
         pipe_probe(case);
     }
+    let _gate = launch_gate();
     let mut process = child(name, &mode).spawn().unwrap();
     let mut stdout = BufReader::new(process.stdout.take().unwrap());
     line(&mut stdout, "\n");
@@ -331,6 +340,7 @@ fn package_children_observe_takeover_changes_after_construction() {
         package_probe();
         std::process::exit(0);
     }
+    let _gate = launch_gate();
     let mut process = child(
         "package_children_observe_takeover_changes_after_construction",
         &case.id,
