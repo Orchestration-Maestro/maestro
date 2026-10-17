@@ -224,6 +224,11 @@ code-generation evidence and framework/highlighting equivalents. See
 [architecture checks](docs/architecture.md) for commands, diagnostics and limits.
 Publish reusable adapter conformance from the owning leaf, not a forwarding test crate.
 
+`maestro-protocol` owns the daemon's versioned records, binary frames and generated
+JSON Schema, with `maestro-json` as its only domain dependency. Native input,
+rendering and notification conversions stay with their runtime adapters. See
+[daemon protocol](docs/daemon-protocol.md).
+
 The workspace daemon is core design: the root always wires the daemon, the
 multiplexer and the terminal engine adapter through the application interface.
 These declared owners need no placeholder crates before their first delivery.
