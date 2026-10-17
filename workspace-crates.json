@@ -23,6 +23,7 @@
   "maestro-session": "core",
   "maestro-settings": "core",
   "maestro-test-conventions": "dedicated",
+  "maestro-test-process": "dedicated",
   "maestro-test-terminal": "dedicated",
   "maestro-text": "core",
   "maestro-theme": "core",

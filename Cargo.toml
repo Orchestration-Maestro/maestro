@@ -5,6 +5,7 @@ resolver = "3"
 
 [workspace.dependencies]
 maestro-dependencies = { path = "crates/maestro-dependencies" }
+maestro-test-process = { path = "crates/maestro-test-process" }
 futures-util = { version = "=0.3.34", default-features = false, features = ["std", "sink"] }
 num-bigint = "=0.4.8"
 num-traits = "=0.2.19"
