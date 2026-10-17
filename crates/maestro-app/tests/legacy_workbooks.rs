@@ -16,6 +16,22 @@ fn legacy_producer_date_format_repairs_display_and_tables() {
 }
 
 #[test]
+fn legacy_biff5_empty_strings_keep_empty_cells_and_nonempty_controls() {
+    use maestro_app::browser::ssf::{self, CellValue, Ssf};
+    let file = "legacy-biff5-empty-string.xls";
+    let book = ssf::read(
+        &legacy_workbook_support::bytes(file),
+        file,
+        &mut Ssf::default(),
+    )
+    .unwrap();
+    let sheet = &book.sheets["Data"];
+    assert_eq!(sheet.cells["A1"].v, CellValue::Text(String::new()));
+    assert_eq!(sheet.cells["A2"].v, CellValue::Text("control".to_owned()));
+    assert_eq!(sheet.cells.len(), 2);
+}
+
+#[test]
 fn legacy_builtins_use_shared_format_engine() {
     legacy_workbook_support::run(&["legacy-builtins.xls"]);
 }

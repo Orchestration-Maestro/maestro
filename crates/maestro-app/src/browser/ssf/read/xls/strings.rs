@@ -35,25 +35,15 @@ pub(super) fn code_page(bytes: &[u8], page: u16) -> String {
     }
 }
 
-/// Read a string with a word-sized character count; an empty one skips its flag byte.
+/// Read a word-counted string, consuming a width flag only for Unicode.
 pub(super) fn unicode_string(payload: &mut Payload<'_, '_>, encoding: Encoding) -> Result<String> {
     let count = usize::from(payload.u16()?);
-    if count == 0 {
-        payload.skip(1)?;
-        return Ok(String::new());
-    }
     encoding.text(payload, count)
 }
 
 /// Read a string with a byte-sized character count, as sheet names store it.
 pub(super) fn short_string(payload: &mut Payload<'_, '_>, encoding: Encoding) -> Result<String> {
     let count = usize::from(payload.u8()?);
-    if encoding == Encoding::Unicode && count == 0 {
-        payload.skip(1)?;
-    }
-    if count == 0 {
-        return Ok(String::new());
-    }
     encoding.text(payload, count)
 }
 
@@ -63,10 +53,6 @@ pub(super) fn format_string(payload: &mut Payload<'_, '_>, encoding: Encoding) -
         return unicode_string(payload, encoding);
     }
     let count = usize::from(payload.u8()?);
-    if count == 0 {
-        payload.skip(1)?;
-        return Ok(String::new());
-    }
     encoding.text(payload, count)
 }
 

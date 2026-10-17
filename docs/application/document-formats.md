@@ -108,8 +108,10 @@ selects only root-level streams, preferring `Workbook` to `Book`, with
 ASCII case-insensitive names. Invalid headers, missing streams, encrypted files
 and truncated records return a contextual `WorkbookError::Reader`.
 The record reader joins continuation pieces, retaining string-width transitions
-and surrogate pairs while skipping rich-run payloads. Declared code pages,
-including producer aliases, decode older strings. Embedded chart substreams do
+and surrogate pairs while skipping rich-run payloads. Shared-string termination
+checks do not rescan the remaining continuation pieces. Declared code pages,
+including producer aliases, decode older strings; empty byte strings need no
+Unicode width flag. Embedded chart substreams do
 not replace worksheet cells; chart sheets shift repeated NUMBER addresses one
 column right. Sheets follow ascending stream positions. Boolean records and
 formula caches are true only for byte 1. A pending formula string consumes its

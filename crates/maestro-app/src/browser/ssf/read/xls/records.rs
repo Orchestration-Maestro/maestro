@@ -19,7 +19,19 @@ impl<'a> Record<'a> {
     pub(super) fn payload(&self) -> Payload<'_, 'a> {
         let mut pieces = self.pieces.iter();
         let current = Blob::new(pieces.next().copied().unwrap_or_default());
-        Payload { current, pieces }
+        let later_bytes = pieces
+            .clone()
+            .map(|piece| {
+                #[cfg(test)]
+                super::tests::PAYLOAD_WORK.with(|work| work.set(work.get() + 1));
+                piece.len()
+            })
+            .sum();
+        Payload {
+            current,
+            pieces,
+            later_bytes,
+        }
     }
 }
 
@@ -88,18 +100,25 @@ pub(super) struct Payload<'r, 'a> {
     current: Blob<'a>,
     /// Later pieces.
     pieces: std::slice::Iter<'r, &'a [u8]>,
+    /// Unread bytes in the later pieces, excluding the current piece.
+    later_bytes: usize,
 }
 
 impl Payload<'_, '_> {
     /// Move to the next piece.
     fn advance(&mut self) -> Result<()> {
         let next = self.pieces.next().ok_or(ParseError::Truncated)?;
+        #[cfg(test)]
+        super::tests::PAYLOAD_WORK.with(|work| work.set(work.get() + 1));
+        self.later_bytes -= next.len();
         self.current = Blob::new(next);
         Ok(())
     }
     /// Unread bytes across all pieces.
     pub(super) fn remaining(&self) -> usize {
-        self.current.rest.len() + self.pieces.clone().map(|p| p.len()).sum::<usize>()
+        #[cfg(test)]
+        super::tests::PAYLOAD_WORK.with(|work| work.set(work.get() + 1));
+        self.current.rest.len() + self.later_bytes
     }
     /// Read one byte, crossing a piece boundary transparently.
     pub(super) fn u8(&mut self) -> Result<u8> {
