@@ -57,16 +57,22 @@ first-line session header with a nonempty string cwd selects the existing
 [session directory encoding](../sessions/session_manager.md). The original entry
 is relocated using its native basename; transcript bytes are not rewritten.
 The scan captures headers and final link referents before moving any entry.
-Relative links are re-anchored because relocation changes their resolution base.
-On Windows without link privilege, a link whose target cannot be shown to resolve
-to the same file from its new place stays where it is and is retried.
-Other creation failures also retain the source.
-Absolute links are renamed first. After relative links are published, their final
-identities are checked against the captured referent's new location after a successful
-move, or its original location otherwise. An absolute link retains its original entry
-only when that identity still matches; mere readability is insufficient. Changed
-referents are re-anchored through the same link publisher. File operation failures
-remain tolerated as described below.
+Links are prepared without consuming their sources. Batch-local dependencies
+include traversed links and moved-directory ancestors. Failed preparation pins
+the entries needed to keep the original source readable; independent direct
+bindings can still settle. Replacement destinations are published before moving
+their referents, verified against actual successful moves, then counted only
+after source retirement. Failed referent moves remove this run's provisional
+links and retain their sources for retry.
+Absolute links retain their original entry only when native resolution proves
+that their binding is stable without a moving or retrying source dependency.
+Other links are directly re-anchored. On Windows, missing link privilege permits
+unchanged rename only with that same proof; other creation failures retain the
+source and its dependencies. A later startup retries retained entries.
+This is not an atomic filesystem batch: independent non-link moves cannot all
+be restored after a later failure. Further failures in cleanup, verification or
+source retirement after a referent moved do not guarantee source restoration.
+There is no crash or concurrent-writer transaction guarantee.
 Non-link entries are renamed unchanged.
 Existing readable destinations are preserved; dangling destination links are
 replaced, not followed. Re-anchored links are staged beside their source with a

@@ -3,16 +3,14 @@
 #[cfg(test)]
 mod tests;
 
+mod relocation;
+use relocation::{PreparedMove, relocate, remove_link_entry};
+
 use maestro_json::{canonical_entries, pretty_object};
 use maestro_path::join;
 use maestro_session::session_manager::get_default_session_dir;
 use serde_json::{Map, Value};
-#[cfg(unix)]
-use std::os::unix::fs::symlink;
-#[cfg(windows)]
-use std::os::windows::fs::{symlink_dir, symlink_file};
 use std::{
-    collections::BTreeMap,
     fs,
     io::{self, Write},
     path::{Path, PathBuf},
@@ -218,63 +216,6 @@ fn canonical_entry_path(path: &Path) -> io::Result<PathBuf> {
         .join(path.file_name().unwrap_or_default()))
 }
 
-/// Remove an entry without following directory links on Windows.
-fn remove_link_entry(path: &Path) -> io::Result<()> {
-    #[cfg(windows)]
-    {
-        use std::os::windows::fs::FileTypeExt;
-        if fs::symlink_metadata(path)?.file_type().is_symlink_dir() {
-            return fs::remove_dir(path);
-        }
-    }
-    fs::remove_file(path)
-}
-
-/// Whether renaming the stored target preserves the captured referent.
-#[cfg(any(windows, test))]
-fn link_rename_preserves_referent(link: &Path, target: &Path, referent: &Path) -> bool {
-    link.is_absolute()
-        || target
-            .parent()
-            .is_some_and(|parent| parent.join(link) == referent)
-}
-
-/// Re-anchor a link, retaining its source if privilege-free rename changes identity.
-fn publish_link(path: &Path, target: &Path, referent: &Path) -> io::Result<()> {
-    let mut temporary = path.as_os_str().to_os_string();
-    temporary.push(".migrating");
-    let temporary = PathBuf::from(temporary);
-    #[cfg(unix)]
-    let created = symlink(referent, &temporary);
-    #[cfg(windows)]
-    let created = if referent.is_dir() {
-        symlink_dir(referent, &temporary)
-    } else {
-        symlink_file(referent, &temporary)
-    };
-    // Windows reports missing symbolic-link privilege as ERROR_PRIVILEGE_NOT_HELD.
-    #[cfg(windows)]
-    if created
-        .as_ref()
-        .is_err_and(|error| error.raw_os_error() == Some(1314))
-    {
-        if link_rename_preserves_referent(&fs::read_link(path)?, target, referent) {
-            return fs::rename(path, target);
-        }
-        return created;
-    }
-    created?;
-    let result = fs::rename(&temporary, target);
-    if result.is_err() {
-        let _ = remove_link_entry(&temporary);
-    }
-    result?;
-    if path != target {
-        remove_link_entry(path)?;
-    }
-    Ok(())
-}
-
 /// Decoration selected for one logical console line.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MigrationStyle {
@@ -335,81 +276,6 @@ fn migrate_keybindings_config_file() -> io::Result<()> {
         }
     }
     Ok(())
-}
-
-/// An admitted relocation with its final link identity captured before any move.
-struct PreparedMove {
-    /// Canonical parent plus original entry name, without following the entry.
-    path: PathBuf,
-    /// Caller-selected destination.
-    target: PathBuf,
-    /// Canonical final target for a live symbolic link.
-    referent: Option<PathBuf>,
-}
-
-/// Resolve a captured target through successfully moved entries or their ancestors.
-fn relocated_referent(referent: &Path, moved: &BTreeMap<PathBuf, PathBuf>) -> PathBuf {
-    for ancestor in referent.ancestors() {
-        if let Some(target) = moved.get(ancestor)
-            && let Ok(suffix) = referent.strip_prefix(ancestor)
-        {
-            return if suffix.as_os_str().is_empty() {
-                target.clone()
-            } else {
-                target.join(suffix)
-            };
-        }
-    }
-    referent.to_path_buf()
-}
-
-/// Execute admitted moves once, publishing links against captured final identities.
-fn relocate(prepared: Vec<PreparedMove>) -> usize {
-    let mut moved = BTreeMap::new();
-    let mut links = Vec::new();
-    let mut count = 0;
-    for entry in prepared {
-        if entry.referent.is_some() {
-            links.push(entry);
-        } else if let Ok(identity) = fs::canonicalize(&entry.path)
-            && fs::rename(&entry.path, &entry.target).is_ok()
-        {
-            count += 1;
-            if let Ok(target) = fs::canonicalize(&entry.target) {
-                moved.insert(identity, target);
-            }
-        }
-    }
-    links.retain_mut(|entry| {
-        if fs::read_link(&entry.path).is_ok_and(|link| link.is_absolute()) {
-            if fs::rename(&entry.path, &entry.target).is_err() {
-                return false;
-            }
-            count += 1;
-            entry.path.clone_from(&entry.target);
-        }
-        true
-    });
-    for entry in links
-        .iter()
-        .filter(|entry| entry.path != entry.target)
-        .chain(links.iter().filter(|entry| entry.path == entry.target))
-    {
-        let Some(referent) = &entry.referent else {
-            continue;
-        };
-        let referent = relocated_referent(referent, &moved);
-        if entry.path == entry.target
-            && fs::canonicalize(&entry.target).is_ok_and(|actual| actual == referent)
-        {
-            continue;
-        }
-        if publish_link(&entry.path, &entry.target, &referent).is_ok() && entry.path != entry.target
-        {
-            count += 1;
-        }
-    }
-    count
 }
 
 /// Retire duplicate old binaries locally, admitting collision-free relocations.
