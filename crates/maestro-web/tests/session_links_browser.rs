@@ -166,11 +166,13 @@ impl Composition {
                 *target.borrow_mut() = Some(ReadingRoot {
                     element: root.clone(),
                     slots: controls.clone(),
+                    commit: None,
                     owner: None,
                 });
                 Ok(ReadingRoot {
                     element: root,
                     slots: controls,
+                    commit: None,
                     owner: None,
                 })
             }),

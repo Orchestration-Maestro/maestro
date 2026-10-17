@@ -7,7 +7,7 @@ use crate::{
     components::copy_button::CopyButton,
 };
 use std::{
-    cell::{Cell, RefCell},
+    cell::RefCell,
     rc::{Rc, Weak},
 };
 
@@ -25,6 +25,9 @@ pub(crate) struct Document {
     pub(crate) html: String,
     /// Listings in slot order.
     pub(crate) code: Vec<Code>,
+    /// Generated-only listing attribute, absent from authored markup.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) slot_attribute: String,
 }
 
 /// The last successfully published document.
@@ -37,6 +40,10 @@ struct Published {
     buttons: Vec<CopyButton>,
     /// Native content, shared with the mount.
     document: Rc<Document>,
+    /// Mounted owner of this published factory, never a speculative replacement.
+    mounted: Rc<RefCell<Weak<browser::Mounted>>>,
+    /// Successfully published reasoning presentation.
+    thinking: bool,
 }
 
 /// Markdown content rendered as selectable native text with canvas copy controls.
@@ -51,10 +58,6 @@ pub struct MarkdownBlock {
     host: Rc<dyn AttachmentHost>,
     /// Stable native surface identity.
     id: egui::Id,
-    /// Presentation flag read when a root is mounted.
-    thinking: Rc<Cell<bool>>,
-    /// Mounted owner, referenced weakly so dropping the surface releases it.
-    mounted: Rc<RefCell<Weak<browser::Mounted>>>,
     /// Last successfully published document.
     published: Option<Published>,
 }
@@ -68,8 +71,6 @@ impl MarkdownBlock {
             escape_html: true,
             host,
             id: crate::browser::attachment_content::identity(),
-            thinking: Rc::default(),
-            mounted: Rc::default(),
             published: None,
         }
     }
@@ -90,12 +91,22 @@ impl MarkdownBlock {
             .collect::<Result<Vec<_>, _>>()?;
         let document = Rc::new(Document {
             html: prepared.html,
+            #[cfg(target_arch = "wasm32")]
+            slot_attribute: prepared.slot_attribute,
             code,
         });
         let ids = buttons.iter().map(|b| b.id).collect();
+        let mounted = Rc::default();
         Ok(Published {
             key: (self.content.clone(), self.escape_html),
-            content: browser::content(&document, ids, (&self.thinking, &self.mounted)),
+            content: browser::content(
+                &document,
+                ids,
+                (self.is_thinking, &mounted),
+                browser::Update::Replace,
+            ),
+            mounted,
+            thinking: self.is_thinking,
             buttons,
             document,
         })
@@ -108,25 +119,43 @@ impl MarkdownBlock {
         ui: &mut egui::Ui,
         view: CodeBlockView<'_, F>,
     ) -> Result<egui::Response, AttachmentUiError> {
-        self.thinking.set(self.is_thinking);
-        if let Some(mounted) = self.mounted.borrow().upgrade() {
-            mounted.set_thinking(self.is_thinking)?;
-        }
-        let current = matches!(&self.published, Some(p) if p.key.0 == self.content && p.key.1 == self.escape_html);
+        let current = match &self.published {
+            Some(p) if p.key.0 == self.content && p.key.1 == self.escape_html => {
+                p.document.code.iter().try_fold(true, |current, code| {
+                    let html = Code::highlight(view.highlighter, &code.text, &code.language)?;
+                    Ok::<_, AttachmentUiError>(current && html == code.html)
+                })?
+            }
+            _ => false,
+        };
         let mut candidate = (!current).then(|| self.prepare(view)).transpose()?;
         let Some(target) = candidate.as_mut().or(self.published.as_mut()) else {
             return Err(AttachmentUiError::Host("Missing document".into()));
         };
         let sizes = sync_controls(target, ui, view)?;
+        let mounted = Rc::default();
+        let style = (target.thinking != self.is_thinking).then(|| {
+            browser::content(
+                &target.document,
+                target.buttons.iter().map(|button| button.id).collect(),
+                (self.is_thinking, &mounted),
+                browser::Update::Presentation,
+            )
+        });
         let layout = ControlledReading {
             host: self.host.as_ref(),
             id: self.id,
-            content: &target.content,
+            content: style.as_ref().unwrap_or(&target.content),
             sizes: &sizes,
             modal: view.modal,
             presentation: view.presentation,
         }
         .draw(ui)?;
+        if let Some(content) = style {
+            target.content = content;
+            target.mounted = mounted;
+            target.thinking = self.is_thinking;
+        }
         if candidate.is_some() {
             self.published = candidate;
         }
@@ -138,7 +167,11 @@ impl MarkdownBlock {
     }
     /// Scroll the native viewport to a control that just gained keyboard focus.
     fn reveal_focused(&self, responses: &[Option<egui::Response>]) {
-        let Some(mounted) = self.mounted.borrow().upgrade() else {
+        let Some(mounted) = self
+            .published
+            .as_ref()
+            .and_then(|p| p.mounted.borrow().upgrade())
+        else {
             return;
         };
         responses

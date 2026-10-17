@@ -3,14 +3,33 @@ use crate::{
     source::{Frame, Prefix, Source, strip_quote},
     types::{Cell, Cells, Document, ImageMetadata, Kind, LinkMetadata, Node, Table, Text},
 };
-use pulldown_cmark::{CodeBlockKind, Event, LinkType, Options, Parser, Tag, TagEnd};
+use pulldown_cmark::{
+    BrokenLink, CodeBlockKind, CowStr, Event, LinkType, Options, Parser, Tag, TagEnd,
+};
 use std::ops::Range;
 /// Parse caller-normalized owned source into native structure.
 #[must_use]
 pub fn parse(source: String) -> Document {
-    let parser = Parser::new_ext(
+    parse_using(source, None::<fn(&str) -> Option<(String, String)>>)
+}
+/// Parse a fragment using the complete document's resolved reference metadata.
+#[must_use]
+pub fn parse_with_references(source: String, document: &Document) -> Document {
+    let references = crate::references::collect(&document.nodes);
+    parse_using(source, Some(move |id: &str| references.get(id).cloned()))
+}
+/// Adapt the one native parser, optionally resolving document-wide references.
+fn parse_using(
+    source: String,
+    mut callback: Option<impl FnMut(&str) -> Option<(String, String)>>,
+) -> Document {
+    let parser = Parser::new_with_broken_link_callback(
         &source,
         Options::ENABLE_STRIKETHROUGH | Options::ENABLE_TASKLISTS | Options::ENABLE_TABLES,
+        Some(move |link: BrokenLink<'_>| {
+            callback.as_mut()?(link.reference.as_ref())
+                .map(|(href, title)| (CowStr::from(href), CowStr::from(title)))
+        }),
     );
     let mut events = parser.into_offset_iter();
     let nodes = gaps(

@@ -101,6 +101,12 @@ shared subscription owner; a failed native removal may retain the callable, but
 its expired weak capture cannot change released feature state. It is not a
 raw-markup or template interface. The host retains the complete returned owner.
 
+An optional `ReadingRoot::commit` callback reconciles a staged update into the
+previous root only after placement succeeds. This infallible callback preserves
+the previous element, slots and native state; roots without it replace content
+normally. Measuring a previously published factory also discards any abandoned
+candidate before reading the retained root.
+
 `ReadingPhase::Measure` stages a hidden candidate without replacing the published
 root. Placements supply actual canvas control sizes by identity.
 `reading_layout(id)` reads unclipped natural height and full slot rectangles in

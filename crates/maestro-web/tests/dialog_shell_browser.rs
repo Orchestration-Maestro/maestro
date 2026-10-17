@@ -186,6 +186,7 @@ pub fn dialog_body_keeps_owned_mixed_content() {
             Ok(ReadingRoot {
                 element,
                 slots: vec![(slot, control)],
+                commit: None,
                 owner: Some(Box::new(retained.clone())),
             })
         }),
@@ -564,6 +565,7 @@ pub fn dialog_first_frame_uses_current_body_size_and_slot_geometry() {
             Ok(ReadingRoot {
                 element,
                 slots: vec![(slot, child)],
+                commit: None,
                 owner: None,
             })
         }),

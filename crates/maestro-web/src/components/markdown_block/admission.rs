@@ -172,11 +172,11 @@ fn opaque(document: &Document) -> Vec<Range<usize>> {
 }
 
 /// Formulas of one display class outside opaque ranges, in source order.
-pub(super) fn scan(source: &str, display: bool) -> Vec<Formula> {
+pub(super) fn scan(source: &str, display: bool, references: &Document) -> Vec<Formula> {
     if !source.contains(['$', '\\']) {
         return Vec::new();
     }
-    let mut document = markdown::parse(source.to_owned());
+    let mut document = markdown::parse_with_references(source.to_owned(), references);
     markdown::autolinks(&mut document);
     let opaque = opaque(&document);
     let (mut found, mut next, mut slashes) = (Vec::new(), 0, 0_usize);
@@ -193,7 +193,11 @@ pub(super) fn scan(source: &str, display: bool) -> Vec<Formula> {
         let formula = (slashes % 2 == 0)
             .then(|| matching(source, index, display))
             .flatten();
-        if let Some(formula) = formula {
+        if let Some(formula) = formula.filter(|formula| {
+            opaque
+                .get(next)
+                .is_none_or(|range| range.start >= formula.range.end)
+        }) {
             index = formula.range.end;
             slashes = 0;
             found.push(formula);

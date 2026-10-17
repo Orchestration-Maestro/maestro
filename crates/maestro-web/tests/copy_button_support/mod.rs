@@ -10,6 +10,7 @@ pub struct Canvas {
     pub clip: egui::Rect,
     pub enabled: bool,
     pub rect: egui::Rect,
+    pub paint: crate::canvas_paint::Paint,
 }
 impl Canvas {
     pub fn new() -> Self {
@@ -22,6 +23,7 @@ impl Canvas {
             clip: egui::Rect::EVERYTHING,
             enabled: true,
             rect: egui::Rect::NOTHING,
+            paint: crate::canvas_paint::Paint::default(),
         }
     }
     pub fn frame(&mut self, events: Vec<egui::Event>) -> (egui::Response, egui::FullOutput) {
@@ -49,6 +51,7 @@ impl Canvas {
                 response = Some(result);
             },
         );
+        self.paint.update(&output);
         output.textures_delta.clear();
         (response.unwrap(), output)
     }
@@ -73,8 +76,8 @@ pub fn pointer(pos: egui::Pos2, pressed: bool) -> Vec<egui::Event> {
         },
     ]
 }
-pub fn copied(output: &egui::FullOutput) -> bool {
-    output.shapes.iter().any(
-        |shape| matches!(&shape.shape, egui::Shape::Text(text) if text.galley.text() == "Copied!"),
-    )
+pub fn copied(output: &egui::FullOutput, canvas: &Canvas) -> bool {
+    canvas
+        .paint
+        .text_visible(&canvas.context, &output.shapes, "Copied!")
 }

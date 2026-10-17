@@ -1,5 +1,7 @@
 //! Real-browser native composition of Markdown, code and canvas copy controls.
 #![cfg(all(test, target_arch = "wasm32"))]
+#[path = "attachment_support/canvas_paint.rs"]
+pub mod canvas_paint;
 pub mod markdown_support;
 pub mod support;
 
@@ -438,21 +440,32 @@ mod tests {
             "(() => { const code = maestro.root().querySelector('.maestro-code code'); return getComputedStyle(code).fontFamily.length > 0 && code.getBoundingClientRect().height > 0; })()",
         );
 
-        let hovered = wasm_bindgen_futures::JsFuture::from(js_sys::Promise::resolve(&js(
-            "globalThis.driverHover('.maestro-markdown a')",
-        )))
-        .await
-        .unwrap();
-        assert_eq!(
-            hovered.as_string().as_deref(),
-            Some("0.8"),
-            "hovered link opacity"
-        );
-        let before = surface.painted.len();
+        copy_glyph_paint(&mut surface, &mut block).await;
+    }
+
+    /// Copy and successful check feedback produce distinct visible raster samples.
+    async fn copy_glyph_paint(surface: &mut Surface, block: &mut MarkdownBlock) {
         surface.draw(|ui, view| block.render(ui, view).unwrap());
-        assert!(surface.painted.len() >= before.min(1));
-        let copy = surface.painted.iter().find(|(label, _)| label == "image");
-        assert!(copy.is_some(), "the canvas copy glyph is painted");
+        let center = first_slot_center();
+        let glyph = egui::Rect::from_center_size(center, egui::vec2(16., 16.));
+        let before = surface
+            .paint
+            .region(&surface.context, &surface.shapes, glyph);
+        assert!(
+            before.iter().any(|p| p[3] > 0),
+            "copy paint survives the final clip"
+        );
+        surface.click(center, |ui, view| block.render(ui, view).unwrap());
+        settle().await;
+        surface.draw(|ui, view| block.render(ui, view).unwrap());
+        let after = surface
+            .paint
+            .region(&surface.context, &surface.shapes, glyph);
+        assert!(
+            after.iter().any(|p| p[3] > 0),
+            "check paint survives the final clip"
+        );
+        assert_ne!(before, after, "copy and check have distinct painted glyphs");
     }
 
     /// Each selected presentation resolves native paint without replacing content.
@@ -481,5 +494,123 @@ mod tests {
             "maestro.paintFailures(JSON.parse(globalThis.colors), {thinking}).join('; ')"
         ));
         assert_eq!(failures.as_string().unwrap(), "", "thinking {thinking}");
+    }
+    /// Hover changes link text paint, never its image or inline-code background.
+    #[wasm_bindgen]
+    pub async fn markdown_hover_keeps_nontext_paint() {
+        let mut surface = Surface::new();
+        let mut block = MarkdownBlock::new(surface.host());
+        block.escape_html = false;
+        block.content = "<a href='#hover'><span>hover text</span><img width='20' height='20' src='data:image/svg+xml,%3Csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"20\" height=\"20\"%3E%3Cpath fill=\"red\" d=\"M0 0h20v20H0z\"/%3E%3C/svg%3E'><code>code</code></a>".into();
+        surface.settle(&mut block);
+        crate::support::reading_paint::observe("markdown-hover").await;
+    }
+    /// Header text occupies its authored left, center or right cell position.
+    #[wasm_bindgen]
+    pub fn markdown_header_alignment_controls_measured_text() {
+        let mut surface = Surface::new();
+        let _block =
+            surface.markdown("| left | center | right |\n| :--- | :---: | ---: |\n| x | y | z |");
+        check(
+            "(() => { const cells = [...maestro.root().querySelectorAll('th')]; return cells.every((cell, i) => { const r = document.createRange(); r.selectNodeContents(cell); const t = r.getBoundingClientRect(), b = cell.getBoundingClientRect(); return i === 0 ? t.left - b.left < 12 : i === 1 ? Math.abs((t.left + t.right - b.left - b.right) / 2) < 1 : b.right - t.right < 12; }); })()",
+        );
+    }
+
+    /// Every failed phase preserves the published listing and unchanged-body updates keep selection.
+    #[wasm_bindgen]
+    pub fn code_failed_publication_keeps_text_selection_and_scroll() {
+        let mut surface = Surface::new();
+        let mut block = CodeBlock::new(surface.host());
+        block.code = "selected line\n".repeat(100);
+        block.language = "first-unknown".into();
+        surface.draw(|ui, view| block.render(ui, view).unwrap());
+        let _ = js(
+            "globalThis.codeRoot = document.querySelector('.maestro-code'); globalThis.body = codeRoot.querySelector('code'); globalThis.scroll = codeRoot.querySelector('.maestro-code-scroll'); scroll.scrollTop = 23; globalThis.offset = scroll.scrollTop; const r = document.createRange(); r.selectNodeContents(body); getSelection().removeAllRanges(); getSelection().addRange(r); globalThis.selectionText = getSelection().toString(); globalThis.originalText = body.textContent",
+        );
+        for phase in [
+            Some(ReadingPhase::Measure),
+            None,
+            Some(ReadingPhase::Publish),
+        ] {
+            block.code = "changed text".into();
+            block.language = "python".into();
+            surface.effects.fail_phase.set(phase);
+            surface.effects.fail_measure.set(phase.is_none());
+            assert!(surface.draw(|ui, view| block.render(ui, view)).is_err());
+            check(
+                "codeRoot.isConnected && document.querySelector('.maestro-code') === codeRoot && body.textContent === originalText && getSelection().toString() === selectionText && scroll.scrollTop === offset && codeRoot.querySelector('.maestro-code-label').textContent === 'first-unknown'",
+            );
+        }
+        block.code = "selected line\n".repeat(100);
+        block.language = "second-unknown".into();
+        surface.draw(|ui, view| block.render(ui, view).unwrap());
+        check(
+            "document.querySelector('.maestro-code') === codeRoot && codeRoot.querySelector('code') === body && getSelection().toString() === selectionText && scroll.scrollTop === offset && codeRoot.querySelector('.maestro-code-label').textContent === 'second-unknown'",
+        );
+    }
+    /// A rejected candidate cannot steal the mounted presentation backedge.
+    #[wasm_bindgen]
+    pub fn markdown_failed_publication_keeps_mounted_presentation_owner() {
+        let mut surface = Surface::new();
+        let mut block = surface.markdown("[kept](#kept)");
+        let _ = js(
+            "globalThis.kept = maestro.root(); const a = kept.querySelector('a'); a.focus(); globalThis.focused = document.activeElement",
+        );
+        for phase in [
+            Some(ReadingPhase::Measure),
+            None,
+            Some(ReadingPhase::Publish),
+        ] {
+            block.content = "replacement".into();
+            surface.effects.fail_phase.set(phase);
+            surface.effects.fail_measure.set(phase.is_none());
+            assert!(surface.draw(|ui, view| block.render(ui, view)).is_err());
+            check("maestro.root() === kept && document.activeElement === focused");
+            block.content = "[kept](#kept)".into();
+            block.is_thinking = !block.is_thinking;
+            surface.draw(|ui, view| block.render(ui, view).unwrap());
+            publish("thinking", &block.is_thinking.into());
+            check(
+                "maestro.root() === kept && (getComputedStyle(kept).fontStyle === 'italic') === thinking && document.activeElement === focused",
+            );
+        }
+    }
+    /// Each emitted syntax class resolves to actual pixels from the selected brand pack.
+    #[wasm_bindgen]
+    pub async fn markdown_native_paints_all_syntax_roles() {
+        use maestro_theme::ThemeColor;
+        let mut surface = Surface::new();
+        surface.highlighter = std::rc::Rc::new(crate::markdown_support::Highlighter(vec![
+            Some(ThemeColor::SyntaxComment),
+            Some(ThemeColor::SyntaxKeyword),
+            Some(ThemeColor::SyntaxFunction),
+            Some(ThemeColor::SyntaxVariable),
+            Some(ThemeColor::SyntaxString),
+            Some(ThemeColor::SyntaxNumber),
+            Some(ThemeColor::SyntaxType),
+            Some(ThemeColor::SyntaxOperator),
+            Some(ThemeColor::SyntaxPunctuation),
+        ]));
+        let mut block = surface.markdown("```js\ncomment\nkeyword\nfunction\nvariable\nstring\nnumber\ntype\noperator\npunctuation\n```");
+        let packs = [surface.pack.clone(), surface.alternate.clone()];
+        for (pack, mode) in packs
+            .iter()
+            .flat_map(|pack| [BrandMode::Dark, BrandMode::Light].map(|mode| (pack, mode)))
+        {
+            let presentation = pack.presentation(mode).unwrap();
+            surface.draw_with(&presentation, (800., 600.), None, |ui, view| {
+                block.render(ui, view).unwrap()
+            });
+            let colors: serde_json::Map<String, serde_json::Value> = presentation
+                .colors
+                .iter()
+                .map(|(role, value)| ((*role).to_owned(), (*value).into()))
+                .collect();
+            publish(
+                "colors",
+                &serde_json::Value::Object(colors).to_string().into(),
+            );
+            crate::support::reading_paint::observe("markdown-syntax").await;
+        }
     }
 }

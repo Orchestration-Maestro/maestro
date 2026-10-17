@@ -53,6 +53,7 @@ pub(super) fn mount(
     append(&flow, &root)?;
     let owner = details::mount(document, &flow, prepared)?;
     Ok(ReadingRoot {
+        commit: None,
         owner,
         element: flow,
         slots,

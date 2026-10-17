@@ -143,7 +143,7 @@ impl Run {
     }
     /// Splits native text into equal spans and individual escaped punctuation.
     /// A differing remainder is a native entity event, kept atomic.
-    fn spans(&mut self, source: Range<usize>, mut decoded: usize, mut authored: usize) {
+    fn spans(&mut self, mut source: Range<usize>, mut decoded: usize, mut authored: usize) {
         while decoded < self.decoded.len() {
             let display = &self.decoded[decoded..];
             let literal = &self.authored[authored..];
@@ -163,11 +163,17 @@ impl Run {
             } else {
                 (display.len(), literal.len())
             };
+            let end = if literal_len == literal.len() {
+                source.end
+            } else {
+                source.start + literal_len
+            };
             self.units.push(Unit {
-                source: source.clone(),
+                source: source.start..end,
                 decoded: decoded..decoded + display_len,
                 authored: authored..authored + literal_len,
             });
+            source.start = end;
             decoded += display_len;
             authored += literal_len;
         }

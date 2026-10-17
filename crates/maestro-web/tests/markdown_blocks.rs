@@ -1,5 +1,7 @@
 //! Real-browser Markdown rendering through the public native component.
 #![cfg(all(test, target_arch = "wasm32"))]
+#[path = "attachment_support/canvas_paint.rs"]
+pub mod canvas_paint;
 pub mod markdown_support;
 pub mod support;
 
@@ -267,5 +269,62 @@ mod tests {
     #[wasm_bindgen]
     pub fn markdown_link_labels_keep_math_but_destinations_stay_literal() {
         contexts_match("markdown_link_labels_keep_math_but_destinations_stay_literal");
+    }
+    /// Formula preparation retains document-wide reference destinations and titles.
+    #[wasm_bindgen]
+    pub fn markdown_math_preserves_document_references() {
+        let mut surface = Surface::new();
+        let _block = surface.markdown(
+            "[r][r] $x$ ![alt][image]\n\n[r]: /docs \"tip\"\n[image]: /favicon.ico \"image tip\"",
+        );
+        check(
+            "maestro.root().querySelector('a').getAttribute('href') === '/docs' && maestro.root().querySelector('a').title === 'tip'",
+        );
+        check(
+            "maestro.root().querySelector('img').getAttribute('src') === '/favicon.ico' && maestro.root().querySelector('img').title === 'image tip'",
+        );
+        check("maestro.root().querySelector('.katex') !== null");
+    }
+
+    /// A formula cannot close inside an opaque code span.
+    #[wasm_bindgen]
+    pub fn markdown_math_rejects_opaque_overlap() {
+        let mut surface = Surface::new();
+        let _block = surface.markdown("$x `y$`");
+        check(
+            "maestro.root().querySelector('.katex') === null && maestro.root().querySelector('code').textContent === 'y$'",
+        );
+    }
+
+    /// Authored slot-like markup never receives a generated listing.
+    #[wasm_bindgen]
+    pub fn markdown_generated_listings_ignore_authored_slots() {
+        let mut surface = Surface::new();
+        let mut block = MarkdownBlock::new(surface.host());
+        block.escape_html = false;
+        block.content =
+            "<div class=\"maestro-code-slot\" data-code=\"0\">authored</div>\n\n```js\nlet x;\n```"
+                .into();
+        surface.settle(&mut block);
+        check(
+            "maestro.root().firstElementChild.textContent === 'authored' && !maestro.root().firstElementChild.querySelector('.maestro-code')",
+        );
+        check("maestro.root().lastElementChild.querySelector('code').textContent === 'let x;\\n'");
+    }
+
+    /// Replacement engines reclassify retained listings without editing Markdown.
+    #[wasm_bindgen]
+    pub fn markdown_replacement_highlighter_updates_existing_listings() {
+        let mut surface = Surface::new();
+        surface.highlighter = std::rc::Rc::new(crate::markdown_support::Highlighter(vec![Some(
+            maestro_theme::ThemeColor::SyntaxKeyword,
+        )]));
+        let mut block = surface.markdown("```js\nlet x;\n```");
+        check("maestro.root().querySelector('.hljs-keyword') !== null");
+        surface.highlighter = std::rc::Rc::new(crate::markdown_support::Highlighter(vec![None]));
+        surface.settle(&mut block);
+        check(
+            "maestro.root().querySelector('.hljs-keyword') === null && maestro.root().querySelector('code').textContent === 'let x;\\n'",
+        );
     }
 }

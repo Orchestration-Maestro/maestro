@@ -2,6 +2,8 @@
 #![cfg(test)]
 #[path = "support/brand.rs"]
 pub mod brand;
+#[path = "attachment_support/canvas_paint.rs"]
+pub mod canvas_paint;
 mod copy_button_support;
 mod effects_support;
 mod session_links_support;
@@ -716,16 +718,25 @@ fn paired_feedback_deadlines(button_first: bool) {
     };
     button.host.advance(link_deadline - 1);
     assert!(session_links_support::check(&link.frame(vec![]).1));
-    assert!(copy_button_support::copied(&button.frame(vec![]).1));
+    assert!(copy_button_support::copied(
+        &button.frame(vec![]).1,
+        &button
+    ));
     button.host.advance(link_deadline);
     assert!(!session_links_support::check(&link.frame(vec![]).1));
     assert!(
-        copy_button_support::copied(&button.frame(vec![]).1),
+        copy_button_support::copied(&button.frame(vec![]).1, &button),
         "the link deadline must not restore the copy control"
     );
     button.host.advance(button_deadline - 1);
-    assert!(copy_button_support::copied(&button.frame(vec![]).1));
+    assert!(copy_button_support::copied(
+        &button.frame(vec![]).1,
+        &button
+    ));
     button.host.advance(button_deadline);
-    assert!(!copy_button_support::copied(&button.frame(vec![]).1));
+    assert!(!copy_button_support::copied(
+        &button.frame(vec![]).1,
+        &button
+    ));
     assert_eq!(button.host.live(), 0);
 }

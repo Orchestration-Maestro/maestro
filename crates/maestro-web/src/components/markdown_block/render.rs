@@ -52,6 +52,8 @@ pub(super) struct Prepared {
     pub(super) html: String,
     /// Code blocks in slot order.
     pub(super) code: Vec<Code>,
+    /// Attribute name absent from authored input, so only generated slots own it.
+    pub(super) slot_attribute: String,
 }
 
 /// Where an inline run sits, deciding whether display formulas open blocks.
@@ -78,12 +80,21 @@ pub(super) fn prepare(content: &str, escape_html: bool) -> Prepared {
     } else {
         source
     };
+    let lower = source.to_ascii_lowercase();
+    let mut slot_attribute = "data-maestro-listing".to_owned();
+    while lower.contains(&slot_attribute) {
+        slot_attribute.push('x');
+    }
     let mut document = markdown::parse(source);
     markdown::autolinks(&mut document);
     let mut writer = Writer {
         context: katex::KatexContext::default(),
+        document: &document,
         slots: Vec::new(),
-        prepared: Prepared::default(),
+        prepared: Prepared {
+            slot_attribute,
+            ..Prepared::default()
+        },
     };
     let mut html = String::new();
     writer.blocks(&document.nodes, &mut html);
@@ -92,7 +103,9 @@ pub(super) fn prepare(content: &str, escape_html: bool) -> Prepared {
 }
 
 /// Document walker with the math renderer and generated-slot table.
-struct Writer {
+struct Writer<'a> {
+    /// Complete document supplying resolved references to fragment parsing.
+    document: &'a markdown::Document,
     /// Reused font and macro tables.
     context: katex::KatexContext,
     /// Generated inline slots of the document currently being written.
@@ -100,7 +113,7 @@ struct Writer {
     /// Output under construction.
     prepared: Prepared,
 }
-impl Writer {
+impl Writer<'_> {
     /// Write block nodes in order.
     fn blocks(&mut self, nodes: &[Node], out: &mut String) {
         for node in nodes {
@@ -153,7 +166,8 @@ impl Writer {
             .unwrap_or("text");
         let _ = writeln!(
             out,
-            "<div class=\"maestro-code-slot\" data-code=\"{}\"></div>",
+            "<div class=\"maestro-code-slot\" {}=\"{}\"></div>",
+            self.prepared.slot_attribute,
             self.prepared.code.len()
         );
         let mut code = code.to_owned();
@@ -207,13 +221,13 @@ impl Writer {
         };
         let block = flow == Flow::Paragraph || (flow == Flow::Item && starts_display(source));
         let displays = if block {
-            scan(source, true)
+            scan(source, true, self.document)
         } else {
             Vec::new()
         };
         let wrap = flow == Flow::Paragraph;
         if displays.is_empty() {
-            let formulas = scan(source, false);
+            let formulas = scan(source, false, self.document);
             let mut body = String::new();
             if formulas.is_empty() {
                 self.inline(children, &mut body);
@@ -240,7 +254,7 @@ impl Writer {
         if text.is_empty() {
             return;
         }
-        let formulas = scan(text, false);
+        let formulas = scan(text, false, self.document);
         let mut body = String::new();
         self.reparsed(text, &formulas, true, &mut body);
         wrapped(&body, wrap, out);
@@ -258,7 +272,7 @@ impl Writer {
             end = formula.range.end;
         }
         generated.push_str(&source[end..]);
-        let mut document = markdown::parse(generated);
+        let mut document = markdown::parse_with_references(generated, self.document);
         markdown::autolinks(&mut document);
         let outer = std::mem::replace(&mut self.slots, slots);
         let edge = |c: char| c == ' ' || c == '\t';
@@ -319,11 +333,16 @@ impl Writer {
     }
     /// Emit a generated slot's formula once, or authored inline markup verbatim.
     fn html(&self, node: &Node, html: &str, out: &mut String) {
-        let slot = self.slots.iter().find(|(range, _)| match html {
-            "<m>" => range.start == node.range.start,
-            "</m>" => range.end == node.range.end,
-            _ => false,
-        });
+        let index = match html {
+            "<m>" => self
+                .slots
+                .binary_search_by_key(&node.range.start, |(range, _)| range.start),
+            "</m>" => self
+                .slots
+                .binary_search_by_key(&node.range.end, |(range, _)| range.end),
+            _ => Err(0),
+        };
+        let slot = index.ok().map(|index| &self.slots[index]);
         match slot {
             Some((range, formula)) if range.start == node.range.start => {
                 out.push_str(&self.math(formula));

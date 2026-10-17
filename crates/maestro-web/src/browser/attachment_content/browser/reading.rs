@@ -284,8 +284,12 @@ impl BrowserAttachmentHost {
             .reading
             .as_ref()
             .is_some_and(|r| Rc::ptr_eq(&r.content, &placement.content));
-        if placement.phase == ReadingPhase::Measure && !same {
-            surface.pending = Some(Box::new(self.create_reading(placement)?));
+        if placement.phase == ReadingPhase::Measure {
+            surface.pending = if same {
+                None
+            } else {
+                Some(Box::new(self.create_reading(placement)?))
+            };
         }
         let target = match surface.pending.as_deref_mut() {
             Some(pending) => pending,
@@ -316,10 +320,7 @@ impl BrowserAttachmentHost {
             target.modal = previous_modal;
             return Err(error);
         }
-        if let Some(candidate) = surface.pending.take() {
-            *surface = *candidate;
-        }
-        Ok(())
+        publish_pending(surface, &projected)
     }
     /// Read natural height now, restoring placement and native scroll afterwards.
     pub(super) fn measure_reading(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentUiError> {
@@ -424,4 +425,47 @@ impl NativeReading {
         self.viewport_measurement = viewport.into();
         Ok(rect)
     }
+}
+
+/// Publish staged geometry before an infallible feature commit into retained native nodes.
+fn reconcile(
+    surface: &mut DomSurface,
+    candidate: &DomSurface,
+    projected: &str,
+) -> Result<bool, AttachmentUiError> {
+    let Some((previous, next)) = surface.reading.as_mut().zip(candidate.reading.as_ref()) else {
+        return Ok(false);
+    };
+    let Some(commit) = &next.root.commit else {
+        return Ok(false);
+    };
+    transaction(
+        (&surface.wrapper, &previous.viewport),
+        &previous.root.slots,
+        ReadingPhase::Publish,
+        |_| {
+            size_slots(&previous.root.slots, &next.sizes)?;
+            attr(&surface.wrapper, projected)?;
+            attr(&previous.viewport, &next.viewport_style)
+        },
+    )?;
+    commit(&previous.root);
+    previous.content = Rc::clone(&next.content);
+    surface.style.clone_from(&candidate.style);
+    surface.modal = candidate.modal;
+    surface.retained = candidate.retained;
+    Ok(true)
+}
+
+/// Release staged callbacks after committing or replacing the published root.
+fn publish_pending(surface: &mut DomSurface, projected: &str) -> Result<(), AttachmentUiError> {
+    if let Some(candidate) = surface.pending.take()
+        && !reconcile(surface, &candidate, projected)?
+    {
+        *surface = *candidate;
+    }
+    if let Some(reading) = surface.reading.as_mut() {
+        reading.root.commit = None;
+    }
+    Ok(())
 }

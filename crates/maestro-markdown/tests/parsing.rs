@@ -150,3 +150,18 @@ fn assert_tasks(document: &maestro_markdown::Document) {
         assert!(matches!(children[0].kind, Kind::TaskListMarker(checked) if checked == expected));
     }
 }
+
+#[test]
+fn mapped_links_retain_source_boundaries_before_escaped_math() {
+    let mut document =
+        parse("https://example.test/a $x$ www.example.test \\(y\\) a@example.test".into());
+    maestro_markdown::autolinks(&mut document);
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    for node in children {
+        if let Kind::Link(..) = &node.kind {
+            assert_eq!(&document.source[node.range.clone()], node.authored);
+        }
+    }
+}

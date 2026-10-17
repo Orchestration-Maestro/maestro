@@ -671,7 +671,7 @@ fn theme_shared_records_edge_is_scoped() {
 #[test]
 fn permitted_downward_edges_pass_without_absent_crates() {
     documented_foundation_graph_matches_policy();
-    assert_eq!(support::policy::POLICY.len(), 46);
+    assert_eq!(support::policy::POLICY.len(), 47);
     assert_eq!(
         support::policy::POLICY
             .iter()
@@ -757,7 +757,7 @@ fn path_utility_edges_preserve_native_layer_rules() {
         .map(|row| row.0)
         .filter(|name| *name != "maestro-path" && !UTILITY_EXCLUDED.contains(name))
         .collect();
-    assert_eq!(rows.len(), 46);
+    assert_eq!(rows.len(), 47);
     assert_eq!(consumers.len(), 30);
     assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 12);
     for from in consumers {
@@ -2214,7 +2214,7 @@ fn test_process_policy_keeps_existing_domain_edges() {
 
 #[test]
 fn test_process_inventory_matches_foundation_contract() {
-    assert_eq!(support::policy::POLICY.len(), 46);
+    assert_eq!(support::policy::POLICY.len(), 47);
     assert_eq!(support::class(OWNER), "dedicated");
     assert!(UTILITY_EXCLUDED.contains(&OWNER));
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");

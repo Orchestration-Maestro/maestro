@@ -45,9 +45,9 @@ pub enum TextView {
     Presentation,
 }
 pub(crate) mod reading;
-pub use reading::{ReadingContent, ReadingLayout, ReadingPhase, ReadingPlacement};
 #[cfg(target_arch = "wasm32")]
-pub use reading::{ReadingMount, ReadingRoot};
+pub use reading::{ReadingCommit, ReadingMount, ReadingRoot};
+pub use reading::{ReadingContent, ReadingLayout, ReadingPhase, ReadingPlacement};
 /// Borrowed operands for one platform content update.
 pub enum AttachmentContent<'a> {
     /// Owned native reading content.

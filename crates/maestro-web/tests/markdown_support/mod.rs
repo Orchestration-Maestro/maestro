@@ -27,6 +27,34 @@ mod tests {
     };
     use wasm_bindgen::{JsCast as _, JsValue};
 
+    /// Supplied engine assigning one known syntax role to each complete input line.
+    pub struct Highlighter(pub Vec<Option<maestro_theme::ThemeColor>>);
+    impl SyntaxHighlighter for Highlighter {
+        fn supports_language(&self, _: &str) -> bool {
+            true
+        }
+        fn highlight(
+            &self,
+            code: &str,
+            _: &str,
+        ) -> Result<Vec<maestro_theme::SyntaxSpan>, Box<dyn std::error::Error + Send + Sync>>
+        {
+            let mut start = 0;
+            Ok(code
+                .split_inclusive('\n')
+                .zip(&self.0)
+                .map(|(line, color)| {
+                    let range = start..start + line.len();
+                    start = range.end;
+                    maestro_theme::SyntaxSpan {
+                        range,
+                        color: color.clone(),
+                    }
+                })
+                .collect())
+        }
+    }
+
     /// One recorded Markdown render.
     #[derive(Deserialize)]
     #[serde(deny_unknown_fields)]
@@ -158,6 +186,10 @@ mod tests {
         pub timers: RefCell<Vec<Rc<Cell<bool>>>>,
         /// Failure delivered by the next presentation.
         pub fail_next: RefCell<Option<String>>,
+        /// Phase rejected before native publication.
+        pub fail_phase: Cell<Option<ReadingPhase>>,
+        /// Reject the next native measurement readback.
+        pub fail_measure: Cell<bool>,
     }
     impl AttachmentHost for Effects {
         fn copy_to_clipboard(&self, text: &str) -> Pin<Box<dyn Future<Output = bool>>> {
@@ -181,6 +213,11 @@ mod tests {
             self.native.native_key(event, context);
         }
         fn reading_layout(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentUiError> {
+            if self.fail_measure.replace(false) {
+                return Err(AttachmentUiError::Host(
+                    "controlled measurement failure".into(),
+                ));
+            }
             self.native.reading_layout(id)
         }
         fn present(
@@ -195,6 +232,10 @@ mod tests {
                 AttachmentContent::Reading(reading) => Some(reading.phase),
                 _ => None,
             };
+            if phase.is_some() && self.fail_phase.get() == phase {
+                self.fail_phase.set(None);
+                return Err(AttachmentUiError::Host("controlled phase failure".into()));
+            }
             let result = self.native.present(surface, presentation);
             if let Some(phase) = phase {
                 let seen = js_sys::Array::from(&js(
@@ -277,6 +318,9 @@ mod tests {
         pub size: (f32, f32),
         /// Painted text and images of the last frame with their rectangles.
         pub painted: Vec<(String, egui::Rect)>,
+        /// Shared final-clip raster sampler and the most recent submitted paint.
+        pub paint: crate::canvas_paint::Paint,
+        pub shapes: Vec<egui::epaint::ClippedShape>,
     }
     impl Default for Surface {
         fn default() -> Self {
@@ -314,6 +358,8 @@ mod tests {
                     phases: RefCell::default(),
                     timers: RefCell::default(),
                     fail_next: RefCell::default(),
+                    fail_phase: Cell::default(),
+                    fail_measure: Cell::default(),
                 }),
                 pack: Rc::new(maestro_theme::load_brand_pack("brand.json", &Pack).unwrap()),
                 alternate: Rc::new(maestro_theme::load_brand_pack("signal.json", &Pack).unwrap()),
@@ -324,6 +370,8 @@ mod tests {
                 output: vec![],
                 size: (800., 600.),
                 painted: vec![],
+                paint: crate::canvas_paint::Paint::default(),
+                shapes: vec![],
             }
         }
         /// Platform effects handed to components.
@@ -381,21 +429,34 @@ mod tests {
                     result = draw.take().map(|draw| draw(ui, view));
                 },
             );
+            self.paint.update(&output);
+            self.shapes.clone_from(&output.shapes);
             output.textures_delta.clear();
             self.output = output.platform_output.events;
             self.painted = output
                 .shapes
                 .iter()
-                .map(|clipped| {
-                    let label = match &clipped.shape {
-                        egui::Shape::Text(text) => text.galley.text().to_owned(),
-                        egui::Shape::Mesh(_) => "image".to_owned(),
-                        _ => String::new(),
-                    };
-                    (label, clipped.shape.visual_bounding_rect())
-                })
+                .map(|clipped| self.painted_shape(clipped))
                 .collect();
             result.unwrap()
+        }
+        /// Name only text or images that actually survive the final paint clip.
+        fn painted_shape(&self, clipped: &egui::epaint::ClippedShape) -> (String, egui::Rect) {
+            let label = match &clipped.shape {
+                egui::Shape::Text(text) => text.galley.text().to_owned(),
+                egui::Shape::Mesh(_) => "image".to_owned(),
+                _ => return (String::new(), egui::Rect::NOTHING),
+            };
+            let rect = clipped
+                .shape
+                .visual_bounding_rect()
+                .intersect(clipped.clip_rect);
+            let visible = self
+                .paint
+                .region(&self.context, std::slice::from_ref(clipped), rect)
+                .iter()
+                .any(|p| p[3] > 0);
+            (if visible { label } else { String::new() }, rect)
         }
         /// A block with `content`, drawn until its native root is placed.
         ///

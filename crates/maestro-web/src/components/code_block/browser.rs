@@ -1,6 +1,8 @@
 //! Native code listing nodes and the empty canvas-control slot.
 use super::Prepared;
-use crate::browser::attachment_content::{AttachmentUiError, ReadingContent};
+#[cfg(target_arch = "wasm32")]
+use crate::browser::attachment_content::AttachmentUiError;
+use crate::browser::attachment_content::ReadingContent;
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},
@@ -37,30 +39,24 @@ impl Mounted {
         self.slot.scroll_into_view();
     }
     /// Change only the label and body that differ, retaining native text selection.
-    pub(crate) fn update(&self, next: &Prepared) -> Result<(), AttachmentUiError> {
+    pub(crate) fn update(&self, next: &Prepared) {
         let mut shown = self.shown.borrow_mut();
         if shown.0 != next.label() {
             self.label.set_text_content(Some(next.label()));
             self.code
-                .set_attribute("class", &format!("hljs language-{}", next.label()))
-                .map_err(|e| host_error(&e))?;
+                .set_class_name(&format!("hljs language-{}", next.label()));
             next.label().clone_into(&mut shown.0);
         }
         if shown.1 != next.html {
             self.code.set_inner_html(&next.html);
             shown.1.clone_from(&next.html);
         }
-        Ok(())
     }
 }
 #[cfg(not(target_arch = "wasm32"))]
 impl Mounted {
     /// Unreachable: there is no native slot to reveal.
     pub(crate) fn reveal(&self) {
-        match *self {}
-    }
-    /// Unreachable: there is no native content to update.
-    pub(crate) fn update(&self, _: &Prepared) -> Result<(), AttachmentUiError> {
         match *self {}
     }
 }
@@ -121,7 +117,7 @@ pub(crate) fn styles(document: &Document) -> Result<Element, AttachmentUiError> 
 
 /// Native factory for a standalone listing; the mounted owner is published through `slot`.
 pub(super) fn content(
-    prepared: &Rc<RefCell<Prepared>>,
+    prepared: &Rc<Prepared>,
     slot: &Rc<RefCell<Weak<Mounted>>>,
     id: egui::Id,
 ) -> Rc<ReadingContent> {
@@ -129,7 +125,7 @@ pub(super) fn content(
     {
         let (prepared, slot) = (Rc::clone(prepared), Rc::clone(slot));
         Rc::new(ReadingContent {
-            mount: Rc::new(move |document| mount(document, &prepared.borrow(), id, &slot)),
+            mount: Rc::new(move |document| mount(document, &prepared, id, &slot)),
         })
     }
     #[cfg(not(target_arch = "wasm32"))]
@@ -142,7 +138,7 @@ pub(super) fn content(
 #[cfg(target_arch = "wasm32")]
 fn mount(
     document: &Document,
-    prepared: &Prepared,
+    prepared: &Rc<Prepared>,
     id: egui::Id,
     slot: &Rc<RefCell<Weak<Mounted>>>,
 ) -> Result<ReadingRoot, AttachmentUiError> {
@@ -157,6 +153,20 @@ fn mount(
     Ok(ReadingRoot {
         element: flow,
         slots: vec![(id, built.slot)],
+        commit: Some(Box::new({
+            let prepared = Rc::clone(prepared);
+            let slot = Rc::clone(slot);
+            move |previous| {
+                if let Some(mounted) = previous
+                    .owner
+                    .as_ref()
+                    .and_then(|owner| owner.downcast_ref::<Rc<Mounted>>())
+                {
+                    mounted.update(&prepared);
+                    *slot.borrow_mut() = Rc::downgrade(mounted);
+                }
+            }
+        })),
         owner: Some(Box::new(mounted)),
     })
 }

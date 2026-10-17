@@ -1,8 +1,10 @@
 //! Native Markdown nodes, code listing owners and their empty canvas-control slots.
 use super::Document;
-use crate::browser::attachment_content::{AttachmentUiError, ReadingContent};
+#[cfg(target_arch = "wasm32")]
+use crate::browser::attachment_content::AttachmentUiError;
+use crate::browser::attachment_content::ReadingContent;
 use std::{
-    cell::{Cell, RefCell},
+    cell::RefCell,
     rc::{Rc, Weak},
 };
 
@@ -38,17 +40,12 @@ impl Mounted {
         }
     }
     /// Switch reasoning presentation without replacing content.
-    pub(crate) fn set_thinking(&self, thinking: bool) -> Result<(), AttachmentUiError> {
-        self.root
-            .set_attribute(
-                "class",
-                if thinking {
-                    "maestro-markdown maestro-thinking"
-                } else {
-                    "maestro-markdown"
-                },
-            )
-            .map_err(|e| host_error(&e))
+    pub(crate) fn set_thinking(&self, thinking: bool) {
+        self.root.set_class_name(if thinking {
+            "maestro-markdown maestro-thinking"
+        } else {
+            "maestro-markdown"
+        });
     }
 }
 #[cfg(not(target_arch = "wasm32"))]
@@ -57,29 +54,34 @@ impl Mounted {
     pub(crate) fn reveal(&self, _: usize) {
         match *self {}
     }
-    /// Unreachable: there is nothing mounted to restyle.
-    pub(crate) fn set_thinking(&self, _: bool) -> Result<(), AttachmentUiError> {
-        match *self {}
-    }
+}
+
+/// Whether publication replaces content or reconciles only its presentation.
+#[derive(Clone, Copy)]
+pub(super) enum Update {
+    /// Replace the complete document.
+    Replace,
+    /// Retain native text, focus and control owners.
+    Presentation,
 }
 
 /// Native factory owning the prepared document, never mounted state.
 pub(super) fn content(
     document: &Rc<Document>,
     ids: Vec<egui::Id>,
-    (thinking, slot): (&Rc<Cell<bool>>, &Rc<RefCell<Weak<Mounted>>>),
+    (thinking, slot): (bool, &Rc<RefCell<Weak<Mounted>>>),
+    update: Update,
 ) -> Rc<ReadingContent> {
     #[cfg(target_arch = "wasm32")]
     {
-        let (document, thinking, slot) =
-            (Rc::clone(document), Rc::clone(thinking), Rc::clone(slot));
+        let (document, slot) = (Rc::clone(document), Rc::clone(slot));
         Rc::new(ReadingContent {
-            mount: Rc::new(move |dom| mount(dom, &document, &ids, thinking.get(), &slot)),
+            mount: Rc::new(move |dom| mount(dom, &document, &ids, (thinking, &slot), update)),
         })
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        let _ = (document, ids, thinking, slot);
+        let _ = (document, ids, thinking, slot, update);
         Rc::new(ReadingContent {})
     }
 }
@@ -89,8 +91,8 @@ fn mount(
     dom: &web_sys::Document,
     document: &Document,
     ids: &[egui::Id],
-    thinking: bool,
-    owner: &Rc<RefCell<Weak<Mounted>>>,
+    (thinking, owner): (bool, &Rc<RefCell<Weak<Mounted>>>),
+    update: Update,
 ) -> Result<ReadingRoot, AttachmentUiError> {
     crate::browser::math_assets::install(dom)?;
     let flow = element(dom, "div", "maestro-markdown-root")?;
@@ -107,10 +109,10 @@ fn mount(
     root.set_inner_html(&document.html);
     append(&flow, &root)?;
     let (mut slots, mut listings) = (Vec::new(), Vec::new());
-    for (code_block, id) in document.code.iter().zip(ids) {
+    for (index, (code_block, id)) in document.code.iter().zip(ids).enumerate() {
         let built = code::build(dom, code_block)?;
         let placeholder = root
-            .query_selector(".maestro-code-slot")
+            .query_selector(&format!("[{}=\"{index}\"]", document.slot_attribute))
             .map_err(|e| host_error(&e))?
             .ok_or_else(|| AttachmentUiError::Host("Missing code slot".into()))?;
         placeholder
@@ -121,11 +123,27 @@ fn mount(
         listings.push(built.mounted);
     }
     let mounted = Rc::new(Mounted { root, listings });
-    mounted.set_thinking(thinking)?;
+    mounted.set_thinking(thinking);
     *owner.borrow_mut() = Rc::downgrade(&mounted);
     Ok(ReadingRoot {
         element: flow,
         slots,
+        commit: match update {
+            Update::Replace => None,
+            Update::Presentation => Some(Box::new({
+                let owner = Rc::clone(owner);
+                move |previous| {
+                    if let Some(mounted) = previous
+                        .owner
+                        .as_ref()
+                        .and_then(|owner| owner.downcast_ref::<Rc<Mounted>>())
+                    {
+                        mounted.set_thinking(thinking);
+                        *owner.borrow_mut() = Rc::downgrade(mounted);
+                    }
+                }
+            })),
+        },
         owner: Some(Box::new(mounted)),
     })
 }

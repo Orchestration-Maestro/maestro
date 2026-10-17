@@ -29,7 +29,7 @@ on; code starts with empty code and language. Both render through
 `CodeBlockView`, which borrows one frame's localization, brand presentation,
 syntax engine and containing-modal identity and is never retained.
 
-Markdown is parsed once by the shared [Markdown owner](../markdown.md), reached
+Markdown parsing and contextual fragment parsing use the shared [Markdown owner](../markdown.md), reached
 through `maestro_app::markdown`. Tag-like text outside code and angle autolinks is
 shown literally when escaping is on. Formulas written with `$…$`, `\(…\)`,
 `$$…$$` and `\[…\]` render through the math library as HTML with errors shown
@@ -50,8 +50,10 @@ theme's HTML code profile; the syntax classes are styled through
 
 Unchanged text keeps its native root, selection and scroll. Changed Markdown
 replaces its root and copy controls only after the replacement is published, so a
-failed publication keeps the old document; reasoning presentation changes without
+failed publication keeps the old document and mounted owner; reasoning presentation changes without
 replacing content. A standalone block updates its label and body in place and keeps
-its copy control and its active success indication. A control that gains keyboard
+its copy control and its active success indication. Updates are staged for measurement;
+only successful publication reconciles changed native nodes. A replacement syntax
+engine is consumed even when Markdown content is unchanged. A control that gains keyboard
 focus is scrolled into view. Dropping the owner removes the native root and revokes
 pending feedback.

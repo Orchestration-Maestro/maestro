@@ -49,18 +49,26 @@ impl Prepared {
         text: String,
         language: String,
     ) -> Result<Self, AttachmentUiError> {
-        let html = maestro_theme::highlight_auto(
-            highlighter,
-            &text,
-            Some(language.as_str()).filter(|l| !l.is_empty()),
-            maestro_theme::HighlightProfile::CodeBlock,
-        )
-        .map_err(|e| AttachmentUiError::Presentation(e.to_string()))?;
+        let html = Self::highlight(highlighter, &text, &language)?;
         Ok(Self {
             language,
             text,
             html,
         })
+    }
+    /// Render the current engine's output without copying retained source operands.
+    pub(crate) fn highlight(
+        highlighter: &dyn maestro_theme::SyntaxHighlighter,
+        text: &str,
+        language: &str,
+    ) -> Result<String, AttachmentUiError> {
+        maestro_theme::highlight_auto(
+            highlighter,
+            text,
+            Some(language).filter(|l| !l.is_empty()),
+            maestro_theme::HighlightProfile::CodeBlock,
+        )
+        .map_err(|error| AttachmentUiError::Presentation(error.to_string()))
     }
     /// The displayed and class language.
     #[cfg(target_arch = "wasm32")]
@@ -112,7 +120,7 @@ pub struct CodeBlock {
     /// Stable native surface identity.
     id: egui::Id,
     /// Current native content, read when a root is mounted.
-    prepared: Rc<RefCell<Prepared>>,
+    prepared: Rc<Prepared>,
     /// Mounted owner, referenced weakly so dropping the surface releases it.
     mounted: Rc<RefCell<Weak<browser::Mounted>>>,
     /// Native factory, created once and reused for the retained root.
@@ -129,11 +137,11 @@ impl CodeBlock {
             language: String::new(),
             host,
             id: crate::browser::attachment_content::identity(),
-            prepared: Rc::new(RefCell::new(Prepared {
+            prepared: Rc::new(Prepared {
                 language: String::new(),
                 text: String::new(),
                 html: String::new(),
-            })),
+            }),
             mounted: Rc::default(),
             content: None,
             copy: None,
@@ -152,13 +160,13 @@ impl CodeBlock {
             Some(copy) => copy,
             None => CopyButton::new(Rc::clone(&self.host), view.i18n)?,
         };
-        copy.text.clone_from(&next.text);
         copy.title = view.i18n.text("Copy code")?;
         copy.show_text = true;
         let size = copy.size(ui, view.i18n)?;
         let result = self.draw(ui, next, (copy.id, size), view);
         match result {
             Ok(layout) => {
+                copy.text.clone_from(&self.prepared.text);
                 let painted = controls(ui, &layout, [&mut copy], view);
                 self.copy = Some(copy);
                 let gained = painted?.iter().flatten().any(egui::Response::gained_focus);
@@ -181,25 +189,29 @@ impl CodeBlock {
         control: (egui::Id, egui::Vec2),
         view: CodeBlockView<'_, F>,
     ) -> Result<ControlledLayout, AttachmentUiError> {
-        if *self.prepared.borrow() != next {
-            *self.prepared.borrow_mut() = next;
-            if let Some(mounted) = self.mounted.borrow().upgrade() {
-                mounted.update(&self.prepared.borrow())?;
-            }
-        }
-        let content = Rc::clone(
-            self.content
-                .get_or_insert_with(|| browser::content(&self.prepared, &self.mounted, control.0)),
-        );
-        ControlledReading {
+        let changed = *self.prepared != next || self.content.is_none();
+        let prepared = Rc::new(next);
+        let mounted = Rc::default();
+        let candidate = changed.then(|| browser::content(&prepared, &mounted, control.0));
+        let content = candidate
+            .as_ref()
+            .or(self.content.as_ref())
+            .ok_or_else(|| AttachmentUiError::Host("Missing listing".into()))?;
+        let layout = ControlledReading {
             host: self.host.as_ref(),
             id: self.id,
-            content: &content,
+            content,
             sizes: &[control],
             modal: view.modal,
             presentation: view.presentation,
         }
-        .draw(ui)
+        .draw(ui)?;
+        if let Some(content) = candidate {
+            self.prepared = prepared;
+            self.mounted = mounted;
+            self.content = Some(content);
+        }
+        Ok(layout)
     }
 }
 impl Drop for CodeBlock {

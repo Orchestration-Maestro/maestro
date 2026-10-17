@@ -42,6 +42,7 @@ pub(super) fn mount(
     text.borrow_mut().nodes = Some(nodes);
     sync(&text.borrow());
     Ok(ReadingRoot {
+        commit: None,
         owner: None,
         element: root,
         slots: vec![],
