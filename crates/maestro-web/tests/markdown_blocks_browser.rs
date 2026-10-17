@@ -410,6 +410,7 @@ mod tests {
             let presentation = pack.presentation(mode).unwrap();
             for thinking in [false, true] {
                 paint_mode(&mut surface, &mut block, &presentation, thinking);
+                crate::support::reading_paint::observe("markdown-brand").await;
             }
         }
         check(
