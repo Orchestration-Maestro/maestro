@@ -221,7 +221,7 @@ pub fn plain(head: Entry) -> BTreeMap<String, Entry> {
 }
 
 #[cfg(unix)]
-mod native;
+use crate::native;
 #[cfg(unix)]
 pub use native::{Scratch, git, install_executable, probe};
 

@@ -1,12 +1,7 @@
 //! Document extraction through the embedding interface.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod support {
-    /// Shared native test runtime.
-    pub mod browser_providers;
-    /// Strict recorded extraction inputs and observations.
-    pub mod document_extraction;
-}
+use crate::support;
 use maestro_app::browser::tools::extract_document::{ExtractDocumentParams, ExtractDocumentResult};
 use maestro_app::{EXTRACT_DOCUMENT_TOOL, Fetch, HttpResponse, create_extract_document_tool};
 use maestro_models::{Cancellation, DiagnosticErrorInfo, FetchError};

@@ -1,12 +1,7 @@
 //! Presentation extraction through the public application boundary.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod support {
-    /// Shared complete attachment observations.
-    pub mod attachment_observation;
-    /// Presentation corpus replay.
-    pub mod pptx;
-}
+use crate::support;
 
 #[test]
 fn pptx_detection_selects_mime_or_suffix() {

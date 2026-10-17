@@ -1,10 +1,6 @@
 //! Spreadsheet serialization through the public application boundary.
 #![cfg(test)]
-mod support {
-    pub mod attachment_observation;
-    mod shared_operands;
-    pub mod spreadsheet;
-}
+use crate::support;
 use maestro_app::browser::ssf::{self, Ssf};
 use support::spreadsheet::{corpus, equal_cell, worksheet};
 

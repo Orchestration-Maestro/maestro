@@ -3,10 +3,8 @@
 #![cfg(unix)]
 #[path = "../../maestro-packages/tests/component_support/mod.rs"]
 mod component_support;
-#[path = "support/package_fixtures.rs"]
-mod fixtures;
-#[path = "support/probe.rs"]
-mod probe;
+use crate::child as probe;
+use crate::package_fixtures as fixtures;
 #[path = "../../maestro-packages/tests/scratch/mod.rs"]
 mod scratch;
 use maestro_app::configuration::config::{CONFIG_DIR_NAME, get_agent_dir};
@@ -150,7 +148,10 @@ fn selected_configuration_roots_feed_package_resolution_and_persistence() {
         envs.push(("HOME", &home));
         assert!(
             probe::probe(
-                "selected_configuration_roots_feed_package_resolution_and_persistence",
+                &crate::child_process::selector(
+                    "selected_configuration_roots_feed_package_resolution_and_persistence"
+                )
+                .unwrap(),
                 &dir.0.join("work"),
                 &envs,
                 &["MAESTRO_CODING_AGENT_DIR", "MAESTRO_OFFLINE"]
@@ -272,7 +273,10 @@ fn selected_package_roots_keep_update_pins_and_progress() {
         let npm = format!("{root}/global/node_modules");
         assert!(
             probe::probe(
-                "selected_package_roots_keep_update_pins_and_progress",
+                &crate::child_process::selector(
+                    "selected_package_roots_keep_update_pins_and_progress"
+                )
+                .unwrap(),
                 &dir.0.join("work"),
                 &[
                     ("MAESTRO_PACKAGE_CASE", &case.id),

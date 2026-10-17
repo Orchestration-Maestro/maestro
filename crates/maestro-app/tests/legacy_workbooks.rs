@@ -1,7 +1,6 @@
 //! Legacy workbook formatting through the public owned reader.
 #![cfg(test)]
-mod legacy_workbook_support;
-mod workbook_fixture;
+use crate::legacy_workbook_support;
 
 #[test]
 fn legacy_producer_date_format_repairs_display_and_tables() {

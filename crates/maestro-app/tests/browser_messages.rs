@@ -1,11 +1,6 @@
 //! Recorded browser messages through public conversion boundaries.
 #![cfg(test)]
-mod support {
-    /// Strict source observations.
-    pub mod attachments;
-    /// Strict browser record construction.
-    pub mod browser_records;
-}
+use crate::support;
 use maestro_app::browser::components::messages::{
     ArtifactAction, ArtifactMessage, CustomAgentMessages, UserMessageWithAttachments,
     convert_attachments, default_convert_to_llm, is_artifact_message,

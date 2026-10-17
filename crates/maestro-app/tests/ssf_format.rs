@@ -1,6 +1,5 @@
 //! Public spreadsheet state and coordinate behavior.
 #![cfg(test)]
-mod workbook_fixture;
 use maestro_app::browser::ssf::{
     CellFormatOptions, CellObject, CellValue, ExcelDataType, Ssf, format_cell,
 };
@@ -203,7 +202,7 @@ fn ssf_retained_identity() {
     assert_eq!(book.ssf.get(&164), None);
 }
 
-mod ssf_support;
+use crate::ssf_support;
 
 #[test]
 fn ssf_general_dispatch() {

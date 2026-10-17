@@ -392,7 +392,7 @@ optional dependency feature. Macro aliases use the same file-wide scope and
 limits as timer aliases. Comments, literal contents and ordinary function calls
 are not macro invocations; no compiler expansion is performed.
 
-Integration tests in `maestro-agent`, `maestro-models`, `maestro-tools` and `maestro-tui` share `tests/integration.rs`. Add new
+Integration tests in `maestro-agent`, `maestro-app`, `maestro-models`, `maestro-tools` and `maestro-tui` share `tests/integration.rs`. Add new
 `tests/*.rs` files as unconditional out-of-line modules in that root; support
 modules stay in their existing directories. When top-level integration-test
 sources exist, the conventions check requires `autotests = false` and one

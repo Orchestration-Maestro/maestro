@@ -1,8 +1,7 @@
 //! Live footer refresh through controlled and native effects.
 #![cfg(test)]
 #[cfg(unix)]
-#[path = "support/native.rs"]
-mod native;
+use crate::native;
 #[path = "support/watching.rs"]
 mod watching;
 use maestro_app::presentation_data::footer_data_provider::{
@@ -894,7 +893,8 @@ fn native_command_probe(root: &native::Scratch) {
         std::path::Path::new(&root.join("bin/git")),
     );
     let output = native::probe(
-        "footer_native_async_lookup_runs_selected_command",
+        &crate::child_process::selector("footer_native_async_lookup_runs_selected_command")
+            .unwrap(),
         &root.0,
         &[
             ("FOOTER_ASYNC_REPO", &root.join("")),
@@ -910,7 +910,8 @@ fn native_command_probe(root: &native::Scratch) {
         ]
     );
     let failed = native::probe(
-        "footer_native_async_lookup_runs_selected_command",
+        &crate::child_process::selector("footer_native_async_lookup_runs_selected_command")
+            .unwrap(),
         &root.0,
         &[
             ("FOOTER_ASYNC_REPO", &root.join("")),
@@ -1135,7 +1136,8 @@ os._exit(0)
     );
     assert!(
         native::probe(
-            "footer_async_lookup_keeps_output_until_pipe_eof",
+            &crate::child_process::selector("footer_async_lookup_keeps_output_until_pipe_eof")
+                .unwrap(),
             &root.0,
             &[("PATH", &root.join("bin")), ("MAESTRO_FOOTER_HOLDER", "1")],
             &[]

@@ -171,8 +171,7 @@ pub const FLAGS: &[&str] = &[
     "MAESTRO_SKIP_VERSION_CHECK",
 ];
 #[cfg(unix)]
-#[path = "probe.rs"]
-mod child;
+use crate::child;
 #[cfg(unix)]
 /// Run the named test with all service flags explicitly absent.
 ///
@@ -184,7 +183,7 @@ pub fn isolated(name: &str) -> bool {
         return false;
     }
     child::probe(
-        name,
+        &crate::child_process::selector(name).unwrap(),
         &std::env::current_dir().unwrap(),
         &[("MAESTRO_SERVICE_PROBE", name)],
         FLAGS,
@@ -216,7 +215,12 @@ pub fn environment_cases(name: &str, group: &str, indices: &[usize]) -> Option<C
                 envs.push((key.as_str(), value.as_str().unwrap()));
             }
         }
-        child::probe(name, &std::env::current_dir().unwrap(), &envs, FLAGS);
+        child::probe(
+            &crate::child_process::selector(name).unwrap(),
+            &std::env::current_dir().unwrap(),
+            &envs,
+            FLAGS,
+        );
     }
     None
 }
@@ -226,7 +230,12 @@ pub fn environment_cases(name: &str, group: &str, indices: &[usize]) -> Option<C
 /// # Panics
 /// Panics when fixture data or controlled observations violate the test contract.
 pub fn native_probe(name: &str, envs: &[(&str, &str)], removed: &[&str]) {
-    child::probe(name, &std::env::current_dir().unwrap(), envs, removed);
+    child::probe(
+        &crate::child_process::selector(name).unwrap(),
+        &std::env::current_dir().unwrap(),
+        envs,
+        removed,
+    );
 }
 
 /// Owned observations and the delayed-header completion signal.
@@ -270,8 +279,7 @@ async fn response(
         })),
     })
 }
-#[path = "browser_providers.rs"]
-mod runtime;
+use crate::support::browser_providers as runtime;
 pub(crate) use runtime::run;
 
 /// Drive controlled deadline work from a paused clock origin.

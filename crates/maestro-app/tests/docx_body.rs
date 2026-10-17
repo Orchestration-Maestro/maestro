@@ -1,9 +1,8 @@
 //! Owned Word element parsing.
 #![cfg(test)]
-mod docx_support;
+use crate::body_tree;
+use crate::docx_support;
 use docx_support::cases;
-#[path = "docx_support/body_tree.rs"]
-pub mod body_tree;
 use maestro_app::browser::docx_preview::{
     DocxError, OwnedXmlElement, parse_body_elements, parse_paragraph, parse_run, parse_xml_string,
 };

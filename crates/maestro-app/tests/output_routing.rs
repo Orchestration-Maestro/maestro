@@ -1,8 +1,7 @@
 //! Managed stream routing observed in isolated native processes.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[path = "support/package_fixtures.rs"]
-mod fixtures;
+use crate::package_fixtures as fixtures;
 use maestro_app::output_guard::{
     flush_raw_stdout, is_stdout_taken_over, restore_stdout, take_over_stdout, write_raw_stdout,
     write_stdout,
@@ -28,11 +27,12 @@ struct Routed {
 }
 /// Re-enter the named test with piped streams, bypassing harness teardown on exit.
 fn child(name: &str, mode: &str) -> Command {
+    let name = crate::child_process::selector(name).unwrap();
     let mut command = Command::new(std::env::current_exe().unwrap());
     command
         .args([
             "--exact",
-            name,
+            &name,
             "--nocapture",
             "--test-threads=1",
             "--quiet",

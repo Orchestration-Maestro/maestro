@@ -180,7 +180,7 @@ fn literal_query() {
     };
     let args = [
         "--exact",
-        "native_query_child",
+        "self_update_selection::native_query_child",
         "--nocapture",
         "--skip",
         "argument with spaces",

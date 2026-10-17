@@ -1,7 +1,6 @@
 //! Browser session persistence at the injected storage boundary.
 #![cfg(test)]
-#[path = "support/browser_storage.rs"]
-mod storage;
+use crate::browser_storage_support as storage;
 use maestro_app::browser::storage::SessionsStore;
 use serde_json::json;
 
@@ -64,8 +63,7 @@ fn session_records_roundtrip_standard_browser_and_open_custom_history() {
         }
     });
 }
-#[path = "support/browser_providers.rs"]
-mod runtime;
+use crate::support::browser_providers as runtime;
 use maestro_agent::{Agent, AgentOptions, CustomAgentMessages};
 use maestro_app::browser::{
     components::messages::{CustomAgentMessages as BrowserCustom, default_convert_to_llm},
@@ -713,13 +711,12 @@ fn latest_session_uses_host_locale_instead_of_lexical_order() {
         });
         return;
     }
+    let test =
+        crate::child_process::selector("latest_session_uses_host_locale_instead_of_lexical_order")
+            .unwrap();
     for locale in ["en-US", "sv-SE"] {
         let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args([
-                "--exact",
-                "latest_session_uses_host_locale_instead_of_lexical_order",
-                "--nocapture",
-            ])
+            .args(["--exact", &test, "--nocapture"])
             .env("MAESTRO_SESSION_LOCALE", locale)
             .env("LC_ALL", locale)
             .env("LC_MESSAGES", locale)
@@ -731,5 +728,6 @@ fn latest_session_uses_host_locale_instead_of_lexical_order() {
             "locale child failed: {}",
             String::from_utf8_lossy(&output.stderr)
         );
+        crate::child_process::assert_executed(&output, &test);
     }
 }

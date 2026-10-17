@@ -1,5 +1,6 @@
 //! Strict image corpus and per-operation effect transcripts.
 #![cfg(test)]
+use crate::clipboard_status as completed;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use futures_util::future::LocalBoxFuture;
 use maestro_app::utils::{
@@ -22,8 +23,6 @@ use std::{
     task::{Context, Poll, Waker},
 };
 use tokio::{process::Command, sync::oneshot};
-#[path = "clipboard_status.rs"]
-mod completed;
 
 /// Every consumed fixture section.
 #[derive(Deserialize)]
@@ -99,8 +98,7 @@ pub struct Expected {
 pub fn corpus() -> Corpus {
     serde_json::from_str(include_str!("../fixtures/clipboard_images.json")).unwrap()
 }
-#[path = "clipboard_platform.rs"]
-mod recorded;
+use crate::clipboard_platform as recorded;
 use recorded::platform;
 /// A single transaction, with no shared mutable process state.
 struct Effects<'a> {

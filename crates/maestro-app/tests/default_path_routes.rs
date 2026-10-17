@@ -1,11 +1,8 @@
 //! Default resource routing through real native consumers.
 #![cfg(test)]
 #![cfg(unix)]
-#[path = "support/directories.rs"]
-mod directories;
-/// Shared recorded queries and assertions.
-#[path = "support/default_configuration.rs"]
-pub mod fixture;
+use crate::default_configuration as fixture;
+use crate::directories;
 use fixture::{Group, child};
 use maestro_app::configuration::config::{CONFIG_DIR_NAME, paths};
 use maestro_app::{AuthStorage, ModelRegistry, SettingsManager};
@@ -286,7 +283,12 @@ fn child_case(name: &str, group: Group, index: usize) {
     }
     let refs: Vec<_> = envs.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
     assert_eq!(
-        child::probe(name, &scratch.0, &refs, fixture::REMOVED),
+        child::probe(
+            &crate::child_process::selector(name).unwrap(),
+            &scratch.0,
+            &refs,
+            fixture::REMOVED
+        ),
         ["routes-ok"]
     );
 }
@@ -315,7 +317,7 @@ fn qualify(name: &str, group: Group) {
         let scratch = child::Scratch::new();
         assert_eq!(
             child::probe(
-                name,
+                &crate::child_process::selector(name).unwrap(),
                 &scratch.0,
                 &[
                     ("MAESTRO_DEFAULT_OUTER", "1"),

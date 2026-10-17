@@ -1,6 +1,5 @@
 //! File-backed public workbook projections.
 #![cfg(test)]
-mod workbook_fixture;
 use maestro_app::browser::ssf::{
     self, CellFormatOptions, CellValue, ExcelDataType, Ssf, WorkbookError,
 };
@@ -308,8 +307,8 @@ fn workbook_string_escapes_decode_once_without_redecoding_shared_text() {
     }
 }
 
-mod legacy_workbook_support;
-mod ssf_support;
+use crate::legacy_workbook_support;
+use crate::ssf_support;
 
 #[test]
 fn workbook_legacy_values_follow_formats_and_declared_bounds() {

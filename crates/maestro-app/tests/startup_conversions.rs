@@ -2,8 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 #[cfg(unix)]
-#[path = "support/child.rs"]
-mod child;
+use crate::child;
 #[cfg(unix)]
 #[path = "support/startup.rs"]
 mod startup;
@@ -161,16 +160,17 @@ fn windows_basename() {
     let source = root.join("one.jsonl");
     let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\nopaque";
     fs::write(&source, body).unwrap();
-    let status = Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            "session_destinations_reuse_the_session_directory_owner",
-        ])
+    let test =
+        crate::child_process::selector("session_destinations_reuse_the_session_directory_owner")
+            .unwrap();
+    let output = Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", &test])
         .env("STARTUP_WINDOWS_CHILD", "1")
         .env("MAESTRO_CODING_AGENT_DIR", &root)
-        .status()
+        .output()
         .unwrap();
-    assert!(status.success());
+    assert!(output.status.success());
+    crate::child_process::assert_executed(&output, &test);
     assert!(!source.exists());
     assert!(fs::read(root.join("sessions/--work--/one.jsonl")).unwrap() == body);
     fs::remove_dir_all(root).unwrap();
@@ -271,7 +271,7 @@ fn relocated_referent(name: &str, alias_first: bool) {
     );
     for _ in 0..2 {
         child::probe(
-            name,
+            &crate::child_process::selector(name).unwrap(),
             &scratch.0,
             &[
                 ("STARTUP_OPERATION", "sessions"),
@@ -318,7 +318,7 @@ fn relative_session_link_replaces_a_dangling_destination() {
     symlink("missing.data", directory.join("alias.jsonl")).unwrap();
     for _ in 0..2 {
         child::probe(
-            name,
+            &crate::child_process::selector(name).unwrap(),
             &scratch.0,
             &[
                 ("STARTUP_OPERATION", "sessions"),
@@ -366,7 +366,7 @@ fn unchanged_absolute_session_link_moves_by_rename() {
     let destination = scratch.0.join("sessions/--work--/alias.jsonl");
     for _ in 0..2 {
         child::probe(
-            name,
+            &crate::child_process::selector(name).unwrap(),
             &scratch.0,
             &[
                 ("STARTUP_OPERATION", "sessions"),
@@ -514,7 +514,7 @@ fn check_resolution_chain(
     let authored = fs::read_link(&paths[0]).unwrap();
     for _ in 0..2 {
         child::probe(
-            "session_link_resolution_matrix",
+            &crate::child_process::selector("session_link_resolution_matrix").unwrap(),
             &scratch.0,
             &[
                 ("STARTUP_OPERATION", "sessions"),
@@ -579,7 +579,10 @@ fn blocked_intermediate_retry_keeps_migrated_alias_readable() {
             fs::remove_file(paths[1].with_extension("jsonl.migrating")).unwrap();
         }
         child::probe(
-            "blocked_intermediate_retry_keeps_migrated_alias_readable",
+            &crate::child_process::selector(
+                "blocked_intermediate_retry_keeps_migrated_alias_readable",
+            )
+            .unwrap(),
             &scratch.0,
             &[
                 ("STARTUP_OPERATION", "sessions"),
