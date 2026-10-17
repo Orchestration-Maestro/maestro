@@ -1,10 +1,7 @@
 #![cfg(test)]
 //! Command-line model selection and mutable provider defaults.
-#[path = "support/descriptors.rs"]
-mod descriptors;
-#[path = "support/isolation.rs"]
-mod isolation;
-mod selection;
+use crate::isolation;
+use crate::selection;
 use selection::replay;
 #[test]
 fn cli_absent_model_bypasses_catalog_validation() {

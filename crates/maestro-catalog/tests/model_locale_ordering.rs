@@ -1,10 +1,7 @@
 #![cfg(test)]
 //! Complete native model ordering with explicit and process locale operands.
-#[path = "support/descriptors.rs"]
-mod descriptors;
-mod selection;
-#[path = "support/subprocess.rs"]
-mod subprocess;
+use crate::selection;
+use crate::subprocess;
 use maestro_catalog::{model_id_comparator, parse_model_pattern};
 use serde::Deserialize;
 use std::collections::HashMap;

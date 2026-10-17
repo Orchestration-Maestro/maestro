@@ -1,8 +1,6 @@
 #![cfg(test)]
 //! Model reference and thinking pattern observations.
-#[path = "support/descriptors.rs"]
-mod descriptors;
-mod selection;
+use crate::selection;
 use selection::replay;
 #[test]
 fn exact_reference_requires_unique_stage_match() {

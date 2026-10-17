@@ -6,7 +6,8 @@ mod support;
 use maestro_test_conventions::check_workspace;
 use support::Workspace;
 
-const OWNERS: [&str; 4] = [
+const OWNERS: [&str; 5] = [
+    "maestro-catalog",
     "maestro-models",
     "maestro-tui",
     "maestro-tools",

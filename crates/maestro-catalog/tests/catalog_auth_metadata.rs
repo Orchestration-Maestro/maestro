@@ -1,24 +1,10 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 //! Authentication metadata and shared descriptor observations.
-#[allow(
-    dead_code,
-    reason = "Recorded callback diagnostics are shared across operation witnesses."
-)]
-#[path = "../../maestro-credentials/tests/fallback_support/mod.rs"]
-mod credential_fallback;
-#[path = "support/dynamic.rs"]
-pub mod dynamic;
-#[allow(
-    dead_code,
-    reason = "Each public operation uses its own recorded inputs."
-)]
-#[path = "support/fallback.rs"]
-mod fallback;
-#[path = "support/request.rs"]
-pub mod request_support;
-#[path = "support/common.rs"]
-pub mod support;
+use crate::credential_fallback;
+use crate::fallback;
+use crate::request_support;
+use crate::support;
 #[test]
 fn configured_auth_rereads_identity_after_fallback() {
     let registry = support::registry(
@@ -245,15 +231,17 @@ fn available_models_keep_order_duplicates_and_shared_descriptors() {
 #[test]
 fn display_table_mutations_are_shared_between_registries() {
     if std::env::var_os("MAESTRO_DISPLAY_CHILD").is_none() {
+        let test = crate::subprocess::child_process::selector(
+            "display_table_mutations_are_shared_between_registries",
+        )
+        .unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args([
-                "--exact",
-                "display_table_mutations_are_shared_between_registries",
-            ])
+            .args(["--exact", &test])
             .env("MAESTRO_DISPLAY_CHILD", "1")
             .output()
             .unwrap();
         assert!(output.status.success(), "display subprocess failed");
+        crate::subprocess::child_process::assert_executed(&output, &test);
         return;
     }
     let first = ModelRegistry::in_memory(support::auth()).unwrap();
@@ -398,16 +386,18 @@ fn metadata_empty_environment_and_oauth(operations: &request_support::Operations
 fn metadata_known_environment() {
     // The child runs only the metadata test with a controlled environment.
     if std::env::var_os("MAESTRO_METADATA_CHILD").is_none() {
+        let test = crate::subprocess::child_process::selector(
+            "metadata_preserves_sources_without_helper_or_refresh_effects",
+        )
+        .unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args([
-                "--exact",
-                "metadata_preserves_sources_without_helper_or_refresh_effects",
-            ])
+            .args(["--exact", &test])
             .env("MAESTRO_METADATA_CHILD", "1")
             .env("OPENAI_API_KEY", "ambient-key")
             .output()
             .unwrap();
         assert!(output.status.success(), "metadata subprocess failed");
+        crate::subprocess::child_process::assert_executed(&output, &test);
         return;
     }
     let registry = ModelRegistry::in_memory(support::auth()).unwrap();

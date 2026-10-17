@@ -73,5 +73,4 @@ fn account_failures_keep_original_diagnostic_and_source_chain() {
     }
 }
 
-#[path = "support/dynamic.rs"]
-pub mod dynamic;
+use crate::dynamic;

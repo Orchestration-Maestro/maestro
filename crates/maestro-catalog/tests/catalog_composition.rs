@@ -1,6 +1,6 @@
 #![cfg(test)]
 //! Descriptor defaults and ordered composition.
-mod support;
+use crate::support;
 #[test]
 fn file_models_keep_defaults_and_field_precedence() {
     support::corpus("file_models_keep_defaults_and_field_precedence");

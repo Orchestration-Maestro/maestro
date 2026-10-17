@@ -1,11 +1,8 @@
 #![cfg(test)]
 //! Public catalog callbacks retain the original execution-family carriers.
-#[path = "support/dynamic.rs"]
-pub mod dynamic;
 #[path = "../../maestro-models/tests/support/original_options.rs"]
 mod original_options;
-#[path = "support/common.rs"]
-pub mod support;
+use crate::{dynamic, support};
 use maestro_catalog::{ModelRegistry, ProviderConfigInput};
 use maestro_models::*;
 use std::sync::{

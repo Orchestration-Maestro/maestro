@@ -1,26 +1,8 @@
 #![cfg(test)]
 //! Initial model choice precedence.
-#[allow(
-    dead_code,
-    reason = "Recorded callback diagnostics are shared across operation witnesses."
-)]
-#[path = "../../maestro-credentials/tests/fallback_support/mod.rs"]
-mod credential_fallback;
-#[path = "support/descriptors.rs"]
-mod descriptors;
-#[allow(
-    dead_code,
-    reason = "Each public operation uses its own recorded inputs."
-)]
-#[path = "support/fallback.rs"]
-mod fallback;
-#[path = "support/isolation.rs"]
-mod isolation;
-#[path = "selection/scopes.rs"]
-mod scopes;
-#[allow(dead_code, reason = "Only controlled registry construction is reused.")]
-#[path = "support/common.rs"]
-mod support;
+use crate::fallback;
+use crate::isolation;
+use crate::scopes;
 use maestro_catalog::{
     DEFAULT_MODEL_PER_PROVIDER, FindInitialModelOptions, ModelResolverOutput,
     RestoreModelFromSessionOptions, ScopedModel, find_initial_model, model_id_comparator,

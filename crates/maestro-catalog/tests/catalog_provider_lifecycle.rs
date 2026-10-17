@@ -1,9 +1,7 @@
 #![cfg(test)]
 //! Dynamic provider retention and catalog replay.
-#[path = "support/dynamic.rs"]
-pub mod dynamic;
-#[path = "support/common.rs"]
-pub mod support;
+use crate::dynamic;
+use crate::support;
 use maestro_catalog::{ModelRegistry, ProviderConfigInput};
 use std::sync::{Arc, RwLock};
 
@@ -521,8 +519,7 @@ fn removal_restores_builtin_oauth_and_deletes_custom_provider() {
         "Override"
     );
 }
-#[path = "support/request.rs"]
-pub mod request_support;
+use crate::request_support;
 
 #[test]
 fn removal_keeps_literal_pair_header_identity() {

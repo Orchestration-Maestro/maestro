@@ -1,7 +1,6 @@
 #![cfg(test)]
 //! Dynamic provider admission and request observations.
-#[path = "support/common.rs"]
-pub mod support;
+use crate::support;
 use maestro_catalog::{ModelRegistry, ProviderConfigInput};
 use maestro_models::{
     ProviderStreamOptions, SimpleStreamOptions, StreamOptions, StreamOptionsInput,
@@ -104,8 +103,7 @@ fn invalid_message(case: usize) -> &'static str {
         _ => "Provider p, model second: no \"api\" specified.",
     }
 }
-#[path = "support/dynamic.rs"]
-pub mod dynamic;
+use crate::dynamic;
 #[test]
 fn dynamic_definitions_keep_values_without_file_defaults() {
     if dynamic::isolated("dynamic_definitions_keep_values_without_file_defaults") {
@@ -161,8 +159,7 @@ fn dynamic_definitions_keep_values_without_file_defaults() {
     assert_eq!(value.max_tokens.to_bits(), (-2.0_f64).to_bits());
     assert_eq!(value.cost.input.to_bits(), (-1.0_f64).to_bits());
 }
-#[path = "support/request.rs"]
-pub mod request_support;
+use crate::request_support;
 #[test]
 fn request_sources_replace_only_on_truthy_incoming_fields() {
     if dynamic::isolated("request_sources_replace_only_on_truthy_incoming_fields") {
