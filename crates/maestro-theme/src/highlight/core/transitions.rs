@@ -1,17 +1,17 @@
 //! Mode entry, ending, resumption and scalar-safe EOF handling.
 use super::{
     IllegalPolicy, Run,
-    callbacks::admit,
+    callbacks::{admit, may_ignore},
     matcher::{Cursor, Hit},
     types::{Boundary, Frame, ModeId, ParentPolicy, Processing, RuleKind, Scope, SubLanguage},
 };
 
-impl Run<'_> {
+impl<'a> Run<'a> {
     /// Parse one complete buffer, returning whether an illegal rule rejected it.
     pub(super) fn scan(&mut self, text: &str, illegals: IllegalPolicy) -> bool {
         let mut cursor = Cursor::default();
-        while let Some(hit) = cursor.find(self.engine.tables, &self.mode().rules, text) {
-            cursor.resume = 0;
+        while let Some(hit) = cursor.find(self.mode(), text) {
+            cursor.resume = None;
             self.buffer.push_str(&text[cursor.position..hit.index]);
             if matches!(cursor.last, Some((RuleKind::Begin(_), position)) if position == hit.index)
                 && hit.kind == RuleKind::End
@@ -46,17 +46,23 @@ impl Run<'_> {
     }
 
     /// Admit a begin, preserving remaining same-position rules when rejected.
-    fn begin(&mut self, next: ModeId, hit: &Hit<'_>, text: &str, cursor: &mut Cursor) {
+    fn begin(&mut self, next: ModeId, hit: &Hit<'_>, text: &str, cursor: &mut Cursor<'a>) {
         let mode = &self.engine.tables.modes[next.0];
         let mut delimiter = None;
         if !admit(mode.before, hit, text, &mut delimiter)
             || !admit(mode.on_begin, hit, text, &mut delimiter)
         {
-            if hit.rule_index + 1 == self.mode().begin_rule_count {
-                cursor.advance(text, hit.index, &mut self.buffer);
-            } else {
-                cursor.resume = hit.rule_index + 1;
+            if may_ignore(mode.before) || may_ignore(mode.on_begin) {
+                cursor.resume = self.engine.tables.modes[self.stack.current.mode.0].rules
+                    [hit.rule_index]
+                    .resumption
+                    .get()
+                    .and_then(|matcher| matcher.as_ref().ok());
+            }
+            if cursor.resume.is_some() {
                 cursor.position = hit.index;
+            } else {
+                cursor.advance(text, hit.index, &mut self.buffer);
             }
             return;
         }
@@ -104,8 +110,9 @@ impl Run<'_> {
             let mode = &tables.modes[frame.mode.0];
             let ends = mode.end.is_some_and(|pattern| {
                 tables.patterns[pattern.0]
-                    .find_from(text, hit.index)
-                    .next()
+                    .get()
+                    .and_then(|pattern| pattern.as_ref().ok())
+                    .and_then(|pattern| pattern.find_from(text, hit.index).next())
                     .is_some_and(|found| found.range.start == hit.index)
             });
             if ends && admit(mode.on_end, hit, text, &mut frame.delimiter) {
@@ -132,7 +139,7 @@ impl Run<'_> {
     }
 
     /// End the admitted frame chain and optionally enter its successor mode.
-    fn end(&mut self, hit: &Hit<'_>, text: &str, cursor: &mut Cursor) {
+    fn end(&mut self, hit: &Hit<'_>, text: &str, cursor: &mut Cursor<'_>) {
         let Some(depth) = self.ending_depth(hit, text) else {
             self.buffer.push_str(hit.text);
             cursor.position = hit.end;

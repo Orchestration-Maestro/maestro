@@ -8,7 +8,13 @@ impl Run<'_> {
         let (Some(pattern), Some(table)) = (mode.keyword_pattern, mode.keywords) else {
             return;
         };
-        for found in self.engine.tables.patterns[pattern.0].find_iter(text) {
+        let Some(pattern) = self.engine.tables.patterns[pattern.0]
+            .get()
+            .and_then(|pattern| pattern.as_ref().ok())
+        else {
+            return;
+        };
+        for found in pattern.find_iter(text) {
             let word = &text[found.range];
             let word = if self.language.fold {
                 word.to_lowercase()

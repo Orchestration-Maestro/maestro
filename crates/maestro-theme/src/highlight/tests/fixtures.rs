@@ -161,7 +161,7 @@ pub(super) fn profile(name: &str) -> HighlightProfile {
 /// Build a real-registry engine using the one shared table publication.
 pub(super) fn engine(profile: HighlightProfile) -> core::Engine<'static> {
     core::Engine {
-        tables: core::tables().unwrap(),
+        tables: core::tables(profile).unwrap(),
         languages: super::super::languages::registered(profile),
         profile,
     }
@@ -185,12 +185,16 @@ struct ModeWitness {
 
 /// One shared compilation of the source-defined mode grammars.
 static MODE_TABLES: std::sync::LazyLock<core::Tables> = std::sync::LazyLock::new(|| {
-    core::Tables::load(
+    let tables = core::Tables::load(
         include_str!("../../../tests/fixtures/automatic_highlighting/mode-patterns.json"),
         include_str!("../../../tests/fixtures/automatic_highlighting/mode-keywords.json"),
         include_str!("../../../tests/fixtures/automatic_highlighting/mode-grammars.json"),
     )
-    .unwrap()
+    .unwrap();
+    tables
+        .prepare_roots(super::grammars::LANGUAGES.iter().filter_map(|l| l.root))
+        .unwrap();
+    tables
 });
 
 /// Controlled grammars run through the production interpreter.

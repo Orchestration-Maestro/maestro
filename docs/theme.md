@@ -208,8 +208,14 @@ explicitly but excludes them from detection. The browser admits only its own reg
 even when another grammar is available to the native painter.
 
 Detection uses shared immutable grammar data with invocation-local scoring and embedded
-frames. The viewer uses version 11.9.0 data and browser code blocks use 11.11.1; identical
-patterns, keyword tables and modes are shared. Derived grammar data carries the BSD-3-Clause
+frames. Each mode searches a combined, ordered terminator expression, preserving rule-order
+ties and original captures. Ignored begins resume the remaining rules at that position
+before the full matcher continues. Combined expressions are compiled once during grammar
+preparation, including only reachable resumption suffixes. First detection prepares only the
+chosen profile's reachable modes and standalone keyword/end patterns; both profiles reuse
+already prepared expressions and modes. Compilation failures propagate before scanning.
+An explicit registered label bypasses detector preparation. The viewer uses version 11.9.0
+data and browser code blocks use 11.11.1; identical patterns, keyword tables and modes are shared. Derived grammar data carries the BSD-3-Clause
 notice in [third-party notices](../THIRD-PARTY-NOTICES.md). The selected language is painted
 by the same `SyntaxHighlighter` and HTML span emitter, preserving the complete original
 input and existing token classes. A plain result or an unavailable selected native syntax

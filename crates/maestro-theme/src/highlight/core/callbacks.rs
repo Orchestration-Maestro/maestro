@@ -2,6 +2,14 @@
 use super::{matcher::Hit, types::Callback};
 use maestro_text::is_whitespace_scalar;
 
+/// Whether this callback can reject a boundary match.
+pub(super) fn may_ignore(kind: Callback) -> bool {
+    matches!(
+        kind,
+        Callback::NotDot | Callback::Shebang | Callback::Same | Callback::Jsx
+    )
+}
+
 /// Apply one admission callback without modifying immutable mode data.
 pub(super) fn admit(
     kind: Callback,

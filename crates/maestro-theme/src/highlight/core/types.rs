@@ -1,6 +1,6 @@
 //! Immutable grammar records and invocation-local parse state.
 use serde::Deserialize;
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::OnceLock};
 
 /// Index of a shared immutable mode.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
@@ -46,6 +46,9 @@ pub(super) struct Rule {
     pub pattern: PatternId,
     /// Mode transition at the match.
     pub action: RuleKind,
+    /// Remaining alternatives when this begin can be ignored without advancing.
+    #[serde(skip)]
+    pub resumption: OnceLock<Result<super::matcher::MultiRegex, super::SharedFailure>>,
 }
 
 /// Ownership of a boundary's text.
@@ -142,6 +145,9 @@ pub(super) struct Mode {
     pub on_end: Callback,
     /// Ordered begin, end and illegal expressions.
     pub rules: Vec<Rule>,
+    /// Combined terminators prepared before publishing this mode.
+    #[serde(skip)]
+    pub matcher: OnceLock<Result<super::matcher::MultiRegex, super::SharedFailure>>,
     /// This mode's own end expression.
     pub end: Option<PatternId>,
     /// Shared keyword weight table.

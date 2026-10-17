@@ -11,16 +11,32 @@ use regress::Regex;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::error::Error;
-use std::sync::{Arc, LazyLock};
-use types::{Evaluation, KeywordHits, Language, Mode, Stack};
+use std::sync::{Arc, LazyLock, OnceLock};
+use types::{Evaluation, KeywordHits, Language, Mode, ModeId, Stack};
 
 /// Owned preparation failures, retaining their native cause.
 pub(in crate::highlight) type Failure = Box<dyn Error + Send + Sync>;
 
+/// Cloneable preparation failures retained by once-only publications.
+type SharedFailure = Arc<dyn Error + Send + Sync>;
+
+/// Borrow one publication while preserving its original failure.
+fn published<T>(result: &Result<T, SharedFailure>) -> Result<&T, Failure> {
+    result
+        .as_ref()
+        .map_err(|error| Box::new(Arc::clone(error)) as Failure)
+}
+
 /// Immutable shared patterns, keyword tables and modes.
 pub(in crate::highlight) struct Tables {
     /// Native expressions compiled once.
-    patterns: Vec<Regex>,
+    patterns: Vec<OnceLock<Result<Regex, SharedFailure>>>,
+    /// Original expressions and capture counts shared by both profiles.
+    sources: Vec<Expression>,
+    /// Tokenizer shared by capture counting and backreference relocation.
+    rewriter: Regex,
+    /// Each surface prepares only its own candidate graph at first detection.
+    profiles: [OnceLock<Result<(), SharedFailure>>; 2],
     /// Interned keyword weights.
     keywords: Vec<HashMap<String, f64>>,
     /// Immutable mode graph.
@@ -30,11 +46,14 @@ pub(in crate::highlight) struct Tables {
 /// An expression and its native matching flags.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-struct Pattern {
+struct Expression {
     /// Source expression.
     pattern: String,
     /// Native expression flags.
     flags: String,
+    /// Native capture count before adding an alternative wrapper.
+    #[serde(skip)]
+    captures: usize,
 }
 
 impl Tables {
@@ -44,16 +63,53 @@ impl Tables {
         keywords: &str,
         modes: &str,
     ) -> Result<Self, Failure> {
-        let patterns: Vec<Pattern> = serde_json::from_str(patterns)?;
-        let patterns = patterns
-            .iter()
-            .map(|p| Regex::with_flags(&p.pattern, p.flags.as_str()))
-            .collect::<Result<_, _>>()?;
+        let mut sources: Vec<Expression> = serde_json::from_str(patterns)?;
+        let rewriter = Regex::new(r"\[(?:[^\\\]]|\\.)*\]|\(\??|\\([1-9][0-9]*)|\\.")?;
+        for source in &mut sources {
+            source.captures = rewriter
+                .find_iter(&source.pattern)
+                .filter(|token| token.as_str(&source.pattern) == "(")
+                .count();
+        }
         Ok(Self {
-            patterns,
+            patterns: (0..sources.len()).map(|_| OnceLock::new()).collect(),
+            sources,
+            rewriter,
+            profiles: std::array::from_fn(|_| OnceLock::new()),
             keywords: serde_json::from_str(keywords)?,
             modes: serde_json::from_str(modes)?,
         })
+    }
+
+    /// Prepare one profile once without duplicating shared modes or patterns.
+    fn prepare(&self, profile: HighlightProfile) -> Result<(), Failure> {
+        let index = match profile {
+            HighlightProfile::ExportViewer => 0,
+            HighlightProfile::CodeBlock => 1,
+        };
+        published(self.profiles[index].get_or_init(|| {
+            self.prepare_roots(languages::registered(profile).iter().filter_map(|l| l.root))
+                .map_err(Arc::from)
+        }))
+        .copied()
+    }
+
+    /// Compile only modes reachable from these candidate roots.
+    pub(in crate::highlight) fn prepare_roots(
+        &self,
+        roots: impl IntoIterator<Item = ModeId>,
+    ) -> Result<(), Failure> {
+        matcher::prepare(self, roots)
+    }
+
+    /// Compile a standalone expression only for a keyword or end consumer.
+    fn prepare_pattern(&self, index: usize) -> Result<(), Failure> {
+        published(self.patterns[index].get_or_init(|| {
+            let source = &self.sources[index];
+            Regex::with_flags(&source.pattern, source.flags.as_str())
+                .map_err(|error| Arc::from(Box::new(error) as Failure))
+        }))
+        .map(|_| ())
     }
 }
 
@@ -68,10 +124,10 @@ static TABLES: LazyLock<Result<Tables, Arc<dyn Error + Send + Sync>>> = LazyLock
 });
 
 /// The shared fallible grammar publication.
-pub(super) fn tables() -> Result<&'static Tables, Failure> {
-    TABLES
-        .as_ref()
-        .map_err(|error| Box::new(Arc::clone(error)) as Failure)
+pub(super) fn tables(profile: HighlightProfile) -> Result<&'static Tables, Failure> {
+    let tables = published(&TABLES)?;
+    tables.prepare(profile)?;
+    Ok(tables)
 }
 
 /// A surface's ordered registry over shared grammar tables.
@@ -168,7 +224,7 @@ impl Run<'_> {
 /// Detect using the exact surface registry, returning stable ranked candidates.
 pub(super) fn detect(profile: HighlightProfile, code: &str) -> Result<Vec<types::Score>, Failure> {
     Ok(Engine {
-        tables: tables()?,
+        tables: tables(profile)?,
         languages: languages::registered(profile),
         profile,
     }

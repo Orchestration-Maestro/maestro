@@ -18,20 +18,6 @@ fn registered_profiles_keep_order_aliases_and_disabled_modes() {
                     .name,
                 language.name
             );
-            for alias in language.aliases {
-                let registry = languages::registered(profile);
-                let expected = registry
-                    .iter()
-                    .find(|l| l.name == *alias)
-                    .or_else(|| registry.iter().rev().find(|l| l.aliases.contains(alias)))
-                    .unwrap();
-                assert_eq!(
-                    languages::lookup(languages::registered(profile), alias)
-                        .unwrap()
-                        .name,
-                    expected.name
-                );
-            }
         }
     }
     for name in ["c", "plaintext"] {
@@ -41,6 +27,35 @@ fn registered_profiles_keep_order_aliases_and_disabled_modes() {
                 .root
                 .is_none()
         );
+    }
+}
+
+/// Alias ownership recorded from each surface's independently loaded grammar set.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Alias {
+    /// Explicit label accepted by the source registry.
+    alias: String,
+    /// Canonical owner after registration order is applied.
+    canonical: String,
+}
+
+#[test]
+fn profiles_keep_independently_recorded_alias_owners() {
+    let aliases: super::fixtures::Profiles<Vec<Alias>> = serde_json::from_str(include_str!(
+        "../../../tests/fixtures/automatic_highlighting/detector-aliases.json"
+    ))
+    .unwrap();
+    for profile in [HighlightProfile::ExportViewer, HighlightProfile::CodeBlock] {
+        for row in aliases.get(profile) {
+            assert_eq!(
+                languages::lookup(languages::registered(profile), &row.alias)
+                    .map(|language| language.name),
+                Some(row.canonical.as_str()),
+                "{profile:?} {}",
+                row.alias
+            );
+        }
     }
 }
 
