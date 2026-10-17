@@ -44,8 +44,8 @@ const root=path.join(process.cwd(),'target/sandbox-browser');
     });
    });
    await page.goto(`http://127.0.0.1:${server.address().port}`);
-   const failed=new Promise((_,reject)=>page.on('console',m=>{if(m.text().includes('panicked at'))reject(new Error(m.text()));}));
-   await Promise.race([failed,page.evaluate(async name=>{const m=await import('/sandbox_loading_browser.js');await m.default();await m[name]();},name)]);
+   const failed=new Promise((_,reject)=>{if(process.env.SANDBOX_TEST_MODULE==='sandbox_execution_browser')page.on('pageerror',reject);page.on('console',m=>{if(m.text().includes('panicked at'))reject(new Error(m.text()));});});
+   await Promise.race([failed,page.evaluate(async name=>{const m=await import('/'+name.module+'.js');await m.default();await m[name.test]();},{module:process.env.SANDBOX_TEST_MODULE||'sandbox_loading_browser',test:name})]);
    console.log('PASS '+name);await page.close();
   }
  }finally{await browser.close();server.close();}

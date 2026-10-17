@@ -1,7 +1,7 @@
 //! Owned sandbox values and supplied execution effects.
 use super::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
 use maestro_agent::agent::Native;
-use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
+use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo, SharedHandle};
 use serde_json::Value;
 use std::{borrow::Cow, sync::Arc};
 
@@ -59,13 +59,13 @@ pub struct SandboxError {
     pub stack: String,
 }
 /// Settled sandbox result with a host-owned return value.
-pub struct SandboxResult<V: SandboxValue = Value> {
+pub struct SandboxResult<V: SandboxValue = Value, C = SandboxFileContent> {
     /// Whether execution succeeded.
     pub success: bool,
     /// Console entries in emission order.
     pub console: Vec<SandboxConsoleEntry>,
     /// Optional downloads.
-    pub files: Option<Vec<SandboxFile>>,
+    pub files: Option<Vec<SandboxFile<C>>>,
     /// Optional failure details.
     pub error: Option<SandboxError>,
     /// Absent return is distinct from a returned null.
@@ -86,7 +86,7 @@ pub struct SandboxExecution<V: SandboxValue = Value> {
     /// Authored JavaScript.
     pub code: String,
     /// Retained runtime providers.
-    pub runtime_providers: Vec<Arc<dyn SandboxRuntimeProvider<V>>>,
+    pub runtime_providers: Vec<SharedHandle<dyn SandboxRuntimeProvider<V>>>,
     /// Caller cancellation handle.
     pub signal: Option<Cancellation>,
 }

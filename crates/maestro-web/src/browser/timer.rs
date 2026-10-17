@@ -25,7 +25,7 @@ impl Drop for Timer {
 }
 /// Admit a timeout or repeating native interval.
 #[cfg(target_arch = "wasm32")]
-pub(super) fn native(
+pub(crate) fn native(
     window: web_sys::Window,
     delay: i32,
     repeat: bool,

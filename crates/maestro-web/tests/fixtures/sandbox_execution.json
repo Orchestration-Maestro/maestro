@@ -1,0 +1,125 @@
+{
+  "returns": [
+    {
+      "name": "native_missing",
+      "code": "return;",
+      "output": "Code executed successfully (no output)"
+    },
+    {
+      "name": "native_null",
+      "code": "return null;",
+      "output": "=> null"
+    },
+    {
+      "name": "native_false",
+      "code": "return false;",
+      "output": "=> false"
+    },
+    {
+      "name": "native_true",
+      "code": "return true;",
+      "output": "=> true"
+    },
+    {
+      "name": "native_zero",
+      "code": "return 0;",
+      "output": "=> 0"
+    },
+    {
+      "name": "native_negative_zero",
+      "code": "return -0;",
+      "output": "=> 0"
+    },
+    {
+      "name": "native_small",
+      "code": "return 1e-7;",
+      "output": "=> 1e-7"
+    },
+    {
+      "name": "native_large",
+      "code": "return 1e21;",
+      "output": "=> 1e+21"
+    },
+    {
+      "name": "native_empty_string",
+      "code": "return \"\";",
+      "output": "=>"
+    },
+    {
+      "name": "native_unicode",
+      "code": "return \"雪\\ufeff\\u0085\";",
+      "output": "=> 雪﻿"
+    },
+    {
+      "name": "native_object",
+      "code": "return {z:1,\"10\":10,\"2\":2,a:[true,null]};",
+      "output": "=> {\n  \"2\": 2,\n  \"10\": 10,\n  \"z\": 1,\n  \"a\": [\n    true,\n    null\n  ]\n}"
+    },
+    {
+      "name": "native_array",
+      "code": "return [2,null,\"x\"];",
+      "output": "=> [\n  2,\n  null,\n  \"x\"\n]"
+    },
+    {
+      "name": "native_date",
+      "code": "return new Date(\"2020-01-02T03:04:05Z\");",
+      "output": "=> \"2020-01-02T03:04:05.000Z\""
+    },
+    {
+      "name": "native_map",
+      "code": "return new Map([[\"a\",1]]);",
+      "output": "=> {}"
+    },
+    {
+      "name": "native_set",
+      "code": "return new Set([2,1]);",
+      "output": "=> {}"
+    },
+    {
+      "name": "native_bytes",
+      "code": "return new Uint8Array([0,128,255]);",
+      "output": "=> {\n  \"0\": 0,\n  \"1\": 128,\n  \"2\": 255\n}"
+    },
+    {
+      "name": "native_bigint",
+      "code": "return 9n;",
+      "output": "=> 9"
+    },
+    {
+      "name": "native_nan",
+      "code": "return NaN;",
+      "output": "=> NaN"
+    },
+    {
+      "name": "native_infinity",
+      "code": "return Infinity;",
+      "output": "=> Infinity"
+    },
+    {
+      "name": "native_negative_infinity",
+      "code": "return -Infinity;",
+      "output": "=> -Infinity"
+    }
+  ],
+  "tool": {
+    "name": "javascript_repl",
+    "label": "JavaScript REPL",
+    "parameters": {
+      "type": "object",
+      "required": [
+        "title",
+        "code"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Brief title describing what the code snippet tries to achieve in active form, e.g. 'Calculating sum'"
+        },
+        "code": {
+          "type": "string",
+          "description": "JavaScript code to execute"
+        }
+      }
+    }
+  }
+}

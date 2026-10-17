@@ -1,15 +1,15 @@
 //! Actual browser document, event-source and subscription lifetime witnesses.
 #![cfg(all(test, target_arch = "wasm32"))]
 mod sandbox_loading_support;
+use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
 use maestro_web::browser::sandbox_value::BrowserSandboxValue;
 use sandbox_loading_support::*;
-use std::sync::Arc;
 
 /// Native values retain their stringify semantics at the public preparation boundary.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn prepared_documents_keep_native_data_and_failures() {
-    let mut sandbox = adapter();
+    let sandbox = adapter();
     for row in document_cases() {
         let prepared =
             sandbox.prepare_html_document(&row.id, &row.code, &row.providers, Some(row.options));
@@ -36,7 +36,7 @@ pub async fn prepared_documents_keep_native_data_and_failures() {
 /// Download preparation keeps provider helpers without installing online routes.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn standalone_runtime_keeps_helpers_without_parent_messaging() {
-    let mut sandbox = adapter();
+    let sandbox = adapter();
     let html = sandbox
         .prepare_html_document(
             "offline",
@@ -60,7 +60,7 @@ pub async fn standalone_runtime_keeps_helpers_without_parent_messaging() {
 /// Completion waits for callbacks without replacing a user's result with callback failure.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn repl_completion_callbacks_preserve_order_and_errors() {
-    let mut sandbox = adapter();
+    let sandbox = adapter();
     for row in fixture_group("callbacks_") {
         let code = if row.input["outcome"] == "success" {
             "return 9;"
@@ -86,7 +86,7 @@ pub async fn repl_completion_callbacks_preserve_order_and_errors() {
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn srcdoc_load_injects_console_before_supplied_providers() {
     begin();
-    let mut sandbox = adapter();
+    let sandbox = adapter();
     arm("loaded");
     sandbox
         .load_content(
@@ -96,7 +96,7 @@ pub async fn srcdoc_load_injects_console_before_supplied_providers() {
                 provider("function(){window.firstProvider=typeof window.complete}"),
                 provider("function(){window.secondProvider=window.firstProvider}"),
             ],
-            vec![std::sync::Arc::new(Consumer)],
+            vec![maestro_app::SharedHandle::new(Consumer)],
         )
         .unwrap();
     let loaded = wasm_bindgen_futures::JsFuture::from(waited())
@@ -124,7 +124,7 @@ pub async fn srcdoc_load_injects_console_before_supplied_providers() {
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn external_links_dispatch_once_across_reload_and_close() {
     begin();
-    let mut sandbox = adapter();
+    let sandbox = adapter();
     for _ in 0..2 {
         arm("loaded");
         sandbox
@@ -148,7 +148,7 @@ pub async fn external_links_dispatch_once_across_reload_and_close() {
 pub async fn unrelated_or_stale_frames_cannot_open_urls() {
     begin();
     fault("sibling");
-    let mut sandbox = adapter();
+    let sandbox = adapter();
     for id in ["old", "new"] {
         arm("loaded");
         sandbox
@@ -172,10 +172,14 @@ pub async fn unrelated_or_stale_frames_cannot_open_urls() {
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn url_load_uses_live_configuration_and_ready_handshake() {
     begin();
-    let mut sandbox = adapter();
+    let sandbox = adapter();
     for mode in ["first", "replacement"] {
         let expected = url(mode);
-        sandbox.sandbox_url_provider = Some(std::sync::Arc::new(move || Ok(expected.clone())));
+        sandbox
+            .sandbox_url_provider
+            .replace(Some(maestro_app::SharedHandle::new(move || {
+                Ok(expected.clone())
+            })));
         arm("url-mounted");
         sandbox
             .load_content(
@@ -212,15 +216,17 @@ pub async fn url_load_uses_live_configuration_and_ready_handshake() {
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn url_error_reaches_registered_consumers_without_source_bypass() {
     begin();
-    let mut sandbox = adapter();
-    sandbox.sandbox_url_provider = Some(std::sync::Arc::new(|| Ok(url("error"))));
+    let sandbox = adapter();
+    sandbox
+        .sandbox_url_provider
+        .replace(Some(maestro_app::SharedHandle::new(|| Ok(url("error")))));
     arm("url-mounted");
     sandbox
         .load_content(
             "url-error",
             "<body>url branch</body>",
             vec![provider("function(){}")],
-            vec![std::sync::Arc::new(Consumer)],
+            vec![maestro_app::SharedHandle::new(Consumer)],
         )
         .unwrap();
     wasm_bindgen_futures::JsFuture::from(waited())
@@ -239,9 +245,11 @@ pub async fn url_error_reaches_registered_consumers_without_source_bypass() {
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn extension_links_use_tabs_then_window_fallback() {
     begin();
-    let mut sandbox = adapter();
+    let sandbox = adapter();
     fault("tabs");
-    sandbox.sandbox_url_provider = Some(std::sync::Arc::new(|| Ok(url("tabs"))));
+    sandbox
+        .sandbox_url_provider
+        .replace(Some(maestro_app::SharedHandle::new(|| Ok(url("tabs")))));
     arm("url-mounted");
     sandbox
         .load_content("tabs", "<body>url branch</body>", vec![], vec![])
@@ -252,7 +260,7 @@ pub async fn extension_links_use_tabs_then_window_fallback() {
     wasm_bindgen_futures::JsFuture::from(route_check("tabs"))
         .await
         .unwrap();
-    sandbox.sandbox_url_provider = None;
+    sandbox.sandbox_url_provider.replace(None);
     arm("loaded");
     sandbox
         .load_content("tabs-srcdoc", &content(), vec![], vec![])
@@ -272,7 +280,7 @@ pub async fn extension_links_use_tabs_then_window_fallback() {
 /// Navigation decisions use real resolved anchors and form actions, including nested targets.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn navigation_intercepts_resolved_links_and_forms() {
-    let mut sandbox = adapter();
+    let sandbox = adapter();
     let html = sandbox
         .prepare_html_document(
             "navigation",
@@ -303,7 +311,7 @@ pub async fn navigation_intercepts_resolved_links_and_forms() {
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn validation_uses_native_parser_and_fallback_messages() {
     begin();
-    let mut sandbox = adapter();
+    let sandbox = adapter();
     for (html, mode, expected) in [
         ("<html><body>valid</body></html>", "", ""),
         ("<div><p>unclosed", "", ""),
@@ -338,7 +346,7 @@ pub async fn validation_document_keeps_literal_text_and_selected_pack() {
     let literal = "literal <tag> & <script>window.executed=true</script>";
     for alternate in [false, true] {
         for light in [false, true] {
-            let (mut sandbox, css) = adapter_pack(
+            let (sandbox, css) = adapter_pack(
                 alternate,
                 if light {
                     maestro_theme::BrandMode::Light
@@ -366,8 +374,10 @@ pub async fn validation_document_keeps_literal_text_and_selected_pack() {
 pub async fn close_removes_ready_error_and_external_routes() {
     begin();
     for phase in ["pending", "ready", "error", "invalid", "drop", "retry"] {
-        let mut sandbox = adapter();
-        sandbox.sandbox_url_provider = Some(std::sync::Arc::new(|| Ok(url("close"))));
+        let sandbox = adapter();
+        sandbox
+            .sandbox_url_provider
+            .replace(Some(maestro_app::SharedHandle::new(|| Ok(url("close")))));
         if phase == "invalid" {
             sandbox
                 .load_content("closing", "<parsererror>bad</parsererror>", vec![], vec![])
@@ -424,7 +434,7 @@ pub async fn removing_one_sandbox_preserves_its_sibling() {
                     &format!("sibling-{index}"),
                     &content(),
                     vec![],
-                    vec![std::sync::Arc::new(Consumer)],
+                    vec![maestro_app::SharedHandle::new(Consumer)],
                 )
                 .unwrap();
             wasm_bindgen_futures::JsFuture::from(waited())
@@ -450,7 +460,7 @@ pub async fn removing_one_sandbox_preserves_its_sibling() {
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn failed_load_releases_native_registration_and_frame() {
     begin();
-    let mut sandbox = adapter();
+    let sandbox = adapter();
     for mode in [
         "url",
         "data",
@@ -462,9 +472,9 @@ pub async fn failed_load_releases_native_registration_and_frame() {
         "append",
     ] {
         fault(mode);
-        let providers: Vec<Arc<dyn SandboxRuntimeProvider<BrowserSandboxValue>>> =
+        let providers: Vec<SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>>> =
             if mode == "data" || mode == "runtime" {
-                vec![std::sync::Arc::new(Provider {
+                vec![maestro_app::SharedHandle::new(Provider {
                     data: js_sys::Object::new().into(),
                     runtime: "function(){}".into(),
                     failure: Some(mode.into()),
@@ -473,7 +483,7 @@ pub async fn failed_load_releases_native_registration_and_frame() {
                 let data = js_sys::Object::new();
                 js_sys::Reflect::set(&data, &"value".into(), &wasm_bindgen::JsValue::UNDEFINED)
                     .unwrap();
-                vec![std::sync::Arc::new(Provider {
+                vec![maestro_app::SharedHandle::new(Provider {
                     data: data.into(),
                     runtime: "function(){}".into(),
                     failure: None,
@@ -481,10 +491,14 @@ pub async fn failed_load_releases_native_registration_and_frame() {
             } else {
                 vec![]
             };
-        sandbox.sandbox_url_provider = (mode == "url").then(|| {
-            std::sync::Arc::new(|| Err(maestro_app::DiagnosticErrorInfo::error("URL failure")))
-                as maestro_app::browser::components::sandboxed_iframe::SandboxUrlProvider
-        });
+        sandbox
+            .sandbox_url_provider
+            .replace((mode == "url").then(|| {
+                maestro_app::SharedHandle::new(|| {
+                    Err(maestro_app::DiagnosticErrorInfo::error("URL failure"))
+                })
+                    as maestro_app::browser::components::sandboxed_iframe::SandboxUrlProvider
+            }));
         let error = sandbox
             .load_content("failed", "<body>attempt</body>", providers, vec![])
             .unwrap_err();
@@ -498,7 +512,7 @@ pub async fn failed_load_releases_native_registration_and_frame() {
         wasm_bindgen_futures::JsFuture::from(route_check("empty"))
             .await
             .unwrap();
-        sandbox.sandbox_url_provider = None;
+        sandbox.sandbox_url_provider.replace(None);
         arm("loaded");
         sandbox
             .load_content("recovered", &content(), vec![], vec![])

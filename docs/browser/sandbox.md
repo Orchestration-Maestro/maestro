@@ -1,4 +1,4 @@
-# Sandbox loading and runtime messaging
+# Sandbox execution, loading and runtime messaging
 
 The browser sandbox modules provide `RuntimeMessageRouter`, `MessageConsumer`
 and `RuntimeMessageBridge`. The crate root exports `RuntimeMessageBridge` and,
@@ -50,7 +50,50 @@ sink, dynamic evaluation, program URL resource or policy relaxation.
 Native HTML parsing accepts recovered markup. Explicit validation errors appear
 as literal preformatted text, with the selected brand pack's background, text,
 error, panel and monospace roles; authored sandbox content keeps its own styling.
-Loading is distinct from [hidden JavaScript execution](https://github.com/Orchestration-Maestro/maestro/issues/815).
+Execution uses the same retained frame owner, but rejects validation errors instead
+of painting this loading document.
+
+## Hidden JavaScript execution
+
+On WebAssembly, `BrowserSandboxHost` creates a hidden `sandbox-iframe` parent.
+Its application trait adapter forwards to `SandboxIframe::execute` with no
+additional consumers and JavaScript-wrapper mode. The browser-local
+`JAVASCRIPT_REPL_TOOL` is a thread-local lazy application registration: access it
+with `.with(...)` to read or replace its existing provider-factory and URL slots.
+Initialization mounts nothing; each tool execution obtains its own adapter.
+[Application output and download formatting](../application/browser-tools.md#javascript-execution)
+stay with the application factory, also re-exported at the browser crate root.
+
+Direct SDK execution takes an owned `SandboxExecution<BrowserSandboxValue>`,
+additional message consumers and an independent `is_html_artifact` flag.
+Providers run before additional consumers; internal result collection comes last.
+A fresh console provider precedes supplied providers. Start/end notifications
+preserve provider entry order, including repeated allocations. The live URL slot
+is shared: use `sandbox.sandbox_url_provider.replace(Some(callback))`; it is read
+after start callbacks. Loading, execution and removal accept shared receivers.
+
+The direct result is `SandboxResult<BrowserSandboxValue, BrowserSandboxValue>`.
+File names, MIME types and content handles are captured when each message arrives;
+in-place edits to a captured buffer remain visible after settlement. Native return
+handles preserve absence versus null, signed zero and native object kinds.
+End hooks run before the application trait converts file content to the default
+owned byte/text records. `SandboxResult<V>` retains that default payload type.
+The adapter does not serialize returns or encode downloads.
+
+Explicit cancellation rejects with `Execution aborted`. The cooperative
+120,000 ms deadline returns an unsuccessful result with
+`Execution timeout (120s)`, an empty stack and earlier console/files. It is
+separate from the bridge request's 30,000 ms deadline. Neither deadline can
+interrupt JavaScript blocking the page's event loop; no worker or hard
+interruption is provided.
+
+The first terminal outcome owns the ordered end-hook pass and independent
+resource-release attempts. Setup failures, containing-adapter removal and dropped
+pending futures use this same owner. A failed end hook cannot skip later hooks;
+an earlier operation failure wins over cleanup failures. Explicit fallible
+`remove` retains failed native detach registrations for retry. The host's hidden
+parent is removed on settlement or removal; caller-supplied loading parents stay
+caller-owned. Keep the adapter alive while awaiting its execution future.
 
 ## Injected bridge
 
@@ -123,10 +166,14 @@ live until reset replaces the current collection.
 
 ## Qualification boundary
 
-Native tests exercise document envelopes and shared routing. The browser-executed
+Native tests exercise document envelopes, ordered result collection and shared routing. The browser-executed
 loading witnesses cover native listener removal, current-window admission,
 ready/error settlement, preparation/runtime values, literal validation documents
-and controlled host failures in Chromium. The tabs capability is controlled in
+and controlled host failures in Chromium. Execution witnesses additionally cover
+real hidden frames, raw return/file identity, tool formatting, callback flushing,
+cooperative cancellation, captured production-deadline policy and cleanup retries.
+The deadline witness invokes the captured production callback; it does not claim
+elapsed-wall-clock qualification. The tabs capability is controlled in
 those tests, not an extension-platform certification. Broader browser/device
 qualification remains tracked in [browser qualification](https://github.com/Orchestration-Maestro/maestro/issues/825)
 and [surface qualification](https://github.com/Orchestration-Maestro/maestro/issues/1084).

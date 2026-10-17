@@ -59,6 +59,13 @@ pub mod tools;
 pub use tools::artifacts::artifact_element::ArtifactElement;
 
 #[cfg(target_arch = "wasm32")]
-pub use components::sandboxed_iframe::SandboxIframe;
+pub use components::sandboxed_iframe::{BrowserSandboxHost, SandboxIframe};
 /// Retained tabbed artifact views using the application-selected filename.
 pub use tools::artifacts::ArtifactsPanel;
+
+pub use maestro_app::{
+    SandboxFile, SandboxResult, SandboxRuntimeProvider, SandboxUrlProvider,
+    create_javascript_repl_tool,
+};
+#[cfg(target_arch = "wasm32")]
+pub use tools::javascript_repl::JAVASCRIPT_REPL_TOOL;

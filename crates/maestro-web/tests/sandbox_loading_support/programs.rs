@@ -1,7 +1,7 @@
 //! Public preparation and production-mounted frame witnesses.
 use super::{Provider, adapter, finish};
+use maestro_app::SharedHandle;
 use maestro_web::components::sandboxed_iframe::PrepareHtmlOptions;
-use std::sync::Arc;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(module = "/tests/sandbox_loading_support/programs.js")]
@@ -24,13 +24,13 @@ extern "C" {
 
 /// Prepare through the public interface and take frame attributes from actual loading.
 pub async fn program_witness() {
-    let mut sandbox = adapter();
-    let providers = vec![Arc::new(Provider {
+    let sandbox = adapter();
+    let providers = vec![SharedHandle::new(Provider {
         data: js_sys::JSON::parse(&serde_json::json!({"obsData": program_input("raw")}).to_string())
             .unwrap(),
         runtime: program_input("provider"),
         failure: None,
-    }) as Arc<dyn maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider<super::BrowserSandboxValue>>];
+    }) as SharedHandle<dyn maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider<super::BrowserSandboxValue>>];
     let html = sandbox
         .prepare_html_document("program", &program_input("user"), &providers, None)
         .unwrap();
@@ -41,7 +41,9 @@ pub async fn program_witness() {
         .prepare_html_document("policy", &program_input("user"), &[tt_provider], None)
         .unwrap();
     for url in [false, true] {
-        sandbox.sandbox_url_provider = url.then(|| Arc::new(|| Ok(program_url())) as _);
+        sandbox
+            .sandbox_url_provider
+            .replace(url.then(|| SharedHandle::new(|| Ok(program_url())) as _));
         sandbox
             .load_content("prototype", "<head></head>", vec![], vec![])
             .unwrap();
@@ -55,7 +57,7 @@ pub async fn program_witness() {
 
 /// The prepared navigation runtime runs in a parsed opaque document.
 pub async fn link_witness() {
-    let mut sandbox = adapter();
+    let sandbox = adapter();
     let html = sandbox
         .prepare_html_document(
             "links",
@@ -79,9 +81,11 @@ pub async fn link_witness() {
 
 /// All authored insertion points retain head policies on both public loading paths.
 pub async fn artifact_witness() {
-    let mut sandbox = adapter();
+    let sandbox = adapter();
     for url in [false, true] {
-        sandbox.sandbox_url_provider = url.then(|| Arc::new(|| Ok(program_url())) as _);
+        sandbox
+            .sandbox_url_provider
+            .replace(url.then(|| SharedHandle::new(|| Ok(program_url())) as _));
         for position in ["head", "html", "fragment"] {
             let mut code = artifact();
             if position != "head" {
@@ -109,13 +113,13 @@ pub async fn artifact_witness() {
 
 /// Marker-looking identifiers, provider records and programs remain literal data.
 pub async fn marker_witness() {
-    let mut sandbox = adapter();
+    let sandbox = adapter();
     let marker = "__PROGRAM__ __RUNTIME__ __SCRIPT__ __USER_CODE__";
-    let providers = vec![Arc::new(Provider {
+    let providers = vec![SharedHandle::new(Provider {
         data: js_sys::JSON::parse(&serde_json::json!({marker: marker, "attachment": {"text": marker}}).to_string()).unwrap(),
         runtime: program_input("marker-provider"),
         failure: None,
-    }) as Arc<dyn maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider<super::BrowserSandboxValue>>];
+    }) as SharedHandle<dyn maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider<super::BrowserSandboxValue>>];
     let html = sandbox
         .prepare_html_document(marker, &program_input("marker-user"), &providers, None)
         .unwrap();
