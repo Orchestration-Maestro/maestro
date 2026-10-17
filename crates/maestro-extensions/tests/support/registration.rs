@@ -223,10 +223,10 @@ impl Replay {
         let runner = Arc::new_cyclic(|runner: &std::sync::Weak<ExtensionRunner<Value, Value>>| {
             let runner = runner.clone();
             let owners = Arc::clone(&owners);
-            ExtensionRunner::new(
+            ExtensionRunner::<Value, Value>::new(
                 Arc::clone(&owners),
                 Arc::clone(&runtime),
-                Arc::new(move |s| {
+                Arc::new(move |s: &str| {
                     let runner = runner.upgrade().unwrap();
                     assert!(runner.get_shortcut_diagnostics().try_write().is_ok());
                     assert_registration_locks_released(&owners);

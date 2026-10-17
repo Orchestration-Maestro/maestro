@@ -1,6 +1,9 @@
 //! Effective shortcut classification and ordered owner selection.
 use super::ExtensionRunner;
-use crate::types::{ExtensionShortcut, read, write};
+use crate::{
+    ExtensionExecution,
+    types::{ExtensionShortcut, read, write},
+};
 use indexmap::{IndexMap, IndexSet};
 use maestro_resources::{DiagnosticType, ResourceDiagnostic};
 use maestro_tui::{KeyId, KeybindingKeys, KeybindingsConfig};
@@ -47,7 +50,7 @@ fn builtin_keybindings(config: &KeybindingsConfig) -> (IndexSet<KeyId>, IndexMap
     }
     (reserved, ordinary)
 }
-impl<C, CC> ExtensionRunner<C, CC> {
+impl<C, CC, E: ExtensionExecution> ExtensionRunner<C, CC, E> {
     /// Selects current shortcuts using supplied effective bindings and UI presence.
     ///
     /// Reserved keys are blocked; ordinary and extension collisions warn but
@@ -57,7 +60,7 @@ impl<C, CC> ExtensionRunner<C, CC> {
         &self,
         resolved_keybindings: &KeybindingsConfig,
         has_ui: bool,
-    ) -> IndexMap<KeyId, Arc<RwLock<ExtensionShortcut<C>>>> {
+    ) -> IndexMap<KeyId, E::Shared<RwLock<ExtensionShortcut<C, E>>>> {
         let diagnostics = Arc::new(RwLock::new(Vec::new()));
         *write(&self.shortcut_diagnostics) = Arc::clone(&diagnostics);
         let (reserved, ordinary) = builtin_keybindings(resolved_keybindings);
@@ -67,11 +70,11 @@ impl<C, CC> ExtensionRunner<C, CC> {
                 read(owner)
                     .shortcuts
                     .iter()
-                    .map(|(key, shortcut)| (key.clone(), Arc::clone(shortcut)))
+                    .map(|(key, shortcut)| (key.clone(), shortcut.clone()))
                     .collect::<Vec<_>>()
             })
             .collect();
-        let mut selected = IndexMap::<KeyId, Arc<RwLock<ExtensionShortcut<C>>>>::new();
+        let mut selected = IndexMap::<KeyId, E::Shared<RwLock<ExtensionShortcut<C, E>>>>::new();
         for (key, shortcut) in registrations {
             let normalized = key.to_lowercase();
             let path = read(&shortcut).extension_path.clone();

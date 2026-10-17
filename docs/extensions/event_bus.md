@@ -13,6 +13,16 @@ cloning a handle retains its identity. Channels are literal strings, including
 empty, Unicode and reserved-looking names. JSON payloads retain their values and
 existing object-key order; listeners share an immutable payload.
 
+`create_event_bus_for::<E>(spawn, report)` creates the same bus in an explicit
+execution family. With `maestro_models::Local`, listeners, tails, the spawner and
+the reporter use `Rc` and may capture single-thread values such as terminal
+components; the spawner must admit local tails, for example through
+`tokio::task::spawn_local` inside a local task set. `create_event_bus` keeps the
+default `maestro_models::Threaded` family, whose callbacks remain `Send + Sync`
+and whose tails remain `Send` on native targets. Both families share one
+delivery implementation. A started tail keeps its bus alive until it settles;
+releasing the last bus alias releases the spawner and reporter.
+
 Ordinary `emit` runs listener prefixes in registration order and returns a ready
 future without awaiting their optional asynchronous tails. Each emission keeps
 its own listener snapshot: subscription edits affect subsequent emissions, not

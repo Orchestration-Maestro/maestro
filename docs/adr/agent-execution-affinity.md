@@ -16,7 +16,11 @@ its return is associated with the invocation family. The same mechanism serves
 provider callbacks and scripted factories. `maestro-agent` owns agent callback
 signatures, conversion from its existing task admission and typed local entry.
 Both representations use one loop, admission path, listener traversal, progress
-FIFO and lifecycle. No crate or dependency edge is added.
+FIFO and lifecycle. Extension command, shortcut, completion and event-bus
+callbacks select the same families through `maestro-extensions`'
+`ExtensionExecution`; one registration owner, query algorithm and bus serve
+both, and their contexts remain caller-chosen types. No crate or dependency
+edge is added.
 
 ## Trade-off
 

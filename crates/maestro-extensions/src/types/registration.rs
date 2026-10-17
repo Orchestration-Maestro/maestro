@@ -1,12 +1,12 @@
 //! Owned records for extension registration.
-use crate::{EventBus, EventError};
+use crate::{EventBus, ExtensionExecution};
 use indexmap::IndexMap;
-use maestro_models::BoxFuture;
+use maestro_models::{Execution, Threaded};
 use maestro_resources::SourceInfo;
-use maestro_tui::{AutocompleteItem, KeyId};
+use maestro_tui::KeyId;
 use std::{
     ops::Deref,
-    sync::{Arc, RwLock, Weak},
+    sync::{Arc, RwLock},
 };
 
 /// The declared flag kind.
@@ -25,41 +25,28 @@ pub enum FlagValue {
     /// A string value.
     String(String),
 }
-/// An owned asynchronous `CommandHandler` callback.
-#[cfg(not(target_arch = "wasm32"))]
-pub type CommandHandler<C> =
-    Arc<dyn Fn(String, C) -> BoxFuture<Result<(), EventError>> + Send + Sync>;
-/// An owned asynchronous `CommandHandler` callback.
-#[cfg(target_arch = "wasm32")]
-pub type CommandHandler<C> = Arc<dyn Fn(String, C) -> BoxFuture<Result<(), EventError>>>;
-/// An owned asynchronous `ShortcutHandler` callback.
-#[cfg(not(target_arch = "wasm32"))]
-pub type ShortcutHandler<C> = Arc<dyn Fn(C) -> BoxFuture<Result<(), EventError>> + Send + Sync>;
-/// An owned asynchronous `ShortcutHandler` callback.
-#[cfg(target_arch = "wasm32")]
-pub type ShortcutHandler<C> = Arc<dyn Fn(C) -> BoxFuture<Result<(), EventError>>>;
-/// An owned asynchronous `ArgumentCompletions` callback.
-#[cfg(not(target_arch = "wasm32"))]
-pub type ArgumentCompletions = Arc<
-    dyn Fn(String) -> BoxFuture<Result<Option<Vec<AutocompleteItem>>, EventError>> + Send + Sync,
->;
-/// An owned asynchronous `ArgumentCompletions` callback.
-#[cfg(target_arch = "wasm32")]
-pub type ArgumentCompletions =
-    Arc<dyn Fn(String) -> BoxFuture<Result<Option<Vec<AutocompleteItem>>, EventError>>>;
+/// An owned asynchronous command callback.
+pub type CommandHandler<C, E = Threaded> =
+    <E as Execution>::Shared<<E as ExtensionExecution>::Command<C>>;
+/// An owned asynchronous shortcut callback.
+pub type ShortcutHandler<C, E = Threaded> =
+    <E as Execution>::Shared<<E as ExtensionExecution>::Shortcut<C>>;
+/// An owned asynchronous argument completion callback.
+pub type ArgumentCompletions<E = Threaded> =
+    <E as Execution>::Shared<<E as ExtensionExecution>::Completions>;
 
 /// Command registration options.
-pub struct RegisteredCommandOptions<C> {
+pub struct RegisteredCommandOptions<C, E: ExtensionExecution = Threaded> {
     /// Optional command description.
     pub description: Option<String>,
     /// Optional argument completion callback.
-    pub get_argument_completions: Option<ArgumentCompletions>,
+    pub get_argument_completions: Option<ArgumentCompletions<E>>,
     /// Command invocation callback.
-    pub handler: CommandHandler<C>,
+    pub handler: CommandHandler<C, E>,
 }
 
 /// One owned command registration.
-pub struct RegisteredCommand<C> {
+pub struct RegisteredCommand<C, E: ExtensionExecution = Threaded> {
     /// Raw command name.
     pub name: String,
     /// Retained source object.
@@ -67,15 +54,15 @@ pub struct RegisteredCommand<C> {
     /// Optional command description.
     pub description: Option<String>,
     /// Optional argument completion callback.
-    pub get_argument_completions: Option<ArgumentCompletions>,
+    pub get_argument_completions: Option<ArgumentCompletions<E>>,
     /// Command invocation callback.
-    pub handler: CommandHandler<C>,
+    pub handler: CommandHandler<C, E>,
 }
 
 /// A shallow command copy with its current invocation name.
-pub struct ResolvedCommand<C> {
+pub struct ResolvedCommand<C, E: ExtensionExecution = Threaded> {
     /// Copied registration retaining callback and source owners.
-    pub command: RegisteredCommand<C>,
+    pub command: RegisteredCommand<C, E>,
     /// Invocation name supplied by the resolving query.
     pub invocation_name: String,
 }
@@ -105,27 +92,27 @@ pub struct ExtensionFlag {
 }
 
 /// Shortcut registration options.
-pub struct ExtensionShortcutOptions<C> {
+pub struct ExtensionShortcutOptions<C, E: ExtensionExecution = Threaded> {
     /// Optional shortcut description.
     pub description: Option<String>,
     /// Shortcut invocation callback.
-    pub handler: ShortcutHandler<C>,
+    pub handler: ShortcutHandler<C, E>,
 }
 
 /// One retained shortcut registration.
-pub struct ExtensionShortcut<C> {
+pub struct ExtensionShortcut<C, E: ExtensionExecution = Threaded> {
     /// Raw shortcut identifier.
     pub shortcut: KeyId,
     /// Optional shortcut description.
     pub description: Option<String>,
     /// Shortcut invocation callback.
-    pub handler: ShortcutHandler<C>,
+    pub handler: ShortcutHandler<C, E>,
     /// Supplied registration-owner path.
     pub extension_path: String,
 }
 
 /// A mutable owner of extension registrations.
-pub struct Extension<C, CC> {
+pub struct Extension<C, CC, E: ExtensionExecution = Threaded> {
     /// Supplied extension path.
     pub path: String,
     /// Supplied resolved extension path.
@@ -133,11 +120,11 @@ pub struct Extension<C, CC> {
     /// Current owner-produced provenance object.
     pub source_info: Arc<RwLock<SourceInfo>>,
     /// Ordered command registrations.
-    pub commands: IndexMap<String, Arc<RwLock<RegisteredCommand<CC>>>>,
+    pub commands: IndexMap<String, E::Shared<RwLock<RegisteredCommand<CC, E>>>>,
     /// Ordered flag registrations.
     pub flags: IndexMap<String, Arc<RwLock<ExtensionFlag>>>,
     /// Ordered shortcut registrations.
-    pub shortcuts: IndexMap<KeyId, Arc<RwLock<ExtensionShortcut<C>>>>,
+    pub shortcuts: IndexMap<KeyId, E::Shared<RwLock<ExtensionShortcut<C, E>>>>,
 }
 
 /// Shared flag values and registration activity.
@@ -149,37 +136,39 @@ pub struct ExtensionRuntimeState {
 }
 
 /// Registration facade borrowing its owner and retaining runtime and event bus.
-pub struct ExtensionAPI<C, CC> {
+pub struct ExtensionAPI<C, CC, E: ExtensionExecution = Threaded> {
     /// Existing shared event capability.
-    pub events: EventBus,
+    pub events: EventBus<E>,
     /// Registration owner.
-    pub(crate) extension: Weak<RwLock<Extension<C, CC>>>,
+    pub(crate) extension: E::Weak<RwLock<Extension<C, CC, E>>>,
     /// Shared values and activity guard.
     pub(crate) runtime: Arc<ExtensionRuntimeState>,
 }
 
 /// An owned mutable extension record.
-pub type ExtensionHandle<C, CC> = Arc<RwLock<Extension<C, CC>>>;
+pub type ExtensionHandle<C, CC, E = Threaded> =
+    <E as Execution>::Shared<RwLock<Extension<C, CC, E>>>;
 /// The shared current extension load order.
-pub type ExtensionCollection<C, CC> = Arc<RwLock<Vec<ExtensionHandle<C, CC>>>>;
-impl<C> Clone for RegisteredCommand<C> {
+pub type ExtensionCollection<C, CC, E = Threaded> =
+    <E as Execution>::Shared<RwLock<Vec<ExtensionHandle<C, CC, E>>>>;
+impl<C, E: ExtensionExecution> Clone for RegisteredCommand<C, E> {
     fn clone(&self) -> Self {
         Self {
             name: self.name.clone(),
             source_info: Arc::clone(&self.source_info),
             description: self.description.clone(),
             get_argument_completions: self.get_argument_completions.clone(),
-            handler: Arc::clone(&self.handler),
+            handler: self.handler.clone(),
         }
     }
 }
-impl<C> Deref for ResolvedCommand<C> {
-    type Target = RegisteredCommand<C>;
+impl<C, E: ExtensionExecution> Deref for ResolvedCommand<C, E> {
+    type Target = RegisteredCommand<C, E>;
     fn deref(&self) -> &Self::Target {
         &self.command
     }
 }
-impl<C, CC> Clone for ExtensionAPI<C, CC> {
+impl<C, CC, E: ExtensionExecution> Clone for ExtensionAPI<C, CC, E> {
     fn clone(&self) -> Self {
         Self {
             events: self.events.clone(),

@@ -2,32 +2,33 @@
 mod registration;
 mod shortcuts;
 use crate::{
-    ErrorReporter,
+    ErrorReporter, ExtensionExecution,
     types::{ExtensionCollection, ExtensionRuntimeState, read},
 };
+use maestro_models::Threaded;
 use maestro_resources::ResourceDiagnostic;
 use std::sync::{Arc, RwLock};
 
 /// Queries current owners while retaining registration and diagnostic identities.
-pub struct ExtensionRunner<C, CC> {
+pub struct ExtensionRunner<C, CC, E: ExtensionExecution = Threaded> {
     /// Current extension load order.
-    extensions: ExtensionCollection<C, CC>,
+    extensions: ExtensionCollection<C, CC, E>,
     /// Shared flag values.
     runtime: Arc<ExtensionRuntimeState>,
     /// Warning destination invoked outside locks.
-    warning_reporter: ErrorReporter,
+    warning_reporter: ErrorReporter<E>,
     /// Most recent command query's diagnostics.
     command_diagnostics: RwLock<Arc<RwLock<Vec<ResourceDiagnostic>>>>,
     /// Most recent shortcut query's diagnostics.
     shortcut_diagnostics: RwLock<Arc<RwLock<Vec<ResourceDiagnostic>>>>,
 }
-impl<C, CC> ExtensionRunner<C, CC> {
+impl<C, CC, E: ExtensionExecution> ExtensionRunner<C, CC, E> {
     /// Retains the supplied current collection, shared values and warning sink.
     #[must_use]
     pub fn new(
-        extensions: ExtensionCollection<C, CC>,
+        extensions: ExtensionCollection<C, CC, E>,
         runtime: Arc<ExtensionRuntimeState>,
-        warning_reporter: ErrorReporter,
+        warning_reporter: ErrorReporter<E>,
     ) -> Self {
         Self {
             extensions,

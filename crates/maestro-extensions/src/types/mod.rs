@@ -1,5 +1,7 @@
 //! Owned extension registration records.
+mod execution;
 mod registration;
+pub use execution::ExtensionExecution;
 pub use registration::*;
 
 use std::sync::{PoisonError, RwLock, RwLockReadGuard, RwLockWriteGuard};

@@ -48,7 +48,7 @@ api.register_flag("quiet".into(), ExtensionFlagOptions {
 api.register_shortcut("ctrl+x".into(), ExtensionShortcutOptions {
     description: None, handler: Arc::new(|()| Box::pin(async { Ok(()) })),
 })?;
-let runner = ExtensionRunner::new(owners, runtime, Arc::new(|line| eprint!("{line}")));
+let runner = ExtensionRunner::<(), ()>::new(owners, runtime, Arc::new(|line| eprint!("{line}")));
 assert_eq!(api.get_flag("quiet")?, Some(FlagValue::Boolean(false)));
 assert!(runner.get_shortcuts(&vec![], false).contains_key("ctrl+x"));
 let command = runner.get_command("hello").ok_or("command missing")?;
@@ -57,6 +57,68 @@ executor.block_on((command.handler)("raw arguments".into(), ()))?;
 # Ok(())
 # }
 ```
+
+## Local callbacks
+
+Registration records, the facade and the runner take an execution family, which
+defaults to the thread-safe `maestro_models::Threaded`. With `maestro_models::Local`,
+command, shortcut, completion and event callbacks use `Rc` and may hold
+single-thread values such as terminal components. Both families share one
+registration owner, one query algorithm and one event bus implementation.
+`create_event_bus_for::<Local>` creates the bus for local callbacks; its spawner
+must admit local tails, for example through a Tokio local task set.
+
+```rust
+use maestro_extensions::types::{ExtensionRuntimeState, RegisteredCommandOptions};
+use maestro_extensions::{create_event_bus_for, Extension, ExtensionAPI, ExtensionRunner, SourceInfo};
+use maestro_models::Local;
+use maestro_tui::Input;
+use std::{rc::Rc, sync::{Arc, RwLock}};
+
+fn local_callback_registration_example() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let source: SourceInfo = serde_json::from_value(serde_json::json!({
+        "path": "/extensions/rename", "source": "cli",
+        "scope": "temporary", "origin": "top-level"
+    }))?;
+    let owner = Rc::new(RwLock::new(Extension::<(), Rc<Input>, Local>::new(
+        source.path.clone(), "/resolved/rename".into(), Arc::new(RwLock::new(source)),
+    )));
+    let owners = Rc::new(RwLock::new(vec![Rc::clone(&owner)]));
+    let runtime = Arc::new(ExtensionRuntimeState::new());
+    let bus = create_event_bus_for::<Local>(
+        Rc::new(|tail| { tokio::task::spawn_local(tail); }),
+        Rc::new(|line| eprint!("{line}")),
+    );
+    let api = ExtensionAPI::new(&owner, Arc::clone(&runtime), bus.for_extension());
+    api.register_command("rename".into(), RegisteredCommandOptions {
+        description: Some("Replace the input text".into()),
+        get_argument_completions: None,
+        handler: Rc::new(|args, input: Rc<Input>| Box::pin(async move {
+            input.set_value(args);
+            Ok(())
+        })),
+    })?;
+    let runner = ExtensionRunner::<(), Rc<Input>, Local>::new(
+        owners, runtime, Rc::new(|line| eprint!("{line}")),
+    );
+    let command = runner.get_command("rename").ok_or("command missing")?;
+    let input = Rc::new(Input::new());
+    let executor = tokio::runtime::Builder::new_current_thread().build()?;
+    executor.block_on((command.handler)("draft.md".into(), Rc::clone(&input)))?;
+    assert_eq!(input.get_value(), "draft.md");
+    Ok(())
+}
+# fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+# local_callback_registration_example()
+# }
+```
+
+The family is a type parameter resolved through associated pointer types, so
+the compiler cannot infer it from a callback alone. Name it where nothing else
+fixes it: a struct literal bound before registration
+(`RegisteredCommandOptions::<()> { .. }`) or a runner built from a collection
+(`ExtensionRunner::<C, CC>::new`). Literals passed directly to a facade method
+infer the facade's family.
 
 ## Commands
 

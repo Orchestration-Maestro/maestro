@@ -1,74 +1,79 @@
 //! Ordered channels shared by independently identified extensions.
-use crate::callbacks::CallbackEmitter;
+use crate::ExtensionExecution;
+use maestro_models::{Execution, Threaded};
 use serde_json::Value;
 use std::{
     error::Error,
     future::Future,
     ops::Deref,
-    pin::Pin,
     sync::{Arc, Mutex},
 };
 
 /// A native listener failure.
 pub type EventError = Box<dyn Error + Send + Sync + 'static>;
 /// An owned asynchronous listener continuation.
-pub type EventTail = Pin<Box<dyn Future<Output = Result<(), EventError>> + Send + 'static>>;
+pub type EventTail<E = Threaded> = <E as Execution>::Future<'static, Result<(), EventError>>;
 /// Enqueues work on the emitting code's serial cooperative executor.
 ///
 /// Must not poll inline or concurrently with the emitting synchronous segment.
 /// A genuine suspension must allow queued work to progress.
-pub type TailSpawner =
-    Arc<dyn Fn(Pin<Box<dyn Future<Output = ()> + Send + 'static>>) + Send + Sync + 'static>;
+pub type TailSpawner<E = Threaded> = <E as Execution>::Shared<<E as ExtensionExecution>::Spawner>;
 /// Receives a complete attributed diagnostic, including its final newline.
-pub type ErrorReporter = Arc<dyn Fn(&str) + Send + Sync + 'static>;
+pub type ErrorReporter<E = Threaded> =
+    <E as Execution>::Shared<<E as ExtensionExecution>::Reporter>;
 /// Runs a synchronous prefix and optionally returns an owned continuation.
-pub type EventListener = Arc<
-    dyn for<'a> Fn(Arc<Value>, CallbackEmitter<'a>) -> Result<Option<EventTail>, EventError>
-        + Send
-        + Sync
-        + 'static,
->;
+pub type EventListener<E = Threaded> =
+    <E as Execution>::Shared<<E as ExtensionExecution>::Listener>;
 /// One independently removable listener registration.
-pub(crate) struct Registration {
+pub(crate) struct Registration<E: ExtensionExecution> {
     /// Literal channel name.
     channel: String,
     /// Identity of the subscribing extension.
     pub(crate) owner: Arc<()>,
     /// Caller-owned listener.
-    handler: EventListener,
+    handler: EventListener<E>,
 }
 /// Shared subscriptions and caller-supplied execution facilities.
-pub(crate) struct Shared {
+pub(crate) struct Shared<E: ExtensionExecution> {
     /// Ordered registrations, locked only for collection operations.
-    registrations: Mutex<Vec<Arc<Registration>>>,
+    registrations: Mutex<Vec<E::Shared<Registration<E>>>>,
     /// Serial continuation enqueue facility.
-    spawn: TailSpawner,
+    spawn: TailSpawner<E>,
     /// Diagnostic destination.
-    report: ErrorReporter,
+    report: ErrorReporter<E>,
 }
 /// An extension's shared channel capability.
-#[derive(Clone)]
-pub struct EventBus {
+pub struct EventBus<E: ExtensionExecution = Threaded> {
     /// Bus shared by all extension handles.
-    pub(crate) shared: Arc<Shared>,
+    pub(crate) shared: E::Shared<Shared<E>>,
     /// Identity retained by cloned handles.
     pub(crate) owner: Arc<()>,
 }
 /// Owns the ability to clear all subscriptions on a shared bus.
-#[derive(Clone)]
-pub struct EventBusController(EventBus);
+pub struct EventBusController<E: ExtensionExecution = Threaded>(EventBus<E>);
 /// An explicit, idempotent remover; dropping it leaves the listener registered.
-pub struct Subscription {
+pub struct Subscription<E: ExtensionExecution = Threaded> {
     /// Bus containing the registration.
-    shared: Arc<Shared>,
+    shared: E::Shared<Shared<E>>,
     /// Registration identity without ownership of the listener.
-    registration: std::sync::Weak<Registration>,
+    registration: E::Weak<Registration<E>>,
 }
 /// Creates an empty shared bus with caller-owned execution and diagnostics.
 #[must_use]
 pub fn create_event_bus(spawn: TailSpawner, report: ErrorReporter) -> EventBusController {
+    create_event_bus_for::<Threaded>(spawn, report)
+}
+/// Creates an empty shared bus whose callbacks use the caller's execution family.
+///
+/// [`Local`](maestro_models::Local) listeners, tails, spawners and reporters may
+/// capture single-thread values such as terminal components.
+#[must_use]
+pub fn create_event_bus_for<E: ExtensionExecution>(
+    spawn: TailSpawner<E>,
+    report: ErrorReporter<E>,
+) -> EventBusController<E> {
     EventBusController(EventBus {
-        shared: Arc::new(Shared {
+        shared: E::share(Shared {
             registrations: Mutex::default(),
             spawn,
             report,
@@ -76,7 +81,20 @@ pub fn create_event_bus(spawn: TailSpawner, report: ErrorReporter) -> EventBusCo
         owner: Arc::new(()),
     })
 }
-impl EventBus {
+impl<E: ExtensionExecution> Clone for EventBus<E> {
+    fn clone(&self) -> Self {
+        Self {
+            shared: self.shared.clone(),
+            owner: self.owner.clone(),
+        }
+    }
+}
+impl<E: ExtensionExecution> Clone for EventBusController<E> {
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+impl<E: ExtensionExecution> EventBus<E> {
     /// Runs listener prefixes without awaiting their tails, then returns a ready future.
     pub fn emit<'a>(
         &'a self,
@@ -90,15 +108,15 @@ impl EventBus {
         std::future::ready(())
     }
     /// Adds a distinct registration on a literal channel.
-    pub fn on(&self, channel: &str, handler: EventListener) -> Subscription {
-        let registration = Arc::new(Registration {
+    pub fn on(&self, channel: &str, handler: EventListener<E>) -> Subscription<E> {
+        let registration = E::share(Registration {
             channel: channel.to_owned(),
             owner: Arc::clone(&self.owner),
             handler,
         });
         let subscription = Subscription {
-            shared: Arc::clone(&self.shared),
-            registration: Arc::downgrade(&registration),
+            shared: self.shared.clone(),
+            registration: E::downgrade(&registration),
         };
         self.shared
             .registrations
@@ -108,7 +126,7 @@ impl EventBus {
         subscription
     }
     /// Retains this emission's ordered listener collection.
-    pub(crate) fn snapshot(&self, channel: &str) -> Vec<Arc<Registration>> {
+    pub(crate) fn snapshot(&self, channel: &str) -> Vec<E::Shared<Registration<E>>> {
         self.shared
             .registrations
             .lock()
@@ -119,40 +137,35 @@ impl EventBus {
             .collect()
     }
     /// Invokes one retained prefix under its subscribing identity.
-    pub(crate) fn deliver(&self, registration: &Registration, data: Arc<Value>) {
+    pub(crate) fn deliver(&self, registration: &Registration<E>, data: Arc<Value>) {
         let events = Self {
-            shared: Arc::clone(&self.shared),
+            shared: self.shared.clone(),
             owner: Arc::clone(&registration.owner),
         };
         let result = events.invoke_callback(|emitter| (registration.handler)(data, emitter));
         match result {
-            Ok(Some(tail)) => self.shared.start_tail(registration.channel.clone(), tail),
+            Ok(Some(tail)) => (self.shared.spawn)(E::tail_task(
+                tail,
+                registration.channel.clone(),
+                self.clone(),
+            )),
             Ok(None) => {}
             Err(error) => self.shared.report_error(&registration.channel, &*error),
         }
     }
 }
-impl Shared {
-    /// Owns tail execution independently of its removed registration.
-    fn start_tail(self: &Arc<Self>, channel: String, tail: EventTail) {
-        let shared = Arc::clone(self);
-        (self.spawn)(Box::pin(async move {
-            if let Err(error) = tail.await {
-                shared.report_error(&channel, &*error);
-            }
-        }));
-    }
+impl<E: ExtensionExecution> Shared<E> {
     /// Renders the authored diagnostic without engine-specific formatting.
     fn report_error(&self, channel: &str, error: &(dyn Error + Send + Sync)) {
         (self.report)(&format!("Event handler error ({channel}): {error}\n"));
     }
 }
-impl EventBusController {
+impl<E: ExtensionExecution> EventBusController<E> {
     /// Creates another independent extension identity sharing this bus.
     #[must_use]
-    pub fn for_extension(&self) -> EventBus {
+    pub fn for_extension(&self) -> EventBus<E> {
         EventBus {
-            shared: Arc::clone(&self.0.shared),
+            shared: self.0.shared.clone(),
             owner: Arc::new(()),
         }
     }
@@ -169,15 +182,18 @@ impl EventBusController {
         drop(removed);
     }
 }
-impl Deref for EventBusController {
-    type Target = EventBus;
-    fn deref(&self) -> &EventBus {
+impl<E: ExtensionExecution> Deref for EventBusController<E> {
+    type Target = EventBus<E>;
+    fn deref(&self) -> &EventBus<E> {
         &self.0
     }
 }
-impl Subscription {
+impl<E: ExtensionExecution> Subscription<E> {
     /// Removes only this registration; repeated calls are inert.
     pub fn unsubscribe(&self) {
+        let Some(target) = E::upgrade(&self.registration) else {
+            return;
+        };
         let removed = {
             let mut registrations = self
                 .shared
@@ -186,11 +202,20 @@ impl Subscription {
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             registrations
                 .iter()
-                .position(|registration| {
-                    std::ptr::eq(Arc::as_ptr(registration), self.registration.as_ptr())
-                })
+                .position(|registration| E::ptr_eq(registration, &target))
                 .map(|index| registrations.remove(index))
         };
-        drop(removed);
+        drop((removed, target));
+    }
+}
+
+/// Settles one retained continuation, keeping its bus alive until it finishes.
+pub(crate) async fn settle_tail<E: ExtensionExecution>(
+    tail: EventTail<E>,
+    channel: String,
+    events: EventBus<E>,
+) {
+    if let Err(error) = tail.await {
+        events.shared.report_error(&channel, &*error);
     }
 }
