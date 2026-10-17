@@ -97,11 +97,17 @@ pub(crate) fn install(document: &Document) -> Result<(), AttachmentUiError> {
     for font in FONTS {
         font.hash(&mut hasher);
     }
-    let css = FONTS.iter().fold(STYLESHEET.to_owned(), |css, (name, bytes)| {
-        css.replace(
-            &format!("url(fonts/{name}.woff2)"),
-            &format!("url(data:font/woff2;base64,{})", STANDARD.encode(bytes)),
-        )
-    });
-    super::install_stylesheet(document, &format!("maestro-math-{:016x}", hasher.finish()), &css)
+    let css = FONTS
+        .iter()
+        .fold(STYLESHEET.to_owned(), |css, (name, bytes)| {
+            css.replace(
+                &format!("url(fonts/{name}.woff2)"),
+                &format!("url(data:font/woff2;base64,{})", STANDARD.encode(bytes)),
+            )
+        });
+    super::install_stylesheet(
+        document,
+        &format!("maestro-math-{:016x}", hasher.finish()),
+        &css,
+    )
 }
