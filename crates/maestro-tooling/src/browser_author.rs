@@ -28,6 +28,9 @@ pub(crate) fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Resul
     if operation == "cargo" {
         return forward(args, cargo);
     }
+    if operation == "hook" {
+        return authored_hook(args);
+    }
     let operation = operation
         .to_str()
         .ok_or_else(|| io::Error::other("invalid browser operation"))?;
@@ -66,6 +69,17 @@ pub(crate) fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Resul
         return run(&next, cargo, checkout);
     }
     trunk(operation, &args[2..], cargo, checkout, &prepared)
+}
+
+/// Run an authored hook with inherited Trunk environment and literal operands.
+fn authored_hook(args: &[OsString]) -> io::Result<ExitCode> {
+    let directory = super::argument(args, 0, "hook directory")?;
+    let command = super::argument(args, 1, "hook command")?;
+    Command::new(command)
+        .current_dir(directory)
+        .args(&args[2..])
+        .status()
+        .map(super::exit_code)
 }
 
 /// Compile the authored fixture against its adjacent lock and prepared includes.
@@ -199,15 +213,9 @@ fn bootstrap(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
             "maestro-theme",
             "--example",
             "browser_author_inputs",
-        ],
-        [
-            "build",
-            "--locked",
-            "-p",
-            "maestro-tooling",
-            "--bin",
-            "browser-cargo-locked",
-        ],
+        ]
+        .as_slice(),
+        ["build", "--locked", "-p", "maestro-tooling", "--bins"].as_slice(),
     ] {
         let status = super::exit_code(
             Command::new(cargo)
@@ -233,9 +241,13 @@ fn configuration(
     prepared: &Prepared,
 ) -> io::Result<()> {
     let inputs = &prepared.inputs;
-    let fixture = checkout.join(FIXTURE);
+    let fixture = checkout.join(FIXTURE).canonicalize()?;
+    let authored = fixture.join("Trunk.json").canonicalize()?;
+    let directory = authored
+        .parent()
+        .ok_or_else(|| io::Error::other("Trunk configuration has no parent"))?;
     let mut value: serde_json::Map<String, serde_json::Value> =
-        serde_json::from_slice(&fs::read(fixture.join("Trunk.json"))?)?;
+        serde_json::from_slice(&fs::read(&authored)?)?;
     let target = if route == "debug" {
         "debug.html"
     } else {
@@ -246,20 +258,87 @@ fn configuration(
         .or_insert_with(|| serde_json::json!({}));
     build["target"] = serde_json::to_value(fixture.join(target))?;
     build["dist"] = serde_json::to_value(checkout.join("target/maestro-browser").join(route))?;
-    let mut roots: Vec<PathBuf> =
-        serde_json::from_slice(&fs::read(inputs.join("watch-dirs.json"))?)?;
-    roots.extend([fixture, checkout.join("assets/brand")]);
-    value
-        .entry("watch")
-        .or_insert_with(|| serde_json::json!({}))["watch"] = serde_json::to_value(roots)?;
-    let hook = projection_hook(cargo, checkout, identity, inputs)?;
-    value
+    configure_watch(
+        value
+            .entry("watch")
+            .or_insert_with(|| serde_json::json!({})),
+        checkout,
+        directory,
+        inputs,
+    )?;
+    let hooks = value
         .entry("hooks")
         .or_insert_with(|| serde_json::json!([]))
         .as_array_mut()
-        .ok_or_else(|| io::Error::other("Trunk hooks must be an array"))?
-        .push(hook);
+        .ok_or_else(|| io::Error::other("Trunk hooks must be an array"))?;
+    let launcher = prepared
+        .adapter
+        .with_file_name("development")
+        .with_extension(std::env::consts::EXE_EXTENSION);
+    for hook in hooks.iter_mut() {
+        wrap_hook(hook, directory, &launcher)?;
+        for platform in ["windows", "macos", "linux"] {
+            if let Some(overridden) = hook.get_mut(platform).filter(|value| !value.is_null()) {
+                wrap_hook(overridden, directory, &launcher)?;
+            }
+        }
+    }
+    hooks.push(projection_hook(cargo, checkout, identity, inputs)?);
     fs::write(&prepared.config, serde_json::to_vec_pretty(&value)?)
+}
+
+/// Anchor authored watch paths and exclude route-owned generated preparation files.
+fn configure_watch(
+    watch: &mut serde_json::Value,
+    checkout: &Path,
+    directory: &Path,
+    inputs: &Path,
+) -> io::Result<()> {
+    let mut roots: Vec<PathBuf> =
+        serde_json::from_slice(&fs::read(inputs.join("watch-dirs.json"))?)?;
+    roots.extend([checkout.join(FIXTURE), checkout.join("assets/brand")]);
+    for (field, additional) in [
+        ("watch", roots),
+        (
+            "ignore",
+            vec![checkout.join("target/maestro-browser/.author")],
+        ),
+    ] {
+        let mut paths: Vec<PathBuf> = serde_json::from_value(
+            watch
+                .get(field)
+                .cloned()
+                .unwrap_or_else(|| serde_json::json!([])),
+        )?;
+        for path in &mut paths {
+            *path = directory.join(&*path);
+        }
+        paths.extend(additional);
+        watch[field] = serde_json::to_value(paths)?;
+    }
+    Ok(())
+}
+
+/// Retain hook command selection while restoring its authored execution directory.
+fn wrap_hook(hook: &mut serde_json::Value, directory: &Path, launcher: &Path) -> io::Result<()> {
+    let command = hook["command"]
+        .as_str()
+        .ok_or_else(|| io::Error::other("Trunk hook command must be a string"))?;
+    let mut arguments = vec![
+        serde_json::json!("browser-author"),
+        serde_json::json!("hook"),
+        serde_json::to_value(directory)?,
+        serde_json::json!(command),
+    ];
+    let original: Vec<String> = serde_json::from_value(
+        hook.get("command_arguments")
+            .cloned()
+            .unwrap_or_else(|| serde_json::json!([])),
+    )?;
+    arguments.extend(original.into_iter().map(serde_json::Value::from));
+    hook["command"] = serde_json::to_value(launcher)?;
+    hook["command_arguments"] = serde_json::to_value(arguments)?;
+    Ok(())
 }
 
 /// Add the native projection without replacing authored Trunk hooks.
