@@ -15,10 +15,11 @@ use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tokio::time::{Instant, Sleep, sleep_until};
 use tokio_tungstenite::tungstenite::Message;
+#[cfg(test)]
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
 
 /// The authenticated native socket.
-pub(super) type Socket = WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>;
+pub(super) use crate::providers::websocket::Socket;
 
 /// How long a released socket stays cached.
 const IDLE_TTL: Duration = Duration::from_millis(300_000);

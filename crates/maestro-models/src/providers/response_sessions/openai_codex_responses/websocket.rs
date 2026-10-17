@@ -11,6 +11,7 @@ use super::{CodexError, OpenAICodexResponsesOptions};
 use crate::arguments::json_parse::whitespace;
 use crate::providers::http::{Raced, client_pairs, decode_utf8, race};
 use crate::providers::json_text::{BorrowedJson, raw_json};
+use crate::providers::websocket::upgrade;
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Cancellation, DiagnosticCode,
     DiagnosticErrorInfo, Model, SharedAssistantMessage, Transport,
@@ -23,12 +24,11 @@ use serde_json::Value;
 use std::borrow::Cow;
 use std::pin::pin;
 use std::sync::{Arc, LazyLock};
-use tokio_tungstenite::connect_async_with_config;
 use tokio_tungstenite::tungstenite::{
     Error, Message,
     client::IntoClientRequest,
     error::ProtocolError,
-    protocol::{CloseFrame, WebSocketConfig, frame::coding::CloseCode},
+    protocol::{CloseFrame, frame::coding::CloseCode},
 };
 use url::Url;
 
@@ -390,17 +390,8 @@ async fn connect(
     if signal.is_some_and(Cancellation::is_aborted) {
         return Err(aborted());
     }
-    let config = WebSocketConfig::default()
-        .max_message_size(None)
-        .max_frame_size(None);
-    match race(
-        Box::pin(connect_async_with_config(request, Some(config), false)),
-        None,
-        signal,
-    )
-    .await
-    {
-        Raced::Done(Ok((socket, _))) => Ok(socket),
+    match race(Box::pin(upgrade(request)), None, signal).await {
+        Raced::Done(Ok(socket)) => Ok(socket),
         Raced::Done(Err(error)) => Err(native(&error)),
         Raced::Cancelled | Raced::TimedOut => Err(aborted()),
     }

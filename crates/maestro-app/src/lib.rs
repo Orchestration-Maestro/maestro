@@ -142,4 +142,9 @@ pub use maestro_packages::{
     ResolvedPaths, ResolvedResource,
 };
 
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_models::default_web_socket;
+pub use maestro_models::{
+    ConnectWebSocket, WebSocket, WebSocketConnection, WebSocketFuture, WebSocketRequest,
+};
 pub use presentation_data::slash_commands::{SlashCommandInfo, SlashCommandSource};

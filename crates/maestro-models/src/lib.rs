@@ -107,3 +107,9 @@ pub use providers::json_text::compact_json;
 
 #[cfg(test)]
 pub mod tests;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use providers::websocket::default_web_socket;
+pub use providers::websocket::{
+    ConnectWebSocket, WebSocket, WebSocketConnection, WebSocketFuture, WebSocketRequest,
+};
