@@ -14,7 +14,9 @@ use crate::{
     transform_messages,
 };
 
-mod api_client;
+pub(super) mod api_client;
+#[cfg(not(target_arch = "wasm32"))]
+mod node_auth;
 mod projection;
 mod request;
 mod stream;
