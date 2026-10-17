@@ -1,0 +1,74 @@
+[
+  {
+    "title": "Title <&>",
+    "description": null,
+    "class_name": "caller-header",
+    "expected_title": "Title <&>",
+    "expected_description": null,
+    "expected_class": "caller-header",
+    "described": false
+  },
+  {
+    "title": "Title <&>",
+    "description": "",
+    "class_name": "caller-header",
+    "expected_title": "Title <&>",
+    "expected_description": null,
+    "expected_class": "caller-header",
+    "described": false
+  },
+  {
+    "title": "Title <&>",
+    "description": " ",
+    "class_name": "caller-header",
+    "expected_title": "Title <&>",
+    "expected_description": " ",
+    "expected_class": "caller-header",
+    "described": true
+  },
+  {
+    "title": "Title <&>",
+    "description": "Description <&>\nnext line",
+    "class_name": "caller-header",
+    "expected_title": "Title <&>",
+    "expected_description": "Description <&>\nnext line",
+    "expected_class": "caller-header",
+    "described": true
+  },
+  {
+    "title": "",
+    "description": null,
+    "class_name": "",
+    "expected_title": "",
+    "expected_description": null,
+    "expected_class": "",
+    "described": false
+  },
+  {
+    "title": " ﻿<&> ",
+    "description": "﻿",
+    "class_name": "",
+    "expected_title": " ﻿<&> ",
+    "expected_description": "﻿",
+    "expected_class": "",
+    "described": true
+  },
+  {
+    "title": "literal",
+    "description": "",
+    "class_name": "",
+    "expected_title": "literal",
+    "expected_description": "",
+    "expected_class": "",
+    "described": true
+  },
+  {
+    "title": "literal",
+    "description": "\n",
+    "class_name": "",
+    "expected_title": "literal",
+    "expected_description": "\n",
+    "expected_class": "",
+    "described": true
+  }
+]

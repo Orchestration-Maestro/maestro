@@ -67,10 +67,10 @@ The root exports `Attachment`, `load_attachment`, `UserMessageWithAttachments`,
 supporting records remain in the public application modules. See
 [application attachment policy](../application/browser-attachments.md).
 
-## Input and timers
+## Input, timers and dialogs
 
-[Browser input and timers](components.md) reuse the attachment content host for
-native editing and owned timer callbacks. The retained browser `Input` is
+[Browser input, timers and dialogs](components.md) reuse the attachment content host for
+native editing, owned callbacks and dialog reading/semantic controls. The retained browser `Input` is
 distinct from the terminal toolkit input.
 
 ## Sandbox messages

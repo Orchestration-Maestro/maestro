@@ -31,25 +31,70 @@ pub(crate) fn native(
     repeat: bool,
     callback: std::rc::Rc<dyn Fn()>,
 ) -> Result<Timer, wasm_bindgen::JsValue> {
+    register(
+        window,
+        if repeat {
+            Schedule::Interval(delay)
+        } else {
+            Schedule::Timeout(delay)
+        },
+        callback,
+    )
+}
+/// Register one native animation frame with the same callback lifetime owner.
+#[cfg(target_arch = "wasm32")]
+pub(super) fn frame(
+    window: web_sys::Window,
+    callback: std::rc::Rc<dyn Fn()>,
+) -> Result<Timer, wasm_bindgen::JsValue> {
+    register(window, Schedule::Frame, callback)
+}
+/// Native registration and cancellation operation.
+#[cfg(target_arch = "wasm32")]
+#[derive(Clone, Copy)]
+enum Schedule {
+    /// One delayed delivery.
+    Timeout(i32),
+    /// Repeated delayed delivery.
+    Interval(i32),
+    /// One next-frame delivery.
+    Frame,
+}
+/// Retain and revoke callbacks through one shared admission implementation.
+#[cfg(target_arch = "wasm32")]
+fn register(
+    window: web_sys::Window,
+    schedule: Schedule,
+    callback: std::rc::Rc<dyn Fn()>,
+) -> Result<Timer, wasm_bindgen::JsValue> {
     use std::{cell::Cell, rc::Rc};
     use wasm_bindgen::{JsCast as _, closure::Closure};
     let active = Rc::new(Cell::new(true));
     let admitted = Rc::clone(&active);
     let handler = Closure::wrap(Box::new(move || {
         if admitted.get() {
-            admitted.set(repeat);
+            admitted.set(matches!(schedule, Schedule::Interval(_)));
             callback();
         }
     }) as Box<dyn FnMut()>);
     let function = handler.as_ref().unchecked_ref();
-    let id = if repeat {
-        window.set_interval_with_callback_and_timeout_and_arguments_0(function, delay)?
-    } else {
-        window.set_timeout_with_callback_and_timeout_and_arguments_0(function, delay)?
+    let id = match schedule {
+        Schedule::Interval(delay) => {
+            window.set_interval_with_callback_and_timeout_and_arguments_0(function, delay)?
+        }
+        Schedule::Timeout(delay) => {
+            window.set_timeout_with_callback_and_timeout_and_arguments_0(function, delay)?
+        }
+        Schedule::Frame => window.request_animation_frame(function)?,
     };
     Ok(Timer::new(move || {
         active.set(false);
-        window.clear_interval_with_handle(id);
+        match schedule {
+            Schedule::Frame => {
+                let _ = window.cancel_animation_frame(id);
+            }
+            Schedule::Interval(_) | Schedule::Timeout(_) => window.clear_interval_with_handle(id),
+        }
         drop(handler);
     }))
 }

@@ -84,10 +84,7 @@ impl DomInput {
                 if let Some(callback) = &key_down {
                     callback(event.clone());
                 }
-                if event.key() == "Escape" && !event.cancel_bubble() {
-                    escape.set(true);
-                    drawing.request_repaint();
-                }
+                admit_escape(&event, &escape, &drawing);
             }),
         )?);
         if let Some(callback) = &props.on_key_up {
@@ -193,14 +190,10 @@ fn install_style(element: &Element) -> Result<(), AttachmentUiError> {
     let document = element
         .owner_document()
         .ok_or_else(|| AttachmentUiError::Host("Input has no document".into()))?;
-    if document.get_element_by_id("maestro-input-style").is_some() {
-        return Ok(());
-    }
-    let style = document
-        .create_element("style")
-        .map_err(|e| host_error(&e))?;
-    style.set_id("maestro-input-style");
-    style.set_text_content(Some(r"
+    crate::browser::install_stylesheet(
+        &document,
+        "maestro-input-style",
+        r"
 .maestro-input-control { min-width:0;border:1px solid var(--maestro-color-border);border-radius:var(--maestro-radii-control);background:transparent;color:var(--maestro-color-text);font-family:var(--maestro-type-body-font);outline:none;box-shadow:0 1px 2px color-mix(in srgb,var(--maestro-color-text) 5%,transparent);transition:color .15s,box-shadow .15s; }
 .maestro-input-control::placeholder { color:var(--maestro-color-muted); }
 .maestro-input-control::selection { background:var(--maestro-color-accent);color:var(--maestro-color-on-accent); }
@@ -209,11 +202,18 @@ fn install_style(element: &Element) -> Result<(), AttachmentUiError> {
 .dark .maestro-input-control { background:color-mix(in srgb,var(--maestro-color-border) 30%,transparent); }
 .dark .maestro-input-control[aria-invalid] { box-shadow:0 0 0 3px color-mix(in srgb,var(--maestro-color-error) 40%,transparent); }
 .maestro-input-control:disabled { pointer-events:none;cursor:not-allowed;opacity:.5; }
-"));
-    document
-        .document_element()
-        .ok_or_else(|| AttachmentUiError::Host("Document has no root".into()))?
-        .append_child(&style)
-        .map_err(|e| host_error(&e))?;
-    Ok(())
+",
+    )
+}
+
+/// Share exact native-key admission between editable fields and semantic controls.
+pub(super) fn admit_escape(
+    event: &KeyboardEvent,
+    pending: &std::cell::Cell<bool>,
+    context: &egui::Context,
+) {
+    if event.key() == "Escape" && !event.cancel_bubble() {
+        pending.set(true);
+        context.request_repaint();
+    }
 }

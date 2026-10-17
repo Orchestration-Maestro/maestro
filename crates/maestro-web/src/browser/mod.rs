@@ -4,6 +4,9 @@ pub mod attachment_content;
 /// Cancel-on-drop browser timers.
 pub mod timer;
 
+/// Mounted CSS-property interpolation shared by canvas controls.
+pub(crate) mod transition;
+
 /// Native sandbox values.
 #[cfg(target_arch = "wasm32")]
 pub mod sandbox_value;
@@ -26,3 +29,52 @@ pub(crate) fn append_brand_properties(
 
 /// Complete-message socket effects.
 pub mod websocket;
+
+/// Install one native stylesheet per supplied document without retaining feature owners.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn install_stylesheet(
+    document: &web_sys::Document,
+    id: &str,
+    source: &str,
+) -> Result<(), attachment_content::AttachmentUiError> {
+    use attachment_content::{AttachmentUiError, browser::host_error};
+    if document.get_element_by_id(id).is_some() {
+        return Ok(());
+    }
+    let style = document
+        .create_element("style")
+        .map_err(|error| host_error(&error))?;
+    style.set_id(id);
+    style.set_text_content(Some(source));
+    document
+        .document_element()
+        .ok_or_else(|| AttachmentUiError::Host("Document has no root".into()))?
+        .append_child(&style)
+        .map_err(|error| host_error(&error))?;
+    Ok(())
+}
+
+/// Map linear progress through the supplied cubic-bezier timing curve.
+pub(crate) fn transition_easing(progress: f32, curve: [f32; 4]) -> f32 {
+    if progress <= 0. || progress >= 1. {
+        return progress;
+    }
+    let (mut low, mut high) = (0., 1.);
+    for _ in 0..24 {
+        let t = f32::midpoint(low, high);
+        let x = bezier(t, curve[0], curve[2]);
+        if x < progress {
+            low = t;
+        } else {
+            high = t;
+        }
+    }
+    let t = f32::midpoint(low, high);
+    bezier(t, curve[1], curve[3])
+}
+
+/// Evaluate one axis of a unit-endpoint cubic bezier.
+fn bezier(t: f32, first: f32, second: f32) -> f32 {
+    let inverse = 1. - t;
+    3. * inverse * inverse * t * first + 3. * inverse * t * t * second + t * t * t
+}

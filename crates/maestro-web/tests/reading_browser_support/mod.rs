@@ -55,6 +55,25 @@ impl AttachmentHost for Host {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
         unreachable!("unexpected clipboard operation")
     }
+    fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentUiError> {
+        self.native.capture_focus()
+    }
+    fn restore_focus(
+        &self,
+        target: Rc<FocusTarget>,
+    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
+        self.native.restore_focus(target)
+    }
+    fn dialog_bounds(
+        &self,
+        id: egui::Id,
+        dimensions: [&str; 2],
+    ) -> Result<egui::Rect, AttachmentUiError> {
+        self.native.dialog_bounds(id, dimensions)
+    }
+    fn native_key(&self, event: &web_sys::KeyboardEvent, context: &egui::Context) {
+        self.native.native_key(event, context);
+    }
 
     fn set_retained_visibility(
         &self,

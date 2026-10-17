@@ -1,5 +1,6 @@
 //! Controlled attachment effects and genuine native drawing frames.
 #![cfg(test)]
+pub mod dialog_paint;
 use egui::{Context, Event, Pos2, RawInput, Rect, Shape, Vec2};
 use maestro_app::browser::utils::attachment_utils::AttachmentType;
 use maestro_theme::{BrandMode, BrandPack};
@@ -63,6 +64,26 @@ impl AttachmentHost for Host {
         _: &str,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
         unreachable!("unexpected clipboard operation")
+    }
+    fn capture_focus(
+        &self,
+    ) -> Result<
+        Option<std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>>,
+        AttachmentUiError,
+    > {
+        unreachable!("no dialog focus in this adapter")
+    }
+    fn restore_focus(
+        &self,
+        _: std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>,
+    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
+        unreachable!("no dialog focus in this adapter")
+    }
+    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentUiError> {
+        unreachable!("no dialog measurement in this adapter")
+    }
+    fn native_key(&self, _: &web_sys::KeyboardEvent, _: &egui::Context) {
+        unreachable!("no native dialog key in this adapter")
     }
 
     fn reading_layout(
@@ -179,6 +200,8 @@ pub struct Frame {
     pub mode: BrandMode,
     /// Localized text context.
     pub i18n: I18n,
+    /// Retained texture paint for final pixel observations.
+    pub paint: dialog_paint::Paint,
     /// Last emitted shapes.
     pub shapes: Vec<egui::epaint::ClippedShape>,
     /// Raster images actually submitted to the renderer.
@@ -187,6 +210,8 @@ pub struct Frame {
     pub screen: Rect,
     /// Native viewport density.
     pub density: f32,
+    /// Optional explicit animation clock in seconds.
+    pub time: Option<f64>,
 }
 impl Default for Frame {
     fn default() -> Self {
@@ -195,15 +220,20 @@ impl Default for Frame {
             ctx: Context::default(),
             pack: maestro_theme::load_brand_pack(
                 concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json"),
+                #[cfg(not(target_arch = "wasm32"))]
                 &maestro_theme::theme::NativeThemeOperations,
+                #[cfg(target_arch = "wasm32")]
+                &crate::support::brand::Pack,
             )
             .unwrap(),
             mode: BrandMode::Dark,
             i18n: I18n::new(host).unwrap(),
+            paint: dialog_paint::Paint::default(),
             shapes: vec![],
             images: vec![],
             screen: Rect::from_min_size(Pos2::ZERO, Vec2::new(800., 600.)),
             density: 1.,
+            time: None,
         }
     }
 }
@@ -218,6 +248,7 @@ impl Frame {
     ) -> T {
         let mut input = RawInput {
             screen_rect: Some(self.screen),
+            time: self.time,
             events,
             ..Default::default()
         };
@@ -233,6 +264,7 @@ impl Frame {
             &self.pack.presentation(self.mode).unwrap(),
         );
         let mut output = self.ctx.end_pass();
+        self.paint.update(&output);
         self.images = output
             .textures_delta
             .set
