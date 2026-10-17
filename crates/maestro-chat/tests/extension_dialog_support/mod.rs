@@ -1,7 +1,6 @@
 //! Strict recorded inputs, controlled hosts and lossless dialog observations.
-#[path = "../support/recorded_keys/bindings.rs"]
-mod bindings;
 use super::{manual_runtime::ms, recording_terminal::RecordingTerminal, runtime_spy::Spy};
+use crate::bindings;
 use bindings::{Binding, bindings};
 use maestro_app::presentation_data::keybindings::KEYBINDINGS;
 use maestro_chat::{
@@ -18,11 +17,10 @@ use std::{
     cell::RefCell,
     collections::{BTreeMap, HashSet},
     rc::{Rc, Weak},
-    sync::Mutex,
 };
 
 /// One admission owner for global manager construction, mutation, replay and cleanup.
-static ADMISSION: Mutex<()> = Mutex::new(());
+use crate::registry::REGISTRY as ADMISSION;
 /// Restores the original manager before releasing admission.
 struct Restore(KeybindingsManager);
 impl Drop for Restore {

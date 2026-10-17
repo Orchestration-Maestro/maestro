@@ -1,23 +1,10 @@
 //! Resource configuration through its retained public component.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[path = "../../maestro-app/tests/support/directories.rs"]
-mod directories;
-#[allow(dead_code, reason = "Only registry admission is reused.")]
-#[path = "support/keybindings.rs"]
-mod keybindings;
-#[cfg(unix)]
-#[path = "../../maestro-app/tests/support/probe.rs"]
-mod probe;
-#[allow(dead_code, reason = "Only publication is reused.")]
-#[path = "../../maestro-theme/tests/published/mod.rs"]
-mod published;
+use crate::keybindings;
+#[path = "resource_configuration_support/mod.rs"]
 mod resource_configuration_support;
-#[path = "../../maestro-packages/tests/scratch/mod.rs"]
-mod scratch;
-#[allow(dead_code, reason = "Only corpus ownership is reused.")]
-#[path = "support/selector.rs"]
-mod selector;
+use crate::selector;
 
 #[test]
 #[cfg(not(windows))]

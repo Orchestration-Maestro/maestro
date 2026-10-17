@@ -1,13 +1,10 @@
 //! Strict recorded inputs replayed through the public navigation interface.
-#[path = "recorded_keys/bindings.rs"]
-mod bindings;
-#[path = "recorded_keys/filter_mode.rs"]
-mod filter_mode;
-pub mod occurrences;
-#[path = "recorded_keys/registry.rs"]
-mod recorded_registry;
-pub mod registry;
-pub mod tree;
+use crate::bindings;
+use crate::filter_mode;
+pub(crate) use crate::occurrences;
+use crate::recorded_registry;
+pub(crate) use crate::registry;
+pub(crate) use crate::tree;
 use bindings::{Binding, bindings};
 use filter_mode::mode;
 use maestro_app::presentation_data::keybindings::KEYBINDINGS;

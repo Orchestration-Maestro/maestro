@@ -1,5 +1,6 @@
 //! Session search behavior through the public chat interface.
 #![cfg(test)]
+#[path = "session_search_support/mod.rs"]
 mod session_search_support;
 use maestro_app::{Presence, SessionInfo};
 use maestro_chat::*;

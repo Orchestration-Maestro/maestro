@@ -1,13 +1,9 @@
 //! Settings changes through the retained public input list.
 #![cfg(test)]
-#[path = "support/keybindings.rs"]
-mod keybindings;
-#[allow(dead_code, reason = "Shared published theme support.")]
-#[path = "../../maestro-theme/tests/published/mod.rs"]
-mod published;
-#[path = "support/selector.rs"]
-mod selector;
-mod settings_selection_support;
+use crate::keybindings;
+use crate::published;
+use crate::selector;
+use crate::settings_selection_support;
 use maestro_tui::Component;
 use selector::Empty;
 use settings_selection_support::*;

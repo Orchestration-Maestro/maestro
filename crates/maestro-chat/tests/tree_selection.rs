@@ -1,5 +1,6 @@
 //! Public session-tree navigation behavior.
 #![cfg(test)]
+#[path = "support/mod.rs"]
 mod support;
 
 /// Runs the hidden model-leaf selection and ordered visible cycle.

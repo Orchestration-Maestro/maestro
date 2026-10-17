@@ -1,8 +1,6 @@
 //! Actual frame-writer cursor effects and containing-owner teardown.
 use super::*;
-#[allow(dead_code, reason = "Shared controlled terminal methods.")]
-#[path = "../../../maestro-test-terminal/tests/support/recording_terminal.rs"]
-mod recording_terminal;
+use crate::recording_terminal;
 use maestro_tui::{CURSOR_MARKER, TUI, TerminalImage};
 use serde_json::json;
 

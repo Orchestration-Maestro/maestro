@@ -1,20 +1,11 @@
 //! Extension dialogs replay complete controlled terminal observations.
 #![cfg(test)]
+#[path = "extension_dialog_support/mod.rs"]
 mod extension_dialog_support;
-#[allow(
-    dead_code,
-    reason = "Shared runtime supports other terminal components."
-)]
-#[path = "../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-mod manual_runtime;
-#[allow(dead_code, reason = "Only published theme state is needed.")]
-#[path = "../../maestro-theme/tests/published/mod.rs"]
-mod published;
-#[allow(dead_code, reason = "Shared terminal supports other writer witnesses.")]
-#[path = "../../maestro-test-terminal/tests/support/recording_terminal.rs"]
-mod recording_terminal;
-#[path = "support/runtime_spy.rs"]
-mod runtime_spy;
+use crate::manual_runtime;
+use crate::published;
+use crate::recording_terminal;
+use crate::runtime_spy;
 
 #[test]
 fn selector_renders_bold_title_options_and_help() {
@@ -208,8 +199,7 @@ fn input_focus_routes_hardware_cursor_through_writer() {
     });
 }
 
-#[path = "message_support/palette.rs"]
-mod palette;
+use crate::palette;
 #[test]
 fn dialog_surface_uses_published_pack_roles() {
     use extension_dialog_support::{Kind, native_dialog};

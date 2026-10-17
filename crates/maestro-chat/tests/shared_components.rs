@@ -1,22 +1,9 @@
 //! Public rendering, timer, input and inherited component witnesses.
 #![cfg(test)]
-#[allow(
-    dead_code,
-    reason = "Shared controlled host supports other terminal tests."
-)]
-#[path = "../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-mod manual_runtime;
-#[allow(dead_code, reason = "Only theme publication is reused.")]
-#[path = "../../maestro-theme/tests/published/mod.rs"]
-mod published;
-#[allow(
-    dead_code,
-    reason = "Shared controlled host supports other terminal tests."
-)]
-#[path = "../../maestro-test-terminal/tests/support/recording_terminal.rs"]
-mod recording_terminal;
-#[path = "support/runtime_spy.rs"]
-mod runtime_spy;
+use crate::manual_runtime;
+use crate::published;
+use crate::recording_terminal;
+use crate::runtime_spy;
 use maestro_chat::DynamicBorder;
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use maestro_tui::{Component, TUI, TerminalImage};
@@ -495,10 +482,7 @@ fn bordered_loader_layout_preserves_padding_and_message() {
     }
 }
 
-/// Serializes tests that replace the process-wide key registry.
-#[allow(dead_code, reason = "Only the shared registry guard is used.")]
-#[path = "../../maestro-tui/tests/fixtures/input_support/mod.rs"]
-mod input_support;
+use crate::input_support;
 /// Typed query data for bordered loader keeps captured theme and hint but matches live keys.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]

@@ -1,12 +1,9 @@
 //! Strict recorded queries and controlled renderer callbacks.
 mod callbacks;
-#[allow(dead_code)]
-#[path = "../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-pub mod manual_runtime;
-#[allow(dead_code)]
-#[path = "../../../maestro-theme/tests/published/mod.rs"]
-mod published;
+pub(crate) use crate::manual_runtime;
+use crate::published;
 mod records;
+use crate::registry::REGISTRY;
 use maestro_app::{ToolDef, ToolRenderEnvironment};
 use maestro_chat::{ToolExecutionComponent, ToolExecutionOptions, ToolExecutionParams};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeOptions};
@@ -15,10 +12,8 @@ use maestro_tui::{
     TerminalCapabilities, TerminalImage, get_keybindings, set_keybindings,
 };
 use records::{Corpus, Input, Operation};
-use std::{cell::Cell, collections::HashSet, rc::Rc, sync::Mutex};
+use std::{cell::Cell, collections::HashSet, rc::Rc};
 
-/// Admission spans registry replacement, row work and restoration.
-static REGISTRY: Mutex<()> = Mutex::new(());
 /// Restore the previous key registry on every exit.
 struct Restore(KeybindingsManager);
 impl Drop for Restore {

@@ -1,20 +1,12 @@
 //! Whole-frame recorded panel observations.
 mod errors;
-#[allow(dead_code, reason = "Shared controlled host effects.")]
-#[path = "../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-mod manual_runtime;
-#[path = "../message_support/palette.rs"]
-mod palette;
-#[allow(dead_code, reason = "Shared publication operations.")]
-#[path = "../../../maestro-theme/tests/published/mod.rs"]
-mod published;
-#[path = "../support/registry.rs"]
-mod registry;
+use crate::manual_runtime;
+use crate::palette;
+use crate::published;
+use crate::registry;
 mod replay;
-#[path = "../../../maestro-catalog/tests/support/subprocess.rs"]
-mod subprocess;
-#[path = "../support/tree.rs"]
-mod tree;
+use crate::subprocess;
+use crate::tree;
 mod writer;
 use maestro_chat::{TreeSelectorCallbacks, TreeSelectorComponent, TreeSelectorOptions};
 use maestro_tui::Component;
@@ -139,7 +131,10 @@ struct Effects {
 pub fn group(name: &str) {
     if std::env::var_os("MAESTRO_DYNAMIC_CHILD").is_none() {
         for tz in ["UTC", "America/New_York", "Asia/Kathmandu"] {
-            subprocess::run_child(name, &[("TZ", Some(tz))]);
+            subprocess::run_child(
+                &crate::child_process::selector(name).unwrap(),
+                &[("TZ", Some(tz))],
+            );
         }
         return;
     }

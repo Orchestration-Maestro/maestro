@@ -1,27 +1,13 @@
 //! Strict search, fold, query, callback and whole-frame corpus replay.
-#[path = "../support/recorded_keys/bindings.rs"]
-mod bindings;
-#[path = "../support/recorded_keys/filter_mode.rs"]
-mod filter_mode;
-#[allow(
-    dead_code,
-    reason = "Only controlled environment and effect observations are used."
-)]
-#[path = "../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-mod manual_runtime;
-#[path = "../support/occurrences.rs"]
-mod occurrences;
-#[path = "../message_support/palette.rs"]
-mod palette;
-#[allow(dead_code, reason = "Only publication helpers are shared.")]
-#[path = "../../../maestro-theme/tests/published/mod.rs"]
-mod published;
-#[path = "../support/recorded_keys/registry.rs"]
-mod recorded_registry;
-#[path = "../support/registry.rs"]
-mod registry;
-#[path = "../support/tree.rs"]
-mod tree;
+use crate::bindings;
+use crate::filter_mode;
+use crate::manual_runtime;
+use crate::occurrences;
+use crate::palette;
+use crate::published;
+use crate::recorded_registry;
+use crate::registry;
+use crate::tree;
 use bindings::{Binding, bindings};
 use filter_mode::mode;
 use maestro_app::{compact_json, presentation_data::keybindings::KEYBINDINGS};

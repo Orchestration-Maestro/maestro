@@ -1297,13 +1297,14 @@ fn visible_loading(name: &str) {
 
 #[cfg(target_os = "linux")]
 use super::super::native_child;
-/// Qualifies actual command capture and unlink in isolated child environments.
+/// Qualifies actual command capture and unlink in isolated child environments,
+/// re-running `test` (the caller's qualified test name) for each scenario.
 #[cfg(target_os = "linux")]
-pub fn native() {
+pub fn native(test: &str) {
     if let Ok(mode) = std::env::var("MAESTRO_NATIVE_MODE") {
         native_run(&mode);
     } else {
-        native_launch();
+        native_launch(test);
     }
 }
 /// Drives one child-only native scenario.
@@ -1350,8 +1351,7 @@ fn native_run(mode: &str) {
 }
 /// Installs controlled executables through a child before launching each scenario.
 #[cfg(target_os = "linux")]
-fn native_launch() {
-    const NAME: &str = "session_native_file_effects_keep_process_and_unlink_failures";
+fn native_launch(test: &str) {
     for mode in [
         "unavailable",
         "nonzero",
@@ -1388,7 +1388,7 @@ fn native_launch() {
         let path = dir.join("bin");
         let log = dir.join("argv");
         let lines = native_child::probe(
-            NAME,
+            test,
             &dir.0,
             &[
                 ("MAESTRO_NATIVE_MODE", mode),

@@ -1,11 +1,6 @@
 //! Retained session discovery through the public selector.
 #![cfg(test)]
-#[allow(
-    dead_code,
-    reason = "Shared header and list witnesses have their own target."
-)]
-#[path = "support/session_picker.rs"]
-mod session_picker;
+use crate::session_picker_support as session_picker;
 #[test]
 fn session_scope_starts_current_and_cancels_only_empty_all() {
     session_picker::session_picker_scopes::initial();
@@ -142,7 +137,7 @@ fn session_selector_default_file_manager_and_supplied_manager_are_distinct() {
         )
         .unwrap();
         keybinding_child::probe(
-            NAME,
+            &crate::child_process::selector(NAME).unwrap(),
             &dir.0,
             &[
                 ("MAESTRO_SELECTOR_KEYS_CHILD", "yes"),

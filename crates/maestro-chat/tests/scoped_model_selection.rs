@@ -1,19 +1,9 @@
 //! Scoped model editing through supplied records and the terminal host.
 #![cfg(test)]
-#[allow(
-    dead_code,
-    reason = "Only the complete-transaction admission is reused."
-)]
-#[path = "support/keybindings.rs"]
-mod keybindings;
-#[allow(dead_code, reason = "Shared controlled host.")]
-#[path = "../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-mod manual_runtime;
-#[allow(dead_code, reason = "Shared model fixture constructors.")]
-mod model_selector_support;
-#[allow(dead_code, reason = "Shared theme publication controls.")]
-#[path = "../../maestro-theme/tests/published/mod.rs"]
-mod published;
+use crate::keybindings;
+use crate::manual_runtime;
+use crate::model_selector_support;
+#[path = "scoped_model_support/mod.rs"]
 mod scoped_model_support;
 /// Caller-added child rendering failures propagate through the selector.
 #[test]
@@ -336,9 +326,7 @@ fn failed_tail(persist: bool) {
     assert_eq!(runtime.futures(), 0);
 }
 
-#[allow(dead_code, reason = "Controlled terminal operations are shared.")]
-#[path = "../../maestro-test-terminal/tests/support/recording_terminal.rs"]
-mod recording_terminal;
+use crate::recording_terminal;
 /// Frame-writer ownership retains focus and releases the component graph.
 #[test]
 fn registered_scope_component_retains_focus_and_releases_children() {
