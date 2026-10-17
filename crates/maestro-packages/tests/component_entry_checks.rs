@@ -1,9 +1,9 @@
 //! Author-built component discovery through the existing package owner.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod component_support;
-mod scratch;
-mod support;
+use crate::component_support;
+use crate::scratch;
+use crate::support;
 use component_support::ExpectedPaths;
 use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions};
 use serde::Deserialize;

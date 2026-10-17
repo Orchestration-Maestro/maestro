@@ -1,9 +1,9 @@
 //! Bootstrap preservation through native effects and public resolution.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod native_support;
-pub mod sandbox;
-mod scratch;
+use crate::native_support;
+use crate::sandbox;
+use crate::scratch;
 use maestro_packages::PackageManager;
 use maestro_resources::{SourceOrigin, SourceScope};
 use maestro_settings::{Settings, SettingsManager};

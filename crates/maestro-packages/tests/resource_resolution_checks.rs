@@ -1,14 +1,13 @@
 //! Explicit resource resolution through the manager boundary.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod native_support;
-mod resolution_support;
-mod resource_cases;
-mod resource_output;
-mod scratch;
-use resolution_support::run as block_on;
-mod support;
+use crate::native_support;
+use crate::resolution_support;
+use crate::resource_cases;
+use crate::scratch;
+use crate::support;
 use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions};
+use resolution_support::run as block_on;
 use std::{fs, rc::Rc};
 /// Explicit inputs select scope bases without extension suffix requirements.
 #[test]

@@ -1,8 +1,8 @@
 //! Installed pin selection ignores unread manifest values.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod scratch;
-mod support;
+use crate::scratch;
+use crate::support;
 
 use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions, SourceScope};
 use std::{fs, rc::Rc};

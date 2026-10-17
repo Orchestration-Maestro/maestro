@@ -1,9 +1,8 @@
 //! Configured package resolution through the public operation.
 #![cfg(unix)]
-mod resolution_support;
-mod resource_output;
-mod scratch;
-mod support;
+use crate::resolution_support;
+use crate::scratch;
+use crate::support;
 
 #[test]
 fn empty_settings_have_no_package_resources() {
@@ -33,7 +32,7 @@ fn empty_settings_have_no_package_resources() {
     })
     .unwrap();
 }
-mod configured_resolution_support;
+use crate::configured_resolution_support;
 #[test]
 fn configured_entries_use_each_scope_base() {
     configured_resolution_support::check(&[

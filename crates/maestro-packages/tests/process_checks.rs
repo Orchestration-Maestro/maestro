@@ -1,7 +1,7 @@
 //! Real children launched through the native package operations.
 #![cfg(unix)]
 #![cfg(test)]
-mod scratch;
+use crate::scratch;
 use maestro_packages::{
     DefaultPackageManager, NativePackageOperations, PackageManager, PackageManagerOptions,
     PackageOperations,
@@ -162,12 +162,11 @@ fn native_stdio_obeys_live_takeover_and_literal_arguments() {
     }
     std::fs::write(at(&root, "input"), "line1\nline2\nline3\n").unwrap();
     let (out, err) = (at(&root, "out"), at(&root, "err"));
+    let test =
+        crate::child_process::selector("native_stdio_obeys_live_takeover_and_literal_arguments")
+            .unwrap();
     let status = Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            "native_stdio_obeys_live_takeover_and_literal_arguments",
-            "--nocapture",
-        ])
+        .args(["--exact", &test, "--nocapture"])
         .env(STDIO_CHILD, &root.0)
         .current_dir(at(&root, "ambient"))
         .stdin(std::fs::File::open(at(&root, "input")).unwrap())
@@ -287,11 +286,11 @@ fn native_local_repository_installs_checks_out_and_removes() {
             git(&repository, &["tag", "v1"]);
         }
     }
+    let test =
+        crate::child_process::selector("native_local_repository_installs_checks_out_and_removes")
+            .unwrap();
     let output = Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            "native_local_repository_installs_checks_out_and_removes",
-        ])
+        .args(["--exact", &test])
         .env(REPOSITORY_CHILD, &root.0)
         .env("GIT_CONFIG_GLOBAL", "/dev/null")
         .env("GIT_CONFIG_SYSTEM", "/dev/null")
@@ -305,7 +304,7 @@ fn native_local_repository_installs_checks_out_and_removes() {
         "{}",
         String::from_utf8_lossy(&output.stdout)
     );
-    assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed"));
+    crate::child_process::assert_executed(&output, &test);
 }
 
 #[test]

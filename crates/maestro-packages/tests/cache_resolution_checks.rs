@@ -1,10 +1,7 @@
 //! Explicit remote source admission through supplied effects.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod cache_support;
-mod resource_output;
-mod scratch;
-mod support;
+use crate::cache_support;
 /// Replays missing npm acquires in selected scope.
 #[test]
 fn missing_npm_acquires_in_selected_scope() {
@@ -378,14 +375,9 @@ fn temporary_cache_is_not_removed_when_manager_is_dropped() {
     });
 }
 
-#[cfg(unix)]
-mod native_support;
 /// A local Git remote changes cached files and a failed fetch retains the new checkout.
 #[cfg(unix)]
 #[test]
 fn native_cached_git_refresh_changes_files_and_survives_failure() {
     cache_support::native::refresh();
 }
-
-#[cfg(unix)]
-mod native_git_command;

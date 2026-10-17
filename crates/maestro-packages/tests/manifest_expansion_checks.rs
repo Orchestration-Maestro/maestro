@@ -1,10 +1,8 @@
 //! Manifest expansion through the existing public package manager.
 #![cfg(test)]
 #![cfg(target_os = "linux")]
-mod resolution_support;
-mod resource_output;
-mod scratch;
-mod support;
+use crate::resolution_support;
+use crate::scratch;
 use maestro_packages::PackageManager;
 use serde_json::json;
 use std::{fs, io::Write};
