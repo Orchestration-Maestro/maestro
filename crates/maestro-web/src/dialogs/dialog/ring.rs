@@ -17,6 +17,10 @@ pub(super) struct Ring {
     /// Physical pixels per logical point.
     pub density: f32,
 }
+/// Supersampling factor per axis.
+const SCALE: usize = 20;
+/// `SCALE` as a float.
+const SCALE_F: f32 = 20.;
 /// One reusable texture per retained Close control.
 #[derive(Default)]
 pub(crate) struct Painter {
@@ -28,9 +32,6 @@ pub(crate) struct Painter {
 impl Painter {
     /// Rasterize changed operands only, then submit the same retained texture.
     pub(super) fn draw(&mut self, ui: &egui::Ui, ring: Ring) -> Result<(), AttachmentUiError> {
-        if ring.spreads[1] <= 0. {
-            return Ok(());
-        }
         if self.cached.as_ref().is_none_or(|(old, _)| *old != ring) {
             let bounds = ring.rect.expand(ring.spreads[1]);
             let pixels = egui::Rect::from_min_max(
@@ -84,8 +85,8 @@ fn raster(ring: &Ring, pixels: egui::Rect) -> Result<egui::ColorImage, Attachmen
 }
 /// Rounded-rectangle union filled in one pass, retaining fractional coordinates and radii.
 fn mask(ring: &Ring, pixels: egui::Rect, spread: f32) -> Result<Vec<f32>, AttachmentUiError> {
-    let rect = (ring.rect.expand(spread) * ring.density).translate(-pixels.min.to_vec2()) * 32.;
-    let radius = (ring.radius + spread) * ring.density * 32.;
+    let rect = (ring.rect.expand(spread) * ring.density).translate(-pixels.min.to_vec2()) * SCALE_F;
+    let radius = (ring.radius + spread) * ring.density * SCALE_F;
     let mut path = PathBuilder::new();
     for (x, y, width, height) in [
         (
@@ -114,8 +115,12 @@ fn mask(ring: &Ring, pixels: egui::Rect, spread: f32) -> Result<Vec<f32>, Attach
         }
     }
     let mut mask = Mask::new(
-        (pixels.width() * 32.).to_u32().ok_or_else(unavailable)?,
-        (pixels.height() * 32.).to_u32().ok_or_else(unavailable)?,
+        (pixels.width() * SCALE_F)
+            .to_u32()
+            .ok_or_else(unavailable)?,
+        (pixels.height() * SCALE_F)
+            .to_u32()
+            .ok_or_else(unavailable)?,
     )
     .ok_or_else(unavailable)?;
     mask.fill_path(
@@ -131,18 +136,18 @@ fn unavailable() -> AttachmentUiError {
     AttachmentUiError::Host("Unable to rasterize Close focus decoration".into())
 }
 
-/// Resolve tiny-skia's four-subpixel scan grid at 1/128 pixel before final colour encoding.
+/// Resolve tiny-skia's four-subpixel scan grid at 1/20 pixel before final colour encoding.
 fn downsample(mask: &Mask) -> Vec<f32> {
     let width = usize::try_from(mask.width()).unwrap_or_default();
     let mut result = Vec::new();
-    for rows in mask.data().chunks_exact(width * 32) {
-        for x in (0..width).step_by(32) {
+    for rows in mask.data().chunks_exact(width * SCALE) {
+        for x in (0..width).step_by(SCALE) {
             let sum: u32 = rows
                 .chunks_exact(width)
-                .flat_map(|row| &row[x..x + 32])
+                .flat_map(|row| &row[x..x + SCALE])
                 .map(|v| u32::from(*v))
                 .sum();
-            result.push(sum.to_f32().unwrap_or_default() / 1024.);
+            result.push(sum.to_f32().unwrap_or_default() / (SCALE_F * SCALE_F));
         }
     }
     result
