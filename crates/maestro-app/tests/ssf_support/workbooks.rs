@@ -2,20 +2,13 @@
 use maestro_app::browser::ssf::{self, CellFormatOptions, CellValue, Ssf};
 use serde_json::{Value, json};
 
-pub(super) fn bytes(file: &str) -> Vec<u8> {
-    std::fs::read(
-        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("tests/fixtures/workbooks")
-            .join(file),
-    )
-    .unwrap()
-}
+use crate::workbook_fixture::bytes;
 
 pub(super) fn observe(args: &Value) -> Value {
     let file = args["file"].as_str().unwrap();
     let mut ssf = Ssf::default();
     match ssf::read(&bytes(file), file, &mut ssf) {
-        Ok(book) => json!({"ok": project(book, &ssf, file == "legacy-states.xls")}),
+        Ok(book) => json!({"ok": project(book, &ssf, false)}),
         Err(error) => {
             assert!(matches!(error, ssf::WorkbookError::Reader(_)));
             assert!(error.to_string().contains(file));

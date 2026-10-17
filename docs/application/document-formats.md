@@ -57,10 +57,12 @@ hole in 0..392; a full range replaces391. `load_table` copies slots through391,
 including empty codes, and leaves the same-owner table unchanged.
 `Ssf::get_table` returns a shared mutable format table. Reading XLSX replaces
 the current table slot without changing earlier handles; XLS retains that slot.
+Both readers repair the producer date code `d.m` to `d\.m` before loading it;
+direct `Ssf::load` calls preserve the supplied code.
 `WorkBook::ssf` is a detached snapshot. `WorkBook` preserves sheet order and the date epoch; each
 `WorkSheet` retains ordered populated cells, its range and merged regions.
 In XLSX, blank sheets retain declared rectangular ranges; empty singleton defaults
-are omitted. Retained error cells load implicit formats into the live table and
+are omitted. Retained XLSX error cells load implicit formats into the live table and
 workbook snapshot. Cells retain raw typed values and optional formatted text.
 Raw string-cell escapes and format-code attributes decode once after XML entity
 decoding; shared and inline strings are not decoded again. XLSX text normalizes
@@ -90,11 +92,18 @@ real March 1900 boundary. Time-only cells attach to the workbook epoch date and
 use the same millisecond serial conversion; noon is 0.5 in either epoch. Numeric
 serial 60 retains the spreadsheet's synthetic leap day.
 XLS selection uses the complete eight-byte compound-file header, not the supplied
-filename. The legacy reader preserves sheet order, populated bounds, merges,
-epoch, numbers, strings, booleans and error values; cached display text uses
-General independently of active format0. Full XLS formatting, format-table effects,
-rich-text/link and formula metadata, and declared blank dimensions remain tracked
-in [legacy workbook metadata](https://github.com/Orchestration-Maestro/maestro/issues/1025).
+filename. The legacy reader preserves sheet order, record-ordered cells, merges,
+epoch and raw scalar values. Each cell's resolved number format selects display
+text through the shared formatter; General bypasses active format0. Missing XFs
+remain uncached except NUMBER's default-format branch. Failed formats remain
+uncached for public fallback. FORMAT records load in encounter order into the live
+table, including duplicate, unused and high identifiers; later records win.
+Declared exclusive dimensions include blank rows and columns without materializing
+blank cells, and populated cells expand those bounds. Without a declaration,
+populated bounds start at A1; empty sheets have no range. For empty sheets, singleton declarations
+retain their range, while zero-sized declarations have no range.
+Binary formula expressions, arrays, rich text and hyperlinks remain tracked in
+[legacy workbook metadata](https://github.com/Orchestration-Maestro/maestro/issues/1175).
 
 `encode_row`, `encode_col`, `encode_cell` and `encode_range` render zero-based
 positions as A1 addresses; decoders accept absolute `$` markers.

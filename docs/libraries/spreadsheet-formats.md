@@ -33,11 +33,15 @@ Derived format data and policy retain the
 values through its streaming reader and legacy XLS values through its owned
 range reader. The application reads style indices, raw
 error labels, dimensions and merges through the existing indexed ZIP/XML owners;
-it uses its own number-format evaluator, not the parser's display text. Legacy
-XLS reading reuses the scalar projection with General text, populated bounds,
-ordered sheets and merges. Raw style metadata, format-table effects, declared blank
-dimensions and binary formula metadata remain tracked in
-[legacy workbook metadata](https://github.com/Orchestration-Maestro/maestro/issues/1025).
+it uses its own number-format evaluator, not the parser's display text. The local
+[calamine patch](../../vendor/calamine/src/xls.rs) retains ordered raw FORMAT
+records, resolved per-cell format selections and exclusive declared dimensions.
+It reuses the existing binary, codepage and scalar decoders with no new dependency
+or optional feature. Legacy cells use the same shared formatter, live format table
+and detached snapshots as application callers. Declared blank bounds do not
+allocate blank cells. Binary formula expressions, arrays, rich text and hyperlinks
+remain tracked in
+[legacy workbook metadata](https://github.com/Orchestration-Maestro/maestro/issues/1175).
 
 The parser's dependency closure uses MIT or Apache-2.0 where offered, with
 BSD-3-Clause for encoding_rs, Unicode-3.0 for unicode-ident and Zlib for zlib-rs.
@@ -50,8 +54,10 @@ The published calamine 0.36.1 source is retained in
 [vendor/calamine](../../vendor/calamine), outside workspace membership, under
 its [MIT licence](../../vendor/calamine/LICENSE-MIT.md). The published archive's
 SHA-256 is `5fa68281b1a76b54a62156474adb06bb380a67e07dd60656e3217152b42183f3`.
-The root crates-io patch changes only the ZIP requirement to `=9.0.3`
+The root crates-io patch pins the ZIP requirement to `=9.0.3`
 (defaults off, `deflate`) and propagates fallible archive names through the
 existing path cache and XLSX/XLSB constructors, including its unit-test setup.
-No name is skipped or decoded with a fallback, and no workbook metadata policy
-changes. The original manifest and source revision metadata remain alongside it.
+No name is skipped or decoded with a fallback. The same copy also retains raw
+legacy FORMAT strings, resolved cell-format selections and exclusive-end declared
+dimensions in the existing XLS parser. Older FORMAT strings reuse its codepage
+decoder. The original manifest and source revision metadata remain alongside it.
