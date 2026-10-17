@@ -178,7 +178,11 @@ async fn replay(mut case: Case) {
         })
     };
     let base = case.base.replace("$ORIGIN", "http://fixture.test:3210");
-    let options = DiscoveryOptions { fetch, log };
+    let options = DiscoveryOptions {
+        fetch,
+        log,
+        connect_web_socket: maestro_app::default_web_socket(),
+    };
     let result = if case.provider == "ollama" {
         discover_ollama_models(&base, case.key.as_deref(), &options).await
     } else if case.provider == "vllm" {
@@ -293,6 +297,7 @@ fn discovery_attributes_network_http_and_decode_failures() {
             "http://fixture.test",
             None,
             &DiscoveryOptions {
+                connect_web_socket: maestro_app::default_web_socket(),
                 fetch,
                 log: Arc::new(|_| {}),
             },
@@ -343,6 +348,7 @@ fn ollama_host_selection_matches_requests() {
             let requests = Arc::new(Mutex::new(Vec::new()));
             let observed = Arc::clone(&requests);
             let options = DiscoveryOptions {
+                connect_web_socket: maestro_app::default_web_socket(),
                 fetch: Arc::new(move |request| {
                     observed.lock().unwrap().push(request.url);
                     ready_response(br#"{"models":[]}"#.to_vec())
@@ -412,6 +418,7 @@ fn ollama_context_uses_architecture_and_decimal_prefix() {
             "http://fixture.test",
             None,
             &DiscoveryOptions {
+                connect_web_socket: maestro_app::default_web_socket(),
                 fetch,
                 log: Arc::new(|_| {}),
             },
@@ -550,6 +557,7 @@ async fn native(case: Case, barrier: bool) {
     let (origin, server) = server(case.replies, count, barrier);
     let base = case.base.replace("$ORIGIN", &origin);
     let options = DiscoveryOptions {
+        connect_web_socket: maestro_app::default_web_socket(),
         fetch: maestro_app::default_fetch(),
         log: Arc::new(|_| panic!("unexpected diagnostic")),
     };
@@ -561,6 +569,7 @@ async fn native(case: Case, barrier: bool) {
             discover_llama_cpp_models(&base, case.key.as_deref(), &options).await
         }
         DiscoveryProvider::Vllm => discover_vllm_models(&base, case.key.as_deref(), &options).await,
+        DiscoveryProvider::Lmstudio => panic!("not an HTTP fixture"),
     }
     .unwrap();
     let expected: Vec<Model> = case
@@ -640,6 +649,7 @@ fn discovery_dispatches_three_provider_types() {
                 "http://fixture.test",
                 None,
                 &DiscoveryOptions {
+                    connect_web_socket: maestro_app::default_web_socket(),
                     fetch,
                     log: Arc::new(|_| panic!("unexpected diagnostic")),
                 },
@@ -648,6 +658,7 @@ fn discovery_dispatches_three_provider_types() {
             .unwrap();
             assert_eq!(models.len(), 1);
             match provider {
+                DiscoveryProvider::Lmstudio => panic!("not an HTTP fixture"),
                 DiscoveryProvider::Ollama => {
                     assert_eq!(models[0].id, "dispatch-ollama");
                     assert_eq!(models[0].context_window.to_bits(), 700.0_f64.to_bits());
@@ -706,6 +717,7 @@ fn discovery_diagnostics_preserve_call_boundaries() {
             "http://fixture.test",
             None,
             &DiscoveryOptions {
+                connect_web_socket: maestro_app::default_web_socket(),
                 fetch,
                 log: Arc::clone(&log),
             },
@@ -740,6 +752,7 @@ async fn failure_diagnostics(transcript: &Arc<Mutex<Vec<String>>>, log: Discover
             "http://fixture.test",
             None,
             &DiscoveryOptions {
+                connect_web_socket: maestro_app::default_web_socket(),
                 fetch,
                 log: Arc::clone(&log),
             },

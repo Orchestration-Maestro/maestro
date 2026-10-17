@@ -23,3 +23,6 @@ pub(crate) fn append_brand_properties(
         let _ = write!(style, "{key}:{value};");
     }
 }
+
+/// Complete-message socket effects.
+pub mod websocket;

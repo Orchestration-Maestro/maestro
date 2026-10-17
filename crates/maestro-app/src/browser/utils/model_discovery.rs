@@ -1,4 +1,4 @@
-//! Local-server model discovery using supplied HTTP and diagnostic effects.
+//! Local-server model discovery using supplied transport and diagnostic effects.
 use futures_util::StreamExt;
 use maestro_models::{Fetch, FetchError, HttpRequest, Model, ModelCost, ModelInput};
 use serde::de::DeserializeOwned;
@@ -14,6 +14,8 @@ pub enum DiscoveryProvider {
     LlamaCpp,
     /// vLLM model listing.
     Vllm,
+    /// LM Studio system socket RPC.
+    Lmstudio,
 }
 impl fmt::Display for DiscoveryProvider {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -21,8 +23,19 @@ impl fmt::Display for DiscoveryProvider {
             Self::Ollama => "Ollama",
             Self::LlamaCpp => "llama.cpp",
             Self::Vllm => "vLLM",
+            Self::Lmstudio => "LM Studio",
         })
     }
+}
+/// Socket operation that failed.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SocketPhase {
+    /// Opening the connection.
+    Connection,
+    /// Sending or receiving authentication.
+    Authentication,
+    /// Sending or receiving the listing call.
+    Rpc,
 }
 /// Why discovery could not produce a model listing.
 #[derive(Debug)]
@@ -35,6 +48,17 @@ pub enum DiscoveryErrorKind {
     InvalidResponse,
     /// Invalid server host.
     InvalidUrl,
+    /// Original socket I/O failure and its operation phase.
+    Socket {
+        /// Operation phase.
+        phase: SocketPhase,
+        /// Retained native cause.
+        cause: Box<std::io::Error>,
+    },
+    /// Authentication refusal or malformed authentication response.
+    Authentication(Box<std::io::Error>),
+    /// Complete remote RPC error object.
+    Rpc(Box<RawValue>),
 }
 /// Provider-attributed discovery failure.
 #[derive(Debug)]
@@ -48,6 +72,9 @@ pub struct DiscoveryError {
 }
 impl fmt::Display for DiscoveryError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.provider == DiscoveryProvider::Lmstudio {
+            return write!(f, "LM Studio discovery failed: {}", self.message);
+        }
         write!(
             f,
             "Failed to discover {} models: {}",
@@ -59,6 +86,8 @@ impl std::error::Error for DiscoveryError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match &self.kind {
             DiscoveryErrorKind::Transport(error) => Some(error.as_ref()),
+            DiscoveryErrorKind::Socket { cause, .. }
+            | DiscoveryErrorKind::Authentication(cause) => Some(cause.as_ref()),
             _ => None,
         }
     }
@@ -107,6 +136,8 @@ pub struct DiscoveryOptions {
     pub fetch: Fetch,
     /// Diagnostic destination.
     pub log: DiscoveryLog,
+    /// Complete-message socket factory without retry policy.
+    pub connect_web_socket: maestro_models::ConnectWebSocket,
 }
 /// Last-wins JSON members, decoded only when selected.
 type Members = HashMap<String, Box<RawValue>>;
@@ -166,11 +197,27 @@ async fn http(
     }
     members(&maestro_text::decode_utf8(&bytes)).map_err(|error| invalid(provider, error))
 }
+/// Final invocation identity and display name.
+struct ModelNames {
+    /// Downloaded path or listed identifier.
+    id: String,
+    /// Final display name.
+    name: String,
+}
+impl ModelNames {
+    /// Use the same listed name for invocation and display.
+    fn same(id: String) -> Self {
+        Self {
+            name: id.clone(),
+            id,
+        }
+    }
+}
 /// Construct a text-only, unpriced completion model.
-fn model(id: String, base: &str, context: f64, maximum: f64, reasoning: bool) -> Model {
+fn model(names: ModelNames, base: &str, context: f64, maximum: f64, reasoning: bool) -> Model {
     Model {
-        name: id.clone(),
-        id,
+        name: names.name,
+        id: names.id,
         api: "openai-completions".into(),
         provider: String::new(),
         base_url: format!("{base}/v1"),
@@ -245,7 +292,7 @@ async fn completion_models(
             } else {
                 limit(&object, "max_tokens", 4096.0).map_err(|error| invalid(provider, error))?
             };
-            Ok(model(id, base, context, maximum, false))
+            Ok(model(ModelNames::same(id), base, context, maximum, false))
         })
         .collect()
 }
@@ -392,7 +439,13 @@ async fn ollama_detail(
         let reasoning = capabilities
             .iter()
             .any(|capability| capability == "thinking");
-        Ok(Some(model(name.clone(), base, context, maximum, reasoning)))
+        Ok(Some(model(
+            ModelNames::same(name.clone()),
+            base,
+            context,
+            maximum,
+            reasoning,
+        )))
     }
     .await;
     match result {
@@ -459,5 +512,9 @@ pub async fn discover_models(
         DiscoveryProvider::Ollama => discover_ollama_models(base_url, api_key, options).await,
         DiscoveryProvider::LlamaCpp => discover_llama_cpp_models(base_url, api_key, options).await,
         DiscoveryProvider::Vllm => discover_vllm_models(base_url, api_key, options).await,
+        DiscoveryProvider::Lmstudio => discover_lm_studio_models(base_url, api_key, options).await,
     }
 }
+
+mod lm_studio;
+pub use lm_studio::discover_lm_studio_models;

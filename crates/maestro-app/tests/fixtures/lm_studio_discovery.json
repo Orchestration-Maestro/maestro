@@ -1,0 +1,3463 @@
+{
+  "schema": [
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "embedding",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": []
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "safetensors",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "onnx",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "ggml",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "mlx_placeholder",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "torch_safetensors",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 0,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 0
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 0,
+          "maxTokens": 0
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": -1,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": -1
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": -1,
+          "maxTokens": -1
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 1e+100,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 1e+100
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 1e+100,
+          "maxTokens": 1e+100
+        }
+      ]
+    },
+    {
+      "input": {
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": null,
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "x",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": 3,
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": false,
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": {},
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": [],
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": null,
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "x",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": 3,
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": false,
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": {},
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": [],
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": null,
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "x",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": 3,
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": false,
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": {},
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": [],
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": null,
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "x",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "x",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": 3,
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": false,
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": {},
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": [],
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": null,
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "x",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "x",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": 3,
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": false,
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": {},
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": [],
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": null,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": "x",
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 3,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": false,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": {},
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": [],
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": null,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": "x",
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": 3,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": false,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": {},
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": [],
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": null,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": "x",
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": 3,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": false,
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": false,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": {},
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": [],
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": null
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": "x"
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 3
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 3,
+          "maxTokens": 3
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": false
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": {}
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": []
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "paramsString": null
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "paramsString": ""
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "paramsString": 3
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "paramsString": false
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "paramsString": {}
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "paramsString": []
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "architecture": null
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "architecture": ""
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "architecture": 3
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "architecture": false
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "architecture": {}
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "architecture": []
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "quantization": null
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "quantization": "q"
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "quantization": []
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "quantization": {}
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "quantization": {
+          "name": "Q4",
+          "bits": 4
+        }
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "quantization": {
+          "name": "",
+          "bits": -1,
+          "future": true
+        }
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "quantization": {
+          "name": "Q",
+          "bits": 4.5
+        }
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "quantization": {
+          "bits": 4
+        }
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "quantization": {
+          "name": "Q"
+        }
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "quantization": {
+          "name": null,
+          "bits": 4
+        }
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "quantization": {
+          "name": "Q",
+          "bits": null
+        }
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192,
+        "extra": {
+          "nested": [
+            "kept only in raw input"
+          ]
+        }
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "",
+        "format": "gguf",
+        "displayName": "",
+        "path": "",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "",
+          "name": "",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": " \ufeff\u0085 ",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": " \ufeff\u0085 ",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 0.5
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 1.5,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "embedding",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": []
+    },
+    {
+      "input": {
+        "type": "embedding",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": null,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "embedding",
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": null,
+        "trainedForToolUse": "future",
+        "maxContextLength": 8192
+      },
+      "success": true,
+      "models": []
+    },
+    {
+      "input": {
+        "type": {
+          "llm": null
+        },
+        "modelKey": "key-not-path",
+        "format": "gguf",
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "llm",
+        "modelKey": "key-not-path",
+        "format": {
+          "gguf": null
+        },
+        "displayName": "Visible name",
+        "path": "publisher/model/file.gguf",
+        "sizeBytes": 123,
+        "vision": true,
+        "trainedForToolUse": true,
+        "maxContextLength": 8192
+      },
+      "success": false
+    }
+  ],
+  "lists": [
+    {
+      "input": [],
+      "success": true,
+      "models": []
+    },
+    {
+      "input": [
+        {
+          "type": "llm",
+          "modelKey": "key-not-path",
+          "format": "gguf",
+          "displayName": "Visible name",
+          "path": "publisher/model/file.gguf",
+          "sizeBytes": 123,
+          "vision": true,
+          "trainedForToolUse": true,
+          "maxContextLength": 8192
+        }
+      ],
+      "success": true,
+      "models": [
+        {
+          "id": "publisher/model/file.gguf",
+          "name": "Visible name",
+          "api": "openai-completions",
+          "provider": "",
+          "baseUrl": "http://fixture.invalid/base/v1",
+          "reasoning": true,
+          "input": [
+            "text",
+            "image"
+          ],
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "contextWindow": 8192,
+          "maxTokens": 8192
+        }
+      ]
+    },
+    {
+      "input": [
+        {
+          "type": "embedding",
+          "modelKey": "key-not-path",
+          "format": "gguf",
+          "displayName": "Visible name",
+          "path": "publisher/model/file.gguf",
+          "sizeBytes": 123,
+          "vision": true,
+          "trainedForToolUse": true,
+          "maxContextLength": 8192
+        }
+      ],
+      "success": true,
+      "models": []
+    },
+    {
+      "input": [
+        null
+      ],
+      "success": false
+    },
+    {
+      "input": [
+        []
+      ],
+      "success": false
+    },
+    {
+      "input": [
+        {
+          "type": "future",
+          "modelKey": "key-not-path",
+          "format": "gguf",
+          "displayName": "Visible name",
+          "path": "publisher/model/file.gguf",
+          "sizeBytes": 123,
+          "vision": true,
+          "trainedForToolUse": true,
+          "maxContextLength": 8192
+        }
+      ],
+      "success": false
+    },
+    {
+      "input": {},
+      "success": false
+    },
+    {
+      "input": null,
+      "success": false
+    },
+    {
+      "input": "text",
+      "success": false
+    },
+    {
+      "input": 3,
+      "success": false
+    },
+    {
+      "input": false,
+      "success": false
+    }
+  ],
+  "remoteErrors": [
+    {
+      "input": {},
+      "success": true
+    },
+    {
+      "input": null,
+      "success": false
+    },
+    {
+      "input": [],
+      "success": false
+    },
+    {
+      "input": 3,
+      "success": false
+    },
+    {
+      "input": "text",
+      "success": false
+    },
+    {
+      "input": false,
+      "success": false
+    },
+    {
+      "input": {
+        "title": "T",
+        "cause": "C",
+        "suggestion": "S",
+        "errorData": {
+          "code": "x"
+        },
+        "displayData": {
+          "type": "future"
+        },
+        "stack": "server-stack",
+        "rootTitle": "Root"
+      },
+      "success": true
+    },
+    {
+      "input": {
+        "title": null,
+        "cause": 3,
+        "suggestion": false,
+        "errorData": [],
+        "stack": {},
+        "rootTitle": null
+      },
+      "success": true
+    },
+    {
+      "input": {
+        "future": {
+          "nested": true
+        }
+      },
+      "success": true
+    }
+  ],
+  "envelopes": [
+    {
+      "input": {
+        "type": "keepAliveAck"
+      },
+      "success": true
+    },
+    {
+      "input": {
+        "type": "communicationWarning",
+        "warning": "fixture warning"
+      },
+      "success": true
+    },
+    {
+      "input": {
+        "type": "rpcResult",
+        "callId": 0,
+        "result": []
+      },
+      "success": true
+    },
+    {
+      "input": {
+        "type": "rpcResult",
+        "callId": 0.5,
+        "result": []
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "rpcResult",
+        "callId": -1,
+        "result": []
+      },
+      "success": true
+    },
+    {
+      "input": {
+        "type": "rpcResult",
+        "callId": 1e+100,
+        "result": []
+      },
+      "success": true
+    },
+    {
+      "input": {
+        "type": "rpcResult",
+        "callId": "0",
+        "result": []
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "rpcResult",
+        "result": []
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "rpcError",
+        "callId": 0,
+        "error": {}
+      },
+      "success": true
+    },
+    {
+      "input": {
+        "type": "rpcError",
+        "callId": 0,
+        "error": null
+      },
+      "success": false
+    },
+    {
+      "input": null,
+      "success": false
+    },
+    {
+      "input": [],
+      "success": false
+    },
+    {
+      "input": {},
+      "success": false
+    },
+    {
+      "input": {
+        "type": "future"
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "type": "channelSend",
+        "channelId": 7,
+        "message": null,
+        "ackId": 1
+      },
+      "success": true
+    },
+    {
+      "input": {
+        "type": "channelAck",
+        "channelId": 7,
+        "ackId": 1
+      },
+      "success": true
+    },
+    {
+      "input": {
+        "type": "channelClose",
+        "channelId": 7
+      },
+      "success": true
+    },
+    {
+      "input": {
+        "type": "channelError",
+        "channelId": 7,
+        "error": {}
+      },
+      "success": true
+    },
+    {
+      "input": {
+        "type": "signalUpdate",
+        "subscribeId": 7,
+        "patches": [],
+        "tags": []
+      },
+      "success": true
+    },
+    {
+      "input": {
+        "type": "signalError",
+        "subscribeId": 7,
+        "error": {}
+      },
+      "success": true
+    },
+    {
+      "input": {
+        "type": "writableSignalUpdate",
+        "subscribeId": 7,
+        "patches": [],
+        "tags": []
+      },
+      "success": true
+    },
+    {
+      "input": {
+        "type": "writableSignalError",
+        "subscribeId": 7,
+        "error": {}
+      },
+      "success": true
+    }
+  ],
+  "auth": [
+    {
+      "input": {
+        "success": true
+      },
+      "success": true,
+      "accepted": true
+    },
+    {
+      "input": {
+        "success": true,
+        "ignored": 1
+      },
+      "success": true,
+      "accepted": true
+    },
+    {
+      "input": {
+        "success": false,
+        "error": "fixture denied"
+      },
+      "success": true,
+      "accepted": false
+    },
+    {
+      "input": {
+        "success": false
+      },
+      "success": false
+    },
+    {
+      "input": {
+        "success": 1
+      },
+      "success": false
+    },
+    {
+      "input": null,
+      "success": false
+    },
+    {
+      "input": [],
+      "success": false
+    },
+    {
+      "input": {},
+      "success": false
+    },
+    {
+      "input": "text",
+      "success": false
+    }
+  ],
+  "urls": [
+    {
+      "input": "http://localhost",
+      "url": "ws://localhost:1234/system"
+    },
+    {
+      "input": "https://LOCALHOST:443/root?query#part",
+      "url": "ws://localhost:1234/system"
+    },
+    {
+      "input": "http://host:80",
+      "url": "ws://host:1234/system"
+    },
+    {
+      "input": "https://host:80/a",
+      "url": "ws://host:80/system"
+    },
+    {
+      "input": "http://u:p@host:1235/root",
+      "url": "ws://host:1235/system"
+    },
+    {
+      "input": "http://[::1]:1234",
+      "url": "ws://[::1]:1234/system"
+    },
+    {
+      "input": "http://[::1]",
+      "url": "ws://[::1]:1234/system"
+    },
+    {
+      "input": "ws://host:80/",
+      "url": "ws://host:1234/system"
+    },
+    {
+      "input": "wss://host:443/",
+      "url": "ws://host:1234/system"
+    },
+    {
+      "input": "ftp://host",
+      "url": "ws://host:1234/system"
+    },
+    {
+      "input": "http://host:0",
+      "url": "ws://host:0/system"
+    },
+    {
+      "input": "http://host:65535",
+      "url": "ws://host:65535/system"
+    },
+    {
+      "input": "http://host:65536",
+      "url": null
+    },
+    {
+      "input": "not a url",
+      "url": null
+    },
+    {
+      "input": "",
+      "url": null
+    },
+    {
+      "input": "\ufeffhttp://host",
+      "url": null
+    },
+    {
+      "input": " http://host ",
+      "url": "ws://host:1234/system"
+    },
+    {
+      "input": "http://\u00e9.example/a",
+      "url": "ws://xn--9ca.example:1234/system"
+    }
+  ],
+  "invalidUrls": [
+    "not a url",
+    "",
+    "http://host:65536"
+  ],
+  "connectionFailures": [
+    "refused",
+    "upgrade"
+  ],
+  "observations": [
+    {
+      "name": "ordered_fields_and_duplicates",
+      "base": "http://127.0.0.1:$PORT/authored/?q=1#f",
+      "key": "ignored-key",
+      "dispatch": true,
+      "replies": [
+        {
+          "success": true
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": [
+            {
+              "type": "llm",
+              "modelKey": "key-not-path",
+              "format": "gguf",
+              "displayName": "Visible name",
+              "path": "publisher/model/file.gguf",
+              "sizeBytes": 123,
+              "vision": true,
+              "trainedForToolUse": true,
+              "maxContextLength": 8192
+            },
+            {
+              "type": "embedding",
+              "modelKey": "key-not-path",
+              "format": "gguf",
+              "displayName": "Visible name",
+              "path": "publisher/model/file.gguf",
+              "sizeBytes": 123,
+              "vision": true,
+              "trainedForToolUse": true,
+              "maxContextLength": 8192
+            },
+            {
+              "type": "llm",
+              "modelKey": "key-not-path",
+              "format": "gguf",
+              "displayName": "",
+              "path": "a",
+              "sizeBytes": 123,
+              "vision": false,
+              "trainedForToolUse": false,
+              "maxContextLength": -1
+            },
+            {
+              "type": "llm",
+              "modelKey": "key-not-path",
+              "format": "gguf",
+              "displayName": "Visible name",
+              "path": "publisher/model/file.gguf",
+              "sizeBytes": 123,
+              "vision": true,
+              "trainedForToolUse": true,
+              "maxContextLength": 8192
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "success": true,
+        "models": [
+          {
+            "id": "publisher/model/file.gguf",
+            "name": "Visible name",
+            "api": "openai-completions",
+            "provider": "",
+            "baseUrl": "http://127.0.0.1:$PORT/authored/?q=1#f/v1",
+            "reasoning": true,
+            "input": [
+              "text",
+              "image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 8192,
+            "maxTokens": 8192
+          },
+          {
+            "id": "a",
+            "name": "a",
+            "api": "openai-completions",
+            "provider": "",
+            "baseUrl": "http://127.0.0.1:$PORT/authored/?q=1#f/v1",
+            "reasoning": false,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": -1,
+            "maxTokens": -1
+          },
+          {
+            "id": "publisher/model/file.gguf",
+            "name": "Visible name",
+            "api": "openai-completions",
+            "provider": "",
+            "baseUrl": "http://127.0.0.1:$PORT/authored/?q=1#f/v1",
+            "reasoning": true,
+            "input": [
+              "text",
+              "image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 8192,
+            "maxTokens": 8192
+          }
+        ]
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "empty_listing",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": []
+        }
+      ],
+      "expected": {
+        "success": true,
+        "models": []
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "empty_api_key",
+      "base": "http://127.0.0.1:$PORT",
+      "key": "",
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": [
+            {
+              "type": "llm",
+              "modelKey": "key-not-path",
+              "format": "gguf",
+              "displayName": "Visible name",
+              "path": "publisher/model/file.gguf",
+              "sizeBytes": 123,
+              "vision": true,
+              "trainedForToolUse": true,
+              "maxContextLength": 8192
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "success": true,
+        "models": [
+          {
+            "id": "publisher/model/file.gguf",
+            "name": "Visible name",
+            "api": "openai-completions",
+            "provider": "",
+            "baseUrl": "http://127.0.0.1:$PORT/v1",
+            "reasoning": true,
+            "input": [
+              "text",
+              "image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 8192,
+            "maxTokens": 8192
+          }
+        ]
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "selected_duplicate_wire_members",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        "{\"type\":\"rpcResult\",\"callId\":99,\"callId\":0,\"result\":[{\"type\":\"llm\",\"modelKey\":\"key-not-path\",\"format\":\"gguf\",\"displayName\":\"Visible name\",\"path\":\"old\",\"\\u0070ath\":\"last\",\"sizeBytes\":123,\"vision\":true,\"trainedForToolUse\":true,\"maxContextLength\":8192}]}"
+      ],
+      "expected": {
+        "success": true,
+        "models": [
+          {
+            "id": "last",
+            "name": "Visible name",
+            "api": "openai-completions",
+            "provider": "",
+            "baseUrl": "http://127.0.0.1:$PORT/v1",
+            "reasoning": true,
+            "input": [
+              "text",
+              "image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 8192,
+            "maxTokens": 8192
+          }
+        ]
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "independent_vision_and_tool_flags",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": [
+            {
+              "type": "llm",
+              "modelKey": "key-not-path",
+              "format": "gguf",
+              "displayName": "Visible name",
+              "path": "vision-only",
+              "sizeBytes": 123,
+              "vision": true,
+              "trainedForToolUse": false,
+              "maxContextLength": 8192
+            },
+            {
+              "type": "llm",
+              "modelKey": "key-not-path",
+              "format": "gguf",
+              "displayName": "Visible name",
+              "path": "tools-only",
+              "sizeBytes": 123,
+              "vision": false,
+              "trainedForToolUse": true,
+              "maxContextLength": 8192
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "success": true,
+        "models": [
+          {
+            "id": "vision-only",
+            "name": "Visible name",
+            "api": "openai-completions",
+            "provider": "",
+            "baseUrl": "http://127.0.0.1:$PORT/v1",
+            "reasoning": false,
+            "input": [
+              "text",
+              "image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 8192,
+            "maxTokens": 8192
+          },
+          {
+            "id": "tools-only",
+            "name": "Visible name",
+            "api": "openai-completions",
+            "provider": "",
+            "baseUrl": "http://127.0.0.1:$PORT/v1",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 8192,
+            "maxTokens": 8192
+          }
+        ]
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "signed_zero_from_raw_wire",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        "{\"type\":\"rpcResult\",\"callId\":0,\"result\":[{\"type\":\"llm\",\"modelKey\":\"key-not-path\",\"format\":\"gguf\",\"displayName\":\"Visible name\",\"path\":\"publisher/model/file.gguf\",\"sizeBytes\":123,\"vision\":true,\"trainedForToolUse\":true,\"maxContextLength\":-0}]}"
+      ],
+      "expected": {
+        "success": true,
+        "models": [
+          {
+            "id": "publisher/model/file.gguf",
+            "name": "Visible name",
+            "api": "openai-completions",
+            "provider": "",
+            "baseUrl": "http://127.0.0.1:$PORT/v1",
+            "reasoning": true,
+            "input": [
+              "text",
+              "image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 0,
+            "maxTokens": 0
+          }
+        ]
+      },
+      "negativeZero": {
+        "contextWindow": true,
+        "maxTokens": true
+      }
+    },
+    {
+      "name": "valid_control_messages_then_success",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        {
+          "type": "keepAliveAck"
+        },
+        {
+          "type": "communicationWarning",
+          "warning": "fixture warning"
+        },
+        {
+          "type": "rpcError",
+          "callId": 6,
+          "error": {
+            "title": "unmatched"
+          }
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": []
+        }
+      ],
+      "expected": {
+        "success": true,
+        "models": []
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "valid_unowned_channel_and_signal_messages",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        {
+          "type": "channelSend",
+          "channelId": 7,
+          "message": null,
+          "ackId": 1
+        },
+        {
+          "type": "channelAck",
+          "channelId": 7,
+          "ackId": 1
+        },
+        {
+          "type": "channelClose",
+          "channelId": 7
+        },
+        {
+          "type": "channelError",
+          "channelId": 7,
+          "error": {}
+        },
+        {
+          "type": "signalUpdate",
+          "subscribeId": 7,
+          "patches": [],
+          "tags": []
+        },
+        {
+          "type": "signalError",
+          "subscribeId": 7,
+          "error": {}
+        },
+        {
+          "type": "writableSignalUpdate",
+          "subscribeId": 7,
+          "patches": [],
+          "tags": []
+        },
+        {
+          "type": "writableSignalError",
+          "subscribeId": 7,
+          "error": {}
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": []
+        }
+      ],
+      "expected": {
+        "success": true,
+        "models": []
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "invalid_integer_call_id_then_success",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0.5,
+          "result": []
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": []
+        }
+      ],
+      "expected": {
+        "success": false,
+        "error": {
+          "kind": "InvalidResponse",
+          "prefix": "LM Studio discovery failed: "
+        }
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "wide_integer_and_empty_name",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": [
+            {
+              "type": "llm",
+              "modelKey": "key-not-path",
+              "format": "gguf",
+              "displayName": "",
+              "path": "",
+              "sizeBytes": 0,
+              "vision": true,
+              "trainedForToolUse": true,
+              "maxContextLength": 1e+100
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "success": true,
+        "models": [
+          {
+            "id": "",
+            "name": "",
+            "api": "openai-completions",
+            "provider": "",
+            "baseUrl": "http://127.0.0.1:$PORT/v1",
+            "reasoning": true,
+            "input": [
+              "text",
+              "image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 1e+100,
+            "maxTokens": 1e+100
+          }
+        ]
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "whitespace_name_and_zero_context",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": [
+            {
+              "type": "llm",
+              "modelKey": "key-not-path",
+              "format": "gguf",
+              "displayName": " \ufeff\u0085 ",
+              "path": "publisher/model/file.gguf",
+              "sizeBytes": 123,
+              "vision": true,
+              "trainedForToolUse": true,
+              "maxContextLength": 0
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "success": true,
+        "models": [
+          {
+            "id": "publisher/model/file.gguf",
+            "name": " \ufeff\u0085 ",
+            "api": "openai-completions",
+            "provider": "",
+            "baseUrl": "http://127.0.0.1:$PORT/v1",
+            "reasoning": true,
+            "input": [
+              "text",
+              "image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 0,
+            "maxTokens": 0
+          }
+        ]
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "authentication_denied",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": false,
+          "error": "fixture denied"
+        }
+      ],
+      "expected": {
+        "success": false,
+        "error": {
+          "message": "LM Studio discovery failed: Failed to authenticate: fixture denied"
+        }
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "authentication_malformed_json",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        "{"
+      ],
+      "expected": {
+        "success": false,
+        "error": {
+          "message": "LM Studio discovery failed: Failed to parse authentication result: <native diagnostic>"
+        }
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "authentication_malformed_shape",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": false
+        }
+      ],
+      "expected": {
+        "success": false,
+        "error": {
+          "message": "LM Studio discovery failed: Failed to parse authentication result: <native diagnostic>"
+        }
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "closed_during_authentication",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [],
+      "expected": {
+        "success": false,
+        "error": {
+          "message": "LM Studio discovery failed: WebSocket connection closed"
+        }
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "closed_during_rpc",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        }
+      ],
+      "expected": {
+        "success": false,
+        "error": {
+          "message": "LM Studio discovery failed: WebSocket connection closed"
+        }
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "remote_rpc_error",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        {
+          "type": "rpcError",
+          "callId": 0,
+          "error": {
+            "title": "Fixture title",
+            "message": "Fixture message",
+            "cause": "Fixture cause",
+            "suggestion": "Fixture suggestion",
+            "errorData": {
+              "code": "fixture"
+            }
+          }
+        }
+      ],
+      "expected": {
+        "success": false,
+        "error": {
+          "message": "LM Studio discovery failed: Fixture title"
+        }
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "unmatched_result_then_success",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        {
+          "type": "rpcResult",
+          "callId": 7,
+          "result": [
+            {
+              "type": "llm",
+              "modelKey": "key-not-path",
+              "format": "gguf",
+              "displayName": "Visible name",
+              "path": "publisher/model/file.gguf",
+              "sizeBytes": 123,
+              "vision": true,
+              "trainedForToolUse": true,
+              "maxContextLength": 8192
+            }
+          ]
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": []
+        }
+      ],
+      "expected": {
+        "success": true,
+        "models": []
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "invalid_json_then_success",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        "{",
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": []
+        }
+      ],
+      "expected": {
+        "success": false,
+        "error": {
+          "kind": "InvalidResponse",
+          "prefix": "LM Studio discovery failed: "
+        }
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "invalid_envelope_then_success",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        {
+          "type": "future",
+          "callId": 0,
+          "result": [
+            {
+              "type": "llm",
+              "modelKey": "key-not-path",
+              "format": "gguf",
+              "displayName": "Visible name",
+              "path": "publisher/model/file.gguf",
+              "sizeBytes": 123,
+              "vision": true,
+              "trainedForToolUse": true,
+              "maxContextLength": 8192
+            }
+          ]
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": []
+        }
+      ],
+      "expected": {
+        "success": false,
+        "error": {
+          "kind": "InvalidResponse",
+          "prefix": "LM Studio discovery failed: "
+        }
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "invalid_result_then_success",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": [
+            {
+              "type": "llm",
+              "modelKey": "key-not-path",
+              "format": "gguf",
+              "displayName": "Visible name",
+              "path": null,
+              "sizeBytes": 123,
+              "vision": true,
+              "trainedForToolUse": true,
+              "maxContextLength": 8192
+            }
+          ]
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": []
+        }
+      ],
+      "expected": {
+        "success": false,
+        "error": {
+          "kind": "InvalidResponse",
+          "prefix": "LM Studio discovery failed: "
+        }
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "invalid_embedding_then_success",
+      "base": "http://127.0.0.1:$PORT",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": [
+            {
+              "type": "embedding",
+              "modelKey": "key-not-path",
+              "format": "gguf",
+              "displayName": "Visible name",
+              "path": "publisher/model/file.gguf",
+              "sizeBytes": null,
+              "vision": true,
+              "trainedForToolUse": true,
+              "maxContextLength": 8192
+            }
+          ]
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": []
+        }
+      ],
+      "expected": {
+        "success": false,
+        "error": {
+          "kind": "InvalidResponse",
+          "prefix": "LM Studio discovery failed: "
+        }
+      },
+      "negativeZero": null
+    },
+    {
+      "name": "endpoint_ignores_credentials_path_query_fragment",
+      "base": "https://user:password@127.0.0.1:$PORT/prefix?x#f",
+      "key": null,
+      "dispatch": false,
+      "replies": [
+        {
+          "success": true
+        },
+        {
+          "type": "rpcResult",
+          "callId": 0,
+          "result": [
+            {
+              "type": "llm",
+              "modelKey": "key-not-path",
+              "format": "gguf",
+              "displayName": "Visible name",
+              "path": "publisher/model/file.gguf",
+              "sizeBytes": 123,
+              "vision": true,
+              "trainedForToolUse": true,
+              "maxContextLength": 8192
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "success": true,
+        "models": [
+          {
+            "id": "publisher/model/file.gguf",
+            "name": "Visible name",
+            "api": "openai-completions",
+            "provider": "",
+            "baseUrl": "https://user:password@127.0.0.1:$PORT/prefix?x#f/v1",
+            "reasoning": true,
+            "input": [
+              "text",
+              "image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 8192,
+            "maxTokens": 8192
+          }
+        ]
+      },
+      "negativeZero": null
+    }
+  ]
+}
