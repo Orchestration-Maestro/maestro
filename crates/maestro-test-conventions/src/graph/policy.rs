@@ -13,6 +13,30 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-watch", &[]),
     ("maestro-lock", &[]),
     ("maestro-process", &[]),
+    ("maestro-protocol", &["maestro-json"]),
+    ("maestro-ipc", &[]),
+    ("maestro-terminal", &["maestro-text"]),
+    (
+        "maestro-workspace",
+        &["maestro-protocol", "maestro-json", "maestro-text"],
+    ),
+    ("maestro-detection", &["maestro-protocol", "maestro-text"]),
+    ("maestro-terminal-ghostty", &["maestro-terminal"]),
+    (
+        "maestro-daemon",
+        &[
+            "maestro-protocol",
+            "maestro-ipc",
+            "maestro-process",
+            "maestro-terminal",
+            "maestro-workspace",
+            "maestro-detection",
+            "maestro-settings",
+            "maestro-tui",
+            "maestro-json",
+            "maestro-text",
+        ],
+    ),
     // Common text operations include CSS string serialization for brand and application callers.
     ("maestro-text", &[]),
     ("maestro-json", &[]),
@@ -151,6 +175,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     (
         "maestro-app",
         &[
+            "maestro-daemon",
             "maestro-models",
             "maestro-agent",
             "maestro-credentials",
@@ -189,6 +214,15 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-theme",
         ],
     ),
+    (
+        "maestro-multiplexer",
+        &[
+            "maestro-app",
+            "maestro-tui",
+            "maestro-tui-crossterm",
+            "maestro-theme",
+        ],
+    ),
     ("maestro-rpc", &["maestro-app", "maestro-theme"]),
     ("maestro-web", &["maestro-app", "maestro-theme"]),
     (
@@ -200,6 +234,8 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-chat",
             "maestro-web",
             "maestro-extensions-wasmtime",
+            "maestro-multiplexer",
+            "maestro-terminal-ghostty",
         ],
     ),
 ];
@@ -294,6 +330,7 @@ pub(crate) fn exact(name: &str) -> bool {
     matches!(
         name,
         "maestro-cli"
+            | "maestro-multiplexer"
             | "maestro-chat"
             | "maestro-rpc"
             | "maestro-web"
@@ -304,9 +341,15 @@ pub(crate) fn exact(name: &str) -> bool {
 
 /// List required edges independently from the allowed dependency boundary.
 pub(crate) fn required(name: &str) -> &'static [&'static str] {
-    if matches!(
+    if name == "maestro" {
+        &[
+            "maestro-app",
+            "maestro-multiplexer",
+            "maestro-terminal-ghostty",
+        ]
+    } else if matches!(
         name,
-        "maestro-cli" | "maestro-chat" | "maestro-rpc" | "maestro-web"
+        "maestro-cli" | "maestro-chat" | "maestro-rpc" | "maestro-web" | "maestro-multiplexer"
     ) {
         &["maestro-app"]
     } else if exact(name) {

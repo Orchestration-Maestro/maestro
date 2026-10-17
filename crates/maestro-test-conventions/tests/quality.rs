@@ -801,3 +801,41 @@ fn associated_test_spans_preserve_production_boundaries() {
         assert!(check_workspace(&workspace.root).is_err(), "{gated}");
     }
 }
+
+#[test]
+fn terminal_engine_alone_may_override_unsafe_lint() {
+    let workspace = Workspace::new();
+    workspace.member("engine", "maestro-terminal-ghostty", "");
+    workspace.list(&[("maestro-terminal-ghostty", "core")]);
+    let lints = workspace.engine_lints();
+    let manifest = workspace.root.join("crates/engine/Cargo.toml");
+    let permitted = std::fs::read_to_string(&manifest).unwrap();
+    let baseline = permitted.replace(&lints, "[lints]\nworkspace = true\n");
+    std::fs::write(&manifest, &permitted).unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    for altered in [
+        baseline,
+        format!("{permitted}\n[lints.rustdoc]\nbroken_intra_doc_links = \"allow\"\n"),
+        permitted.replace("unwrap_used = \"forbid\"", "unwrap_used = \"allow\""),
+        permitted.replace("unsafe_code = \"allow\"", "unsafe_code = \"deny\""),
+        permitted.replace(
+            "unsafe_code = \"allow\"",
+            "unsafe_code = \"allow\"\ndead_code = \"allow\"",
+        ),
+    ] {
+        std::fs::write(&manifest, altered).unwrap();
+        assert!(check_workspace(&workspace.root).is_err());
+    }
+    workspace.member("engine", "maestro-terminal", "");
+    workspace.list(&[("maestro-terminal", "core")]);
+    std::fs::write(
+        &manifest,
+        permitted.replace("maestro-terminal-ghostty", "maestro-terminal"),
+    )
+    .unwrap();
+    assert!(
+        check_workspace(&workspace.root)
+            .unwrap_err()
+            .contains("must inherit workspace lints")
+    );
+}

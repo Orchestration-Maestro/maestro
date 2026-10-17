@@ -41,9 +41,11 @@ impl Workspace {
         fs::create_dir_all(root.join("src")).unwrap();
         fs::write(root.join("src/lib.rs"), "").unwrap();
         let lints = if name == "maestro-extensions-wasm" {
-            GUEST_LINTS
+            GUEST_LINTS.to_owned()
+        } else if name == "maestro-terminal-ghostty" {
+            self.engine_lints()
         } else {
-            "[lints]\nworkspace = true\n"
+            "[lints]\nworkspace = true\n".to_owned()
         };
         fs::write(
             root.join("Cargo.toml"),
@@ -52,6 +54,18 @@ impl Workspace {
             ),
         )
         .unwrap();
+    }
+
+    /// The engine's lint exception retains the complete workspace table.
+    pub fn engine_lints(&self) -> String {
+        let text = fs::read_to_string(self.root.join("Cargo.toml")).unwrap();
+        let root: toml::Value = toml::from_str(&text).unwrap();
+        let mut lints = root["workspace"]["lints"].clone();
+        lints["rust"]["unsafe_code"] = "allow".into();
+        toml::to_string(&toml::Value::Table(
+            [("lints".into(), lints)].into_iter().collect(),
+        ))
+        .unwrap()
     }
 
     pub fn external(&self, name: &str) {

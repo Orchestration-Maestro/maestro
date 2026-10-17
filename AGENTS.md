@@ -49,10 +49,12 @@ function, cognitive complexity 15, nesting depth 4 and
 500 code lines per file; doc comments are not counted. Test directories,
 `tests.rs` and trailing test modules do not count against file length. Pedantic
 Clippy lints are errors; production code may not use `unwrap`, `expect` or
-`panic!`. Unsafe code is forbidden. Thresholds live in
+`panic!`. Unsafe code is forbidden except in `maestro-terminal-ghostty` engine bindings.
+That adapter declares its own workspace-equivalent lint table with only
+`unsafe_code = "allow"`; the workspace retains `unsafe_code = "forbid"`. Thresholds live in
 `clippy.toml`; levels live in `[workspace.lints]` and crates inherit them with
 `[lints] workspace = true`. Clippy also rejects the ambiguous JSON map `remove`; see
-[quality checks](docs/architecture.md#quality-checks). Quality-lint allowances are forbidden, with one exception.
+[quality checks](docs/architecture.md#quality-checks). Quality-lint allowances are forbidden apart from the engine exception above and the generated-binding exception below.
 `maestro-extensions-wasm` declares its own lint table instead of inheriting the workspace's:
 the same table with `pedantic`, `too_many_arguments` and `excessive_nesting` at `deny`
 rather than `forbid`, because its generated bindings cannot compile under `forbid`. Its
@@ -118,7 +120,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, newline
   normalization shared with `maestro-tools`); JSON owns JSON
   boundary semantics (object acceptance, canonical keys, truth, compact and
-  pretty text). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
+  pretty text, JSONL line framing). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
   interchange records and depend only on `maestro-request`; `maestro-brand`
   projects a brand pack and depends on text and JSON. Text, JSON, entry, tool and brand exist; add no `common`, `utils` or
   `shared-types` crate. `maestro-pattern` depends only on text.
@@ -142,7 +144,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   production lines with matching moved/deleted counts, not claimed savings.
 - `maestro-process` is a declared core leaf below layer 0 with no workspace
   dependencies, including the path and cancellation leaves. Only tools, packages,
-  credentials, the application and the toolkit may depend on it, on native targets. It owns native child-process
+  credentials, the application, the daemon and the toolkit may depend on it, on native targets. It owns native child-process
   lifecycles; the callers keep cancellation, termination and settlement policy and
   all output handling. Synchronous capture follows the timeout handling in
   [the spec](docs/specs/maestro-port.md#crates-and-delivery-order).
@@ -190,7 +192,7 @@ conventions checker, terminal scenario harness, checked test-process owner,
 repository tooling and the feature unifier (`maestro-dependencies`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
 no internal dependencies apart from the optional utility and the unifier. Sparse workspaces need
-no placeholder crates. Frontends require the application edge and may declare
+no placeholder crates. Frontends, including the multiplexer, require the application edge and may declare
 only the other edges in their allowed sets, when used. The terminal adapter
 requires toolkit and text, and the scenario harness requires toolkit only. The
 utility edge never supplies a required edge. Other non-leaves permit subsets.
@@ -217,6 +219,10 @@ caller context, wiring-only binaries, no frontend application policy, complete
 code-generation evidence and framework/highlighting equivalents. See
 [architecture checks](docs/architecture.md) for commands, diagnostics and limits.
 Publish reusable adapter conformance from the owning leaf, not a forwarding test crate.
+
+The workspace daemon is core design: the root always wires the daemon, the
+multiplexer and the terminal engine adapter through the application interface.
+These declared owners need no placeholder crates before their first delivery.
 
 ## Libraries and formats
 
