@@ -3650,6 +3650,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-test-process"
+version = "0.1.0"
+dependencies = [
+ "maestro-dependencies",
+]
+
+[[package]]
 name = "maestro-test-terminal"
 version = "0.1.0"
 dependencies = [

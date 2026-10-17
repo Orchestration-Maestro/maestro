@@ -263,6 +263,7 @@ from the optional foundation utility described below.
 | `maestro-resources` | discover instruction resources | `maestro-request`, `maestro-pattern`, `maestro-text` | 0 |
 | `maestro-settings` | own accepted preferences | `maestro-lock`, `maestro-json` | 0 |
 | `maestro-test-conventions` | verify workspace structure | — | 0 |
+| `maestro-test-process` | run one named test in a checked child process | — | 0 |
 | `maestro-tooling` | automate repository development | — | 0 |
 | `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process` | 0 |
 | `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool` | 1 |
@@ -426,16 +427,34 @@ The terminal adapter (`maestro-tui-crossterm`) requires the toolkit and
 `maestro-text` as direct dependencies; an absent required dependency fails, and the
 terminal scenario harness remains forbidden from importing text.
 
-Two internal development edges are permitted. `maestro-tui-crossterm` to
+The internal development edges include the test-process edges below. `maestro-tui-crossterm` to
 `maestro-brand` serves the terminal examples' shared brand projection. It does not
 permit a normal or build dependency on brand or theme, satisfy either required
 toolkit/text dependency, or make the scenario harness a development target.
 `maestro-extensions` to `maestro-credentials`, declared for native targets only,
 lets extension tests and doctests build a real model catalog over in-memory
 credential storage; it permits no normal or build dependency on credentials.
-Both edges remain subject to test-graph cycle checks, including aliases and
+These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
+
+### Test process owner
+
+`maestro-test-process` is a dedicated, unpublished, native, std-only test-support
+leaf that starts one named libtest child and proves the child started exactly that
+test. It has no workspace dependencies except the native feature unifier, and it is
+excluded from the foundation utility permission. Its only incoming edges are
+non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
+from `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
+`maestro-credentials`, `maestro-models`, `maestro-packages`, `maestro-process`,
+`maestro-session`, `maestro-settings`, `maestro-test-conventions`,
+`maestro-tooling`, `maestro-tools`, `maestro-tui` and `maestro-tui-crossterm`; a
+caller declares it only when it uses it. No normal, build, optional, unqualified or
+non-native declaration, no other consumer and no other `maestro-test-*` crate is
+admitted by this rule, and the terminal scenario harness is not a reusable
+dependency. The edge is checked in declared metadata (native placement) and in
+host-resolved metadata, before the dependency-free and core-to-dedicated rules, and
+remains subject to both cycle checks.
 
 The graph consists of the table entries, the foundation utility, the native
 feature unifier and these development-only exceptions. The
@@ -448,7 +467,7 @@ consumers; the utility is delivered before its first consumer.
 
 A crate is reached when every crate it depends on has its first tickets landed. Each crate's tickets are written when that crate is reached, and each ticket links to this specification. Tickets are not planned in advance for all crates. Same-layer crates run in parallel (at most 4 compiling lanes).
 
-1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-conventions`, `maestro-tooling`, `maestro-tui`
+1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-conventions`, `maestro-test-process`, `maestro-tooling`, `maestro-tui`
 2. **Layer 1:** `maestro-agent`, `maestro-credentials`, `maestro-packages`, `maestro-test-terminal`, `maestro-theme`, `maestro-tui-crossterm`
 3. **Layer 2:** `maestro-catalog`, `maestro-session`, `maestro-tools`
 4. **Layer 3:** `maestro-export`, `maestro-extensions`
