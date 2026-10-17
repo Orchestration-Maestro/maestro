@@ -327,3 +327,20 @@ pub fn rejected_pipeline(receive: &std::sync::mpsc::Receiver<String>) -> String 
         }
     }
 }
+
+/// Restrict the cold witness to bindings and the prepared include it consumes.
+pub fn bootstrap_source(browser: &Browser) {
+    let manifest = browser.fixture("Cargo.toml");
+    let mut value: toml::Value = toml::from_str(&fs::read_to_string(&manifest).unwrap()).unwrap();
+    value["dependencies"]
+        .as_table_mut()
+        .unwrap()
+        .retain(|name, _| name == "wasm-bindgen");
+    fs::write(manifest, toml::to_string(&value).unwrap()).unwrap();
+    fs::write(
+        browser.fixture("src/main.rs"),
+        include_str!("browser_bootstrap.rs"),
+    )
+    .unwrap();
+    browser.generate_lockfile();
+}

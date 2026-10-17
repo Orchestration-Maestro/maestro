@@ -271,7 +271,9 @@ shell on Windows. The example builds the author component, warms the Wasmtime
 compilation cache beside it and exports its path to the tests' processes.
 Plain Cargo tests retain their self-building fallback. Native OAuth callback
 tests that bind a fixed port belong in an `oauth_callback` module, which joins a single-thread nextest group
-because their redirect URIs require fixed ports; other tests remain parallel.
+because their redirect URIs require fixed ports. Browser author-build tests also
+join a single-thread group because Trunk shares binding/optimizer intermediates;
+their file lock keeps plain Cargo tests safe. Other tests remain parallel.
 
 Only `test-offline` sets local-model suppression, removes its explicit
 provider variables and temporarily moves `$HOME/.maestro/agent/auth.json` to the
