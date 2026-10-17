@@ -19,7 +19,7 @@ fn reload(native: bool, original: &Model) {
     let initial = r#"{"providers":{"openrouter":{"baseUrl":"first","modelOverrides":{"anthropic/claude-sonnet-4":{"name":"First"}},"models":[{"id":"old"}]}}}"#;
     let file = support::File::new(initial.as_bytes());
     let text = support::Text(Arc::new(Mutex::new(Some(initial.into()))));
-    let mut registry = if native {
+    let registry = if native {
         ModelRegistry::create(support::auth(), file.path()).unwrap()
     } else {
         ModelRegistry::with_operations(support::auth(), "<models-file>", text.clone()).unwrap()
@@ -77,7 +77,7 @@ fn reload(native: bool, original: &Model) {
 
 #[test]
 fn retained_catalog_handles_track_edits_and_survive_reload() {
-    let mut registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
     let old = registry.get_all();
     assert!(Arc::ptr_eq(&old, &registry.get_all()));
     let first = old.read().unwrap()[0].clone();

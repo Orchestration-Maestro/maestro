@@ -9,6 +9,7 @@ mod catalog_observations;
 mod catalog_provider_affinity;
 mod catalog_provider_lifecycle;
 mod catalog_provider_registration;
+mod catalog_reentry;
 mod catalog_request_auth;
 #[allow(
     dead_code,

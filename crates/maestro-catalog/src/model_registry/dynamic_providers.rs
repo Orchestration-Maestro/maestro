@@ -1,7 +1,7 @@
 //! Dynamic application and retained provider replay.
 use super::provider_config::{RegisteredOAuth, nonempty};
 use super::request_auth::ProviderRequestConfig;
-use super::{CatalogError, ModelRegistry, ProviderConfigInput, ProviderModelInput};
+use super::{CatalogError, CatalogState, ModelRegistry, ProviderConfigInput, ProviderModelInput};
 use maestro_credentials::AuthCredential;
 use maestro_models::SharedHandle;
 use maestro_models::{
@@ -12,101 +12,53 @@ use std::sync::{Arc, PoisonError, RwLock};
 impl ModelRegistry {
     /// Apply incoming operations before descriptor publication and optional transformation.
     pub(super) fn apply_provider_config(
-        &mut self,
+        &self,
         provider: &str,
         config: &Arc<RwLock<ProviderConfigInput>>,
     ) -> Result<(), CatalogError> {
-        install_operations(provider, config);
-        let oauth = {
-            let config = config.read().unwrap_or_else(PoisonError::into_inner);
-            if nonempty(config.api_key.as_deref()).is_some()
-                || config.headers.is_some()
-                || config.auth_header == Some(true)
-            {
-                self.provider_configs.insert(
-                    provider.into(),
-                    ProviderRequestConfig {
-                        api_key: config.api_key.clone(),
-                        headers: super::composition::ordered(config.headers.clone()),
-                        auth_header: config.auth_header.unwrap_or(false),
-                    },
-                );
-            }
-            if let Some(definitions) = config.models.as_ref().filter(|models| !models.is_empty()) {
-                self.replace_models(provider, &config, definitions);
-                config.oauth.clone()
-            } else if nonempty(config.base_url.as_deref()).is_some() || config.headers.is_some() {
-                self.override_models(provider, config.base_url.as_deref());
-                None
-            } else {
-                None
-            }
-        };
+        let oauth = self.prepare_provider_config(provider, config);
         if let Some(oauth) = oauth {
             self.transform_models(provider, &oauth)?;
         }
         Ok(())
     }
-    /// Publish a replacement list before a fallible account transformation.
-    fn replace_models(
-        &mut self,
+    /// Publish incoming sources and descriptors before supplied transformation.
+    pub(super) fn prepare_provider_config(
+        &self,
         provider: &str,
-        config: &ProviderConfigInput,
-        definitions: &[ProviderModelInput],
-    ) {
-        let mut models: Vec<_> = self
-            .models
-            .read()
-            .unwrap_or_else(PoisonError::into_inner)
-            .iter()
-            .filter(|model| {
-                model
-                    .read()
-                    .unwrap_or_else(PoisonError::into_inner)
-                    .provider
-                    != provider
-            })
-            .cloned()
-            .collect();
-        for definition in definitions {
-            let identity = (provider.into(), definition.id.clone());
-            if let Some(headers) = super::composition::ordered(definition.headers.clone())
-                .filter(|headers| !headers.is_empty())
+        config: &Arc<RwLock<ProviderConfigInput>>,
+    ) -> Option<OAuthProviderHandle> {
+        install_operations(provider, config);
+        {
+            let config = config.read().unwrap_or_else(PoisonError::into_inner);
+            let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
+            if nonempty(config.api_key.as_deref()).is_some()
+                || config.headers.is_some()
+                || config.auth_header == Some(true)
             {
-                self.model_headers.insert(identity, headers);
-            } else {
-                self.model_headers.remove(&identity);
+                state.provider_configs.insert(
+                    provider.into(),
+                    Arc::new(ProviderRequestConfig {
+                        api_key: config.api_key.clone(),
+                        headers: super::composition::ordered(config.headers.clone()),
+                        auth_header: config.auth_header.unwrap_or(false),
+                    }),
+                );
             }
-            models.push(Arc::new(RwLock::new(
-                definition.descriptor(provider, config),
-            )));
+            if let Some(definitions) = config.models.as_ref().filter(|models| !models.is_empty()) {
+                state.replace_models(provider, &config, definitions);
+                config.oauth.clone()
+            } else if nonempty(config.base_url.as_deref()).is_some() || config.headers.is_some() {
+                state.override_models(provider, config.base_url.as_deref());
+                None
+            } else {
+                None
+            }
         }
-        self.models = Arc::new(RwLock::new(models));
-    }
-    /// Replace matching descriptors while retaining unrelated handles.
-    fn override_models(&mut self, provider: &str, url: Option<&str>) {
-        let models = self
-            .models
-            .read()
-            .unwrap_or_else(PoisonError::into_inner)
-            .iter()
-            .map(|handle| {
-                let model = handle.read().unwrap_or_else(PoisonError::into_inner);
-                if model.provider != provider {
-                    return Arc::clone(handle);
-                }
-                let mut replacement = model.clone();
-                if let Some(url) = url {
-                    replacement.base_url = url.into();
-                }
-                Arc::new(RwLock::new(replacement))
-            })
-            .collect();
-        self.models = Arc::new(RwLock::new(models));
     }
     /// Invoke supplied account operations outside configuration and descriptor guards.
     fn transform_models(
-        &mut self,
+        &self,
         provider: &str,
         oauth: &OAuthProviderHandle,
     ) -> Result<(), CatalogError> {
@@ -114,39 +66,52 @@ impl ModelRegistry {
             return Ok(());
         };
         let handles = self
-            .models
+            .get_all()
             .read()
             .unwrap_or_else(PoisonError::into_inner)
             .clone();
         let handles = super::transform_handles(handles, oauth, &credentials)?;
-        self.models = Arc::new(RwLock::new(handles));
+        self.publish(handles);
         Ok(())
     }
     /// Remove a retained registration before reloading; unknown names are no-ops.
     ///
     /// # Errors
     /// Returns a catalog error wrapping a surviving account transformation failure.
-    pub fn unregister_provider(&mut self, provider_name: &str) -> Result<(), CatalogError> {
-        if self
+    pub fn unregister_provider(&self, provider_name: &str) -> Result<(), CatalogError> {
+        let retired = self
+            .state
+            .write()
+            .unwrap_or_else(PoisonError::into_inner)
             .registered_providers
-            .shift_remove(provider_name)
-            .is_some()
-        {
+            .shift_remove(provider_name);
+        let removed = retired.is_some();
+        drop(retired);
+        if removed {
             self.refresh()?;
         }
         Ok(())
     }
     /// Merge defined fields into the first retained handle without moving its slot.
     pub(super) fn upsert_registered_provider(
-        &mut self,
+        &self,
         provider: &str,
         config: Arc<RwLock<ProviderConfigInput>>,
     ) {
-        let Some(existing) = self.registered_providers.get(provider) else {
-            self.registered_providers.insert(provider.into(), config);
-            return;
+        let existing = {
+            let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
+            if let Some((_, existing)) = state.registered_providers.get(provider) {
+                Arc::clone(existing)
+            } else {
+                let ordinal = state.next_provider;
+                state.next_provider += 1;
+                state
+                    .registered_providers
+                    .insert(provider.into(), (ordinal, config));
+                return;
+            }
         };
-        if Arc::ptr_eq(existing, &config) {
+        if Arc::ptr_eq(&existing, &config) {
             return;
         }
         let retired = {
@@ -247,5 +212,65 @@ impl<E: ProviderExecution, O: Into<StreamOptionsInput<E>>> Invoke<E, ProviderCal
             call.context,
             E::submission(call.options.map(Into::into), call.submit),
         )
+    }
+}
+
+impl CatalogState {
+    /// Publish a replacement list before a fallible account transformation.
+    fn replace_models(
+        &mut self,
+        provider: &str,
+        config: &ProviderConfigInput,
+        definitions: &[ProviderModelInput],
+    ) {
+        let mut models: Vec<_> = self
+            .models
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .iter()
+            .filter(|model| {
+                model
+                    .read()
+                    .unwrap_or_else(PoisonError::into_inner)
+                    .provider
+                    != provider
+            })
+            .cloned()
+            .collect();
+        for definition in definitions {
+            let identity = (provider.into(), definition.id.clone());
+            if let Some(headers) = super::composition::ordered(definition.headers.clone())
+                .filter(|headers| !headers.is_empty())
+            {
+                self.model_headers.insert(identity, headers);
+            } else {
+                self.model_headers.remove(&identity);
+            }
+            models.push(Arc::new(RwLock::new(
+                definition.descriptor(provider, config),
+            )));
+        }
+        self.models = Arc::new(RwLock::new(models));
+    }
+    /// Replace matching descriptors while retaining unrelated handles.
+    fn override_models(&mut self, provider: &str, url: Option<&str>) {
+        let models = self
+            .models
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .iter()
+            .map(|handle| {
+                let model = handle.read().unwrap_or_else(PoisonError::into_inner);
+                if model.provider != provider {
+                    return Arc::clone(handle);
+                }
+                let mut replacement = model.clone();
+                if let Some(url) = url {
+                    replacement.base_url = url.into();
+                }
+                Arc::new(RwLock::new(replacement))
+            })
+            .collect();
+        self.models = Arc::new(RwLock::new(models));
     }
 }

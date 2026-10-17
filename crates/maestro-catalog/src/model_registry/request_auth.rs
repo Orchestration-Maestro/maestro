@@ -32,13 +32,15 @@ impl ModelRegistry {
             .auth_storage
             .get_api_key(provider, false, operations)
             .await?;
-        Ok(key.or_else(|| {
-            self.provider_configs
-                .get(provider)
-                .and_then(|config| config.api_key.as_deref())
-                .filter(|value| !value.is_empty())
-                .and_then(|value| resolve_config_value_uncached(value, operations))
-        }))
+        if key.is_some() {
+            return Ok(key);
+        }
+        let config = self.request_config(provider);
+        Ok(config
+            .as_ref()
+            .and_then(|c| c.api_key.as_deref())
+            .filter(|v| !v.is_empty())
+            .and_then(|v| resolve_config_value_uncached(v, operations)))
     }
 }
 
@@ -61,7 +63,7 @@ impl ModelRegistry {
         operations: &dyn ConfigValueOperations,
     ) -> Result<RequestValues, String> {
         let provider = read_provider(model);
-        let config = self.provider_configs.get(&provider);
+        let config = self.request_config(&provider);
         let stored = self
             .auth_storage
             .get_api_key(&provider, false, operations)
@@ -69,13 +71,13 @@ impl ModelRegistry {
             .map_err(|error| error.to_string())?;
         let api_key = resolve_key(
             stored,
-            config.and_then(|c| c.api_key.as_deref()),
+            config.as_ref().and_then(|c| c.api_key.as_deref()),
             model,
             operations,
         )?;
         let provider = read_provider(model);
         let provider_headers = resolve_headers_or_throw(
-            config.and_then(|c| c.headers.as_ref()),
+            config.as_ref().and_then(|c| c.headers.as_ref()),
             &format!("provider \"{provider}\""),
             operations,
         )
@@ -84,8 +86,15 @@ impl ModelRegistry {
             let model = model.read().unwrap_or_else(PoisonError::into_inner);
             (model.provider.clone(), model.id.clone())
         };
+        let model_sources = self
+            .state
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .model_headers
+            .get(&identity)
+            .cloned();
         let model_headers = resolve_headers_or_throw(
-            self.model_headers.get(&identity),
+            model_sources.as_ref(),
             &format!("model \"{}/{}\"", identity.0, identity.1),
             operations,
         )
@@ -98,7 +107,7 @@ impl ModelRegistry {
             .unwrap_or_default();
         headers.extend(provider_headers.into_iter().flatten());
         headers.extend(model_headers.into_iter().flatten());
-        if config.is_some_and(|c| c.auth_header) {
+        if config.as_ref().is_some_and(|c| c.auth_header) {
             let Some(key) = api_key.as_ref().filter(|key| !key.is_empty()) else {
                 let provider = read_provider(model);
                 return Err(format!("No API key found for \"{provider}\""));

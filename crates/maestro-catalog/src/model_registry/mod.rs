@@ -19,8 +19,18 @@ pub use request_auth::ResolvedRequestAuth;
 use std::collections::HashMap;
 use std::sync::{Arc, PoisonError, RwLock};
 
-/// Two synchronous effects used to load a model file.
-pub trait ModelFileOperations {
+/// Native file effects may be shared across threads.
+#[cfg(not(target_arch = "wasm32"))]
+pub trait ThreadBound: Send + Sync {}
+#[cfg(not(target_arch = "wasm32"))]
+impl<T: Send + Sync + ?Sized> ThreadBound for T {}
+/// Local browser effects carry no thread-safety bound.
+#[cfg(target_arch = "wasm32")]
+pub trait ThreadBound {}
+#[cfg(target_arch = "wasm32")]
+impl<T: ?Sized> ThreadBound for T {}
+/// Synchronous model-file effects with native thread-safe ownership.
+pub trait ModelFileOperations: ThreadBound {
     /// Test whether the supplied path exists.
     fn exists(&self, path: &str) -> bool;
     /// Read model-file text.
@@ -51,17 +61,25 @@ pub struct ModelRegistry {
     path: String,
     /// Caller-selected file effects.
     operations: Box<dyn ModelFileOperations>,
-    /// Currently published list.
+    /// Privately synchronized published and retained catalog state.
+    state: RwLock<CatalogState>,
+}
+/// Mutable fields sampled at their consuming catalog phase.
+struct CatalogState {
+    /// Current shared list.
     models: ModelList,
-    /// Current file failure, separate from propagated catalog failures.
+    /// Owned file-load diagnostic.
     load_error: Option<String>,
-    /// Request sources keyed by exact provider identity.
-    provider_configs: HashMap<String, ProviderRequestConfig>,
-    /// First configuration handles in initial registration order.
-    registered_providers: IndexMap<String, Arc<RwLock<ProviderConfigInput>>>,
-    /// Model header sources keyed by both identity components.
+    /// Provider sources retained by entry identity.
+    provider_configs: HashMap<String, Arc<ProviderRequestConfig>>,
+    /// Live registration order with monotone visit identities.
+    registered_providers: IndexMap<String, (u64, Arc<RwLock<ProviderConfigInput>>)>,
+    /// Next registration identity.
+    next_provider: u64,
+    /// Model request sources indexed by exact identity.
     model_headers: HashMap<(String, String), IndexMap<String, String>>,
 }
+
 impl ModelRegistry {
     /// Load immediately from the explicit native file path.
     ///
@@ -90,15 +108,18 @@ impl ModelRegistry {
         models_json_path: impl Into<String>,
         operations: impl ModelFileOperations + 'static,
     ) -> Result<Self, CatalogError> {
-        let mut registry = Self {
+        let registry = Self {
             auth_storage,
             path: models_json_path.into(),
             operations: Box::new(operations),
-            models: Arc::default(),
-            load_error: None,
-            provider_configs: HashMap::new(),
-            registered_providers: IndexMap::new(),
-            model_headers: HashMap::new(),
+            state: RwLock::new(CatalogState {
+                models: Arc::default(),
+                load_error: None,
+                provider_configs: HashMap::new(),
+                registered_providers: IndexMap::new(),
+                next_provider: 0,
+                model_headers: HashMap::new(),
+            }),
         };
         registry.load_models()?;
         Ok(registry)
@@ -108,7 +129,7 @@ impl ModelRegistry {
     /// # Errors
     /// Returns the first missing prerequisite or supplied model transformation failure.
     pub fn register_provider(
-        &mut self,
+        &self,
         provider_name: &str,
         config: Arc<RwLock<ProviderConfigInput>>,
     ) -> Result<(), CatalogError> {
@@ -129,19 +150,23 @@ impl ModelRegistry {
     ///
     /// # Errors
     /// Returns the first transformation failure, retaining effects already applied.
-    pub fn refresh(&mut self) -> Result<(), CatalogError> {
-        self.load_error = None;
-        self.provider_configs.clear();
-        self.model_headers.clear();
+    pub fn refresh(&self) -> Result<(), CatalogError> {
+        {
+            let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
+            state.load_error = None;
+            state.provider_configs.clear();
+            state.model_headers.clear();
+        }
         maestro_models::reset_api_providers();
         maestro_models::reset_oauth_providers();
         self.load_models()?;
-        let providers: Vec<_> = self
-            .registered_providers
-            .iter()
-            .map(|(name, config)| (name.clone(), Arc::clone(config)))
-            .collect();
-        for (name, config) in providers {
+        let mut cursor = 0;
+        loop {
+            let next = self.next_registered(cursor);
+            let Some((name, ordinal, config)) = next else {
+                break;
+            };
+            cursor = ordinal + 1;
             self.apply_provider_config(&name, &config)?;
         }
         Ok(())
@@ -150,39 +175,119 @@ impl ModelRegistry {
     ///
     /// # Errors
     /// Returns a transformation failure without replacing the published list.
-    fn load_models(&mut self) -> Result<(), CatalogError> {
-        let config = loading::load(&self.path, self.operations.as_ref());
-        let mut models: Vec<Model> = get_providers().iter().flat_map(|p| get_models(p)).collect();
-        match config {
-            Ok(Some(mut providers)) => {
-                self.retain_request_sources(&mut providers);
-                models = composition::compose(models, providers, &mut self.model_headers);
-            }
-            Ok(None) => {}
-            Err(error) => self.load_error = Some(error),
-        }
-        let mut handles = models
-            .into_iter()
-            .map(|m| Arc::new(RwLock::new(m)))
-            .collect();
+    fn load_models(&self) -> Result<(), CatalogError> {
+        let mut handles = self.prepare_load();
         for provider in get_oauth_providers() {
             if let Some(AuthCredential::OAuth(credentials)) = self.auth_storage.get(provider.id()) {
                 handles = transform_handles(handles, &provider, &credentials)?;
             }
         }
-        self.models = Arc::new(RwLock::new(handles));
+        self.publish(handles);
         Ok(())
     }
+    /// Prepare descriptors after supplied file effects return.
+    fn prepare_load(&self) -> Vec<Arc<RwLock<Model>>> {
+        let config = loading::load(&self.path, self.operations.as_ref());
+        let mut models: Vec<Model> = get_providers().iter().flat_map(|p| get_models(p)).collect();
+        {
+            let mut state = self.state.write().unwrap_or_else(PoisonError::into_inner);
+            match config {
+                Ok(Some(mut providers)) => {
+                    state.retain_request_sources(&mut providers);
+                    models = composition::compose(models, providers, &mut state.model_headers);
+                }
+                Ok(None) => {}
+                Err(error) => state.load_error = Some(error),
+            }
+        }
+        models
+            .into_iter()
+            .map(|m| Arc::new(RwLock::new(m)))
+            .collect()
+    }
+    /// Copy the current file-load diagnostic into an owned observation.
+    #[must_use]
+    pub fn get_error(&self) -> Option<String> {
+        self.state
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .load_error
+            .clone()
+    }
+    /// Share the current mutable list; reload publishes a different list.
+    #[must_use]
+    pub fn get_all(&self) -> ModelList {
+        Arc::clone(
+            &self
+                .state
+                .read()
+                .unwrap_or_else(PoisonError::into_inner)
+                .models,
+        )
+    }
+    /// Share the first descriptor matching the exact provider and model ID.
+    #[must_use]
+    pub fn find(&self, provider: &str, model_id: &str) -> Option<Arc<RwLock<Model>>> {
+        self.get_all()
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .iter()
+            .find(|handle| {
+                let model = handle.read().unwrap_or_else(PoisonError::into_inner);
+                model.provider == provider && model.id == model_id
+            })
+            .cloned()
+    }
+}
+impl ModelRegistry {
+    /// Replace the list and retire the previous owner outside exclusion.
+    fn publish(&self, handles: Vec<Arc<RwLock<Model>>>) {
+        let retired = std::mem::replace(
+            &mut self
+                .state
+                .write()
+                .unwrap_or_else(PoisonError::into_inner)
+                .models,
+            Arc::new(RwLock::new(handles)),
+        );
+        drop(retired);
+    }
+    /// Capture the next live registration without retaining exclusion.
+    fn next_registered(
+        &self,
+        cursor: u64,
+    ) -> Option<(String, u64, Arc<RwLock<ProviderConfigInput>>)> {
+        let state = self.state.read().unwrap_or_else(PoisonError::into_inner);
+        let index = state
+            .registered_providers
+            .as_slice()
+            .partition_point(|_, (ordinal, _)| *ordinal < cursor);
+        state
+            .registered_providers
+            .get_index(index)
+            .map(|(name, (ordinal, config))| (name.clone(), *ordinal, Arc::clone(config)))
+    }
+    /// Retain the source entry identity for a later consuming phase.
+    fn request_config(&self, provider: &str) -> Option<Arc<ProviderRequestConfig>> {
+        self.state
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .provider_configs
+            .get(provider)
+            .cloned()
+    }
+}
+impl CatalogState {
     /// Move checked request sources before descriptor composition.
     fn retain_request_sources(&mut self, providers: &mut [(String, composition::ProviderConfig)]) {
         for (provider, config) in providers {
             self.provider_configs.insert(
                 provider.clone(),
-                ProviderRequestConfig {
+                Arc::new(ProviderRequestConfig {
                     api_key: config.api_key.take(),
                     headers: composition::ordered(config.headers.take()),
                     auth_header: config.auth_header,
-                },
+                }),
             );
             self.retain_model_headers(provider, &mut config.model_overrides);
         }
@@ -200,30 +305,8 @@ impl ModelRegistry {
             }
         }
     }
-    /// Borrow the current file-load diagnostic.
-    #[must_use]
-    pub fn get_error(&self) -> Option<&str> {
-        self.load_error.as_deref()
-    }
-    /// Share the current mutable list; reload publishes a different list.
-    #[must_use]
-    pub fn get_all(&self) -> ModelList {
-        Arc::clone(&self.models)
-    }
-    /// Share the first descriptor matching the exact provider and model ID.
-    #[must_use]
-    pub fn find(&self, provider: &str, model_id: &str) -> Option<Arc<RwLock<Model>>> {
-        self.models
-            .read()
-            .unwrap_or_else(PoisonError::into_inner)
-            .iter()
-            .find(|handle| {
-                let model = handle.read().unwrap_or_else(PoisonError::into_inner);
-                model.provider == provider && model.id == model_id
-            })
-            .cloned()
-    }
 }
+
 /// File effects unused by memory construction.
 struct MemoryOperations;
 impl ModelFileOperations for MemoryOperations {

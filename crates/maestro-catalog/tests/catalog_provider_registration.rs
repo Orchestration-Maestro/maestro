@@ -12,7 +12,7 @@ fn registration_checks_incoming_fields_before_any_effect() {
     if dynamic::isolated("registration_checks_incoming_fields_before_any_effect") {
         return;
     }
-    let mut registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
     let retained = dynamic::config(&["m"]);
     retained.write().unwrap().oauth = Some(dynamic::oauth("retained"));
     dynamic::callback(&retained, "retained");
@@ -109,7 +109,7 @@ fn dynamic_definitions_keep_values_without_file_defaults() {
     if dynamic::isolated("dynamic_definitions_keep_values_without_file_defaults") {
         return;
     }
-    let mut registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
     for models in [None, Some(vec![])] {
         registry
             .register_provider(
@@ -167,7 +167,7 @@ fn request_sources_replace_only_on_truthy_incoming_fields() {
     }
     let operations = request_support::Operations::default();
     for case in 0..8 {
-        let mut registry = ModelRegistry::in_memory(support::auth()).unwrap();
+        let registry = ModelRegistry::in_memory(support::auth()).unwrap();
         let first = dynamic::config(&["m"]);
         first.write().unwrap().headers = Some([("X".into(), "initial".into())].into());
         first.write().unwrap().auth_header = Some(true);
@@ -233,7 +233,7 @@ fn empty_lists_and_overrides_preserve_branch_specific_identity() {
     if dynamic::isolated("empty_lists_and_overrides_preserve_branch_specific_identity") {
         return;
     }
-    let mut registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
     registry
         .register_provider("p", dynamic::config(&["m"]))
         .unwrap();
@@ -281,7 +281,7 @@ fn replacement_appends_duplicates_and_preserves_unrelated_handles() {
     if dynamic::isolated("replacement_appends_duplicates_and_preserves_unrelated_handles") {
         return;
     }
-    let mut registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
     registry
         .register_provider("p", dynamic::config(&["old"]))
         .unwrap();
@@ -344,7 +344,7 @@ fn oauth_registration_forces_id_and_delegates_existing_operations() {
     if dynamic::isolated("oauth_registration_forces_id_and_delegates_existing_operations") {
         return;
     }
-    let mut registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
     let calls = Arc::new(std::sync::Mutex::new(Vec::new()));
     let supplied: maestro_models::OAuthProviderHandle = Arc::new(dynamic::OAuth {
         calls: Some(calls.clone()),
@@ -393,7 +393,7 @@ fn callback_failures_propagate_without_invocation_during_listing() {
     if dynamic::isolated("callback_failures_propagate_without_invocation_during_listing") {
         return;
     }
-    let mut registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
     let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let observed = calls.clone();
     let config = dynamic::config(&["m"]);
@@ -446,7 +446,7 @@ fn incoming_oauth_transform_runs_after_replacement_only_with_tokens() {
         return;
     }
     let auth = support::auth();
-    let mut registry = ModelRegistry::in_memory(auth.clone()).unwrap();
+    let registry = ModelRegistry::in_memory(auth.clone()).unwrap();
     registry
         .register_provider("q", dynamic::config(&["unrelated"]))
         .unwrap();
@@ -511,7 +511,7 @@ fn replacement_updates_selected_headers_without_sweeping_retired_ids() {
         Some(indexmap::IndexMap::new()),
         Some([("Y".into(), "new".into())].into()),
     ] {
-        let mut registry = ModelRegistry::in_memory(support::auth()).unwrap();
+        let registry = ModelRegistry::in_memory(support::auth()).unwrap();
         let config = dynamic::config(&["m", "retired"]);
         {
             let mut config = config.write().unwrap();
@@ -555,7 +555,7 @@ fn empty_configured_keys_keep_presence_but_skip_resolution() {
     if dynamic::isolated("empty_configured_keys_keep_presence_but_skip_resolution") {
         return;
     }
-    let mut registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
     registry
         .register_provider("p", dynamic::config(&["m"]))
         .unwrap();
@@ -596,7 +596,7 @@ fn builtin_oauth_transform_changes_only_matching_values() {
         "github-copilot",
         maestro_credentials::AuthCredential::OAuth(credentials),
     );
-    let mut registry = ModelRegistry::in_memory(Arc::clone(&auth)).unwrap();
+    let registry = ModelRegistry::in_memory(Arc::clone(&auth)).unwrap();
     registry
         .register_provider("other", dynamic::config(&["unrelated", "unrelated"]))
         .unwrap();
@@ -680,7 +680,7 @@ fn builtin_oauth_transform_detaches_changed_descriptors() {
     }
     let oauth = maestro_models::get_oauth_provider("github-copilot").unwrap();
     let auth = support::auth();
-    let mut registry = ModelRegistry::in_memory(Arc::clone(&auth)).unwrap();
+    let registry = ModelRegistry::in_memory(Arc::clone(&auth)).unwrap();
     registry
         .register_provider("github-copilot", dynamic::config(&["m"]))
         .unwrap();
@@ -713,7 +713,7 @@ fn per_model_metadata_replaces_provider_defaults_without_compat_merging() {
     if dynamic::isolated("per_model_metadata_replaces_provider_defaults_without_compat_merging") {
         return;
     }
-    let mut registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
     let config = dynamic::config(&["m"]);
     let mut expected = dynamic::model("m");
     expected.api = Some("model-api".into());
@@ -764,7 +764,7 @@ fn raw_and_simple_callbacks_keep_open_options_results_and_source_ownership() {
     {
         return;
     }
-    let mut registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
     let terminal = dynamic::terminal();
     let output = maestro_models::AssistantMessageEventStream::new();
     output.end(Some(terminal.clone()));
@@ -806,7 +806,7 @@ fn raw_and_simple_callbacks_keep_open_options_results_and_source_ownership() {
     }
     assert!(signal.is_aborted());
     assert_eq!(*calls.lock().unwrap(), ["raw", "simple", "none", "none"]);
-    check_callback_release(&mut registry, handler, model, &terminal, &weak);
+    check_callback_release(&registry, handler, model, &terminal, &weak);
 }
 /// Assert common options without displaying secret-bearing records.
 fn check_common<E: maestro_models::ProviderExecution>(
@@ -899,7 +899,7 @@ fn invoke_option_forms(
 
 /// Retained callbacks remain callable until their final independent handle is released.
 fn check_callback_release(
-    registry: &mut ModelRegistry,
+    registry: &ModelRegistry,
     handler: maestro_models::ApiProvider,
     model: maestro_models::Model,
     terminal: &maestro_models::SharedAssistantMessage,
@@ -969,7 +969,7 @@ fn absent_oauth_modifier_preserves_unrelated_descriptor_alias() {
         return;
     }
     let auth = support::auth();
-    let mut registry = ModelRegistry::in_memory(auth.clone()).unwrap();
+    let registry = ModelRegistry::in_memory(auth.clone()).unwrap();
     registry
         .register_provider("q", dynamic::config(&["other"]))
         .unwrap();
@@ -997,7 +997,7 @@ fn nonempty_models_accept_oauth_without_configured_key() {
     if dynamic::isolated("nonempty_models_accept_oauth_without_configured_key") {
         return;
     }
-    let mut registry = ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = ModelRegistry::in_memory(support::auth()).unwrap();
     let config = dynamic::config(&["m"]);
     config.write().unwrap().api_key = None;
     config.write().unwrap().oauth = Some(dynamic::oauth("OAuth only"));
@@ -1018,7 +1018,7 @@ fn repeated_borrowed_descriptor_keeps_one_shared_alias() {
         return;
     }
     let auth = support::auth();
-    let mut registry = ModelRegistry::in_memory(auth.clone()).unwrap();
+    let registry = ModelRegistry::in_memory(auth.clone()).unwrap();
     registry
         .register_provider("other", dynamic::config(&["m"]))
         .unwrap();
@@ -1071,7 +1071,7 @@ fn owned_descriptor_preserves_key_order_and_signed_zero() {
         return;
     }
     let auth = support::auth();
-    let mut registry = ModelRegistry::in_memory(auth.clone()).unwrap();
+    let registry = ModelRegistry::in_memory(auth.clone()).unwrap();
     registry
         .register_provider("other", dynamic::config(&["m"]))
         .unwrap();

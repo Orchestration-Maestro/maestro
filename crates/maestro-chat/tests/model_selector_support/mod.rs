@@ -6,7 +6,6 @@ use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use serde::Deserialize;
 use serde_json::Value;
 use std::{
-    cell::Cell,
     collections::BTreeMap,
     io,
     rc::Rc,
@@ -320,7 +319,7 @@ pub fn bindings(keys: BTreeMap<String, Keys>) {
 /// Read counter and optional diagnostic owned by a real file boundary.
 struct Files {
     /// Number of reads.
-    reads: Rc<Cell<usize>>,
+    reads: Arc<std::sync::atomic::AtomicUsize>,
     /// Failure message.
     failure: Option<String>,
     /// Controlled JSON document.
@@ -331,7 +330,7 @@ impl ModelFileOperations for Files {
         true
     }
     fn read_to_string(&self, _: &str) -> io::Result<String> {
-        self.reads.set(self.reads.get() + 1);
+        self.reads.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         self.failure.as_ref().map_or_else(
             || Ok(self.text.clone()),
             |message| Err(io::Error::other(message.clone())),
@@ -339,9 +338,9 @@ impl ModelFileOperations for Files {
     }
 }
 /// Registry configured through its real retained provider records.
-pub fn registry(query: &Query) -> (ModelRegistry, Rc<Cell<usize>>) {
-    let reads = Rc::new(Cell::new(0));
-    let mut registry = ModelRegistry::with_operations(
+pub fn registry(query: &Query) -> (ModelRegistry, Arc<std::sync::atomic::AtomicUsize>) {
+    let reads = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let registry = ModelRegistry::with_operations(
         Arc::new(AuthStorage::in_memory(std::iter::empty().collect())),
         query
             .read_failure
@@ -379,7 +378,7 @@ pub fn registry(query: &Query) -> (ModelRegistry, Rc<Cell<usize>>) {
             )
             .unwrap();
     }
-    reads.set(0);
+    reads.store(0, std::sync::atomic::Ordering::SeqCst);
     (registry, reads)
 }
 
@@ -389,7 +388,7 @@ pub fn malformed_registry() -> ModelRegistry {
         Arc::new(AuthStorage::in_memory(std::iter::empty().collect())),
         "<malformed-models-file>",
         Files {
-            reads: Rc::new(Cell::new(0)),
+            reads: Arc::new(std::sync::atomic::AtomicUsize::new(0)),
             failure: None,
             text: "{".into(),
         },
