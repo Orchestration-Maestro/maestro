@@ -63,6 +63,7 @@ pub fn apis() -> Vec<&'static str> {
 pub fn registered_apis() -> Vec<&'static str> {
     let mut apis = apis();
     apis.push("google-generative-ai");
+    apis.push("google-vertex");
     apis.push("bedrock-converse-stream");
     apis
 }

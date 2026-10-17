@@ -392,3 +392,43 @@ fn credential_services_reuse_the_supplied_sender() -> TestResult {
 fn bedrock_socks_reuses_credential_route() -> TestResult {
     profile_routes::check("bedrock_socks_reuses_credential_route")
 }
+
+#[test]
+fn idle_routed_shutdown_joins_without_connection_errors() -> TestResult {
+    if maestro_test_process::child_case().is_none() {
+        return maestro_test_process::rerun(
+            "idle_routed_shutdown_joins_without_connection_errors",
+            "idle",
+            &[],
+        );
+    }
+    for iteration in 0..20_000 {
+        let server = loopback::start_routed(std::sync::Arc::new(|_| {
+            panic!("wake-up connection must not reach the handler")
+        }))?;
+        server
+            .finish()
+            .map_err(|error| format!("idle shutdown {iteration}: {error}"))?;
+    }
+    Ok(())
+}
+
+#[test]
+fn routed_shutdown_retains_handler_errors() -> TestResult {
+    let (entered, ready) = std::sync::mpsc::channel();
+    let server = loopback::start_routed(std::sync::Arc::new(move |_| {
+        entered.send(()).unwrap();
+        Err(std::io::Error::new(
+            std::io::ErrorKind::ConnectionReset,
+            "served request reset",
+        ))
+    }))?;
+    let connection = std::net::TcpStream::connect(&server.url[7..])?;
+    ready.recv()?;
+    assert_eq!(
+        server.finish().unwrap_err().to_string(),
+        "served request reset"
+    );
+    drop(connection);
+    Ok(())
+}

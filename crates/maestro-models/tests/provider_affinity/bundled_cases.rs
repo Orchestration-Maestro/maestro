@@ -24,14 +24,15 @@ enum Entry {
     /// Protocol-specific mode-aware SDK entry.
     Direct,
 }
-/// Eight delivered protocols, including the native SDK route.
-const PROTOCOLS: [&str; 8] = [
+/// Nine delivered protocols, including the native SDK route.
+const PROTOCOLS: [&str; 9] = [
     "openai-completions",
     "anthropic-messages",
     "openai-responses",
     "azure-openai-responses",
     "mistral-conversations",
     "google-generative-ai",
+    "google-vertex",
     "openai-codex-responses",
     "bedrock-converse-stream",
 ];
@@ -53,20 +54,12 @@ fn bundled_registered_requests_keep_local_payload_hooks() -> crate::TestResult {
     crate::chat::block_on(
         false,
         tokio::task::LocalSet::new().run_until(async {
-            for protocol in PROTOCOLS {
-                for simple in [false, true] {
-                    let local_body =
-                        local(protocol, simple, Observation::Drain, Entry::Registered).await?;
-                    let direct_body =
-                        local(protocol, simple, Observation::Drain, Entry::Direct).await?;
-                    let threaded_body =
-                        threaded(protocol, simple, Observation::Drain, Entry::Registered).await?;
-                    let threaded_direct =
-                        threaded(protocol, simple, Observation::Drain, Entry::Direct).await?;
-                    assert_eq!(local_body, direct_body, "{protocol}");
-                    assert_eq!(threaded_body, threaded_direct, "{protocol}");
-                    super::controls::cancel(protocol, simple).await?;
-                }
+            for protocol in PROTOCOLS
+                .iter()
+                .copied()
+                .filter(|api| *api != "google-vertex")
+            {
+                affinity(protocol).await?;
             }
             super::controls::injected_client().await?;
             Ok(())
@@ -237,8 +230,10 @@ fn check(
     if let Some(events) = events {
         assert_eq!(events, ["start", "done"]);
     }
-    let expected: &[&str] = if matches!(protocol, "mistral-conversations" | "google-generative-ai")
-    {
+    let expected: &[&str] = if matches!(
+        protocol,
+        "mistral-conversations" | "google-generative-ai" | "google-vertex"
+    ) {
         &["payload-before", "payload-after"]
     } else {
         &[
@@ -358,5 +353,25 @@ async fn check_default_scripted(stream: &AssistantMessageEventStream) -> crate::
     assert_eq!(message.stop_reason, StopReason::Stop);
     assert_eq!(message.error_message, None);
     assert_eq!(message.content, [AssistantContent::Text(faux_text("ok"))]);
+    Ok(())
+}
+
+/// Reuse both registered and direct execution-family witnesses for cloud content.
+pub(super) async fn cloud_affinity() -> crate::TestResult {
+    affinity("google-vertex").await
+}
+
+/// Compare all execution routes once for one protocol.
+async fn affinity(protocol: &str) -> crate::TestResult {
+    for simple in [false, true] {
+        let local_body = local(protocol, simple, Observation::Drain, Entry::Registered).await?;
+        let direct_body = local(protocol, simple, Observation::Drain, Entry::Direct).await?;
+        let threaded_body =
+            threaded(protocol, simple, Observation::Drain, Entry::Registered).await?;
+        let threaded_direct = threaded(protocol, simple, Observation::Drain, Entry::Direct).await?;
+        assert_eq!(local_body, direct_body, "{protocol}");
+        assert_eq!(threaded_body, threaded_direct, "{protocol}");
+        super::controls::cancel(protocol, simple).await?;
+    }
     Ok(())
 }

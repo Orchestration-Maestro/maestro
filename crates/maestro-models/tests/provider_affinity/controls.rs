@@ -21,7 +21,7 @@ enum Selection {
 /// Preserve original cancellation for every protocol, and both Google selection directions.
 pub(super) async fn cancel(protocol: &str, simple: bool) -> crate::TestResult {
     run(protocol, simple, Selection::Original).await?;
-    if protocol == "google-generative-ai" {
+    if matches!(protocol, "google-generative-ai" | "google-vertex") {
         run(protocol, simple, Selection::Aborted).await?;
         run(protocol, simple, Selection::Active).await?;
     }
@@ -34,7 +34,7 @@ async fn run(protocol: &str, simple: bool, selection: Selection) -> crate::TestR
     let selected = Cancellation::new();
     let hook_original = original.clone();
     let hook_selected = selected.clone();
-    let google = protocol == "google-generative-ai";
+    let google = matches!(protocol, "google-generative-ai" | "google-vertex");
     let calls = Rc::new(Cell::new(0));
     let hook_calls = calls.clone();
     let common = StreamOptions::<Local> {
@@ -110,7 +110,7 @@ fn check(
             },
             "{protocol}"
         );
-        if protocol == "google-generative-ai" {
+        if matches!(protocol, "google-generative-ai" | "google-vertex") {
             assert_eq!(transport.attempts(), 0);
         }
     }

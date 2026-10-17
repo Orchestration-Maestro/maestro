@@ -89,3 +89,8 @@ path = "tests/integration.rs"
 name = "bedrock_browser_witness"
 path = "tests/support/bedrock_browser.rs"
 crate-type = ["cdylib"]
+
+[[example]]
+name = "cloud_content_browser_witness"
+path = "tests/support/cloud_content_browser.rs"
+crate-type = ["cdylib"]

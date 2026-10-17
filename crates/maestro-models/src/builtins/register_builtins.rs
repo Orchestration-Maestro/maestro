@@ -4,7 +4,7 @@ use crate::SharedHandle;
 use crate::providers::assistant_output::{fail, initial_message};
 use crate::providers::chat::openai_completions as chat;
 use crate::providers::cloud::amazon_bedrock as bedrock;
-use crate::providers::content::google as content;
+use crate::providers::content::{google as content, google_vertex as cloud_content};
 use crate::providers::http::RequestFailure;
 use crate::providers::messages::anthropic as messages;
 use crate::providers::reasoning::mistral as conversation;
@@ -131,6 +131,13 @@ provider!(
     |model, context, invocation| Ok(bedrock::dispatch_simple(model, context, invocation))
 );
 
+provider!(
+    CloudContent,
+    raw_options::google_vertex,
+    cloud_content::dispatch,
+    |model, context, invocation| Ok(cloud_content::dispatch_simple(model, context, invocation))
+);
+
 /// One protocol whose raw and simple fields retain the same owner.
 fn provider<T>(api: &str, owner: SharedHandle<T>) -> ApiProvider
 where
@@ -146,7 +153,7 @@ where
 }
 
 /// The bundled protocols in registration order.
-pub(crate) fn built_in_providers() -> [ApiProvider; 8] {
+pub(crate) fn built_in_providers() -> [ApiProvider; 9] {
     [
         provider("anthropic-messages", SharedHandle::new(Messages)),
         provider("openai-completions", SharedHandle::new(Chat)),
@@ -155,6 +162,7 @@ pub(crate) fn built_in_providers() -> [ApiProvider; 8] {
         provider("azure-openai-responses", SharedHandle::new(CloudResponses)),
         provider("openai-codex-responses", SharedHandle::new(Sessions)),
         provider("google-generative-ai", SharedHandle::new(Content)),
+        provider("google-vertex", SharedHandle::new(CloudContent)),
         provider(
             "bedrock-converse-stream",
             SharedHandle::new(SelectedBedrock),

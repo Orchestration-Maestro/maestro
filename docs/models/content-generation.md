@@ -260,9 +260,8 @@ in the order model, contents, configuration wins.
 `google_shared::project_vertex_content_request(params, project, location)` projects the
 selected cloud payload using the same content grouping and [schema/JSON owners](#request-projection).
 It reads no environment, calls no hook, authenticates nothing and sends nothing.
-Cloud invocation is tracked separately in
-[#937](https://github.com/Orchestration-Maestro/maestro/issues/937); the
-[native credentials](#native-credentials) it consumes are described below.
+The [cloud entry](#cloud-invocation) uses this projector and the existing
+[native credentials](#native-credentials).
 
 Cloud model resources retain `projects/`, `publishers/` and `models/`; other names gain
 `publishers/google/models/`, or use the first two segments as publisher and model.
@@ -356,20 +355,31 @@ family and producer submitter, with `GoogleOptions<E>` retaining that family's
 hooks. Content generation invokes the payload hook, not the response hook.
 The public preparation helpers retain their default signatures and do not invoke hooks.
 
-On native targets, the raw entry captures `GOOGLE_GEMINI_BASE_URL` synchronously into
-owned client settings; browser targets supply no environment fallback.
-It is used only for an empty model endpoint, after trimming the shared text whitespace set;
-an absent or empty fallback keeps the built-in endpoint and version. The supplied endpoint
-is never trimmed. `create_client` receives this optional owned fallback without reading
-the environment. Cloud-mode preparation remains separate.
+On native targets, constructor settings are captured before the payload hook. An empty
+model endpoint uses the matching trimmed environment endpoint: `GOOGLE_GEMINI_BASE_URL`
+for public mode or `GOOGLE_VERTEX_BASE_URL` for cloud mode. A present
+`GOOGLE_GENAI_USE_ENTERPRISE` flag takes precedence over `GOOGLE_GENAI_USE_VERTEXAI`;
+only trimmed, case-insensitive `true` enables cloud mode. Browser calls read no environment.
+Explicit public model endpoints remain untrimmed and suppress the appended API version;
+environment endpoints keep `v1beta` in public mode or `v1beta1` in cloud mode.
+The borrowed `create_client` helper itself still reads no environment.
+
+Ambient cloud mode keeps authentication separate from resource routing. Public raw key
+resolution retains a present empty key; it does not automatically select native credentials.
+Ambient project/location together with an implicit SDK environment key can select native
+authentication instead. The public simple entry keeps its missing-provider-key error.
+Public raw browser calls accept API-key authentication from model or hook-selected
+`x-goog-api-key` headers even with an empty constructor key. An empty key without
+that effective header fails after the payload hook.
 
 After [parameter preparation](#request-preparation), the optional payload hook is awaited
 once and its selected payload passes through [projection](#request-projection) and
 [transport preparation](#request-transport). Dispatch makes one attempt through
 `StreamOptions::fetch` or the default transport. Common timeout/retry settings, transport
 selection and the response hook are not consumed. Only a positive selected
-`config.httpOptions.timeout` sets a deadline, spanning dispatch, error-body admission and
-reduction. The hook's `PayloadHookInput::signal` starts as the caller's signal and may be
+`config.httpOptions.timeout` sets a deadline, spanning native authentication, dispatch, error-body admission and
+reduction. Native credential acquisition is allowed to finish, but does not reset an
+expired deadline. The hook's `PayloadHookInput::signal` starts as the caller's signal and may be
 replaced or set to `None`. The returned handle controls request cancellation and is checked
 before dispatch; the caller's original signal still determines final abort classification.
 Timeout cancellation belongs to the request and does not abort the caller's signal.
@@ -390,6 +400,40 @@ boundaries; other complete non-data segments are ignored.
 Source and framing failures preserve
 prior content without closing its active block; [reducer failures](#response-reduction)
 retain the effects preceding their failing conversion. Clean EOF uses the shared conclusion policy.
+
+## Cloud invocation
+
+[`google_vertex`](../../crates/maestro-models/src/providers/content/google_vertex/mod.rs)
+exports `GoogleVertexOptions`, `stream_google_vertex`, `stream_simple_google_vertex`
+and their `_for` variants, also available at the crate root. Raw options add optional
+`project` and `location` to common controls, tool choice and the existing `GoogleThinking`.
+Simple options forward common controls, not raw scope fields. Setup failures settle into
+the returned stream. Both entries reuse the [owned invocation](#public-invocation),
+[projection](#cloud-projection), [transport](#request-transport) and [credential](#native-credentials)
+owners; neither invokes the response hook. Generated tool identifiers use a separate
+cloud counter.
+
+The first nonempty trimmed explicit key or `GOOGLE_CLOUD_API_KEY` is selected before
+rejecting `gcp-vertex-credentials` and nonempty angle-bracket placeholders. Without a real
+key, raw project falls back to `GOOGLE_CLOUD_PROJECT`, then `GCLOUD_PROJECT`; location
+falls back to `GOOGLE_CLOUD_LOCATION`. These scope values are not trimmed. Missing project
+or location fails before the payload hook. Native credential-file discovery remains later,
+at request preparation, so the file may first appear in the hook.
+
+Explicit cloud requests use `v1`. Empty, whitespace-only and literal `{location}` template
+endpoints are ignored. Other explicit endpoints are trimmed and select collection scope;
+a complete lowercase ASCII `v<digits>` or `v<digits>beta<digits>` pathname segment suppresses
+the added version (digits after `beta` may be absent). Default native hosts distinguish
+global, `us`/`eu` and regional locations. Environment-selected hosts retain native scope.
+Hook HTTP controls may override endpoint, version and resource scope; only exact
+`COLLECTION` suppresses the native project/location prefix. Nonempty routing keys and
+already-qualified `projects/` model paths also suppress that prefix. Authentication remains
+independent of those resource decisions.
+
+Cloud thinking differs from public thinking: Gemma uses budgets, Flash-Lite's minimal
+budget is 128, and disabled Gemma uses budget zero. Third-generation Pro and Flash keep
+their level policies. Browser raw/simple API-key calls use the same cloud projection;
+a keyless call with supplied scope reports `An API Key must be set when running in a browser`.
 
 ## Native credentials
 

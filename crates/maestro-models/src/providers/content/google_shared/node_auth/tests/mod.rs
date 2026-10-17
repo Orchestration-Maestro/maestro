@@ -28,42 +28,7 @@ fn client_key_pem() -> String {
     )
 }
 
-/// Disposable exclusively created files owned by one test transaction.
-struct Files(std::path::PathBuf);
-
-impl Files {
-    /// Create a unique directory without overwriting an existing path.
-    fn new() -> Self {
-        static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
-        let path = std::env::temp_dir().join(format!(
-            "maestro-cloud-{}-{}",
-            std::process::id(),
-            NEXT.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
-        ));
-        std::fs::create_dir(&path).unwrap();
-        Self(path)
-    }
-
-    /// Write one new fixture file, preserving any pre-existing file.
-    fn write(&self, name: &str, bytes: &[u8]) -> String {
-        use std::io::Write;
-        let path = self.0.join(name);
-        std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&path)
-            .unwrap()
-            .write_all(bytes)
-            .unwrap();
-        path.to_str().unwrap().to_owned()
-    }
-}
-
-impl Drop for Files {
-    fn drop(&mut self) {
-        std::fs::remove_dir_all(&self.0).unwrap();
-    }
-}
+use crate::tests::content_credentials::{Files, workforce};
 
 /// Retained native content client with a real credential provider.
 fn client(
@@ -72,6 +37,7 @@ fn client(
 ) -> super::super::ApiClient {
     super::super::ApiClient {
         base_url: "https://content.invalid".into(),
+        resource: super::super::api_client::Resource::default(),
         api_version: "v1".into(),
         headers,
         authentication: super::super::api_client::Authentication::Native(super::NodeAuth {
@@ -96,11 +62,6 @@ fn run<F: std::future::Future>(future: F) -> F::Output {
         .build()
         .unwrap()
         .block_on(future)
-}
-
-/// File-backed workforce credentials with a controlled endpoint and distinguishable quota.
-fn workforce(endpoint: &str, quota: &str) -> serde_json::Value {
-    serde_json::json!({"type":"external_account_authorized_user","client_id":"controlled-id","client_secret":"controlled-secret","refresh_token":"controlled-refresh","token_url":endpoint,"quota_project_id":quota})
 }
 
 /// Fetch recording each requested URL and answering through `reply`.

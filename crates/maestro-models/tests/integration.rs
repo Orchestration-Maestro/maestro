@@ -236,3 +236,12 @@ mod usage_after_abort;
 #[path = "usage_totals/cases.rs"]
 mod usage_cases;
 mod usage_totals;
+
+mod cloud_content_invocation;
+
+#[allow(
+    dead_code,
+    reason = "Shared credential fixtures serve library and integration witnesses."
+)]
+#[path = "support/content_credentials.rs"]
+mod content_credentials;

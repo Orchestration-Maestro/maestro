@@ -782,3 +782,81 @@ fn reducer_leaves_lifecycle_updates_to_its_caller() -> TestResult {
         Ok(())
     })
 }
+
+/// Replay retained response fixtures with a fresh module-owned counter per invocation.
+pub(crate) fn cloud_entry_rows() -> TestResult {
+    let mut selected = Vec::new();
+    for name in [
+        "first_candidate_wins_without_reading_later_content",
+        "thinking_switches_close_the_previous_block_in_order",
+        "tool_calls_keep_server_ids_and_distinct_arguments",
+        "pricing_uses_each_model_rate_with_source_expression_order",
+    ] {
+        selected.extend(rows(name)?);
+    }
+    if let Some(case) = crate::child_process::child_case() {
+        return block_on(false, async {
+            let index = case.parse::<usize>()?;
+            cloud_entry_row(&selected[index]).await?;
+            if index == 0 {
+                crate::content_generation_invocation::native::live_alias("google-vertex").await?;
+            }
+            Ok(())
+        });
+    }
+    for index in 0..selected.len() {
+        crate::child_process::rerun(
+            "cloud_raw_entry_uses_shared_response_reduction",
+            &index.to_string(),
+            &[],
+        )?;
+    }
+    Ok(())
+}
+
+/// Observe one recorded response through framing, reduction and final settlement.
+async fn cloud_entry_row(row: &Row) -> TestResult {
+    use crate::content_generation_invocation::native;
+    let mut model = priced(row.input.cost.as_ref())?;
+    model.api = "google-vertex".into();
+    model.provider = "google-vertex".into();
+    let context = crate::bundled::conversation()?;
+    let body = row
+        .input
+        .chunks
+        .iter()
+        .fold(String::new(), |mut body, chunk| {
+            body.push_str("data: ");
+            body.push_str(chunk);
+            body.push_str("\n\n");
+            body
+        });
+    let stream = maestro_models::stream_google_vertex(
+        model,
+        context,
+        Some(maestro_models::GoogleVertexOptions {
+            common: maestro_models::StreamOptions {
+                api_key: Some("fixture-key".into()),
+                fetch: Some(native::body_fetch(body.into_bytes())),
+                ..Default::default()
+            },
+            ..Default::default()
+        }),
+    );
+    let (mut events, message) = crate::response_output::collect(&stream).await?;
+    assert_eq!(events.remove(0)["type"], "start");
+    assert_eq!(events.pop().ok_or("terminal event")?["type"], "done");
+    let mut selected = json!({"content":message["content"],"stopReason":message["stopReason"],"usage":message["usage"]});
+    if let Some(id) = message.get("responseId") {
+        selected["responseId"] = id.clone();
+    }
+    assert_row(
+        row,
+        Observed {
+            message: selected,
+            events,
+            error: None,
+        },
+    )?;
+    Ok(())
+}

@@ -56,7 +56,7 @@ pub fn get_env_api_key(provider: &str) -> Option<String> {
 
 /// Read a nonempty environment value, ignoring unavailable or empty variables.
 pub(crate) fn env_value(key: &str) -> Option<String> {
-    std::env::var(key).ok().filter(|value| !value.is_empty())
+    raw_env_value(key).filter(|value| !value.is_empty())
 }
 
 /// Check the configured or default credentials file once per process.
@@ -107,4 +107,9 @@ fn get_api_key_env_vars(provider: &str) -> &'static [&'static str] {
         "xiaomi-token-plan-sgp" => &["XIAOMI_TOKEN_PLAN_SGP_API_KEY"],
         _ => &[],
     }
+}
+
+/// Observe a native environment variable without discarding present-empty values.
+pub(crate) fn raw_env_value(key: &str) -> Option<String> {
+    std::env::var(key).ok()
 }
