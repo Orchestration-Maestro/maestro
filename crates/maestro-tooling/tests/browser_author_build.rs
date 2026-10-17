@@ -1693,6 +1693,50 @@ fn assert_fixture_independent(browser: &Browser) {
 }
 
 #[test]
+fn browser_author_shared_launcher_uses_invoking_checkout() {
+    let browser = Browser::new();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let target = root
+        .join("target/browser-author-tests")
+        .canonicalize()
+        .unwrap();
+    success(
+        &toolchain_support::command(env!("CARGO"))
+            .current_dir(&root)
+            .args(["build", "--locked", "-p", "maestro-tooling", "--bins"])
+            .env("CARGO_TARGET_DIR", &target)
+            .output()
+            .unwrap(),
+    );
+    let launcher = target.join("debug/development");
+    let compiled = fs::read(&launcher).unwrap();
+    let marker = install_authored_hook(&browser);
+    success(&browser.run("browser-debug-build"));
+    assert!(
+        marker.is_file(),
+        "Trunk must execute the invoking checkout's authored hook in its directory"
+    );
+    assert_eq!(
+        fs::read(marker).unwrap(),
+        fs::read(browser.fixture("assets/app.css")).unwrap()
+    );
+    assert_authored_target(
+        &browser,
+        &browser.path("target/maestro-browser/.author/debug/Trunk.json"),
+        "debug.html",
+    );
+    assert_eq!(
+        &browser_support::wasm(&browser, "debug")[..8],
+        b"\0asm\x01\0\0\0"
+    );
+    assert_eq!(
+        fs::read(launcher).unwrap(),
+        compiled,
+        "reuse the built launcher"
+    );
+}
+
+#[test]
 fn browser_author_bootstraps_from_empty_build_state() {
     let browser = Browser::new();
     let (home, target) = browser_support::cold_sources(&browser);
