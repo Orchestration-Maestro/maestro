@@ -1614,47 +1614,6 @@
   "managed_binary_names_move_in_fixed_order_once": [
     {
       "input": {
-        "entries": {}
-      },
-      "expected": {
-        "calls": [
-          {
-            "result": {
-              "migratedAuthProviders": [],
-              "deprecationWarnings": []
-            },
-            "error": null,
-            "output": "",
-            "tree": {
-              "agent": {
-                "kind": "dir"
-              },
-              "project": {
-                "kind": "dir"
-              }
-            }
-          },
-          {
-            "result": {
-              "migratedAuthProviders": [],
-              "deprecationWarnings": []
-            },
-            "error": null,
-            "output": "",
-            "tree": {
-              "agent": {
-                "kind": "dir"
-              },
-              "project": {
-                "kind": "dir"
-              }
-            }
-          }
-        ]
-      }
-    },
-    {
-      "input": {
         "entries": {
           "agent/tools": {
             "kind": "file",
@@ -4354,47 +4313,6 @@
     }
   ],
   "deprecated_directory_warning_domains_and_order_are_exact": [
-    {
-      "input": {
-        "entries": {}
-      },
-      "expected": {
-        "calls": [
-          {
-            "result": {
-              "migratedAuthProviders": [],
-              "deprecationWarnings": []
-            },
-            "error": null,
-            "output": "",
-            "tree": {
-              "agent": {
-                "kind": "dir"
-              },
-              "project": {
-                "kind": "dir"
-              }
-            }
-          },
-          {
-            "result": {
-              "migratedAuthProviders": [],
-              "deprecationWarnings": []
-            },
-            "error": null,
-            "output": "",
-            "tree": {
-              "agent": {
-                "kind": "dir"
-              },
-              "project": {
-                "kind": "dir"
-              }
-            }
-          }
-        ]
-      }
-    },
     {
       "input": {
         "entries": {

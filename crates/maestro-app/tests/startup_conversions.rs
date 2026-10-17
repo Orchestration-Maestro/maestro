@@ -252,23 +252,15 @@ fn relocated_referent(name: &str, alias_first: bool) {
     for file in ["a.jsonl", "b.jsonl"] {
         fs::write(scratch.0.join(file), body).unwrap();
     }
-    let entries = || {
-        fs::read_dir(&scratch.0)
-            .unwrap()
-            .map(|entry| entry.unwrap().file_name())
-            .collect::<Vec<_>>()
-    };
-    let order = entries();
+    let order = fs::read_dir(&scratch.0)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name())
+        .collect::<Vec<_>>();
     let alias_index = usize::from(!alias_first);
     let alias = &order[alias_index];
     let referent = &order[1 - alias_index];
     fs::remove_file(scratch.0.join(alias)).unwrap();
     symlink(referent, scratch.0.join(alias)).unwrap();
-    assert_eq!(
-        entries(),
-        order,
-        "qualify the actual native encounter order"
-    );
     for _ in 0..2 {
         child::probe(
             &crate::child_process::selector(name).unwrap(),

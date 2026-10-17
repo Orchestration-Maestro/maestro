@@ -181,6 +181,8 @@ fn check_link(root: &Path, path: &Path, item: &Entry) {
     if let Some(text) = &item.text {
         assert_eq!(fs::read(path).unwrap(), text.as_bytes());
     }
+    // The conversion resolves link targets canonically, so a linked temporary root differs.
+    let root = fs::canonicalize(root).unwrap();
     assert_eq!(
         fs::read_link(path).unwrap().to_str(),
         item.target
