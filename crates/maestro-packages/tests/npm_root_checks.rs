@@ -1,5 +1,5 @@
 //! npm root lookup through public existing-content operations.
-mod support;
+use crate::support;
 use maestro_packages::{InstalledSourceScope::User, PackageManager};
 use maestro_settings::SettingsListEntry;
 use serde_json::json;

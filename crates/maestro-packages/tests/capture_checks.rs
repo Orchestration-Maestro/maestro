@@ -1,8 +1,8 @@
 //! Captured native children through the public package operations.
 #![cfg(test)]
 #![cfg(unix)]
-mod native_support;
-mod scratch;
+use crate::native_support;
+use crate::scratch;
 use maestro_packages::{CommandCaptureOptions, NativePackageOperations, PackageOperations};
 use std::{io, rc::Rc, time::Duration};
 
@@ -179,7 +179,11 @@ fn capture_inherits_environment_and_applies_scoped_overrides() {
     const NAME: &str = "capture_inherits_environment_and_applies_scoped_overrides";
     if std::env::var_os("MAESTRO_CAPTURE_REEXEC").is_none() {
         let mut child = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", NAME, "--test-threads=1"])
+            .args([
+                "--exact",
+                &crate::child_process::selector(NAME).unwrap(),
+                "--test-threads=1",
+            ])
             .env("MAESTRO_CAPTURE_REEXEC", "1")
             .env("MAESTRO_INHERITED", "parent")
             .env("PATH", INHERITED_PATH)
@@ -196,7 +200,10 @@ fn capture_inherits_environment_and_applies_scoped_overrides() {
         let output = child.wait_with_output().unwrap();
         let text = String::from_utf8_lossy(&output.stdout);
         assert!(output.status.success(), "{text}");
-        assert!(text.contains("1 passed"), "{text}");
+        crate::child_process::assert_executed(
+            &output,
+            &crate::child_process::selector(NAME).unwrap(),
+        );
         return;
     }
     let scratch = scratch::Scratch::new().unwrap();

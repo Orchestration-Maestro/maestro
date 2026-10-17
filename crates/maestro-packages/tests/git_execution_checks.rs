@@ -1,7 +1,7 @@
 //! Configured Git refresh through the public package manager.
 #![cfg(test)]
 #![cfg(unix)]
-mod support;
+use crate::support;
 use maestro_packages::PackageManager;
 use serde_json::json;
 use std::rc::Rc;
@@ -71,10 +71,7 @@ fn git_fetch_compares_refreshed_heads_before_replacement() {
     );
 }
 
-mod native_git;
-mod native_git_command;
-mod native_support;
-mod scratch;
+use crate::native_git;
 
 #[test]
 fn git_native_current_preserves_dirty_and_untracked_contents() {
@@ -509,7 +506,7 @@ fn failed_responses(failed: &str) -> Vec<std::io::Result<String>> {
         .collect()
 }
 
-mod update_corpus;
+use crate::update_corpus;
 
 #[test]
 fn configured_update_matches_recorded_observations() {

@@ -1,8 +1,8 @@
 //! Recorded manifest selection through the public package manager.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod scratch;
-mod support;
+use crate::scratch;
+use crate::support;
 
 use maestro_packages::{DefaultPackageManager, PackageManagerOptions};
 use maestro_packages::{PackageManager, ResolvedPaths, ResolvedResource};

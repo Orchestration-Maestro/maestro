@@ -1,10 +1,10 @@
 //! Configured updates through the public manager and replaceable effects.
 #![cfg(test)]
 #![cfg(unix)]
-mod native_support;
-mod scratch;
-mod support;
-mod worker_support;
+use crate::native_support;
+use crate::scratch;
+use crate::support;
+use crate::worker_support;
 use maestro_packages::{
     DefaultPackageManager, NativePackageOperations, PackageManager, PackageManagerOptions,
 };

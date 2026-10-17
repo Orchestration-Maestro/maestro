@@ -1,7 +1,7 @@
 //! Configured sources through the supplied-operation manager.
 #[cfg(unix)]
-mod scratch;
-mod support;
+use crate::scratch;
+use crate::support;
 use maestro_packages::PackageManager;
 use maestro_packages::{DefaultPackageManager, PackageManagerOptions};
 use maestro_settings::{Settings, SettingsManager};
