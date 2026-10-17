@@ -45,8 +45,10 @@ positional inputs before additional native options. Native options are forwarded
 by build/watch/serve/debug recipes; preview accepts only native server options.
 Relative pack paths resolve from the recipe directory. Paths containing spaces,
 apostrophes and non-ASCII characters remain literal arguments. One `maestro-tooling`
-operation prepares and dispatches all author checks, builds and watch routes. A
-locked native `maestro-theme` example uses the existing loader/projection and writes
+operation prepares and dispatches all author checks, builds and watch routes.
+The launcher selects the invoking checkout from Cargo's runtime manifest directory,
+falling back to its build-time checkout when that variable is absent.
+A locked native `maestro-theme` example uses the existing loader/projection and writes
 eleven presentation files plus pack/mark directory observations; the fixture has
 no native path dependency or build script.
 
