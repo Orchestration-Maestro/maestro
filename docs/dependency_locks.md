@@ -57,7 +57,7 @@ The `dependency_locks` integration module in `maestro-test-conventions` verifies
   resolution without rewriting the lock. A missing lock fails without creating
   it; restoring each input returns to the original passing graph.
 
-Run the focused target:
+Run the focused module:
 
 ```sh
 mise exec -- cargo test -p maestro-test-conventions --locked --test integration -- dependency_locks::
