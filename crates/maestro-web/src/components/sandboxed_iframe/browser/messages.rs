@@ -1,5 +1,5 @@
 //! Current-source admission and the one-shot URL handshake.
-use super::{EventSubscription, Load, SandboxIframe};
+use super::{EventSubscription, Load, Owner};
 use js_sys::{Function, Object, Reflect};
 use std::{
     cell::RefCell,
@@ -8,20 +8,20 @@ use std::{
 use wasm_bindgen::{JsCast as _, JsValue, closure::Closure};
 use web_sys::MessageEvent;
 
-impl SandboxIframe {
+impl Owner {
     /// Install the single actual native registration before appending the frame.
-    pub(super) fn subscribe(&mut self) -> Result<(), JsValue> {
+    pub(super) fn subscribe(&self) -> Result<(), JsValue> {
         let weak = Rc::downgrade(&self.state);
         let callback = Closure::new(move |event: MessageEvent| {
             if let Err(error) = receive(&weak, &event) {
                 wasm_bindgen::throw_val(error);
             }
         });
-        self.subscription = Some(EventSubscription::new(
+        self.subscription.replace(Some(EventSubscription::new(
             js_sys::global().dyn_into()?,
             "message",
             callback,
-        )?);
+        )?));
         Ok(())
     }
 }

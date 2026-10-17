@@ -3546,6 +3546,7 @@ dependencies = [
  "ryu-js",
  "serde",
  "serde_json",
+ "tokio",
  "url",
  "usvg",
  "wasm-bindgen",

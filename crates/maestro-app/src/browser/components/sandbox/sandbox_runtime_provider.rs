@@ -1,15 +1,16 @@
 //! Retained runtime provider interface.
 use super::super::sandboxed_iframe::SandboxValue;
 use maestro_agent::agent::Native;
+use maestro_models::SharedHandle;
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
-use std::sync::Arc;
 
 /// Native response callback preserving caller failures.
 #[cfg(not(target_arch = "wasm32"))]
-pub type SandboxRespond<V> = Arc<dyn Fn(V) -> Result<(), DiagnosticErrorInfo> + Send + Sync>;
+pub type SandboxRespond<V> =
+    SharedHandle<dyn Fn(V) -> Result<(), DiagnosticErrorInfo> + Send + Sync>;
 /// Browser-local response callback preserving caller failures.
 #[cfg(target_arch = "wasm32")]
-pub type SandboxRespond<V> = Arc<dyn Fn(V) -> Result<(), DiagnosticErrorInfo>>;
+pub type SandboxRespond<V> = SharedHandle<dyn Fn(V) -> Result<(), DiagnosticErrorInfo>>;
 /// Supplied data and self-contained function source for injection.
 pub trait SandboxRuntimeProvider<V: SandboxValue = serde_json::Value>: Native {
     /// Obtain owned globals in insertion order.

@@ -1,4 +1,6 @@
 //! Live sandbox message dispatch and registered-window admission.
+#[cfg(any(target_arch = "wasm32", test))]
+use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandboxed_iframe::SandboxValue;
 use maestro_app::{BoxFuture, DiagnosticErrorInfo};
 
@@ -10,11 +12,11 @@ pub trait MessageConsumer<V: SandboxValue> {
 /// Shared native-tested state, compiled only where routing is used.
 #[cfg(any(target_arch = "wasm32", test))]
 mod routing {
-    use super::{MessageConsumer, SandboxValue};
+    use super::{MessageConsumer, SandboxValue, SharedHandle};
     use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
-    use std::{cell::RefCell, collections::HashMap, rc::Rc, sync::Arc};
+    use std::{cell::RefCell, collections::HashMap, rc::Rc};
     /// Retained providers whose mutations remain visible during dispatch.
-    pub(super) type Providers<V> = Rc<RefCell<Vec<Arc<dyn SandboxRuntimeProvider<V>>>>>;
+    pub(super) type Providers<V> = Rc<RefCell<Vec<SharedHandle<dyn SandboxRuntimeProvider<V>>>>>;
     /// Mutable frame retained independently by response callbacks.
     type Frame<F> = Rc<RefCell<Option<Rc<F>>>>;
     /// Sandbox context captured by an admitted message.
@@ -24,7 +26,7 @@ mod routing {
         /// Caller-owned provider collection.
         pub(super) providers: Providers<V>,
         /// Stable insertion positions, including removed entries.
-        pub(super) consumers: RefCell<Vec<Option<Arc<dyn MessageConsumer<V>>>>>,
+        pub(super) consumers: RefCell<Vec<Option<SharedHandle<dyn MessageConsumer<V>>>>>,
         /// Live allocation identities and their insertion positions.
         pub(super) positions: RefCell<HashMap<usize, usize>>,
     }
@@ -50,7 +52,7 @@ mod routing {
             &self,
             id: String,
             providers: Providers<V>,
-            consumers: Vec<Arc<dyn MessageConsumer<V>>>,
+            consumers: Vec<SharedHandle<dyn MessageConsumer<V>>>,
         ) {
             let context = Rc::new(SandboxContext {
                 frame: Rc::new(RefCell::new(None)),
@@ -99,8 +101,8 @@ mod routing {
     }
     impl<V: SandboxValue, F> SandboxContext<V, F> {
         /// Remove identity without shifting any visitation position.
-        pub(super) fn remove(&self, consumer: &Arc<dyn MessageConsumer<V>>) {
-            let key = Arc::as_ptr(consumer).cast::<()>() as usize;
+        pub(super) fn remove(&self, consumer: &SharedHandle<dyn MessageConsumer<V>>) {
+            let key = SharedHandle::as_ptr(consumer).cast::<()>() as usize;
             let index = self.positions.borrow_mut().remove(&key);
             if let Some(index) = index {
                 let removed = self.consumers.borrow_mut()[index].take();
@@ -109,8 +111,8 @@ mod routing {
         }
 
         /// Insert a new allocation once at a stable position.
-        pub(super) fn add(&self, consumer: Arc<dyn MessageConsumer<V>>) {
-            let key = Arc::as_ptr(&consumer).cast::<()>() as usize;
+        pub(super) fn add(&self, consumer: SharedHandle<dyn MessageConsumer<V>>) {
+            let key = SharedHandle::as_ptr(&consumer).cast::<()>() as usize;
             let mut positions = self.positions.borrow_mut();
             if let std::collections::hash_map::Entry::Vacant(entry) = positions.entry(key) {
                 let mut consumers = self.consumers.borrow_mut();

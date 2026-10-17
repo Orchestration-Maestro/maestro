@@ -150,3 +150,5 @@ fn marker_looking_runtime_and_user_text_are_never_template_syntax() {
     assert!(html.contains(&format!("<head>\n\t{runtime}\n</head>\n<body>\n\t<svg")));
     assert_eq!(programs(&html).matches(markers).count(), 5);
 }
+
+mod execution;

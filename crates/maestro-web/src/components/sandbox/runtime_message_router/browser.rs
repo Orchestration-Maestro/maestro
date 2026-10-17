@@ -4,11 +4,11 @@ use crate::browser::event_subscription::EventSubscription;
 use crate::browser::sandbox_value::{BrowserSandboxValue, diagnostic};
 use js_sys::{Function, Object, Promise, Reflect};
 use maestro_app::DiagnosticErrorInfo;
+use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRespond;
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},
-    sync::Arc,
 };
 use wasm_bindgen::{JsCast, JsValue, closure::Closure};
 use wasm_bindgen_futures::future_to_promise;
@@ -51,7 +51,7 @@ impl RuntimeMessageRouter {
         &self,
         sandbox_id: String,
         providers: Providers<BrowserSandboxValue>,
-        consumers: Vec<Arc<dyn MessageConsumer<BrowserSandboxValue>>>,
+        consumers: Vec<SharedHandle<dyn MessageConsumer<BrowserSandboxValue>>>,
     ) -> Result<(), DiagnosticErrorInfo> {
         self.state.register(sandbox_id, providers, consumers);
         self.install().map_err(|error| diagnostic(&error))
@@ -74,7 +74,7 @@ impl RuntimeMessageRouter {
     pub fn add_consumer(
         &self,
         sandbox_id: &str,
-        consumer: Arc<dyn MessageConsumer<BrowserSandboxValue>>,
+        consumer: SharedHandle<dyn MessageConsumer<BrowserSandboxValue>>,
     ) {
         let context = self.state.sandboxes.borrow().get(sandbox_id).cloned();
         if let Some(context) = context {
@@ -85,7 +85,7 @@ impl RuntimeMessageRouter {
     pub fn remove_consumer(
         &self,
         sandbox_id: &str,
-        consumer: &Arc<dyn MessageConsumer<BrowserSandboxValue>>,
+        consumer: &SharedHandle<dyn MessageConsumer<BrowserSandboxValue>>,
     ) {
         let context = self.state.sandboxes.borrow().get(sandbox_id).cloned();
         if let Some(context) = context {
@@ -231,7 +231,12 @@ fn window_delivery(context: Sandbox, message: JsValue, id: JsValue) -> Result<Js
         }
         Ok(())
     });
-    Ok(deliver(context, message, Arc::from(respond as Box<dyn Fn(_) -> _>)).into())
+    Ok(deliver(
+        context,
+        message,
+        SharedHandle::from(respond as Box<dyn Fn(_) -> _>),
+    )
+    .into())
 }
 /// Retain the extension's synchronous admission and response precedence.
 fn extension_message(
@@ -256,7 +261,11 @@ fn extension_message(
             .map_err(|error| diagnostic(&error))?;
         Ok(())
     });
-    let _promise = deliver(context, message, Arc::from(respond as Box<dyn Fn(_) -> _>));
+    let _promise = deliver(
+        context,
+        message,
+        SharedHandle::from(respond as Box<dyn Fn(_) -> _>),
+    );
     Ok(true.into())
 }
 /// Copy enumerable fields without invoking the target's prototype setters.

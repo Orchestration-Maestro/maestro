@@ -1,18 +1,21 @@
 //! Native observations of the shared routing core.
 use super::*;
+use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandbox::sandbox_runtime_provider::{
     SandboxRespond, SandboxRuntimeProvider,
 };
 use serde_json::Value;
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc};
 
 #[test]
 fn router_sender_gate_rejects_foreign_and_unbound_sources() {
     let registry = Registry::<Shared, u8>::default();
-    let trace = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let trace = SharedHandle::new(std::sync::Mutex::new(Vec::new()));
     registry.register(
         "victim".into(),
-        Rc::new(RefCell::new(vec![Arc::new(provider(&trace, "provider"))])),
+        Rc::new(RefCell::new(vec![SharedHandle::new(provider(
+            &trace, "provider",
+        ))])),
         vec![traced_consumer(trace.clone(), "consumer", false)],
     );
     registry.register("other".into(), Rc::new(RefCell::new(vec![])), vec![]);
@@ -92,7 +95,7 @@ fn router_sandbox_ids_are_matched_without_coercion() {
 
 /// Shared native test value without a transport copy.
 #[derive(Clone)]
-struct Shared(Arc<std::sync::Mutex<Value>>);
+struct Shared(SharedHandle<std::sync::Mutex<Value>>);
 impl SandboxValue for Shared {
     fn format_repl_value(&self) -> Result<std::borrow::Cow<'_, str>, DiagnosticErrorInfo> {
         Ok("test".into())
@@ -109,7 +112,7 @@ impl MessageConsumer<Shared> for Consumer {
 /// Erase local callbacks before sharing their allocation identity.
 fn consumer(
     action: impl Fn(Shared) -> Result<(), DiagnosticErrorInfo> + 'static,
-) -> Arc<dyn MessageConsumer<Shared>> {
+) -> SharedHandle<dyn MessageConsumer<Shared>> {
     let value: Box<dyn MessageConsumer<Shared>> = Box::new(Consumer(Box::new(action)));
     value.into()
 }
@@ -126,18 +129,18 @@ fn finish<T>(future: impl std::future::Future<Output = T>) -> T {
 }
 /// Fresh shared message.
 fn message() -> Shared {
-    Shared(Arc::new(std::sync::Mutex::new(Value::from(0))))
+    Shared(SharedHandle::new(std::sync::Mutex::new(Value::from(0))))
 }
 /// Empty response callback.
 fn respond() -> SandboxRespond<Shared> {
-    Arc::new(|_| Ok(()))
+    SharedHandle::new(|_| Ok(()))
 }
 
 #[test]
 fn router_consumer_identity_preserves_live_order() {
     let registry = Rc::new(Registry::<Shared, u8>::default());
     let trace = Rc::new(RefCell::new(Vec::new()));
-    let second: Arc<dyn MessageConsumer<Shared>> = consumer({
+    let second: SharedHandle<dyn MessageConsumer<Shared>> = consumer({
         let trace = trace.clone();
         move |_| {
             trace.borrow_mut().push("equal");
@@ -153,7 +156,7 @@ fn router_consumer_identity_preserves_live_order() {
             Ok(())
         }
     });
-    let first: Arc<dyn MessageConsumer<Shared>> = consumer({
+    let first: SharedHandle<dyn MessageConsumer<Shared>> = consumer({
         let trace = trace.clone();
         let second = second.clone();
         move |_| {
@@ -171,7 +174,7 @@ fn router_consumer_identity_preserves_live_order() {
             Ok(())
         }
     });
-    let equal: Arc<dyn MessageConsumer<Shared>> = consumer({
+    let equal: SharedHandle<dyn MessageConsumer<Shared>> = consumer({
         let trace = trace.clone();
         move |_| {
             trace.borrow_mut().push("equal");
@@ -194,11 +197,11 @@ fn router_consumer_identity_preserves_live_order() {
 /// Provider with a controllable completion signal.
 struct Provider {
     /// Shared observations independent of registry mutation.
-    trace: Arc<std::sync::Mutex<Vec<&'static str>>>,
+    trace: SharedHandle<std::sync::Mutex<Vec<&'static str>>>,
     /// Distinguishing callback label.
     label: &'static str,
     /// Release flag for a deliberately suspended callback.
-    release: Arc<std::sync::atomic::AtomicBool>,
+    release: SharedHandle<std::sync::atomic::AtomicBool>,
     /// Callback failure branch.
     fail: bool,
     /// Edit the retained message before its successor reads it.
@@ -258,11 +261,14 @@ impl SandboxRuntimeProvider<Shared> for DefaultProvider {
     }
 }
 /// Ready provider with a distinct trace label.
-fn provider(trace: &Arc<std::sync::Mutex<Vec<&'static str>>>, label: &'static str) -> Provider {
+fn provider(
+    trace: &SharedHandle<std::sync::Mutex<Vec<&'static str>>>,
+    label: &'static str,
+) -> Provider {
     Provider {
         trace: trace.clone(),
         label,
-        release: Arc::new(std::sync::atomic::AtomicBool::new(true)),
+        release: SharedHandle::new(std::sync::atomic::AtomicBool::new(true)),
         fail: false,
         edit: false,
     }
@@ -271,15 +277,15 @@ fn provider(trace: &Arc<std::sync::Mutex<Vec<&'static str>>>, label: &'static st
 #[test]
 fn router_dispatch_runs_providers_before_live_consumers() {
     let registry = Registry::<Shared, u8>::default();
-    let trace = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let trace = SharedHandle::new(std::sync::Mutex::new(Vec::new()));
     let first = provider(&trace, "first");
     let release = first.release.clone();
     release.store(false, std::sync::atomic::Ordering::SeqCst);
     let providers: Providers<Shared> = Rc::new(RefCell::new(vec![
-        Arc::new(first),
-        Arc::new(provider(&trace, "replaced")),
+        SharedHandle::new(first),
+        SharedHandle::new(provider(&trace, "replaced")),
     ]));
-    let consumer: Arc<dyn MessageConsumer<Shared>> = consumer({
+    let consumer: SharedHandle<dyn MessageConsumer<Shared>> = consumer({
         let trace = trace.clone();
         move |_| {
             trace.lock().unwrap().push("consumer");
@@ -296,10 +302,10 @@ fn router_dispatch_runs_providers_before_live_consumers() {
             .is_pending()
     );
     assert_eq!(*trace.lock().unwrap(), ["first"]);
-    providers.borrow_mut()[1] = Arc::new(DefaultProvider);
+    providers.borrow_mut()[1] = SharedHandle::new(DefaultProvider);
     providers
         .borrow_mut()
-        .push(Arc::new(provider(&trace, "appended")));
+        .push(SharedHandle::new(provider(&trace, "appended")));
     release.store(true, std::sync::atomic::Ordering::SeqCst);
     finish(pending).unwrap();
     assert_eq!(*trace.lock().unwrap(), ["first", "appended", "consumer"]);
@@ -307,10 +313,10 @@ fn router_dispatch_runs_providers_before_live_consumers() {
 
 /// Record one consumer invocation and optionally reject it.
 fn traced_consumer(
-    trace: Arc<std::sync::Mutex<Vec<&'static str>>>,
+    trace: SharedHandle<std::sync::Mutex<Vec<&'static str>>>,
     label: &'static str,
     fail: bool,
-) -> Arc<dyn MessageConsumer<Shared>> {
+) -> SharedHandle<dyn MessageConsumer<Shared>> {
     consumer(move |_| {
         trace.lock().unwrap().push(label);
         if fail {
@@ -324,7 +330,7 @@ fn traced_consumer(
 #[test]
 fn router_dispatch_stops_at_the_failing_callback() {
     for branch in 0..3 {
-        let trace = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let trace = SharedHandle::new(std::sync::Mutex::new(Vec::new()));
         let registry = Registry::<Shared, u8>::default();
         let mut first = provider(&trace, "provider");
         first.fail = branch == 1;
@@ -332,7 +338,7 @@ fn router_dispatch_stops_at_the_failing_callback() {
             .map(|label| traced_consumer(trace.clone(), label, branch == 2 && label == "consumer"));
         registry.register(
             "one".into(),
-            Rc::new(RefCell::new(vec![Arc::new(first)])),
+            Rc::new(RefCell::new(vec![SharedHandle::new(first)])),
             consumers.into(),
         );
         let context = registry.context(Some("one")).unwrap();
@@ -356,14 +362,14 @@ fn router_dispatch_stops_at_the_failing_callback() {
 #[test]
 fn router_callbacks_share_the_same_message_handle() {
     let registry = Registry::<Shared, u8>::default();
-    let trace = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let trace = SharedHandle::new(std::sync::Mutex::new(Vec::new()));
     let mut editor = provider(&trace, "editor");
     editor.edit = true;
     let original = message();
-    let consumer: Arc<dyn MessageConsumer<Shared>> = consumer({
+    let consumer: SharedHandle<dyn MessageConsumer<Shared>> = consumer({
         let original = original.clone();
         move |value| {
-            assert!(Arc::ptr_eq(&original.0, &value.0));
+            assert!(SharedHandle::ptr_eq(&original.0, &value.0));
             assert_eq!(*value.0.lock().unwrap(), Value::from(2));
             Ok(())
         }
@@ -371,8 +377,8 @@ fn router_callbacks_share_the_same_message_handle() {
     registry.register(
         "one".into(),
         Rc::new(RefCell::new(vec![
-            Arc::new(editor),
-            Arc::new(provider(&trace, "observe")),
+            SharedHandle::new(editor),
+            SharedHandle::new(provider(&trace, "observe")),
         ])),
         vec![consumer],
     );
@@ -390,11 +396,11 @@ fn router_callbacks_share_the_same_message_handle() {
 fn router_registry_replacement_keeps_inflight_context() {
     for replace in [false, true] {
         let registry = Registry::<Shared, u8>::default();
-        let trace = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let trace = SharedHandle::new(std::sync::Mutex::new(Vec::new()));
         let first = provider(&trace, "provider");
         let release = first.release.clone();
         release.store(false, std::sync::atomic::Ordering::SeqCst);
-        let consumer: Arc<dyn MessageConsumer<Shared>> = consumer({
+        let consumer: SharedHandle<dyn MessageConsumer<Shared>> = consumer({
             let trace = trace.clone();
             move |_| {
                 trace.lock().unwrap().push("old");
@@ -403,7 +409,7 @@ fn router_registry_replacement_keeps_inflight_context() {
         });
         registry.register(
             "one".into(),
-            Rc::new(RefCell::new(vec![Arc::new(first)])),
+            Rc::new(RefCell::new(vec![SharedHandle::new(first)])),
             vec![consumer],
         );
         let context = registry.context(Some("one")).unwrap();
@@ -440,13 +446,13 @@ fn router_registry_replacement_keeps_inflight_context() {
 #[test]
 fn router_responses_follow_the_retained_iframe_slot() {
     let registry = Registry::<Shared, u8>::default();
-    let trace = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let trace = SharedHandle::new(std::sync::Mutex::new(Vec::new()));
     let first = provider(&trace, "provider");
     let release = first.release.clone();
     release.store(false, std::sync::atomic::Ordering::SeqCst);
     registry.register(
         "one".into(),
-        Rc::new(RefCell::new(vec![Arc::new(first)])),
+        Rc::new(RefCell::new(vec![SharedHandle::new(first)])),
         vec![],
     );
     registry.set_frame("one", 1);

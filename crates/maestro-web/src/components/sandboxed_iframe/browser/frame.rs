@@ -1,24 +1,25 @@
 //! Native frame construction, validation and literal error documents.
 use super::{
-    BrowserSandboxValue, DiagnosticErrorInfo, MessageConsumer, Provider, SandboxIframe, diagnostic,
+    BrowserSandboxValue, DiagnosticErrorInfo, MessageConsumer, Owner, Provider, diagnostic,
 };
 use crate::components::sandboxed_iframe::PrepareHtmlOptions;
 use js_sys::Reflect;
+use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandbox::console_runtime_provider::ConsoleRuntimeProvider;
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, JsValue};
 use web_sys::{Document, DomParser, HtmlIFrameElement, SupportedType};
 
-impl SandboxIframe {
+impl Owner {
     /// Acquire the context, prepared document, frame and subscription before mounting.
     pub(super) fn load(
-        &mut self,
+        &self,
         id: &str,
         code: &str,
         providers: Vec<Provider>,
-        consumers: Vec<Arc<dyn MessageConsumer<BrowserSandboxValue>>>,
+        consumers: Vec<SharedHandle<dyn MessageConsumer<BrowserSandboxValue>>>,
     ) -> Result<(), DiagnosticErrorInfo> {
-        let providers: Vec<Provider> = std::iter::once(Arc::new(ConsoleRuntimeProvider::<
+        let providers: Vec<Provider> = std::iter::once(SharedHandle::new(ConsoleRuntimeProvider::<
             BrowserSandboxValue,
         >::new()) as Provider)
         .chain(providers)
@@ -39,7 +40,21 @@ impl SandboxIframe {
                 is_standalone: false,
             }),
         )?;
+        self.mount(id, html, Mount::Loading)
+    }
+    /// Validate and mount through the same retained frame and one-shot handshake.
+    pub(super) fn mount(
+        &self,
+        id: &str,
+        html: String,
+        mode: Mount,
+    ) -> Result<(), DiagnosticErrorInfo> {
         let error = validate(&html);
+        if let (Mount::Execution, Some(error)) = (mode, &error) {
+            return Err(DiagnosticErrorInfo::error(format!(
+                "HTML validation failed: {error}"
+            )));
+        }
         let document = self
             .parent
             .owner_document()
@@ -50,8 +65,17 @@ impl SandboxIframe {
             .dyn_into()
             .map_err(|error| diagnostic(&error))?;
         self.state.borrow_mut().frame = Some(frame.clone());
+        let url = self.url.borrow().clone();
+        let hidden = matches!(mode, Mount::Execution) && url.is_none();
         frame
-            .set_attribute("style", "width:100%;height:100%;border:none;")
+            .set_attribute(
+                "style",
+                if hidden {
+                    "width:100%;height:100%;border:none;display:none;"
+                } else {
+                    "width:100%;height:100%;border:none;"
+                },
+            )
             .map_err(|error| diagnostic(&error))?;
         if let Some(error) = error {
             frame.set_srcdoc(
@@ -62,7 +86,7 @@ impl SandboxIframe {
             frame
                 .set_attribute("sandbox", "allow-scripts allow-modals")
                 .map_err(|error| diagnostic(&error))?;
-            if let Some(provider) = &self.sandbox_url_provider {
+            if let Some(provider) = url {
                 let url = provider()?;
                 frame.set_src(&url);
                 let mut state = self.state.borrow_mut();
@@ -79,6 +103,14 @@ impl SandboxIframe {
             .map_err(|error| diagnostic(&error))?;
         Ok(())
     }
+}
+/// Loading paints validation failures; execution rejects them.
+#[derive(Clone, Copy)]
+pub(super) enum Mount {
+    /// Caller-visible HTML content.
+    Loading,
+    /// Hidden or SDK-authored execution.
+    Execution,
 }
 /// Native text/html recovery is accepted; explicit parser errors retain their text.
 fn validate(html: &str) -> Option<String> {

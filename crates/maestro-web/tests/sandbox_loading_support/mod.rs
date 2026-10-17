@@ -1,10 +1,9 @@
 //! Browser transactions and source-derived raw-value fixture construction.
 use maestro_app::DiagnosticErrorInfo;
+use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
-use maestro_theme::{BrandMode, ThemeInfo, ThemeOperations};
+use maestro_web::browser::sandbox_value::BrowserSandboxValue;
 use maestro_web::components::sandboxed_iframe::PrepareHtmlOptions;
-use maestro_web::{SandboxIframe, browser::sandbox_value::BrowserSandboxValue};
-use std::sync::Arc;
 use wasm_bindgen::{JsCast as _, prelude::*};
 
 #[wasm_bindgen(module = "/tests/sandbox_loading_support/native.js")]
@@ -36,7 +35,7 @@ pub struct DocumentCase {
     /// Unchanged authored input.
     pub code: String,
     /// Retained provider allocations.
-    pub providers: Vec<Arc<dyn SandboxRuntimeProvider<BrowserSandboxValue>>>,
+    pub providers: Vec<SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>>>,
     /// Independent envelope and standalone selection.
     pub options: PrepareHtmlOptions,
     /// Complete consumed oracle output.
@@ -101,59 +100,8 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Provider {
         Ok(String::new())
     }
 }
-/// Selected same-format pack supplied without filesystem access.
-pub struct Pack(
-    /// Optional same-format selection, falling back to the checked-in pack.
-    pub Option<String>,
-);
-impl ThemeOperations for Pack {
-    fn read_to_string(&self, _: &str) -> std::io::Result<String> {
-        Ok(self
-            .0
-            .clone()
-            .unwrap_or_else(|| include_str!("../../../../assets/brand/brand.json").into()))
-    }
-    fn environment(&self, _: &str) -> Option<String> {
-        unreachable!()
-    }
-    fn exists(&self, _: &str) -> bool {
-        unreachable!()
-    }
-    fn read_dir(&self, _: &str) -> std::io::Result<Vec<String>> {
-        unreachable!()
-    }
-    fn sort_by_name(&self, _: &mut [ThemeInfo]) -> std::io::Result<()> {
-        unreachable!()
-    }
-}
-/// Construct a mounted owner from the selected brand pack.
-pub fn adapter() -> SandboxIframe {
-    adapter_pack(false, BrandMode::Dark).0
-}
-/// Materialize a second same-format selection using only existing approved pack values.
-pub fn adapter_pack(alternate: bool, mode: BrandMode) -> (SandboxIframe, String) {
-    std::panic::set_hook(Box::new(|info| {
-        web_sys::console::error_1(&info.to_string().into())
-    }));
-    let mut json: serde_json::Value =
-        serde_json::from_str(include_str!("../../../../assets/brand/brand.json")).unwrap();
-    if alternate {
-        json["modes"]["dark"]["colors"]["background"] = "oxide".into();
-        json["modes"]["light"]["colors"]["panel"] = "burnished-brass".into();
-        json["fonts"]["mono"] = json["fonts"]["body"].clone();
-    }
-    let pack = maestro_theme::load_brand_pack("brand.json", &Pack(Some(json.to_string()))).unwrap();
-    let presentation = pack.presentation(mode).unwrap();
-    let css = serde_json::to_string(&presentation.css_properties()).unwrap();
-    let document = web_sys::window().unwrap().document().unwrap();
-    let parent = document.create_element("div").unwrap();
-    parent.set_attribute("data-sandbox-test", "").unwrap();
-    document.body().unwrap().append_child(&parent).unwrap();
-    (
-        SandboxIframe::new(parent.unchecked_into(), &presentation).unwrap(),
-        css,
-    )
-}
+mod placement;
+pub use placement::{adapter, adapter_pack};
 /// Materialize native provider values before preparation, preserving failure phases.
 pub fn document_cases() -> Vec<DocumentCase> {
     let rows: Vec<Case> =
@@ -163,22 +111,22 @@ pub fn document_cases() -> Vec<DocumentCase> {
         .filter(|row| row.input.get("id").is_some() || row.input.get("provider_failure").is_some())
         .map(|row| {
             let input = row.input;
-            let mut providers: Vec<Arc<dyn SandboxRuntimeProvider<BrowserSandboxValue>>> =
+            let mut providers: Vec<SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>>> =
                 input["providers"]
                     .as_array()
                     .into_iter()
                     .flatten()
                     .map(|p| {
-                        Arc::new(Provider {
+                        SharedHandle::new(Provider {
                             data: decode(js_sys::JSON::parse(&p["data"].to_string()).unwrap()),
                             runtime: p["runtime"].as_str().unwrap().into(),
                             failure: None,
                         })
-                            as Arc<dyn SandboxRuntimeProvider<BrowserSandboxValue>>
+                            as SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>>
                     })
                     .collect();
             if let Some(phase) = input["provider_failure"].as_str() {
-                providers.push(Arc::new(Provider {
+                providers.push(SharedHandle::new(Provider {
                     data: js_sys::Object::new().into(),
                     runtime: "function(){}".into(),
                     failure: Some(phase.into()),
@@ -203,8 +151,8 @@ pub fn document_cases() -> Vec<DocumentCase> {
         .collect()
 }
 /// Native callback for a simple self-contained runtime.
-pub fn provider(source: &str) -> Arc<dyn SandboxRuntimeProvider<BrowserSandboxValue>> {
-    Arc::new(Provider {
+pub fn provider(source: &str) -> SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>> {
+    SharedHandle::new(Provider {
         data: js_sys::Object::new().into(),
         runtime: source.into(),
         failure: None,

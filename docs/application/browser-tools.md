@@ -49,9 +49,9 @@ come from the loaded attachment. There is no progress or termination request.
 retains a supplied `SandboxHost`. Register its shared `tool` handle; the factory
 wrapper need not remain alive. The host owns hidden creation, execution and
 removal. Removal follows settlement and precedes return-value formatting, including
-on host failures. This interface supplies no browser engine or hard interruption;
-the real browser adapter and default instance are tracked in
-[#815](https://github.com/Orchestration-Maestro/maestro/issues/815).
+on host failures. The browser frontend supplies
+[`BrowserSandboxHost` and its lazy default registration](../browser/sandbox.md#hidden-javascript-execution)
+on the existing retained frame owner. The interface adds no hard interruption.
 
 `runtime_providers_factory` starts as an empty successful factory and may be
 unset. Its current callback runs separately for descriptions and executions,

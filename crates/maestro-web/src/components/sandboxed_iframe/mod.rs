@@ -2,6 +2,8 @@
 #[cfg(any(target_arch = "wasm32", test))]
 mod document;
 #[cfg(any(target_arch = "wasm32", test))]
+mod execution;
+#[cfg(any(target_arch = "wasm32", test))]
 mod runtime;
 #[cfg(test)]
 mod tests;
@@ -18,4 +20,4 @@ pub struct PrepareHtmlOptions {
 #[cfg(target_arch = "wasm32")]
 mod browser;
 #[cfg(target_arch = "wasm32")]
-pub use browser::SandboxIframe;
+pub use browser::{BrowserSandboxHost, SandboxIframe};

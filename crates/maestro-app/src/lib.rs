@@ -45,11 +45,11 @@ pub use maestro_tools::{RenderDiffOptions, key_hint, key_text, raw_key_hint, ren
 
 pub use maestro_agent::{AgentMessage, CustomAgentMessages, StreamFn};
 pub use maestro_models::{
-    AssistantContent, AssistantMessage, AssistantMessageEventStream, BoxFuture, Context,
-    DiagnosticErrorInfo, Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, ImageContent,
-    Message, Model, ModelInput, OAuthCallbacks, OAuthCredentials, OAuthError,
-    OAuthProviderInterface, ProviderStreamOptions, SharedAssistantMessage, SimpleStreamOptions,
-    StopReason, TextContent, UserBlock, UserContent, default_fetch,
+    AssistantContent, AssistantMessage, AssistantMessageEventStream, BoxFuture, Cancellation,
+    Context, DiagnosticErrorInfo, Fetch, FetchError, HttpBody, HttpRequest, HttpResponse,
+    ImageContent, Message, Model, ModelInput, OAuthCallbacks, OAuthCredentials, OAuthError,
+    OAuthProviderInterface, ProviderStreamOptions, SharedAssistantMessage, SharedHandle,
+    SimpleStreamOptions, StopReason, TextContent, UserBlock, UserContent, default_fetch,
 };
 pub use maestro_session::messages::{
     BranchSummaryMessage, CompactionSummaryMessage, parse_timestamp_millis,

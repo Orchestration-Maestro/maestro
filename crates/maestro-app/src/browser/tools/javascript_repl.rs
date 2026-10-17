@@ -26,7 +26,7 @@ pub struct JavaScriptExecution {
 /// Returns preflight, execution or display failures.
 pub async fn execute_javascript<V: SandboxValue>(
     code: String,
-    runtime_providers: Vec<Arc<dyn SandboxRuntimeProvider<V>>>,
+    runtime_providers: Vec<SharedHandle<dyn SandboxRuntimeProvider<V>>>,
     signal: Option<Cancellation>,
     environment: SandboxEnvironment<V>,
 ) -> Result<JavaScriptExecution, DiagnosticErrorInfo> {
@@ -115,12 +115,15 @@ fn format_output<V: SandboxValue>(
 /// Native retained factory of runtime providers.
 #[cfg(not(target_arch = "wasm32"))]
 pub type RuntimeProvidersFactory<V> = SharedHandle<
-    dyn Fn() -> Result<Vec<Arc<dyn SandboxRuntimeProvider<V>>>, DiagnosticErrorInfo> + Send + Sync,
+    dyn Fn() -> Result<Vec<SharedHandle<dyn SandboxRuntimeProvider<V>>>, DiagnosticErrorInfo>
+        + Send
+        + Sync,
 >;
 /// Browser-local retained factory of runtime providers.
 #[cfg(target_arch = "wasm32")]
-pub type RuntimeProvidersFactory<V> =
-    SharedHandle<dyn Fn() -> Result<Vec<Arc<dyn SandboxRuntimeProvider<V>>>, DiagnosticErrorInfo>>;
+pub type RuntimeProvidersFactory<V> = SharedHandle<
+    dyn Fn() -> Result<Vec<SharedHandle<dyn SandboxRuntimeProvider<V>>>, DiagnosticErrorInfo>,
+>;
 /// Required arguments for execution.
 #[derive(Deserialize, Serialize)]
 pub struct JavaScriptReplParams {
@@ -212,7 +215,7 @@ pub fn create_javascript_repl_tool<V: SandboxValue>(
 /// Execute the configured call and encode its downloads.
 async fn execute_tool<V: SandboxValue>(
     code: String,
-    providers: Result<Vec<Arc<dyn SandboxRuntimeProvider<V>>>, DiagnosticErrorInfo>,
+    providers: Result<Vec<SharedHandle<dyn SandboxRuntimeProvider<V>>>, DiagnosticErrorInfo>,
     signal: Option<Cancellation>,
     environment: SandboxEnvironment<V>,
 ) -> Result<AgentToolResult<JavaScriptReplToolResult>, DiagnosticErrorInfo> {
@@ -235,7 +238,7 @@ async fn execute_tool<V: SandboxValue>(
 /// Invoke the current factory without holding the setting guard.
 fn runtime_providers<V: SandboxValue>(
     setting: &RwLock<Option<RuntimeProvidersFactory<V>>>,
-) -> Result<Vec<Arc<dyn SandboxRuntimeProvider<V>>>, DiagnosticErrorInfo> {
+) -> Result<Vec<SharedHandle<dyn SandboxRuntimeProvider<V>>>, DiagnosticErrorInfo> {
     let factory = setting
         .read()
         .unwrap_or_else(std::sync::PoisonError::into_inner)

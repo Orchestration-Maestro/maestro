@@ -4,7 +4,7 @@ use maestro_app::browser::components::sandbox::sandbox_runtime_provider::{
     SandboxRespond, SandboxRuntimeProvider,
 };
 use maestro_app::browser::components::sandboxed_iframe::SandboxValue;
-use maestro_app::{BoxFuture, DiagnosticErrorInfo};
+use maestro_app::{BoxFuture, DiagnosticErrorInfo, SharedHandle};
 use maestro_web::browser::sandbox_value::BrowserSandboxValue;
 use maestro_web::components::sandbox::runtime_message_bridge::{
     MessageType, RuntimeMessageBridgeOptions, RuntimeMessageContext,
@@ -58,8 +58,10 @@ fn sandbox_sdk_exports_retain_shared_router() {
         sandbox_id: "sdk",
     });
     let router = RuntimeMessageRouter::default();
-    let provider: Arc<dyn SandboxRuntimeProvider<BrowserSandboxValue>> = Arc::new(Provider);
-    let consumer: Arc<dyn MessageConsumer<BrowserSandboxValue>> = Arc::new(Consumer);
+    let provider: SharedHandle<dyn SandboxRuntimeProvider<BrowserSandboxValue>> =
+        SharedHandle::new(Provider);
+    let consumer: SharedHandle<dyn MessageConsumer<BrowserSandboxValue>> =
+        SharedHandle::new(Consumer);
     let _ = router.register_sandbox(
         "sdk".into(),
         Rc::new(RefCell::new(vec![provider])),
@@ -78,7 +80,7 @@ fn raw_sandbox_values_reach_provider_and_consumer_contracts() {
     let cloned = raw.clone();
     let _: &JsValue = &cloned.0;
     let _ = raw.format_repl_value();
-    let reply: SandboxRespond<BrowserSandboxValue> = Arc::new(|_value| Ok(()));
+    let reply: SandboxRespond<BrowserSandboxValue> = SharedHandle::new(|_value| Ok(()));
     let _: BoxFuture<Result<(), DiagnosticErrorInfo>> = Provider.handle_message(raw.clone(), reply);
     let _: BoxFuture<Result<(), DiagnosticErrorInfo>> = Consumer.handle_message(raw);
 }
@@ -89,9 +91,9 @@ fn concrete_providers_keep_native_browser_handles() {
         AttachmentsRuntimeProvider, ConsoleLog, ConsoleRuntimeProvider, DownloadableFile,
         FileDownloadRuntimeProvider,
     };
-    let console = Arc::new(ConsoleRuntimeProvider::<BrowserSandboxValue>::new());
-    let files = Arc::new(FileDownloadRuntimeProvider::<BrowserSandboxValue>::new());
-    let attachments = Arc::new(AttachmentsRuntimeProvider::<BrowserSandboxValue>::new(
+    let console = SharedHandle::new(ConsoleRuntimeProvider::<BrowserSandboxValue>::new());
+    let files = SharedHandle::new(FileDownloadRuntimeProvider::<BrowserSandboxValue>::new());
+    let attachments = SharedHandle::new(AttachmentsRuntimeProvider::<BrowserSandboxValue>::new(
         Arc::default(),
     ));
     let raw = BrowserSandboxValue(js_sys::Uint8Array::new_with_length(3).into());
