@@ -45,7 +45,7 @@ impl ApplicationSandboxIframe<BrowserSandboxValue> for SandboxIframe {
         request: SandboxExecution<BrowserSandboxValue>,
     ) -> BoxFuture<Result<SandboxResult<BrowserSandboxValue>, DiagnosticErrorInfo>> {
         let execution = Self::execute(self, request, Vec::new(), false);
-        Box::pin(async move { execution.await.map(super::values::application_result) })
+        Box::pin(async move { execution.await.and_then(super::values::application_result) })
     }
     fn remove(&self) {
         let _cleanup = Self::remove(self);

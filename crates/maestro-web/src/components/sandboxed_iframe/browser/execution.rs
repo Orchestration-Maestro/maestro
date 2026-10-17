@@ -6,7 +6,10 @@ use super::{
 };
 use crate::browser::timer::{self, Timer};
 use maestro_app::browser::components::{
-    sandbox::console_runtime_provider::ConsoleRuntimeProvider,
+    sandbox::{
+        console_runtime_provider::ConsoleRuntimeProvider,
+        sandbox_runtime_provider::RuntimeProviderValue as _,
+    },
     sandboxed_iframe::{SandboxError, SandboxExecution},
 };
 use maestro_app::{BoxFuture, Cancellation, SandboxResult};
@@ -29,6 +32,8 @@ pub(super) struct Execution {
     providers: Vec<Provider>,
     /// Existing console owner; no second console collector.
     console: SharedHandle<ConsoleRuntimeProvider<BrowserSandboxValue>>,
+    /// Caller cancellation observed before terminal admission.
+    signal: Option<Cancellation>,
     /// Native file handles and single terminal admission.
     collected: RefCell<ExecutionState<BrowserSandboxValue, BrowserSandboxValue>>,
     /// Owned one-shot result observer.
@@ -126,6 +131,7 @@ async fn execute(
         id: std::mem::take(&mut request.sandbox_id),
         providers,
         console,
+        signal: request.signal.clone(),
         collected: RefCell::default(),
         sender: RefCell::new(Some(sender)),
         timer: RefCell::new(None),
@@ -178,16 +184,31 @@ impl Owner {
         if !current {
             return;
         }
-        match super::values::select(message) {
-            Ok(message) => {
-                let result = run.collected.borrow_mut().receive(message);
-                if let Some(result) = result {
-                    self.finish(Ok(result));
+        if run.signal.as_ref().is_some_and(Cancellation::is_aborted) {
+            return self.finish(Err(aborted()));
+        }
+        let kind = match message.message_type() {
+            Ok(kind) => kind,
+            Err(error) => return self.finish(Err(error)),
+        };
+        if matches!(
+            kind.as_deref(),
+            Some("execution-complete" | "execution-error")
+        ) {
+            self.finish_after_hooks(|run| {
+                let selected = super::values::select(message, kind.as_deref())?;
+                Ok(run.collected.borrow_mut().receive(selected))
+            });
+        } else {
+            match super::values::select(message, kind.as_deref()) {
+                Ok(message) => {
+                    run.collected.borrow_mut().receive(message);
                 }
+                Err(error) => self.finish(Err(error)),
             }
-            Err(error) => self.finish(Err(error)),
         }
     }
+
     /// Invoke the exact production deadline outcome once.
     fn timeout(&self) {
         let run = self.execution.borrow().clone();
@@ -261,7 +282,14 @@ impl Owner {
         self.mount(&run.id, html, super::frame::Mount::Execution)
     }
     /// Take terminal ownership before calling out, then attempt every independent release.
-    pub(super) fn finish(&self, mut result: Result<NativeResult, DiagnosticErrorInfo>) {
+    pub(super) fn finish(&self, result: Result<NativeResult, DiagnosticErrorInfo>) {
+        self.finish_after_hooks(|_| result.map(Some));
+    }
+    /// Project terminal fields only after hooks and native cleanup finish.
+    fn finish_after_hooks(
+        &self,
+        project: impl FnOnce(&Execution) -> Result<Option<NativeResult>, DiagnosticErrorInfo>,
+    ) {
         let Some(run) = self.execution.take() else {
             return;
         };
@@ -276,15 +304,16 @@ impl Owner {
         if let Err(error) = self.cleanup() {
             failure.get_or_insert(error);
         }
-        if let Ok(value) = &mut result {
+        let mut result = project(&run).transpose();
+        if let Some(Ok(value)) = &mut result {
             value.console = super::values::console_entries(&run.console);
         }
         let result = match (result, failure) {
-            (Ok(value), Some(error)) if value.success => Err(error),
+            (Some(Ok(value)), Some(error)) if value.success => Some(Err(error)),
             (result, _) => result,
         };
         let sender = run.sender.take();
-        if let Some(sender) = sender {
+        if let (Some(sender), Some(result)) = (sender, result) {
             let _delivery = sender.send(result);
         }
     }

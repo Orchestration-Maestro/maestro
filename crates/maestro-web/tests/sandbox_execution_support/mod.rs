@@ -366,3 +366,23 @@ pub async fn root_records() {
     assert_eq!(text.text, "=> 4");
     hidden_released();
 }
+
+/// Retain the actual terminal envelope and edit it only during the end hook.
+pub fn terminal_editor(kind: &'static str, script: &'static str) -> Provider {
+    let message = Rc::new(RefCell::new(None::<BrowserSandboxValue>));
+    let observed = message.clone();
+    SharedHandle::new(Probe {
+        observe: Some(Rc::new(move |value| {
+            if tag(value) == kind {
+                observed.replace(Some(value.clone()));
+            }
+        })),
+        end: Some(Rc::new(move || {
+            js_sys::Function::new_with_args("m", script)
+                .call1(&JsValue::UNDEFINED, &message.borrow().as_ref().unwrap().0)
+                .unwrap();
+            Ok(())
+        })),
+        ..Probe::default()
+    })
+}

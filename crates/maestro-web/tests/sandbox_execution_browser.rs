@@ -264,8 +264,41 @@ pub async fn execution_abort_releases_every_acquired_resource() {
             .count(),
         1
     );
-    let mut input = request("return 9", vec![]);
+    let during = Cancellation::new();
+    let abort = during.clone();
+    let provider: Provider = SharedHandle::new(Probe {
+        observe: Some(Rc::new(move |value| {
+            if tag(value) == "execution-complete" {
+                abort.abort();
+            }
+        })),
+        ..Probe::default()
+    });
+    let mut input = request("return 9", vec![provider]);
+    input.signal = Some(during);
+    assert_eq!(
+        sandbox
+            .execute(input, vec![], false)
+            .await
+            .err()
+            .unwrap()
+            .message,
+        "Execution aborted"
+    );
+    closed(0);
+    timers(0);
     let late = Cancellation::new();
+    let abort = late.clone();
+    let mut input = request(
+        "return 9",
+        vec![SharedHandle::new(Probe {
+            end: Some(Rc::new(move || {
+                abort.abort();
+                Ok(())
+            })),
+            ..Probe::default()
+        })],
+    );
     input.signal = Some(late.clone());
     let result = sandbox.execute(input, vec![], false).await.unwrap();
     late.abort();
@@ -997,5 +1030,82 @@ pub async fn execution_retains_native_returns_through_repl_formatting() {
         tool_output("return {answer:1};").await.unwrap(),
         "=> {\n  \"answer\": 2\n}"
     );
+    end();
+}
+
+/// End hooks may replace, add or remove terminal fields before SDK projection.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn execution_reads_terminal_fields_after_end_hooks() {
+    begin();
+    let sandbox = adapter();
+    for (code, edit, expected) in [
+        ("return 1;", "m.returnValue=2", Some(2.0)),
+        ("return;", "m.returnValue=2", Some(2.0)),
+        ("return 1;", "delete m.returnValue", None),
+    ] {
+        let provider = terminal_editor("execution-complete", edit);
+        let result = direct(&sandbox, code, vec![provider.clone()]).await;
+        assert_eq!(result.return_value.map(|v| v.0.as_f64().unwrap()), expected);
+        maestro_web::JAVASCRIPT_REPL_TOOL.with(|tool| {
+            *tool.runtime_providers_factory.write().unwrap() =
+                Some(SharedHandle::new(move || Ok(vec![provider.clone()])));
+        });
+        assert_eq!(
+            tool_output(code).await.unwrap(),
+            expected.map_or("Code executed successfully (no output)", |_| "=> 2")
+        );
+        hidden_released();
+    }
+    for edit in [
+        "m.error={message:'edited message',stack:'edited stack'}",
+        "m.error.message='edited message';m.error.stack='edited stack'",
+    ] {
+        let provider = terminal_editor("execution-error", edit);
+        let result = direct(&sandbox, "throw Error('original');", vec![provider.clone()]).await;
+        assert!(!result.success);
+        let error = result.error.unwrap();
+        assert_eq!(error.message, "edited message");
+        assert_eq!(error.stack, "edited stack");
+        let error = application("throw Error('original');", vec![provider])
+            .await
+            .err()
+            .unwrap();
+        assert_eq!(error.message, "Error: edited message\nedited stack");
+        hidden_released();
+    }
+    end();
+}
+
+/// Open download content reaches the shared native string fallback and tool encoder.
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub async fn execution_encodes_nonbyte_download_content() {
+    use maestro_app::browser::components::sandboxed_iframe::SandboxFileContent;
+    begin();
+    let code = "await returnDownloadableFile('missing.json', undefined);";
+    let result = application(code, vec![downloads()]).await.unwrap();
+    let file = result.files.unwrap().remove(0);
+    let SandboxFileContent::Text(text) = file.content else {
+        panic!("native string fallback");
+    };
+    assert_eq!(text.as_bytes(), b"undefined");
+    maestro_web::JAVASCRIPT_REPL_TOOL.with(|tool| {
+        *tool.runtime_providers_factory.write().unwrap() =
+            Some(SharedHandle::new(|| Ok(vec![downloads()])));
+    });
+    let execute =
+        maestro_web::JAVASCRIPT_REPL_TOOL.with(|tool| tool.tool.read().unwrap().execute.clone());
+    let result = execute(
+        "fallback".into(),
+        serde_json::json!({"title":"fallback", "code":code}),
+        None,
+        None,
+    )
+    .await
+    .unwrap();
+    let details = result.details.unwrap();
+    assert_eq!(details["files"][0]["fileName"], "missing.json");
+    assert_eq!(details["files"][0]["contentBase64"], "dW5kZWZpbmVk");
+    assert_eq!(details["files"][0]["size"], 9);
+    hidden_released();
     end();
 }

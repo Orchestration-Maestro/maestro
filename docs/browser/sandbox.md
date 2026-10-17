@@ -76,11 +76,15 @@ The direct result is `SandboxResult<BrowserSandboxValue, BrowserSandboxValue>`.
 File names, MIME types and content handles are captured when each message arrives;
 in-place edits to a captured buffer remain visible after settlement. Native return
 handles preserve absence versus null, signed zero and native object kinds.
-End hooks run before the application trait converts file content to the default
-owned byte/text records. `SandboxResult<V>` retains that default payload type.
-The adapter does not serialize returns or encode downloads.
+Terminal return/error fields are read after end hooks, including property
+replacement, addition and removal. End hooks run before the application trait
+converts file content to the default owned byte/text records. Actual byte arrays
+become bytes; strings stay text; other content uses native string conversion.
+`SandboxResult<V>` retains that default payload type. The adapter does not
+serialize returns or encode downloads.
 
-Explicit cancellation rejects with `Execution aborted`. The cooperative
+Cancellation before terminal admission rejects with `Execution aborted`;
+cancellation after admission leaves the settled result unchanged. The cooperative
 120,000 ms deadline returns an unsuccessful result with
 `Execution timeout (120s)`, an empty stack and earlier console/files. It is
 separate from the bridge request's 30,000 ms deadline. Neither deadline can
