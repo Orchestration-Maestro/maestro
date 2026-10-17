@@ -155,10 +155,7 @@
         {
           "op": "invoke_command",
           "name": "z",
-          "args": "  raw﻿ ",
-          "ctx": {
-            "marker": "retained"
-          }
+          "args": "  raw﻿ "
         }
       ],
       "observe": [
@@ -196,9 +193,7 @@
         {
           "tag": "replacement",
           "args": "  raw﻿ ",
-          "ctx": {
-            "marker": "retained"
-          }
+          "ctx": "/workspace"
         }
       ],
       "observations": [
@@ -1438,9 +1433,6 @@
           "op": "invoke_command",
           "name": "go",
           "args": "x y",
-          "ctx": {
-            "value": 42
-          },
           "error": "command failed"
         },
         {
@@ -1467,9 +1459,7 @@
         {
           "tag": "go",
           "args": "x y",
-          "ctx": {
-            "value": 42
-          }
+          "ctx": "/workspace"
         },
         {
           "tag": "ctrl+x",

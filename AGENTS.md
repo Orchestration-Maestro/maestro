@@ -121,7 +121,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   normalization shared with `maestro-tools`); JSON owns JSON
   boundary semantics (object acceptance, canonical keys, truth, compact and
   pretty text, JSONL line framing). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
-  interchange records and depend only on `maestro-request`; `maestro-brand`
+  interchange records (entry includes `ForkPosition` and `NavigateTreeOptions`) and depend only on `maestro-request`; `maestro-brand`
   projects a brand pack and depends on text and JSON. Text, JSON, entry, tool and brand exist; add no `common`, `utils` or
   `shared-types` crate. `maestro-pattern` depends only on text.
   Keep authored paths as strings and convert to `PathBuf` only at I/O.
@@ -158,7 +158,8 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   guest authoring rather than redeclared.
   Shared application messages include bash execution, custom, branch summary and
   compaction summary records with their existing `Presence<T>` wrapper, plus the
-  renderer option record `MessageRenderOptions`, re-exported by session and guest
+  renderer option record `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
+`UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`, re-exported by session and guest
   authoring rather than redeclared.
   It also owns `model_registry::ResolvedRequestAuth`, re-exported by the native
   catalog and guest authoring library, default zero usage, message-only diagnostic

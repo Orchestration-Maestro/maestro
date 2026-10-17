@@ -384,20 +384,4 @@ pub struct SwitchSessionOptions {
     /// One-shot continuation bound by the host to this operation.
     pub with_session: Option<WithSession>,
 }
-#[derive(Default, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-/// Independently optional tree navigation choices.
-pub struct NavigateTreeOptions {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    /// Whether to request summarization.
-    pub summarize: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    /// Literal optional instructions.
-    pub custom_instructions: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    /// Whether to replace the host instructions.
-    pub replace_instructions: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    /// Literal optional label.
-    pub label: Option<String>,
-}
+pub use maestro_entry::session_manager::NavigateTreeOptions;

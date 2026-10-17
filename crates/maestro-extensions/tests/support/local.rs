@@ -50,19 +50,19 @@ pub fn source(path: &str) -> Arc<RwLock<SourceInfo>> {
 }
 
 /// A loaded owner with its facade, current collection and runtime state.
-pub struct Loaded<C> {
+pub struct Loaded {
     /// The strong registration owner.
-    pub owner: ExtensionHandle<C, Local>,
+    pub owner: ExtensionHandle<Local>,
     /// The weak registration facade.
-    pub api: ExtensionAPI<C, Local>,
+    pub api: ExtensionAPI<Local>,
     /// Current load order containing the owner.
-    pub owners: ExtensionCollection<C, Local>,
+    pub owners: ExtensionCollection<Local>,
     /// Shared flag values and activity.
     pub runtime: Arc<ExtensionRuntimeState>,
 }
 
 /// Creates a loaded owner using the supplied bus identity.
-pub fn loaded<C>(path: &str, events: EventBus<Local>) -> Loaded<C> {
+pub fn loaded(path: &str, events: EventBus<Local>) -> Loaded {
     let owner = Rc::new(RwLock::new(Extension::new(
         path.into(),
         format!("{path}/index"),
@@ -78,8 +78,8 @@ pub fn loaded<C>(path: &str, events: EventBus<Local>) -> Loaded<C> {
 }
 
 /// Creates a local runner over the supplied collection, serving `/work`.
-pub fn runner<C>(owners: &ExtensionCollection<C, Local>) -> ExtensionRunner<C, Local> {
-    ExtensionRunner::<C, Local>::new(
+pub fn runner(owners: &ExtensionCollection<Local>) -> ExtensionRunner<Local> {
+    ExtensionRunner::<Local>::new(
         owners.clone(),
         Arc::new(ExtensionRuntimeState::new()),
         session::runner_session("/work").0,

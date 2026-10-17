@@ -23,7 +23,7 @@ impl ExtensionUIContext {
         }
     }
 }
-impl<CC, E: ExtensionExecution> ExtensionRunner<CC, E> {
+impl<E: ExtensionExecution> ExtensionRunner<E> {
     /// Installs a UI context, or restores this runner's headless fallback with `None`.
     pub fn set_ui_context(&self, context: Option<ExtensionUIContext>) {
         let context = context.unwrap_or_else(|| self.binding.no_ui.clone());

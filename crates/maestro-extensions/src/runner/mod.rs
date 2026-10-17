@@ -20,9 +20,9 @@ use std::{
 };
 
 /// Queries current owners while retaining registration and diagnostic identities.
-pub struct ExtensionRunner<CC, E: ExtensionExecution = Threaded> {
+pub struct ExtensionRunner<E: ExtensionExecution = Threaded> {
     /// Current extension load order.
-    extensions: ExtensionCollection<CC, E>,
+    extensions: ExtensionCollection<E>,
     /// State shared with this runner's contexts.
     binding: Rc<ContextBinding>,
     /// Warning destination invoked outside locks.
@@ -32,13 +32,13 @@ pub struct ExtensionRunner<CC, E: ExtensionExecution = Threaded> {
     /// Most recent shortcut query's diagnostics.
     shortcut_diagnostics: RwLock<Arc<RwLock<Vec<ResourceDiagnostic>>>>,
 }
-impl<CC, E: ExtensionExecution> ExtensionRunner<CC, E> {
+impl<E: ExtensionExecution> ExtensionRunner<E> {
     /// Retains the supplied current collection, shared values, session and warning sink.
     ///
     /// Until a UI context is installed, the headless fallback supplies `theme`.
     #[must_use]
     pub fn new(
-        extensions: ExtensionCollection<CC, E>,
+        extensions: ExtensionCollection<E>,
         runtime: Arc<ExtensionRuntimeState>,
         session: ExtensionRunnerSession,
         warning_reporter: ErrorReporter<E>,
@@ -51,6 +51,7 @@ impl<CC, E: ExtensionExecution> ExtensionRunner<CC, E> {
                 runtime,
                 session,
                 actions: RefCell::default(),
+                command_actions: RefCell::default(),
                 ui: RefCell::new(no_ui.clone()),
                 no_ui,
             }),

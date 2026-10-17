@@ -2,7 +2,8 @@
 
 `maestro-entry` declares session headers, entry identity, the nine concrete entry
 records, new-session options, built-context records and compaction preparation,
-results, settings and file-operation records. It depends only on `maestro-request` within
+results, settings and file-operation records, plus `ForkPosition` and
+`NavigateTreeOptions` shared by native session operations and guest authoring. It depends only on `maestro-request` within
 the workspace. [Approved libraries](libraries/entry.md) supply serialization and
 ordered sets.
 

@@ -210,7 +210,7 @@ fn headless_queries(ui: &Ui, rejected: &Rejecting) {
 #[test]
 fn no_ui_methods_return_their_defined_fallbacks() {
     local(async {
-        let owners: ExtensionCollection<Ui, Local> = Rc::new(RwLock::new(Vec::new()));
+        let owners: ExtensionCollection<Local> = Rc::new(RwLock::new(Vec::new()));
         let ui = runner(&owners).get_ui_context();
         let rejected = Rejecting(Trace::default());
         let signal = Cancellation::new();
@@ -225,9 +225,9 @@ fn no_ui_methods_return_their_defined_fallbacks() {
 }
 
 /// Registers a shortcut on a reserved effective key and returns its runner.
-fn reserved_shortcut(warnings: &Trace) -> (Loaded<Ui>, ExtensionRunner<Ui, Local>) {
+fn reserved_shortcut(warnings: &Trace) -> (Loaded, ExtensionRunner<Local>) {
     let bus = LocalBus::new();
-    let owner = loaded::<Ui>("/reserved", bus.controller.for_extension());
+    let owner = loaded("/reserved", bus.controller.for_extension());
     let options = ExtensionShortcutOptions::<Local> {
         description: None,
         handler: Rc::new(|_| Box::pin(async { Ok(()) })),
@@ -237,7 +237,7 @@ fn reserved_shortcut(warnings: &Trace) -> (Loaded<Ui>, ExtensionRunner<Ui, Local
         .register_shortcut("Ctrl+C".into(), options)
         .unwrap();
     let warnings = warnings.clone();
-    let runner = ExtensionRunner::<Ui, Local>::new(
+    let runner = ExtensionRunner::<Local>::new(
         owner.owners.clone(),
         Arc::clone(&owner.runtime),
         local_support::session::runner_session("/work").0,
@@ -273,16 +273,16 @@ fn installed_ui_presence_does_not_claim_mode_support() {
     let fallback = runner.get_ui_context();
     runner.set_ui_context(Some(fallback.clone()));
     assert!(!runner.has_ui());
-    let owners: ExtensionCollection<Ui, Local> = Rc::new(RwLock::new(Vec::new()));
+    let owners: ExtensionCollection<Local> = Rc::new(RwLock::new(Vec::new()));
     let other = runner_with_fallback_of(&owners, fallback);
     assert!(!other.has_ui());
 }
 
 /// A second runner given another runner's retained fallback.
 fn runner_with_fallback_of(
-    owners: &ExtensionCollection<Ui, Local>,
+    owners: &ExtensionCollection<Local>,
     fallback: Ui,
-) -> ExtensionRunner<Ui, Local> {
+) -> ExtensionRunner<Local> {
     let other = runner(owners);
     other.set_ui_context(Some(ExtensionUIContext::new(Rc::new(Limited))));
     assert!(other.has_ui());
@@ -293,7 +293,7 @@ fn runner_with_fallback_of(
 #[test]
 fn retained_ui_handles_keep_old_hosts_after_rebinding() {
     local(async {
-        let owners: ExtensionCollection<Ui, Local> = Rc::new(RwLock::new(Vec::new()));
+        let owners: ExtensionCollection<Local> = Rc::new(RwLock::new(Vec::new()));
         let runner = runner(&owners);
         let (first, host) = Named::install("a");
         let released = Rc::downgrade(&host);
@@ -428,14 +428,18 @@ async fn ask(ui: Ui, signal: Cancellation, answers: Trace) -> Result<(), EventEr
 fn ui_dialog_options_reach_the_installed_host() {
     local(async {
         let bus = LocalBus::new();
-        let owner = loaded::<Ui>("/dialogs", bus.controller.for_extension());
+        let owner = loaded("/dialogs", bus.controller.for_extension());
         let (signal, answers) = (Cancellation::new(), Trace::default());
         let (command_signal, output) = (signal.clone(), answers.clone());
-        let options = RegisteredCommandOptions::<Ui, Local> {
+        let options = RegisteredCommandOptions::<Local> {
             description: None,
             get_argument_completions: None,
-            handler: Rc::new(move |_, ui| {
-                Box::pin(ask(ui, command_signal.clone(), output.clone()))
+            handler: Rc::new(move |_, ctx| {
+                Box::pin(ask(
+                    ctx.ui().unwrap(),
+                    command_signal.clone(),
+                    output.clone(),
+                ))
             }),
         };
         owner.api.register_command("ask".into(), options).unwrap();
@@ -443,7 +447,7 @@ fn ui_dialog_options_reach_the_installed_host() {
         let runner = runner(&owner.owners);
         runner.set_ui_context(Some(ExtensionUIContext::new(host.clone())));
         let command = runner.get_command("ask").unwrap();
-        (command.handler)(String::new(), runner.get_ui_context())
+        (command.handler)(String::new(), runner.create_command_context())
             .await
             .unwrap();
         assert_eq!(
@@ -476,7 +480,7 @@ fn ui_dialog_options_reach_the_installed_host() {
         );
         assert!(host.signals.borrow().iter().all(Cancellation::is_aborted));
         host.fail.set(true);
-        let error = (command.handler)(String::new(), runner.get_ui_context()).await;
+        let error = (command.handler)(String::new(), runner.create_command_context()).await;
         assert_eq!(error.unwrap_err().to_string(), "dialog failed");
         let error = runner.get_ui_context().editor("edit".into(), None).await;
         assert_eq!(error.unwrap_err().to_string(), "dialog failed");
@@ -839,7 +843,7 @@ fn theme_selection_routes(ui: &Ui, host: &Screen, first: &Rc<Theme>) {
 fn ui_capabilities_keep_factories_options_and_live_theme() {
     let (tui, _terminal) = ui_toolkit::screen();
     let bus = LocalBus::new();
-    let owner = loaded::<Ui>("/screen", bus.controller.for_extension());
+    let owner = loaded("/screen", bus.controller.for_extension());
     let trace = Trace::default();
     let foreign = bus.controller.for_extension();
     foreign.on(
@@ -853,7 +857,7 @@ fn ui_capabilities_keep_factories_options_and_live_theme() {
         }),
     );
     let state = published::unpublished();
-    let runner = ExtensionRunner::<Ui, Local>::new(
+    let runner = ExtensionRunner::<Local>::new(
         owner.owners.clone(),
         Arc::clone(&owner.runtime),
         local_support::session::runner_session("/work").0,
@@ -1562,7 +1566,7 @@ fn statuses_stay_live(metadata: &Metadata, view: &ExtensionStatuses) {
 fn footer_factories_keep_live_metadata_and_subscription_identity() {
     let (tui, _terminal) = ui_toolkit::screen();
     let bus = LocalBus::new();
-    let owner = loaded::<Ui>("/footer", bus.controller.for_extension());
+    let owner = loaded("/footer", bus.controller.for_extension());
     let trace = Trace::default();
     owner.api.events.on("branch", listener(&trace, "same"));
     bus.controller
@@ -2162,7 +2166,7 @@ fn render<T>(
 
 /// The label the current renderer for `custom_type` records, if one is selected.
 fn rendered_by(
-    runner: &ExtensionRunner<Ui, Local>,
+    runner: &ExtensionRunner<Local>,
     bus: &LocalBus,
     trace: &Trace,
     custom_type: &str,
@@ -2183,10 +2187,10 @@ fn rendered_by(
 fn message_renderer_lookup_keeps_the_first_owner() {
     let (bus, trace) = (LocalBus::new(), Trace::default());
     let (a, b) = (
-        loaded::<Ui>("/a", bus.controller.for_extension()),
-        loaded::<Ui>("/b", bus.controller.for_extension()),
+        loaded("/a", bus.controller.for_extension()),
+        loaded("/b", bus.controller.for_extension()),
     );
-    let owners: ExtensionCollection<Ui, Local> =
+    let owners: ExtensionCollection<Local> =
         Rc::new(RwLock::new(vec![a.owner.clone(), b.owner.clone()]));
     let runner = runner(&owners);
     for (owner, label) in [(&a, "a"), (&b, "b")] {
@@ -2229,8 +2233,8 @@ fn message_renderer_lookup_keeps_the_first_owner() {
 
 /// Reordering, removing and appending owners changes the selected owner.
 fn collection_changes(
-    runner: &ExtensionRunner<Ui, Local>,
-    owners: &ExtensionCollection<Ui, Local>,
+    runner: &ExtensionRunner<Local>,
+    owners: &ExtensionCollection<Local>,
     bus: &LocalBus,
     trace: &Trace,
 ) {
@@ -2246,7 +2250,7 @@ fn collection_changes(
             .get_message_renderer::<Value>("ノート\u{feff}")
             .is_none()
     );
-    let c = loaded::<Ui>("/c", bus.controller.for_extension());
+    let c = loaded("/c", bus.controller.for_extension());
     c.api
         .register_message_renderer("appended".into(), renderer::<Value>(trace, "c"))
         .unwrap();
@@ -2261,7 +2265,7 @@ fn collection_changes(
 #[test]
 fn message_renderer_replacement_preserves_slot_and_old_callback() {
     let (bus, trace) = (LocalBus::new(), Trace::default());
-    let owner = loaded::<Ui>("/replace", bus.controller.for_extension());
+    let owner = loaded("/replace", bus.controller.for_extension());
     let runner = runner(&owner.owners);
     let released = Rc::new(Cell::new(false));
     let capture = Released(released.clone());
@@ -2365,7 +2369,7 @@ fn notes_renderer(rendered: &Rc<Rendered>) -> MessageRenderer<Notes, Local> {
 #[test]
 fn message_renderers_keep_messages_options_theme_and_errors() {
     let bus = LocalBus::new();
-    let owner = loaded::<Ui>("/notes", bus.controller.for_extension());
+    let owner = loaded("/notes", bus.controller.for_extension());
     let runner = runner(&owner.owners);
     let rendered = Rc::new(Rendered::default());
     owner
@@ -2443,7 +2447,7 @@ fn message_renderer_registration_uses_existing_activity_guard() {
         (None, STALE),
         (Some(""), ""),
     ] {
-        let owner = loaded::<Ui>("/stale", bus.controller.for_extension());
+        let owner = loaded("/stale", bus.controller.for_extension());
         owner
             .api
             .register_message_renderer("kept".into(), renderer::<Value>(&trace, "kept"))
@@ -2469,14 +2473,14 @@ fn message_renderer_registration_uses_existing_activity_guard() {
                 .is_some()
         );
     }
-    let released = loaded::<Ui>("/released", bus.controller.for_extension());
+    let released = loaded("/released", bus.controller.for_extension());
     let Loaded {
         owner, api, owners, ..
     } = released;
     drop((owner, owners));
     let error = api.register_message_renderer("added".into(), renderer::<Value>(&trace, "added"));
     assert_eq!(error.unwrap_err().to_string(), STALE);
-    let sibling = loaded::<Ui>("/sibling", bus.controller.for_extension());
+    let sibling = loaded("/sibling", bus.controller.for_extension());
     sibling
         .api
         .register_message_renderer("added".into(), renderer::<Value>(&trace, "sibling"))
@@ -2489,7 +2493,7 @@ fn message_renderer_registration_uses_existing_activity_guard() {
 
 /// A renderer using a captured facade, emitting to other extensions before returning.
 fn facade_renderer(
-    api: &ExtensionAPI<Ui, Local>,
+    api: &ExtensionAPI<Local>,
     trace: &Trace,
     released: Released,
 ) -> MessageRenderer<Value, Local> {
@@ -2505,7 +2509,7 @@ fn facade_renderer(
 }
 
 /// An editor factory using a captured facade.
-fn facade_editor(api: &ExtensionAPI<Ui, Local>, released: Released) -> EditorFactory {
+fn facade_editor(api: &ExtensionAPI<Local>, released: Released) -> EditorFactory {
     let api = api.clone();
     Rc::new(move |_, _, _, _| {
         let _ = &released;
@@ -2520,7 +2524,7 @@ fn retained_ui_callbacks_release_captured_api_owners() {
     bus.controller
         .for_extension()
         .on("rendered", listener(&trace, "foreign"));
-    let owner = loaded::<Ui>("/captured", bus.controller.for_extension());
+    let owner = loaded("/captured", bus.controller.for_extension());
     let (renderer_released, editor_released) =
         (Rc::new(Cell::new(false)), Rc::new(Cell::new(false)));
     let capturing = facade_renderer(&owner.api, &trace, Released(renderer_released.clone()));
@@ -2582,11 +2586,11 @@ fn ui_defaults_preserve_threaded_registration_contracts() {
     use maestro_extensions::{Extension, ExtensionAPI as DefaultApi, create_event_bus};
     send_sync::<DefaultRenderer>();
     send_sync::<DefaultRenderer<Vec<u8>>>();
-    send_sync::<Extension<String>>();
-    send_sync::<ExtensionHandle<String>>();
-    send_sync::<ExtensionCollection<String>>();
-    send_sync::<DefaultApi<String>>();
-    let owner = Arc::new(RwLock::new(Extension::<String>::new(
+    send_sync::<Extension>();
+    send_sync::<ExtensionHandle>();
+    send_sync::<ExtensionCollection>();
+    send_sync::<DefaultApi>();
+    let owner = Arc::new(RwLock::new(Extension::<maestro_models::Threaded>::new(
         "/default".into(),
         "/resolved".into(),
         local_support::source("/default"),
@@ -2603,7 +2607,7 @@ fn ui_defaults_preserve_threaded_registration_contracts() {
         },
     );
     api.register_message_renderer("n".into(), renderer).unwrap();
-    let runner = ExtensionRunner::<String>::new(
+    let runner = ExtensionRunner::<maestro_models::Threaded>::new(
         owners,
         runtime,
         local_support::session::runner_session("/work").0,

@@ -50,7 +50,7 @@ fn builtin_keybindings(config: &KeybindingsConfig) -> (IndexSet<KeyId>, IndexMap
     }
     (reserved, ordinary)
 }
-impl<CC, E: ExtensionExecution> ExtensionRunner<CC, E> {
+impl<E: ExtensionExecution> ExtensionRunner<E> {
     /// Selects current shortcuts using supplied effective bindings.
     ///
     /// Reserved keys are blocked; ordinary and extension collisions warn but

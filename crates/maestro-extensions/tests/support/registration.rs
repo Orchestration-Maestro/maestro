@@ -89,7 +89,6 @@ struct Step {
     default: Option<Value>,
     data: Option<Value>,
     args: Option<String>,
-    ctx: Option<Value>,
     prefix: Option<String>,
     value: Option<Value>,
     message: Option<String>,
@@ -104,10 +103,10 @@ struct Step {
     source_info: Option<Provenance>,
 }
 struct Replay {
-    owners: ExtensionCollection<Value, Local>,
-    apis: Vec<ExtensionAPI<Value, Local>>,
+    owners: ExtensionCollection<Local>,
+    apis: Vec<ExtensionAPI<Local>>,
     runtime: Arc<ExtensionRuntimeState>,
-    runner: Rc<ExtensionRunner<Value, Local>>,
+    runner: Rc<ExtensionRunner<Local>>,
     bus: EventBusController<Local>,
     trace: Arc<Mutex<Vec<Value>>>,
     warnings: Arc<Mutex<Vec<String>>>,
@@ -115,7 +114,7 @@ struct Replay {
     snapshot: Option<IndexMap<String, FlagValue>>,
     diagnostics: Option<Arc<RwLock<Vec<ResourceDiagnostic>>>>,
     flag: Option<Arc<RwLock<ExtensionFlag>>>,
-    command: Option<ResolvedCommand<Value, Local>>,
+    command: Option<ResolvedCommand<Local>>,
 }
 /// A host installed without supporting any optional operation.
 struct LimitedHost;
@@ -161,8 +160,8 @@ fn bindings(v: &IndexMap<String, Value>, unset: &[String]) -> KeybindingsConfig 
         .chain(unset.iter().map(|k| (k.clone(), None)))
         .collect()
 }
-fn command_view(c: &ResolvedCommand<Value, Local>) -> Value {
-    let registration: &maestro_extensions::RegisteredCommand<Value, Local> = c;
+fn command_view(c: &ResolvedCommand<Local>) -> Value {
+    let registration: &maestro_extensions::RegisteredCommand<Local> = c;
     let mut v = json!({"name":registration.name,"invocation_name":c.invocation_name,"source_info":*c.source_info.read().unwrap(),"has_completions":c.get_argument_completions.is_some()});
     if let Some(d) = &c.description {
         v["description"] = json!(d);
@@ -204,7 +203,7 @@ fn diagnostic_view(d: &Arc<RwLock<Vec<ResourceDiagnostic>>>) -> Value {
             .collect::<Vec<_>>()
     )
 }
-fn assert_registration_locks_released(owners: &ExtensionCollection<Value, Local>) {
+fn assert_registration_locks_released(owners: &ExtensionCollection<Local>) {
     let owners = owners.try_write().unwrap();
     for owner in owners.iter() {
         let owner = owner.try_write().unwrap();
@@ -233,12 +232,12 @@ impl Replay {
                 Ok(None)
             }),
         );
-        let owners: ExtensionCollection<Value, Local> = Rc::new(RwLock::new(Vec::new()));
+        let owners: ExtensionCollection<Local> = Rc::new(RwLock::new(Vec::new()));
         let output = Arc::clone(&warnings);
-        let runner = Rc::new_cyclic(|runner: &std::rc::Weak<ExtensionRunner<Value, Local>>| {
+        let runner = Rc::new_cyclic(|runner: &std::rc::Weak<ExtensionRunner<Local>>| {
             let runner = runner.clone();
             let owners = Rc::clone(&owners);
-            ExtensionRunner::<Value, Local>::new(
+            ExtensionRunner::<Local>::new(
                 Rc::clone(&owners),
                 Arc::clone(&runtime),
                 session::runner_session("/workspace").0,
@@ -362,7 +361,7 @@ impl Replay {
                         trace
                             .lock()
                             .unwrap()
-                            .push(json!({"tag":tag,"args":args,"ctx":ctx}));
+                            .push(json!({"tag":tag,"args":args,"ctx":ctx.cwd()?}));
                         fail.map_or(Ok(()), |message| Err(message.into()))
                     })
                 }),
@@ -466,7 +465,7 @@ impl Replay {
                     .runner
                     .get_command(s.name.as_deref().unwrap())
                     .expect("promised command");
-                (c.handler)(s.args.unwrap(), s.ctx.unwrap()).await?;
+                (c.handler)(s.args.unwrap(), self.runner.create_command_context()).await?;
                 self.observations.push(json!({"invoked":true}));
             }
             "complete" => {

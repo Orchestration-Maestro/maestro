@@ -14,7 +14,8 @@ The extension domain may depend directly on resources. The crates that list
 `maestro-request` in the specification table may depend on it; its job is to define shared
 message and model-request records, including command provenance records
 `SlashCommandInfo` and the open `SlashCommandSource` label, and the renderer option
-record `MessageRenderOptions`. Resources, application presentation data, session and
+record `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
+`UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`. Resources, application presentation data, session and
 guest authoring re-export these declarations; the declaration
 scanner rejects copies outside the request owner or duplicates within it.
 The request owner has no workspace dependencies.
@@ -178,7 +179,9 @@ Raw identifiers (`r#name`) normalize to their ordinary names. Tool definition/re
 belong to tools, except the guest author definition in
 `maestro-extensions-wasm/src/types/tools.rs`; application selector types and selector
 modules belong to chat.
-Qualified uses and re-exports are not declarations. Duplicate tool declarations
+The four message delivery records belong to `maestro-request`; `ForkPosition` and
+`NavigateTreeOptions` belong to `maestro-entry`. Duplicate declarations in these
+owners are rejected. Qualified uses and re-exports are not declarations. Duplicate tool declarations
 within either owner are rejected. Planning references in comments retain their separate policy and
 line-accurate diagnostics from native compiler-lexer comment spans.
 Legal included fragments need not parse as full modules; the compiler owns

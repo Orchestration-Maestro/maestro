@@ -7,7 +7,7 @@ use crate::{
 use indexmap::{IndexMap, IndexSet};
 use std::sync::{Arc, RwLock};
 
-impl<CC, E: ExtensionExecution> ExtensionRunner<CC, E> {
+impl<E: ExtensionExecution> ExtensionRunner<E> {
     /// Returns supplied owner paths in current load order.
     #[must_use]
     pub fn get_extension_paths(&self) -> Vec<String> {
@@ -58,19 +58,19 @@ impl<CC, E: ExtensionExecution> ExtensionRunner<CC, E> {
     }
     /// Resolves current commands and publishes fresh empty diagnostics.
     #[must_use]
-    pub fn get_registered_commands(&self) -> Vec<ResolvedCommand<CC, E>> {
+    pub fn get_registered_commands(&self) -> Vec<ResolvedCommand<E>> {
         *write(&self.command_diagnostics) = Arc::default();
         self.resolve_registered_commands()
     }
     /// Looks up only the current resolved invocation name.
     #[must_use]
-    pub fn get_command(&self, name: &str) -> Option<ResolvedCommand<CC, E>> {
+    pub fn get_command(&self, name: &str) -> Option<ResolvedCommand<E>> {
         self.resolve_registered_commands()
             .into_iter()
             .find(|command| command.invocation_name == name)
     }
     /// Copies registrations before allocating unique invocation names in order.
-    fn resolve_registered_commands(&self) -> Vec<ResolvedCommand<CC, E>> {
+    fn resolve_registered_commands(&self) -> Vec<ResolvedCommand<E>> {
         let mut commands = Vec::new();
         let mut counts = IndexMap::new();
         for owner in read(&self.extensions).iter() {

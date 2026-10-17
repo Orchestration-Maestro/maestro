@@ -42,7 +42,7 @@ fn retained_ui_owned_host_example() -> Result<(), EventError> {
 #       session_manager: Rc::new(RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
 #       model_registry: Rc::new(RefCell::new(maestro_catalog::ModelRegistry::in_memory(auth)?)),
 #   };
-    let runner = ExtensionRunner::<(), Local>::new(
+    let runner = ExtensionRunner::<Local>::new(
         Rc::new(RwLock::new(Vec::new())),
         Arc::new(ExtensionRuntimeState::new()),
         session,

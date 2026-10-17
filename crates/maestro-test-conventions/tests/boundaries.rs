@@ -1131,3 +1131,65 @@ fn message_render_options_have_one_shared_owner() {
             .contains("duplicate declaration")
     );
 }
+
+#[test]
+fn session_operation_records_have_one_shared_owner() {
+    for (name, owner) in [
+        ("MessageDelivery", "maestro-request"),
+        ("UserMessageDelivery", "maestro-request"),
+        ("SendMessageOptions", "maestro-request"),
+        ("SendUserMessageOptions", "maestro-request"),
+        ("ForkPosition", "maestro-entry"),
+        ("NavigateTreeOptions", "maestro-entry"),
+    ] {
+        let workspace = Workspace::new();
+        workspace.foundation(&[
+            "maestro-request",
+            "maestro-entry",
+            "maestro-session",
+            "maestro-extensions",
+            "maestro-extensions-wasm",
+        ]);
+        for consumer in [
+            "maestro-session",
+            "maestro-extensions",
+            "maestro-extensions-wasm",
+        ] {
+            source(
+                &workspace,
+                consumer,
+                "src/lib.rs",
+                &format!("pub struct {name};"),
+            );
+            let error = check_workspace(&workspace.root).unwrap_err();
+            assert!(
+                error.contains("src/lib.rs:1:") && error.contains(&format!("belongs to {owner}")),
+                "{error}"
+            );
+            source(
+                &workspace,
+                consumer,
+                "src/lib.rs",
+                &format!("pub use shared::{name};"),
+            );
+        }
+        source(
+            &workspace,
+            owner,
+            "src/lib.rs",
+            &format!("pub struct {name};"),
+        );
+        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        source(
+            &workspace,
+            owner,
+            "src/other.rs",
+            &format!("pub type {name} = ();"),
+        );
+        assert!(
+            check_workspace(&workspace.root)
+                .unwrap_err()
+                .contains("duplicate declaration")
+        );
+    }
+}
