@@ -60,8 +60,12 @@ fn emit_bytes(out: &mut impl Write, err: &mut impl Write) {
 }
 
 /// Report on standard error whether writes to a closed standard output fail.
+///
+/// The total stays below the smallest pipe buffer, so a reader that was wrongly kept open
+/// reports `no-error` instead of blocking. A concurrently starting process can briefly
+/// inherit the read end, so the loop gives it time to exec and release it.
 fn write_after_close(out: &mut impl Write) {
-    let broken = (0..1000).any(|_| out.write_all(b"x\n").and_then(|()| out.flush()).is_err());
+    let broken = (0..7000).any(|_| out.write_all(b"x\n").and_then(|()| out.flush()).is_err());
     let verdict = if broken { "broken-pipe" } else { "no-error" };
     writeln!(std::io::stderr(), "{verdict}").unwrap();
 }
