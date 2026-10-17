@@ -45,6 +45,13 @@ pub struct CustomMessage<T = serde_json::Value> {
     pub timestamp: f64,
 }
 
+/// Options supplied to a custom-message renderer.
+#[derive(Clone, Copy)]
+pub struct MessageRenderOptions {
+    /// Whether expanded rendering is requested.
+    pub expanded: bool,
+}
+
 /// A summary of a conversation branch.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "role", rename = "branchSummary", rename_all = "camelCase")]

@@ -7,20 +7,16 @@
 //! Paths are authored strings; their lexical rules belong to `maestro_path`.
 
 mod git;
-mod live;
 #[cfg(unix)]
 mod native;
 mod operations;
 mod provider;
 mod watch;
 
+pub use maestro_extensions::footer_data_provider::{
+    ExtensionStatusIter, ExtensionStatuses, ReadonlyFooterDataProvider,
+};
 #[cfg(unix)]
 pub use native::NativeFooterOperations;
 pub use operations::{FooterFileKind, FooterFileStats, FooterOperations};
-pub use provider::{FooterDataProvider, ReadonlyFooterDataProvider};
-
-/// Extension status texts by key, in insertion order; clones share one
-/// collection, so a retained view observes later changes.
-pub type ExtensionStatuses = live::Live<String, String>;
-/// Live iterator over [`ExtensionStatuses`].
-pub type ExtensionStatusIter = live::LiveIter<String, String>;
+pub use provider::FooterDataProvider;

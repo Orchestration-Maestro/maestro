@@ -25,6 +25,11 @@ pub use maestro_tools::{
     ToolRenderShell, ToolRendererBinding, ToolRendererState,
 };
 
+pub use maestro_extensions::{
+    AutocompleteProviderFactory, ExtensionUIContext, ExtensionUIDialogOptions,
+    ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer, TerminalInputHandler,
+    WidgetPlacement, WorkingIndicatorOptions,
+};
 pub use presentation_data::footer_data_provider::ReadonlyFooterDataProvider;
 
 pub use maestro_json::{canonical_entries, is_truthy};

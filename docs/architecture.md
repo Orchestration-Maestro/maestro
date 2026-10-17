@@ -13,8 +13,9 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 The extension domain may depend directly on resources. The crates that list
 `maestro-request` in the specification table may depend on it; its job is to define shared
 message and model-request records, including command provenance records
-`SlashCommandInfo` and the open `SlashCommandSource` label. Resources, application
-presentation data and guest authoring re-export these declarations; the declaration
+`SlashCommandInfo` and the open `SlashCommandSource` label, and the renderer option
+record `MessageRenderOptions`. Resources, application presentation data, session and
+guest authoring re-export these declarations; the declaration
 scanner rejects copies outside the request owner or duplicates within it.
 The request owner has no workspace dependencies.
 No reverse dependency is permitted.

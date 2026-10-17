@@ -27,7 +27,8 @@ pub struct Live<K, V>(Rc<RefCell<Entries<K, V>>>);
 
 impl<K: Hash + Eq + Clone, V: Clone> Live<K, V> {
     /// An empty collection.
-    pub(super) fn new() -> Self {
+    #[must_use]
+    pub fn new() -> Self {
         Self(Rc::new(RefCell::new(Entries {
             next_position: 0,
             positions: HashMap::new(),
@@ -36,7 +37,7 @@ impl<K: Hash + Eq + Clone, V: Clone> Live<K, V> {
     }
 
     /// Set `key` to `value`, appending the entry when the key is new.
-    pub(super) fn insert(&self, key: K, value: V) {
+    pub fn insert(&self, key: K, value: V) {
         let mut entries = self.0.borrow_mut();
         let entries = &mut *entries;
         let position = *entries
@@ -48,7 +49,7 @@ impl<K: Hash + Eq + Clone, V: Clone> Live<K, V> {
     }
 
     /// Remove `key`.
-    pub(super) fn remove<Q: Hash + Eq + ?Sized>(&self, key: &Q)
+    pub fn remove<Q: Hash + Eq + ?Sized>(&self, key: &Q)
     where
         K: std::borrow::Borrow<Q>,
     {
@@ -59,7 +60,7 @@ impl<K: Hash + Eq + Clone, V: Clone> Live<K, V> {
     }
 
     /// Remove every entry.
-    pub(super) fn clear(&self) {
+    pub fn clear(&self) {
         let mut entries = self.0.borrow_mut();
         entries.positions.clear();
         entries.by_position.clear();
@@ -108,6 +109,20 @@ impl<K: Hash + Eq + Clone, V: Clone> Iterator for LiveIter<K, V> {
 }
 
 impl<K: Hash + Eq + Clone, V: Clone> FusedIterator for LiveIter<K, V> {}
+
+impl<K: Hash + Eq + Clone, V: Clone> IntoIterator for &Live<K, V> {
+    type Item = (K, V);
+    type IntoIter = LiveIter<K, V>;
+    fn into_iter(self) -> LiveIter<K, V> {
+        self.iter()
+    }
+}
+
+impl<K: Hash + Eq + Clone, V: Clone> Default for Live<K, V> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Live<String, String> {
     /// The value of `key`.

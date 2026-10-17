@@ -129,6 +129,9 @@ Constructing it reads nothing.
 currently published instance; clones read the same slot, and an `Rc<Theme>` already
 returned stays what it was. Before the first publication `get` fails with
 `Theme not initialized. Call initTheme() first.`
+`LiveTheme::from_theme` wraps a prepared instance in its own fixed slot, so a caller
+can pass that exact instance wherever a `LiveTheme` is expected; it never follows
+later publication.
 
 - `init_theme` selects the given name, else `dark` or `light` from the second
   `;`-separated field of `COLORFGBG` (below 8 or no leading decimal digits selects

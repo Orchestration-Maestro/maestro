@@ -17,6 +17,7 @@ chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 calamine = { version = "=0.36.1", default-features = false }
 num-traits.workspace = true
 maestro-agent = { path = "../maestro-agent" }
+maestro-extensions = { path = "../maestro-extensions" }
 serde = { workspace = true, features = ["rc"] }
 serde_json = { workspace = true, features = ["raw_value"] }
 percent-encoding = "=2.3.2"

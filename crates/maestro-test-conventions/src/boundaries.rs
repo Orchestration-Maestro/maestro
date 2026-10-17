@@ -186,7 +186,10 @@ fn check_declarations(
             "ToolDefinition" | "ToolRenderContext" | "ToolRenderResultOptions"
         ) {
             "maestro-tools"
-        } else if matches!(name.as_str(), "SlashCommandInfo" | "SlashCommandSource") {
+        } else if matches!(
+            name.as_str(),
+            "SlashCommandInfo" | "SlashCommandSource" | "MessageRenderOptions"
+        ) {
             "maestro-request"
         } else {
             continue;

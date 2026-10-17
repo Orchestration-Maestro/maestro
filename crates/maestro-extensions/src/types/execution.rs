@@ -1,9 +1,11 @@
 //! Execution-family declarations for retained extension callbacks.
-use crate::{CallbackEmitter, EventBus, EventError, EventTail};
+use crate::{CallbackEmitter, EventBus, EventError, EventTail, types::MessageRenderer};
 use maestro_models::{Execution, Local, Threaded};
-use maestro_tui::AutocompleteItem;
+use maestro_session::messages::{CustomMessage, MessageRenderOptions};
+use maestro_theme::LiveTheme;
+use maestro_tui::{AutocompleteItem, tui::ComponentHandle};
 use serde_json::Value;
-use std::sync::Arc;
+use std::{any::Any, sync::Arc};
 
 /// Callback representations for extension registration and channel delivery.
 ///
@@ -42,6 +44,24 @@ pub trait ExtensionExecution: Execution + Clone + Default {
     type Spawner: Fn(Self::Future<'static, ()>) + ?Sized;
     /// Diagnostic destination.
     type Reporter: Fn(&str) + ?Sized;
+    /// Custom-message renderer with typed details.
+    type Renderer<T>: for<'a> Fn(
+            Self::Shared<CustomMessage<T>>,
+            MessageRenderOptions,
+            LiveTheme,
+            CallbackEmitter<'a, Self>,
+        ) -> Result<Option<ComponentHandle>, EventError>
+        + ?Sized;
+    /// A renderer stored without its details type.
+    type RendererRegistration;
+    /// Stores a typed renderer.
+    fn erase_message_renderer<T: 'static>(
+        renderer: MessageRenderer<T, Self>,
+    ) -> Self::RendererRegistration;
+    /// Returns the stored renderer when it has exactly this details type.
+    fn recover_message_renderer<T: 'static>(
+        registration: &Self::RendererRegistration,
+    ) -> Option<MessageRenderer<T, Self>>;
     /// Erases the shared tail settlement, which keeps the bus alive until it finishes.
     fn tail_task(
         tail: EventTail<Self>,
@@ -67,6 +87,23 @@ macro_rules! family {
             ) -> Result<Option<EventTail<Self>>, EventError> $($bound)*;
             type Spawner = dyn Fn(Self::Future<'static, ()>) $($bound)*;
             type Reporter = dyn Fn(&str) $($bound)*;
+            type Renderer<T> = dyn for<'a> Fn(
+                Self::Shared<CustomMessage<T>>,
+                MessageRenderOptions,
+                LiveTheme,
+                CallbackEmitter<'a, Self>,
+            ) -> Result<Option<ComponentHandle>, EventError> $($bound)*;
+            type RendererRegistration = Box<dyn Any $($bound)*>;
+            fn erase_message_renderer<T: 'static>(
+                renderer: MessageRenderer<T, Self>,
+            ) -> Self::RendererRegistration {
+                Box::new(renderer)
+            }
+            fn recover_message_renderer<T: 'static>(
+                registration: &Self::RendererRegistration,
+            ) -> Option<MessageRenderer<T, Self>> {
+                registration.downcast_ref::<MessageRenderer<T, Self>>().cloned()
+            }
             fn tail_task(
                 tail: EventTail<Self>,
                 channel: String,

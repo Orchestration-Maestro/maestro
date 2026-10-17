@@ -192,7 +192,12 @@ fn callback_lifetimes_end_after_last_retained_owner() {
         },
     )
     .unwrap();
-    let runner = ExtensionRunner::<(), String>::new(Arc::clone(&owners), runtime, Arc::new(|_| {}));
+    let runner = ExtensionRunner::<(), String>::new(
+        Arc::clone(&owners),
+        runtime,
+        Arc::new(|_| {}),
+        maestro_theme::LiveTheme::default(),
+    );
     let command = runner.get_command("hello").unwrap();
     owners.write().unwrap().clear();
     drop((api, owner, runner, owners, bus));

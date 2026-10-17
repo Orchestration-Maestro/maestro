@@ -19,7 +19,11 @@ Both representations use one loop, admission path, listener traversal, progress
 FIFO and lifecycle. Extension command, shortcut, completion and event-bus
 callbacks select the same families through `maestro-extensions`'
 `ExtensionExecution`; one registration owner, query algorithm and bus serve
-both, and their contexts remain caller-chosen types. No crate or dependency
+both, and their contexts remain caller-chosen types. Message renderers also
+follow the family, stored per family without their details type. The extension
+UI handle and its factories are always local: a runner that retains a UI host or
+the live headless theme is not thread-safe, while registrations, the API facade
+and default callbacks keep their thread-safe defaults. No crate or dependency
 edge is added.
 
 ## Trade-off

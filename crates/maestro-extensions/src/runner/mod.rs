@@ -1,13 +1,18 @@
 //! Queries over current shared extension registrations.
 mod registration;
 mod shortcuts;
+mod ui;
 use crate::{
     ErrorReporter, ExtensionExecution,
-    types::{ExtensionCollection, ExtensionRuntimeState, read},
+    types::{ExtensionCollection, ExtensionRuntimeState, ExtensionUIContext, read},
 };
 use maestro_models::Threaded;
 use maestro_resources::ResourceDiagnostic;
-use std::sync::{Arc, RwLock};
+use maestro_theme::LiveTheme;
+use std::{
+    cell::RefCell,
+    sync::{Arc, RwLock},
+};
 
 /// Queries current owners while retaining registration and diagnostic identities.
 pub struct ExtensionRunner<C, CC, E: ExtensionExecution = Threaded> {
@@ -21,21 +26,31 @@ pub struct ExtensionRunner<C, CC, E: ExtensionExecution = Threaded> {
     command_diagnostics: RwLock<Arc<RwLock<Vec<ResourceDiagnostic>>>>,
     /// Most recent shortcut query's diagnostics.
     shortcut_diagnostics: RwLock<Arc<RwLock<Vec<ResourceDiagnostic>>>>,
+    /// The headless fallback restored by a reset.
+    no_ui: ExtensionUIContext,
+    /// The current UI context.
+    ui: RefCell<ExtensionUIContext>,
 }
 impl<C, CC, E: ExtensionExecution> ExtensionRunner<C, CC, E> {
     /// Retains the supplied current collection, shared values and warning sink.
+    ///
+    /// Until a UI context is installed, the headless fallback supplies `theme`.
     #[must_use]
     pub fn new(
         extensions: ExtensionCollection<C, CC, E>,
         runtime: Arc<ExtensionRuntimeState>,
         warning_reporter: ErrorReporter<E>,
+        theme: LiveTheme,
     ) -> Self {
+        let no_ui = ExtensionUIContext::no_ui(theme);
         Self {
             extensions,
             runtime,
             warning_reporter,
             command_diagnostics: RwLock::default(),
             shortcut_diagnostics: RwLock::default(),
+            ui: RefCell::new(no_ui.clone()),
+            no_ui,
         }
     }
     /// Retains the most recently published command diagnostics.

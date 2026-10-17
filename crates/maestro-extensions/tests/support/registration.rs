@@ -4,13 +4,18 @@ use indexmap::IndexMap;
 use maestro_extensions::types::*;
 use maestro_extensions::{
     EventBusController, EventError, Extension, ExtensionAPI, ExtensionFlag, ExtensionRunner,
-    ResolvedCommand, SourceInfo, create_event_bus,
+    ExtensionUIContext, ResolvedCommand, SourceInfo, create_event_bus_for,
 };
+use maestro_models::Local;
 use maestro_resources::ResourceDiagnostic;
+use maestro_theme::LiveTheme;
 use maestro_tui::{AutocompleteItem, KeybindingKeys, KeybindingsConfig};
 use serde::{Deserialize, Deserializer};
 use serde_json::{Value, json};
-use std::sync::{Arc, Mutex, RwLock};
+use std::{
+    rc::Rc,
+    sync::{Arc, Mutex, RwLock},
+};
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -95,19 +100,25 @@ struct Step {
     source_info: Option<Provenance>,
 }
 struct Replay {
-    owners: ExtensionCollection<Value, Value>,
-    apis: Vec<ExtensionAPI<Value, Value>>,
+    owners: ExtensionCollection<Value, Value, Local>,
+    apis: Vec<ExtensionAPI<Value, Value, Local>>,
     runtime: Arc<ExtensionRuntimeState>,
-    runner: Arc<ExtensionRunner<Value, Value>>,
-    bus: EventBusController,
+    runner: Rc<ExtensionRunner<Value, Value, Local>>,
+    bus: EventBusController<Local>,
     trace: Arc<Mutex<Vec<Value>>>,
     warnings: Arc<Mutex<Vec<String>>>,
     observations: Vec<Value>,
     snapshot: Option<IndexMap<String, FlagValue>>,
     diagnostics: Option<Arc<RwLock<Vec<ResourceDiagnostic>>>>,
     flag: Option<Arc<RwLock<ExtensionFlag>>>,
-    command: Option<ResolvedCommand<Value>>,
-    has_ui: bool,
+    command: Option<ResolvedCommand<Value, Local>>,
+}
+/// A host installed without supporting any optional operation.
+struct LimitedHost;
+impl ExtensionUIContextPort for LimitedHost {
+    fn theme(&self) -> LiveTheme {
+        LiveTheme::default()
+    }
 }
 fn value(v: Value) -> FlagValue {
     match v {
@@ -146,8 +157,8 @@ fn bindings(v: &IndexMap<String, Value>, unset: &[String]) -> KeybindingsConfig 
         .chain(unset.iter().map(|k| (k.clone(), None)))
         .collect()
 }
-fn command_view(c: &ResolvedCommand<Value>) -> Value {
-    let registration: &maestro_extensions::RegisteredCommand<Value> = c;
+fn command_view(c: &ResolvedCommand<Value, Local>) -> Value {
+    let registration: &maestro_extensions::RegisteredCommand<Value, Local> = c;
     let mut v = json!({"name":registration.name,"invocation_name":c.invocation_name,"source_info":*c.source_info.read().unwrap(),"has_completions":c.get_argument_completions.is_some()});
     if let Some(d) = &c.description {
         v["description"] = json!(d);
@@ -168,7 +179,7 @@ fn assert_error(error: &EventError, expected: Option<&str>) {
         None => (),
     }
 }
-fn shortcut_view(key: &str, record: &maestro_extensions::ExtensionShortcut<Value>) -> Value {
+fn shortcut_view(key: &str, record: &maestro_extensions::ExtensionShortcut<Value, Local>) -> Value {
     let mut v =
         json!({"key":key,"shortcut":record.shortcut,"extension_path":record.extension_path});
     if let Some(d) = &record.description {
@@ -189,7 +200,7 @@ fn diagnostic_view(d: &Arc<RwLock<Vec<ResourceDiagnostic>>>) -> Value {
             .collect::<Vec<_>>()
     )
 }
-fn assert_registration_locks_released(owners: &ExtensionCollection<Value, Value>) {
+fn assert_registration_locks_released(owners: &ExtensionCollection<Value, Value, Local>) {
     let owners = owners.try_write().unwrap();
     for owner in owners.iter() {
         let owner = owner.try_write().unwrap();
@@ -203,41 +214,44 @@ impl Replay {
         let trace = Arc::new(Mutex::new(Vec::new()));
         let warnings = Arc::new(Mutex::new(Vec::new()));
         let runtime = Arc::new(ExtensionRuntimeState::new());
-        let bus = create_event_bus(
-            Arc::new(|tail| {
-                tokio::spawn(tail);
+        let bus = create_event_bus_for::<Local>(
+            Rc::new(|tail| {
+                tokio::task::spawn_local(tail);
             }),
-            Arc::new(|_| panic!("unexpected bus error")),
+            Rc::new(|_| panic!("unexpected bus error")),
         );
         let events = bus.for_extension();
         let output = Arc::clone(&trace);
         events.on(
             "registration-probe",
-            Arc::new(move |data, _| {
+            Rc::new(move |data, _| {
                 output.lock().unwrap().push(json!({"event":*data}));
                 Ok(None)
             }),
         );
-        let owners: ExtensionCollection<Value, Value> = Arc::new(RwLock::new(Vec::new()));
+        let owners: ExtensionCollection<Value, Value, Local> = Rc::new(RwLock::new(Vec::new()));
         let output = Arc::clone(&warnings);
-        let runner = Arc::new_cyclic(|runner: &std::sync::Weak<ExtensionRunner<Value, Value>>| {
-            let runner = runner.clone();
-            let owners = Arc::clone(&owners);
-            ExtensionRunner::<Value, Value>::new(
-                Arc::clone(&owners),
-                Arc::clone(&runtime),
-                Arc::new(move |s: &str| {
-                    let runner = runner.upgrade().unwrap();
-                    assert!(runner.get_shortcut_diagnostics().try_write().is_ok());
-                    assert_registration_locks_released(&owners);
-                    assert!(s.ends_with('\n'));
-                    output
-                        .lock()
-                        .unwrap()
-                        .push(s.strip_suffix('\n').unwrap().to_owned());
-                }),
-            )
-        });
+        let runner = Rc::new_cyclic(
+            |runner: &std::rc::Weak<ExtensionRunner<Value, Value, Local>>| {
+                let runner = runner.clone();
+                let owners = Rc::clone(&owners);
+                ExtensionRunner::<Value, Value, Local>::new(
+                    Rc::clone(&owners),
+                    Arc::clone(&runtime),
+                    Rc::new(move |s: &str| {
+                        let runner = runner.upgrade().unwrap();
+                        assert!(runner.get_shortcut_diagnostics().try_write().is_ok());
+                        assert_registration_locks_released(&owners);
+                        assert!(s.ends_with('\n'));
+                        output
+                            .lock()
+                            .unwrap()
+                            .push(s.strip_suffix('\n').unwrap().to_owned());
+                    }),
+                    LiveTheme::default(),
+                )
+            },
+        );
         let mut r = Self {
             owners,
             apis: Vec::new(),
@@ -251,7 +265,6 @@ impl Replay {
             diagnostics: None,
             flag: None,
             command: None,
-            has_ui: false,
         };
         for (i, source) in sources.into_iter().enumerate() {
             r.add(source.record(), &format!("/resolved/{i}"));
@@ -259,7 +272,7 @@ impl Replay {
         r
     }
     fn add(&mut self, source: SourceInfo, resolved: &str) {
-        let owner = Arc::new(RwLock::new(Extension::new(
+        let owner = Rc::new(RwLock::new(Extension::new(
             source.path.clone(),
             resolved.into(),
             Arc::new(RwLock::new(source)),
@@ -304,7 +317,7 @@ impl Replay {
             _ => panic!("unknown fixture operation"),
         }
     }
-    fn completion_callback(&self, list: CompletionList) -> ArgumentCompletions {
+    fn completion_callback(&self, list: CompletionList) -> ArgumentCompletions<Local> {
         let items = list.0.map(|items| {
             items
                 .into_iter()
@@ -316,7 +329,7 @@ impl Replay {
                 .collect::<Vec<_>>()
         });
         let trace = Arc::clone(&self.trace);
-        Arc::new(move |prefix| {
+        Rc::new(move |prefix| {
             trace
                 .lock()
                 .unwrap()
@@ -338,7 +351,7 @@ impl Replay {
             RegisteredCommandOptions {
                 description: s.description,
                 get_argument_completions,
-                handler: Arc::new(move |args, ctx| {
+                handler: Rc::new(move |args, ctx| {
                     let trace = Arc::clone(&trace);
                     let tag = tag.clone();
                     let fail = fail.clone();
@@ -366,7 +379,7 @@ impl Replay {
             key,
             ExtensionShortcutOptions {
                 description: s.description,
-                handler: Arc::new(move |ctx| {
+                handler: Rc::new(move |ctx| {
                     let trace = Arc::clone(&trace);
                     let tag = tag.clone();
                     let fail = fail.clone();
@@ -467,11 +480,9 @@ impl Replay {
                 }));
             }
             "invoke_shortcut" => {
-                let selected = self
-                    .runner
-                    .get_shortcuts(&bindings(&s.bindings, &[]), self.has_ui);
+                let selected = self.runner.get_shortcuts(&bindings(&s.bindings, &[]));
                 let handler =
-                    Arc::clone(&selected[s.key.as_deref().unwrap()].read().unwrap().handler);
+                    Rc::clone(&selected[s.key.as_deref().unwrap()].read().unwrap().handler);
                 handler(s.ctx.unwrap()).await?;
                 self.observations.push(json!({"invoked":true}));
             }
@@ -490,9 +501,7 @@ impl Replay {
                 .observations
                 .push(values(self.snapshot.as_ref().unwrap())),
             "query_shortcuts" => {
-                let selected = self
-                    .runner
-                    .get_shortcuts(&bindings(&s.bindings, &[]), self.has_ui);
+                let selected = self.runner.get_shortcuts(&bindings(&s.bindings, &[]));
                 if s.retain {
                     self.diagnostics = Some(self.runner.get_shortcut_diagnostics());
                 }
@@ -501,7 +510,10 @@ impl Replay {
             "read_diagnostic_snapshot" => self
                 .observations
                 .push(diagnostic_view(self.diagnostics.as_ref().unwrap())),
-            "ui" => self.has_ui = s.installed,
+            "ui" => self.runner.set_ui_context(
+                s.installed
+                    .then(|| ExtensionUIContext::new(Rc::new(LimitedHost))),
+            ),
             "append_owner" => {
                 let path = s.path.unwrap();
                 self.add(serde_json::from_value(json!({"path":path,"source":"late","scope":"temporary","origin":"top-level"})).unwrap(),&path);
@@ -510,7 +522,7 @@ impl Replay {
         }
     }
     fn edits(&mut self, s: Step) {
-        let owner = Arc::clone(&self.owners.read().unwrap()[s.owner]);
+        let owner = Rc::clone(&self.owners.read().unwrap()[s.owner]);
         match s.op.as_str() {
             "clear_commands" => {
                 let removed = std::mem::take(&mut owner.write().unwrap().commands);
@@ -555,7 +567,7 @@ impl Replay {
             "flags" => json!(self.runner.get_flags().iter().map(|(key,f)| {let f=f.read().unwrap();let mut v=json!({"key":key,"name":f.name,"type":match f.r#type{FlagType::Boolean=>"boolean",FlagType::String=>"string"},"extension_path":f.extension_path});if let Some(d)=&f.description{v["description"]=json!(d);}
 if let Some(d)=&f.default{v["default"]=flag_value(d);}v}).collect::<Vec<_>>()),
             "flag_values" => values(&self.runner.get_flag_values()),
-            "shortcuts" => json!(self.runner.get_shortcuts(config,self.has_ui).iter().map(|(key,s)| shortcut_view(key, &s.read().unwrap())).collect::<Vec<_>>()),
+            "shortcuts" => json!(self.runner.get_shortcuts(config).iter().map(|(key,s)| shortcut_view(key, &s.read().unwrap())).collect::<Vec<_>>()),
             "diagnostics" => diagnostic_view(&self.runner.get_shortcut_diagnostics()),
             "observations" => json!(self.observations), "trace" => json!(*self.trace.lock().unwrap()),"paths" => json!(self.runner.get_extension_paths()),
             _ => panic!("unknown fixture observation"),
@@ -574,7 +586,7 @@ pub fn run(group: &str) {
         .build()
         .unwrap();
     for case in cases {
-        runtime.block_on(run_case(case));
+        tokio::task::LocalSet::new().block_on(&runtime, run_case(case));
     }
 }
 async fn run_case(case: Case) {

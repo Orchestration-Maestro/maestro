@@ -1075,3 +1075,55 @@ fn slash_command_records_have_one_shared_owner() {
         );
     }
 }
+
+#[test]
+fn message_render_options_have_one_shared_owner() {
+    let workspace = Workspace::new();
+    workspace.foundation(&[
+        "maestro-request",
+        "maestro-session",
+        "maestro-extensions",
+        "maestro-extensions-wasm",
+    ]);
+    for owner in [
+        "maestro-session",
+        "maestro-extensions",
+        "maestro-extensions-wasm",
+    ] {
+        source(
+            &workspace,
+            owner,
+            "src/lib.rs",
+            "// struct MessageRenderOptions;\nfn f() { let _ = \"struct MessageRenderOptions\"; }\npub struct MessageRenderOptions { pub expanded: bool }",
+        );
+        let error = check_workspace(&workspace.root).unwrap_err();
+        assert!(
+            error.contains("src/lib.rs:3:") && error.contains("belongs to maestro-request"),
+            "{error}"
+        );
+        source(
+            &workspace,
+            owner,
+            "src/lib.rs",
+            "pub use maestro_request::messages::MessageRenderOptions;",
+        );
+    }
+    source(
+        &workspace,
+        "maestro-request",
+        "src/messages.rs",
+        "pub struct MessageRenderOptions { pub expanded: bool }",
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    source(
+        &workspace,
+        "maestro-request",
+        "src/other.rs",
+        "pub type MessageRenderOptions = ();",
+    );
+    assert!(
+        check_workspace(&workspace.root)
+            .unwrap_err()
+            .contains("duplicate declaration")
+    );
+}

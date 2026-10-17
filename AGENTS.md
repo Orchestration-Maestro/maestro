@@ -153,7 +153,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   `SlashCommandSource`, re-exported by resources, application presentation data and
   guest authoring rather than redeclared.
   Shared application messages include bash execution, custom, branch summary and
-  compaction summary records with their existing `Presence<T>` wrapper.
+  compaction summary records with their existing `Presence<T>` wrapper, plus the
+  renderer option record `MessageRenderOptions`, re-exported by session and guest
+  authoring rather than redeclared.
   It also owns `model_registry::ResolvedRequestAuth`, re-exported by the native
   catalog and guest authoring library, default zero usage, message-only diagnostic
   construction and the shared optional-field helper. Only the crates that list it in the spec table
@@ -164,6 +166,10 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   table, inventory, graph policy and architecture tests together with the code.
 - Names follow `maestro-<noun>[-<role>]`.
 - When present, the composition-root crate owns the binary and only wires.
+
+The read-only footer contract, its live status view and the generic live map behind
+them belong to `maestro-extensions::footer_data_provider`; the application footer
+owner keeps its policy and re-exports them at its existing paths.
 
 Pure retained session-tree ordering, geometry, content extraction/search and raw-record ancestry belong to `maestro-session`,
 re-exported through `maestro-app`; frontend filter, fold and selection state stay

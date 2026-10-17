@@ -1,9 +1,10 @@
 # Owned extension registration
 
-`maestro-extensions` registers commands, flags and shortcuts on caller-supplied
-extension owners. It does not load extension artifacts or create application contexts.
-The caller supplies provenance, an existing event bus, effective keybindings and
-its current UI-presence observation. The loader or runtime retains a strong extension
+`maestro-extensions` registers commands, flags, shortcuts and message renderers on
+caller-supplied extension owners. It does not load extension artifacts or create
+application contexts. The caller supplies provenance, an existing event bus,
+effective keybindings and the live theme the headless UI fallback reports; the
+[UI capabilities](ui.md) guide covers UI hosts and renderers. The loader or runtime retains a strong extension
 owner. API clones hold weak owner handles, so callbacks may capture them without
 keeping a discarded extension alive. After the last strong owner is released,
 registration and facade flag reads return the stale-context error.
@@ -48,9 +49,11 @@ api.register_flag("quiet".into(), ExtensionFlagOptions {
 api.register_shortcut("ctrl+x".into(), ExtensionShortcutOptions {
     description: None, handler: Arc::new(|()| Box::pin(async { Ok(()) })),
 })?;
-let runner = ExtensionRunner::<(), ()>::new(owners, runtime, Arc::new(|line| eprint!("{line}")));
+let runner = ExtensionRunner::<(), ()>::new(
+    owners, runtime, Arc::new(|line| eprint!("{line}")), maestro_theme::LiveTheme::default(),
+);
 assert_eq!(api.get_flag("quiet")?, Some(FlagValue::Boolean(false)));
-assert!(runner.get_shortcuts(&vec![], false).contains_key("ctrl+x"));
+assert!(runner.get_shortcuts(&vec![]).contains_key("ctrl+x"));
 let command = runner.get_command("hello").ok_or("command missing")?;
 let executor = tokio::runtime::Builder::new_current_thread().build()?;
 executor.block_on((command.handler)("raw arguments".into(), ()))?;
@@ -99,7 +102,7 @@ fn local_callback_registration_example() -> Result<(), Box<dyn std::error::Error
         })),
     })?;
     let runner = ExtensionRunner::<(), Rc<Input>, Local>::new(
-        owners, runtime, Rc::new(|line| eprint!("{line}")),
+        owners, runtime, Rc::new(|line| eprint!("{line}")), maestro_theme::LiveTheme::default(),
     );
     let command = runner.get_command("rename").ok_or("command missing")?;
     let input = Rc::new(Input::new());
@@ -156,7 +159,7 @@ overrides. Other built-in collisions warn but allow overrides. Later extension
 registrations replace normalized-key collisions in the first key's slot.
 
 Each shortcut query publishes fresh diagnostics; an earlier retained collection
-is not cleared. The `has_ui` input suppresses only warning output, not diagnostics
-or selection. A warning reporter receives one complete line, including its final
+is not cleared. An installed UI context suppresses only warning output, not
+diagnostics or selection; with the headless fallback each warning is reported. A warning reporter receives one complete line, including its final
 newline, outside registration locks. Flag and shortcut paths are captured when
 registered; changing an owner's current path does not rewrite them.

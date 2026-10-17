@@ -2,7 +2,7 @@
 use super::ExtensionRunner;
 use crate::{
     ExtensionExecution,
-    types::{ExtensionFlag, FlagValue, ResolvedCommand, read, write},
+    types::{ExtensionFlag, FlagValue, MessageRenderer, ResolvedCommand, read, write},
 };
 use indexmap::{IndexMap, IndexSet};
 use std::sync::{Arc, RwLock};
@@ -37,6 +37,24 @@ impl<C, CC, E: ExtensionExecution> ExtensionRunner<C, CC, E> {
     #[must_use]
     pub fn get_flag_values(&self) -> IndexMap<String, FlagValue> {
         read(&self.runtime.flag_values).clone()
+    }
+    /// Returns the first owner's renderer for `custom_type` when it has details type `T`.
+    ///
+    /// A different details type on that owner is absent; later owners are not consulted.
+    #[must_use]
+    pub fn get_message_renderer<T: 'static>(
+        &self,
+        custom_type: &str,
+    ) -> Option<MessageRenderer<T, E>> {
+        read(&self.extensions)
+            .iter()
+            .find_map(|owner| {
+                read(owner)
+                    .message_renderers
+                    .get(custom_type)
+                    .map(E::recover_message_renderer::<T>)
+            })
+            .flatten()
     }
     /// Resolves current commands and publishes fresh empty diagnostics.
     #[must_use]
