@@ -52,7 +52,10 @@ existing serde_json dependency. Tooling builds the existing theme owner's native
 export example and its own wiring-only locked-metadata adapter as separate locked
 root operations; no theme/brand Cargo edge is added to tooling or the fixture.
 Generated route configurations retain the pinned tool versions and original
-absolute HTML/watch paths. Only the Trunk child's `CARGO` selects the adapter;
+absolute HTML/watch paths. Authored hooks run through the existing development
+command in the authored directory with their literal arguments and inherited
+environment. Authored watch roots and ignores remain relative to that directory;
+Trunk ignores the generated preparation tree. Only the Trunk child's `CARGO` selects the adapter;
 metadata gains `--locked`, while other invocations pass through unchanged. See the
 [browser lock/write contract](../browser-build.md#locks-writes-and-direct-cargo-use)
 for preparation, independent lock maintenance and offline source provisioning.

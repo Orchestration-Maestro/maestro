@@ -60,8 +60,12 @@ distributions. Checks may create these directories without creating distribution
 The generated configuration uses absolute original HTML/watch paths and retains
 the authored asset paths and tool pins. Trunk
 invokes the same locked native exporter through a pre-build hook on each rebuild,
-retaining authored hooks alongside it.
-The initial watch configuration retains the fixture and default
+retaining authored hooks alongside it. Authored hooks retain their original
+working directory, command arguments, platform overrides and inherited Trunk
+environment; a failed hook fails the native build.
+The initial watch configuration retains authored watch roots and ignores,
+resolving relative paths from the authored configuration's directory. It excludes
+the generated preparation tree from rebuilds, retains the fixture and default
 brand roots and adds the containing directories of both the authored paths and
 symlink-resolved targets of the selected pack and mark template, including
 external directories. Recursive directory watching covers edits to linked targets,

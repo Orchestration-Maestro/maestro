@@ -1229,6 +1229,10 @@ fn browser_author_preparation_is_route_local() {
                 .unwrap(),
         );
         assert!(marker.is_file(), "the actual native authored hook must run");
+        assert_eq!(
+            fs::read(&marker).unwrap(),
+            fs::read(browser.fixture("assets/app.css")).unwrap()
+        );
         let directory = browser.path(&format!("target/maestro-browser/.author/{route}"));
         retained.push((
             directory.join("inputs/text.txt"),
@@ -1266,13 +1270,209 @@ fn assert_authored_target(browser: &Browser, config: &std::path::Path, target: &
 
 /// Install a native authored hook whose filesystem effect the real bundler observes.
 fn install_authored_hook(browser: &Browser) -> std::path::PathBuf {
-    let marker = browser.path("authored-hook-ran");
+    let marker = browser.fixture("hook.css");
     let authored = browser.fixture("Trunk.json");
     let mut configuration: serde_json::Value =
         serde_json::from_slice(&fs::read(&authored).unwrap()).unwrap();
-    configuration["hooks"] = serde_json::json!([{"stage": "pre_build", "command": "touch", "command_arguments": [&marker]}]);
+    configuration["hooks"] = serde_json::json!([{
+        "stage": "pre_build",
+        "command": "cp",
+        "command_arguments": ["assets/app.css", "hook.css"]
+    }]);
     fs::write(authored, serde_json::to_vec_pretty(&configuration).unwrap()).unwrap();
     marker
+}
+
+#[test]
+fn browser_author_watch_ignores_generated_outputs_and_keeps_authored_roots() {
+    use browser_support::{start_output, wait_for};
+    let browser = Browser::new();
+    let pack = external_identity(&browser);
+    let extra = browser.path("authored-extra");
+    fs::create_dir(&extra).unwrap();
+    let ignored = browser.fixture("ignored.txt");
+    fs::write(&ignored, "ignored input").unwrap();
+    let authored = browser.fixture("Trunk.json");
+    let mut config: serde_json::Value =
+        serde_json::from_slice(&fs::read(&authored).unwrap()).unwrap();
+    config["watch"]["watch"]
+        .as_array_mut()
+        .unwrap()
+        .push("../../../../../authored-extra".into());
+    config["watch"]["ignore"] = serde_json::json!(["ignored.txt"]);
+    fs::write(authored, serde_json::to_vec_pretty(&config).unwrap()).unwrap();
+    for (recipe, route) in [
+        ("browser-dev-compile", "library"),
+        ("browser-example-dev", "example"),
+    ] {
+        let mut command = browser.command(recipe);
+        command.args([
+            pack.to_str().unwrap(),
+            "dark",
+            "--log",
+            "info,trunk::watch=trace",
+        ]);
+        if route == "example" {
+            command.args(["--port", "0"]);
+        }
+        let (child, receive, thread) = start_output(command);
+        wait_for(&receive, "✅ success");
+        for file in ["Trunk.json", "inputs/text.txt"] {
+            let relative = format!("target/maestro-browser/.author/{route}/{file}");
+            let path = browser.path(&relative);
+            fs::write(&path, fs::read(&path).unwrap()).unwrap();
+            assert_ignored_event(&receive, &relative);
+        }
+        fs::write(&ignored, format!("ignored {route}")).unwrap();
+        assert_ignored_event(&receive, "ignored.txt");
+        fs::write(extra.join("source.txt"), route).unwrap();
+        wait_for(&receive, "accepted change in");
+        wait_for(&receive, "✅ success");
+        let css = browser.fixture("assets/app.css");
+        let text =
+            fs::read_to_string(&css).unwrap() + &format!("\ncanvas{{outline-{route}:dotted}}\n");
+        fs::write(css, text).unwrap();
+        wait_for(&receive, "accepted change in");
+        wait_for(&receive, "✅ success");
+        assert!(
+            fs::read_to_string(browser.path(&format!("target/maestro-browser/{route}/app.css")))
+                .unwrap()
+                .contains(&format!("outline-{route}:dotted"))
+        );
+        drop(child);
+        drop(receive);
+        thread.join().unwrap();
+    }
+}
+
+/// Observe the native watcher's completed relevance decision for one actual write.
+fn assert_ignored_event(receive: &std::sync::mpsc::Receiver<String>, path: &str) {
+    loop {
+        let line = receive.recv().unwrap();
+        if line.contains("change detected in")
+            && line.contains(path)
+            && (line.contains("Modify(Data(") || line.contains("Create("))
+        {
+            let decision = receive.recv().unwrap();
+            assert!(
+                decision.contains("Event not relevant, skipping"),
+                "{line}\n{decision}"
+            );
+            break;
+        }
+    }
+}
+
+#[test]
+#[cfg(target_os = "linux")]
+fn browser_author_native_hook_preserves_overrides_environment_and_failure() {
+    let browser = Browser::new();
+    fs::create_dir(browser.fixture("scripts")).unwrap();
+    let script = browser.path("hook-source");
+    fs::write(&script, "#!/bin/sh\nset -eu\ncp assets/app.css hook.css\nprintf '%s\\n' \"$1\" \"$TRUNK_PROFILE\" \"$TRUNK_HTML_FILE\" \"$TRUNK_SOURCE_DIR\" \"$TRUNK_DIST_DIR\" \"$TRUNK_PUBLIC_URL\" \"$TRUNK_STAGING_DIR\" \"$MAESTRO_HOOK_INHERITED\" > hook-environment\nexit \"$MAESTRO_HOOK_STATUS\"\n").unwrap();
+    recipe_support::install_executable(&script, &browser.fixture("scripts/hook.sh"));
+    let authored = browser.fixture("Trunk.json");
+    let mut config: serde_json::Value =
+        serde_json::from_slice(&fs::read(&authored).unwrap()).unwrap();
+    config["hooks"] = serde_json::json!([{
+        "stage": "pre_build", "command": "must-not-run", "windows": null, "macos": null,
+        "linux": {"command": "./scripts/hook.sh", "command_arguments": ["literal ' 東京"]}
+    }]);
+    fs::write(authored, serde_json::to_vec_pretty(&config).unwrap()).unwrap();
+    for status in ["0", "17"] {
+        let output = browser
+            .command("browser-debug-build")
+            .env("MAESTRO_HOOK_INHERITED", "inherited-value")
+            .env("MAESTRO_HOOK_STATUS", status)
+            .output()
+            .unwrap();
+        if status == "0" {
+            success(&output);
+        } else {
+            assert!(!output.status.success());
+            assert!(String::from_utf8_lossy(&output.stdout).contains("returned a bad status"));
+        }
+        assert_eq!(
+            fs::read(browser.fixture("hook.css")).unwrap(),
+            fs::read(browser.fixture("assets/app.css")).unwrap()
+        );
+        assert_hook_environment(&browser);
+    }
+}
+
+/// Compare the environment received by the native authored executable.
+#[cfg(target_os = "linux")]
+fn assert_hook_environment(browser: &Browser) {
+    let environment = fs::read_to_string(browser.fixture("hook-environment")).unwrap();
+    let lines: Vec<_> = environment.lines().collect();
+    assert_eq!(lines[0], "literal ' 東京");
+    assert_eq!(lines[1], "debug");
+    assert_eq!(
+        std::path::Path::new(lines[2]),
+        browser.fixture("debug.html").canonicalize().unwrap()
+    );
+    assert_eq!(
+        std::path::Path::new(lines[3]),
+        browser.fixture("").canonicalize().unwrap()
+    );
+    assert_eq!(
+        std::path::Path::new(lines[4]),
+        browser
+            .path("target/maestro-browser/debug")
+            .canonicalize()
+            .unwrap()
+    );
+    assert_eq!(lines[5], "/");
+    assert_eq!(
+        std::path::Path::new(lines[6]),
+        browser
+            .path("target/maestro-browser/debug")
+            .canonicalize()
+            .unwrap()
+            .join(".stage")
+    );
+    assert_eq!(lines[7], "inherited-value");
+}
+
+#[test]
+fn browser_author_hook_uses_resolved_configuration_directory() {
+    let browser = Browser::new();
+    let directory = browser.path("linked configuration");
+    fs::create_dir(&directory).unwrap();
+    fs::write(directory.join("source.css"), "linked source").unwrap();
+    let authored = browser.fixture("Trunk.json");
+    let mut config: serde_json::Value =
+        serde_json::from_slice(&fs::read(&authored).unwrap()).unwrap();
+    config["hooks"] = serde_json::json!([{
+        "stage": "pre_build", "command": "cp", "command_arguments": ["source.css", "hook.css"]
+    }]);
+    let target = directory.join("Trunk.json");
+    fs::write(&target, serde_json::to_vec_pretty(&config).unwrap()).unwrap();
+    fs::remove_file(&authored).unwrap();
+    std::os::unix::fs::symlink(target, authored).unwrap();
+    success(&browser.run("browser-debug-build"));
+    assert_eq!(
+        fs::read(directory.join("hook.css")).unwrap(),
+        b"linked source"
+    );
+}
+
+#[test]
+fn browser_author_hook_status_propagates() {
+    let workspace = Workspace::new();
+    let args = [
+        "browser-author",
+        "hook",
+        workspace.0.to_str().unwrap(),
+        "sh",
+        "-c",
+        "exit 17",
+    ]
+    .map(std::ffi::OsString::from);
+    assert_eq!(
+        maestro_tooling::run(&args, std::path::Path::new(env!("CARGO")), &workspace.0).unwrap(),
+        std::process::ExitCode::from(17)
+    );
 }
 
 #[test]
