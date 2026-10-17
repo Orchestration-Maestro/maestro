@@ -10,7 +10,8 @@ pub use theme::{BrandType, load_brand_pack};
 pub use theme::{Collator, NativeThemeOperations, NativeThemeWatchOperations};
 pub use theme::{ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeError, ThemeOptions};
 pub use theme::{
-    HighlightProfile, get_settings_list_theme, highlight_auto, highlight_code, highlight_html,
+    HighlightProfile, get_settings_list_theme, highlight_auto, highlight_code, highlight_css,
+    highlight_html,
 };
 pub use theme::{LiveTheme, ThemeChangeResult, ThemeExportColors, ansi256_to_hex, is_light_theme};
 pub use theme::{SyntaxHighlighter, SyntaxSpan, SyntectHighlighter, get_language_from_path};

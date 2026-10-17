@@ -135,7 +135,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Catalog:** The application-facing usable model selection resolved from models and credentials.
 - **Tools:** The owner of executable tool definitions and their caller-supplied preview/render context. The [tool-record library](docs/tool-records.md), `maestro-tool`, depends only on `maestro-request` and owns the tool interchange records; `maestro-tools` keeps execution.
 - **Export:** Session document serialization shared with application operations.
-- **Terminal toolkit:** Terminal components in `maestro-tui` depending internally only on shared cancellation, the text leaf, the native process leaf and the optional foundation utility, without application selectors or framework/highlighting engines.
+- **Terminal toolkit:** Terminal components in `maestro-tui` depending internally only on shared cancellation, the text leaf, the native process leaf, the shared Markdown parser and the optional foundation utility, without application selectors or framework/highlighting engines.
 - **Frame writer:** The `TUI` owner in `maestro-tui` that draws components to a terminal as retained frames, routes terminal input and schedules renders through its runtime.
 - **Overlay:** A retained component layered over the frame, with live placement/visibility options and a public handle for focus, temporary hiding and removal.
 - **Retained frame:** The lines the terminal currently shows, kept so the next update writes only the rows that changed.
@@ -196,6 +196,8 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Reading content:** A feature-owned native text factory admitted by the existing browser attachment-surface registry; the shared host retains a fixed placement frame, one host-created clipped scrolling viewport and the feature root, measures natural height and frame-local canvas-control slots, restores optional styles and fractional viewport scroll transactionally, and retains unchanged roots. See [owned reading content](docs/browser/attachments.md#owned-reading-content).
 
 - **Browser SandboxIframe:** The retained loading/execution adapter in `maestro-web`. One native frame owner serves direct execution and the hidden application host, with retryable removal and native result handles; preparation can produce standalone documents. See [sandbox execution](docs/browser/sandbox.md#hidden-javascript-execution).
+
+- **Markdown parser:** `maestro-markdown` owns native structure, source extents and mapped extended links; application exposes it as `markdown`, while adapters retain presentation policy.
 
 ## Workspace daemon
 

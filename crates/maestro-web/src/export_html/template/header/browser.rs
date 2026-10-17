@@ -1,6 +1,9 @@
 //! Native literal header composition and locale binding.
 use super::{HELP, LABELS, Prepared};
-use crate::browser::attachment_content::{AttachmentUiError, ReadingRoot, browser::host_error};
+use crate::browser::attachment_content::{
+    AttachmentUiError, ReadingRoot,
+    browser::{append, element as create, host_error},
+};
 use std::io;
 use web_sys::{Document, Element};
 mod details;
@@ -11,16 +14,9 @@ fn element(
     class: &str,
     text: &str,
 ) -> Result<Element, AttachmentUiError> {
-    let e = document.create_element(tag).map_err(|e| host_error(&e))?;
-    e.set_attribute("class", class)
-        .map_err(|e| host_error(&e))?;
+    let e = create(document, tag, class)?;
     e.set_text_content(Some(text));
     Ok(e)
-}
-/// Append owned nodes through the native effect boundary.
-fn append(parent: &Element, child: &Element) -> Result<(), AttachmentUiError> {
-    parent.append_child(child).map_err(|e| host_error(&e))?;
-    Ok(())
 }
 /// Mount literal metadata and empty mixed-content slots.
 pub(super) fn mount(
@@ -57,6 +53,7 @@ pub(super) fn mount(
     append(&flow, &root)?;
     let owner = details::mount(document, &flow, prepared)?;
     Ok(ReadingRoot {
+        commit: None,
         owner,
         element: flow,
         slots,

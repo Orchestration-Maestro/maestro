@@ -1,0 +1,2098 @@
+[
+  {
+    "id": "dollar-plain",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "$x+1$",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "math-inline",
+            "text": "x+1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dollar-multiline",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "$x\ny$",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "text",
+            "text": "$x\ny$"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dollar-brace",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "$\\frac{a}{b}$",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "math-inline",
+            "text": "\\frac{a}{b}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dollar-unbalanced",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "$}$",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "math-inline",
+            "text": "}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dollar-invalid",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "$\\frac{$",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "math-inline",
+            "text": "\\frac{"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "dollar-whitespace",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "$ ﻿x﻿ $",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "math-inline",
+            "text": "x"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "double-plain",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "$$x+1$$",
+    "tree": [
+      {
+        "kind": "math-block",
+        "text": "x+1"
+      }
+    ]
+  },
+  {
+    "id": "double-multiline",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "$$x\ny$$",
+    "tree": [
+      {
+        "kind": "math-block",
+        "text": "x\ny"
+      }
+    ]
+  },
+  {
+    "id": "double-brace",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "$$\\frac{a}{b}$$",
+    "tree": [
+      {
+        "kind": "math-block",
+        "text": "\\frac{a}{b}"
+      }
+    ]
+  },
+  {
+    "id": "double-unbalanced",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "$$}$$",
+    "tree": [
+      {
+        "kind": "math-block",
+        "text": "}"
+      }
+    ]
+  },
+  {
+    "id": "double-invalid",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "$$\\frac{$$",
+    "tree": [
+      {
+        "kind": "math-block",
+        "text": "\\frac{"
+      }
+    ]
+  },
+  {
+    "id": "double-whitespace",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "$$ ﻿x﻿ $$",
+    "tree": [
+      {
+        "kind": "math-block",
+        "text": "x"
+      }
+    ]
+  },
+  {
+    "id": "backslash-plain",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "\\(x+1\\)",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "math-inline",
+            "text": "x+1"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "backslash-multiline",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "\\(x\ny\\)",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "math-inline",
+            "text": "x\ny"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "backslash-brace",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "\\(\\frac{a}{b}\\)",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "math-inline",
+            "text": "\\frac{a}{b}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "backslash-unbalanced",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "\\(}\\)",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "math-inline",
+            "text": "}"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "backslash-invalid",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "\\(\\frac{\\)",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "math-inline",
+            "text": "\\frac{"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "backslash-whitespace",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "\\( ﻿x﻿ \\)",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "math-inline",
+            "text": "x"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "square-plain",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "\\[x+1\\]",
+    "tree": [
+      {
+        "kind": "math-block",
+        "text": "x+1"
+      }
+    ]
+  },
+  {
+    "id": "square-multiline",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "\\[x\ny\\]",
+    "tree": [
+      {
+        "kind": "math-block",
+        "text": "x\ny"
+      }
+    ]
+  },
+  {
+    "id": "square-brace",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "\\[\\frac{a}{b}\\]",
+    "tree": [
+      {
+        "kind": "math-block",
+        "text": "\\frac{a}{b}"
+      }
+    ]
+  },
+  {
+    "id": "square-unbalanced",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "\\[}\\]",
+    "tree": [
+      {
+        "kind": "math-block",
+        "text": "}"
+      }
+    ]
+  },
+  {
+    "id": "square-invalid",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "\\[\\frac{\\]",
+    "tree": [
+      {
+        "kind": "math-block",
+        "text": "\\frac{"
+      }
+    ]
+  },
+  {
+    "id": "square-whitespace",
+    "test": "markdown_math_delimiters_keep_modes_trimming_and_errors",
+    "source": "\\[ ﻿x﻿ \\]",
+    "tree": [
+      {
+        "kind": "math-block",
+        "text": "x"
+      }
+    ]
+  },
+  {
+    "id": "inline-code",
+    "test": "markdown_math_recognition_keeps_nonmath_neighbors",
+    "source": "`$x$ \\(y\\)` beside $z$",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "code",
+            "text": "$x$ \\(y\\)"
+          },
+          {
+            "kind": "text",
+            "text": " beside "
+          },
+          {
+            "kind": "math-inline",
+            "text": "z"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "fenced-code",
+    "test": "markdown_math_recognition_keeps_nonmath_neighbors",
+    "source": "```text\n$x$ \\(y\\)\n```\n\n$z$",
+    "tree": [
+      {
+        "kind": "code-block",
+        "children": [
+          {
+            "kind": "text",
+            "text": "$x$ \\(y\\)"
+          }
+        ]
+      },
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "math-inline",
+            "text": "z"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "list-inline",
+    "test": "markdown_math_keeps_display_context_in_lists",
+    "source": "- before $x$ and `$y$` after\n- \\(z\\)",
+    "tree": [
+      {
+        "kind": "list",
+        "children": [
+          {
+            "kind": "item",
+            "children": [
+              {
+                "kind": "text",
+                "text": "before "
+              },
+              {
+                "kind": "math-inline",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "$y$"
+              },
+              {
+                "kind": "text",
+                "text": " after"
+              }
+            ]
+          },
+          {
+            "kind": "item",
+            "children": [
+              {
+                "kind": "math-inline",
+                "text": "z"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quote-inline",
+    "test": "markdown_math_keeps_display_context_in_quotes",
+    "source": "> before $x$ and `$y$` after\n> \\(z\\)",
+    "tree": [
+      {
+        "kind": "quote",
+        "children": [
+          {
+            "kind": "paragraph",
+            "children": [
+              {
+                "kind": "text",
+                "text": "before "
+              },
+              {
+                "kind": "math-inline",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "code",
+                "text": "$y$"
+              },
+              {
+                "kind": "text",
+                "text": " after\n"
+              },
+              {
+                "kind": "math-inline",
+                "text": "z"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table-inline",
+    "test": "markdown_math_keeps_display_context_in_tables",
+    "source": "| h | v |\n| - | - |\n| $x$ | `$y$` |\n| \\(z\\) | ordinary |",
+    "tree": [
+      {
+        "kind": "table",
+        "children": [
+          {
+            "kind": "head",
+            "children": [
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "h"
+                  }
+                ]
+              },
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "v"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "row",
+            "children": [
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "math-inline",
+                    "text": "x"
+                  }
+                ]
+              },
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "code",
+                    "text": "$y$"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "row",
+            "children": [
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "math-inline",
+                    "text": "z"
+                  }
+                ]
+              },
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "ordinary"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "list-display",
+    "test": "markdown_math_keeps_display_context_in_lists",
+    "source": "- before $$x$$ after\n- \\[y\\]",
+    "tree": [
+      {
+        "kind": "list",
+        "children": [
+          {
+            "kind": "item",
+            "children": [
+              {
+                "kind": "text",
+                "text": "before $"
+              },
+              {
+                "kind": "math-inline",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": "$ after"
+              }
+            ]
+          },
+          {
+            "kind": "item",
+            "children": [
+              {
+                "kind": "math-block",
+                "text": "y"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quote-display",
+    "test": "markdown_math_keeps_display_context_in_quotes",
+    "source": "> before $$x$$ after\n> \\[y\\]",
+    "tree": [
+      {
+        "kind": "quote",
+        "children": [
+          {
+            "kind": "paragraph",
+            "children": [
+              {
+                "kind": "text",
+                "text": "before "
+              }
+            ]
+          },
+          {
+            "kind": "math-block",
+            "text": "x"
+          },
+          {
+            "kind": "paragraph",
+            "children": [
+              {
+                "kind": "text",
+                "text": " after"
+              }
+            ]
+          },
+          {
+            "kind": "math-block",
+            "text": "y"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table-display",
+    "test": "markdown_math_keeps_display_context_in_tables",
+    "source": "| h | v |\n| - | - |\n| $$x$$ | \\[y\\] |",
+    "tree": [
+      {
+        "kind": "table",
+        "children": [
+          {
+            "kind": "head",
+            "children": [
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "h"
+                  }
+                ]
+              },
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "v"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "row",
+            "children": [
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "$"
+                  },
+                  {
+                    "kind": "math-inline",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "$"
+                  }
+                ]
+              },
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "[y]"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "autolink-neighbor",
+    "test": "markdown_link_labels_keep_math_but_destinations_stay_literal",
+    "source": "https://example.test/a $x$ www.example.test \\(y\\) a@example.test",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "link",
+            "children": [
+              {
+                "kind": "text",
+                "text": "https://example.test/a"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " "
+          },
+          {
+            "kind": "math-inline",
+            "text": "x"
+          },
+          {
+            "kind": "text",
+            "text": " "
+          },
+          {
+            "kind": "link",
+            "children": [
+              {
+                "kind": "text",
+                "text": "www.example.test"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " "
+          },
+          {
+            "kind": "math-inline",
+            "text": "y"
+          },
+          {
+            "kind": "text",
+            "text": " "
+          },
+          {
+            "kind": "link",
+            "children": [
+              {
+                "kind": "text",
+                "text": "a@example.test"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "placeholder-collision",
+    "test": "markdown_math_recognition_keeps_nonmath_neighbors",
+    "source": "__CODE_BLOCK_0__ before `<b>`",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "CODE_BLOCK_0"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " before "
+          },
+          {
+            "kind": "code",
+            "text": "<b>"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "authored-marker",
+    "test": "markdown_math_recognition_keeps_nonmath_neighbors",
+    "source": "<m></m> $x$ and <div></div>",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "text",
+            "text": "<m></m> "
+          },
+          {
+            "kind": "math-inline",
+            "text": "x"
+          },
+          {
+            "kind": "text",
+            "text": " and <div></div>"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "embedded-display",
+    "test": "markdown_display_math_preserves_neighbor_whitespace",
+    "source": "before $$x$$ after",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "text",
+            "text": "before "
+          }
+        ]
+      },
+      {
+        "kind": "math-block",
+        "text": "x"
+      },
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "text",
+            "text": " after"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "escaped-dollar",
+    "test": "markdown_math_recognition_keeps_nonmath_neighbors",
+    "source": "\\$x$",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "text",
+            "text": "$x$"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "adjacent",
+    "test": "markdown_math_recognition_keeps_nonmath_neighbors",
+    "source": "a$x$b",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "text",
+            "text": "a"
+          },
+          {
+            "kind": "math-inline",
+            "text": "x"
+          },
+          {
+            "kind": "text",
+            "text": "b"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "list-display-inline-neighbor",
+    "test": "markdown_math_keeps_display_context_in_lists",
+    "source": "- before $x$ after\n- \\(y\\)",
+    "tree": [
+      {
+        "kind": "list",
+        "children": [
+          {
+            "kind": "item",
+            "children": [
+              {
+                "kind": "text",
+                "text": "before "
+              },
+              {
+                "kind": "math-inline",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " after"
+              }
+            ]
+          },
+          {
+            "kind": "item",
+            "children": [
+              {
+                "kind": "math-inline",
+                "text": "y"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "list-display-code-neighbor",
+    "test": "markdown_math_keeps_display_context_in_lists",
+    "source": "- before `$$x$$` after\n- `\\[y\\]`",
+    "tree": [
+      {
+        "kind": "list",
+        "children": [
+          {
+            "kind": "item",
+            "children": [
+              {
+                "kind": "text",
+                "text": "before "
+              },
+              {
+                "kind": "code",
+                "text": "$$x$$"
+              },
+              {
+                "kind": "text",
+                "text": " after"
+              }
+            ]
+          },
+          {
+            "kind": "item",
+            "children": [
+              {
+                "kind": "code",
+                "text": "\\[y\\]"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "list-display-autolink-neighbor",
+    "test": "markdown_math_keeps_display_context_in_lists",
+    "source": "- https://example.test/a $$x$$ after\n- \\[y\\] www.example.test",
+    "tree": [
+      {
+        "kind": "list",
+        "children": [
+          {
+            "kind": "item",
+            "children": [
+              {
+                "kind": "link",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "https://example.test/a"
+                  }
+                ]
+              },
+              {
+                "kind": "text",
+                "text": " $"
+              },
+              {
+                "kind": "math-inline",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": "$ after"
+              }
+            ]
+          },
+          {
+            "kind": "item",
+            "children": [
+              {
+                "kind": "math-block",
+                "text": "y"
+              },
+              {
+                "kind": "text",
+                "text": " "
+              },
+              {
+                "kind": "link",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "www.example.test"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "list-display-format-neighbor",
+    "test": "markdown_math_keeps_display_context_in_lists",
+    "source": "- **before** $$x_1$$ *after*\n- \\[y\\]",
+    "tree": [
+      {
+        "kind": "list",
+        "children": [
+          {
+            "kind": "item",
+            "children": [
+              {
+                "kind": "strong",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "before"
+                  }
+                ]
+              },
+              {
+                "kind": "text",
+                "text": " $"
+              },
+              {
+                "kind": "math-inline",
+                "text": "x_1"
+              },
+              {
+                "kind": "text",
+                "text": "$ "
+              },
+              {
+                "kind": "em",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "after"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "item",
+            "children": [
+              {
+                "kind": "math-block",
+                "text": "y"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quote-display-inline-neighbor",
+    "test": "markdown_math_keeps_display_context_in_quotes",
+    "source": "> before \\(x\\) after\n> $y$",
+    "tree": [
+      {
+        "kind": "quote",
+        "children": [
+          {
+            "kind": "paragraph",
+            "children": [
+              {
+                "kind": "text",
+                "text": "before "
+              },
+              {
+                "kind": "math-inline",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " after\n"
+              },
+              {
+                "kind": "math-inline",
+                "text": "y"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quote-display-code-neighbor",
+    "test": "markdown_math_keeps_display_context_in_quotes",
+    "source": "> before `$$x$$` after\n> `\\[y\\]`",
+    "tree": [
+      {
+        "kind": "quote",
+        "children": [
+          {
+            "kind": "paragraph",
+            "children": [
+              {
+                "kind": "text",
+                "text": "before "
+              },
+              {
+                "kind": "code",
+                "text": "$$x$$"
+              },
+              {
+                "kind": "text",
+                "text": " after\n"
+              },
+              {
+                "kind": "code",
+                "text": "\\[y\\]"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quote-display-autolink-neighbor",
+    "test": "markdown_math_keeps_display_context_in_quotes",
+    "source": "> https://example.test/a $$x$$ www.example.test\n> \\[y\\]",
+    "tree": [
+      {
+        "kind": "quote",
+        "children": [
+          {
+            "kind": "paragraph",
+            "children": [
+              {
+                "kind": "link",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "https://example.test/a"
+                  }
+                ]
+              },
+              {
+                "kind": "text",
+                "text": " "
+              }
+            ]
+          },
+          {
+            "kind": "math-block",
+            "text": "x"
+          },
+          {
+            "kind": "paragraph",
+            "children": [
+              {
+                "kind": "text",
+                "text": " "
+              },
+              {
+                "kind": "link",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "www.example.test"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "math-block",
+            "text": "y"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quote-display-format-neighbor",
+    "test": "markdown_math_keeps_display_context_in_quotes",
+    "source": "> **before** $$x_1$$ *after*\n> \\[y\\]",
+    "tree": [
+      {
+        "kind": "quote",
+        "children": [
+          {
+            "kind": "paragraph",
+            "children": [
+              {
+                "kind": "strong",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "before"
+                  }
+                ]
+              },
+              {
+                "kind": "text",
+                "text": " "
+              }
+            ]
+          },
+          {
+            "kind": "math-block",
+            "text": "x_1"
+          },
+          {
+            "kind": "paragraph",
+            "children": [
+              {
+                "kind": "text",
+                "text": " "
+              },
+              {
+                "kind": "em",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "after"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "math-block",
+            "text": "y"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table-display-inline-neighbor",
+    "test": "markdown_math_keeps_display_context_in_tables",
+    "source": "| h | v |\n| - | - |\n| $x$ | \\(y\\) |",
+    "tree": [
+      {
+        "kind": "table",
+        "children": [
+          {
+            "kind": "head",
+            "children": [
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "h"
+                  }
+                ]
+              },
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "v"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "row",
+            "children": [
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "math-inline",
+                    "text": "x"
+                  }
+                ]
+              },
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "math-inline",
+                    "text": "y"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table-display-code-neighbor",
+    "test": "markdown_math_keeps_display_context_in_tables",
+    "source": "| h | v |\n| - | - |\n| `$$x$$` | `\\[y\\]` |",
+    "tree": [
+      {
+        "kind": "table",
+        "children": [
+          {
+            "kind": "head",
+            "children": [
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "h"
+                  }
+                ]
+              },
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "v"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "row",
+            "children": [
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "code",
+                    "text": "$$x$$"
+                  }
+                ]
+              },
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "code",
+                    "text": "\\[y\\]"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table-display-autolink-neighbor",
+    "test": "markdown_math_keeps_display_context_in_tables",
+    "source": "| h | v |\n| - | - |\n| https://example.test/a $$x$$ | \\[y\\] www.example.test |",
+    "tree": [
+      {
+        "kind": "table",
+        "children": [
+          {
+            "kind": "head",
+            "children": [
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "h"
+                  }
+                ]
+              },
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "v"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "row",
+            "children": [
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "link",
+                    "children": [
+                      {
+                        "kind": "text",
+                        "text": "https://example.test/a"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "text",
+                    "text": " $"
+                  },
+                  {
+                    "kind": "math-inline",
+                    "text": "x"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "$"
+                  }
+                ]
+              },
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "[y] "
+                  },
+                  {
+                    "kind": "link",
+                    "children": [
+                      {
+                        "kind": "text",
+                        "text": "www.example.test"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table-display-format-neighbor",
+    "test": "markdown_math_keeps_display_context_in_tables",
+    "source": "| h | v |\n| - | - |\n| **before** $$x_1$$ | \\[y\\] *after* |",
+    "tree": [
+      {
+        "kind": "table",
+        "children": [
+          {
+            "kind": "head",
+            "children": [
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "h"
+                  }
+                ]
+              },
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "v"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "row",
+            "children": [
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "strong",
+                    "children": [
+                      {
+                        "kind": "text",
+                        "text": "before"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "text",
+                    "text": " $"
+                  },
+                  {
+                    "kind": "math-inline",
+                    "text": "x_1"
+                  },
+                  {
+                    "kind": "text",
+                    "text": "$"
+                  }
+                ]
+              },
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "[y] "
+                  },
+                  {
+                    "kind": "em",
+                    "children": [
+                      {
+                        "kind": "text",
+                        "text": "after"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "embedded-display-inline-neighbor",
+    "test": "markdown_display_math_preserves_neighbor_whitespace",
+    "source": "before \\(x\\) after",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "text",
+            "text": "before "
+          },
+          {
+            "kind": "math-inline",
+            "text": "x"
+          },
+          {
+            "kind": "text",
+            "text": " after"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "embedded-display-code-neighbor",
+    "test": "markdown_display_math_preserves_neighbor_whitespace",
+    "source": "before `$$x$$` after",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "text",
+            "text": "before "
+          },
+          {
+            "kind": "code",
+            "text": "$$x$$"
+          },
+          {
+            "kind": "text",
+            "text": " after"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "embedded-display-autolink-neighbor",
+    "test": "markdown_display_math_preserves_neighbor_whitespace",
+    "source": "https://example.test/a $$x$$ www.example.test",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "link",
+            "children": [
+              {
+                "kind": "text",
+                "text": "https://example.test/a"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " "
+          }
+        ]
+      },
+      {
+        "kind": "math-block",
+        "text": "x"
+      },
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "text",
+            "text": " "
+          },
+          {
+            "kind": "link",
+            "children": [
+              {
+                "kind": "text",
+                "text": "www.example.test"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "embedded-display-format-neighbor",
+    "test": "markdown_display_math_preserves_neighbor_whitespace",
+    "source": "**before** $$x_1$$ *after*",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "before"
+              }
+            ]
+          },
+          {
+            "kind": "text",
+            "text": " "
+          }
+        ]
+      },
+      {
+        "kind": "math-block",
+        "text": "x_1"
+      },
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "text",
+            "text": " "
+          },
+          {
+            "kind": "em",
+            "children": [
+              {
+                "kind": "text",
+                "text": "after"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "list-multiline-inline",
+    "test": "markdown_math_keeps_display_context_in_lists",
+    "source": "- \\(x\n  y\\)",
+    "tree": [
+      {
+        "kind": "list",
+        "children": [
+          {
+            "kind": "item",
+            "children": [
+              {
+                "kind": "math-inline",
+                "text": "x\ny"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quote-list-multiline-inline",
+    "test": "markdown_math_keeps_display_context_in_lists",
+    "source": "> - \\(x\n>   y\\)",
+    "tree": [
+      {
+        "kind": "quote",
+        "children": [
+          {
+            "kind": "list",
+            "children": [
+              {
+                "kind": "item",
+                "children": [
+                  {
+                    "kind": "math-inline",
+                    "text": "x\ny"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "list-multiline-display",
+    "test": "markdown_math_keeps_display_context_in_lists",
+    "source": "- \\[x\n  y\\]",
+    "tree": [
+      {
+        "kind": "list",
+        "children": [
+          {
+            "kind": "item",
+            "children": [
+              {
+                "kind": "math-block",
+                "text": "x\ny"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "link-label-inline-dollar",
+    "test": "markdown_link_labels_keep_math_but_destinations_stay_literal",
+    "source": "[$x$](../doc \"tip\")",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "link",
+            "children": [
+              {
+                "kind": "math-inline",
+                "text": "x"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "link-label-inline-backslash",
+    "test": "markdown_link_labels_keep_math_but_destinations_stay_literal",
+    "source": "[\\(x\\)](../doc \"tip\")",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "link",
+            "children": [
+              {
+                "kind": "math-inline",
+                "text": "x"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "link-label-code-neighbor",
+    "test": "markdown_link_labels_keep_math_but_destinations_stay_literal",
+    "source": "[`x` and $y$](../doc \"tip\")",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "link",
+            "children": [
+              {
+                "kind": "code",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " and "
+              },
+              {
+                "kind": "math-inline",
+                "text": "y"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "link-destination-is-not-math",
+    "test": "markdown_link_labels_keep_math_but_destinations_stay_literal",
+    "source": "[label](https://example.test/$x$ \"tip\")",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "link",
+            "children": [
+              {
+                "kind": "text",
+                "text": "label"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "strong-label-inline",
+    "test": "markdown_link_labels_keep_math_but_destinations_stay_literal",
+    "source": "**before $x$ after**",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "strong",
+            "children": [
+              {
+                "kind": "text",
+                "text": "before "
+              },
+              {
+                "kind": "math-inline",
+                "text": "x"
+              },
+              {
+                "kind": "text",
+                "text": " after"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "url-target-inline-dollar",
+    "test": "markdown_link_labels_keep_math_but_destinations_stay_literal",
+    "source": "https://example.test/$x$",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "link",
+            "children": [
+              {
+                "kind": "text",
+                "text": "https://example.test/$x$"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "www-target-inline-dollar",
+    "test": "markdown_link_labels_keep_math_but_destinations_stay_literal",
+    "source": "www.example.test/$x$",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "link",
+            "children": [
+              {
+                "kind": "text",
+                "text": "www.example.test/$x$"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "angle-target-inline-dollar",
+    "test": "markdown_link_labels_keep_math_but_destinations_stay_literal",
+    "source": "<https://example.test/$x$>",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "link",
+            "children": [
+              {
+                "kind": "text",
+                "text": "https://example.test/$x$"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "quote-url-target-and-math-neighbor",
+    "test": "markdown_math_keeps_display_context_in_quotes",
+    "source": "> https://example.test/$x$ $y$",
+    "tree": [
+      {
+        "kind": "quote",
+        "children": [
+          {
+            "kind": "paragraph",
+            "children": [
+              {
+                "kind": "link",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "https://example.test/$x$"
+                  }
+                ]
+              },
+              {
+                "kind": "text",
+                "text": " "
+              },
+              {
+                "kind": "math-inline",
+                "text": "y"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "table-url-target-and-math-neighbor",
+    "test": "markdown_math_keeps_display_context_in_tables",
+    "source": "| A | B |\n| - | - |\n| https://example.test/a\\|b/$x$ | $y$ |",
+    "tree": [
+      {
+        "kind": "table",
+        "children": [
+          {
+            "kind": "head",
+            "children": [
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "A"
+                  }
+                ]
+              },
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "text",
+                    "text": "B"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "kind": "row",
+            "children": [
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "link",
+                    "children": [
+                      {
+                        "kind": "text",
+                        "text": "https://example.test/a|b/$x$"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "kind": "cell",
+                "children": [
+                  {
+                    "kind": "math-inline",
+                    "text": "y"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "angle-mail-target",
+    "test": "markdown_link_labels_keep_math_but_destinations_stay_literal",
+    "source": "<a$x$@example.test>",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "link",
+            "children": [
+              {
+                "kind": "text",
+                "text": "a$x$@example.test"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "angle-autolink-with-escaped-html-neighbor",
+    "test": "markdown_link_labels_keep_math_but_destinations_stay_literal",
+    "source": "<b>not bold</b> <https://example.test/$x$>",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "text",
+            "text": "<b>not bold</b> "
+          },
+          {
+            "kind": "link",
+            "children": [
+              {
+                "kind": "text",
+                "text": "https://example.test/$x$"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "code-angle-autolink-is-literal",
+    "test": "markdown_link_labels_keep_math_but_destinations_stay_literal",
+    "source": "`<https://example.test/a>`",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "code",
+            "text": "<https://example.test/a>"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "angle-display-dollar-target",
+    "test": "markdown_link_labels_keep_math_but_destinations_stay_literal",
+    "source": "<https://example.test/$$x$$>",
+    "tree": [
+      {
+        "kind": "paragraph",
+        "children": [
+          {
+            "kind": "link",
+            "children": [
+              {
+                "kind": "text",
+                "text": "https://example.test/$$x$$"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

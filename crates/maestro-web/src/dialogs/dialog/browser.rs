@@ -35,6 +35,7 @@ pub(super) fn header(
     Ok(ReadingRoot {
         element,
         slots: vec![],
+        commit: None,
         owner: None,
     })
 }
@@ -57,6 +58,7 @@ pub(super) fn content(
     Ok(ReadingRoot {
         element,
         slots,
+        commit: None,
         owner: Some(Box::new(owners)),
     })
 }
@@ -175,6 +177,7 @@ fn mount(
     Ok(ReadingRoot {
         element,
         slots: child.slots,
+        commit: None,
         owner: Some(Box::new((
             child.owner,
             Mounted {

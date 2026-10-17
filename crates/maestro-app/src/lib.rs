@@ -154,3 +154,6 @@ pub use maestro_models::{
     ConnectWebSocket, WebSocket, WebSocketConnection, WebSocketFuture, WebSocketRequest,
 };
 pub use presentation_data::slash_commands::{SlashCommandInfo, SlashCommandSource};
+
+/// Owned Markdown structure and mapped extended links for presentation consumers.
+pub use maestro_markdown as markdown;

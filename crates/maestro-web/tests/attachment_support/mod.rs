@@ -1,5 +1,7 @@
 //! Controlled attachment effects and genuine native drawing frames.
 #![cfg(test)]
+/// Shared final-clip canvas raster observations.
+pub mod canvas_paint;
 pub mod dialog_paint;
 use egui::{Context, Event, Pos2, RawInput, Rect, Shape, Vec2};
 use maestro_app::browser::utils::attachment_utils::AttachmentType;

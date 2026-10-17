@@ -101,6 +101,12 @@ shared subscription owner; a failed native removal may retain the callable, but
 its expired weak capture cannot change released feature state. It is not a
 raw-markup or template interface. The host retains the complete returned owner.
 
+An optional `ReadingRoot::commit` callback reconciles a staged update into the
+previous root only after placement succeeds. This infallible callback preserves
+the previous element, slots and native state; roots without it replace content
+normally. Measuring a previously published factory also discards any abandoned
+candidate before reading the retained root.
+
 `ReadingPhase::Measure` stages a hidden candidate without replacing the published
 root. Placements supply actual canvas control sizes by identity.
 `reading_layout(id)` reads unclipped natural height and full slot rectangles in
@@ -118,8 +124,10 @@ frame/viewport/slot style attributes and fractional viewport scroll positions on
 axes after measurement or failed publication.
 All restoration attempts run: the original operation error takes precedence,
 otherwise the first cleanup error is returned. A failed native restoration write
-cannot itself be guaranteed recovered. Publication applies the staged sizes and
-clamped offsets before committing placement. Feature roots must contain their trailing flow spacing within
+cannot itself be guaranteed recovered. Publication applies staged sizes and placement before the infallible feature
+commit. Reconciled candidates are measured with the retained viewport's offsets
+under bounded prospective geometry; after the native commit, the retained viewport
+receives those measured clamped offsets before controls are returned. Feature roots must contain their trailing flow spacing within
 the measured root, rather than leaving an external margin outside its bounds.
 
 The frame, including typography, uses the existing canvas's separate

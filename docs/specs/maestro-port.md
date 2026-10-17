@@ -262,6 +262,7 @@ from the optional foundation utility described below.
 | `maestro-pattern` | match file patterns | `maestro-text` | below 0 |
 | `maestro-protocol` | define the daemon protocol | `maestro-json` | below 0 |
 | `maestro-ipc` | connect local sockets | — | below 0 |
+| `maestro-markdown` | parse Markdown source | `maestro-text` | below 0 |
 | `maestro-extensions-wasm` | provide guest authoring | `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json` | 0 |
 | `maestro-models` | supply model invocations | `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-brand` | 0 |
 | `maestro-resources` | discover instruction resources | `maestro-request`, `maestro-pattern`, `maestro-text` | 0 |
@@ -269,7 +270,7 @@ from the optional foundation utility described below.
 | `maestro-test-conventions` | verify workspace structure | — | 0 |
 | `maestro-test-process` | run one named test in a checked child process | — | 0 |
 | `maestro-tooling` | automate repository development | — | 0 |
-| `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process` | 0 |
+| `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown` | 0 |
 | `maestro-terminal` | emulate terminal screens | `maestro-text` | 0 |
 | `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text` | 0 |
 | `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text` | 0 |
@@ -286,7 +287,7 @@ from the optional foundation utility described below.
 | `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-tool`, `maestro-text`, `maestro-json`, `maestro-process` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-json`, `maestro-text` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources` | 3 |
-| `maestro-app` | coordinate application operations | `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-daemon` | 4 |
+| `maestro-app` | coordinate application operations | `maestro-markdown`, `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-daemon` | 4 |
 | `maestro-extensions-wasmtime` | execute artifacts | `maestro-extensions` | 4 |
 | `maestro-chat` | present interactive conversations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
 | `maestro-cli` | present command-line operations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
@@ -520,3 +521,8 @@ Deferred model responses, remote core catalog refresh, newer transcript/tool-cha
 **CI placement.** Shared CI is the whole merge check. The caller's `.github/ci.toml` lists `wasm_crates`, four platform `check_targets` and optional `browser_build`; absent configuration skips only optional jobs, invalid configuration fails. As #109 specifies, `just test` remains unwrapped; the separate ported non-LLM test script removes the specified provider credentials and sets the agent's auth file aside, restoring it on exit. Required shared jobs use real rg/fd, wasm builds and foreign-target checks. Enabling the browser application runs the caller's mise-pinned `just browser-build` recipe for real app/example assets. Release binaries, notes, checksums, SBOM/attestation and smoke belong to this repository's tag workflow. macOS/Windows runtime tests return before first release. No separate gate program or extra required repository workflow is added.
 
 **Approved scope exclusions.** Hidden joke commands and their views are not part of Maestro. Omit their dedicated assets and model-selection checks. Rust file paths use the current source-keyed name map; source-based ownership does not change.
+
+`maestro-markdown` owns native Markdown structure, owned source extents and mapped
+extended links. The toolkit keeps terminal normalization and formatting. The
+application re-exports the parser as `markdown`; browser consumers use that edge.
+The parser depends internally only on text and introduces no UI or effect owner.

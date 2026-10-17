@@ -45,9 +45,9 @@ pub enum TextView {
     Presentation,
 }
 pub(crate) mod reading;
-pub use reading::{ReadingContent, ReadingLayout, ReadingPhase, ReadingPlacement};
 #[cfg(target_arch = "wasm32")]
-pub use reading::{ReadingMount, ReadingRoot};
+pub use reading::{ReadingCommit, ReadingMount, ReadingRoot};
+pub use reading::{ReadingContent, ReadingLayout, ReadingPhase, ReadingPlacement};
 /// Borrowed operands for one platform content update.
 pub enum AttachmentContent<'a> {
     /// Owned native reading content.
@@ -344,6 +344,15 @@ pub(crate) fn ghost_sized(
     name: &str,
     size: egui::Vec2,
 ) -> Result<egui::Response, AttachmentUiError> {
+    ghost_labeled(ui, p, (name, None), size)
+}
+/// Draw the same ghost control with an optional adjacent label.
+pub(crate) fn ghost_labeled(
+    ui: &mut egui::Ui,
+    p: &BrandPresentation<'_>,
+    (name, label): (&str, Option<&str>),
+    size: egui::Vec2,
+) -> Result<egui::Response, AttachmentUiError> {
     let response = ui
         .allocate_response(size, egui::Sense::click())
         .on_hover_cursor(egui::CursorIcon::PointingHand);
@@ -366,12 +375,27 @@ pub(crate) fn ghost_sized(
             egui::StrokeKind::Inside,
         );
     }
+    let center = label.map_or(response.rect.center(), |_| {
+        egui::pos2(
+            response.rect.left() + GHOST_SIZE.x / 2.,
+            response.rect.center().y,
+        )
+    });
     glyph(
         ui,
-        egui::Rect::from_center_size(response.rect.center(), egui::vec2(16., 16.)),
+        egui::Rect::from_center_size(center, egui::vec2(16., 16.)),
         name,
         color(p, "text")?,
     )?;
+    if let Some(label) = label {
+        ui.painter().text(
+            response.rect.right_center(),
+            egui::Align2::RIGHT_CENTER,
+            label,
+            egui::TextStyle::Button.resolve(ui.style()),
+            color(p, "text")?,
+        );
+    }
     Ok(response)
 }
 #[cfg(any(target_arch = "wasm32", test))]

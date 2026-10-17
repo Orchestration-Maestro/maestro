@@ -1,14 +1,10 @@
 //! Native selectable table nodes and empty canvas-control slots.
 use super::Sheets;
-use crate::browser::attachment_content::{AttachmentUiError, ReadingRoot, browser::host_error};
-use web_sys::{Document, Element};
-/// Create one feature-owned element in the supplied canvas document.
-fn create(document: &Document, tag: &str, class: &str) -> Result<Element, AttachmentUiError> {
-    let node = document.create_element(tag).map_err(|e| host_error(&e))?;
-    node.set_attribute("class", class)
-        .map_err(|e| host_error(&e))?;
-    Ok(node)
-}
+use crate::browser::attachment_content::{
+    AttachmentUiError, ReadingRoot,
+    browser::{element as create, host_error},
+};
+use web_sys::Document;
 /// Mount every sheet once; only native visibility changes on tab selection.
 pub(super) fn mount(
     document: &Document,
@@ -59,6 +55,7 @@ pub(super) fn mount(
     *sheets.nodes.borrow_mut() = nodes;
     select(sheets, 0)?;
     Ok(ReadingRoot {
+        commit: None,
         owner: None,
         element: root,
         slots,

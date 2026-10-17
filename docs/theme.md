@@ -203,6 +203,9 @@ and plain escaped text for unclassified runs; `&`, `<`, `>`, `"` and `'` (`&#x27
 escaped. A missing, empty or unsupported label returns `None` and an engine failure is
 returned as the error. This explicit-only operation does not select a language.
 
+`highlight_css()` projects these same nine class names through the existing
+brand-role aliases as `--maestro-color-*` references. It emits the nine syntax selectors without adding a palette; the native host supplies the selected pack's custom properties.
+
 `highlight_auto` adds automatic selection for HTML callers. `HighlightProfile::ExportViewer`
 and `HighlightProfile::CodeBlock` retain separate ordered language sets. A registered label
 is lowercased and resolved to its canonical grammar without trimming or splitting; missing,

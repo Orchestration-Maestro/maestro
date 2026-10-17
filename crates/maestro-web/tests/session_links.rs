@@ -2,8 +2,12 @@
 #![cfg(test)]
 #[path = "support/brand.rs"]
 pub mod brand;
+#[path = "attachment_support/canvas_paint.rs"]
+pub mod canvas_paint;
+mod copy_button_support;
 mod effects_support;
 mod session_links_support;
+mod support;
 use session_links_support::*;
 
 #[test]
@@ -140,6 +144,8 @@ fn copy_link_uses_click_time_context() {
 
 #[test]
 fn copy_link_success_shows_check_for_1500_ms() {
+    paired_feedback_deadlines(false);
+    paired_feedback_deadlines(true);
     let mut canvas = Canvas::new();
     canvas.activate().unwrap();
     assert!(!check(&canvas.frame(vec![]).1));
@@ -690,4 +696,47 @@ fn check_tooltip(canvas: &mut Canvas, title: &str) {
             |shape| matches!(&shape.shape,egui::Shape::Text(text) if text.galley.text()==title)
         )
     );
+}
+
+/// Independent controls keep their own delay in both completion orders.
+fn paired_feedback_deadlines(button_first: bool) {
+    let mut button = copy_button_support::Canvas::new();
+    button.button.show_text = true;
+    let mut link = Canvas::new();
+    link.host = button.host.clone();
+    link.state = maestro_web::export_html::template::CopyLinkState::new(link.host.clone());
+    button.activate();
+    link.activate().unwrap();
+    let first = usize::from(!button_first);
+    button.settle(first, true);
+    button.host.advance(250);
+    button.settle(1 - first, true);
+    let (link_deadline, button_deadline) = if button_first {
+        (1750, 2000)
+    } else {
+        (1500, 2250)
+    };
+    button.host.advance(link_deadline - 1);
+    assert!(session_links_support::check(&link.frame(vec![]).1));
+    assert!(copy_button_support::copied(
+        &button.frame(vec![]).1,
+        &button
+    ));
+    button.host.advance(link_deadline);
+    assert!(!session_links_support::check(&link.frame(vec![]).1));
+    assert!(
+        copy_button_support::copied(&button.frame(vec![]).1, &button),
+        "the link deadline must not restore the copy control"
+    );
+    button.host.advance(button_deadline - 1);
+    assert!(copy_button_support::copied(
+        &button.frame(vec![]).1,
+        &button
+    ));
+    button.host.advance(button_deadline);
+    assert!(!copy_button_support::copied(
+        &button.frame(vec![]).1,
+        &button
+    ));
+    assert_eq!(button.host.live(), 0);
 }

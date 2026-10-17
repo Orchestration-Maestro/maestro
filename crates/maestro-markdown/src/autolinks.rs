@@ -1,7 +1,11 @@
 //! Extended URL and email recognition on mapped native text runs.
-use super::parse::{Kind, Node, Text};
+use crate::{
+    inline::ScopeKey,
+    source::ScopeSource,
+    types::{Document, Kind, Node, Text},
+};
 use regress::Regex;
-use std::{ops::Range, sync::LazyLock};
+use std::{collections::HashMap, ops::Range, sync::LazyLock};
 
 /// Web candidates, validated before reserving any text.
 static WEB: LazyLock<Option<Regex>> =
@@ -58,7 +62,7 @@ fn candidate(run: &Run, range: Range<usize>, email: bool) -> Option<(Range<usize
         if run.authored[..range.start]
             .chars()
             .next_back()
-            .is_some_and(|c| !c.is_whitespace() && !"*_~(".contains(c))
+            .is_some_and(|c| !maestro_text::is_whitespace_scalar(c) && !"*_~(".contains(c))
         {
             return None;
         }
@@ -124,7 +128,7 @@ struct Unit {
 }
 impl Run {
     /// Builds ordered buffers without container source bytes.
-    fn new(parts: Vec<Node>) -> Self {
+    fn new(parts: Vec<Node>, mapping: Option<&ScopeSource>) -> Self {
         let mut run = Self {
             decoded: String::new(),
             authored: String::new(),
@@ -136,23 +140,35 @@ impl Run {
                 let authored = run.authored.len();
                 run.decoded.push_str(&text.decoded);
                 run.authored.push_str(&text.authored);
-                run.spans(part.range, decoded, authored);
+                run.spans(part.range, (decoded, authored), mapping);
             }
         }
         run
     }
     /// Splits native text into equal spans and individual escaped punctuation.
     /// A differing remainder is a native entity event, kept atomic.
-    fn spans(&mut self, source: Range<usize>, mut decoded: usize, mut authored: usize) {
+    fn spans(
+        &mut self,
+        mut source: Range<usize>,
+        (mut decoded, mut authored): (usize, usize),
+        mapping: Option<&ScopeSource>,
+    ) {
+        let base = authored;
+        let local = mapping
+            .and_then(|mapping| mapping.local(&source))
+            .map(|range| range.start);
         while decoded < self.decoded.len() {
             let display = &self.decoded[decoded..];
             let literal = &self.authored[authored..];
-            let equal = display
+            let mut equal = display
                 .chars()
                 .zip(literal.chars())
                 .take_while(|(left, right)| left == right)
                 .map(|(left, _)| left.len_utf8())
                 .sum::<usize>();
+            if let Some((mapping, local)) = mapping.zip(local) {
+                equal = equal.min(mapping.remaining(local + authored - base));
+            }
             let (display_len, literal_len) = if literal.starts_with('\\')
                 && display.as_bytes()[0].is_ascii_punctuation()
                 && literal.as_bytes().get(1) == display.as_bytes().first()
@@ -163,11 +179,22 @@ impl Run {
             } else {
                 (display.len(), literal.len())
             };
+            let end = if literal_len == literal.len() {
+                source.end
+            } else {
+                source.start + literal_len
+            };
+            let selected = mapping.zip(local).and_then(|(mapping, local)| {
+                mapping.native(&(local + authored - base..local + authored - base + literal_len))
+            });
+            let selected = selected.unwrap_or(source.start..end);
+            let next = selected.end;
             self.units.push(Unit {
-                source: source.clone(),
+                source: selected,
                 decoded: decoded..decoded + display_len,
                 authored: authored..authored + literal_len,
             });
+            source.start = next;
             decoded += display_len;
             authored += literal_len;
         }
@@ -218,18 +245,31 @@ impl Run {
             .units
             .iter()
             .find(|unit| unit.authored.end > range.start)
-            .map_or(0, |unit| unit.source.start);
+            .map_or(0, |unit| {
+                if unit.source.len() == unit.authored.len() {
+                    unit.source.start + range.start - unit.authored.start
+                } else {
+                    unit.source.start
+                }
+            });
         let end = self
             .units
             .iter()
             .rev()
             .find(|unit| unit.authored.start < range.end)
-            .map_or(start, |unit| unit.source.end);
+            .map_or(start, |unit| {
+                if unit.source.len() == unit.authored.len() {
+                    unit.source.start + range.end - unit.authored.start
+                } else {
+                    unit.source.end
+                }
+            });
         start..end
     }
     /// Constructs one surrounding text child without unused link spellings.
     fn node(&self, range: Range<usize>) -> Node {
         Node {
+            authored: self.authored[range.clone()].to_owned(),
             range: self.source_range(range.clone()),
             kind: Kind::Text(self.text(range)),
         }
@@ -237,11 +277,11 @@ impl Run {
 }
 
 /// Replaces accepted links while preserving native-decoded surrounding text.
-pub(super) fn extend(parts: Vec<Node>) -> Vec<Node> {
+fn extend(parts: Vec<Node>, mapping: Option<&ScopeSource>) -> Vec<Node> {
     if parts.is_empty() {
         return parts;
     }
-    let run = Run::new(parts);
+    let run = Run::new(parts, mapping);
     let mut output = Vec::new();
     let mut end = 0;
     for (range, href) in links(&run) {
@@ -251,6 +291,7 @@ pub(super) fn extend(parts: Vec<Node>) -> Vec<Node> {
         let label = run.authored[range.clone()].to_owned();
         let absolute = run.source_range(range.clone());
         let child = Node {
+            authored: label.clone(),
             range: absolute.clone(),
             kind: Kind::Text(Text {
                 decoded: label.clone(),
@@ -258,7 +299,17 @@ pub(super) fn extend(parts: Vec<Node>) -> Vec<Node> {
             }),
         };
         output.push(Node {
-            kind: Kind::Link(vec![child], label, href),
+            authored: label.clone(),
+            kind: Kind::Link(
+                vec![child],
+                label,
+                href,
+                crate::types::LinkMetadata {
+                    title: String::new(),
+                    link_type: pulldown_cmark::LinkType::Autolink,
+                    id: String::new(),
+                },
+            ),
             range: absolute,
         });
         end = range.end;
@@ -284,4 +335,63 @@ fn domain(label: &str) -> bool {
             .take(2)
             .any(|part| part.contains('_'))
     })
+}
+
+/// Scans only contiguous eligible text children of the same container.
+fn runs(nodes: Vec<Node>, mapping: Option<&ScopeSource>) -> Vec<Node> {
+    let mut result = Vec::new();
+    let mut parts = Vec::new();
+    for node in nodes {
+        if matches!(node.kind, Kind::Text(_)) {
+            parts.push(node);
+        } else {
+            result.extend(super::autolinks::extend(
+                std::mem::take(&mut parts),
+                mapping,
+            ));
+            result.push(node);
+        }
+    }
+    result.extend(super::autolinks::extend(parts, mapping));
+    result
+}
+
+/// Apply shared mapped extended links after any caller-owned inline admission.
+pub fn autolinks(document: &mut Document) {
+    map_links(&mut document.nodes, &document.scopes, None);
+}
+/// Keep native opaque nodes intact while sharing the one mapped text-run scanner.
+fn map_links(
+    nodes: &mut Vec<Node>,
+    scopes: &HashMap<ScopeKey, ScopeSource>,
+    mapping: Option<&ScopeSource>,
+) {
+    for node in nodes.iter_mut() {
+        match &mut node.kind {
+            Kind::Paragraph(children)
+            | Kind::Inline(children)
+            | Kind::Strong(children)
+            | Kind::Strike(children)
+            | Kind::Emphasis(children)
+            | Kind::Item(children)
+            | Kind::List(_, children)
+            | Kind::Heading(_, children, _)
+            | Kind::Quote(children, _) => map_links(children, scopes, mapping),
+            Kind::Table(table) => {
+                for cell in table
+                    .header
+                    .iter_mut()
+                    .chain(table.rows.iter_mut().flatten())
+                {
+                    map_links(
+                        &mut cell.children,
+                        scopes,
+                        scopes.get(&(cell.range.start, cell.range.end, false)),
+                    );
+                }
+            }
+            _ => {}
+        }
+    }
+    *nodes = runs(std::mem::take(nodes), mapping);
 }

@@ -8,26 +8,37 @@ use web_sys::Element;
 /// Native fractional scroll offsets, without integer Element bindings.
 pub(super) struct Scroll {
     /// Native horizontal offset.
-    left: JsValue,
+    left: f64,
     /// Native vertical offset.
-    top: JsValue,
+    top: f64,
 }
 impl Scroll {
     /// Observe both native axes before mutation.
     pub(super) fn read(viewport: &Element) -> Result<Self, AttachmentUiError> {
         Ok(Self {
-            left: Reflect::get(viewport, &"scrollLeft".into()).map_err(|e| host_error(&e))?,
-            top: Reflect::get(viewport, &"scrollTop".into()).map_err(|e| host_error(&e))?,
+            left: offset(viewport, "scrollLeft")?,
+            top: offset(viewport, "scrollTop")?,
         })
+    }
+    /// Restore the qualified prospective offsets after the infallible native content commit.
+    pub(super) fn commit(&self, viewport: &Element) {
+        viewport.scroll_to_with_x_and_y(self.left, self.top);
     }
     /// Attempt both axes even when the first write fails.
     pub(super) fn apply(&self, viewport: &Element) -> Result<(), AttachmentUiError> {
-        let left =
-            Reflect::set(viewport, &"scrollLeft".into(), &self.left).map_err(|e| host_error(&e));
-        let top =
-            Reflect::set(viewport, &"scrollTop".into(), &self.top).map_err(|e| host_error(&e));
+        let left = Reflect::set(viewport, &"scrollLeft".into(), &JsValue::from(self.left))
+            .map_err(|e| host_error(&e));
+        let top = Reflect::set(viewport, &"scrollTop".into(), &JsValue::from(self.top))
+            .map_err(|e| host_error(&e));
         left.and(top).map(|_| ())
     }
+}
+/// Read a fractional native offset before any publication mutation.
+fn offset(viewport: &Element, name: &str) -> Result<f64, AttachmentUiError> {
+    Reflect::get(viewport, &name.into())
+        .map_err(|e| host_error(&e))?
+        .as_f64()
+        .ok_or_else(|| AttachmentUiError::Host("Invalid native scroll offset".into()))
 }
 /// Size slots by identity, preserving native slot ownership.
 pub(super) fn size_slots(
