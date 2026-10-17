@@ -2,9 +2,10 @@
 #![cfg(test)]
 
 use std::future::Future;
-use std::process::{Command, Output};
+use std::process::Output;
 use std::rc::Rc;
 
+use maestro_test_process::TestProcess;
 use tokio::runtime::Builder;
 use tokio::task::LocalSet;
 
@@ -26,25 +27,19 @@ pub fn run_set<Fut: Future<Output = ()>>(paused: bool, body: impl FnOnce(Rc<Loca
 
 /// Runs the named test again in a child process and returns what it wrote.
 ///
-/// The child must exit successfully after running exactly that test, so a name that
-/// matches nothing fails here instead of passing silently, and its standard output may
-/// hold only the test harness's own lines.
-pub fn rerun(test: &str, setup: impl FnOnce(&mut Command)) -> Output {
-    let mut command = Command::new(std::env::current_exe().expect("test executable path"));
-    command
-        .args(["--exact", test, "--nocapture"])
-        .env(CHILD_MARKER, "1");
-    setup(&mut command);
-    let output = command.output().expect("child process runs");
+/// The child must exit successfully after the checked owner proves it started exactly that
+/// test, so a name that matches nothing fails here instead of passing silently, and its
+/// standard output may hold only the test harness's own lines.
+pub fn rerun(test: &str, setup: impl FnOnce(TestProcess) -> TestProcess) -> Output {
+    let process = TestProcess::current(test).expect("running test identity");
+    let process = setup(process.nocapture().env(CHILD_MARKER, "1"));
+    let name = process.name().to_owned();
+    let output = process.output().expect("child process starts the test");
     assert!(
         output.status.success(),
-        "child {test} failed: {:?}\n{}",
+        "child {name} failed: {:?}\n{}",
         output.status,
         String::from_utf8_lossy(&output.stdout)
-    );
-    assert!(
-        String::from_utf8_lossy(&output.stdout).contains("1 passed"),
-        "child ran no test named {test}"
     );
     for line in String::from_utf8_lossy(&output.stdout)
         .lines()
@@ -52,9 +47,9 @@ pub fn rerun(test: &str, setup: impl FnOnce(&mut Command)) -> Output {
     {
         assert!(
             line == "running 1 test"
-                || line == format!("test {test} ... ok")
+                || line == format!("test {name} ... ok")
                 || line.starts_with("test result: ok. 1 passed;"),
-            "unexpected standard output from child {test}: {line:?}"
+            "unexpected standard output from child {name}: {line:?}"
         );
     }
     output

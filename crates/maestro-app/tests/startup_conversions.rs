@@ -170,7 +170,7 @@ fn windows_basename() {
         .output()
         .unwrap();
     assert!(output.status.success());
-    crate::child_process::assert_executed(&output, &test);
+    crate::child_process::assert_executed(&output, &test).unwrap();
     assert!(!source.exists());
     assert!(fs::read(root.join("sessions/--work--/one.jsonl")).unwrap() == body);
     fs::remove_dir_all(root).unwrap();
