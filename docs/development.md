@@ -134,7 +134,16 @@ only from the child command, leaving the parent's environment unchanged.
 It restores the wrapper that preceded coverage, when present. This keeps nested
 native and WebAssembly builds independent of parent instrumentation without
 changing measurement of the test runner. Profile-writer fixtures still request
-their own instrumentation explicitly.
+their own instrumentation explicitly. Fresh tooling and conventions fixture roots
+carry the checkout's complete `rust-toolchain.toml` declaration before their first
+compiler child. Compiler, Cargo and recipe children run beneath that declaration;
+the shared command builder sets `RUSTUP_TOOLCHAIN` to the resolved toolchain
+recorded when the test was compiled, overriding ambient selectors for every
+descendant regardless of working directory. Environment-clearing fixture drivers
+reapply that value after clearing. When compilation supplies no resolved toolchain,
+the builder leaves normal Rustup selection unchanged.
+Clearing a child's environment does not remove the fixture's declaration. Required
+components and targets are provisioned before tests, never installed by fixtures.
 
 Compiler watches do not run catalog generation or copy assets. Browser selections
 are activated by [#113](https://github.com/Orchestration-Maestro/maestro/issues/113).

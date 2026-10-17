@@ -1,3 +1,7 @@
+#[allow(dead_code, reason = "Scratch uses only the shared declaration writer.")]
+#[path = "../../../maestro-tooling/tests/fixtures/toolchain_support.rs"]
+mod toolchain_support;
+
 use std::fs;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -17,7 +21,14 @@ impl Scratch {
                 NEXT.fetch_add(1, Ordering::Relaxed)
             ));
             match fs::create_dir(&root) {
-                Ok(()) => return Self { root },
+                Ok(()) => {
+                    toolchain_support::declare_toolchain(
+                        &root,
+                        include_str!("../../../../rust-toolchain.toml"),
+                    )
+                    .unwrap();
+                    return Self { root };
+                }
                 Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {}
                 Err(error) => panic!("create fixture: {error}"),
             }

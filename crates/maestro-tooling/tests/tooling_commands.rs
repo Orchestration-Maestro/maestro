@@ -10,6 +10,186 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use maestro_tooling as tooling;
 
+/// Exercise Rustup selection with an incomplete default and an installed pin.
+#[test]
+fn child_toolchain_uses_declared_pin() {
+    if std::env::var_os("MAESTRO_TOOLCHAIN_CONTROL").is_none() {
+        let owner = Fixture::new();
+        let home = owner.root.join("rustup");
+        let sysroot = prepare_incomplete_toolchain(&home);
+        for selector in [None, Some("incomplete")] {
+            let mut command = Command::new(std::env::current_exe().unwrap());
+            command
+                .args([
+                    "--exact",
+                    "child_toolchain_uses_declared_pin",
+                    "--nocapture",
+                ])
+                .env("MAESTRO_TOOLCHAIN_CONTROL", "1")
+                .env("MAESTRO_EXPECTED_SYSROOT", &sysroot)
+                .env("RUSTUP_HOME", &home)
+                .env_remove("RUSTUP_TOOLCHAIN")
+                .env("RUSTUP_AUTO_INSTALL", "0");
+            if let Some(selector) = selector {
+                command.env("RUSTUP_TOOLCHAIN", selector);
+            }
+            let output = command.output().unwrap();
+            assert!(
+                output.status.success(),
+                "{}\n{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            print!("{}", String::from_utf8_lossy(&output.stdout));
+        }
+        return;
+    }
+    let before: Vec<_> = std::env::vars_os().collect();
+    assert_incomplete_default();
+    let fixture = Fixture::new();
+    assert_eq!(
+        fs::read(fixture.root.join("rust-toolchain.toml")).unwrap(),
+        include_bytes!("../../../rust-toolchain.toml")
+    );
+    check_declared_children(&fixture);
+    let declaration = include_str!("../../../rust-toolchain.toml");
+    assert!(
+        toolchain_support::declare_toolchain(&fixture.root.join("missing"), declaration).is_err()
+    );
+    assert!(toolchain_support::declare_toolchain(&fixture.child, declaration).is_err());
+    assert!(
+        std::env::vars_os().collect::<Vec<_>>() == before,
+        "parent environment changed"
+    );
+    println!("parent environment unchanged");
+}
+
+/// Observe unsanitized default and override failures before using fixture setup.
+fn assert_incomplete_default() {
+    let default = Command::new("rustup")
+        .current_dir(std::env::temp_dir())
+        .env_remove("RUSTUP_TOOLCHAIN")
+        .args(["show", "active-toolchain"])
+        .output()
+        .unwrap();
+    assert!(default.status.success());
+    assert!(String::from_utf8_lossy(&default.stdout).starts_with("incomplete (default)"));
+    println!(
+        "default control: {}",
+        String::from_utf8_lossy(&default.stdout).trim()
+    );
+    for selector in [None, Some("incomplete")] {
+        let mut compiler = Command::new("rustc");
+        compiler.current_dir(std::env::temp_dir()).arg("--version");
+        compiler.env_remove("RUSTUP_TOOLCHAIN");
+        if let Some(selector) = selector {
+            compiler.env("RUSTUP_TOOLCHAIN", selector);
+        }
+        let output = compiler.output().unwrap();
+        assert!(!output.status.success());
+        println!(
+            "rejecting compiler control: {}",
+            String::from_utf8_lossy(&output.stderr).trim()
+        );
+    }
+}
+
+/// Link the already installed compiler without installing or changing its files.
+fn prepare_incomplete_toolchain(home: &Path) -> PathBuf {
+    let output = toolchain_support::command("rustc")
+        .args(["--print", "sysroot"])
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let sysroot = PathBuf::from(std::str::from_utf8(&output.stdout).unwrap().trim());
+    fs::create_dir_all(home.join("toolchains/incomplete")).unwrap();
+    let target = home.join("toolchains").join(sysroot.file_name().unwrap());
+    #[cfg(unix)]
+    std::os::unix::fs::symlink(&sysroot, &target).unwrap();
+    #[cfg(windows)]
+    std::os::windows::fs::symlink_dir(&sysroot, &target).unwrap();
+    fs::write(
+        home.join("settings.toml"),
+        "version = \"12\"\ndefault_toolchain = \"incomplete\"\nauto_install_toolchains = false\n",
+    )
+    .unwrap();
+    sysroot
+}
+
+/// Require compiler output, Cargo metadata and a real recipe below the declaration.
+fn check_declared_children(fixture: &Fixture) {
+    let sysroot = toolchain_support::command("rustc")
+        .current_dir(&fixture.root)
+        .args(["--print", "sysroot"])
+        .output()
+        .unwrap();
+    assert!(
+        sysroot.status.success(),
+        "{}",
+        String::from_utf8_lossy(&sysroot.stderr)
+    );
+    let expected = std::env::var_os("MAESTRO_EXPECTED_SYSROOT").unwrap();
+    assert_eq!(
+        fs::canonicalize(std::str::from_utf8(&sysroot.stdout).unwrap().trim()).unwrap(),
+        fs::canonicalize(expected).unwrap()
+    );
+    let run = Command::new(&fixture.child)
+        .env("MAESTRO_RECEIPT", fixture.root.join("receipt"))
+        .env("HOME", &fixture.root)
+        .status()
+        .unwrap();
+    assert!(run.success());
+    println!("declared compiler and emitted executable: passed");
+    check_declared_metadata(fixture);
+    fs::write(
+        fixture.root.join("justfile"),
+        "probe:\n    rustc --print sysroot\n",
+    )
+    .unwrap();
+    let recipe = toolchain_support::command("just")
+        .current_dir(&fixture.root)
+        .arg("probe")
+        .output()
+        .unwrap();
+    assert!(
+        recipe.status.success(),
+        "{}",
+        String::from_utf8_lossy(&recipe.stderr)
+    );
+    assert_eq!(recipe.stdout, sysroot.stdout);
+    println!("declared recipe compiler sysroot: passed");
+}
+
+/// Require the real Cargo proxy to identify the local offline package.
+fn check_declared_metadata(fixture: &Fixture) {
+    fs::write(
+        fixture.root.join("Cargo.toml"),
+        "[package]\nname = 'toolchain-probe'\nversion = '0.0.0'\nedition = '2024'\n[workspace]\n",
+    )
+    .unwrap();
+    fs::create_dir(fixture.root.join("src")).unwrap();
+    fs::write(fixture.root.join("src/lib.rs"), "").unwrap();
+    let metadata = toolchain_support::command("cargo")
+        .current_dir(&fixture.root)
+        .args([
+            "metadata",
+            "--offline",
+            "--no-deps",
+            "--format-version",
+            "1",
+        ])
+        .output()
+        .unwrap();
+    assert!(
+        metadata.status.success(),
+        "{}",
+        String::from_utf8_lossy(&metadata.stderr)
+    );
+    let metadata: serde_json::Value = serde_json::from_slice(&metadata.stdout).unwrap();
+    assert_eq!(metadata["packages"][0]["name"], "toolchain-probe");
+    println!("declared Cargo proxy metadata: passed");
+}
+
 #[cfg(unix)]
 #[test]
 fn child_toolchain_preserves_parent_profile_destination() {
@@ -114,6 +294,7 @@ fn compile_toolchain_probe(fixture: &Fixture) -> PathBuf {
     fs::write(&source, include_str!("fixtures/child_toolchain_probe.rs")).unwrap();
     let binary = fixture.root.join("parent");
     let compile = toolchain_support::command("rustc")
+        .current_dir(&fixture.root)
         .args(["--cfg", "test", "-C", "instrument-coverage"])
         .arg(&source)
         .arg("-o")
@@ -131,6 +312,7 @@ fn compile_toolchain_probe(fixture: &Fixture) -> PathBuf {
 /// Inspect actual parent counters after the instrumented process exits normally.
 fn assert_profile_counters(profile: &Path) {
     let directory = toolchain_support::command("rustc")
+        .current_dir(profile.parent().unwrap())
         .args(["--print", "target-libdir"])
         .output()
         .unwrap();
@@ -165,11 +347,13 @@ impl Fixture {
     fn new() -> Self {
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let root = std::env::temp_dir().join(format!(
-            "maestro-tooling-{}-{}",
+            "Maestro's tooling fixture-{}-{}",
             std::process::id(),
             NEXT.fetch_add(1, Ordering::Relaxed)
         ));
         fs::create_dir(&root).unwrap();
+        toolchain_support::declare_toolchain(&root, include_str!("../../../rust-toolchain.toml"))
+            .unwrap();
         fs::create_dir(root.join("receipt")).unwrap();
         fs::create_dir_all(root.join(".maestro/agent")).unwrap();
         let source = root.join("child.rs");
@@ -213,15 +397,7 @@ fn main() {
 }
 "#).unwrap();
         let child = root.join(format!("just{}", std::env::consts::EXE_SUFFIX));
-        assert!(
-            toolchain_support::command("rustc")
-                .arg(source)
-                .arg("-o")
-                .arg(&child)
-                .status()
-                .unwrap()
-                .success()
-        );
+        compile_fixture(&root, &source, &child);
         Self { root, child }
     }
 
@@ -242,6 +418,9 @@ fn main() {
             .env("HOME", &self.root)
             .env("PATH", &self.root)
             .current_dir(&self.root);
+        if let Some(channel) = toolchain_support::channel() {
+            command.env("RUSTUP_TOOLCHAIN", channel);
+        }
         for (index, arg) in args.iter().enumerate() {
             command.env(format!("MAESTRO_ARG_{index}"), arg);
         }
@@ -260,6 +439,20 @@ fn main() {
             .map(|index| fs::read(root.join(index.to_string())).unwrap())
             .collect()
     }
+}
+
+/// Compile the fixture program beneath its declared toolchain root.
+fn compile_fixture(root: &Path, source: &Path, child: &Path) {
+    assert!(
+        toolchain_support::command("rustc")
+            .current_dir(root)
+            .arg(source)
+            .arg("-o")
+            .arg(child)
+            .status()
+            .unwrap()
+            .success()
+    );
 }
 
 impl Drop for Fixture {
@@ -1267,7 +1460,7 @@ fn maestro_hook_fixtures_exclude_ambient_credentials() {
                 &[],
             )
             .envs(
-                ["RUSTUP_HOME", "CARGO_HOME", "RUSTUP_TOOLCHAIN"]
+                ["RUSTUP_HOME", "CARGO_HOME", "RUSTUP_AUTO_INSTALL"]
                     .into_iter()
                     .filter_map(|key| std::env::var_os(key).map(|value| (key, value))),
             )
