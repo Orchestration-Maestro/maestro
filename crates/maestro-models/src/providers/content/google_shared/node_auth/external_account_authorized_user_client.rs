@@ -1,6 +1,8 @@
 //! Workforce authorized-user refresh and retained refresh-token rotation.
 
-use super::base_external_client::{Effects, Token, TokenSource, invalid_token};
+use super::base_external_client::{
+    Effects, Grant, Token, TokenResponse, TokenSource, invalid_token,
+};
 use super::oauth_client_auth_handler::{client_auth, exchange, policy};
 use crate::HttpRequest;
 use google_cloud_auth::errors::CredentialsError;
@@ -45,9 +47,11 @@ impl ExternalAccountAuthorizedUserClient {
             refresh: Mutex::new(refresh),
         })
     }
+}
 
+impl TokenSource for ExternalAccountAuthorizedUserClient {
     /// Perform refresh, retaining rotation before validating the access response.
-    async fn acquire(&self, effects: Effects) -> Result<Token, CredentialsError> {
+    async fn refresh(&self, effects: Effects) -> Result<Grant, CredentialsError> {
         let refresh = self.refresh.lock().map_err(|_| invalid_token())?.clone();
         let body = url::form_urlencoded::Serializer::new(String::new())
             .extend_pairs([
@@ -62,20 +66,17 @@ impl ExternalAccountAuthorizedUserClient {
             body: body.into_bytes(),
             signal: None,
         };
-        let value = exchange(request, effects.fetch, policy()).await?;
-        if let Some(rotated) = value
-            .get("refresh_token")
-            .and_then(Value::as_str)
+        let response: TokenResponse = exchange(request, effects.fetch.clone(), policy()).await?;
+        if let Some(rotated) = response
+            .refresh_token
+            .as_deref()
             .filter(|value| !value.is_empty())
         {
             rotated.clone_into(&mut *self.refresh.lock().map_err(|_| invalid_token())?);
         }
-        Token::from_response(&value, (effects.clock)())
-    }
-}
-
-impl TokenSource for ExternalAccountAuthorizedUserClient {
-    async fn refresh(&self, effects: Effects) -> Result<Token, CredentialsError> {
-        self.acquire(effects).await
+        Ok(Grant {
+            token: Token::from_response(&response, (effects.clock)())?,
+            fetch: effects.fetch,
+        })
     }
 }

@@ -1,9 +1,8 @@
 //! Native credential acquisition through the shared HTTP effect.
 
 use super::super::{
-    base_external_client::{BaseExternalClient, Effects},
+    base_external_client::{BaseExternalAccountClient, Effects},
     compute_client::Compute,
-    metadata::Metadata,
 };
 use base64::Engine as _;
 use google_cloud_auth::credentials::{CacheableResource, Credentials};
@@ -25,9 +24,9 @@ fn native_metadata_acquires_and_refreshes_controlled_tokens() {
             response.headers.insert("metadata-flavor".into(),"Google".into());
             Box::pin(std::future::ready(Ok(response)))
         });
-        let metadata = Metadata::new(Some("assume-present"),false,(None,Some("controlled.invalid")),0).unwrap();
+        let metadata = super::metadata::metadata(Some("assume-present"),false,(None,Some("controlled.invalid")),0);
         let effects = Effects {fetch,clock:Arc::new(||1000.0), ..Effects::default()};
-        let credentials = Credentials::from(BaseExternalClient::new(Compute::new(metadata),effects,&serde_json::json!({})));
+        let credentials = Credentials::from(BaseExternalAccountClient::new(Compute::new(metadata),effects,None,None));
         for _ in 0..2 {
             let CacheableResource::New {data,..} = credentials.headers(hyper::http::Extensions::new()).await.unwrap() else {panic!("expected generated headers")};
             assert!(data.get("authorization").is_some_and(|value| value == "Bearer controlled-access"));
@@ -301,7 +300,7 @@ fn newest_form(log: &Log) -> std::collections::HashMap<String, String> {
             serde_json::from_slice(&request.body).unwrap();
         return fields
             .into_iter()
-            .map(|(name, value)| (name, value.as_str().unwrap().to_owned()))
+            .filter_map(|(name, value)| value.as_str().map(|text| (name, text.to_owned())))
             .collect();
     }
     url::form_urlencoded::parse(&request.body)
@@ -382,7 +381,7 @@ fn assert_form_requests(name: &str, log: &Log) {
     match name {
         "user" => {
             assert_eq!(form["refresh_token"], "controlled-refresh");
-            assert_eq!(form["scopes"], super::super::CLOUD_SCOPE);
+            assert!(!form.contains_key("scopes"));
         }
         "aws" => {
             assert_eq!(form["scope"], super::super::CLOUD_SCOPE);

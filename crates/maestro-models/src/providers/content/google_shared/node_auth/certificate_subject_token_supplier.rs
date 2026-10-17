@@ -1,6 +1,7 @@
 //! Certificate configuration, validated leaf material and ordered trust chains.
 
-use super::google_auth::environment;
+use super::{CERTIFICATE_FAILED, fixed_error};
+use crate::builtins::env_value;
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use google_cloud_auth::errors::CredentialsError;
 use rustls::pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject};
@@ -38,7 +39,7 @@ impl CertificateSubjectTokenSupplier {
         }
         let config = explicit
             .map(str::to_owned)
-            .or_else(|| environment("GOOGLE_API_CERTIFICATE_CONFIG"))
+            .or_else(|| env_value("GOOGLE_API_CERTIFICATE_CONFIG"))
             .unwrap_or_else(default_path);
         let chain = value
             .get("trust_chain_path")
@@ -106,15 +107,11 @@ impl CertificateSubjectTokenSupplier {
 
 /// Platform gcloud default; unlike ADC, a missing home uses a relative default.
 fn default_path() -> String {
-    let root = environment("CLOUDSDK_CONFIG").unwrap_or_else(|| {
+    let root = env_value("CLOUDSDK_CONFIG").unwrap_or_else(|| {
         if cfg!(windows) {
-            maestro_path::join(&[&environment("APPDATA").unwrap_or_default(), "gcloud"])
+            maestro_path::join(&[&env_value("APPDATA").unwrap_or_default(), "gcloud"])
         } else {
-            maestro_path::join(&[
-                &environment("HOME").unwrap_or_default(),
-                ".config",
-                "gcloud",
-            ])
+            maestro_path::join(&[&env_value("HOME").unwrap_or_default(), ".config", "gcloud"])
         }
     });
     maestro_path::join(&[&root, "certificate_config.json"])
@@ -134,5 +131,5 @@ fn validate(cert: &CertificateDer<'_>) -> Result<(), CredentialsError> {
 
 /// Safe certificate failure without parser or key text.
 pub(super) fn certificate_error() -> CredentialsError {
-    CredentialsError::from_msg(false, "Authentication: certificate credentials failed")
+    fixed_error(false, CERTIFICATE_FAILED, None)
 }

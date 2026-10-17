@@ -1,5 +1,19 @@
 //! Metadata admission and endpoint controls.
 
+use super::super::metadata::{Detection, Metadata, gcp_residency};
+use crate::{FetchError, HttpResponse};
+
+/// Metadata over `policy` (absent means the default control), which must not disable metadata.
+pub(super) fn metadata(
+    policy: Option<&str>,
+    resident: bool,
+    endpoints: (Option<&str>, Option<&str>),
+    retries: u64,
+) -> Metadata {
+    let detection = Detection::parse(policy).unwrap().unwrap();
+    Metadata::new(detection, resident, endpoints, retries).unwrap()
+}
+
 #[test]
 fn native_metadata_endpoint_chooses_ip_before_host() {
     for (ip, host, expected) in [
@@ -64,14 +78,8 @@ fn metadata_detection_modes_choose_their_required_operations() {
                         .insert("metadata-flavor".into(), "Google".into());
                     Box::pin(std::future::ready(Ok(response)))
                 });
-                let metadata = super::super::metadata::Metadata::new(
-                    policy,
-                    resident,
-                    (None, Some("controlled.invalid")),
-                    0,
-                )
-                .unwrap();
-                assert_eq!(metadata.admitted(fetch).await.unwrap(), expected);
+                let metadata = metadata(policy, resident, (None, Some("controlled.invalid")), 0);
+                assert_eq!(metadata.admitted(fetch).await, expected);
                 assert_eq!(
                     calls.load(std::sync::atomic::Ordering::SeqCst),
                     expected_calls
@@ -79,9 +87,6 @@ fn metadata_detection_modes_choose_their_required_operations() {
             }
         });
 }
-
-use super::super::metadata::{Metadata, gcp_residency};
-use crate::{FetchError, HttpResponse};
 
 #[test]
 fn metadata_disable_wins_over_residency() {
@@ -93,28 +98,53 @@ fn metadata_disable_wins_over_residency() {
             fetch,
             ..Default::default()
         };
-        let error = super::run(super::super::metadata::credentials(effects))
+        let available = tokio::sync::OnceCell::new();
+        let error = super::run(super::super::metadata::credentials(effects, &available))
             .err()
             .unwrap();
         assert_eq!(error.message, super::super::NO_CREDENTIALS);
         assert!(urls.lock().unwrap().is_empty());
         return;
     }
-    super::run_paused(async {
-        for resident in [false, true] {
-            let (fetch, urls) = super::recording(|_| Ok(super::google_response()));
-            let metadata =
-                Metadata::new(Some("none"), resident, (None, Some("m.invalid")), 0).unwrap();
-            assert!(!metadata.admitted(fetch).await.unwrap());
-            assert!(urls.lock().unwrap().is_empty());
-        }
-    });
     child_process::rerun(
         TEST,
         "disabled",
         &[
             ("METADATA_SERVER_DETECTION", "none"),
             ("K_SERVICE", "service"),
+        ],
+    )
+    .unwrap();
+}
+
+#[test]
+fn metadata_check_result_is_kept_once_per_owner() {
+    use crate::tests::child_process;
+    const TEST: &str = "metadata_check_result_is_kept_once_per_owner";
+    if child_process::child_case().is_some() {
+        super::run_paused(async {
+            let (fetch, urls) = super::recording(|_| Err(FetchError::Timeout));
+            let effects = super::super::base_external_client::Effects {
+                fetch,
+                ..Default::default()
+            };
+            let available = tokio::sync::OnceCell::new();
+            let first = super::super::metadata::credentials(effects.clone(), &available).await;
+            assert_eq!(first.err().unwrap().message, super::super::NO_CREDENTIALS);
+            let probes = urls.lock().unwrap().len();
+            assert!(probes > 0);
+            let second = super::super::metadata::credentials(effects, &available).await;
+            assert_eq!(second.err().unwrap().message, super::super::NO_CREDENTIALS);
+            assert_eq!(urls.lock().unwrap().len(), probes);
+        });
+        return;
+    }
+    child_process::rerun(
+        TEST,
+        "negative",
+        &[
+            ("METADATA_SERVER_DETECTION", "ping-only"),
+            ("GCE_METADATA_HOST", "m.invalid"),
         ],
     )
     .unwrap();
@@ -134,9 +164,8 @@ fn metadata_probe_requires_successful_google_flavor() {
                 }),
                 _ => Err(FetchError::Timeout),
             });
-            let metadata =
-                Metadata::new(Some("ping-only"), false, (None, Some("m.invalid")), 0).unwrap();
-            assert_eq!(metadata.admitted(fetch).await.unwrap(), expected);
+            let metadata = metadata(Some("ping-only"), false, (None, Some("m.invalid")), 0);
+            assert_eq!(metadata.admitted(fetch).await, expected);
             assert_eq!(
                 urls.lock().unwrap()[0],
                 "http://m.invalid/computeMetadata/v1/instance"
@@ -155,20 +184,18 @@ fn wrong_flavor() -> HttpResponse {
 
 #[test]
 fn metadata_probe_uses_selected_deadline_and_retry_controls() {
-    let nonresident = Metadata::new(None, false, (None, Some("m.invalid")), 0).unwrap();
+    let nonresident = metadata(None, false, (None, Some("m.invalid")), 0);
     assert_eq!(
         nonresident.timeout,
         Some(std::time::Duration::from_millis(3000))
     );
-    let resident = Metadata::new(Some("ping-only"), true, (None, Some("m.invalid")), 0).unwrap();
+    let resident = metadata(Some("ping-only"), true, (None, Some("m.invalid")), 0);
     assert_eq!(resident.timeout, None);
     super::run_paused(async {
         for (retries, expected) in [(0, 1), (2, 3), (3, 4), (9, 4)] {
             let (fetch, urls) = super::recording(|_| Err(FetchError::Timeout));
-            let metadata =
-                Metadata::new(Some("ping-only"), false, (None, Some("m.invalid")), retries)
-                    .unwrap();
-            assert!(!metadata.admitted(fetch).await.unwrap());
+            let metadata = metadata(Some("ping-only"), false, (None, Some("m.invalid")), retries);
+            assert!(!metadata.admitted(fetch).await);
             assert_eq!(urls.lock().unwrap().len(), expected);
         }
     });
@@ -183,8 +210,8 @@ fn metadata_default_candidates_accept_the_first_success() {
             (false, false, false),
         ] {
             let (fetch, urls) = super::recording(move |url| answer(url, (primary, secondary)));
-            let metadata = Metadata::new(None, false, (None, None), 0).unwrap();
-            assert_eq!(metadata.admitted(fetch).await.unwrap(), expected);
+            let metadata = metadata(None, false, (None, None), 0);
+            assert_eq!(metadata.admitted(fetch).await, expected);
             let urls = urls.lock().unwrap();
             assert!(
                 urls.iter()
@@ -197,8 +224,8 @@ fn metadata_default_candidates_accept_the_first_success() {
             );
         }
         let (fetch, urls) = super::recording(|_| Err(FetchError::Timeout));
-        let metadata = Metadata::new(None, false, (Some("10.0.0.1"), None), 0).unwrap();
-        assert!(!metadata.admitted(fetch).await.unwrap());
+        let metadata = metadata(None, false, (Some("10.0.0.1"), None), 0);
+        assert!(!metadata.admitted(fetch).await);
         assert_eq!(urls.lock().unwrap().len(), 1);
     });
 }
@@ -208,15 +235,28 @@ fn linux_residency_reads_serverless_dmi_and_network_prefix() {
     use crate::tests::child_process;
     const TEST: &str = "linux_residency_reads_serverless_dmi_and_network_prefix";
     if let Some(case) = child_process::child_case() {
-        assert_eq!(gcp_residency::detect(), case != "none");
+        assert_eq!(gcp_residency::detect_gcp_residency(), case != "none");
         return;
     }
-    assert!(gcp_residency::bios(true, Some("Google")));
-    assert!(!gcp_residency::bios(true, Some("google")));
-    assert!(!gcp_residency::bios(false, Some("Google")));
-    assert!(!gcp_residency::bios(true, None));
-    assert!(gcp_residency::mac("42:01:0a:00:00:02"));
-    assert!(!gcp_residency::mac("02:42:01:00:00:00"));
+    assert!(gcp_residency::is_google_compute_engine_linux(
+        true,
+        Some("Google")
+    ));
+    assert!(!gcp_residency::is_google_compute_engine_linux(
+        true,
+        Some("google")
+    ));
+    assert!(!gcp_residency::is_google_compute_engine_linux(
+        false,
+        Some("Google")
+    ));
+    assert!(!gcp_residency::is_google_compute_engine_linux(true, None));
+    assert!(gcp_residency::is_google_compute_engine_mac_address(
+        "42:01:0a:00:00:02"
+    ));
+    assert!(!gcp_residency::is_google_compute_engine_mac_address(
+        "02:42:01:00:00:00"
+    ));
     for name in ["CLOUD_RUN_JOB", "FUNCTION_NAME", "K_SERVICE"] {
         for value in ["0", "false", "x"] {
             child_process::rerun(TEST, "serverless", &[(name, value)]).unwrap();
@@ -226,21 +266,16 @@ fn linux_residency_reads_serverless_dmi_and_network_prefix() {
 
 #[test]
 fn metadata_policy_uses_shared_whitespace_and_case_rules() {
+    for policy in ["\u{feff}NoNe\u{feff}", " none\n"] {
+        assert!(Detection::parse(Some(policy)).unwrap().is_none());
+    }
     super::run_paused(async {
-        for policy in ["\u{feff}NoNe\u{feff}", " none\n"] {
-            let (fetch, urls) = super::recording(|_| Ok(super::google_response()));
-            let metadata =
-                Metadata::new(Some(policy), false, (None, Some("m.invalid")), 0).unwrap();
-            assert!(!metadata.admitted(fetch).await.unwrap());
-            assert!(urls.lock().unwrap().is_empty());
-        }
         let (fetch, _) = super::recording(|_| Ok(super::google_response()));
-        let metadata =
-            Metadata::new(Some(" Assume-Present"), false, (None, Some("m.invalid")), 0).unwrap();
-        assert!(metadata.admitted(fetch).await.unwrap());
+        let metadata = metadata(Some(" Assume-Present"), false, (None, Some("m.invalid")), 0);
+        assert!(metadata.admitted(fetch).await);
     });
-    assert!(Metadata::new(Some("\u{85}none"), false, (None, None), 0).is_err());
-    assert!(Metadata::new(Some("unknown"), false, (None, None), 0).is_err());
+    assert!(Detection::parse(Some("\u{85}none")).is_err());
+    assert!(Detection::parse(Some("unknown")).is_err());
 }
 
 /// Success for the candidate whose flag is set, a no-response failure otherwise.

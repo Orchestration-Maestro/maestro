@@ -402,7 +402,8 @@ the same header name, in any case, was not authored. Authentication still runs w
 authored.
 
 Native credentials resolve lazily, on the first preparation, and the successful owner is
-retained for later requests; a failed resolution is not cached. Discovery order:
+retained for later requests; a failed resolution is not cached, except that the metadata
+check result, a negative one included, is kept once per owner. Discovery order:
 
 1. `GOOGLE_APPLICATION_CREDENTIALS`, then `google_application_credentials`, when nonempty;
 2. the platform's well-known application-default file (`HOME/.config/gcloud` or `APPDATA\gcloud`);
@@ -426,13 +427,14 @@ Certificate sources read their configuration from `certificate_config_location`,
 leaf is prepended to the trust chain when absent, a late leaf is rejected, and the token
 exchange runs over HTTPS with the client certificate and no environment proxy.
 
-Metadata detection honors `none` (always disabled), `assume-present`, `bios-only` and
-`ping-only`; `GCE_METADATA_IP` takes precedence over `GCE_METADATA_HOST`, and a scheme in either
+Metadata detection is read once, before residency: it honors `none` (always disabled),
+`assume-present`, `bios-only` and `ping-only`, and rejects any other value; `GCE_METADATA_IP` takes precedence over `GCE_METADATA_HOST`, and a scheme in either
 is kept. The probe waits 3000 ms off Google hosts and has no deadline on them;
 `DETECT_GCP_RETRIES` sets its no-response retries. Residency comes from serverless variables,
 Linux DMI data and `/sys/class/net/*/address`; other platforms' network data is tracked in
 [#1188](https://github.com/Orchestration-Maestro/maestro/issues/1188).
 
-Failures expose only a fixed `Authentication: ...` message, the stage, whether the failure is
+Failures expose only a fixed `Authentication: ...` message (acquisition, certificate or
+configuration), the stage, whether the failure is
 transient, and the HTTP status when one exists; tokens, keys, response bodies and credential
 URLs never appear in any rendering.

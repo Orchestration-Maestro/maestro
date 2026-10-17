@@ -55,7 +55,7 @@ pub fn get_env_api_key(provider: &str) -> Option<String> {
 }
 
 /// Read a nonempty environment value, ignoring unavailable or empty variables.
-fn env_value(key: &str) -> Option<String> {
+pub(crate) fn env_value(key: &str) -> Option<String> {
     std::env::var(key).ok().filter(|value| !value.is_empty())
 }
 

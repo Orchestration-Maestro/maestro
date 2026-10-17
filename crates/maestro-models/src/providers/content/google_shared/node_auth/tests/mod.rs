@@ -1,6 +1,10 @@
 //! Authentication witnesses through content preparation.
 
+mod adc;
+mod certificates;
 mod headers;
+mod metadata;
+mod refresh;
 
 /// A complete controlled JSON response at the production HTTP boundary.
 fn response(value: &serde_json::Value) -> crate::HttpResponse {
@@ -12,14 +16,6 @@ fn response(value: &serde_json::Value) -> crate::HttpResponse {
         body: Box::pin(futures_util::stream::once(std::future::ready(Ok(bytes)))),
     }
 }
-
-mod metadata;
-
-mod adc;
-
-mod certificates;
-
-mod refresh;
 
 /// Disposable exclusively created files owned by one test transaction.
 struct Files(std::path::PathBuf);
@@ -69,6 +65,7 @@ fn client(
         headers,
         authentication: super::super::api_client::Authentication::Native(super::NodeAuth {
             credentials: tokio::sync::OnceCell::new_with(Some(credentials)),
+            ..Default::default()
         }),
     }
 }
@@ -126,12 +123,4 @@ fn run_paused<F: std::future::Future>(future: F) -> F::Output {
         .build()
         .unwrap()
         .block_on(future)
-}
-
-/// Fetch recording each request and answering with a plain token body.
-fn recording_requests() -> (
-    crate::Fetch,
-    std::sync::Arc<std::sync::Mutex<Vec<crate::HttpRequest>>>,
-) {
-    refresh::script(vec![refresh::grant("controlled-access", 3600)])
 }

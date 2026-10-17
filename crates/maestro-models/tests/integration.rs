@@ -222,7 +222,6 @@ mod simple_model_options;
 mod socks;
 mod streamed_arguments;
 mod subscription_accounts;
-#[allow(dead_code, reason = "Shared TLS helpers also serve library tests.")]
 #[path = "support/tls.rs"]
 mod tls;
 #[path = "tool_images.rs"]

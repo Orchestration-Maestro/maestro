@@ -1,9 +1,8 @@
 //! Certificate-backed identity-pool refresh over an identity-bearing HTTP effect.
 
 use super::{
-    base_external_client::{Effects, Token, TokenSource},
+    base_external_client::{Effects, Grant, Token, TokenSource},
     certificate_subject_token_supplier::{CertificateSubjectTokenSupplier, certificate_error},
-    impersonated::Impersonated,
     sts_credentials::StsCredentials,
 };
 use google_cloud_auth::errors::CredentialsError;
@@ -15,8 +14,6 @@ pub(super) struct IdentityPoolClient {
     supplier: CertificateSubjectTokenSupplier,
     /// Ordered STS exchange configuration.
     sts: StsCredentials,
-    /// Optional final service-account exchange.
-    impersonated: Option<Impersonated>,
 }
 
 impl IdentityPoolClient {
@@ -35,23 +32,18 @@ impl IdentityPoolClient {
         Ok(Self {
             supplier: CertificateSubjectTokenSupplier::new(certificate)?,
             sts: StsCredentials::new(value)?,
-            impersonated: Impersonated::new(value)?,
         })
     }
 }
 
 impl TokenSource for IdentityPoolClient {
-    async fn refresh(&self, effects: Effects) -> Result<Token, CredentialsError> {
+    async fn refresh(&self, effects: Effects) -> Result<Grant, CredentialsError> {
         let material = self.supplier.material()?;
         let fetch = (effects.identity)(material.identity)?;
         let response = self.sts.exchange(&material.subject, fetch.clone()).await?;
-        let token = Token::from_response(&response, (effects.clock)())?;
-        if let Some(impersonated) = &self.impersonated {
-            impersonated
-                .exchange(&token.access, fetch, (effects.clock)())
-                .await
-        } else {
-            Ok(token)
-        }
+        Ok(Grant {
+            token: Token::from_response(&response, (effects.clock)())?,
+            fetch,
+        })
     }
 }

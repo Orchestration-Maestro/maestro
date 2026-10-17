@@ -149,20 +149,21 @@ fn compute_credentials(clock: &Arc<AtomicU64>) -> (Credentials, Seen) {
             Ok(response)
         })
     });
-    let metadata = super::super::metadata::Metadata::new(
+    let metadata = super::metadata::metadata(
         Some("assume-present"),
         false,
         (None, Some("controlled.invalid")),
         0,
-    )
-    .unwrap();
+    );
     let source = super::super::compute_client::Compute::new(metadata);
-    let credentials =
-        Credentials::from(super::super::base_external_client::BaseExternalClient::new(
+    let credentials = Credentials::from(
+        super::super::base_external_client::BaseExternalAccountClient::new(
             source,
             effects(wrapped, clock),
-            &serde_json::json!({}),
-        ));
+            None,
+            None,
+        ),
+    );
     (credentials, seen)
 }
 
@@ -295,5 +296,89 @@ fn certificate_refresh_coalesces_concurrent_acquisition() {
         assert_eq!(received.try_iter().count(), 1);
         drop(credentials);
         server.finish().unwrap();
+    });
+}
+
+/// Prepare a minimal content request through `credentials` and return its failure.
+async fn failure_of(credentials: Credentials) -> crate::DiagnosticErrorInfo {
+    let client = super::client(credentials, indexmap::IndexMap::new());
+    let projected = super::super::super::project_content_request(
+        serde_json::json!({"model":"model","contents":"hello"}),
+    )
+    .unwrap();
+    client.prepare_request(projected, None).await.err().unwrap()
+}
+
+/// A response with `status`, or a timeout when there is none.
+fn outcome(status: Option<u16>) -> Result<crate::HttpResponse, crate::FetchError> {
+    let mut response = super::response(&serde_json::json!({}));
+    response.status = status.ok_or(crate::FetchError::Timeout)?;
+    Ok(response)
+}
+
+#[test]
+fn exchange_failures_carry_typed_status_and_transience() {
+    super::run_paused(async {
+        let clock = Arc::new(AtomicU64::new(1000));
+        for (status, name, code) in [
+            (Some(400), "AuthenticationError", Some(400.0)),
+            (Some(404), "AuthenticationError", Some(404.0)),
+            (Some(429), "TransientAuthenticationError", Some(429.0)),
+            (Some(503), "TransientAuthenticationError", Some(503.0)),
+            (None, "TransientAuthenticationError", None),
+        ] {
+            let send: crate::Fetch =
+                Arc::new(move |_| Box::pin(std::future::ready(outcome(status))));
+            let error = failure_of(workforce(effects(send, &clock))).await;
+            assert_eq!(error.name.as_deref(), Some(name));
+            assert_eq!(error.code, code.map(crate::DiagnosticCode::Number));
+        }
+    });
+}
+
+#[test]
+fn token_responses_must_be_objects_with_a_text_access_token() {
+    super::run(async {
+        let clock = Arc::new(AtomicU64::new(1000));
+        for body in [
+            serde_json::json!([]),
+            serde_json::json!("token"),
+            serde_json::json!({"access_token":5}),
+            serde_json::json!({"access_token":""}),
+            serde_json::json!({"access_token":"a","expires_in":"soon"}),
+        ] {
+            let (send, _) = script(vec![body]);
+            let error = failure_of(workforce(effects(send, &clock))).await;
+            assert_eq!(
+                error.message,
+                "Authentication: credential acquisition failed"
+            );
+        }
+    });
+}
+
+#[test]
+fn lazy_configuration_failures_keep_their_fixed_messages() {
+    super::run(async {
+        let files = super::Files::new();
+        let missing = files.0.join("missing.json").to_str().unwrap().to_owned();
+        let certificate = serde_json::json!({"type":"external_account","audience":"//a","subject_token_type":"t","credential_source":{"certificate":{"certificate_config_location":missing}}});
+        let credentials =
+            super::super::google_auth::from_json(certificate, Effects::default()).unwrap();
+        assert_eq!(
+            failure_of(credentials).await.message,
+            "Authentication: certificate credentials failed"
+        );
+        let clock = Arc::new(AtomicU64::new(1000));
+        let (send, _) = script(vec![grant("controlled-access", 3600)]);
+        let credentials = super::super::google_auth::from_json(
+            super::workforce("https://auth.invalid/token", "bad\nquota"),
+            effects(send, &clock),
+        )
+        .unwrap();
+        assert_eq!(
+            failure_of(credentials).await.message,
+            "Authentication: invalid credential configuration"
+        );
     });
 }

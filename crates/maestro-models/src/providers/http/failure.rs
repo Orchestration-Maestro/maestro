@@ -7,6 +7,15 @@ use super::FetchError;
 use crate::DiagnosticErrorInfo;
 use crate::providers::json_text::{compact_raw, is_truthy, member, raw_json};
 
+/// How the attempt loop gave up, for callers that classify the failure without reading its text.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) enum Ending {
+    /// The final response carried this non-success status.
+    Status(u16),
+    /// Every attempt ended with a connection failure or timeout.
+    NoResponse,
+}
+
 /// Why a request ended without a usable response, with upstream detail when reported.
 #[derive(Clone, Debug, PartialEq)]
 pub(crate) struct RequestFailure {
@@ -14,6 +23,8 @@ pub(crate) struct RequestFailure {
     pub(crate) message: String,
     /// Upstream explanation the provider reported under `error.metadata.raw`.
     pub(crate) raw: Option<String>,
+    /// How the attempt loop gave up; absent for validation and cancellation failures.
+    pub(crate) ending: Option<Ending>,
 }
 
 impl RequestFailure {
@@ -22,6 +33,7 @@ impl RequestFailure {
         Self {
             message: message.into(),
             raw: None,
+            ending: None,
         }
     }
 
@@ -84,7 +96,11 @@ fn failure(status: Option<u16>, error: Option<&RawValue>, body: Option<&str>) ->
         .and_then(string_text)
         .filter(|raw| !raw.is_empty());
     match describe(status, error, body) {
-        Ok(message) => RequestFailure { message, raw },
+        Ok(message) => RequestFailure {
+            message,
+            raw,
+            ending: None,
+        },
         Err(error) => RequestFailure::new(error.to_string()),
     }
 }

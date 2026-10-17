@@ -1,25 +1,24 @@
 //! Application-default file discovery and native credential adapters.
 
-use super::CLOUD_SCOPE;
-use super::base_external_client::{BaseExternalClient, Effects};
+use super::base_external_client::{
+    BaseExternalAccountClient, Effects, ServiceAccountImpersonation, TokenSource,
+};
 use super::external_account_authorized_user_client::ExternalAccountAuthorizedUserClient;
+use super::identity_pool_client::IdentityPoolClient;
+use super::{CLOUD_SCOPE, INVALID_CONFIGURATION};
 use crate::DiagnosticErrorInfo;
+use crate::builtins::env_value;
 use google_cloud_auth::credentials::{
     Credentials, external_account, impersonated, service_account, user_account,
 };
 use serde_json::Value;
 
-/// Read a nonempty environment variable without trimming authored text.
-pub(super) fn environment(name: &str) -> Option<String> {
-    std::env::var(name).ok().filter(|value| !value.is_empty())
-}
-
 /// Locate the platform's well-known ADC file without interpreting authored paths.
 fn well_known() -> Option<String> {
     let root = if cfg!(windows) {
-        environment("APPDATA")
+        env_value("APPDATA")
     } else {
-        environment("HOME").map(|home| maestro_path::join(&[&home, ".config"]))
+        env_value("HOME").map(|home| maestro_path::join(&[&home, ".config"]))
     }?;
     Some(maestro_path::join(&[
         &root,
@@ -29,12 +28,14 @@ fn well_known() -> Option<String> {
 }
 
 /// Resolve only the selected source; a selected-file failure never falls through.
-pub(super) async fn resolve() -> Result<Credentials, DiagnosticErrorInfo> {
-    let selected = environment("GOOGLE_APPLICATION_CREDENTIALS")
-        .or_else(|| environment("google_application_credentials"));
+pub(super) async fn resolve(
+    metadata_available: &tokio::sync::OnceCell<bool>,
+) -> Result<Credentials, DiagnosticErrorInfo> {
+    let selected = env_value("GOOGLE_APPLICATION_CREDENTIALS")
+        .or_else(|| env_value("google_application_credentials"));
     let path = selected.or_else(|| well_known().filter(|path| std::path::Path::new(path).exists()));
     let Some(path) = path else {
-        return super::metadata::credentials(Effects::default()).await;
+        return super::metadata::credentials(Effects::default(), metadata_available).await;
     };
     let path = std::fs::canonicalize(path).map_err(|_| file_error())?;
     if !path.is_file() {
@@ -42,7 +43,7 @@ pub(super) async fn resolve() -> Result<Credentials, DiagnosticErrorInfo> {
     }
     let text = std::fs::read_to_string(path).map_err(|_| file_error())?;
     let mut value: Value = serde_json::from_str(&text).map_err(|_| configuration_error())?;
-    if let Some(quota) = environment("GOOGLE_CLOUD_QUOTA_PROJECT") {
+    if let Some(quota) = env_value("GOOGLE_CLOUD_QUOTA_PROJECT") {
         value
             .as_object_mut()
             .ok_or_else(configuration_error)?
@@ -60,13 +61,9 @@ pub(super) fn from_json(
         Some("external_account_authorized_user") => {
             let source = ExternalAccountAuthorizedUserClient::new(&value)
                 .map_err(|_| configuration_error())?;
-            return Ok(Credentials::from(BaseExternalClient::new(
-                source, effects, &value,
-            )));
+            return Ok(Credentials::from(external_client(source, effects, &value)));
         }
-        Some("authorized_user") => user_account::Builder::new(value)
-            .with_scopes([CLOUD_SCOPE])
-            .build(),
+        Some("authorized_user") => user_account::Builder::new(value).build(),
         Some("service_account") => service_account::Builder::new(value)
             .with_access_specifier(service_account::AccessSpecifier::from_scopes([CLOUD_SCOPE]))
             .build(),
@@ -76,11 +73,12 @@ pub(super) fn from_json(
                 .and_then(|source| source.get("certificate"))
                 .is_some() =>
         {
-            let source = super::identity_pool_client::IdentityPoolClient::new(&value)
-                .map_err(|_| configuration_error())?;
-            return Ok(Credentials::from(BaseExternalClient::new(
-                source, effects, &value,
-            )));
+            let source = IdentityPoolClient::new(&value).map_err(|_| configuration_error())?;
+            let impersonation =
+                ServiceAccountImpersonation::new(&value).map_err(|_| configuration_error())?;
+            return Ok(Credentials::from(
+                external_client(source, effects, &value).with_impersonation(impersonation),
+            ));
         }
         Some("external_account") => external_account::Builder::new(value)
             .with_scopes([CLOUD_SCOPE])
@@ -91,9 +89,24 @@ pub(super) fn from_json(
     result.map_err(|_| configuration_error())
 }
 
+/// Owned client over `source`, with the quota and universe the configuration names.
+fn external_client<S: TokenSource>(
+    source: S,
+    effects: Effects,
+    value: &Value,
+) -> BaseExternalAccountClient<S> {
+    let text = |name: &str| value.get(name).and_then(Value::as_str).map(str::to_owned);
+    BaseExternalAccountClient::new(
+        source,
+        effects,
+        text("quota_project_id"),
+        text("universe_domain"),
+    )
+}
+
 /// Fixed safe configuration diagnostic.
 pub(super) fn configuration_error() -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo::error("Authentication: invalid credential configuration")
+    DiagnosticErrorInfo::error(INVALID_CONFIGURATION)
 }
 
 /// Fixed safe filesystem diagnostic.

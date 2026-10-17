@@ -3,6 +3,7 @@
 use std::collections::BTreeMap;
 use std::time::Duration;
 
+use super::failure::Ending;
 use super::failure::status_failure;
 use super::headers::normalize_request;
 use super::runtime::{Raced, race, sleep, unit_random};
@@ -154,11 +155,13 @@ async fn pause(delay: Duration, signal: Option<&Cancellation>) -> Result<(), Req
 
 /// Describe the last failed attempt after retries are exhausted.
 fn exhausted(error: &FetchError) -> RequestFailure {
-    if matches!(error, FetchError::Timeout) {
+    let mut failure = if matches!(error, FetchError::Timeout) {
         RequestFailure::new(error.to_string())
     } else {
         RequestFailure::new("Connection error.")
-    }
+    };
+    failure.ending = Some(Ending::NoResponse);
+    failure
 }
 
 /// Read a failed response body as text, reporting a read failure as that text.
@@ -257,7 +260,9 @@ pub(crate) async fn send_with_policy(
                 }
                 let status = response.status;
                 let text = read_text(response, signal.as_ref()).await?;
-                return Err(format_error(status, &text));
+                let mut failure = format_error(status, &text);
+                failure.ending = Some(Ending::Status(status));
+                return Err(failure);
             }
         };
         if budget - remaining >= policy.no_response_retries {

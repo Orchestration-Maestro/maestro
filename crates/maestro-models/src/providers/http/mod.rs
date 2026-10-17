@@ -29,6 +29,8 @@ pub(crate) use body::buffered;
 pub(crate) use body::collect_body;
 #[cfg(not(target_arch = "wasm32"))]
 pub(crate) use client::{ProxySelector, Route, configured_fetch, supplied_fetch};
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) use failure::Ending;
 pub(crate) use failure::{
     RequestFailure, endpoint_url, envelope_failure, sdk_status_failure, sdk_stream_failure,
     stream_failure,

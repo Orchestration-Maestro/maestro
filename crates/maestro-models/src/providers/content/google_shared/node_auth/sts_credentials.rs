@@ -1,6 +1,7 @@
 //! Ordered certificate subject-token exchange.
 
-use super::{CLOUD_SCOPE, base_external_client::invalid_token, oauth_client_auth_handler};
+use super::base_external_client::{TokenResponse, invalid_token};
+use super::{CLOUD_SCOPE, oauth_client_auth_handler};
 use crate::{Fetch, HttpRequest};
 use google_cloud_auth::errors::CredentialsError;
 use serde_json::Value;
@@ -74,7 +75,7 @@ impl StsCredentials {
         &self,
         subject: &str,
         fetch: Fetch,
-    ) -> Result<Value, CredentialsError> {
+    ) -> Result<TokenResponse, CredentialsError> {
         let body = {
             let mut form = url::form_urlencoded::Serializer::new(String::new());
             form.extend_pairs([

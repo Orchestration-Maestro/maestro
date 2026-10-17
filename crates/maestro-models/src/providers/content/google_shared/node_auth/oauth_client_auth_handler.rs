@@ -1,13 +1,16 @@
 //! Client authentication and safe buffered OAuth exchanges.
 
 use super::base_external_client::invalid_token;
+use super::{ACQUISITION_FAILED, fixed_error};
 use crate::providers::http::{
-    RequestFailure, RequestPolicy, RetryStatuses, buffered, collect_body, send_with_policy,
+    Ending, RequestFailure, RequestPolicy, RetryStatuses, buffered, collect_body, send_with_policy,
 };
-use crate::{Fetch, HttpRequest};
+use crate::providers::json_text::{raw_json, try_object_record};
+use crate::{Fetch, HttpRequest, HttpResponse};
 use base64::{Engine as _, engine::general_purpose::STANDARD};
 use google_cloud_auth::errors::CredentialsError;
 use indexmap::IndexMap;
+use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 /// Add UTF-8 Basic client authentication when a client identifier is present.
@@ -31,27 +34,8 @@ pub(super) fn client_auth(value: &Value, headers: &mut IndexMap<String, String>)
 }
 
 /// Status-only authentication diagnostic; bodies and URLs are never rendered.
-fn status_error(status: u16, _: &str) -> RequestFailure {
-    RequestFailure::new(format!(
-        "Authentication: credential acquisition failed (HTTP {status})"
-    ))
-}
-
-/// Send through the shared retry owner, collecting bytes before the attempt deadline.
-pub(super) async fn exchange(
-    request: HttpRequest,
-    fetch: Fetch,
-    policy: RequestPolicy,
-) -> Result<Value, CredentialsError> {
-    let response = self::request(request, fetch, policy).await?;
-    let bytes = collect_body(response.body)
-        .await
-        .map_err(|_| invalid_token())?;
-    let value: Value = serde_json::from_slice(&bytes).map_err(|_| invalid_token())?;
-    if !value.is_object() {
-        return Err(invalid_token());
-    }
-    Ok(value)
+fn status_error(_: u16, _: &str) -> RequestFailure {
+    RequestFailure::new(ACQUISITION_FAILED)
 }
 
 /// Retry policy shared by owned non-metadata credential exchanges.
@@ -64,49 +48,43 @@ pub(super) fn policy() -> RequestPolicy {
     }
 }
 
-/// Send a buffered operation while retaining safe status and transience categories.
+/// Send through the shared retry owner and decode the JSON object response as `T`.
+pub(super) async fn exchange<T: DeserializeOwned>(
+    request: HttpRequest,
+    fetch: Fetch,
+    policy: RequestPolicy,
+) -> Result<T, CredentialsError> {
+    decode(self::request(request, fetch, policy).await?).await
+}
+
+/// Collect a response body before the attempt deadline and decode it as a JSON object record.
+pub(super) async fn decode<T: DeserializeOwned>(
+    response: HttpResponse,
+) -> Result<T, CredentialsError> {
+    let bytes = collect_body(response.body)
+        .await
+        .map_err(|_| invalid_token())?;
+    let text = std::str::from_utf8(&bytes).map_err(|_| invalid_token())?;
+    raw_json(text)
+        .and_then(try_object_record)
+        .map_err(|_| invalid_token())
+}
+
+/// Send a buffered operation while retaining its typed status and transience.
 pub(super) async fn request(
     request: HttpRequest,
     fetch: Fetch,
     policy: RequestPolicy,
-) -> Result<crate::HttpResponse, CredentialsError> {
+) -> Result<HttpResponse, CredentialsError> {
     send_with_policy(request, buffered(fetch), policy, status_error)
         .await
-        .map_err(|failure| {
-            let transient = failure.message == "Connection error."
-                || failure.message == "Request timed out."
-                || ["HTTP 408", "HTTP 429", "HTTP 5"]
-                    .iter()
-                    .any(|kind| failure.message.contains(kind));
-            match status_of(&failure.message) {
-                Some(status) => CredentialsError::from_source(transient, Status(status)),
-                None => CredentialsError::from_msg(transient, failure.message),
-            }
+        .map_err(|failure| match failure.ending {
+            Some(Ending::Status(status)) => fixed_error(
+                matches!(status, 408 | 429 | 500..=599),
+                ACQUISITION_FAILED,
+                Some(status),
+            ),
+            Some(Ending::NoResponse) => CredentialsError::from_msg(true, failure.message),
+            None => CredentialsError::from_msg(false, failure.message),
         })
-}
-
-/// Safe HTTP status retained as the source of an authentication failure.
-#[derive(Debug)]
-pub(super) struct Status(pub(super) u16);
-
-impl std::fmt::Display for Status {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "Authentication: credential acquisition failed (HTTP {})",
-            self.0
-        )
-    }
-}
-
-impl std::error::Error for Status {}
-
-/// Read the status written by `status_error`.
-fn status_of(message: &str) -> Option<u16> {
-    message
-        .rsplit_once("(HTTP ")?
-        .1
-        .strip_suffix(')')?
-        .parse()
-        .ok()
 }

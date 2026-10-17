@@ -93,28 +93,28 @@ impl ApiClient {
     }
 
     /// Acquire authentication before inserting only absent header names.
+    #[cfg(not(target_arch = "wasm32"))]
     async fn authenticate(
         &self,
         headers: &mut IndexMap<String, String>,
     ) -> Result<(), DiagnosticErrorInfo> {
         let generated = match &self.authentication {
-            Authentication::ApiKey(key) => {
-                if key.starts_with("auth_tokens/") {
-                    return Err(DiagnosticErrorInfo::error(
-                        "Authentication: ephemeral tokens are not supported",
-                    ));
-                }
-                IndexMap::from([("x-goog-api-key".to_owned(), key.clone())])
-            }
-            #[cfg(not(target_arch = "wasm32"))]
+            Authentication::ApiKey(key) => key_headers(key)?,
             Authentication::Native(auth) => auth.headers().await?,
         };
-        let generated = generated
-            .into_iter()
-            .filter(|(name, _)| !headers.contains_key(name))
-            .collect();
-        crate::providers::http::layer_request_headers(headers, &generated, true)
-            .map_err(|error| DiagnosticErrorInfo::error(format!("Authentication: {error}")))
+        layer_generated(headers, generated)
+    }
+
+    /// Insert the key header before only absent header names; no work remains to await.
+    #[cfg(target_arch = "wasm32")]
+    fn authenticate(
+        &self,
+        headers: &mut IndexMap<String, String>,
+    ) -> std::future::Ready<Result<(), DiagnosticErrorInfo>> {
+        let Authentication::ApiKey(key) = &self.authentication;
+        std::future::ready(
+            key_headers(key).and_then(|generated| layer_generated(headers, generated)),
+        )
     }
 
     /// Concatenate the selected endpoint, version and resource before URL parsing.
@@ -384,4 +384,30 @@ fn bare_error(text: &str) -> Option<DiagnosticErrorInfo> {
         )));
     }
     None
+}
+
+/// The key header, refusing ephemeral tokens.
+fn key_headers(key: &str) -> Result<IndexMap<String, String>, DiagnosticErrorInfo> {
+    if key.starts_with("auth_tokens/") {
+        return Err(DiagnosticErrorInfo::error(
+            "Authentication: ephemeral tokens are not supported",
+        ));
+    }
+    Ok(IndexMap::from([(
+        "x-goog-api-key".to_owned(),
+        key.to_owned(),
+    )]))
+}
+
+/// Layer generated headers over the request headers, skipping names already present.
+fn layer_generated(
+    headers: &mut IndexMap<String, String>,
+    generated: IndexMap<String, String>,
+) -> Result<(), DiagnosticErrorInfo> {
+    let generated = generated
+        .into_iter()
+        .filter(|(name, _)| !headers.contains_key(name))
+        .collect();
+    crate::providers::http::layer_request_headers(headers, &generated, true)
+        .map_err(|error| DiagnosticErrorInfo::error(format!("Authentication: {error}")))
 }

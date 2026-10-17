@@ -5,6 +5,8 @@ use serde::Deserialize;
 use sha2::{Digest as _, Sha256};
 use std::fmt::Write as _;
 
+use super::super::certificate_subject_token_supplier::CertificateSubjectTokenSupplier;
+
 const CLIENT: &[u8] =
     include_bytes!("../../../../../../tests/fixtures/cloud-authentication/client.pem");
 const CA: &[u8] = include_bytes!("../../../../../../tests/fixtures/cloud-authentication/ca.pem");
@@ -57,7 +59,7 @@ fn certificate_chain_prepends_or_retains_the_leaf() {
             _ => panic!("unknown certificate row"),
         };
         let chain_path = chain.map(|bytes| files.write("chain.pem", &bytes));
-        let supplier = super::super::certificate_subject_token_supplier::CertificateSubjectTokenSupplier::new(&serde_json::json!({"certificate_config_location":config,"trust_chain_path":chain_path})).unwrap();
+        let supplier = CertificateSubjectTokenSupplier::new(&serde_json::json!({"certificate_config_location":config,"trust_chain_path":chain_path})).unwrap();
         let material = supplier.material().unwrap();
         let chain: Vec<String> = serde_json::from_str(&material.subject).unwrap();
         let hashes: Vec<String> = chain
@@ -83,16 +85,41 @@ fn trusted_client(
 ) -> Result<crate::Fetch, google_cloud_auth::errors::CredentialsError> {
     let root = reqwest::Certificate::from_pem(CA)
         .map_err(|_| super::super::base_external_client::invalid_token())?;
-    let client = reqwest::Client::builder()
-        .identity(identity)
+    let client = super::super::base_external_client::identity_client(identity)
         .add_root_certificate(root)
-        .https_only(true)
-        .no_proxy()
-        .pool_max_idle_per_host(0)
-        .retry(reqwest::retry::never())
         .build()
         .map_err(|_| super::super::base_external_client::invalid_token())?;
     Ok(crate::providers::http::supplied_fetch(client))
+}
+
+/// Build a server that verifies the controlled cloud-authentication client certificate.
+fn mutual_server_config() -> Result<std::sync::Arc<rustls::ServerConfig>, Box<dyn std::error::Error>>
+{
+    use rustls::pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject};
+    let ca = CertificateDer::from_pem_slice(include_bytes!(
+        "../../../../../../tests/fixtures/cloud-authentication/ca.pem"
+    ))?;
+    let cert = CertificateDer::from_pem_slice(include_bytes!(
+        "../../../../../../tests/fixtures/cloud-authentication/server.pem"
+    ))?;
+    let key = PrivateKeyDer::try_from(
+        include_bytes!("../../../../../../tests/fixtures/cloud-authentication/server-key.der")
+            .to_vec(),
+    )?;
+    let mut roots = rustls::RootCertStore::empty();
+    roots.add(ca)?;
+    let verifier = rustls::server::WebPkiClientVerifier::builder_with_provider(
+        std::sync::Arc::new(roots),
+        std::sync::Arc::new(rustls::crypto::aws_lc_rs::default_provider()),
+    )
+    .build()?;
+    let config = rustls::ServerConfig::builder_with_provider(std::sync::Arc::new(
+        rustls::crypto::aws_lc_rs::default_provider(),
+    ))
+    .with_safe_default_protocol_versions()?
+    .with_client_cert_verifier(verifier)
+    .with_single_cert(vec![cert], key)?;
+    Ok(std::sync::Arc::new(config))
 }
 
 /// Write a selected certificate configuration backed by the controlled client identity.
@@ -188,7 +215,7 @@ pub(super) fn tls_server(
     use std::sync::Arc;
     let (sent, received) = std::sync::mpsc::channel();
     let sent = std::sync::Mutex::new(sent);
-    let config = crate::tests::tls::mutual_server_config().unwrap();
+    let config = mutual_server_config().unwrap();
     let count = std::sync::atomic::AtomicUsize::new(0);
     let server = crate::tests::loopback::start_routed(Arc::new(move |socket| {
         let connection =
@@ -246,8 +273,6 @@ pub(super) fn credentials(
     };
     super::super::google_auth::from_json(value, effects).unwrap()
 }
-
-use super::super::certificate_subject_token_supplier::CertificateSubjectTokenSupplier;
 
 /// Certificate material failures never echo file paths or PEM content.
 fn assert_safe(error: &google_cloud_auth::errors::CredentialsError) {
@@ -445,7 +470,8 @@ fn certificate_exchange_preserves_workforce_and_client_auth_options() {
                 .as_object_mut()
                 .unwrap()
                 .extend(extra.as_object().unwrap().clone());
-            let (send, seen) = super::recording_requests();
+            let (send, seen) =
+                super::refresh::script(vec![super::refresh::grant("controlled-access", 3600)]);
             let sts = StsCredentials::new(&value).unwrap();
             sts.exchange("subject", send).await.unwrap();
             let seen = seen.lock().unwrap();

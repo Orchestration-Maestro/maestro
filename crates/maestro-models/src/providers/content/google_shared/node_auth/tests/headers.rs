@@ -51,11 +51,7 @@ fn native_headers_retain_authored_authorization_and_quota() {
             let value = serde_json::json!({"type":"external_account_authorized_user","client_id":"controlled-id","client_secret":"controlled-secret","refresh_token":"controlled-refresh","token_url":"https://auth.invalid/token","quota_project_id":"file-quota"});
             let effects = super::super::base_external_client::Effects {fetch,clock: std::sync::Arc::new(|| 1000.0), ..super::super::base_external_client::Effects::default()};
             let credentials = super::super::google_auth::from_json(value,effects).unwrap();
-            let client = ApiClient {
-                base_url: "https://content.invalid".into(),api_version:"v1".into(),
-                authentication: super::super::super::api_client::Authentication::Native(super::super::NodeAuth {credentials: tokio::sync::OnceCell::new_with(Some(credentials))}),
-                headers: serde_json::from_value(authored.clone()).unwrap(),
-            };
+            let client = super::client(credentials, serde_json::from_value(authored.clone()).unwrap());
             let projection = project_content_request(serde_json::json!({"model":"model","contents":"hello"})).unwrap();
             let prepared = client.prepare_request(projection,None).await.unwrap();
             let expected_auth = authored.as_object().unwrap().iter().find(|(name,_)| name.eq_ignore_ascii_case("authorization")).map_or("Bearer controlled-access",|(_,value)| value.as_str().unwrap());

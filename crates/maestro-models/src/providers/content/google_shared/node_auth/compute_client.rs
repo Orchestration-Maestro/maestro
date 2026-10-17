@@ -1,9 +1,12 @@
 //! Metadata-server token acquisition with one resolved endpoint.
 
-use super::base_external_client::{Effects, Token, TokenSource, invalid_token};
+use super::base_external_client::{
+    Effects, Grant, Token, TokenResponse, TokenSource, invalid_token,
+};
+use super::oauth_client_auth_handler::{decode, request as send};
 use super::{CLOUD_SCOPE, metadata::Metadata};
 use crate::HttpRequest;
-use crate::providers::http::{RequestPolicy, RetryStatuses, collect_body};
+use crate::providers::http::{RequestPolicy, RetryStatuses};
 use google_cloud_auth::errors::CredentialsError;
 
 /// Compute token source; discovery admission never changes its primary endpoint.
@@ -20,7 +23,7 @@ impl Compute {
 }
 
 impl TokenSource for Compute {
-    async fn refresh(&self, effects: Effects) -> Result<Token, CredentialsError> {
+    async fn refresh(&self, effects: Effects) -> Result<Grant, CredentialsError> {
         let mut url = url::Url::parse(&format!(
             "{}/instance/service-accounts/default/token",
             self.metadata.base
@@ -40,17 +43,12 @@ impl TokenSource for Compute {
             no_response_retries: 3,
             statuses: RetryStatuses::Authentication,
         };
-        let response =
-            super::oauth_client_auth_handler::request(request, effects.fetch, policy).await?;
+        let response = send(request, effects.fetch.clone(), policy).await?;
         super::metadata::validate_flavor(&response)?;
-        let bytes = collect_body(response.body)
-            .await
-            .map_err(|_| invalid_token())?;
-        let value: serde_json::Value =
-            serde_json::from_slice(&bytes).map_err(|_| invalid_token())?;
-        if !value.is_object() {
-            return Err(invalid_token());
-        }
-        Token::from_response(&value, (effects.clock)())
+        let body: TokenResponse = decode(response).await?;
+        Ok(Grant {
+            token: Token::from_response(&body, (effects.clock)())?,
+            fetch: effects.fetch,
+        })
     }
 }
