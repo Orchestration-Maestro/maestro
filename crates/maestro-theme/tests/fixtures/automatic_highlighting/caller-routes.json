@@ -1,0 +1,72 @@
+[
+  {
+    "label": null,
+    "viewer": "cpp",
+    "browser": "javascript"
+  },
+  {
+    "label": "",
+    "viewer": "cpp",
+    "browser": "javascript"
+  },
+  {
+    "label": "unknown-syntax",
+    "viewer": "cpp",
+    "browser": "javascript"
+  },
+  {
+    "label": "javascript",
+    "viewer": "javascript",
+    "browser": "javascript"
+  },
+  {
+    "label": "JAVASCRIPT",
+    "viewer": "javascript",
+    "browser": "javascript"
+  },
+  {
+    "label": " js",
+    "viewer": "cpp",
+    "browser": "javascript"
+  },
+  {
+    "label": "js extra",
+    "viewer": "cpp",
+    "browser": "javascript"
+  },
+  {
+    "label": "html",
+    "viewer": "xml",
+    "browser": "html"
+  },
+  {
+    "label": "xml",
+    "viewer": "xml",
+    "browser": "xml"
+  },
+  {
+    "label": "c",
+    "viewer": "c",
+    "browser": "javascript"
+  },
+  {
+    "label": "toml",
+    "viewer": "ini",
+    "browser": "javascript"
+  },
+  {
+    "label": "jsonc",
+    "viewer": "cpp",
+    "browser": "json"
+  },
+  {
+    "label": "zsh",
+    "viewer": "cpp",
+    "browser": "bash"
+  },
+  {
+    "label": "KT",
+    "viewer": "kotlin",
+    "browser": "javascript"
+  }
+]

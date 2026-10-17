@@ -198,8 +198,29 @@ instead.
 `keyword`, `function`, `variable`, `string`, `number`, `type`, `operator`, `punctuation`)
 and plain escaped text for unclassified runs; `&`, `<`, `>`, `"` and `'` (`&#x27;`) are
 escaped. A missing, empty or unsupported label returns `None` and an engine failure is
-returned as the error; recognizing unlabeled code and the plain fallback belong to the
-consuming frontend.
+returned as the error. This explicit-only operation does not select a language.
+
+`highlight_auto` adds automatic selection for HTML callers. `HighlightProfile::ExportViewer`
+and `HighlightProfile::CodeBlock` retain separate ordered language sets. A registered label
+is lowercased and resolved to its canonical grammar without trimming or splitting; missing,
+empty or unregistered labels trigger detection. The viewer admits `c` and `plaintext`
+explicitly but excludes them from detection. The browser admits only its own registrations,
+even when another grammar is available to the native painter.
+
+Detection uses shared immutable grammar data with invocation-local scoring and embedded
+frames. Each mode searches a combined, ordered terminator expression, preserving rule-order
+ties and original captures. Ignored begins resume the remaining rules at that position
+before the full matcher continues. Combined expressions are compiled once during grammar
+preparation, including only reachable resumption suffixes. First detection prepares only the
+chosen profile's reachable modes and standalone keyword/end patterns; both profiles reuse
+already prepared expressions and modes. Compilation failures propagate before scanning.
+An explicit registered label bypasses detector preparation. The viewer uses version 11.9.0
+data and browser code blocks use 11.11.1; identical patterns, keyword tables and modes are shared. Derived grammar data carries the BSD-3-Clause
+notice in [third-party notices](../THIRD-PARTY-NOTICES.md). The selected language is painted
+by the same `SyntaxHighlighter` and HTML span emitter, preserving the complete original
+input and existing token classes. A plain result or an unavailable selected native syntax
+returns escaped original text. Painter failures propagate; a frontend owns recovery,
+surrounding markup, the authored label and copy text. Terminal highlighting is unchanged.
 
 `get_language_from_path` compares the lowercase text after the last `.` of the whole string
 with the file-extension table. A name without a dot is compared whole, so extensionless

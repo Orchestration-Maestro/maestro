@@ -1,0 +1,2575 @@
+{
+  "registrations": {
+    "viewer": [
+      "bash",
+      "c",
+      "cpp",
+      "csharp",
+      "css",
+      "diff",
+      "go",
+      "graphql",
+      "ini",
+      "java",
+      "javascript",
+      "json",
+      "kotlin",
+      "less",
+      "lua",
+      "makefile",
+      "markdown",
+      "objectivec",
+      "perl",
+      "php",
+      "php-template",
+      "plaintext",
+      "python",
+      "python-repl",
+      "r",
+      "ruby",
+      "rust",
+      "scss",
+      "shell",
+      "sql",
+      "swift",
+      "typescript",
+      "vbnet",
+      "wasm",
+      "xml",
+      "yaml"
+    ],
+    "browser": [
+      "javascript",
+      "typescript",
+      "python",
+      "html",
+      "xml",
+      "css",
+      "json",
+      "bash",
+      "sql"
+    ]
+  },
+  "inputs": [
+    {
+      "id": "javascript",
+      "code": "const answer = 42;\nconsole.log(answer);\n",
+      "observed": {
+        "viewer": {
+          "language": "cpp",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "python",
+      "code": "def greet(name):\n    return f\"Hello, {name}\"\n",
+      "observed": {
+        "viewer": {
+          "language": "python",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "ruby",
+            "relevance": 4
+          }
+        },
+        "browser": {
+          "language": "python",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "sql",
+      "code": "SELECT name, COUNT(*) FROM users WHERE active = true GROUP BY name;",
+      "observed": {
+        "viewer": {
+          "language": "sql",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "vbnet",
+            "relevance": 6
+          }
+        },
+        "browser": {
+          "language": "sql",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "json",
+      "code": "{\"name\":\"Maestro\", \"active\":true, \"count\":42}",
+      "observed": {
+        "viewer": {
+          "language": "json",
+          "relevance": 5.029999999999999,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 5
+          }
+        },
+        "browser": {
+          "language": "json",
+          "relevance": 5.029999999999999,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "html",
+      "code": "<div class=\"note\">Hello &amp; <b>world</b></div>",
+      "observed": {
+        "viewer": {
+          "language": "php-template",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "xml",
+            "relevance": 6
+          }
+        },
+        "browser": {
+          "language": "html",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "xml",
+            "relevance": 6
+          }
+        }
+      }
+    },
+    {
+      "id": "css",
+      "code": ".notice { color: red; margin: 1px 2px; }",
+      "observed": {
+        "viewer": {
+          "language": "css",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "less",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "css",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": null,
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "typescript",
+      "code": "interface User { name: string; age: number; }\nconst user: User = { name: \"A\", age: 2 };",
+      "observed": {
+        "viewer": {
+          "language": "css",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 5
+          }
+        },
+        "browser": {
+          "language": "typescript",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "css",
+            "relevance": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "rust",
+      "code": "fn main() { let answer: u32 = 42; println!(\"{}\", answer); }",
+      "observed": {
+        "viewer": {
+          "language": "rust",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "csharp",
+            "relevance": 4
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 4
+          }
+        }
+      }
+    },
+    {
+      "id": "bash",
+      "code": "for f in *.rs; do echo \"$f\"; done",
+      "observed": {
+        "viewer": {
+          "language": "bash",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "php",
+            "relevance": 4
+          }
+        },
+        "browser": {
+          "language": "bash",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "yaml",
+      "code": "name: Maestro\nsteps:\n  - run: cargo test\n",
+      "observed": {
+        "viewer": {
+          "language": "yaml",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "makefile",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "bash",
+          "relevance": 1,
+          "illegal": false,
+          "second_best": {
+            "language": null,
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "toml",
+      "code": "[package]\nname = \"maestro\"\nversion = \"0.1.0\"\n",
+      "observed": {
+        "viewer": {
+          "language": "ini",
+          "relevance": 7,
+          "illegal": false,
+          "second_best": {
+            "language": "makefile",
+            "relevance": 4
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "dockerfile",
+      "code": "FROM alpine:3\nRUN echo hello\nCMD [\"sh\"]\n",
+      "observed": {
+        "viewer": {
+          "language": "bash",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "css",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "css",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "kotlin",
+      "code": "fun main() { val message: String = \"hello\"; println(message) }",
+      "observed": {
+        "viewer": {
+          "language": "kotlin",
+          "relevance": 8,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 4
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 4
+          }
+        }
+      }
+    },
+    {
+      "id": "swift",
+      "code": "import Foundation\nlet message: String = \"hello\"\nprint(message)",
+      "observed": {
+        "viewer": {
+          "language": "javascript",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "swift",
+            "relevance": 4
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 4
+          }
+        }
+      }
+    },
+    {
+      "id": "ini",
+      "code": "[server]\nport=8081\nhost=localhost\n",
+      "observed": {
+        "viewer": {
+          "language": "ini",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "makefile",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "zig",
+      "code": "const std = @import(\"std\");\npub fn main() void { std.debug.print(\"hello\", .{}); }",
+      "observed": {
+        "viewer": {
+          "language": "csharp",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "java",
+            "relevance": 6
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "nginx",
+      "code": "server { listen 80; location / { return 200 \"ok\"; } }",
+      "observed": {
+        "viewer": {
+          "language": "kotlin",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "perl",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "fsharp",
+      "code": "let square x = x * x\nprintfn \"%d\" (square 5)",
+      "observed": {
+        "viewer": {
+          "language": "bash",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "csharp",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "jsx",
+      "code": "const App = () => <div>Hello</div>;",
+      "observed": {
+        "viewer": {
+          "language": "javascript",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 4
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 4
+          }
+        }
+      }
+    },
+    {
+      "id": "header",
+      "code": "struct point { int x; int y; };",
+      "observed": {
+        "viewer": {
+          "language": "cpp",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "csharp",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "python",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "css",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "prose",
+      "code": "This is an ordinary sentence about a quiet room.",
+      "observed": {
+        "viewer": {
+          "language": "csharp",
+          "relevance": 1,
+          "illegal": false,
+          "second_best": {
+            "language": "css",
+            "relevance": 1
+          }
+        },
+        "browser": {
+          "language": "python",
+          "relevance": 1,
+          "illegal": false,
+          "second_best": {
+            "language": "css",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "blank",
+      "code": "",
+      "observed": {
+        "viewer": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 0
+          }
+        },
+        "browser": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "spaces",
+      "code": " \t\n\n",
+      "observed": {
+        "viewer": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 0
+          }
+        },
+        "browser": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "metacharacters",
+      "code": "<tag title=\"a&b\">'quoted' & literal &lt;</tag>",
+      "observed": {
+        "viewer": {
+          "language": "php-template",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "xml",
+            "relevance": 4
+          }
+        },
+        "browser": {
+          "language": "html",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "xml",
+            "relevance": 4
+          }
+        }
+      }
+    },
+    {
+      "id": "unicode",
+      "code": "const café = \"雪 é 👩‍💻\";\n\t// λ\n",
+      "observed": {
+        "viewer": {
+          "language": "cpp",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "csharp",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "crlf",
+      "code": "const n = 1;\r\n\t// end\r\n",
+      "observed": {
+        "viewer": {
+          "language": "cpp",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "csharp",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "shebang",
+      "code": "#!/usr/bin/env python3\nprint(\"hello\")\n",
+      "observed": {
+        "viewer": {
+          "language": "perl",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "php",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "python",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "late-javascript",
+      "code": "\n\n// application\nfunction greet(name) { return `hi ${name}`; }",
+      "observed": {
+        "viewer": {
+          "language": "javascript",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 5
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "late-sql",
+      "code": "\n\nSELECT user_id FROM events WHERE kind = 'login';",
+      "observed": {
+        "viewer": {
+          "language": "sql",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "vbnet",
+            "relevance": 4
+          }
+        },
+        "browser": {
+          "language": "sql",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "malformed",
+      "code": "<div title=\"unterminated",
+      "observed": {
+        "viewer": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 0
+          }
+        },
+        "browser": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "trailing-empty",
+      "code": "x\n\n",
+      "observed": {
+        "viewer": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 0
+          }
+        },
+        "browser": {
+          "language": "css",
+          "relevance": 1,
+          "illegal": false,
+          "second_best": {
+            "language": null,
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "plain-symbols",
+      "code": "@#$%^&* 𝄞",
+      "observed": {
+        "viewer": {
+          "language": "python",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 1
+          }
+        },
+        "browser": {
+          "language": "python",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": null,
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "keyword-cap-1",
+      "code": "return",
+      "observed": {
+        "viewer": {
+          "language": "kotlin",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 1
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 1,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "keyword-cap-7",
+      "code": "return return return return return return return ",
+      "observed": {
+        "viewer": {
+          "language": "kotlin",
+          "relevance": 14,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 7
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 7,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 7
+          }
+        }
+      }
+    },
+    {
+      "id": "keyword-cap-8",
+      "code": "return return return return return return return return ",
+      "observed": {
+        "viewer": {
+          "language": "kotlin",
+          "relevance": 16,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 7
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 7,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 7
+          }
+        }
+      }
+    },
+    {
+      "id": "comment-phrases",
+      "code": "// This is a test of an ordinary sentence with several words.\n",
+      "observed": {
+        "viewer": {
+          "language": "cpp",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "csharp",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "jsx-open",
+      "code": "const ui = <Box title=\"x\">Hi</Box>;",
+      "observed": {
+        "viewer": {
+          "language": "javascript",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 4
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 4
+          }
+        }
+      }
+    },
+    {
+      "id": "jsx-self-close",
+      "code": "const ui = <Box />;",
+      "observed": {
+        "viewer": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "rust",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "jsx-comparison",
+      "code": "const a = x < y;",
+      "observed": {
+        "viewer": {
+          "language": "cpp",
+          "relevance": 1,
+          "illegal": false,
+          "second_best": {
+            "language": "csharp",
+            "relevance": 1
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 1,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "generic-type",
+      "code": "const id = <T>(x: T): T => x;",
+      "observed": {
+        "viewer": {
+          "language": "r",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "xml-script",
+      "code": "<script>function square(n) { return n * n; }</script>",
+      "observed": {
+        "viewer": {
+          "language": "php-template",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "xml",
+            "relevance": 6
+          }
+        },
+        "browser": {
+          "language": "html",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "xml",
+            "relevance": 6
+          }
+        }
+      }
+    },
+    {
+      "id": "xml-style",
+      "code": "<style>.box { color: red; }</style>",
+      "observed": {
+        "viewer": {
+          "language": "php-template",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "xml",
+            "relevance": 5
+          }
+        },
+        "browser": {
+          "language": "html",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "xml",
+            "relevance": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "template-css",
+      "code": "const s = css`a { color: red; }`;",
+      "observed": {
+        "viewer": {
+          "language": "javascript",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 5
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "template-graphql",
+      "code": "const s = gql`query Q { users { id } }`;",
+      "observed": {
+        "viewer": {
+          "language": "javascript",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "python-formats",
+      "code": "f\"{foo!r:10}\"\nrf\"{bar}\"\n",
+      "observed": {
+        "viewer": {
+          "language": "python",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "python",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "python-block",
+      "code": "def f():\n    \"\"\"docs\n    and more\n    \"\"\"\n    return 42\n",
+      "observed": {
+        "viewer": {
+          "language": "python",
+          "relevance": 12,
+          "illegal": false,
+          "second_best": {
+            "language": "ruby",
+            "relevance": 6
+          }
+        },
+        "browser": {
+          "language": "python",
+          "relevance": 12,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 4
+          }
+        }
+      }
+    },
+    {
+      "id": "bash-variable",
+      "code": "echo \"${var:-${other}} $(date)\"",
+      "observed": {
+        "viewer": {
+          "language": "bash",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "perl",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "bash",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "json-illegal",
+      "code": "{\"x\": undefined}",
+      "observed": {
+        "viewer": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "json-trailing-comma",
+      "code": "{\"x\": 1,}",
+      "observed": {
+        "viewer": {
+          "language": "json",
+          "relevance": 1.01,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 1
+          }
+        },
+        "browser": {
+          "language": "css",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "json",
+            "relevance": 1.01
+          }
+        }
+      }
+    },
+    {
+      "id": "json-comment",
+      "code": "{ /* note */ \"x\": 1 }",
+      "observed": {
+        "viewer": {
+          "language": "json",
+          "relevance": 2.01,
+          "illegal": false,
+          "second_best": {
+            "language": "cpp",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "css",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "json",
+            "relevance": 2.01
+          }
+        }
+      }
+    },
+    {
+      "id": "sql-case",
+      "code": "select count(*) from users where id = 42;",
+      "observed": {
+        "viewer": {
+          "language": "bash",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "csharp",
+            "relevance": 4
+          }
+        },
+        "browser": {
+          "language": "bash",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "sql",
+            "relevance": 4
+          }
+        }
+      }
+    },
+    {
+      "id": "keyword-feff",
+      "code": "﻿return﻿42;",
+      "observed": {
+        "viewer": {
+          "language": "kotlin",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 1
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 1,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "keyword-nel",
+      "code": "return42;",
+      "observed": {
+        "viewer": {
+          "language": "kotlin",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 1
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 1,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "unicode-identifiers",
+      "code": "const 𐐀 = \"a\";\nconst café = 2;",
+      "observed": {
+        "viewer": {
+          "language": "cpp",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "csharp",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "zero-input-lf",
+      "code": "\n",
+      "observed": {
+        "viewer": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 0
+          }
+        },
+        "browser": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "zero-input-crlf",
+      "code": "\r\n",
+      "observed": {
+        "viewer": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 0
+          }
+        },
+        "browser": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "only-bom",
+      "code": "﻿",
+      "observed": {
+        "viewer": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 0
+          }
+        },
+        "browser": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "only-nel",
+      "code": "",
+      "observed": {
+        "viewer": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 0
+          }
+        },
+        "browser": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "unterminated-comment",
+      "code": "/* never closed",
+      "observed": {
+        "viewer": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 0
+          }
+        },
+        "browser": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "unterminated-string",
+      "code": "\"never closed",
+      "observed": {
+        "viewer": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 0
+          }
+        },
+        "browser": {
+          "language": null,
+          "relevance": 0,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "nested-languages",
+      "code": "<script>const a = html`<b>${name}</b>`;</script>",
+      "observed": {
+        "viewer": {
+          "language": "php-template",
+          "relevance": 8,
+          "illegal": false,
+          "second_best": {
+            "language": "xml",
+            "relevance": 8
+          }
+        },
+        "browser": {
+          "language": "html",
+          "relevance": 8,
+          "illegal": false,
+          "second_best": {
+            "language": "xml",
+            "relevance": 8
+          }
+        }
+      }
+    },
+    {
+      "id": "swift-interpolation",
+      "code": "let x = \"value: \\(value)\"",
+      "observed": {
+        "viewer": {
+          "language": "swift",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "less-variables",
+      "code": "@color: red; .box { color: @color; }",
+      "observed": {
+        "viewer": {
+          "language": "less",
+          "relevance": 27,
+          "illegal": false,
+          "second_best": {
+            "language": "scss",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "typescript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "python",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "scss-variables",
+      "code": "$color: red; .box { color: $color; }",
+      "observed": {
+        "viewer": {
+          "language": "bash",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "perl",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "bash",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": null,
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "markdown-fence",
+      "code": "```python\ndef f():\n    return 42\n```",
+      "observed": {
+        "viewer": {
+          "language": "go",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "c-template",
+      "code": "template <typename T> T twice(T x) { return x + x; }",
+      "observed": {
+        "viewer": {
+          "language": "cpp",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "r",
+            "relevance": 4
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "php-template",
+      "code": "<p><?php echo $x; ?></p>",
+      "observed": {
+        "viewer": {
+          "language": "php-template",
+          "relevance": 15,
+          "illegal": false,
+          "second_best": {
+            "language": "php",
+            "relevance": 13
+          }
+        },
+        "browser": {
+          "language": "html",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "xml",
+            "relevance": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "python-prompt",
+      "code": ">>> print(\"hi\")\nhi\n",
+      "observed": {
+        "viewer": {
+          "language": "python-repl",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "python",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "python",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "shell-prompt",
+      "code": "$ echo \"hello\"\nhello\n",
+      "observed": {
+        "viewer": {
+          "language": "shell",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "bash",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "objc-message",
+      "code": "#import <Foundation/Foundation.h>\nNSString *x = [NSString stringWithFormat:@\"%@\", value];",
+      "observed": {
+        "viewer": {
+          "language": "objectivec",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "swift",
+            "relevance": 4
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "wasm-module",
+      "code": "(module (func (export \"add\") (param i32 i32) (result i32) local.get 0 local.get 1 i32.add))",
+      "observed": {
+        "viewer": {
+          "language": "wasm",
+          "relevance": 12,
+          "illegal": false,
+          "second_best": {
+            "language": "rust",
+            "relevance": 5
+          }
+        },
+        "browser": {
+          "language": "sql",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "ini-boolean",
+      "code": "[general]\nenabled=true\nsize=42\n",
+      "observed": {
+        "viewer": {
+          "language": "ini",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "csharp",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 1,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "ruby-heredoc",
+      "code": "puts <<~TEXT\nhello #{name}\nTEXT\n",
+      "observed": {
+        "viewer": {
+          "language": "ruby",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "scss",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "css",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "python",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "perl-quote",
+      "code": "my $x = q{hello}; print $x;",
+      "observed": {
+        "viewer": {
+          "language": "perl",
+          "relevance": 9,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "bash",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "python",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "diff-hunk",
+      "code": "@@ -1,2 +1,2 @@\n-old\n+new\n",
+      "observed": {
+        "viewer": {
+          "language": "diff",
+          "relevance": 12,
+          "illegal": false,
+          "second_best": {
+            "language": "sql",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "sql",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "r-assignment",
+      "code": "square <- function(x) { x^2 }\n",
+      "observed": {
+        "viewer": {
+          "language": "scss",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "css",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "vbnet-module",
+      "code": "Module Demo\nSub Main()\nConsole.WriteLine(\"hi\")\nEnd Sub\nEnd Module",
+      "observed": {
+        "viewer": {
+          "language": "vbnet",
+          "relevance": 7,
+          "illegal": false,
+          "second_best": {
+            "language": "sql",
+            "relevance": 5
+          }
+        },
+        "browser": {
+          "language": "sql",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "go-package",
+      "code": "package main\nimport \"fmt\"\nfunc main() { fmt.Println(\"hi\") }",
+      "observed": {
+        "viewer": {
+          "language": "go",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "java",
+            "relevance": 5
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "resume-followup",
+      "code": "ImmutablePair.of(Stuff.class, \"bar\");\n23",
+      "observed": {
+        "viewer": {
+          "language": "cpp",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "csharp",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "python",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "dot-before",
+      "code": "A.class = self",
+      "observed": {
+        "viewer": {
+          "language": "ini",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "php",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "python",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": null,
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "dot-after",
+      "code": "class.config = true",
+      "observed": {
+        "viewer": {
+          "language": "ini",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "cpp",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "keyword-weights",
+      "code": "of and if else for while return",
+      "observed": {
+        "viewer": {
+          "language": "kotlin",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "continuation-xml",
+      "code": "<div title=\"<?php echo $x; ?>return\"><?php echo \"?>\"; ?></div>",
+      "observed": {
+        "viewer": {
+          "language": "php-template",
+          "relevance": 29,
+          "illegal": false,
+          "second_best": {
+            "language": "php",
+            "relevance": 15
+          }
+        },
+        "browser": {
+          "language": "bash",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "html",
+            "relevance": 4
+          }
+        }
+      }
+    },
+    {
+      "id": "continuation-ruby",
+      "code": "%Q{hello #{\"world\"} return}",
+      "observed": {
+        "viewer": {
+          "language": "kotlin",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "ruby",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "python",
+          "relevance": 1,
+          "illegal": false,
+          "second_best": {
+            "language": "css",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "heredoc-wrong-end",
+      "code": "cat <<EOF\nEND\nreturn\nEOF\necho done",
+      "observed": {
+        "viewer": {
+          "language": "bash",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "kotlin",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "bash",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "sql",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "shebang-late",
+      "code": "return\n#!/usr/bin/python\ndef f(): return 1",
+      "observed": {
+        "viewer": {
+          "language": "ruby",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "csharp",
+            "relevance": 4
+          }
+        },
+        "browser": {
+          "language": "python",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "jsx-generics",
+      "code": "const f = <T = any>(x: T) => x; const g = <From extends string>(s: From) => s;",
+      "observed": {
+        "viewer": {
+          "language": "typescript",
+          "relevance": 9,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 7
+          }
+        },
+        "browser": {
+          "language": "typescript",
+          "relevance": 9,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 7
+          }
+        }
+      }
+    },
+    {
+      "id": "jsx-no-close",
+      "code": "const f = <Thing>return",
+      "observed": {
+        "viewer": {
+          "language": "kotlin",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "cpp",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "jsx-nested-type",
+      "code": "const f = <Array<Array<number>>>x;",
+      "observed": {
+        "viewer": {
+          "language": "typescript",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "typescript",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "multiclass-buffer",
+      "code": "class Foo extends Bar { public static void main() {} }",
+      "observed": {
+        "viewer": {
+          "language": "csharp",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "java",
+            "relevance": 6
+          }
+        },
+        "browser": {
+          "language": "typescript",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 5
+          }
+        }
+      }
+    },
+    {
+      "id": "typescript-namespace",
+      "code": "namespace Foo { export interface Bar { value: number; } }",
+      "observed": {
+        "viewer": {
+          "language": "typescript",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "cpp",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "typescript",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "python-self",
+      "code": "def f(self):\n    return self.value or None",
+      "observed": {
+        "viewer": {
+          "language": "python",
+          "relevance": 5,
+          "illegal": false,
+          "second_best": {
+            "language": "ruby",
+            "relevance": 5
+          }
+        },
+        "browser": {
+          "language": "python",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "sql",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "using-declaration",
+      "code": "using x = foo();",
+      "observed": {
+        "viewer": {
+          "language": "cpp",
+          "relevance": 1,
+          "illegal": false,
+          "second_best": {
+            "language": "csharp",
+            "relevance": 1
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 1,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "empty-illegal-embedded",
+      "code": "<script>const s = html`<a>${42}</a>`;\n</script>",
+      "observed": {
+        "viewer": {
+          "language": "php-template",
+          "relevance": 8,
+          "illegal": false,
+          "second_best": {
+            "language": "xml",
+            "relevance": 8
+          }
+        },
+        "browser": {
+          "language": "html",
+          "relevance": 8,
+          "illegal": false,
+          "second_best": {
+            "language": "xml",
+            "relevance": 8
+          }
+        }
+      }
+    },
+    {
+      "id": "blank-eof-end",
+      "code": "def f():\n",
+      "observed": {
+        "viewer": {
+          "language": "ruby",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "scss",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "python",
+          "relevance": 1,
+          "illegal": false,
+          "second_best": {
+            "language": null,
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "json-fraction",
+      "code": "{\"x\":1,\"y\":2,\"z\":3}",
+      "observed": {
+        "viewer": {
+          "language": "json",
+          "relevance": 3.0300000000000002,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "css",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "json",
+            "relevance": 3.0300000000000002
+          }
+        }
+      }
+    },
+    {
+      "id": "skip-php",
+      "code": "<b><?php /* ?> */ echo \"?>\"; ?></b>",
+      "observed": {
+        "viewer": {
+          "language": "php-template",
+          "relevance": 16,
+          "illegal": false,
+          "second_best": {
+            "language": "php",
+            "relevance": 14
+          }
+        },
+        "browser": {
+          "language": "html",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "xml",
+            "relevance": 3
+          }
+        }
+      }
+    },
+    {
+      "id": "ruby-delimiter-alternate",
+      "code": "x = <<-\"ONE\"\nreturn\nTWO\nONE\nputs x",
+      "observed": {
+        "viewer": {
+          "language": "kotlin",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "sql",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "sql",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "javascript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "swift-raw",
+      "code": "let x = #\"value: \\#(value)\"#",
+      "observed": {
+        "viewer": {
+          "language": "swift",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "bash",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "python",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "nested-heredoc",
+      "code": "x = <<OUTER\n#{ <<INNER\nhello\nINNER\n}\nOUTER\nputs true\n",
+      "observed": {
+        "viewer": {
+          "language": "ruby",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 4
+          }
+        },
+        "browser": {
+          "language": "bash",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "python",
+            "relevance": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "cr-end",
+      "code": "class Foo\rreturn",
+      "observed": {
+        "viewer": {
+          "language": "kotlin",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "ruby",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "unicode-fold",
+      "code": "SELECT K ſ İ FROM users;",
+      "observed": {
+        "viewer": {
+          "language": "sql",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "vbnet",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "css",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "sql",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "tagged-missing",
+      "code": "const s = gql`query { users { id } }`;",
+      "observed": {
+        "viewer": {
+          "language": "javascript",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 3
+          }
+        },
+        "browser": {
+          "language": "javascript",
+          "relevance": 2,
+          "illegal": false,
+          "second_best": {
+            "language": "typescript",
+            "relevance": 2
+          }
+        }
+      }
+    },
+    {
+      "id": "nested-parent-ends",
+      "code": "a { .b { color: red; } }",
+      "observed": {
+        "viewer": {
+          "language": "css",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": "less",
+            "relevance": 2
+          }
+        },
+        "browser": {
+          "language": "css",
+          "relevance": 3,
+          "illegal": false,
+          "second_best": {
+            "language": null,
+            "relevance": 0
+          }
+        }
+      }
+    },
+    {
+      "id": "return-end-newline",
+      "code": ">>> print(\"hello\")\nhello\n>>> 42\n42\n",
+      "observed": {
+        "viewer": {
+          "language": "python-repl",
+          "relevance": 6,
+          "illegal": false,
+          "second_best": {
+            "language": "python",
+            "relevance": 4
+          }
+        },
+        "browser": {
+          "language": "python",
+          "relevance": 4,
+          "illegal": false,
+          "second_best": {
+            "language": "bash",
+            "relevance": 2
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,4 +1,6 @@
 //! Controlled theme operations and documents shared by the theme tests.
+pub mod highlighting;
+
 use maestro_theme::{
     ColorMode, Theme, ThemeColor, ThemeError, ThemeInfo, ThemeOperations, load_theme_from_path,
 };
@@ -24,6 +26,7 @@ pub struct Controlled {
 
 impl Controlled {
     /// Serve `content` with the given environment.
+    #[must_use]
     pub fn new(content: &str, env: &[(&str, &str)]) -> Self {
         Self {
             content: Some(content.to_owned()),
@@ -63,11 +66,19 @@ impl ThemeOperations for Controlled {
 }
 
 /// Parse the shipped dark theme.
+///
+/// # Panics
+/// Panics if the bundled document is invalid.
+#[must_use]
 pub fn dark() -> Value {
     serde_json::from_str(DARK).unwrap()
 }
 
 /// The published schema's required color names in authored order.
+///
+/// # Panics
+/// Panics if the bundled schema has an invalid required-color list.
+#[must_use]
 pub fn required_colors() -> Vec<String> {
     let schema: Value = serde_json::from_str(PUBLISHED_SCHEMA).unwrap();
     let required = schema["properties"]["colors"]["required"]
@@ -80,11 +91,17 @@ pub fn required_colors() -> Vec<String> {
 }
 
 /// Load theme text through the public loader with an empty environment.
+///
+/// # Errors
+/// Returns the theme loader failure.
 pub fn load(text: &str, mode: Option<ColorMode>) -> Result<Theme, ThemeError> {
     load_theme_from_path("fixture", mode, &Controlled::new(text, &[]))
 }
 
 /// The foreground prefix stored under a literal key.
+///
+/// # Panics
+/// Panics if the theme does not contain the requested key.
 pub fn fg(theme: &Theme, name: &str) -> String {
     theme
         .get_fg_ansi(&ThemeColor::Named(name.into()))

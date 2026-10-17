@@ -105,6 +105,15 @@ pub fn highlight_html(
     let Some(lang) = supported(highlighter, lang) else {
         return Ok(None);
     };
+    render_html(highlighter, code, lang).map(Some)
+}
+
+/// Paint original text through the shared span-to-HTML emitter.
+fn render_html(
+    highlighter: &dyn SyntaxHighlighter,
+    code: &str,
+    lang: &str,
+) -> Result<String, Box<dyn Error + Send + Sync>> {
     let mut html = String::new();
     for span in highlighter.highlight(code, lang)? {
         let text = code.get(span.range).unwrap_or_default();
@@ -123,5 +132,29 @@ pub fn highlight_html(
             None => escape(text, &mut html),
         }
     }
-    Ok(Some(html))
+    Ok(html)
+}
+
+/// Highlight an HTML code block using its surface's registered language policy.
+///
+/// Admitted labels use their canonical grammar; missing or unregistered labels
+/// select automatically. A plain result or unavailable native syntax returns
+/// escaped original text. Terminal and explicit HTML highlighting are unchanged.
+///
+/// # Errors
+/// Returns grammar preparation failures or the painter's original failure.
+pub fn highlight_auto(
+    highlighter: &dyn SyntaxHighlighter,
+    code: &str,
+    lang: Option<&str>,
+    profile: super::HighlightProfile,
+) -> Result<String, Box<dyn Error + Send + Sync>> {
+    let language = crate::highlight::select(code, lang, profile)?;
+    if let Some(language) = language.filter(|language| highlighter.supports_language(language)) {
+        render_html(highlighter, code, language)
+    } else {
+        let mut html = String::new();
+        escape(code, &mut html);
+        Ok(html)
+    }
 }

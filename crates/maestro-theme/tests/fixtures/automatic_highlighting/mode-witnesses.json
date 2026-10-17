@@ -1,0 +1,548 @@
+[
+  {
+    "profile": "viewer",
+    "grammar": "order",
+    "code": "zab",
+    "relevance": 13,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "order",
+    "code": "zab",
+    "relevance": 13,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "begin_end_illegal",
+    "code": "ax",
+    "relevance": 3,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "begin_end_illegal",
+    "code": "ax",
+    "relevance": 3,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "keywords",
+    "code": "farmer and of river weeds",
+    "relevance": 3,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "weights",
+    "code": "farmer and of river weeds",
+    "relevance": 13,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "forced_weight",
+    "code": "farmer and of river weeds",
+    "relevance": 4,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "keywords",
+    "code": "farmer and of river weeds",
+    "relevance": 3,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "weights",
+    "code": "farmer and of river weeds",
+    "relevance": 13,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "forced_weight",
+    "code": "farmer and of river weeds",
+    "relevance": 4,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "cap",
+    "code": "bob",
+    "relevance": 1,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "cap",
+    "code": "bob",
+    "relevance": 1,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "cap",
+    "code": "bob bob bob bob bob bob bob ",
+    "relevance": 7,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "cap",
+    "code": "bob bob bob bob bob bob bob ",
+    "relevance": 7,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "cap",
+    "code": "bob bob bob bob bob bob bob bob ",
+    "relevance": 7,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "cap",
+    "code": "bob bob bob bob bob bob bob bob ",
+    "relevance": 7,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "cap",
+    "code": "suzy suzy suzy suzy suzy suzy suzy suzy suzy suzy suzy suzy suzy ",
+    "relevance": 14,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "cap",
+    "code": "suzy suzy suzy suzy suzy suzy suzy suzy suzy suzy suzy suzy suzy ",
+    "relevance": 14,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "before",
+    "code": "A.class = self",
+    "relevance": 5,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "before",
+    "code": "A.class = self",
+    "relevance": 5,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "before",
+    "code": "class.config = true",
+    "relevance": 5,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "before",
+    "code": "class.config = true",
+    "relevance": 5,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "before",
+    "code": "I have a class yes I do.",
+    "relevance": 1,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "before",
+    "code": "I have a class yes I do.",
+    "relevance": 1,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "lookahead",
+    "code": "ABC123 is the secret. XYZ123. End of string: ABC123",
+    "relevance": 1,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "lookahead",
+    "code": "ABC123 is the secret. XYZ123. End of string: ABC123",
+    "relevance": 1,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "zero",
+    "code": "The number is 123_longint yes.",
+    "relevance": 1,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "zero",
+    "code": "The number is 123_longint yes.",
+    "relevance": 1,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "reused",
+    "code": "(abc 123) [abc 123] (abc 123)",
+    "relevance": 9,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "reused",
+    "code": "(abc 123) [abc 123] (abc 123)",
+    "relevance": 9,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "multi",
+    "code": "abchitxyz!",
+    "relevance": 2,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "multi",
+    "code": "abchitxyz!",
+    "relevance": 2,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "multi",
+    "code": "123 ahitz",
+    "relevance": 2,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "multi",
+    "code": "123 ahitz",
+    "relevance": 2,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "wrapped",
+    "code": "hit hit end hit",
+    "relevance": 2,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "included",
+    "code": "hit hit end hit",
+    "relevance": 23,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "excluded",
+    "code": "hit hit end hit",
+    "relevance": 13,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "excluded_begin",
+    "code": "hit hit end hit",
+    "relevance": 17,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "excluded_end",
+    "code": "hit hit end hit",
+    "relevance": 19,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "returned",
+    "code": "hit hit end hit",
+    "relevance": 8,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "wrapped",
+    "code": "hit hit end hit",
+    "relevance": 2,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "included",
+    "code": "hit hit end hit",
+    "relevance": 23,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "excluded",
+    "code": "hit hit end hit",
+    "relevance": 13,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "excluded_begin",
+    "code": "hit hit end hit",
+    "relevance": 17,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "excluded_end",
+    "code": "hit hit end hit",
+    "relevance": 19,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "returned",
+    "code": "hit hit end hit",
+    "relevance": 8,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "skip",
+    "code": "hit x end hit",
+    "relevance": 2,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "skip",
+    "code": "hit x end hit",
+    "relevance": 2,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "parent",
+    "code": "([x] trailing )",
+    "relevance": 2,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "parent",
+    "code": "([x] trailing )",
+    "relevance": 2,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "starts",
+    "code": "one two hit three",
+    "relevance": 3,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "starts",
+    "code": "one two hit three",
+    "relevance": 3,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "same",
+    "code": "\"hit'hit\"",
+    "relevance": 3,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "same",
+    "code": "\"hit'hit\"",
+    "relevance": 3,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "same",
+    "code": "\"hit\" 'hit'",
+    "relevance": 4,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "same",
+    "code": "\"hit\" 'hit'",
+    "relevance": 4,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "embedded",
+    "code": "<bob [bob] bob>",
+    "relevance": 3,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "autoembed",
+    "code": "<bob [bob] bob>",
+    "relevance": 3,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "missing",
+    "code": "<bob [bob] bob>",
+    "relevance": 0,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "norelevance",
+    "code": "<bob [bob] bob>",
+    "relevance": 0,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "embedded",
+    "code": "<bob [bob] bob>",
+    "relevance": 3,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "autoembed",
+    "code": "<bob [bob] bob>",
+    "relevance": 3,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "missing",
+    "code": "<bob [bob] bob>",
+    "relevance": 0,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "norelevance",
+    "code": "<bob [bob] bob>",
+    "relevance": 0,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "embedded",
+    "code": "<bob>[suzy]<bob>",
+    "relevance": 2,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "embedded",
+    "code": "<bob>[suzy]<bob>",
+    "relevance": 2,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "hostillegal",
+    "code": "a\nb",
+    "relevance": 0,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "hostillegal",
+    "code": "a\nb",
+    "relevance": 1,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "keywords",
+    "code": "",
+    "relevance": 0,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "keywords",
+    "code": "",
+    "relevance": 0,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "base",
+    "code": "same",
+    "relevance": 1,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "superset",
+    "code": "same",
+    "relevance": 1,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "base",
+    "code": "same",
+    "relevance": 1,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "superset",
+    "code": "same",
+    "relevance": 1,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "included",
+    "code": "hit hit",
+    "relevance": 10,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "included",
+    "code": "hit hit",
+    "relevance": 10,
+    "illegal": false
+  },
+  {
+    "profile": "viewer",
+    "grammar": "zero",
+    "code": "💡123_longint",
+    "relevance": 1,
+    "illegal": false
+  },
+  {
+    "profile": "browser",
+    "grammar": "zero",
+    "code": "💡123_longint",
+    "relevance": 1,
+    "illegal": false
+  }
+]

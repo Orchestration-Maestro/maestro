@@ -1,0 +1,362 @@
+{
+  "viewer": [
+    {
+      "alias": "sh",
+      "canonical": "bash"
+    },
+    {
+      "alias": "h",
+      "canonical": "c"
+    },
+    {
+      "alias": "cc",
+      "canonical": "cpp"
+    },
+    {
+      "alias": "c++",
+      "canonical": "cpp"
+    },
+    {
+      "alias": "h++",
+      "canonical": "cpp"
+    },
+    {
+      "alias": "hpp",
+      "canonical": "cpp"
+    },
+    {
+      "alias": "hh",
+      "canonical": "cpp"
+    },
+    {
+      "alias": "hxx",
+      "canonical": "cpp"
+    },
+    {
+      "alias": "cxx",
+      "canonical": "cpp"
+    },
+    {
+      "alias": "cs",
+      "canonical": "csharp"
+    },
+    {
+      "alias": "c#",
+      "canonical": "csharp"
+    },
+    {
+      "alias": "patch",
+      "canonical": "diff"
+    },
+    {
+      "alias": "golang",
+      "canonical": "go"
+    },
+    {
+      "alias": "gql",
+      "canonical": "graphql"
+    },
+    {
+      "alias": "toml",
+      "canonical": "ini"
+    },
+    {
+      "alias": "jsp",
+      "canonical": "java"
+    },
+    {
+      "alias": "js",
+      "canonical": "javascript"
+    },
+    {
+      "alias": "jsx",
+      "canonical": "javascript"
+    },
+    {
+      "alias": "mjs",
+      "canonical": "javascript"
+    },
+    {
+      "alias": "cjs",
+      "canonical": "javascript"
+    },
+    {
+      "alias": "kt",
+      "canonical": "kotlin"
+    },
+    {
+      "alias": "kts",
+      "canonical": "kotlin"
+    },
+    {
+      "alias": "mk",
+      "canonical": "makefile"
+    },
+    {
+      "alias": "mak",
+      "canonical": "makefile"
+    },
+    {
+      "alias": "make",
+      "canonical": "makefile"
+    },
+    {
+      "alias": "md",
+      "canonical": "markdown"
+    },
+    {
+      "alias": "mkdown",
+      "canonical": "markdown"
+    },
+    {
+      "alias": "mkd",
+      "canonical": "markdown"
+    },
+    {
+      "alias": "mm",
+      "canonical": "objectivec"
+    },
+    {
+      "alias": "objc",
+      "canonical": "objectivec"
+    },
+    {
+      "alias": "obj-c",
+      "canonical": "objectivec"
+    },
+    {
+      "alias": "obj-c++",
+      "canonical": "objectivec"
+    },
+    {
+      "alias": "objective-c++",
+      "canonical": "objectivec"
+    },
+    {
+      "alias": "pl",
+      "canonical": "perl"
+    },
+    {
+      "alias": "pm",
+      "canonical": "perl"
+    },
+    {
+      "alias": "text",
+      "canonical": "plaintext"
+    },
+    {
+      "alias": "txt",
+      "canonical": "plaintext"
+    },
+    {
+      "alias": "py",
+      "canonical": "python"
+    },
+    {
+      "alias": "gyp",
+      "canonical": "python"
+    },
+    {
+      "alias": "ipython",
+      "canonical": "python"
+    },
+    {
+      "alias": "pycon",
+      "canonical": "python-repl"
+    },
+    {
+      "alias": "rb",
+      "canonical": "ruby"
+    },
+    {
+      "alias": "gemspec",
+      "canonical": "ruby"
+    },
+    {
+      "alias": "podspec",
+      "canonical": "ruby"
+    },
+    {
+      "alias": "thor",
+      "canonical": "ruby"
+    },
+    {
+      "alias": "irb",
+      "canonical": "ruby"
+    },
+    {
+      "alias": "rs",
+      "canonical": "rust"
+    },
+    {
+      "alias": "console",
+      "canonical": "shell"
+    },
+    {
+      "alias": "shellsession",
+      "canonical": "shell"
+    },
+    {
+      "alias": "ts",
+      "canonical": "typescript"
+    },
+    {
+      "alias": "tsx",
+      "canonical": "typescript"
+    },
+    {
+      "alias": "mts",
+      "canonical": "typescript"
+    },
+    {
+      "alias": "cts",
+      "canonical": "typescript"
+    },
+    {
+      "alias": "vb",
+      "canonical": "vbnet"
+    },
+    {
+      "alias": "html",
+      "canonical": "xml"
+    },
+    {
+      "alias": "xhtml",
+      "canonical": "xml"
+    },
+    {
+      "alias": "rss",
+      "canonical": "xml"
+    },
+    {
+      "alias": "atom",
+      "canonical": "xml"
+    },
+    {
+      "alias": "xjb",
+      "canonical": "xml"
+    },
+    {
+      "alias": "xsd",
+      "canonical": "xml"
+    },
+    {
+      "alias": "xsl",
+      "canonical": "xml"
+    },
+    {
+      "alias": "plist",
+      "canonical": "xml"
+    },
+    {
+      "alias": "wsf",
+      "canonical": "xml"
+    },
+    {
+      "alias": "svg",
+      "canonical": "xml"
+    },
+    {
+      "alias": "yml",
+      "canonical": "yaml"
+    }
+  ],
+  "browser": [
+    {
+      "alias": "js",
+      "canonical": "javascript"
+    },
+    {
+      "alias": "jsx",
+      "canonical": "javascript"
+    },
+    {
+      "alias": "mjs",
+      "canonical": "javascript"
+    },
+    {
+      "alias": "cjs",
+      "canonical": "javascript"
+    },
+    {
+      "alias": "ts",
+      "canonical": "typescript"
+    },
+    {
+      "alias": "tsx",
+      "canonical": "typescript"
+    },
+    {
+      "alias": "mts",
+      "canonical": "typescript"
+    },
+    {
+      "alias": "cts",
+      "canonical": "typescript"
+    },
+    {
+      "alias": "py",
+      "canonical": "python"
+    },
+    {
+      "alias": "gyp",
+      "canonical": "python"
+    },
+    {
+      "alias": "ipython",
+      "canonical": "python"
+    },
+    {
+      "alias": "html",
+      "canonical": "html"
+    },
+    {
+      "alias": "xhtml",
+      "canonical": "xml"
+    },
+    {
+      "alias": "rss",
+      "canonical": "xml"
+    },
+    {
+      "alias": "atom",
+      "canonical": "xml"
+    },
+    {
+      "alias": "xjb",
+      "canonical": "xml"
+    },
+    {
+      "alias": "xsd",
+      "canonical": "xml"
+    },
+    {
+      "alias": "xsl",
+      "canonical": "xml"
+    },
+    {
+      "alias": "plist",
+      "canonical": "xml"
+    },
+    {
+      "alias": "wsf",
+      "canonical": "xml"
+    },
+    {
+      "alias": "svg",
+      "canonical": "xml"
+    },
+    {
+      "alias": "jsonc",
+      "canonical": "json"
+    },
+    {
+      "alias": "sh",
+      "canonical": "bash"
+    },
+    {
+      "alias": "zsh",
+      "canonical": "bash"
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 //! Public theme file loading, admission and alias resolution.
 #[cfg(test)]
-mod support;
+pub mod support;
 
 use maestro_theme::{
     ColorMode, NativeThemeOperations, ThemeColor, ThemeOperations, load_theme_from_path,

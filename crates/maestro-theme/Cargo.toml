@@ -21,6 +21,7 @@ jsonschema = { version = "=0.58.5", default-features = false }
 syntect = { version = "=5.3.0", default-features = false, features = ["parsing", "regex-fancy"] }
 two-face = { version = "=0.5.2", default-features = false, features = ["syntect-fancy"] }
 owo-colors = "=4.2.1"
+regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
