@@ -376,3 +376,6 @@ pub struct OpenXmlElementTree {
     /// Element storage; links refer to positions here.
     pub nodes: Vec<OpenXmlElement>,
 }
+
+mod numbering;
+pub use numbering::{IDomNumbering, NumberingPicBullet};

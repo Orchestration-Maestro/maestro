@@ -149,7 +149,12 @@ pub fn foreign(tree: &OpenXmlElementTree, context: &str) -> Value {
 }
 
 /// Add an encountered member without conflating absent and null.
-fn member<T>(out: &mut Value, key: &str, value: Option<T>, encode: impl FnOnce(T) -> Value) {
+pub(super) fn member<T>(
+    out: &mut Value,
+    key: &str,
+    value: Option<T>,
+    encode: impl FnOnce(T) -> Value,
+) {
     if let Some(value) = value {
         out[key] = encode(value);
     }
@@ -225,7 +230,7 @@ fn styles(style: Option<&indexmap::IndexMap<String, Option<String>>>, out: &mut 
 }
 
 /// Observe paragraph metadata through the same graph projection.
-fn paragraph_properties(
+pub(super) fn paragraph_properties(
     p: &maestro_app::browser::docx_preview::ParagraphProperties,
     out: &mut Value,
 ) {

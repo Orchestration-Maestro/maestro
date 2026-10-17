@@ -95,6 +95,7 @@ fn check(name: &str) {
         let result = WordDocument::load(&data, Options::default());
         let observed = match result {
             Ok(document) => observe(&document, &case.input),
+            Err(DocxError::FontKey) => panic!("Unexpected font-key error while parsing metadata"),
             Err(DocxError::Archive(_)) => json!({"error": "Archive"}),
             Err(DocxError::Xml { path, .. }) => json!({"error": "Xml", "path": path}),
         };

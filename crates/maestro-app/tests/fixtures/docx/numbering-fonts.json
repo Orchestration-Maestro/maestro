@@ -1,0 +1,5506 @@
+[
+  {
+    "test": "font_tables_keep_order_duplicates_and_unknown_children",
+    "input": {
+      "kind": "fonts",
+      "xml": "<w:fonts xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"></w:fonts>"
+    },
+    "expected": []
+  },
+  {
+    "test": "font_tables_keep_order_duplicates_and_unknown_children",
+    "input": {
+      "kind": "fonts",
+      "xml": "<w:fonts xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:font name=\"B\"/><q:foreign name=\"A\"/><w:font name=\"B\"/><!--x--><w:font name=\"C\"><w:unknown><w:family val=\"hidden\"/></w:unknown></w:font></w:fonts>"
+    },
+    "expected": [
+      {
+        "name": "B",
+        "embedFontRefs": []
+      },
+      {
+        "name": "A",
+        "embedFontRefs": []
+      },
+      {
+        "name": "B",
+        "embedFontRefs": []
+      },
+      {
+        "name": "C",
+        "embedFontRefs": []
+      }
+    ]
+  },
+  {
+    "test": "font_metadata_keeps_null_empty_and_last_writes",
+    "input": {
+      "kind": "fonts",
+      "xml": "<w:fonts xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:font><w:family></w:family><w:altName></w:altName></w:font></w:fonts>"
+    },
+    "expected": [
+      {
+        "name": null,
+        "embedFontRefs": [],
+        "family": null,
+        "altName": null
+      }
+    ]
+  },
+  {
+    "test": "font_metadata_keeps_null_empty_and_last_writes",
+    "input": {
+      "kind": "fonts",
+      "xml": "<w:fonts xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:font name=\"\"><w:family val=\"\"></w:family><w:altName val=\"\"></w:altName></w:font></w:fonts>"
+    },
+    "expected": [
+      {
+        "name": "",
+        "embedFontRefs": [],
+        "family": "",
+        "altName": ""
+      }
+    ]
+  },
+  {
+    "test": "font_metadata_keeps_null_empty_and_last_writes",
+    "input": {
+      "kind": "fonts",
+      "xml": "<w:fonts xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:font name=\" A&amp;B \"><w:family val=\" A&amp;B \"></w:family><w:altName val=\" A&amp;B \"></w:altName></w:font></w:fonts>"
+    },
+    "expected": [
+      {
+        "name": " A&B ",
+        "embedFontRefs": [],
+        "family": " A&B ",
+        "altName": " A&B "
+      }
+    ]
+  },
+  {
+    "test": "font_metadata_keeps_null_empty_and_last_writes",
+    "input": {
+      "kind": "fonts",
+      "xml": "<w:fonts xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:font name=\"decorative\"><w:family val=\"decorative\"></w:family><w:altName val=\"decorative\"></w:altName></w:font></w:fonts>"
+    },
+    "expected": [
+      {
+        "name": "decorative",
+        "embedFontRefs": [],
+        "family": "decorative",
+        "altName": "decorative"
+      }
+    ]
+  },
+  {
+    "test": "font_metadata_keeps_null_empty_and_last_writes",
+    "input": {
+      "kind": "fonts",
+      "xml": "<w:fonts xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:font><w:family val=\"first\"/><w:altName val=\"old\"/><w:family/><w:altName val=\"last\"/></w:font></w:fonts>"
+    },
+    "expected": [
+      {
+        "name": null,
+        "embedFontRefs": [],
+        "family": null,
+        "altName": "last"
+      }
+    ]
+  },
+  {
+    "test": "embedded_font_variants_keep_order_and_nullable_fields",
+    "input": {
+      "kind": "fonts",
+      "xml": "<w:fonts xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:font name=\"Custom\"><w:embedBoldItalic id=\"r0\" fontKey=\"{00112233-4455-6677-8899-AABBCCDDEEFF}\"></w:embedBoldItalic><w:embedRegular id=\"r1\" fontKey=\"{00112233-4455-6677-8899-AABBCCDDEEFF}\"></w:embedRegular><w:embedItalic id=\"r2\" fontKey=\"{00112233-4455-6677-8899-AABBCCDDEEFF}\"></w:embedItalic><w:embedBold id=\"r3\" fontKey=\"{00112233-4455-6677-8899-AABBCCDDEEFF}\"></w:embedBold><w:embedRegular id=\"r4\" fontKey=\"{00112233-4455-6677-8899-AABBCCDDEEFF}\"></w:embedRegular></w:font></w:fonts>"
+    },
+    "expected": [
+      {
+        "name": "Custom",
+        "embedFontRefs": [
+          {
+            "id": "r0",
+            "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}",
+            "type": "boldItalic"
+          },
+          {
+            "id": "r1",
+            "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}",
+            "type": "regular"
+          },
+          {
+            "id": "r2",
+            "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}",
+            "type": "italic"
+          },
+          {
+            "id": "r3",
+            "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}",
+            "type": "bold"
+          },
+          {
+            "id": "r4",
+            "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}",
+            "type": "regular"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "test": "embedded_font_variants_keep_order_and_nullable_fields",
+    "input": {
+      "kind": "fonts",
+      "xml": "<w:fonts xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:font><w:embedRegular/><w:embedBold id=\"\" fontKey=\"\"/><w:embedItalic id=\"r1\" fontKey=\"00\"/></w:font></w:fonts>"
+    },
+    "expected": [
+      {
+        "name": null,
+        "embedFontRefs": [
+          {
+            "id": null,
+            "key": null,
+            "type": "regular"
+          },
+          {
+            "id": "",
+            "key": "",
+            "type": "bold"
+          },
+          {
+            "id": "r1",
+            "key": "00",
+            "type": "italic"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "test": "font_selection_uses_immediate_local_names_and_first_attributes",
+    "input": {
+      "kind": "fonts",
+      "xml": "<w:fonts xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><q:font q:name=\"first\" w:name=\"second\"><q:family val=\"decorative\"/><q:embedRegular q:id=\"first\" r:id=\"second\" fontKey=\"00\"/><w:unknown><w:embedBold id=\"hidden\"/></w:unknown></q:font></w:fonts>"
+    },
+    "expected": [
+      {
+        "name": "first",
+        "embedFontRefs": [
+          {
+            "id": "first",
+            "key": "00",
+            "type": "regular"
+          }
+        ],
+        "family": "decorative"
+      }
+    ]
+  },
+  {
+    "test": "numbering_arrays_preserve_order_duplicates_and_null_pictures",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [],
+        "abstractNumberings": [],
+        "bulletPictures": []
+      },
+      "dom": []
+    }
+  },
+  {
+    "test": "numbering_arrays_preserve_order_duplicates_and_null_pictures",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num numId=\"B\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num><w:abstractNum abstractNumId=\"Z\"><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum><w:numPicBullet numPicBulletId=\"3\"><w:pict><v:shape style=\"width:10pt\"><v:imagedata r:id=\"pic\"/></v:shape></w:pict></w:numPicBullet><w:num numId=\"A\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num><w:abstractNum abstractNumId=\"Y\"><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum><w:numPicBullet/><w:num numId=\"B\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num><w:unknown><w:num numId=\"hidden\"/></w:unknown></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "B",
+            "overrides": [],
+            "abstractId": "7"
+          },
+          {
+            "id": "A",
+            "overrides": [],
+            "abstractId": "7"
+          },
+          {
+            "id": "B",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "Z",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          },
+          {
+            "id": "Y",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": [
+          {
+            "id": "3",
+            "referenceId": "pic",
+            "style": "width:10pt"
+          },
+          null
+        ]
+      },
+      "dom": [
+        {
+          "id": {
+            "$undefined": true
+          },
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": {
+            "$undefined": true
+          },
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "numbering_identifiers_and_abstract_metadata_keep_text",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num><w:abstractNumId></w:abstractNumId></w:num><w:abstractNum><w:name></w:name><w:multiLevelType></w:multiLevelType><w:numStyleLink></w:numStyleLink><w:styleLink></w:styleLink></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": null,
+            "overrides": [],
+            "abstractId": null
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": null,
+            "levels": [],
+            "name": null,
+            "multiLevelType": null,
+            "numberingStyleLink": null,
+            "styleLink": null
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": []
+    }
+  },
+  {
+    "test": "numbering_identifiers_and_abstract_metadata_keep_text",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num numId=\"\"><w:abstractNumId val=\"\"></w:abstractNumId></w:num><w:abstractNum abstractNumId=\"\"><w:name val=\"\"></w:name><w:multiLevelType val=\"\"></w:multiLevelType><w:numStyleLink val=\"\"></w:numStyleLink><w:styleLink val=\"\"></w:styleLink></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "",
+            "overrides": [],
+            "abstractId": ""
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "",
+            "levels": [],
+            "name": "",
+            "multiLevelType": "",
+            "numberingStyleLink": "",
+            "styleLink": ""
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": []
+    }
+  },
+  {
+    "test": "numbering_identifiers_and_abstract_metadata_keep_text",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num numId=\"0007\"><w:abstractNumId val=\"0007\"></w:abstractNumId></w:num><w:abstractNum abstractNumId=\"0007\"><w:name val=\"0007\"></w:name><w:multiLevelType val=\"0007\"></w:multiLevelType><w:numStyleLink val=\"0007\"></w:numStyleLink><w:styleLink val=\"0007\"></w:styleLink></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "0007",
+            "overrides": [],
+            "abstractId": "0007"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "0007",
+            "levels": [],
+            "name": "0007",
+            "multiLevelType": "0007",
+            "numberingStyleLink": "0007",
+            "styleLink": "0007"
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": []
+    }
+  },
+  {
+    "test": "numbering_identifiers_and_abstract_metadata_keep_text",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num numId=\"custom\"><w:abstractNumId val=\"custom\"></w:abstractNumId></w:num><w:abstractNum abstractNumId=\"custom\"><w:name val=\"custom\"></w:name><w:multiLevelType val=\"custom\"></w:multiLevelType><w:numStyleLink val=\"custom\"></w:numStyleLink><w:styleLink val=\"custom\"></w:styleLink></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "custom",
+            "overrides": [],
+            "abstractId": "custom"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "custom",
+            "levels": [],
+            "name": "custom",
+            "multiLevelType": "custom",
+            "numberingStyleLink": "custom",
+            "styleLink": "custom"
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": []
+    }
+  },
+  {
+    "test": "numbering_identifiers_and_abstract_metadata_keep_text",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num numId=\" A&amp;B \"><w:abstractNumId val=\" A&amp;B \"></w:abstractNumId></w:num><w:abstractNum abstractNumId=\" A&amp;B \"><w:name val=\" A&amp;B \"></w:name><w:multiLevelType val=\" A&amp;B \"></w:multiLevelType><w:numStyleLink val=\" A&amp;B \"></w:numStyleLink><w:styleLink val=\" A&amp;B \"></w:styleLink></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": " A&B ",
+            "overrides": [],
+            "abstractId": " A&B "
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": " A&B ",
+            "levels": [],
+            "name": " A&B ",
+            "multiLevelType": " A&B ",
+            "numberingStyleLink": " A&B ",
+            "styleLink": " A&B "
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": []
+    }
+  },
+  {
+    "test": "numbering_identifiers_and_abstract_metadata_keep_text",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num><w:abstractNumId val=\"first\"/><w:abstractNumId/></w:num><w:abstractNum><w:name val=\"first\"/><w:name/><w:styleLink val=\"last\"/><w:lvl/></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": null,
+            "overrides": [],
+            "abstractId": null
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": null,
+            "levels": [
+              {
+                "level": null
+              }
+            ],
+            "name": null,
+            "styleLink": "last"
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": {
+            "$undefined": true
+          },
+          "level": null,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "level_fields_keep_strings_and_numeric_prefix_domains",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl><w:start></w:start><w:lvlRestart></w:lvlRestart><w:numFmt></w:numFmt><w:lvlText></w:lvlText><w:lvlJc></w:lvlJc><w:lvlPicBulletId></w:lvlPicBulletId><w:pStyle></w:pStyle></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": null,
+                "start": null,
+                "restart": null,
+                "format": null,
+                "text": null,
+                "justification": null,
+                "bulletPictureId": null,
+                "paragraphStyle": null
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": null,
+          "start": null,
+          "pStyleName": null,
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": null,
+          "levelText": null,
+          "bullet": {
+            "$undefined": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "level_fields_keep_strings_and_numeric_prefix_domains",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"\"><w:start val=\"\"></w:start><w:lvlRestart val=\"\"></w:lvlRestart><w:numFmt val=\"\"></w:numFmt><w:lvlText val=\"\"></w:lvlText><w:lvlJc val=\"\"></w:lvlJc><w:lvlPicBulletId val=\"\"></w:lvlPicBulletId><w:pStyle val=\"\"></w:pStyle></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": null,
+                "start": "",
+                "restart": null,
+                "format": "",
+                "text": "",
+                "justification": "",
+                "bulletPictureId": "",
+                "paragraphStyle": ""
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": null,
+          "start": null,
+          "pStyleName": "",
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "",
+          "levelText": "",
+          "bullet": {
+            "$undefined": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "level_fields_keep_strings_and_numeric_prefix_domains",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:start val=\"0\"></w:start><w:lvlRestart val=\"0\"></w:lvlRestart><w:numFmt val=\"0\"></w:numFmt><w:lvlText val=\"0\"></w:lvlText><w:lvlJc val=\"0\"></w:lvlJc><w:lvlPicBulletId val=\"0\"></w:lvlPicBulletId><w:pStyle val=\"0\"></w:pStyle></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0,
+                "start": "0",
+                "restart": 0,
+                "format": "0",
+                "text": "0",
+                "justification": "0",
+                "bulletPictureId": "0",
+                "paragraphStyle": "0"
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 0,
+          "pStyleName": "0",
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "0",
+          "levelText": "0",
+          "bullet": {
+            "$undefined": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "level_fields_keep_strings_and_numeric_prefix_domains",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"-0\"><w:start val=\"-0\"></w:start><w:lvlRestart val=\"-0\"></w:lvlRestart><w:numFmt val=\"-0\"></w:numFmt><w:lvlText val=\"-0\"></w:lvlText><w:lvlJc val=\"-0\"></w:lvlJc><w:lvlPicBulletId val=\"-0\"></w:lvlPicBulletId><w:pStyle val=\"-0\"></w:pStyle></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": {
+                  "$number": "-0"
+                },
+                "start": "-0",
+                "restart": {
+                  "$number": "-0"
+                },
+                "format": "-0",
+                "text": "-0",
+                "justification": "-0",
+                "bulletPictureId": "-0",
+                "paragraphStyle": "-0"
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": {
+            "$number": "-0"
+          },
+          "start": {
+            "$number": "-0"
+          },
+          "pStyleName": "-0",
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "-0",
+          "levelText": "-0",
+          "bullet": {
+            "$undefined": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "level_fields_keep_strings_and_numeric_prefix_domains",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"-2\"><w:start val=\"-2\"></w:start><w:lvlRestart val=\"-2\"></w:lvlRestart><w:numFmt val=\"-2\"></w:numFmt><w:lvlText val=\"-2\"></w:lvlText><w:lvlJc val=\"-2\"></w:lvlJc><w:lvlPicBulletId val=\"-2\"></w:lvlPicBulletId><w:pStyle val=\"-2\"></w:pStyle></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": -2,
+                "start": "-2",
+                "restart": -2,
+                "format": "-2",
+                "text": "-2",
+                "justification": "-2",
+                "bulletPictureId": "-2",
+                "paragraphStyle": "-2"
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": -2,
+          "start": -2,
+          "pStyleName": "-2",
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "-2",
+          "levelText": "-2",
+          "bullet": {
+            "$undefined": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "level_fields_keep_strings_and_numeric_prefix_domains",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"+42tail\"><w:start val=\"+42tail\"></w:start><w:lvlRestart val=\"+42tail\"></w:lvlRestart><w:numFmt val=\"+42tail\"></w:numFmt><w:lvlText val=\"+42tail\"></w:lvlText><w:lvlJc val=\"+42tail\"></w:lvlJc><w:lvlPicBulletId val=\"+42tail\"></w:lvlPicBulletId><w:pStyle val=\"+42tail\"></w:pStyle></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 42,
+                "start": "+42tail",
+                "restart": 42,
+                "format": "+42tail",
+                "text": "+42tail",
+                "justification": "+42tail",
+                "bulletPictureId": "+42tail",
+                "paragraphStyle": "+42tail"
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 42,
+          "start": 42,
+          "pStyleName": "+42tail",
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "+42tail",
+          "levelText": "+42tail",
+          "bullet": {
+            "$undefined": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "level_fields_keep_strings_and_numeric_prefix_domains",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"1.5\"><w:start val=\"1.5\"></w:start><w:lvlRestart val=\"1.5\"></w:lvlRestart><w:numFmt val=\"1.5\"></w:numFmt><w:lvlText val=\"1.5\"></w:lvlText><w:lvlJc val=\"1.5\"></w:lvlJc><w:lvlPicBulletId val=\"1.5\"></w:lvlPicBulletId><w:pStyle val=\"1.5\"></w:pStyle></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 1,
+                "start": "1.5",
+                "restart": 1,
+                "format": "1.5",
+                "text": "1.5",
+                "justification": "1.5",
+                "bulletPictureId": "1.5",
+                "paragraphStyle": "1.5"
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 1,
+          "start": 1,
+          "pStyleName": "1.5",
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "1.5",
+          "levelText": "1.5",
+          "bullet": {
+            "$undefined": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "level_fields_keep_strings_and_numeric_prefix_domains",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0x10\"><w:start val=\"0x10\"></w:start><w:lvlRestart val=\"0x10\"></w:lvlRestart><w:numFmt val=\"0x10\"></w:numFmt><w:lvlText val=\"0x10\"></w:lvlText><w:lvlJc val=\"0x10\"></w:lvlJc><w:lvlPicBulletId val=\"0x10\"></w:lvlPicBulletId><w:pStyle val=\"0x10\"></w:pStyle></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 16,
+                "start": "0x10",
+                "restart": 16,
+                "format": "0x10",
+                "text": "0x10",
+                "justification": "0x10",
+                "bulletPictureId": "0x10",
+                "paragraphStyle": "0x10"
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 16,
+          "start": 16,
+          "pStyleName": "0x10",
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "0x10",
+          "levelText": "0x10",
+          "bullet": {
+            "$undefined": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "level_fields_keep_strings_and_numeric_prefix_domains",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"﻿20\"><w:start val=\"﻿20\"></w:start><w:lvlRestart val=\"﻿20\"></w:lvlRestart><w:numFmt val=\"﻿20\"></w:numFmt><w:lvlText val=\"﻿20\"></w:lvlText><w:lvlJc val=\"﻿20\"></w:lvlJc><w:lvlPicBulletId val=\"﻿20\"></w:lvlPicBulletId><w:pStyle val=\"﻿20\"></w:pStyle></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 20,
+                "start": "﻿20",
+                "restart": 20,
+                "format": "﻿20",
+                "text": "﻿20",
+                "justification": "﻿20",
+                "bulletPictureId": "﻿20",
+                "paragraphStyle": "﻿20"
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 20,
+          "start": 20,
+          "pStyleName": "﻿20",
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "﻿20",
+          "levelText": "﻿20",
+          "bullet": {
+            "$undefined": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "level_fields_keep_strings_and_numeric_prefix_domains",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"20\"><w:start val=\"20\"></w:start><w:lvlRestart val=\"20\"></w:lvlRestart><w:numFmt val=\"20\"></w:numFmt><w:lvlText val=\"20\"></w:lvlText><w:lvlJc val=\"20\"></w:lvlJc><w:lvlPicBulletId val=\"20\"></w:lvlPicBulletId><w:pStyle val=\"20\"></w:pStyle></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": {
+                  "$number": "NaN"
+                },
+                "start": "20",
+                "restart": {
+                  "$number": "NaN"
+                },
+                "format": "20",
+                "text": "20",
+                "justification": "20",
+                "bulletPictureId": "20",
+                "paragraphStyle": "20"
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": {
+            "$number": "NaN"
+          },
+          "start": {
+            "$number": "NaN"
+          },
+          "pStyleName": "20",
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "20",
+          "levelText": "20",
+          "bullet": {
+            "$undefined": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "level_fields_keep_strings_and_numeric_prefix_domains",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"bad\"><w:start val=\"bad\"></w:start><w:lvlRestart val=\"bad\"></w:lvlRestart><w:numFmt val=\"bad\"></w:numFmt><w:lvlText val=\"bad\"></w:lvlText><w:lvlJc val=\"bad\"></w:lvlJc><w:lvlPicBulletId val=\"bad\"></w:lvlPicBulletId><w:pStyle val=\"bad\"></w:pStyle></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": {
+                  "$number": "NaN"
+                },
+                "start": "bad",
+                "restart": {
+                  "$number": "NaN"
+                },
+                "format": "bad",
+                "text": "bad",
+                "justification": "bad",
+                "bulletPictureId": "bad",
+                "paragraphStyle": "bad"
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": {
+            "$number": "NaN"
+          },
+          "start": {
+            "$number": "NaN"
+          },
+          "pStyleName": "bad",
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "bad",
+          "levelText": "bad",
+          "bullet": {
+            "$undefined": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "level_fields_keep_strings_and_numeric_prefix_domains",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:start val=\"8\"/><w:start/><w:lvlRestart val=\"3\"/><w:lvlRestart/><w:numFmt val=\"decimal\"/><w:numFmt/><w:lvlText val=\"%1\"/><w:lvlText/></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0,
+                "start": null,
+                "restart": null,
+                "format": null,
+                "text": null
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": null,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": null,
+          "levelText": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "override_records_keep_order_nullable_start_and_nested_levels",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride><w:startOverride></w:startOverride><w:lvl ilvl=\"2\"><w:numFmt val=\"lowerRoman\"/></w:lvl></w:lvlOverride></w:num><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": null,
+                "start": null,
+                "numberingLevel": {
+                  "level": 2,
+                  "format": "lowerRoman"
+                }
+              }
+            ],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "11",
+          "level": 2,
+          "start": null,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "lowerRoman"
+        }
+      ]
+    }
+  },
+  {
+    "test": "override_records_keep_order_nullable_start_and_nested_levels",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride ilvl=\"\"><w:startOverride val=\"\"></w:startOverride><w:lvl ilvl=\"2\"><w:numFmt val=\"lowerRoman\"/></w:lvl></w:lvlOverride></w:num><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": null,
+                "start": null,
+                "numberingLevel": {
+                  "level": 2,
+                  "format": "lowerRoman"
+                }
+              }
+            ],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "11",
+          "level": 2,
+          "start": null,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "lowerRoman"
+        }
+      ]
+    }
+  },
+  {
+    "test": "override_records_keep_order_nullable_start_and_nested_levels",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride ilvl=\"0\"><w:startOverride val=\"0\"></w:startOverride><w:lvl ilvl=\"2\"><w:numFmt val=\"lowerRoman\"/></w:lvl></w:lvlOverride></w:num><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": 0,
+                "start": 0,
+                "numberingLevel": {
+                  "level": 2,
+                  "format": "lowerRoman"
+                }
+              }
+            ],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 2,
+          "start": 0,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "lowerRoman"
+        }
+      ]
+    }
+  },
+  {
+    "test": "override_records_keep_order_nullable_start_and_nested_levels",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride ilvl=\"-0\"><w:startOverride val=\"-0\"></w:startOverride><w:lvl ilvl=\"2\"><w:numFmt val=\"lowerRoman\"/></w:lvl></w:lvlOverride></w:num><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": {
+                  "$number": "-0"
+                },
+                "start": {
+                  "$number": "-0"
+                },
+                "numberingLevel": {
+                  "level": 2,
+                  "format": "lowerRoman"
+                }
+              }
+            ],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 2,
+          "start": {
+            "$number": "-0"
+          },
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "lowerRoman"
+        }
+      ]
+    }
+  },
+  {
+    "test": "override_records_keep_order_nullable_start_and_nested_levels",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride ilvl=\"-2\"><w:startOverride val=\"-2\"></w:startOverride><w:lvl ilvl=\"2\"><w:numFmt val=\"lowerRoman\"/></w:lvl></w:lvlOverride></w:num><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": -2,
+                "start": -2,
+                "numberingLevel": {
+                  "level": 2,
+                  "format": "lowerRoman"
+                }
+              }
+            ],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "11",
+          "level": 2,
+          "start": -2,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "lowerRoman"
+        }
+      ]
+    }
+  },
+  {
+    "test": "override_records_keep_order_nullable_start_and_nested_levels",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride ilvl=\"+42tail\"><w:startOverride val=\"+42tail\"></w:startOverride><w:lvl ilvl=\"2\"><w:numFmt val=\"lowerRoman\"/></w:lvl></w:lvlOverride></w:num><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": 42,
+                "start": 42,
+                "numberingLevel": {
+                  "level": 2,
+                  "format": "lowerRoman"
+                }
+              }
+            ],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "11",
+          "level": 2,
+          "start": 42,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "lowerRoman"
+        }
+      ]
+    }
+  },
+  {
+    "test": "override_records_keep_order_nullable_start_and_nested_levels",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride ilvl=\"1.5\"><w:startOverride val=\"1.5\"></w:startOverride><w:lvl ilvl=\"2\"><w:numFmt val=\"lowerRoman\"/></w:lvl></w:lvlOverride></w:num><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": 1,
+                "start": 1,
+                "numberingLevel": {
+                  "level": 2,
+                  "format": "lowerRoman"
+                }
+              }
+            ],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "11",
+          "level": 2,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "lowerRoman"
+        }
+      ]
+    }
+  },
+  {
+    "test": "override_records_keep_order_nullable_start_and_nested_levels",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride ilvl=\"0x10\"><w:startOverride val=\"0x10\"></w:startOverride><w:lvl ilvl=\"2\"><w:numFmt val=\"lowerRoman\"/></w:lvl></w:lvlOverride></w:num><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": 16,
+                "start": 16,
+                "numberingLevel": {
+                  "level": 2,
+                  "format": "lowerRoman"
+                }
+              }
+            ],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "11",
+          "level": 2,
+          "start": 16,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "lowerRoman"
+        }
+      ]
+    }
+  },
+  {
+    "test": "override_records_keep_order_nullable_start_and_nested_levels",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride ilvl=\"﻿20\"><w:startOverride val=\"﻿20\"></w:startOverride><w:lvl ilvl=\"2\"><w:numFmt val=\"lowerRoman\"/></w:lvl></w:lvlOverride></w:num><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": 20,
+                "start": 20,
+                "numberingLevel": {
+                  "level": 2,
+                  "format": "lowerRoman"
+                }
+              }
+            ],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "11",
+          "level": 2,
+          "start": 20,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "lowerRoman"
+        }
+      ]
+    }
+  },
+  {
+    "test": "override_records_keep_order_nullable_start_and_nested_levels",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride ilvl=\"20\"><w:startOverride val=\"20\"></w:startOverride><w:lvl ilvl=\"2\"><w:numFmt val=\"lowerRoman\"/></w:lvl></w:lvlOverride></w:num><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": {
+                  "$number": "NaN"
+                },
+                "start": {
+                  "$number": "NaN"
+                },
+                "numberingLevel": {
+                  "level": 2,
+                  "format": "lowerRoman"
+                }
+              }
+            ],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "11",
+          "level": 2,
+          "start": {
+            "$number": "NaN"
+          },
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "lowerRoman"
+        }
+      ]
+    }
+  },
+  {
+    "test": "override_records_keep_order_nullable_start_and_nested_levels",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride ilvl=\"bad\"><w:startOverride val=\"bad\"></w:startOverride><w:lvl ilvl=\"2\"><w:numFmt val=\"lowerRoman\"/></w:lvl></w:lvlOverride></w:num><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": {
+                  "$number": "NaN"
+                },
+                "start": {
+                  "$number": "NaN"
+                },
+                "numberingLevel": {
+                  "level": 2,
+                  "format": "lowerRoman"
+                }
+              }
+            ],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "11",
+          "level": 2,
+          "start": {
+            "$number": "NaN"
+          },
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "lowerRoman"
+        }
+      ]
+    }
+  },
+  {
+    "test": "override_records_keep_order_nullable_start_and_nested_levels",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride ilvl=\"0\"><w:startOverride val=\"3\"/><w:startOverride/><w:lvl ilvl=\"0\"/><w:lvl ilvl=\"1\"/></w:lvlOverride><w:lvlOverride ilvl=\"0\"/></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": 0,
+                "start": null,
+                "numberingLevel": {
+                  "level": 1
+                }
+              },
+              {
+                "level": 0
+              }
+            ],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 1,
+          "start": null,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "picture_records_follow_first_immediate_shape_chain",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:numPicBullet></w:numPicBullet></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [],
+        "abstractNumberings": [],
+        "bulletPictures": [
+          null
+        ]
+      },
+      "dom": []
+    }
+  },
+  {
+    "test": "picture_records_follow_first_immediate_shape_chain",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:numPicBullet><w:pict/></w:numPicBullet></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [],
+        "abstractNumberings": [],
+        "bulletPictures": [
+          null
+        ]
+      },
+      "dom": []
+    }
+  },
+  {
+    "test": "picture_records_follow_first_immediate_shape_chain",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:numPicBullet><w:pict><v:shape/></w:pict></w:numPicBullet></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [],
+        "abstractNumberings": [],
+        "bulletPictures": [
+          null
+        ]
+      },
+      "dom": []
+    }
+  },
+  {
+    "test": "picture_records_follow_first_immediate_shape_chain",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:numPicBullet><w:pict><v:shape><v:imagedata/></v:shape></w:pict></w:numPicBullet></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [],
+        "abstractNumberings": [],
+        "bulletPictures": [
+          {
+            "id": null,
+            "referenceId": null,
+            "style": null
+          }
+        ]
+      },
+      "dom": []
+    }
+  },
+  {
+    "test": "picture_records_follow_first_immediate_shape_chain",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:numPicBullet><w:pict><v:shape><w:unknown><v:imagedata r:id=\"hidden\"/></w:unknown></v:shape></w:pict></w:numPicBullet></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [],
+        "abstractNumberings": [],
+        "bulletPictures": [
+          null
+        ]
+      },
+      "dom": []
+    }
+  },
+  {
+    "test": "picture_records_follow_first_immediate_shape_chain",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:numPicBullet numPicBulletId=\"03\"><w:pict><v:shape style=\"width:10pt\"><v:imagedata r:id=\"first\"/></v:shape></w:pict></w:numPicBullet><w:numPicBullet numPicBulletId=\"3\"><w:pict><v:shape style=\"width:10pt\"><v:imagedata r:id=\"second\"/></v:shape></w:pict></w:numPicBullet></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [],
+        "abstractNumberings": [],
+        "bulletPictures": [
+          {
+            "id": "03",
+            "referenceId": "first",
+            "style": "width:10pt"
+          },
+          {
+            "id": "3",
+            "referenceId": "second",
+            "style": "width:10pt"
+          }
+        ]
+      },
+      "dom": []
+    }
+  },
+  {
+    "test": "picture_records_follow_first_immediate_shape_chain",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:numPicBullet numPicBulletId=\"3\"><w:pict/><w:pict><v:shape><v:imagedata id=\"second\"/></v:shape></w:pict></w:numPicBullet></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [],
+        "abstractNumberings": [],
+        "bulletPictures": [
+          null
+        ]
+      },
+      "dom": []
+    }
+  },
+  {
+    "test": "picture_records_follow_first_immediate_shape_chain",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:numPicBullet numPicBulletId=\"3\"><w:pict><v:shape/><v:shape><v:imagedata id=\"second\"/></v:shape></w:pict></w:numPicBullet></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [],
+        "abstractNumberings": [],
+        "bulletPictures": [
+          null
+        ]
+      },
+      "dom": []
+    }
+  },
+  {
+    "test": "picture_records_follow_first_immediate_shape_chain",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:numPicBullet numPicBulletId=\"3\"><w:pict><v:shape><v:imagedata id=\"first\"/><v:imagedata id=\"second\"/></v:shape></w:pict></w:numPicBullet></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [],
+        "abstractNumberings": [],
+        "bulletPictures": [
+          {
+            "id": "3",
+            "referenceId": "first",
+            "style": null
+          }
+        ]
+      },
+      "dom": []
+    }
+  },
+  {
+    "test": "numbering_selection_keeps_local_names_and_qualified_properties",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><q:abstractNum q:abstractNumId=\"first\" w:abstractNumId=\"second\"><q:lvl ilvl=\"0\"><w:pPr><q:keepNext/><w:keepLines/><w:numPr><q:numId val=\"9\"/></w:numPr></w:pPr></q:lvl></q:abstractNum></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [],
+        "abstractNumberings": [
+          {
+            "id": "first",
+            "levels": [
+              {
+                "level": 0,
+                "paragraphProps": {
+                  "keepLines": true,
+                  "numbering": {
+                    "id": "9"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": {
+            "$undefined": true
+          },
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "level_properties_reuse_raw_paragraph_and_common_run_readers",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:pPr><w:color val=\"ABCDEF\"/><w:sz val=\"24\"/><w:keepNext/><w:tabs><w:tab pos=\"20\" val=\"decimal\"/></w:tabs><w:numPr><w:numId val=\"9\"/><w:ilvl val=\"2\"/></w:numPr><w:spacing before=\"20\" line=\"360\" lineRule=\"auto\"/><w:rPr><w:color val=\"123456\"/></w:rPr></w:pPr><w:rPr><w:color val=\"FEDCBA\"/><w:sz val=\"28\"/><w:b/></w:rPr></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0,
+                "paragraphProps": {
+                  "color": "ABCDEF",
+                  "fontSize": "12.00pt",
+                  "keepNext": true,
+                  "tabs": [
+                    {
+                      "position": "1.00pt",
+                      "leader": null,
+                      "style": "decimal"
+                    }
+                  ],
+                  "numbering": {
+                    "id": "9",
+                    "level": 2
+                  },
+                  "lineSpacing": {
+                    "before": "1.00pt",
+                    "after": null,
+                    "line": 360,
+                    "lineRule": "auto"
+                  },
+                  "runProps": {
+                    "color": "123456"
+                  }
+                },
+                "runProps": {
+                  "color": "FEDCBA",
+                  "fontSize": "14.00pt"
+                }
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [
+            [
+              "color",
+              "#ABCDEF"
+            ],
+            [
+              "min-height",
+              "12.00pt"
+            ],
+            [
+              "font-size",
+              "12.00pt"
+            ],
+            [
+              "margin-top",
+              "1.00pt"
+            ],
+            [
+              "line-height",
+              "1.50"
+            ]
+          ],
+          "rStyle": [
+            [
+              "color",
+              "#FEDCBA"
+            ],
+            [
+              "min-height",
+              "14.00pt"
+            ],
+            [
+              "font-size",
+              "14.00pt"
+            ],
+            [
+              "font-weight",
+              "bold"
+            ]
+          ],
+          "suff": "tab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "level_properties_reuse_raw_paragraph_and_common_run_readers",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:pPr/><w:rPr/></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0,
+                "paragraphProps": {},
+                "runProps": {}
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "property_group_replacement_does_not_clear_accumulated_dom_styles",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:pPr><w:keepNext/><w:b/></w:pPr><w:pPr><w:keepLines/><w:i/></w:pPr><w:rPr><w:color val=\"ABCDEF\"/></w:rPr><w:rPr><w:sz val=\"24\"/></w:rPr></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0,
+                "paragraphProps": {
+                  "keepLines": true
+                },
+                "runProps": {
+                  "fontSize": "12.00pt"
+                }
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [
+            [
+              "font-weight",
+              "bold"
+            ],
+            [
+              "font-style",
+              "italic"
+            ]
+          ],
+          "rStyle": [
+            [
+              "color",
+              "#ABCDEF"
+            ],
+            [
+              "min-height",
+              "12.00pt"
+            ],
+            [
+              "font-size",
+              "12.00pt"
+            ]
+          ],
+          "suff": "tab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "dom_levels_keep_defaults_suffixes_and_distinct_style_maps",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:unknown><w:start val=\"99\"/></w:unknown></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "dom_levels_keep_defaults_suffixes_and_distinct_style_maps",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:suff/><w:unknown><w:start val=\"99\"/></w:unknown></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": null
+        }
+      ]
+    }
+  },
+  {
+    "test": "dom_levels_keep_defaults_suffixes_and_distinct_style_maps",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:suff val=\"\"/><w:unknown><w:start val=\"99\"/></w:unknown></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": ""
+        }
+      ]
+    }
+  },
+  {
+    "test": "dom_levels_keep_defaults_suffixes_and_distinct_style_maps",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:suff val=\"space\"/><w:unknown><w:start val=\"99\"/></w:unknown></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "space"
+        }
+      ]
+    }
+  },
+  {
+    "test": "dom_levels_keep_defaults_suffixes_and_distinct_style_maps",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:suff val=\"nothing\"/><w:unknown><w:start val=\"99\"/></w:unknown></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "nothing"
+        }
+      ]
+    }
+  },
+  {
+    "test": "dom_levels_keep_defaults_suffixes_and_distinct_style_maps",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:suff val=\"custom\"/><w:unknown><w:start val=\"99\"/></w:unknown></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "custom"
+        }
+      ]
+    }
+  },
+  {
+    "test": "numbering_width_policy_reaches_both_style_maps",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:pPr><w:tcW w=\"40\"/><w:b/></w:pPr><w:rPr><w:tcW w=\"60\"/><w:i/></w:rPr></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>",
+      "ignoreWidth": false
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0,
+                "paragraphProps": {},
+                "runProps": {}
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [
+            [
+              "width",
+              "2.00pt"
+            ],
+            [
+              "font-weight",
+              "bold"
+            ]
+          ],
+          "rStyle": [
+            [
+              "width",
+              "3.00pt"
+            ],
+            [
+              "font-style",
+              "italic"
+            ]
+          ],
+          "suff": "tab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "numbering_width_policy_reaches_both_style_maps",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:pPr><w:tcW w=\"40\"/><w:b/></w:pPr><w:rPr><w:tcW w=\"60\"/><w:i/></w:rPr></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>",
+      "ignoreWidth": true
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0,
+                "paragraphProps": {},
+                "runProps": {}
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [
+            [
+              "font-weight",
+              "bold"
+            ]
+          ],
+          "rStyle": [
+            [
+              "font-style",
+              "italic"
+            ]
+          ],
+          "suff": "tab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "dom_style_writes_keep_order_and_replace_values_in_place",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:pPr><w:b/><w:i/><w:b val=\"false\"/></w:pPr><w:pPr><w:jc val=\"right\"/></w:pPr><w:rPr><w:i/><w:b/></w:rPr></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0,
+                "paragraphProps": {},
+                "runProps": {}
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [
+            [
+              "font-weight",
+              "normal"
+            ],
+            [
+              "font-style",
+              "italic"
+            ],
+            [
+              "text-align",
+              "right"
+            ]
+          ],
+          "rStyle": [
+            [
+              "font-style",
+              "italic"
+            ],
+            [
+              "font-weight",
+              "bold"
+            ]
+          ],
+          "suff": "tab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "dom_levels_keep_defaults_suffixes_and_distinct_style_maps",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:suff val=\"space\"/><w:suff val=\"nothing\"/></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "nothing"
+        }
+      ]
+    }
+  },
+  {
+    "test": "unreferenced_definitions_and_missing_targets_do_not_invent_instances",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum><w:num numId=\"9\"><w:abstractNumId val=\"missing\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "9",
+            "overrides": [],
+            "abstractId": "missing"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": {
+            "$undefined": true
+          },
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "concrete_instances_share_definition_without_losing_ids",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:numFmt val=\"decimal\"/></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num><w:num numId=\"12\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          },
+          {
+            "id": "12",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0,
+                "format": "decimal"
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "decimal"
+        },
+        {
+          "id": "12",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "decimal"
+        }
+      ]
+    }
+  },
+  {
+    "test": "instance_order_preserves_abstract_then_concrete_then_level_order",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"B\"><w:lvl ilvl=\"2\"></w:lvl><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum><w:abstractNum abstractNumId=\"A\"><w:lvl ilvl=\"1\"></w:lvl></w:abstractNum><w:num numId=\"4\"><w:abstractNumId val=\"A\"></w:abstractNumId></w:num><w:num numId=\"3\"><w:abstractNumId val=\"B\"></w:abstractNumId></w:num><w:num numId=\"2\"><w:abstractNumId val=\"B\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "4",
+            "overrides": [],
+            "abstractId": "A"
+          },
+          {
+            "id": "3",
+            "overrides": [],
+            "abstractId": "B"
+          },
+          {
+            "id": "2",
+            "overrides": [],
+            "abstractId": "B"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "B",
+            "levels": [
+              {
+                "level": 2
+              },
+              {
+                "level": 0
+              }
+            ]
+          },
+          {
+            "id": "A",
+            "levels": [
+              {
+                "level": 1
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "3",
+          "level": 2,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "3",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "2",
+          "level": 2,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "2",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "4",
+          "level": 1,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "picture_links_resolve_after_their_abstract_definition",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:lvlPicBulletId val=\"3\"/></w:lvl></w:abstractNum><w:numPicBullet numPicBulletId=\"3\"><w:pict><v:shape style=\"width:10pt\"><v:imagedata r:id=\"pic\"/></v:shape></w:pict></w:numPicBullet><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0,
+                "bulletPictureId": "3"
+              }
+            ]
+          }
+        ],
+        "bulletPictures": [
+          {
+            "id": "3",
+            "referenceId": "pic",
+            "style": "width:10pt"
+          }
+        ]
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "bullet": {
+            "id": 3,
+            "src": "pic",
+            "style": "width:10pt"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "picture_links_resolve_after_their_abstract_definition",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:numPicBullet numPicBulletId=\"3\"><w:pict><v:shape style=\"width:10pt\"><v:imagedata r:id=\"pic\"/></v:shape></w:pict></w:numPicBullet><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:lvlPicBulletId val=\"3\"/></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0,
+                "bulletPictureId": "3"
+              }
+            ]
+          }
+        ],
+        "bulletPictures": [
+          {
+            "id": "3",
+            "referenceId": "pic",
+            "style": "width:10pt"
+          }
+        ]
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "bullet": {
+            "id": 3,
+            "src": "pic",
+            "style": "width:10pt"
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "picture_selection_keeps_first_match_and_missing_neighbors",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:numPicBullet numPicBulletId=\"3\"><w:pict><v:shape style=\"width:10pt\"><v:imagedata r:id=\"first\"/></v:shape></w:pict></w:numPicBullet><w:numPicBullet numPicBulletId=\"3\"><w:pict><v:shape style=\"width:10pt\"><v:imagedata r:id=\"second\"/></v:shape></w:pict></w:numPicBullet><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:lvlPicBulletId val=\"3\"/></w:lvl><w:lvl ilvl=\"1\"><w:lvlPicBulletId val=\"4\"/></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0,
+                "bulletPictureId": "3"
+              },
+              {
+                "level": 1,
+                "bulletPictureId": "4"
+              }
+            ]
+          }
+        ],
+        "bulletPictures": [
+          {
+            "id": "3",
+            "referenceId": "first",
+            "style": "width:10pt"
+          },
+          {
+            "id": "3",
+            "referenceId": "second",
+            "style": "width:10pt"
+          }
+        ]
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "bullet": {
+            "id": 3,
+            "src": "first",
+            "style": "width:10pt"
+          }
+        },
+        {
+          "id": "11",
+          "level": 1,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "bullet": {
+            "$undefined": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "picture_selection_keeps_first_match_and_missing_neighbors",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:numPicBullet numPicBulletId=\"-0\"><w:pict><v:shape style=\"width:10pt\"><v:imagedata r:id=\"negative-zero\"/></v:shape></w:pict></w:numPicBullet><w:numPicBullet numPicBulletId=\"0\"><w:pict><v:shape style=\"width:10pt\"><v:imagedata r:id=\"positive-zero\"/></v:shape></w:pict></w:numPicBullet><w:numPicBullet numPicBulletId=\"bad\"><w:pict><v:shape style=\"width:10pt\"><v:imagedata r:id=\"invalid\"/></v:shape></w:pict></w:numPicBullet><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:lvlPicBulletId val=\"0\"/></w:lvl><w:lvl ilvl=\"1\"><w:lvlPicBulletId val=\"bad\"/></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0,
+                "bulletPictureId": "0"
+              },
+              {
+                "level": 1,
+                "bulletPictureId": "bad"
+              }
+            ]
+          }
+        ],
+        "bulletPictures": [
+          {
+            "id": "-0",
+            "referenceId": "negative-zero",
+            "style": "width:10pt"
+          },
+          {
+            "id": "0",
+            "referenceId": "positive-zero",
+            "style": "width:10pt"
+          },
+          {
+            "id": "bad",
+            "referenceId": "invalid",
+            "style": "width:10pt"
+          }
+        ]
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "bullet": {
+            "id": {
+              "$number": "-0"
+            },
+            "src": "negative-zero",
+            "style": "width:10pt"
+          }
+        },
+        {
+          "id": "11",
+          "level": 1,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "bullet": {
+            "$undefined": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "test": "start_overrides_change_only_the_selected_instance_level",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:start val=\"1\"/></w:lvl><w:lvl ilvl=\"1\"><w:start val=\"2\"/></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride ilvl=\"0\"><w:startOverride val=\"8\"/></w:lvlOverride></w:num><w:num numId=\"12\"><w:abstractNumId val=\"7\"></w:abstractNumId></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": 0,
+                "start": 8
+              }
+            ],
+            "abstractId": "7"
+          },
+          {
+            "id": "12",
+            "overrides": [],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0,
+                "start": "1"
+              },
+              {
+                "level": 1,
+                "start": "2"
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 8,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "11",
+          "level": 1,
+          "start": 2,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "12",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "12",
+          "level": 1,
+          "start": 2,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "level_overrides_replace_the_level_before_start_override",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:start val=\"1\"/><w:numFmt val=\"decimal\"/><w:pPr><w:b/></w:pPr></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride ilvl=\"0\"><w:startOverride val=\"8\"/><w:lvl ilvl=\"0\"><w:start val=\"4\"/><w:numFmt val=\"lowerRoman\"/><w:rPr><w:i/></w:rPr></w:lvl></w:lvlOverride></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": 0,
+                "start": 8,
+                "numberingLevel": {
+                  "level": 0,
+                  "start": "4",
+                  "format": "lowerRoman",
+                  "runProps": {}
+                }
+              }
+            ],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0,
+                "start": "1",
+                "format": "decimal",
+                "paragraphProps": {}
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 8,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [
+            [
+              "font-style",
+              "italic"
+            ]
+          ],
+          "suff": "tab",
+          "format": "lowerRoman"
+        }
+      ]
+    }
+  },
+  {
+    "test": "level_overrides_replace_the_level_before_start_override",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"><w:start val=\"1\"/><w:numFmt val=\"decimal\"/></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride ilvl=\"0\"><w:lvl ilvl=\"0\"><w:start val=\"4\"/><w:numFmt val=\"lowerRoman\"/></w:lvl><w:startOverride val=\"8\"/></w:lvlOverride></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": 0,
+                "numberingLevel": {
+                  "level": 0,
+                  "start": "4",
+                  "format": "lowerRoman"
+                },
+                "start": 8
+              }
+            ],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0,
+                "start": "1",
+                "format": "decimal"
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 8,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "lowerRoman"
+        }
+      ]
+    }
+  },
+  {
+    "test": "later_overrides_win_without_touching_other_levels",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"></w:lvl><w:lvl ilvl=\"1\"></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride ilvl=\"0\"><w:startOverride val=\"8\"/></w:lvlOverride><w:lvlOverride ilvl=\"1\"><w:startOverride val=\"6\"/></w:lvlOverride><w:lvlOverride ilvl=\"0\"><w:startOverride val=\"9\"/></w:lvlOverride></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": 0,
+                "start": 8
+              },
+              {
+                "level": 1,
+                "start": 6
+              },
+              {
+                "level": 0,
+                "start": 9
+              }
+            ],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              },
+              {
+                "level": 1
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 9,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "11",
+          "level": 1,
+          "start": 6,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        }
+      ]
+    }
+  },
+  {
+    "test": "override_only_levels_are_retained_for_the_concrete_instance",
+    "input": {
+      "kind": "numbering",
+      "xml": "<w:numbering xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\" xmlns:v=\"urn:v\" xmlns:r=\"urn:r\"><w:abstractNum abstractNumId=\"7\"><w:lvl ilvl=\"0\"></w:lvl></w:abstractNum><w:num numId=\"11\"><w:abstractNumId val=\"7\"></w:abstractNumId><w:lvlOverride ilvl=\"2\"><w:lvl ilvl=\"2\"><w:numFmt val=\"bullet\"/><w:lvlText val=\"x\"/></w:lvl></w:lvlOverride></w:num></w:numbering>"
+    },
+    "expected": {
+      "raw": {
+        "numberings": [
+          {
+            "id": "11",
+            "overrides": [
+              {
+                "level": 2,
+                "numberingLevel": {
+                  "level": 2,
+                  "format": "bullet",
+                  "text": "x"
+                }
+              }
+            ],
+            "abstractId": "7"
+          }
+        ],
+        "abstractNumberings": [
+          {
+            "id": "7",
+            "levels": [
+              {
+                "level": 0
+              }
+            ]
+          }
+        ],
+        "bulletPictures": []
+      },
+      "dom": [
+        {
+          "id": "11",
+          "level": 0,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab"
+        },
+        {
+          "id": "11",
+          "level": 2,
+          "start": 1,
+          "pStyleName": {
+            "$undefined": true
+          },
+          "pStyle": [],
+          "rStyle": [],
+          "suff": "tab",
+          "format": "bullet",
+          "levelText": "x"
+        }
+      ]
+    }
+  },
+  {
+    "test": "font_resource_reloads_keep_archive_payload_unchanged",
+    "input": {
+      "kind": "resource",
+      "resource": "present",
+      "reload": true,
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        255,
+        239,
+        223,
+        207,
+        191,
+        175,
+        159,
+        143,
+        127,
+        111,
+        95,
+        79,
+        63,
+        47,
+        31,
+        15,
+        239,
+        255,
+        207,
+        223,
+        175,
+        191,
+        143,
+        159,
+        111,
+        127,
+        79,
+        95,
+        47,
+        63,
+        15,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "again": [
+        255,
+        239,
+        223,
+        207,
+        191,
+        175,
+        159,
+        143,
+        127,
+        111,
+        95,
+        79,
+        63,
+        47,
+        31,
+        15,
+        239,
+        255,
+        207,
+        223,
+        175,
+        191,
+        143,
+        159,
+        111,
+        127,
+        79,
+        95,
+        47,
+        63,
+        15,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "raw": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    }
+  },
+  {
+    "test": "font_resource_reads_preserve_missing_empty_and_key_failure_phases",
+    "input": {
+      "kind": "resource",
+      "resource": "present",
+      "keyParts": null
+    },
+    "expected": {
+      "error": "TypeError"
+    }
+  },
+  {
+    "test": "font_resource_reads_preserve_missing_empty_and_key_failure_phases",
+    "input": {
+      "kind": "resource",
+      "resource": "present",
+      "keyParts": []
+    },
+    "expected": {
+      "bytes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    }
+  },
+  {
+    "test": "font_resource_reads_preserve_missing_empty_and_key_failure_phases",
+    "input": {
+      "kind": "resource",
+      "resource": "present",
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        255,
+        239,
+        223,
+        207,
+        191,
+        175,
+        159,
+        143,
+        127,
+        111,
+        95,
+        79,
+        63,
+        47,
+        31,
+        15,
+        239,
+        255,
+        207,
+        223,
+        175,
+        191,
+        143,
+        159,
+        111,
+        127,
+        79,
+        95,
+        47,
+        63,
+        15,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    }
+  },
+  {
+    "test": "font_resource_reads_preserve_missing_empty_and_key_failure_phases",
+    "input": {
+      "kind": "resource",
+      "resource": "empty",
+      "keyParts": null
+    },
+    "expected": {
+      "error": "TypeError"
+    }
+  },
+  {
+    "test": "font_resource_reads_preserve_missing_empty_and_key_failure_phases",
+    "input": {
+      "kind": "resource",
+      "resource": "empty",
+      "keyParts": []
+    },
+    "expected": {
+      "bytes": []
+    }
+  },
+  {
+    "test": "font_resource_reads_preserve_missing_empty_and_key_failure_phases",
+    "input": {
+      "kind": "resource",
+      "resource": "empty",
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
+    },
+    "expected": {
+      "bytes": []
+    }
+  },
+  {
+    "test": "font_resource_reads_preserve_missing_empty_and_key_failure_phases",
+    "input": {
+      "kind": "resource",
+      "resource": "missingRelationship",
+      "keyParts": null
+    },
+    "expected": {
+      "bytes": null
+    }
+  },
+  {
+    "test": "font_resource_reads_preserve_missing_empty_and_key_failure_phases",
+    "input": {
+      "kind": "resource",
+      "resource": "missingRelationship",
+      "keyParts": []
+    },
+    "expected": {
+      "bytes": null
+    }
+  },
+  {
+    "test": "font_resource_reads_preserve_missing_empty_and_key_failure_phases",
+    "input": {
+      "kind": "resource",
+      "resource": "missingRelationship",
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
+    },
+    "expected": {
+      "bytes": null
+    }
+  },
+  {
+    "test": "font_resource_reads_preserve_missing_empty_and_key_failure_phases",
+    "input": {
+      "kind": "resource",
+      "resource": "missingEntry",
+      "keyParts": null
+    },
+    "expected": {
+      "bytes": null
+    }
+  },
+  {
+    "test": "font_resource_reads_preserve_missing_empty_and_key_failure_phases",
+    "input": {
+      "kind": "resource",
+      "resource": "missingEntry",
+      "keyParts": []
+    },
+    "expected": {
+      "bytes": null
+    }
+  },
+  {
+    "test": "font_resource_reads_preserve_missing_empty_and_key_failure_phases",
+    "input": {
+      "kind": "resource",
+      "resource": "missingEntry",
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
+    },
+    "expected": {
+      "bytes": null
+    }
+  },
+  {
+    "test": "font_bytes_xor_only_the_first_two_key_blocks",
+    "input": {
+      "kind": "bytes",
+      "data": [],
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
+    },
+    "expected": {
+      "bytes": []
+    }
+  },
+  {
+    "test": "font_bytes_xor_only_the_first_two_key_blocks",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0
+      ],
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        255
+      ]
+    }
+  },
+  {
+    "test": "font_bytes_xor_only_the_first_two_key_blocks",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        255,
+        239,
+        223,
+        207,
+        191,
+        175,
+        159,
+        143,
+        127,
+        111,
+        95,
+        79,
+        63,
+        47,
+        31
+      ]
+    }
+  },
+  {
+    "test": "font_bytes_xor_only_the_first_two_key_blocks",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        255,
+        239,
+        223,
+        207,
+        191,
+        175,
+        159,
+        143,
+        127,
+        111,
+        95,
+        79,
+        63,
+        47,
+        31,
+        15
+      ]
+    }
+  },
+  {
+    "test": "font_bytes_xor_only_the_first_two_key_blocks",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        255,
+        239,
+        223,
+        207,
+        191,
+        175,
+        159,
+        143,
+        127,
+        111,
+        95,
+        79,
+        63,
+        47,
+        31,
+        15,
+        239
+      ]
+    }
+  },
+  {
+    "test": "font_bytes_xor_only_the_first_two_key_blocks",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30
+      ],
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        255,
+        239,
+        223,
+        207,
+        191,
+        175,
+        159,
+        143,
+        127,
+        111,
+        95,
+        79,
+        63,
+        47,
+        31,
+        15,
+        239,
+        255,
+        207,
+        223,
+        175,
+        191,
+        143,
+        159,
+        111,
+        127,
+        79,
+        95,
+        47,
+        63,
+        15
+      ]
+    }
+  },
+  {
+    "test": "font_bytes_xor_only_the_first_two_key_blocks",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31
+      ],
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        255,
+        239,
+        223,
+        207,
+        191,
+        175,
+        159,
+        143,
+        127,
+        111,
+        95,
+        79,
+        63,
+        47,
+        31,
+        15,
+        239,
+        255,
+        207,
+        223,
+        175,
+        191,
+        143,
+        159,
+        111,
+        127,
+        79,
+        95,
+        47,
+        63,
+        15,
+        31
+      ]
+    }
+  },
+  {
+    "test": "font_bytes_xor_only_the_first_two_key_blocks",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32
+      ],
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        255,
+        239,
+        223,
+        207,
+        191,
+        175,
+        159,
+        143,
+        127,
+        111,
+        95,
+        79,
+        63,
+        47,
+        31,
+        15,
+        239,
+        255,
+        207,
+        223,
+        175,
+        191,
+        143,
+        159,
+        111,
+        127,
+        79,
+        95,
+        47,
+        63,
+        15,
+        31,
+        32
+      ]
+    }
+  },
+  {
+    "test": "font_bytes_xor_only_the_first_two_key_blocks",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63
+      ],
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        255,
+        239,
+        223,
+        207,
+        191,
+        175,
+        159,
+        143,
+        127,
+        111,
+        95,
+        79,
+        63,
+        47,
+        31,
+        15,
+        239,
+        255,
+        207,
+        223,
+        175,
+        191,
+        143,
+        159,
+        111,
+        127,
+        79,
+        95,
+        47,
+        63,
+        15,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63
+      ]
+    }
+  },
+  {
+    "test": "font_keys_keep_scrubbing_reverse_byte_order_and_partial_hex",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "keyParts": [
+        "0011223344556677",
+        "8899aabbccddeeff"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        255,
+        239,
+        223,
+        207,
+        191,
+        175,
+        159,
+        143,
+        127,
+        111,
+        95,
+        79,
+        63,
+        47,
+        31,
+        15,
+        239,
+        255,
+        207,
+        223,
+        175,
+        191,
+        143,
+        159,
+        111,
+        127,
+        79,
+        95,
+        47,
+        63,
+        15,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    }
+  },
+  {
+    "test": "font_keys_keep_scrubbing_reverse_byte_order_and_partial_hex",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        255,
+        239,
+        223,
+        207,
+        191,
+        175,
+        159,
+        143,
+        127,
+        111,
+        95,
+        79,
+        63,
+        47,
+        31,
+        15,
+        239,
+        255,
+        207,
+        223,
+        175,
+        191,
+        143,
+        159,
+        111,
+        127,
+        79,
+        95,
+        47,
+        63,
+        15,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    }
+  },
+  {
+    "test": "font_keys_keep_scrubbing_reverse_byte_order_and_partial_hex",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "keyParts": [
+        "--{00-11}2233445",
+        "566778899AABBCCD",
+        "DEEFF--"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        255,
+        239,
+        223,
+        207,
+        191,
+        175,
+        159,
+        143,
+        127,
+        111,
+        95,
+        79,
+        63,
+        47,
+        31,
+        15,
+        239,
+        255,
+        207,
+        223,
+        175,
+        191,
+        143,
+        159,
+        111,
+        127,
+        79,
+        95,
+        47,
+        63,
+        15,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    }
+  },
+  {
+    "test": "font_keys_keep_scrubbing_reverse_byte_order_and_partial_hex",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "keyParts": []
+    },
+    "expected": {
+      "bytes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    }
+  },
+  {
+    "test": "font_keys_keep_scrubbing_reverse_byte_order_and_partial_hex",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "keyParts": [
+        "0"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    }
+  },
+  {
+    "test": "font_keys_keep_scrubbing_reverse_byte_order_and_partial_hex",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "keyParts": [
+        "gg"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    }
+  },
+  {
+    "test": "font_keys_keep_scrubbing_reverse_byte_order_and_partial_hex",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "keyParts": [
+        "1g"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        14,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        30,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    }
+  },
+  {
+    "test": "font_keys_keep_scrubbing_reverse_byte_order_and_partial_hex",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "keyParts": [
+        "0x"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    }
+  },
+  {
+    "test": "font_keys_keep_scrubbing_reverse_byte_order_and_partial_hex",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "keyParts": [
+        "+f"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        0,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        16,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    }
+  },
+  {
+    "test": "font_keys_keep_scrubbing_reverse_byte_order_and_partial_hex",
+    "input": {
+      "kind": "bytes",
+      "data": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "keyParts": [
+        "-f"
+      ]
+    },
+    "expected": {
+      "bytes": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        0,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        16,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ]
+    }
+  }
+]

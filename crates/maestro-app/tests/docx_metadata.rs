@@ -27,6 +27,9 @@ fn check(name: &str) {
             "custom" => match CustomPropsPart::parse_xml(&xml, xml.root()) {
                 Ok(part) => metadata::custom(&part.props),
                 Err(DocxError::Xml { .. }) => json!({"kind":"invalid-xml-part"}),
+                Err(DocxError::FontKey) => {
+                    panic!("Unexpected font-key error while parsing metadata")
+                }
                 Err(DocxError::Archive(_)) => panic!("unexpected archive error"),
             },
             _ => panic!("unexpected metadata operation"),

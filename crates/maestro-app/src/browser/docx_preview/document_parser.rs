@@ -379,3 +379,5 @@ mod math;
 pub use math::MathProperties;
 
 pub(super) mod comments;
+
+pub(crate) mod numbering;
