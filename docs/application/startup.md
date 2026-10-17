@@ -100,6 +100,10 @@ destinations are replaceable. Binary-directory creation errors propagate; indivi
 rename/delete failures are tolerated. The binary staging name appends `.migrating`
 to the complete basename and never overwrites an existing staging entry.
 
+The identity guarantee does not cover spelling aliases that differ only by letter
+case on case-insensitive filesystems, nor dependency chains through destination
+links that point back into the source directory. Both match the plain rename.
+
 Persisted `keybindings.json` conversion uses the same raw name converter described
 above, writing only renamed object documents, with two-space JSON and one final LF.
 It writes through the authored path, preserving live links and permissions. Read,
