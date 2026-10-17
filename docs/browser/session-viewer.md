@@ -115,3 +115,42 @@ observer/compositor qualification remain
 [#1084](https://github.com/Orchestration-Maestro/maestro/issues/1084) and
 [#825](https://github.com/Orchestration-Maestro/maestro/issues/825); compilation or
 controlled-host tests alone do not prove those observations.
+
+## Message links
+
+Retain `CopyLinkState::new(host)` and call
+[`render_copy_link_button`](../../crates/maestro-web/src/export_html/template/copy_link/draw.rs)
+through `maestro_web::export_html::template`, supplying a per-frame `CopyLinkView`.
+The view borrows the selected brand presentation, active leaf identity, current
+browser location, optional injected base, native slot rectangle and real
+containing-message hover observation. Only activation prepares the URL. Raw leaf
+and target identities remain literal through URL encoding, including empty values;
+a present empty injected base differs from no base. Current-location links retain
+the fragment and first nonreserved valueless query identity. Injected bases retain
+their spelling, with selection appended before their fragment. Invalid current
+locations return `AttachmentUiError::Presentation` on activation even with a base.
+
+The containing native message positions a 28-by-28 slot eight points from its
+top/right edges and publishes the measured slot as a canvas hole. The control
+registers full geometry, applies the caller clip and existing primary-gesture
+admission, and returns the response for native focus reveal. It paints its own
+14-point link glyph, border and selected-pack roles; message hover controls
+visibility with a 150-ms transition. It owns no text root or viewport.
+
+`AttachmentHost::copy_to_clipboard` starts the native call before local dispatch,
+returning owned local settlement work. The default browser host uses its canvas
+document, preferring the Clipboard API and falling back to a selected temporary
+textarea. Refusal or reached native failure reports false; scoped cleanup removes
+the textarea even if another observer removed it first. Direct effect calls have
+no control feedback. A successful control completion shows the selected pack's
+passed symbol for 1500 ms. Later successes replace the restoring timer; failures
+leave prior successful feedback unchanged. Timer registration failure restores
+idle rather than publishing permanent success. Dropping the state revokes its
+timer and weak UI delivery, not an already-started native copy.
+
+Message rendering and final composition remain
+[#1043](https://github.com/Orchestration-Maestro/maestro/issues/1043) and
+[#1044](https://github.com/Orchestration-Maestro/maestro/issues/1044).
+Permission-dependent OS clipboard and broad browser/device qualification remain
+[#1084](https://github.com/Orchestration-Maestro/maestro/issues/1084) and
+[#825](https://github.com/Orchestration-Maestro/maestro/issues/825).

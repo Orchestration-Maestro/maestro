@@ -36,7 +36,7 @@ rounding use `ryu-js`; token text uses `k`, never `M`.
 
 ## Icons
 
-`icons()` loads 27 used glyphs. `icon_svg` serializes ordered primitive nodes
+`icons()` loads 28 used glyphs. `icon_svg` serializes ordered primitive nodes
 with literal names and attributes, adding no namespace bindings;
 [`markup`](../../crates/maestro-text/src/markup.rs) owns XML attribute escaping.
 `icon` renders the SVG through usvg/resvg into an egui image, accepting caller
@@ -82,3 +82,9 @@ effect qualification.
 
 See [artifact views](artifacts.md) for independently embeddable generic reading
 bodies, progressive PDF pages and original-byte header downloads.
+
+## Message links
+
+The [offline viewer's retained copy-link control](session-viewer.md#message-links)
+uses the shared browser effects host for native clipboard success, with owned
+feedback and caller-measured message slots. It does not render message content.

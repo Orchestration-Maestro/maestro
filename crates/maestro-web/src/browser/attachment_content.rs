@@ -151,8 +151,14 @@ impl From<io::Error> for AttachmentUiError {
         Self::Presentation(error.to_string())
     }
 }
-/// Replaceable browser content and download effects.
+/// Replaceable browser content, download and clipboard effects.
 pub trait AttachmentHost {
+    /// Begin copying literal text, owning native operands before returning local work.
+    /// The result reports native success after any fallback, without UI feedback.
+    fn copy_to_clipboard(
+        &self,
+        text: &str,
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>>;
     /// Measure the admitted reading root in the current canvas frame.
     /// # Errors
     /// Returns missing-surface or native geometry failures.

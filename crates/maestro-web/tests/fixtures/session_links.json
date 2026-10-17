@@ -1,0 +1,477 @@
+{
+  "urls": [
+    {
+      "name": "ordinary",
+      "input": {
+        "href": "https://example.test/view?old=value#anchor",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?leafId=branch&targetId=message#anchor"
+      }
+    },
+    {
+      "name": "file",
+      "input": {
+        "href": "file:///tmp/session.html",
+        "base": null,
+        "leaf": "leaf",
+        "entry": "entry"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "file:///tmp/session.html?leafId=leaf&targetId=entry"
+      }
+    },
+    {
+      "name": "file-fragment",
+      "input": {
+        "href": "file:///tmp/雪.html?old=1#entry-old",
+        "base": null,
+        "leaf": "葉",
+        "entry": "目標"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "file:///tmp/%E9%9B%AA.html?leafId=%E8%91%89&targetId=%E7%9B%AE%E6%A8%99#entry-old"
+      }
+    },
+    {
+      "name": "unicode",
+      "input": {
+        "href": "https://example.test/view",
+        "base": null,
+        "leaf": "葉😀",
+        "entry": "目標é"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?leafId=%E8%91%89%F0%9F%98%80&targetId=%E7%9B%AE%E6%A8%99%C3%A9"
+      }
+    },
+    {
+      "name": "markup",
+      "input": {
+        "href": "https://example.test/view",
+        "base": null,
+        "leaf": "<leaf> & \"'",
+        "entry": "<entry> & \"'"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?leafId=%3Cleaf%3E+%26+%22%27&targetId=%3Centry%3E+%26+%22%27"
+      }
+    },
+    {
+      "name": "form-boundaries",
+      "input": {
+        "href": "https://example.test/view",
+        "base": null,
+        "leaf": "a +/%&=?#",
+        "entry": "b\t\r\n\u0000﻿"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?leafId=a+%2B%2F%25%26%3D%3F%23&targetId=b%09%0D%0A%00%EF%BB%BF%C2%85"
+      }
+    },
+    {
+      "name": "empty-identities",
+      "input": {
+        "href": "https://example.test/view",
+        "base": null,
+        "leaf": "",
+        "entry": ""
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?leafId=&targetId="
+      }
+    },
+    {
+      "name": "whitespace-identities",
+      "input": {
+        "href": "https://example.test/view",
+        "base": null,
+        "leaf": " leaf ",
+        "entry": " entry "
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?leafId=+leaf+&targetId=+entry+"
+      }
+    },
+    {
+      "name": "injected",
+      "input": {
+        "href": "about:srcdoc",
+        "base": "https://share.test/view?gist",
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://share.test/view?gist&leafId=branch&targetId=message"
+      }
+    },
+    {
+      "name": "injected-overrides",
+      "input": {
+        "href": "https://example.test/view?old#old",
+        "base": "https://share.test/view?gist&old=1",
+        "leaf": "new",
+        "entry": "target"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://share.test/view?gist&old=1&leafId=new&targetId=target"
+      }
+    },
+    {
+      "name": "injected-empty",
+      "input": {
+        "href": "https://example.test/view",
+        "base": "",
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "&leafId=branch&targetId=message"
+      }
+    },
+    {
+      "name": "injected-fragment",
+      "input": {
+        "href": "https://example.test/view",
+        "base": "https://share.test/view?gist#anchor",
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://share.test/view?gist&leafId=branch&targetId=message#anchor"
+      }
+    },
+    {
+      "name": "gist-first",
+      "input": {
+        "href": "https://example.test/view?gist&other&old=1#anchor",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?gist&leafId=branch&targetId=message#anchor"
+      }
+    },
+    {
+      "name": "gist-empty-value",
+      "input": {
+        "href": "https://example.test/view?old=1&gist=&later=",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?gist&leafId=branch&targetId=message"
+      }
+    },
+    {
+      "name": "gist-duplicate-first-valued",
+      "input": {
+        "href": "https://example.test/view?dup=1&dup&gist",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?gist&leafId=branch&targetId=message"
+      }
+    },
+    {
+      "name": "gist-duplicate-first-empty",
+      "input": {
+        "href": "https://example.test/view?dup&dup=1&gist",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?dup&leafId=branch&targetId=message"
+      }
+    },
+    {
+      "name": "empty-key",
+      "input": {
+        "href": "https://example.test/view?&=x&gist",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?gist&leafId=branch&targetId=message"
+      }
+    },
+    {
+      "name": "existing-selection",
+      "input": {
+        "href": "https://example.test/view?leafId=old&targetId=old#target",
+        "base": null,
+        "leaf": "new",
+        "entry": "selected"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?leafId=new&targetId=selected#target"
+      }
+    },
+    {
+      "name": "fragment-only",
+      "input": {
+        "href": "https://example.test/view#frag",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?leafId=branch&targetId=message#frag"
+      }
+    },
+    {
+      "name": "gist-ampersand",
+      "input": {
+        "href": "https://example.test/view?a%26b#frag",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?a%26b&leafId=branch&targetId=message#frag"
+      }
+    },
+    {
+      "name": "gist-equals",
+      "input": {
+        "href": "https://example.test/view?a%3Db",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?a%3Db&leafId=branch&targetId=message"
+      }
+    },
+    {
+      "name": "gist-plus",
+      "input": {
+        "href": "https://example.test/view?a%2Bb",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?a%2Bb&leafId=branch&targetId=message"
+      }
+    },
+    {
+      "name": "gist-percent",
+      "input": {
+        "href": "https://example.test/view?a%2520b",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?a%2520b&leafId=branch&targetId=message"
+      }
+    },
+    {
+      "name": "gist-space",
+      "input": {
+        "href": "https://example.test/view?a+b",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?a%20b&leafId=branch&targetId=message"
+      }
+    },
+    {
+      "name": "gist-hash",
+      "input": {
+        "href": "https://example.test/view?a%23b#frag",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?a%23b&leafId=branch&targetId=message#frag"
+      }
+    },
+    {
+      "name": "gist-safe-punctuation",
+      "input": {
+        "href": "https://example.test/view?a%2Fb%7Ec%3Fd%3Ae!%28f%29*%27q#frag",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?a/b~c?d:e!(f)*%27q&leafId=branch&targetId=message#frag"
+      }
+    },
+    {
+      "name": "gist-controls",
+      "input": {
+        "href": "https://example.test/view?a%00%09%0A%0D%7Fb#frag",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?a%00%09%0A%0D%7Fb&leafId=branch&targetId=message#frag"
+      }
+    },
+    {
+      "name": "query-selection-empty",
+      "input": {
+        "href": "https://example.test/view?leafId=&targetId=",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?leafId=branch&targetId=message"
+      }
+    },
+    {
+      "name": "target-selection-empty",
+      "input": {
+        "href": "https://example.test/view?targetId=",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?leafId=branch&targetId=message"
+      }
+    },
+    {
+      "name": "selection-before-gist",
+      "input": {
+        "href": "https://example.test/view?leafId=&gist#frag",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?gist&leafId=branch&targetId=message#frag"
+      }
+    },
+    {
+      "name": "gist-before-selection",
+      "input": {
+        "href": "https://example.test/view?gist&leafId=",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "success",
+        "url": "https://example.test/view?gist&leafId=branch&targetId=message"
+      }
+    },
+    {
+      "name": "invalid-location",
+      "input": {
+        "href": "not an absolute URL",
+        "base": null,
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "invalid-location"
+      }
+    },
+    {
+      "name": "injected-invalid-location",
+      "input": {
+        "href": "not an absolute URL",
+        "base": "https://share.test/view?gist",
+        "leaf": "branch",
+        "entry": "message"
+      },
+      "expected": {
+        "outcome": "invalid-location"
+      }
+    }
+  ],
+  "control": {
+    "identities": [
+      {
+        "input": "message",
+        "expected": "message"
+      },
+      {
+        "input": "雪😀",
+        "expected": "雪😀"
+      },
+      {
+        "input": "<entry>&",
+        "expected": "<entry>&"
+      },
+      {
+        "input": "x\" data-extra=\"yes",
+        "expected": "x\" data-extra=\"yes"
+      },
+      {
+        "input": "single'quote",
+        "expected": "single'quote"
+      },
+      {
+        "input": "line\nend",
+        "expected": "line\nend"
+      },
+      {
+        "input": "line\r\nend",
+        "expected": "line\r\nend"
+      }
+    ],
+    "geometry": {
+      "width": 28,
+      "height": 28,
+      "inset": 8,
+      "padding": 6,
+      "glyphWidth": 14,
+      "glyphHeight": 14,
+      "transitionSeconds": 0.15
+    },
+    "title": "Copy link to this message",
+    "paths": [
+      "M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71",
+      "M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"
+    ]
+  }
+}

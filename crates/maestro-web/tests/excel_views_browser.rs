@@ -117,6 +117,8 @@ pub fn excel_native_tables_paint_formatted_text_merges_and_links() {
                     z: Some(NumberFormat::Code("0 \"quoted\" 雪".into())),
                     l: None,
                     xf: None,
+                    f: None,
+                    array_formula: None,
                 },
             )]
             .into_iter()

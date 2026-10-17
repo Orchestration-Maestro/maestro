@@ -6,3 +6,6 @@ pub mod i18n;
 pub(crate) mod download;
 
 pub(crate) mod base64;
+
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod clipboard;

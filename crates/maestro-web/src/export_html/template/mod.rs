@@ -12,3 +12,6 @@ pub use header::{HeaderAction, HeaderState, HeaderView, render_header};
 
 mod download;
 pub use download::download_session_json;
+
+mod copy_link;
+pub use copy_link::{CopyLinkState, CopyLinkView, render_copy_link_button};
