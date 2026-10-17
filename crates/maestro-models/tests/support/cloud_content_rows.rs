@@ -311,6 +311,25 @@ fn check(row: &Row, mut actual: Value) -> TestResult {
     // Numeric spellings share the product JSON writer, while body bytes stay literal.
     let actual: Value = serde_json::from_str(&maestro_models::compact_json(&actual)?)?;
     let expected: Value = serde_json::from_str(&maestro_models::compact_json(&row.expected)?)?;
+    for (actual, expected) in actual["requests"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .zip(expected["requests"].as_array().unwrap())
+    {
+        assert_eq!(
+            actual["headers"]
+                .as_object()
+                .unwrap()
+                .keys()
+                .collect::<Vec<_>>(),
+            expected["headers"]
+                .as_object()
+                .unwrap()
+                .keys()
+                .collect::<Vec<_>>()
+        );
+    }
     assert!(
         actual == expected,
         "recorded output differs for {}: events={} result={}",
