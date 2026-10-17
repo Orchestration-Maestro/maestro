@@ -182,9 +182,7 @@ pub fn bound_provider_configuration_reaches_stream_oauth_and_request_consumers()
     let executor = super::action_checks::executor();
     let stream_model = model.read().unwrap().clone();
     executor.block_on(async {
-        let credentials = account.login(Arc::new(NoInteraction), None).await.unwrap();
-        let credentials = account.refresh_token(credentials, None).await.unwrap();
-        assert_eq!(account.get_api_key(&credentials).unwrap(), "refreshed");
+        exercise_account(&account).await;
         assert_request(&registry, &model).await;
         tokio::task::LocalSet::new()
             .run_until(original_options::exercise(
@@ -222,10 +220,13 @@ async fn assert_request(
 ) {
     match registry.get_api_key_and_headers(model, &Values).await {
         maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } => {
-            assert_eq!(api_key.as_deref(), Some("literal-key"));
+            assert!(matches!(api_key.as_deref(), Some("literal-key")));
             let headers = headers.unwrap();
-            assert_eq!(headers["X-Order"], "model");
-            assert_eq!(headers["Authorization"], "Bearer literal-key");
+            assert!(matches!(headers["X-Order"].as_str(), "model"));
+            assert!(matches!(
+                headers["Authorization"].as_str(),
+                "Bearer literal-key"
+            ));
             assert_eq!(
                 headers.keys().map(String::as_str).collect::<Vec<_>>(),
                 ["X-Provider", "X-Order", "X-Model", "Authorization"]
@@ -321,13 +322,30 @@ fn request_variants(
             .block_on(registry.get_api_key_and_headers(&model, &Values))
         {
             maestro_catalog::ResolvedRequestAuth::Ok { api_key, headers } => {
-                assert_eq!(api_key.as_deref(), Some("literal-key"));
-                assert_eq!(
-                    headers.map(|h| h.into_iter().collect::<Vec<_>>()),
-                    auth.then(|| vec![("Authorization".into(), "Bearer literal-key".into())])
-                );
+                assert!(matches!(api_key.as_deref(), Some("literal-key")));
+                match headers {
+                    Some(headers) => {
+                        assert!(auth);
+                        assert_eq!(headers.len(), 1);
+                        assert!(matches!(
+                            headers.get("Authorization").map(String::as_str),
+                            Some("Bearer literal-key")
+                        ));
+                    }
+                    None => assert!(!auth),
+                }
             }
             maestro_catalog::ResolvedRequestAuth::Error { .. } => panic!("request must resolve"),
         }
     }
+}
+
+/// Exercises installed account operations without printing credential values.
+async fn exercise_account(account: &OAuthProviderHandle) {
+    let credentials = account.login(Arc::new(NoInteraction), None).await.unwrap();
+    let credentials = account.refresh_token(credentials, None).await.unwrap();
+    assert!(matches!(
+        account.get_api_key(&credentials).unwrap(),
+        "refreshed"
+    ));
 }
