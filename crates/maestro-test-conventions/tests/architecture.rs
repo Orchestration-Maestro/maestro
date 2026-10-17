@@ -1096,7 +1096,7 @@ fn metadata_queries_leave_compiler_wrappers_to_builds() {
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
-        crate::child_process::assert_executed(&output, &selector);
+        crate::child_process::assert_executed(&output, &selector).unwrap();
     }
 }
 
