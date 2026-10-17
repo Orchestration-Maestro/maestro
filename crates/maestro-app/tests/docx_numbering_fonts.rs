@@ -24,12 +24,17 @@ enum Input {
     },
     /// Opaque bytes through the public resource loader.
     #[serde(rename = "bytes")]
-    Bytes { data: Vec<u8>, key: String },
+    Bytes {
+        data: Vec<u8>,
+        #[serde(rename = "keyParts")]
+        key_parts: Vec<String>,
+    },
     /// Controlled retained package input.
     #[serde(rename = "resource")]
     Resource {
         resource: String,
-        key: Option<String>,
+        #[serde(rename = "keyParts")]
+        key_parts: Option<Vec<String>>,
         #[serde(default)]
         reload: bool,
     },
@@ -68,14 +73,18 @@ fn check(name: &str) {
                 drop(source);
                 crate::numbering_observation::observe(&part)
             }
-            Input::Bytes { data, key } => {
+            Input::Bytes { data, key_parts } => {
+                let key = key_parts.concat();
                 crate::font_resources::observe("present", Some(&data), Some(&key), false)
             }
             Input::Resource {
                 resource,
-                key,
+                key_parts,
                 reload,
-            } => crate::font_resources::observe(&resource, None, key.as_deref(), reload),
+            } => {
+                let key = key_parts.map(|parts| parts.concat());
+                crate::font_resources::observe(&resource, None, key.as_deref(), reload)
+            }
         };
         assert_eq!(observed, case.expected);
     }

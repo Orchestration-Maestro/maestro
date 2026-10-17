@@ -3615,8 +3615,12 @@
     "input": {
       "kind": "resource",
       "resource": "present",
-      "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}",
-      "reload": true
+      "reload": true,
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
     },
     "expected": {
       "bytes": [
@@ -3752,7 +3756,7 @@
     "input": {
       "kind": "resource",
       "resource": "present",
-      "key": null
+      "keyParts": null
     },
     "expected": {
       "error": "TypeError"
@@ -3763,7 +3767,7 @@
     "input": {
       "kind": "resource",
       "resource": "present",
-      "key": ""
+      "keyParts": []
     },
     "expected": {
       "bytes": [
@@ -3815,7 +3819,11 @@
     "input": {
       "kind": "resource",
       "resource": "present",
-      "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}"
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
     },
     "expected": {
       "bytes": [
@@ -3867,7 +3875,7 @@
     "input": {
       "kind": "resource",
       "resource": "empty",
-      "key": null
+      "keyParts": null
     },
     "expected": {
       "error": "TypeError"
@@ -3878,7 +3886,7 @@
     "input": {
       "kind": "resource",
       "resource": "empty",
-      "key": ""
+      "keyParts": []
     },
     "expected": {
       "bytes": []
@@ -3889,7 +3897,11 @@
     "input": {
       "kind": "resource",
       "resource": "empty",
-      "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}"
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
     },
     "expected": {
       "bytes": []
@@ -3900,7 +3912,7 @@
     "input": {
       "kind": "resource",
       "resource": "missingRelationship",
-      "key": null
+      "keyParts": null
     },
     "expected": {
       "bytes": null
@@ -3911,7 +3923,7 @@
     "input": {
       "kind": "resource",
       "resource": "missingRelationship",
-      "key": ""
+      "keyParts": []
     },
     "expected": {
       "bytes": null
@@ -3922,7 +3934,11 @@
     "input": {
       "kind": "resource",
       "resource": "missingRelationship",
-      "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}"
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
     },
     "expected": {
       "bytes": null
@@ -3933,7 +3949,7 @@
     "input": {
       "kind": "resource",
       "resource": "missingEntry",
-      "key": null
+      "keyParts": null
     },
     "expected": {
       "bytes": null
@@ -3944,7 +3960,7 @@
     "input": {
       "kind": "resource",
       "resource": "missingEntry",
-      "key": ""
+      "keyParts": []
     },
     "expected": {
       "bytes": null
@@ -3955,7 +3971,11 @@
     "input": {
       "kind": "resource",
       "resource": "missingEntry",
-      "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}"
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
     },
     "expected": {
       "bytes": null
@@ -3966,7 +3986,11 @@
     "input": {
       "kind": "bytes",
       "data": [],
-      "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}"
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
     },
     "expected": {
       "bytes": []
@@ -3979,7 +4003,11 @@
       "data": [
         0
       ],
-      "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}"
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
     },
     "expected": {
       "bytes": [
@@ -4008,7 +4036,11 @@
         13,
         14
       ],
-      "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}"
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
     },
     "expected": {
       "bytes": [
@@ -4052,7 +4084,11 @@
         14,
         15
       ],
-      "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}"
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
     },
     "expected": {
       "bytes": [
@@ -4098,7 +4134,11 @@
         15,
         16
       ],
-      "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}"
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
     },
     "expected": {
       "bytes": [
@@ -4159,7 +4199,11 @@
         29,
         30
       ],
-      "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}"
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
     },
     "expected": {
       "bytes": [
@@ -4235,7 +4279,11 @@
         30,
         31
       ],
-      "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}"
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
     },
     "expected": {
       "bytes": [
@@ -4313,7 +4361,11 @@
         31,
         32
       ],
-      "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}"
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
     },
     "expected": {
       "bytes": [
@@ -4423,7 +4475,11 @@
         62,
         63
       ],
-      "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}"
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
     },
     "expected": {
       "bytes": [
@@ -4540,7 +4596,10 @@
         38,
         39
       ],
-      "key": "00112233445566778899aabbccddeeff"
+      "keyParts": [
+        "0011223344556677",
+        "8899aabbccddeeff"
+      ]
     },
     "expected": {
       "bytes": [
@@ -4633,7 +4692,11 @@
         38,
         39
       ],
-      "key": "{00112233-4455-6677-8899-AABBCCDDEEFF}"
+      "keyParts": [
+        "{00112233-4455-6",
+        "677-8899-AABBCCD",
+        "DEEFF}"
+      ]
     },
     "expected": {
       "bytes": [
@@ -4726,7 +4789,11 @@
         38,
         39
       ],
-      "key": "--{00-11}2233445566778899AABBCCDDEEFF--"
+      "keyParts": [
+        "--{00-11}2233445",
+        "566778899AABBCCD",
+        "DEEFF--"
+      ]
     },
     "expected": {
       "bytes": [
@@ -4819,7 +4886,7 @@
         38,
         39
       ],
-      "key": ""
+      "keyParts": []
     },
     "expected": {
       "bytes": [
@@ -4912,7 +4979,9 @@
         38,
         39
       ],
-      "key": "0"
+      "keyParts": [
+        "0"
+      ]
     },
     "expected": {
       "bytes": [
@@ -5005,7 +5074,9 @@
         38,
         39
       ],
-      "key": "gg"
+      "keyParts": [
+        "gg"
+      ]
     },
     "expected": {
       "bytes": [
@@ -5098,7 +5169,9 @@
         38,
         39
       ],
-      "key": "1g"
+      "keyParts": [
+        "1g"
+      ]
     },
     "expected": {
       "bytes": [
@@ -5191,7 +5264,9 @@
         38,
         39
       ],
-      "key": "0x"
+      "keyParts": [
+        "0x"
+      ]
     },
     "expected": {
       "bytes": [
@@ -5284,7 +5359,9 @@
         38,
         39
       ],
-      "key": "+f"
+      "keyParts": [
+        "+f"
+      ]
     },
     "expected": {
       "bytes": [
@@ -5377,7 +5454,9 @@
         38,
         39
       ],
-      "key": "-f"
+      "keyParts": [
+        "-f"
+      ]
     },
     "expected": {
       "bytes": [
