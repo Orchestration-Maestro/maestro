@@ -308,8 +308,10 @@ Tool renderer field selection reuses `maestro-json` for JSON truth.
 
 `maestro-request` defines shared message and model-request records: model
 descriptors, messages, content, usage, stream events and diagnostics, plus
-`SourceInfo` and `Skill` for
-instruction inputs. Shared application messages include `BashExecutionMessage`,
+`SourceInfo`, `Skill`, `SlashCommandInfo` and `SlashCommandSource` for
+instruction inputs and command provenance. Resources, application presentation data and
+the guest re-export the command records; command discovery stays with its owner.
+Shared application messages include `BashExecutionMessage`,
 `CustomMessage`, `BranchSummaryMessage` and `CompactionSummaryMessage`, with the
 existing `Presence<T>` optional-field wrapper. It owns the declarations and their
 serialization, plus the resolved request-auth record, default zero usage and the shared

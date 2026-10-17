@@ -36,7 +36,8 @@ The terminal starts no runtime and no thread. It is given a `LocalSet`, and ever
 creates runs there: the input reader, the progress keepalive and every callback. Tasks run
 only while the caller drives that set inside a Tokio runtime whose I/O, time and signal
 drivers are enabled; a runtime built without one of them is a caller error, which Tokio
-reports itself. `start` called outside a running runtime returns an `ErrorKind::Other` error
+reports itself. The standalone one-input wait validates the I/O driver before changing
+standard-input attributes or flags. `start` called outside a running runtime returns an `ErrorKind::Other` error
 and changes nothing, even on a terminal that is already started. Because callbacks never
 leave the thread that drives the set, they need not be `Send`, and a callback may call back
 into the terminal to write or to stop it.
@@ -199,3 +200,18 @@ diagnostics of its own (the runtime host prints the errors its work returns, as 
 above), and a failure to append to the write log is ignored. Failures in
 background tasks cannot be returned where they happen, so the first is kept and the next
 `stop` reports it; dropping the terminal discards it.
+
+## One-input wait
+
+On Unix, `terminal::wait_for_input()` is a standalone future for a host-owned pause.
+Its first poll checks the caller's Tokio runtime and opens the existing input source
+before acquiring raw/nonblocking stdin through the terminal's restoration guard.
+It completes on one nonempty raw read: no key decoding, Enter requirement, protocol
+filtering, resize listener, output-mode negotiation, background task or runtime creation.
+A pipe is supported and arbitrary bytes count as input. EOF stays pending until drop.
+
+Success, errors and future drop restore the saved terminal attributes and descriptor
+flags, including initially raw state. Explicit completion reports restoration failures
+unless an earlier operation already failed. Opening or acquisition failures release the
+input registration. A later wait opens its own reader rather than retaining one.
+Windows native raw input is not exposed by this Unix operation.

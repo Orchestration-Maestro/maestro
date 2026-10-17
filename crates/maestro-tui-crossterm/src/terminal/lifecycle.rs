@@ -303,3 +303,27 @@ async fn wait_until_quiet(shared: &Shared, begin: Instant, max: Duration, idle: 
         sleep(left.map_or(idle, |left| left.min(idle))).await;
     }
 }
+
+/// Await one nonempty raw stdin read without starting a terminal or enabling output modes.
+/// Acquires on first poll and restores saved attributes and descriptor flags on completion
+/// or drop. EOF remains pending until dropped. Requires a caller-driven Tokio I/O runtime.
+///
+/// # Errors
+/// Returns runtime, acquisition, open, read or restoration errors, preserving an earlier
+/// operation error when restoration also fails.
+pub async fn wait_for_input() -> io::Result<()> {
+    Handle::try_current().map_err(io::Error::other)?;
+    let mut source = Source::open()?;
+    let mut acquired = Acquired::default();
+    let result = async {
+        acquired.take()?;
+        let mut chunk = [0; super::input::READ_SIZE];
+        if source.read(&mut chunk).await? == 0 {
+            std::future::pending::<()>().await;
+        }
+        Ok(())
+    }
+    .await;
+    let restored = acquired.restore();
+    result.and(restored)
+}

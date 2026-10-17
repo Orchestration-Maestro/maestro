@@ -552,11 +552,45 @@ fn check_resolution_chain(
             .join("sessions/--work--")
             .join(paths[0].file_name().unwrap());
         assert!(fs::symlink_metadata(&destination).unwrap().is_symlink());
-        if payload != "relative" && matches!(moving, "none" | "blocked") {
+        if payload != "relative" && moving == "none" {
             assert_eq!(fs::symlink_metadata(&destination).unwrap().ino(), identity);
             assert_eq!(fs::read_link(&destination).unwrap(), authored);
         } else {
             assert!(fs::read_link(&destination).unwrap().is_absolute());
         }
     }
+}
+
+#[test]
+#[cfg(unix)]
+fn blocked_intermediate_retry_keeps_migrated_alias_readable() {
+    use std::fs;
+    if std::env::var_os("STARTUP_OPERATION").is_some() {
+        maestro_app::configuration::migrations::migrate_sessions_from_agent_root().unwrap();
+        return;
+    }
+    let (scratch, paths) = resolution_chain(2, "absolute", "blocked", 0);
+    let alias = scratch
+        .0
+        .join("sessions/--work--")
+        .join(paths[0].file_name().unwrap());
+    for call in 0..3 {
+        if call == 2 {
+            fs::remove_file(paths[1].with_extension("jsonl.migrating")).unwrap();
+        }
+        child::probe(
+            "blocked_intermediate_retry_keeps_migrated_alias_readable",
+            &scratch.0,
+            &[
+                ("STARTUP_OPERATION", "sessions"),
+                ("MAESTRO_CODING_AGENT_DIR", "."),
+            ],
+            &[],
+        );
+        assert_eq!(
+            fs::read(&alias).unwrap(),
+            b"{\"type\":\"session\",\"cwd\":\"/work\"}\ntranscript"
+        );
+    }
+    assert!(!paths[1].exists());
 }

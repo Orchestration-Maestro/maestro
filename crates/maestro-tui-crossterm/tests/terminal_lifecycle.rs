@@ -1425,3 +1425,148 @@ fn native_restarting_active_terminal_replaces_resources_once() {
         });
     });
 }
+
+#[test]
+fn native_one_chunk_wait_restores_without_terminal_modes() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        for terminal in [true, false] {
+            let input = if terminal { pty_input() } else { pipe_input() };
+            let output = pipe_output();
+            let saved = (terminal.then(stdin_attributes), stdin_flags());
+            rig.run(async {
+                for chunk in [b"x".as_slice(), b"\x1b[?1u", &[0xff, 0x00]] {
+                    let wait = maestro_tui_crossterm::terminal::wait_for_input();
+                    let mut wait = std::pin::pin!(wait);
+                    poll_pending(wait.as_mut()).await;
+                    if terminal {
+                        assert_raw(&attributes(stdin()));
+                    }
+                    input.send(chunk);
+                    wait.await.unwrap();
+                    assert_eq!((terminal.then(stdin_attributes), stdin_flags()), saved);
+                    assert_eq!(output.take(), "");
+                }
+            });
+        }
+    });
+}
+
+/// Poll once without manufacturing a wake or running another input consumer.
+async fn poll_pending<F: Future>(mut future: std::pin::Pin<&mut F>) {
+    poll_fn(|cx| {
+        assert!(future.as_mut().poll(cx).is_pending());
+        std::task::Poll::Ready(())
+    })
+    .await;
+}
+
+#[test]
+fn native_one_chunk_wait_preserves_preexisting_raw_mode() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let input = pty_input();
+        let mut original = attributes(stdin());
+        original.make_raw();
+        original.local_modes.insert(LocalModes::ECHOK);
+        original.special_codes[SpecialCodeIndex::VTIME] = 7;
+        tcsetattr(stdin(), OptionalActions::Now, &original).unwrap();
+        fcntl_setfl(stdin(), stdin_flags() | OFlags::NONBLOCK).unwrap();
+        let saved = (stdin_attributes(), stdin_flags());
+        rig.run(async {
+            let mut wait = std::pin::pin!(maestro_tui_crossterm::terminal::wait_for_input());
+            poll_pending(wait.as_mut()).await;
+            input.send(b"key");
+            wait.await.unwrap();
+        });
+        assert_eq!((stdin_attributes(), stdin_flags()), saved);
+    });
+}
+
+#[test]
+fn native_one_chunk_wait_drop_restores_pending_acquisition() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let _input = pty_input();
+        let saved = (stdin_attributes(), stdin_flags());
+        rig.run(async {
+            let mut wait = Box::pin(maestro_tui_crossterm::terminal::wait_for_input());
+            poll_pending(wait.as_mut()).await;
+            assert_raw(&attributes(stdin()));
+            drop(wait);
+            assert_eq!((stdin_attributes(), stdin_flags()), saved);
+            let input = pipe_input();
+            let saved_flags = stdin_flags();
+            input.close();
+            let mut eof = Box::pin(maestro_tui_crossterm::terminal::wait_for_input());
+            poll_pending(eof.as_mut()).await;
+            tokio::task::yield_now().await;
+            poll_pending(eof.as_mut()).await;
+            assert!(stdin_flags().contains(OFlags::NONBLOCK));
+            drop(eof);
+            assert_eq!(stdin_flags(), saved_flags);
+        });
+    });
+}
+
+#[test]
+fn native_one_chunk_wait_failures_restore_acquisition() {
+    isolated!(&[], || {
+        use maestro_tui_crossterm::terminal::wait_for_input;
+        let _input = pty_input();
+        let saved = (stdin_attributes(), stdin_flags());
+        let mut outside = Box::pin(wait_for_input());
+        let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+        assert!(matches!(
+            outside.as_mut().poll(&mut context),
+            std::task::Poll::Ready(Err(_))
+        ));
+        assert_eq!((stdin_attributes(), stdin_flags()), saved);
+        let rig = Rig::paused();
+        rig.run(async {
+            let limit = DescriptorLimit::reached();
+            let error = wait_for_input().await.unwrap_err();
+            drop(limit);
+            assert_eq!(error.raw_os_error(), Some(Errno::MFILE.raw_os_error()));
+            assert_eq!((stdin_attributes(), stdin_flags()), saved);
+            directory_input();
+            let flags = stdin_flags();
+            let error = wait_for_input().await.unwrap_err();
+            assert_eq!(error.raw_os_error(), Some(Errno::ISDIR.raw_os_error()));
+            assert_eq!(stdin_flags(), flags);
+            #[cfg(target_os = "linux")]
+            {
+                let path = rustix::fs::open(
+                    "/",
+                    OFlags::PATH | OFlags::CLOEXEC,
+                    rustix::fs::Mode::empty(),
+                )
+                .unwrap();
+                rustix::stdio::dup2_stdin(&path).unwrap();
+                drop(path);
+                let (flags, descriptors) = (stdin_flags(), open_descriptors());
+                assert!(wait_for_input().await.is_err());
+                assert_eq!(stdin_flags(), flags);
+                assert_eq!(open_descriptors(), descriptors);
+            }
+        });
+    });
+}
+
+#[test]
+fn native_one_chunk_wait_leaves_later_input_for_the_next_wait() {
+    isolated!(&[], || {
+        let rig = Rig::paused();
+        let input = pipe_input();
+        rig.run(async {
+            let mut first = std::pin::pin!(maestro_tui_crossterm::terminal::wait_for_input());
+            poll_pending(first.as_mut()).await;
+            input.send(b"first");
+            first.await.unwrap();
+            let mut second = std::pin::pin!(maestro_tui_crossterm::terminal::wait_for_input());
+            poll_pending(second.as_mut()).await;
+            input.send(b"second");
+            second.await.unwrap();
+        });
+    });
+}

@@ -149,7 +149,9 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   It uses Tokio `=1.53.2`, defaults off, with `sync` on all targets.
 - `maestro-request` defines shared message and model-request records below layer 0:
   model, message, content, usage, stream and diagnostic data, plus `SourceInfo`
-  and `Skill`.
+  and `Skill`, plus the command provenance records `SlashCommandInfo` and
+  `SlashCommandSource`, re-exported by resources, application presentation data and
+  guest authoring rather than redeclared.
   Shared application messages include bash execution, custom, branch summary and
   compaction summary records with their existing `Presence<T>` wrapper.
   It also owns `model_registry::ResolvedRequestAuth`, re-exported by the native

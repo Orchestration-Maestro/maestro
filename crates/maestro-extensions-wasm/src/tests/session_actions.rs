@@ -1200,3 +1200,43 @@ fn assert_reverse_notifications(driver: &impl Driver, before: usize) -> Result<(
 
     Ok(())
 }
+
+/// Both adapters transport open command sources through the existing inventory getter.
+async fn shared_command_inventory(driver: &mut impl Driver) -> Result<(), String> {
+    use crate::{SlashCommandInfo, SlashCommandSource, SourceInfo, SourceOrigin, SourceScope};
+    let provenance = SourceInfo {
+        path: "commands/example".into(),
+        source: "package:fixture".into(),
+        scope: SourceScope::Project,
+        origin: SourceOrigin::Package,
+        base_dir: Some("commands".into()),
+    };
+    let commands = [
+        SlashCommandInfo {
+            name: "example".into(),
+            description: Some(String::new()),
+            source: SlashCommandSource("future-source".into()),
+            source_info: provenance.clone(),
+        },
+        SlashCommandInfo {
+            name: "other".into(),
+            description: None,
+            source: SlashCommandSource(SlashCommandSource::EXTENSION.into()),
+            source_info: provenance,
+        },
+    ];
+    let wire = serde_json::to_value(commands).map_err(|e| e.to_string())?;
+    assert_eq!(wire[0]["description"], "");
+    assert!(wire[1].get("description").is_none());
+    control(driver, json!({"value":wire})).await?;
+    assert_eq!(
+        ask(driver, "getCommands", json!({})).await?,
+        json!({"ok":wire})
+    );
+    Ok(())
+}
+
+#[test]
+fn command_inventory_uses_shared_open_source_records() -> Result<(), String> {
+    on_both_adapters!(shared_command_inventory)
+}

@@ -371,7 +371,10 @@ collapse missing and null, while existing nested options retain explicit null.
 [Application message records](../records.md#application-message-records) keep their existing
 `Presence` fields; model records have no added wrapper. The inventory record
 [`SlashCommandInfo`](../../crates/maestro-extensions-wasm/src/slash_commands.rs)
-also uses standard `Option` decoding for `description`: missing and null both become `None`.
+also uses standard `Option` decoding for `description`: missing and null both become `None`
+and are omitted on serialization; an empty string is retained. Command source is an open
+string with three default labels, not a closed enum. The declaration belongs to the shared
+request owner; see [ordinary command metadata](../application/commands.md).
 
 Numbers use plain JSON with exact finite floating-point parsing, including signed zero.
 Ordinary host nonfinite serialization writes null, which a required numeric decoder
