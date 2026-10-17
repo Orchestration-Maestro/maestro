@@ -2,7 +2,7 @@
 use super::{
     Renderer,
     inline::Style,
-    parse::{Kind, Node},
+    nodes::{Kind, Node},
 };
 
 /// Whether a row already carries its complete nested indentation.
@@ -59,7 +59,7 @@ impl Renderer<'_> {
                     | Kind::Strong(_)
                     | Kind::Strike(_)
                     | Kind::Link(..)
-                    | Kind::Image(_)
+                    | Kind::Image(..)
                     | Kind::Html(_)
                     | Kind::HtmlBlock(_)
             ) {
@@ -76,7 +76,9 @@ impl Renderer<'_> {
                         .into_iter()
                         .map(Row::Nested),
                 ),
-                Kind::Paragraph(children) => rows.push(Row::Content(self.inline(children, style))),
+                Kind::Paragraph(children) | Kind::Inline(children) => {
+                    rows.push(Row::Content(self.inline(children, style)));
+                }
                 Kind::Heading(..) | Kind::Quote(..) | Kind::Table(_) => {
                     rows.push(Row::Content(self.inline(std::iter::once(node), style)));
                 }

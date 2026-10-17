@@ -117,14 +117,11 @@ fn render_html(
     let mut html = String::new();
     for span in highlighter.highlight(code, lang)? {
         let text = code.get(span.range).unwrap_or_default();
-        let class = span
-            .color
-            .as_ref()
-            .and_then(|c| c.as_str().strip_prefix("syntax"));
+        let class = span.color.as_ref().and_then(|c| syntax_class(c.as_str()));
         match class {
             Some(name) => {
                 html.push_str("<span class=\"hljs-");
-                html.push_str(&name.to_ascii_lowercase());
+                html.push_str(&name);
                 html.push_str("\">");
                 escape(text, &mut html);
                 html.push_str("</span>");
@@ -157,4 +154,16 @@ pub fn highlight_auto(
         escape(code, &mut html);
         Ok(html)
     }
+}
+
+/// The class spelling emitted by both syntax projections.
+pub(crate) fn syntax_class(key: &str) -> Option<String> {
+    key.strip_prefix("syntax").map(str::to_ascii_lowercase)
+}
+
+/// CSS for emitted syntax classes using selected-pack custom properties.
+/// # Errors
+/// Returns an invalid shipped role-table error.
+pub fn highlight_css() -> Result<String, super::ThemeError> {
+    super::brand::syntax_css()
 }

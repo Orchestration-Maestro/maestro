@@ -1,9 +1,9 @@
 //! Literal message-link preparation with weak asynchronous feedback delivery.
 use crate::browser::{
     attachment_content::{self, AttachmentHost, AttachmentUiError},
-    timer::Timer,
+    copy_feedback::CopyFeedback,
 };
-use std::{cell::RefCell, rc::Rc};
+use std::rc::Rc;
 mod draw;
 pub use draw::{CopyLinkView, render_copy_link_button};
 
@@ -14,7 +14,7 @@ pub struct CopyLinkState {
     /// Stable toolkit identity, unrelated to literal message identity.
     id: egui::Id,
     /// Pending clipboard work cannot retain this UI owner.
-    feedback: Rc<RefCell<Option<Timer>>>,
+    feedback: CopyFeedback,
     /// Primary gesture admitted at its first endpoint.
     pressed: Option<()>,
 }
@@ -25,44 +25,14 @@ impl CopyLinkState {
         Self {
             host,
             id: attachment_content::identity(),
-            feedback: Rc::default(),
+            feedback: CopyFeedback::default(),
             pressed: None,
         }
     }
     /// Begin the native effect before scheduling its owned completion.
     fn copy(&self, text: &str, context: &egui::Context) {
-        let work = self.host.copy_to_clipboard(text);
-        let feedback = Rc::downgrade(&self.feedback);
-        let host = Rc::downgrade(&self.host);
-        let context = context.clone();
-        self.host.spawn_local(Box::pin(async move {
-            if !work.await {
-                return;
-            }
-            let (Some(feedback), Some(host)) = (feedback.upgrade(), host.upgrade()) else {
-                return;
-            };
-            let timer = host.timer(
-                1500,
-                false,
-                restore(Rc::downgrade(&feedback), context.clone()),
-            );
-            let old = feedback.replace(timer.ok());
-            drop(old);
-            context.request_repaint();
-        }));
+        self.feedback.copy(&self.host, text, 1500, context);
     }
-}
-/// Restore idle feedback without retaining its UI owner.
-fn restore(weak: std::rc::Weak<RefCell<Option<Timer>>>, context: egui::Context) -> Rc<dyn Fn()> {
-    Rc::new(move || {
-        let Some(feedback) = weak.upgrade() else {
-            return;
-        };
-        let old = feedback.borrow_mut().take();
-        drop(old);
-        context.request_repaint();
-    })
 }
 /// Escapes query syntax while preserving healthy opaque-key punctuation.
 const KEY_ESCAPES: &percent_encoding::AsciiSet = &percent_encoding::CONTROLS

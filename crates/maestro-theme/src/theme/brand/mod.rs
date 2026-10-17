@@ -50,3 +50,5 @@ impl From<BrandError> for ThemeError {
         Self::caused_by(error.to_string(), error)
     }
 }
+
+pub(crate) use projection::syntax_css;

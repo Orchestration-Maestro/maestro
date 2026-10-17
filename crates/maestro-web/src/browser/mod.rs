@@ -78,3 +78,5 @@ fn bezier(t: f32, first: f32, second: f32) -> f32 {
     let inverse = 1. - t;
     3. * inverse * inverse * t * first + 3. * inverse * t * t * second + t * t * t
 }
+
+pub(crate) mod copy_feedback;

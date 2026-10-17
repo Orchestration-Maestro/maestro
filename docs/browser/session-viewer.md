@@ -146,7 +146,9 @@ document, preferring the Clipboard API and falling back to a selected temporary
 textarea. Refusal or reached native failure reports false; scoped cleanup removes
 the textarea even if another observer removed it first. Direct effect calls have
 no control feedback. A successful control completion shows the selected pack's
-passed symbol for 1500 ms. Later successes replace the restoring timer; failures
+passed symbol for 1500 ms. The weak completion and restoring-timer owner is
+shared with the [original-text copy control](transcript.md), which retains its
+independent 2000 ms policy. Later successes replace the restoring timer; failures
 leave prior successful feedback unchanged. Timer registration failure restores
 idle rather than publishing permanent success. Dropping the state revokes its
 timer and weak UI delivery, not an already-started native copy.

@@ -1,7 +1,7 @@
 //! Inline formatting and parent-prefix restoration.
 use super::{
     Renderer, TextDecoration,
-    parse::{Kind, Node},
+    nodes::{Kind, Node},
 };
 use std::borrow::Cow;
 
@@ -60,10 +60,10 @@ impl Renderer<'_> {
                 ),
                 Kind::Html(text)
                 | Kind::HtmlBlock(text)
-                | Kind::Image(text)
+                | Kind::Image(text, _)
                 | Kind::Heading(_, _, text)
                 | Kind::Quote(_, text)
-                | Kind::Table(super::parse::Table { authored: text, .. }) => (
+                | Kind::Table(super::nodes::Table { authored: text, .. }) => (
                     text.split('\n')
                         .map(|part| self.style(part, style))
                         .collect::<Vec<_>>()
@@ -83,7 +83,7 @@ impl Renderer<'_> {
                     (self.theme.strikethrough)(&self.inline_with_prefix(children, style, prefix)),
                     true,
                 ),
-                Kind::Link(children, label, href) => (
+                Kind::Link(children, label, href, _) => (
                     self.link(
                         &self.inline_with_prefix(children, style, prefix),
                         label,
