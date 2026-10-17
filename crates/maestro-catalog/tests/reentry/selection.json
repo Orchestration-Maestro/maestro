@@ -1,0 +1,124 @@
+[
+  {
+    "input": {
+      "edit": "mutate"
+    },
+    "expected": {
+      "models": [
+        {
+          "id": "one",
+          "name": "edited"
+        },
+        {
+          "id": "two",
+          "name": "two"
+        }
+      ],
+      "retained": [
+        "nested",
+        "outer"
+      ],
+      "error": null
+    }
+  },
+  {
+    "input": {
+      "edit": "replace"
+    },
+    "expected": {
+      "models": [
+        {
+          "id": "replacement",
+          "name": "replacement"
+        }
+      ],
+      "retained": [
+        "nested",
+        "outer"
+      ],
+      "error": null
+    }
+  },
+  {
+    "input": {
+      "edit": "add"
+    },
+    "expected": {
+      "models": [
+        {
+          "id": "one",
+          "name": "one"
+        },
+        {
+          "id": "two",
+          "name": "two"
+        },
+        {
+          "id": "added",
+          "name": "added"
+        }
+      ],
+      "retained": [
+        "nested",
+        "outer"
+      ],
+      "error": null
+    }
+  },
+  {
+    "input": {
+      "edit": "delete"
+    },
+    "expected": {
+      "models": [
+        {
+          "id": "two",
+          "name": "two"
+        }
+      ],
+      "retained": [
+        "nested",
+        "outer"
+      ],
+      "error": null
+    }
+  },
+  {
+    "input": {
+      "edit": "empty"
+    },
+    "expected": {
+      "models": [],
+      "retained": [
+        "nested",
+        "outer"
+      ],
+      "error": null
+    }
+  },
+  {
+    "input": {
+      "edit": "error"
+    },
+    "expected": {
+      "models": [
+        {
+          "id": "one",
+          "name": "one"
+        },
+        {
+          "id": "two",
+          "name": "two"
+        },
+        {
+          "id": "nested-model",
+          "name": "nested-model"
+        }
+      ],
+      "retained": [
+        "nested"
+      ],
+      "error": "selection refused"
+    }
+  }
+]

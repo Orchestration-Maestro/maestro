@@ -154,7 +154,7 @@ struct Fixture {
     /// Original scoped fallback descriptors.
     scoped: Vec<Arc<RwLock<Model>>>,
     /// Constructor read count.
-    reads: Rc<std::cell::Cell<usize>>,
+    reads: Arc<std::sync::atomic::AtomicUsize>,
     /// Weak caller capture used for teardown.
     release: Weak<()>,
 }
@@ -164,7 +164,7 @@ impl Fixture {
         assert!(!query.current_shared || !query.scoped.is_empty());
         bindings(std::mem::take(&mut query.bindings));
         let (theme, live) = published::published(&colors(0));
-        let (mut registry, reads) = registry(query);
+        let (registry, reads) = registry(query);
         let runtime = manual_runtime::ManualRuntime::new();
         let tui = TUI::new(
             recording_terminal::RecordingTerminal::new(120, 24).handle(),
@@ -196,7 +196,7 @@ impl Fixture {
             ModelSelectorComponent::new(
                 &tui,
                 observed.settings.clone(),
-                &mut registry,
+                &registry,
                 callbacks,
                 options,
             );
@@ -247,7 +247,10 @@ fn run(case: Case) {
     } = case;
     let fixture = Fixture::new(&mut query);
     if let Some(count) = expected.refresh_count {
-        assert_eq!(fixture.reads.get(), count);
+        assert_eq!(
+            fixture.reads.load(std::sync::atomic::Ordering::SeqCst),
+            count
+        );
     }
     if expected.input_lines.is_some() {
         fixture.retained(expected, query.width);
@@ -493,13 +496,13 @@ fn malformed_notice() {
         TerminalImage::default(),
         None,
     );
-    let mut registry = malformed_registry();
+    let registry = malformed_registry();
     let selector = ModelSelectorComponent::new(
         &tui,
         Rc::new(RefCell::new(SettingsManager::in_memory(
             serde_json::from_str("{}").unwrap(),
         ))),
-        &mut registry,
+        &registry,
         ModelSelectorCallbacks {
             on_select: Rc::new(|_| {}),
             on_cancel: Rc::new(|| {}),
@@ -557,7 +560,7 @@ fn failing_registry(
     Arc<std::sync::atomic::AtomicBool>,
 ) {
     let query: Query = serde_json::from_value(serde_json::json!({"available":[], "readFailure":{"message":input.notice.take().unwrap(), "path":"<models-file>"}})).unwrap();
-    let (mut registry, _) = registry(&query);
+    let (registry, _) = registry(&query);
     assert!(registry.get_error().is_some());
     registry
         .register_provider(
@@ -624,7 +627,7 @@ fn failed_picker_clears_all_and_scoped_views_but_keeps_original_help() {
     for case in selector_failure_support::cases(name) {
         bindings(std::collections::BTreeMap::default());
         let mut input = case.input;
-        let (mut registry, reached) = failing_registry(&mut input);
+        let (registry, reached) = failing_registry(&mut input);
         let runtime = runtime_spy::Spy::default();
         let tui = TUI::new(
             recording_terminal::RecordingTerminal::new(100, 24).handle(),
@@ -641,7 +644,7 @@ fn failed_picker_clears_all_and_scoped_views_but_keeps_original_help() {
         let selector = ModelSelectorComponent::new(
             &tui,
             settings.clone(),
-            &mut registry,
+            &registry,
             ModelSelectorCallbacks {
                 on_select: Rc::new(|_| panic!("failed load cannot select")),
                 on_cancel: Rc::new(move || {
@@ -712,7 +715,7 @@ impl maestro_app::OAuthProviderInterface for RejectingModels {
 }
 /// Real retained provider whose transformation is first consumed by the next refresh.
 fn rejecting_registry() -> maestro_app::ModelRegistry {
-    let mut registry = maestro_app::ModelRegistry::in_memory(Arc::new(
+    let registry = maestro_app::ModelRegistry::in_memory(Arc::new(
         maestro_app::AuthStorage::in_memory(std::iter::empty().collect()),
     ))
     .unwrap();
@@ -757,7 +760,7 @@ fn picker_refresh_failure_is_not_availability_notice() {
     }
     for case in selector_failure_support::cases(name) {
         assert_eq!(case.input.phase.as_deref(), Some("refresh"));
-        let mut registry = rejecting_registry();
+        let registry = rejecting_registry();
         let runtime = runtime_spy::Spy::default();
         let tui = TUI::new(
             recording_terminal::RecordingTerminal::new(100, 24).handle(),
@@ -769,7 +772,7 @@ fn picker_refresh_failure_is_not_availability_notice() {
         let result = ModelSelectorComponent::new(
             &tui,
             Observations::new().settings,
-            &mut registry,
+            &registry,
             ModelSelectorCallbacks {
                 on_select: Rc::new(|_| panic!("no picker")),
                 on_cancel: Rc::new(|| panic!("no picker")),

@@ -273,7 +273,7 @@ impl ModelSelectorComponent {
     pub fn new(
         tui: &TUI,
         settings_manager: Rc<RefCell<SettingsManager>>,
-        model_registry: &mut ModelRegistry,
+        model_registry: &ModelRegistry,
         callbacks: ModelSelectorCallbacks,
         options: ModelSelectorOptions,
     ) -> Result<Self, Box<dyn Error>> {
@@ -289,7 +289,7 @@ impl ModelSelectorComponent {
             settings: settings_manager,
             callbacks,
             theme: options.theme,
-            error: model_registry.get_error().map(str::to_owned),
+            error: model_registry.get_error(),
             list: Rc::new(Container::new()),
         };
         if let Err(error) = state.load_models(model_registry, options.scoped_models, &compare) {

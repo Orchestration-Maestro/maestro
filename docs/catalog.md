@@ -4,6 +4,8 @@
 model file. `create` uses native file operations; `with_operations` accepts
 caller-selected `ModelFileOperations`. Browser callers use that adapter surface.
 `in_memory` skips file access. `auth_storage` borrows the supplied credential owner.
+Native file effects require `Send + Sync`; browser file effects may capture local
+`Rc` state.
 
 [Model selection](selection.md) describes references, patterns and command-line choices.
 
@@ -55,14 +57,35 @@ File failures are available through `get_error`: schema failures, native parse
 failures and load failures include the supplied path. A failed file replacement
 removes previous custom data and uses offline descriptors as the transformation
 input. Refresh clears
-the preceding file diagnostic before reloading.
+the preceding file diagnostic before reloading. `get_error` returns an owned
+`Option<String>`: an earlier observation survives clearing or replacement.
 
 Construction loads without resetting shared account or protocol registrations.
 `refresh` clears request sources and the preceding file diagnostic, resets shared
 registrations, loads the underlying catalog, then replays this registry's retained
-providers in initial registration order. A transformation failure stops replay
+providers in live insertion order. Replacement keeps its slot; removal skips a
+pending provider; removal followed by insertion moves it to the end. Callback
+additions are visited during that replay. A transformation failure stops replay
 with earlier effects still visible. See [OAuth transformations](models/oauth.md)
 for the delegated account behavior.
+
+## Callback re-entry
+
+Registration, removal and refresh accept shared catalog references. The catalog
+owns its private synchronization; callers need no outer lock or `RefCell` borrow.
+Supplied file, credential, OAuth, configured-value and display-name effects run
+without catalog, configuration or descriptor guards. Callback ownership is retired
+after those guards end. Callbacks may synchronously inspect or update the same
+catalog, including recursive removal and refresh.
+
+A successful transformation publishes exactly its selected list, not a merge with
+nested writes. A failing transformation leaves already-applied effects visible.
+Loading publishes its local selected list only after its complete transformation
+chain succeeds. Public regression witnesses in
+[`catalog_reentry.rs`](../crates/maestro-catalog/tests/catalog_reentry.rs) exercise
+these boundaries, live replay, owned diagnostics and native/local callers; the
+[browser example](../crates/maestro-catalog/examples/browser_catalog_check.rs)
+provides compile-only evidence for local browser effects.
 
 ## Dynamic providers
 
@@ -109,7 +132,8 @@ handles remain independent of later publication or registration changes.
 
 `get_api_key_for_provider(provider, operations)` selects a credential key with
 its fallback resolver disabled, then tries the configured nonempty provider key.
-A present empty credential key suppresses the configured fallback.
+A present empty credential key suppresses the configured fallback. Provider-only
+lookup samples that fallback after credential extraction.
 `get_api_key_and_headers(model, operations)` accepts a shared descriptor, including
 one outside the catalog, and returns `ResolvedRequestAuth::Ok` or
 `ResolvedRequestAuth::Error` with the winning resolution message.
@@ -132,7 +156,9 @@ Provider headers resolve before model headers even if later values replace them.
 The request merges literal descriptor headers, resolved provider headers and
 resolved model headers in that order, then adds `Authorization` when `authHeader`
 is enabled. An enabled auth header requires a nonempty selected key. Model
-request sources use both provider and model ID as their identity.
+request sources use both provider and model ID as their identity. Request resolution
+retains its provider-source entry before credential work, but reads model identity
+and model-header sources at their later consuming phases.
 
 ## Authentication metadata
 

@@ -135,7 +135,7 @@ fn native_and_controlled_reads_share_failure_boundaries() {
     );
     std::fs::remove_dir(file.path()).unwrap();
     let fail = Arc::new(std::sync::atomic::AtomicBool::new(true));
-    let mut disappeared =
+    let disappeared =
         ModelRegistry::with_operations(support::auth(), "gone", Disappearing(fail.clone()))
             .unwrap();
     assert!(

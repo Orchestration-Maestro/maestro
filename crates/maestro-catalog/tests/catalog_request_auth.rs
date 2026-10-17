@@ -328,7 +328,7 @@ fn admitted_definitions_replace_override_header_storage() {
 #[test]
 fn pair_keys_stay_distinct_through_reload_and_removal() {
     let text = support::Text(Arc::new(std::sync::Mutex::new(Some(r#"{"providers":{"a:b":{"api":"test","baseUrl":"url","apiKey":"key-ab","models":[{"id":"c","headers":{"X":"ab-c"}}]},"a":{"api":"test","baseUrl":"url","apiKey":"key-a","models":[{"id":"b:c","headers":{"X":"a-bc"}}]}}}"#.into()))));
-    let mut registry = maestro_catalog::ModelRegistry::with_operations(
+    let registry = maestro_catalog::ModelRegistry::with_operations(
         support::auth(),
         "models-input.json",
         text.clone(),
@@ -366,7 +366,7 @@ fn reload_clears_replaces_and_removes_request_configuration() {
         r#""apiKey":"first","authHeader":true,"headers":{"X":"first"}"#,
         "",
     )))));
-    let mut registry = maestro_catalog::ModelRegistry::with_operations(
+    let registry = maestro_catalog::ModelRegistry::with_operations(
         support::auth(),
         "models-input.json",
         text.clone(),
@@ -1021,7 +1021,7 @@ fn request_fields_preserve_checked_input_domains() {
             support::Text(Arc::new(std::sync::Mutex::new(Some((*input).into())))),
         )
         .unwrap();
-        assert_eq!(registry.get_error(), *diagnostic);
+        assert_eq!(registry.get_error().as_deref(), *diagnostic);
         if diagnostic.is_none() {
             success(request(&registry, &Operations), *key, headers);
         }
@@ -1036,7 +1036,7 @@ fn request_result_catches_storage_errors_while_key_lookup_propagates() {
     let mut provider = request_support::OAuth::new(id, "controlled");
     provider.fail_key = true;
     let _registration = provider.register();
-    let mut registry = maestro_catalog::ModelRegistry::in_memory(support::auth()).unwrap();
+    let registry = maestro_catalog::ModelRegistry::in_memory(support::auth()).unwrap();
     let config = dynamic::config(&["m"]);
     config.write().unwrap().api_key = Some("!never".into());
     registry.register_provider(id, config).unwrap();
@@ -1124,7 +1124,7 @@ fn oauth_reload_failure_keeps_new_request_configuration() {
         r#""apiKey":"first","headers":{"X":"first"}"#,
         "",
     )))));
-    let mut registry =
+    let registry =
         maestro_catalog::ModelRegistry::with_operations(auth, "models-input.json", text.clone())
             .unwrap();
     let config = dynamic::config(&["dynamic"]);

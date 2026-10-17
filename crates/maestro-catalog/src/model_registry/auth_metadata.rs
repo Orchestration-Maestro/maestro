@@ -16,8 +16,7 @@ impl ModelRegistry {
         }
         let provider = read_provider(model);
         Ok(self
-            .provider_configs
-            .get(&provider)
+            .request_config(&provider)
             .is_some_and(|c| c.api_key.is_some()))
     }
     /// Filter current slots up to the captured list length, retaining shared descriptors.
@@ -55,9 +54,9 @@ impl ModelRegistry {
         if status.source.is_some() {
             return Ok(status);
         }
-        let Some(key) = self
-            .provider_configs
-            .get(provider)
+        let config = self.request_config(provider);
+        let Some(key) = config
+            .as_ref()
             .and_then(|c| c.api_key.as_ref())
             .filter(|key| !key.is_empty())
         else {
@@ -82,7 +81,14 @@ impl ModelRegistry {
     /// Prefer retained labels, then current OAuth, shipped labels and the identifier.
     #[must_use]
     pub fn get_provider_display_name(&self, provider: &str) -> String {
-        let registered = self.registered_providers.get(provider).map(|config| {
+        let retained = self
+            .state
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .registered_providers
+            .get(provider)
+            .map(|(_, c)| Arc::clone(c));
+        let registered = retained.map(|config| {
             let config = config.read().unwrap_or_else(PoisonError::into_inner);
             (config.name.clone(), config.oauth.clone())
         });
