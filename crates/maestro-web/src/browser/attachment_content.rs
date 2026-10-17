@@ -457,3 +457,8 @@ pub(crate) fn panel_shadow(ui: &egui::Ui, rect: egui::Rect, radius: f32, border:
         );
     }
 }
+
+/// Round and clamp only the final encoded color channel.
+pub(crate) fn channel(value: f32) -> u8 {
+    value.round().clamp(0., 255.).to_u8().unwrap_or_default()
+}

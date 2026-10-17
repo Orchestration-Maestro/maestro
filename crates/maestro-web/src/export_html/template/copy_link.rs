@@ -17,6 +17,8 @@ pub struct CopyLinkState {
     feedback: CopyFeedback,
     /// Primary gesture admitted at its first endpoint.
     pressed: Option<()>,
+    /// Mounted property histories, absent before the first resolved style.
+    transitions: Option<draw::CopyLinkTransitions>,
 }
 impl CopyLinkState {
     /// Retain the supplied browser effects and a stable control identity.
@@ -27,6 +29,7 @@ impl CopyLinkState {
             id: attachment_content::identity(),
             feedback: CopyFeedback::default(),
             pressed: None,
+            transitions: None,
         }
     }
     /// Begin the native effect before scheduling its owned completion.
