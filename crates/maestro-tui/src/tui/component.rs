@@ -28,7 +28,7 @@ pub trait InputHandler {
 pub struct FocusFlag {
     /// This component's own focus state.
     focused: Cell<bool>,
-    /// Child receiving each focus change immediately.
+    /// Targets receiving each focus change immediately, in order.
     targets: Vec<Rc<dyn Focusable>>,
 }
 
@@ -54,7 +54,7 @@ impl FocusFlag {
         self.focused.get()
     }
 
-    /// Records own state, then synchronously forwards to the optional child.
+    /// Records own state, then synchronously forwards to every target in order.
     pub fn set(&self, focused: bool) {
         self.focused.set(focused);
         for target in &self.targets {

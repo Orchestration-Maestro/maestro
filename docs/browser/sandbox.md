@@ -34,9 +34,12 @@ properties still ignore numeric assignments, as they do for any browser script.
 HTML and vector links use native hyperlink state and effective resolved HTTP(S)
 targets, including namespaced and animated vector addresses.
 
-The runtime's inert template moves its parser-created script into the head before
-authored head content. The REPL module's non-rendering vector scaffold is removed
-before execution; no carrier template or vector element remains after loading.
+When the script policy admits the head boot script, the runtime's inert template
+moves its parser-created script into the head before authored head content. When it
+admits the body remover, the REPL module's non-rendering vector scaffold is removed
+before execution. With both admitted, no carrier template or vector element remains
+after loading; a policy omitting a boot script's digest leaves its inert template or
+vector scaffold in the loaded document.
 During runtime execution, `document.currentScript` is an `SVGScriptElement`; the built-in
 providers do not read it. Hosts pin four digests over decoded text content, not encoded
 markup: the runtime, module and these two constant boot scripts (SHA-256):

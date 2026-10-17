@@ -109,7 +109,7 @@ impl std::error::Error for AttachmentError {
 ///
 /// # Errors
 /// Returns transport/body failures, non-success status, unsupported media types,
-/// or document processing failures. Word and binary XLS remain unsupported.
+/// or document processing failures. Word documents remain unsupported.
 pub async fn load_attachment(
     source: AttachmentSource<'_>,
     file_name: Option<&str>,
