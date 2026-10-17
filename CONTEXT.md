@@ -14,6 +14,7 @@ From `docs/specs/maestro-port.md`.
 - **Model pattern:** Authored ID/name selection text with an optional thinking suffix; [model selection](docs/selection.md) owns matching and diagnostics.
 - **Model identity:** The combination of provider ID and model ID.
 - **Replay identity:** Provider, API and model ID used to decide whether signed response content is reusable.
+- **Socket effect:** A replaceable model-library operation opening an owned connection for complete text messages; native upgrades are shared, while caller authentication and lifetime policy stay with their operation.
 - **Protocol adapter:** An implementation of a registered model protocol, including provider-specific wire conversion and usage interpretation.
 - **ModelRegistry:** The owner of the usable local model catalog. [Local model loading](docs/catalog.md) provides explicit-file and memory construction, overrides, shared observations, reload, request authentication, provider metadata and dynamic registration, replacement, replay and removal.
 - **Tool arguments:** The model-supplied argument object, completed from accumulated JSON before execution.
