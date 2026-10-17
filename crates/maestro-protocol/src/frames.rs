@@ -709,7 +709,7 @@ pub enum VersionCheck {
 ///
 /// Current rules:
 /// - Version 0 (pre-persistence client) is always rejected.
-/// - Matching major versions are accepted.
+/// - Exactly matching protocol versions are accepted.
 /// - A client with a newer version than the server is rejected.
 /// - A client with an older version than the server is rejected
 ///   (backward compatibility is not yet supported).

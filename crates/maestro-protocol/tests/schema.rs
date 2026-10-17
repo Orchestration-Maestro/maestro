@@ -53,7 +53,7 @@ fn protocol_schema_document() -> serde_json::Value {
 
 #[test]
 /// Request uses dot method names.
-fn request_uses_dot_method_names() {
+fn request_method_serializes_with_a_dot_separator() {
     let request = Request {
         id: "req_1".into(),
         method: Method::WorkspaceCreate(WorkspaceCreateParams {
@@ -70,7 +70,7 @@ fn request_uses_dot_method_names() {
 
 #[test]
 /// Agent start and prompt requests round trip.
-fn agent_start_and_prompt_requests_round_trip() {
+fn agent_launch_and_prompt_options_survive_json() {
     let start = Request {
         id: "start".into(),
         method: Method::AgentStart(AgentStartParams {
@@ -131,8 +131,8 @@ fn agent_start_and_prompt_requests_round_trip() {
 }
 
 #[test]
-/// Bundled protocol schema refs resolve inside bundle.
-fn bundled_protocol_schema_refs_resolve_inside_bundle() {
+/// Bundled schema references do not use standalone definition prefixes.
+fn schema_bundle_avoids_standalone_definition_prefixes() {
     /// Assert no standalone refs.
     fn assert_no_standalone_refs(value: &serde_json::Value) {
         match value {
@@ -161,7 +161,7 @@ fn bundled_protocol_schema_refs_resolve_inside_bundle() {
 
 #[test]
 /// Generated protocol schema artifact is current.
-fn generated_protocol_schema_artifact_is_current() {
+fn schema_bundle_matches_the_published_document() {
     let expected: serde_json::Value =
         serde_json::from_str(include_str!("../../../docs/daemon-protocol.schema.json")).unwrap();
     assert_eq!(expected, protocol_schema_document());
@@ -169,7 +169,7 @@ fn generated_protocol_schema_artifact_is_current() {
 
 #[test]
 /// Request round trips for server stop.
-fn request_round_trips_for_server_stop() {
+fn server_stop_preserves_its_request_envelope() {
     let request = Request {
         id: "req_stop".into(),
         method: Method::ServerStop(EmptyParams::default()),
@@ -183,7 +183,7 @@ fn request_round_trips_for_server_stop() {
 
 #[test]
 /// Request round trips for server reload config.
-fn request_round_trips_for_server_reload_config() {
+fn config_reload_preserves_its_request_envelope() {
     let request = Request {
         id: "req_reload".into(),
         method: Method::ServerReloadConfig(EmptyParams::default()),
@@ -197,7 +197,7 @@ fn request_round_trips_for_server_reload_config() {
 
 #[test]
 /// Request round trips for server reload agent manifests.
-fn request_round_trips_for_server_reload_agent_manifests() {
+fn manifest_reload_preserves_its_request_envelope() {
     let request = Request {
         id: "req_reload_agent_manifests".into(),
         method: Method::ServerReloadAgentManifests(EmptyParams::default()),
@@ -211,7 +211,7 @@ fn request_round_trips_for_server_reload_agent_manifests() {
 
 #[test]
 /// Request round trips for server agent manifests.
-fn request_round_trips_for_server_agent_manifests() {
+fn manifest_listing_preserves_its_request_envelope() {
     let request = Request {
         id: "req_agent_manifests".into(),
         method: Method::ServerAgentManifests(EmptyParams::default()),
@@ -225,7 +225,7 @@ fn request_round_trips_for_server_agent_manifests() {
 
 #[test]
 /// Request round trips for agent explain.
-fn request_round_trips_for_agent_explain() {
+fn agent_explanation_preserves_its_request_envelope() {
     let request = Request {
         id: "req_agent_explain".into(),
         method: Method::AgentExplain(AgentTarget {
@@ -241,7 +241,7 @@ fn request_round_trips_for_agent_explain() {
 
 #[test]
 /// Notification show request parses.
-fn notification_show_request_parses() {
+fn notification_json_decodes_its_presentation_options() {
     let json = r#"{"id":"req_1","method":"notification.show","params":{"title":"build failed","body":"api workspace","position":"top-left","sound":"request"}}"#;
     let request: Request = serde_json::from_str(json).unwrap();
     let Method::NotificationShow(params) = request.method else {
@@ -258,7 +258,7 @@ fn notification_show_request_parses() {
 
 #[test]
 /// Notification show sound defaults to none.
-fn notification_show_sound_defaults_to_none() {
+fn omitted_notification_sound_selects_none() {
     let json = r#"{"id":"req_1","method":"notification.show","params":{"title":"build failed"}}"#;
     let request: Request = serde_json::from_str(json).unwrap();
     let Method::NotificationShow(params) = request.method else {
@@ -270,7 +270,7 @@ fn notification_show_sound_defaults_to_none() {
 
 #[test]
 /// Client window title requests round trip.
-fn client_window_title_requests_round_trip() {
+fn window_title_commands_preserve_their_json_records() {
     let set = Request {
         id: "req_title_set".into(),
         method: Method::ClientWindowTitleSet(ClientWindowTitleSetParams {
@@ -295,7 +295,7 @@ fn client_window_title_requests_round_trip() {
 
 #[test]
 /// Agent view requests round trip.
-fn agent_view_requests_round_trip() {
+fn agent_view_commands_preserve_their_json_records() {
     let set_json = serde_json::json!({
         "id": "view-set",
         "method": "agent.view.set",
@@ -339,7 +339,7 @@ fn agent_view_requests_round_trip() {
 
 #[test]
 /// Unknown method is rejected.
-fn unknown_method_is_rejected() {
+fn unregistered_method_names_fail_request_decoding() {
     let json = r#"{"id":"req_1","method":"nope","params":{}}"#;
     let err = serde_json::from_str::<Request>(json)
         .unwrap_err()
@@ -349,7 +349,7 @@ fn unknown_method_is_rejected() {
 
 #[test]
 /// Missing required params are rejected.
-fn missing_required_params_are_rejected() {
+fn absent_mandatory_parameters_fail_request_decoding() {
     let json = r#"{"id":"req_1","method":"pane.send_text","params":{"pane_id":"p_1"}}"#;
     let err = serde_json::from_str::<Request>(json)
         .unwrap_err()
@@ -359,7 +359,7 @@ fn missing_required_params_are_rejected() {
 
 #[test]
 /// Pane send input defaults to empty text and keys.
-fn pane_send_input_defaults_to_empty_text_and_keys() {
+fn omitted_pane_input_fields_produce_empty_values() {
     let json = r#"
     {
         "id": "req_1",
@@ -381,7 +381,7 @@ fn pane_send_input_defaults_to_empty_text_and_keys() {
 
 #[test]
 /// Pane wait for output defaults strip ansi to true.
-fn pane_wait_for_output_defaults_strip_ansi_to_true() {
+fn omitted_output_wait_option_enables_ansi_stripping() {
     let json = r#"
     {
         "id": "req_1",
@@ -403,7 +403,7 @@ fn pane_wait_for_output_defaults_strip_ansi_to_true() {
 
 #[test]
 /// Pane read defaults to text format.
-fn pane_read_defaults_to_text_format() {
+fn omitted_pane_read_format_selects_text() {
     let json = r#"
     {
         "id": "req_1",
@@ -427,7 +427,7 @@ fn pane_read_defaults_to_text_format() {
 
 #[test]
 /// Pane current request round trips.
-fn pane_current_request_round_trips() {
+fn current_pane_lookup_preserves_its_request_envelope() {
     let request = Request {
         id: "req_current".into(),
         method: Method::PaneCurrent(PaneCurrentParams {
@@ -444,7 +444,7 @@ fn pane_current_request_round_trips() {
 
 #[test]
 /// Pane process info request round trips.
-fn pane_process_info_request_round_trips() {
+fn pane_process_lookup_preserves_its_request_envelope() {
     let request = Request {
         id: "req_process_info".into(),
         method: Method::PaneProcessInfo(PaneProcessInfoParams {
@@ -461,7 +461,7 @@ fn pane_process_info_request_round_trips() {
 
 #[test]
 /// Event envelope round trips.
-fn event_envelope_round_trips() {
+fn event_json_preserves_payload_and_envelope() {
     let events = [
         EventEnvelope {
             event: EventKind::PaneOutputChanged,
@@ -513,7 +513,7 @@ fn event_envelope_round_trips() {
 
 #[test]
 /// Subscribe request parses parameterized subscriptions.
-fn subscribe_request_parses_parameterized_subscriptions() {
+fn subscription_json_decodes_event_parameters() {
     let json = r#"
     {
         "id": "sub_1",
@@ -571,7 +571,7 @@ fn subscribe_request_parses_parameterized_subscriptions() {
 
 #[test]
 /// Subscription event envelope round trips.
-fn subscription_event_envelope_round_trips() {
+fn subscription_delivery_preserves_its_json_envelope() {
     let event = SubscriptionEventEnvelope {
         event: SubscriptionEventKind::PaneOutputMatched,
         data: SubscriptionEventData::PaneOutputMatched(PaneOutputMatchedEvent {
@@ -598,7 +598,7 @@ fn subscription_event_envelope_round_trips() {
 
 #[test]
 /// Scroll changed subscription event round trips.
-fn scroll_changed_subscription_event_round_trips() {
+fn scroll_delivery_preserves_its_subscription_payload() {
     let event = SubscriptionEventEnvelope {
         event: SubscriptionEventKind::ScrollChanged,
         data: SubscriptionEventData::ScrollChanged(PaneScrollChangedEvent {
@@ -620,7 +620,7 @@ fn scroll_changed_subscription_event_round_trips() {
 
 #[test]
 /// Success response round trips.
-fn success_response_round_trips() {
+fn successful_reply_survives_json_encoding() {
     let response = SuccessResponse {
         id: "req_1".into(),
         result: ResponseResult::Pong {
@@ -640,7 +640,7 @@ fn success_response_round_trips() {
 
 #[test]
 /// Session snapshot request and response round trip.
-fn session_snapshot_request_and_response_round_trip() {
+fn session_snapshot_exchange_preserves_json_records() {
     let request = Request {
         id: "req_snapshot".into(),
         method: Method::SessionSnapshot(EmptyParams::default()),
@@ -675,7 +675,7 @@ fn session_snapshot_request_and_response_round_trip() {
 
 #[test]
 /// Worktree request and response round trip.
-fn worktree_request_and_response_round_trip() {
+fn worktree_exchange_preserves_json_records() {
     let request = Request {
         id: "req_worktree".into(),
         method: Method::WorktreeCreate(WorktreeCreateParams {
@@ -733,7 +733,7 @@ fn worktree_request_and_response_round_trip() {
 
 #[test]
 /// Worktree lifecycle events round trip.
-fn worktree_lifecycle_events_round_trip() {
+fn worktree_notifications_preserve_lifecycle_payloads() {
     let subscription = Request {
         id: "sub_worktrees".into(),
         method: Method::EventsSubscribe(EventsSubscribeParams {
@@ -798,7 +798,7 @@ fn worktree_lifecycle_events_round_trip() {
 
 #[test]
 /// Plugin link list unlink round trip.
-fn plugin_link_list_unlink_round_trip() {
+fn plugin_registration_commands_preserve_json_records() {
     let link = Request {
         id: "plugin_link".into(),
         method: Method::PluginLink(PluginLinkParams {
@@ -865,7 +865,7 @@ fn plugin_link_list_unlink_round_trip() {
 
 #[test]
 /// Layout export apply round trip.
-fn layout_export_apply_round_trip() {
+fn layout_exchange_preserves_tree_records() {
     let root = LayoutNode::Split {
         direction: SplitDirection::Right,
         ratio: 0.6,
@@ -918,7 +918,7 @@ fn layout_export_apply_round_trip() {
 
 #[test]
 /// Authority mutation requests round trip.
-fn authority_mutation_requests_round_trip() {
+fn authority_commands_preserve_json_parameters() {
     let workspace_move = Request {
         id: "move_ws".into(),
         method: Method::WorkspaceMove(WorkspaceMoveParams {
@@ -960,7 +960,7 @@ fn authority_mutation_requests_round_trip() {
 
 #[test]
 /// Create response round trips with root pane.
-fn create_response_round_trips_with_root_pane() {
+fn creation_reply_preserves_the_root_pane() {
     let response = SuccessResponse {
         id: "req_2".into(),
         result: ResponseResult::TabCreated {
@@ -1006,7 +1006,7 @@ fn create_response_round_trips_with_root_pane() {
 
 #[test]
 /// Error response round trips.
-fn error_response_round_trips() {
+fn failure_reply_preserves_error_fields() {
     let response = ErrorResponse {
         id: "req_1".into(),
         error: ErrorBody {
@@ -1022,7 +1022,7 @@ fn error_response_round_trips() {
 
 #[test]
 /// Event wait parses typed match.
-fn event_wait_parses_typed_match() {
+fn event_wait_decodes_typed_matching_options() {
     let json = r#"
     {
         "id": "req_9",
@@ -1053,7 +1053,7 @@ fn event_wait_parses_typed_match() {
 
 #[test]
 /// Plugin action list and invoke round trips.
-fn plugin_action_list_and_invoke_round_trips() {
+fn plugin_action_exchange_preserves_json_records() {
     let list = Request {
         id: "req_plugin_action_list".into(),
         method: Method::PluginActionList(PluginActionListParams {
@@ -1098,7 +1098,7 @@ fn plugin_action_list_and_invoke_round_trips() {
 
 #[test]
 /// Plugin pane open request round trips.
-fn plugin_pane_open_request_round_trips() {
+fn plugin_pane_request_preserves_popup_options() {
     let request = Request {
         id: "req_plugin_pane".into(),
         method: Method::PluginPaneOpen(PluginPaneOpenParams {
@@ -1127,8 +1127,8 @@ fn plugin_pane_open_request_round_trips() {
 }
 
 #[test]
-/// Popup close request round trips.
-fn popup_close_request_round_trips() {
+/// Popup close emits its method name and empty parameters.
+fn popup_close_serializes_the_method_and_empty_parameters() {
     let request = Request {
         id: "popup-close".into(),
         method: Method::PopupClose(EmptyParams::default()),

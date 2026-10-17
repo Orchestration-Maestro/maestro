@@ -6,7 +6,7 @@ use maestro_protocol::events::*;
 
 #[test]
 /// Known event names stay in sync with event kind.
-fn known_event_names_stay_in_sync_with_event_kind() {
+fn event_kinds_match_the_independent_name_inventory() {
     let mut from_kind = KNOWN_EVENT_KINDS
         .iter()
         .map(|kind| kind.dot_name())
@@ -22,7 +22,7 @@ fn known_event_names_stay_in_sync_with_event_kind() {
 
 #[test]
 /// Plugin hook event names exclude high volume events.
-fn plugin_hook_event_names_exclude_high_volume_events() {
+fn plugin_hooks_filter_frequent_updates_but_keep_pane_moves() {
     let names = plugin_hook_event_names();
     assert!(!names.contains(&"pane.output_changed"));
     assert!(!names.contains(&"layout.updated"));

@@ -9,7 +9,7 @@ use std::io::{self, Read};
 
 #[test]
 /// Client hello roundtrip.
-fn client_hello_roundtrip() {
+fn handshake_fields_survive_binary_encoding() {
     let msg = hello_message();
     let encoded = bincode::serde::encode_to_vec(&msg, bincode::config::standard()).unwrap();
     let (decoded, _): (ClientMessage, _) =
@@ -19,7 +19,7 @@ fn client_hello_roundtrip() {
 
 #[test]
 /// Client input roundtrip.
-fn client_input_roundtrip() {
+fn input_bytes_survive_binary_encoding() {
     let msg = ClientMessage::Input {
         data: vec![0x1b, 0x5b, 0x41], // ESC [ A (up arrow)
     };
@@ -31,7 +31,7 @@ fn client_input_roundtrip() {
 
 #[test]
 /// Client message wire tags preserve protocol 15 order.
-fn client_message_wire_tags_preserve_protocol_15_order() {
+fn client_variant_discriminants_keep_their_wire_values() {
     /// Tag.
     fn tag(msg: &ClientMessage) -> u8 {
         *bincode::serde::encode_to_vec(msg, bincode::config::standard())
@@ -95,7 +95,7 @@ fn client_message_wire_tags_preserve_protocol_15_order() {
 
 #[test]
 /// Client input events roundtrip.
-fn client_input_events_roundtrip() {
+fn structured_input_events_survive_binary_encoding() {
     let msg = ClientMessage::InputEvents {
         events: vec![
             ClientInputEvent::Key {
@@ -160,7 +160,7 @@ fn client_input_events_roundtrip() {
 
 #[test]
 /// Client clipboard image roundtrip.
-fn client_clipboard_image_roundtrip() {
+fn clipboard_image_bytes_survive_binary_encoding() {
     let msg = ClientMessage::ClipboardImage {
         extension: "png".to_owned(),
         data: vec![0x89, b'P', b'N', b'G'],
@@ -173,7 +173,7 @@ fn client_clipboard_image_roundtrip() {
 
 #[test]
 /// Client input large multilingual payload roundtrip.
-fn client_input_large_multilingual_payload_roundtrip() {
+fn large_unicode_input_survives_binary_encoding() {
     let text = "你好，今天我们测试一段比较长的语音输入。こんにちは。안녕하세요.🙂".repeat(1024);
     assert!(text.len() > 64 * 1024);
     assert!(text.len() < MAX_FRAME_SIZE);
@@ -191,7 +191,7 @@ fn client_input_large_multilingual_payload_roundtrip() {
 
 #[test]
 /// Client resize roundtrip.
-fn client_resize_roundtrip() {
+fn terminal_dimensions_survive_binary_encoding() {
     let msg = ClientMessage::Resize {
         cols: 80,
         rows: 24,
@@ -206,7 +206,7 @@ fn client_resize_roundtrip() {
 
 #[test]
 /// Client detach roundtrip.
-fn client_detach_roundtrip() {
+fn detach_variant_survives_binary_encoding() {
     let msg = ClientMessage::Detach;
     let encoded = bincode::serde::encode_to_vec(&msg, bincode::config::standard()).unwrap();
     let (decoded, _): (ClientMessage, _) =
@@ -216,7 +216,7 @@ fn client_detach_roundtrip() {
 
 #[test]
 /// Client attach terminal roundtrip.
-fn client_attach_terminal_roundtrip() {
+fn terminal_attachment_survives_binary_encoding() {
     let msg = ClientMessage::AttachTerminal {
         terminal_id: "term_123".to_owned(),
         takeover: true,
@@ -229,7 +229,7 @@ fn client_attach_terminal_roundtrip() {
 
 #[test]
 /// Client observe terminal roundtrip.
-fn client_observe_terminal_roundtrip() {
+fn terminal_observation_survives_binary_encoding() {
     let msg = ClientMessage::ObserveTerminal {
         target: "w1:p1".to_owned(),
     };
@@ -241,7 +241,7 @@ fn client_observe_terminal_roundtrip() {
 
 #[test]
 /// Client control terminal roundtrip.
-fn client_control_terminal_roundtrip() {
+fn terminal_control_survives_binary_encoding() {
     let msg = ClientMessage::ControlTerminal {
         target: "w1:p1".to_owned(),
         takeover: true,
@@ -254,7 +254,7 @@ fn client_control_terminal_roundtrip() {
 
 #[test]
 /// Client attach scroll roundtrip.
-fn client_attach_scroll_roundtrip() {
+fn scroll_attachment_survives_binary_encoding() {
     let msg = ClientMessage::AttachScroll {
         source: AttachScrollSource::Wheel,
         direction: AttachScrollDirection::Up,
@@ -273,7 +273,7 @@ fn client_attach_scroll_roundtrip() {
 
 #[test]
 /// Server welcome roundtrip.
-fn server_welcome_roundtrip() {
+fn welcome_fields_survive_binary_encoding() {
     let msg = ServerMessage::Welcome {
         version: PROTOCOL_VERSION,
         encoding: RenderEncoding::SemanticFrame,
@@ -287,7 +287,7 @@ fn server_welcome_roundtrip() {
 
 #[test]
 /// Server welcome with error roundtrip.
-fn server_welcome_with_error_roundtrip() {
+fn welcome_failure_survives_binary_encoding() {
     let msg = ServerMessage::Welcome {
         version: PROTOCOL_VERSION,
         encoding: RenderEncoding::SemanticFrame,
@@ -301,7 +301,7 @@ fn server_welcome_with_error_roundtrip() {
 
 #[test]
 /// Server frame roundtrip nontrivial.
-fn server_frame_roundtrip_nontrivial() {
+fn styled_screen_cells_survive_binary_encoding() {
     // Build a 3×2 frame with varied styles (≥2×2).
     let frame = FrameData {
         cells: varied_cells(),
@@ -332,7 +332,7 @@ fn server_frame_roundtrip_nontrivial() {
 
 #[test]
 /// Server shutdown roundtrip.
-fn server_shutdown_roundtrip() {
+fn shutdown_reason_survives_binary_encoding() {
     let msg = ServerMessage::ServerShutdown {
         reason: Some("updating".to_owned()),
     };
@@ -344,7 +344,7 @@ fn server_shutdown_roundtrip() {
 
 #[test]
 /// Server notify roundtrip.
-fn server_notify_roundtrip() {
+fn notification_fields_survive_binary_encoding() {
     for kind in [
         NotifyKind::Sound,
         NotifyKind::Toast,
@@ -364,7 +364,7 @@ fn server_notify_roundtrip() {
 
 #[test]
 /// Server clipboard roundtrip.
-fn server_clipboard_roundtrip() {
+fn clipboard_text_survives_binary_encoding() {
     let msg = ServerMessage::Clipboard {
         data: "dGVzdA==".to_owned(), // base64 "test"
     };
@@ -376,7 +376,7 @@ fn server_clipboard_roundtrip() {
 
 #[test]
 /// Server window title roundtrip.
-fn server_window_title_roundtrip() {
+fn window_title_survives_binary_encoding() {
     for title in [Some("maestro api".to_owned()), None] {
         let msg = ServerMessage::WindowTitle { title };
         let encoded = bincode::serde::encode_to_vec(&msg, bincode::config::standard()).unwrap();
@@ -388,7 +388,7 @@ fn server_window_title_roundtrip() {
 
 #[test]
 /// Server graphics roundtrip.
-fn server_graphics_roundtrip() {
+fn graphics_payload_survives_binary_encoding() {
     let msg = ServerMessage::Graphics {
         bytes: b"\x1b_Ga=d,d=A,q=2;\x1b\\".to_vec(),
     };
@@ -400,7 +400,7 @@ fn server_graphics_roundtrip() {
 
 #[test]
 /// Server terminal frame roundtrip.
-fn server_terminal_frame_roundtrip() {
+fn terminal_frame_bytes_survive_binary_encoding() {
     let msg = ServerMessage::Terminal(TerminalFrame {
         seq: 7,
         width: 120,
@@ -416,7 +416,7 @@ fn server_terminal_frame_roundtrip() {
 
 #[test]
 /// Server reload sound config roundtrip.
-fn server_reload_sound_config_roundtrip() {
+fn sound_reload_variant_survives_binary_encoding() {
     let msg = ServerMessage::ReloadSoundConfig;
     let encoded = bincode::serde::encode_to_vec(&msg, bincode::config::standard()).unwrap();
     let (decoded, _): (ServerMessage, _) =
@@ -426,7 +426,7 @@ fn server_reload_sound_config_roundtrip() {
 
 #[test]
 /// Server mouse capture roundtrip.
-fn server_mouse_capture_roundtrip() {
+fn mouse_capture_setting_survives_binary_encoding() {
     let msg = ServerMessage::MouseCapture {
         enabled: true,
         sgr_pixels: true,
@@ -439,7 +439,7 @@ fn server_mouse_capture_roundtrip() {
 
 #[test]
 /// Server kitty keyboard report all roundtrip.
-fn server_kitty_keyboard_report_all_roundtrip() {
+fn keyboard_report_setting_survives_binary_encoding() {
     let msg = ServerMessage::KittyKeyboardReportAll { enabled: true };
     let encoded = bincode::serde::encode_to_vec(&msg, bincode::config::standard()).unwrap();
     let (decoded, _): (ServerMessage, _) =
@@ -449,7 +449,7 @@ fn server_kitty_keyboard_report_all_roundtrip() {
 
 #[test]
 /// Direct graphics messages roundtrip.
-fn direct_graphics_messages_roundtrip() {
+fn direct_graphics_commands_survive_binary_encoding() {
     let client = ClientMessage::GraphicsTransmissionResult {
         transfer_id: 7,
         image_id: 42,
@@ -488,7 +488,7 @@ fn direct_graphics_messages_roundtrip() {
 
 #[test]
 /// Server prefix input source roundtrip.
-fn server_prefix_input_source_roundtrip() {
+fn prefix_input_origin_survives_binary_encoding() {
     for active in [true, false] {
         let msg = ServerMessage::PrefixInputSource { active };
         let encoded = bincode::serde::encode_to_vec(&msg, bincode::config::standard()).unwrap();
@@ -500,7 +500,7 @@ fn server_prefix_input_source_roundtrip() {
 
 #[test]
 /// Server terminal bell roundtrip.
-fn server_terminal_bell_roundtrip() {
+fn bell_count_survives_binary_encoding() {
     let msg = ServerMessage::TerminalBell { count: 3 };
     let encoded = bincode::serde::encode_to_vec(&msg, bincode::config::standard()).unwrap();
     let (decoded, _): (ServerMessage, _) =
@@ -512,7 +512,7 @@ fn server_terminal_bell_roundtrip() {
 
 #[test]
 /// Framing small message roundtrip.
-fn framing_small_message_roundtrip() {
+fn framed_handshake_preserves_client_fields() {
     let msg = ClientMessage::Hello {
         version: PROTOCOL_VERSION,
         cols: 80,
@@ -531,7 +531,7 @@ fn framing_small_message_roundtrip() {
 
 #[test]
 /// Framing large payload roundtrip.
-fn framing_large_payload_roundtrip() {
+fn framed_screen_preserves_a_large_cell_payload() {
     // Create a Frame message that is ≥128 KB.
     // Use a large frame with verbose cell data to exceed 128 KB after bincode encoding.
     // 200×50 = 10000 cells. With varied symbols and styles, this should easily exceed 128 KB.
@@ -584,7 +584,7 @@ fn framing_large_payload_roundtrip() {
 
 #[test]
 /// Framing multiple messages sequential.
-fn framing_multiple_messages_sequential() {
+fn consecutive_frames_decode_in_written_order() {
     // Write 100+ messages of varying types and read them back.
     let mut buf = Vec::new();
     let mut expected = Vec::new();
@@ -630,7 +630,7 @@ fn framing_multiple_messages_sequential() {
 
 #[test]
 /// Framing oversized rejected without panic.
-fn framing_oversized_rejected_without_panic() {
+fn frame_length_limit_rejects_an_oversized_prefix() {
     // Craft a frame with a huge length prefix (4 GB claim).
     let mut buf: Vec<u8> = (u32::MAX).to_le_bytes().to_vec();
     // Add a few garbage bytes after the length prefix.
@@ -649,7 +649,7 @@ fn framing_oversized_rejected_without_panic() {
 
 #[test]
 /// Framing malformed payload rejected without panic.
-fn framing_malformed_payload_rejected_without_panic() {
+fn invalid_payload_returns_a_framing_error() {
     // Valid length prefix pointing to garbage data.
     let payload = vec![0xDE, 0xAD, 0xBE, 0xEF, 0x01, 0x02];
     let mut buf = u32::try_from(payload.len()).unwrap().to_le_bytes().to_vec();
@@ -666,7 +666,7 @@ fn framing_malformed_payload_rejected_without_panic() {
 
 #[test]
 /// Framing truncated stream returns unexpected eof.
-fn framing_truncated_stream_returns_unexpected_eof() {
+fn incomplete_frame_reports_unexpected_eof() {
     // Write a length prefix claiming 100 bytes, but only provide 4.
     let mut buf: Vec<u8> = 100u32.to_le_bytes().to_vec();
     buf.extend_from_slice(&[0xAA, 0xBB, 0xCC, 0xDD]);
@@ -680,10 +680,9 @@ fn framing_truncated_stream_returns_unexpected_eof() {
 }
 
 #[test]
-/// Framing zero length message.
-fn framing_zero_length_message() {
-    // A 1-byte message (smallest possible valid bincode payload).
-    // Actually, let's test with the smallest real message: Detach.
+/// The detach frame prefix records the payload length.
+fn detach_frame_prefix_matches_its_payload_length() {
+    // Detach is a one-byte bincode payload.
     let msg = ClientMessage::Detach;
     let mut buf = Vec::new();
     write_message(&mut buf, &msg).unwrap();
@@ -702,7 +701,7 @@ fn framing_zero_length_message() {
 
 #[test]
 /// Framing partial read reassembly.
-fn framing_partial_read_reassembly() {
+fn fragmented_reads_reassemble_the_input_payload() {
     // Simulate partial reads by using a reader that yields small chunks.
     let msg = ClientMessage::Input {
         data: vec![42; 500], // 500-byte input payload
@@ -720,7 +719,7 @@ fn framing_partial_read_reassembly() {
 
 #[test]
 /// Version compatible.
-fn version_compatible() {
+fn equal_protocol_versions_allow_connection() {
     assert_eq!(
         check_client_version(PROTOCOL_VERSION),
         VersionCheck::Compatible
@@ -729,7 +728,7 @@ fn version_compatible() {
 
 #[test]
 /// Version older client rejected.
-fn version_older_client_rejected() {
+fn older_protocol_version_requires_a_client_upgrade() {
     let result = check_client_version(PROTOCOL_VERSION - 1);
     assert!(matches!(result, VersionCheck::Incompatible(_)));
     if let VersionCheck::Incompatible(msg) = result {
@@ -739,7 +738,7 @@ fn version_older_client_rejected() {
 
 #[test]
 /// Version newer client rejected.
-fn version_newer_client_rejected() {
+fn newer_protocol_version_requires_a_server_upgrade() {
     let result = check_client_version(PROTOCOL_VERSION + 1);
     assert!(matches!(result, VersionCheck::Incompatible(_)));
     if let VersionCheck::Incompatible(msg) = result {
@@ -751,7 +750,7 @@ fn version_newer_client_rejected() {
 
 #[test]
 /// Prepersistence version zero rejected.
-fn prepersistence_version_zero_rejected() {
+fn zero_protocol_version_cannot_connect() {
     let result = check_client_version(0);
     match result {
         VersionCheck::Incompatible(msg) => {
@@ -766,7 +765,7 @@ fn prepersistence_version_zero_rejected() {
 
 #[test]
 /// Prepersistence version zero welcome has error.
-fn prepersistence_version_zero_welcome_has_error() {
+fn zero_version_failure_survives_the_welcome_record() {
     // Simulating what the server would send to a v0 client.
     let check = check_client_version(0);
     let response = match check {
@@ -792,7 +791,7 @@ fn prepersistence_version_zero_welcome_has_error() {
 
 #[test]
 /// Oversized frame does not panic.
-fn oversized_frame_does_not_panic() {
+fn maximal_length_prefix_returns_an_error() {
     // Claim 4GB payload — should return Oversized error, not panic.
     let mut buf: Vec<u8> = 0xFFC0_0000_u32.to_le_bytes().to_vec(); // ~4 GB claim
     buf.extend_from_slice(&[0; 8]);
@@ -805,7 +804,7 @@ fn oversized_frame_does_not_panic() {
 
 #[test]
 /// Malformed frame does not panic.
-fn malformed_frame_does_not_panic() {
+fn invalid_binary_discriminant_returns_an_error() {
     // Random garbage bytes after a valid-ish length prefix.
     let garbage: Vec<u8> = (0_u8..200).map(|i| i ^ 0xAA).collect();
     let mut buf = u32::try_from(garbage.len()).unwrap().to_le_bytes().to_vec();
@@ -819,7 +818,7 @@ fn malformed_frame_does_not_panic() {
 
 #[test]
 /// Oversized input rejected custom max.
-fn oversized_input_rejected_custom_max() {
+fn caller_frame_limit_rejects_larger_input() {
     // Verify a custom (small) max_frame_size is enforced.
     let msg = ClientMessage::Input {
         data: vec![0x41; 1000],
@@ -839,7 +838,7 @@ fn oversized_input_rejected_custom_max() {
 
 #[test]
 /// Read message rejects trailing bytes.
-fn read_message_rejects_trailing_bytes() {
+fn extra_bytes_inside_a_frame_are_rejected() {
     // Encode a valid message, then append an extra byte after it.
     let msg = ClientMessage::Detach;
     let mut payload = bincode::serde::encode_to_vec(&msg, bincode::config::standard()).unwrap();
@@ -868,31 +867,9 @@ fn read_message_rejects_trailing_bytes() {
 }
 
 #[test]
-/// Read message accepts exact payload.
-fn read_message_accepts_exact_payload() {
-    // A normally-framed message should decode without error.
-    let msg = ClientMessage::Hello {
-        version: PROTOCOL_VERSION,
-        cols: 80,
-        rows: 24,
-        cell_width_px: 8,
-        cell_height_px: 16,
-        requested_encoding: RenderEncoding::SemanticFrame,
-        keybindings: ClientKeybindings::Server,
-        launch_mode: ClientLaunchMode::App,
-    };
-    let mut buf = Vec::new();
-    write_message(&mut buf, &msg).unwrap();
-    let decoded: ClientMessage = read_message(&mut buf.as_slice(), MAX_FRAME_SIZE).unwrap();
-    assert_eq!(msg, decoded);
-}
-
-#[test]
 /// Write message accepts normal payload.
 fn write_message_accepts_normal_payload() {
-    // We can't easily create a message that exceeds u32::MAX in a test,
-    // but we can verify the check exists by testing that normal messages
-    // have lengths well within the limit and the function doesn't fail.
+    // A normal detach payload can be written successfully.
     let msg = ClientMessage::Detach;
     let mut buf = Vec::new();
     assert!(write_message(&mut buf, &msg).is_ok());
@@ -903,7 +880,7 @@ fn write_message_accepts_normal_payload() {
 #[cfg(unix)]
 #[test]
 /// Framing over unix socketpair.
-fn framing_over_unix_socketpair() {
+fn socket_pair_delivers_the_written_message_sequence() {
     use std::os::unix::net::UnixStream;
 
     let (mut a, mut b) = UnixStream::pair().expect("socketpair");
@@ -935,7 +912,7 @@ fn framing_over_unix_socketpair() {
         ClientMessage::Detach,
     ];
 
-    // Set non-blocking so we can write and read in the same test.
+    // Keep both sockets blocking for this small sequential exchange.
     a.set_nonblocking(false).unwrap();
     b.set_nonblocking(false).unwrap();
 
