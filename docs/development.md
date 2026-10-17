@@ -17,6 +17,12 @@ mise exec -- just setup
 mise exec -- just build
 ```
 
+Tool versions stay caller-owned in `mise.toml`. Generated downloads and checksums
+in `mise.lock` must cover Linux x64 and ARM64, macOS Intel and ARM64, and Windows
+x64 hosts, independently of the compilation target. A successful `mise lock` can
+still skip unresolved hosts; check its platform inventory. Follow the
+[repository setup guidance](../AGENTS.md#checks) when installing pinned tools.
+
 `setup` installs the commit, merge-commit and commit-message hooks. `build`
 generates the native catalog once, then compiles the delivered workspace through
 Cargo's dependency graph. See [catalog generation](models/generation.md). `check`

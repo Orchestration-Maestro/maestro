@@ -10,7 +10,7 @@ cargo-hakari = "github:guppy-rs/guppy"
 # Runs the shared development recipes.
 just = "1.58.0"
 # Installs and runs commit hooks.
-prek = { version = "0.5.4", matching = "x86_64-unknown-linux-musl" }
+prek = "0.5.4"
 
 # Watches compiler inputs with native argument forwarding.
 watchexec = "2.8.0"
