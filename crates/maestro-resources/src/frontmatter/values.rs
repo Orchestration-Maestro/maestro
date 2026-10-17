@@ -5,15 +5,12 @@ use num_traits::ToPrimitive;
 
 /// Resolve scalar text according to native style and authored tags.
 pub(super) fn scalar(text: String, style: Style, tag: Option<&Tag>) -> FrontmatterValue {
-    let tag = tag.filter(|tag| {
-        !matches!(tag, Tag::Core(name) if matches!(name.as_str(), "binary" | "set" | "timestamp" | "omap" | "pairs"))
-    });
-    if let Some(tag) = tag {
+    if let Some(tag) = tag.filter(|tag| **tag != Tag::Data) {
         let resolved = match tag {
-            Tag::Core(name) if name == "int" => integer(&text).map(FrontmatterValue::Number),
-            Tag::Core(name) if name == "float" => float(&text).map(FrontmatterValue::Number),
-            Tag::Core(name) if name == "bool" => boolean(&text).map(FrontmatterValue::Bool),
-            Tag::Core(name) if name == "null" && null(&text) => Some(FrontmatterValue::Null),
+            Tag::Int => integer(&text).map(FrontmatterValue::Number),
+            Tag::Float => float(&text).map(FrontmatterValue::Number),
+            Tag::Bool => boolean(&text).map(FrontmatterValue::Bool),
+            Tag::Null if null(&text) => Some(FrontmatterValue::Null),
             _ => None,
         };
         return resolved.unwrap_or(FrontmatterValue::String(text));

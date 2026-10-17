@@ -1,11 +1,12 @@
 //! Document settlement and direct construction of owned metadata nodes.
 
-use super::{FrontmatterError, FrontmatterValue, lexer::Cursor, values};
-use std::collections::HashMap;
+use super::{FrontmatterError, FrontmatterValue, alias_count::Anchors, lexer::Cursor, values};
 
 /// Lexical admission rules at a node boundary.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Mode {
+    /// Document root, whose children may start in the first column.
+    Root,
     /// Block collection or scalar.
     Block,
     /// Inline block value, excluding compact nested maps.
@@ -16,25 +17,32 @@ pub(super) enum Mode {
     Flow,
 }
 
+impl Mode {
+    /// Whether block collections may start at this node.
+    fn is_block(self) -> bool {
+        matches!(self, Self::Root | Self::Block)
+    }
+}
+
 /// One document's cursor and completed anchors.
 pub(super) struct Parser<'a> {
     /// Monotone source traversal.
     pub cursor: Cursor<'a>,
     /// Only completed values may be referenced.
-    anchors: HashMap<String, FrontmatterValue>,
+    anchors: Anchors,
 }
 
 /// Parse a single extracted document with no retained source borrows.
 pub(super) fn parse(source: &str) -> Result<FrontmatterValue, FrontmatterError> {
     let mut parser = Parser {
         cursor: Cursor { source, offset: 0 },
-        anchors: HashMap::new(),
+        anchors: Anchors::default(),
     };
     parser.cursor.trivia();
     let value = if parser.cursor.peek().is_none() || parser.cursor.document_end() {
         FrontmatterValue::Null
     } else {
-        parser.node(0, Mode::Block)?
+        parser.node(0, Mode::Root)?
     };
     parser.cursor.trivia();
     if parser.cursor.document_end() {
@@ -60,25 +68,17 @@ impl Parser<'_> {
         indent: usize,
         mode: Mode,
     ) -> Result<FrontmatterValue, FrontmatterError> {
-        if mode == Mode::Block
-            && self.cursor.source[..self.cursor.offset]
-                .rsplit('\n')
-                .next()
-                .is_some_and(|s| {
-                    s.bytes()
-                        .take_while(|b| matches!(b, b' ' | b'\t'))
-                        .any(|b| b == b'\t')
-                })
-        {
+        if mode.is_block() && self.cursor.tab_indented() {
             return Err(self.cursor.error("Tabs cannot indent block nodes"));
         }
-        if mode == Mode::Block && !self.cursor.indicator('-') && self.cursor.mapping_start() {
+        if mode.is_block() && !self.cursor.indicator('-') && self.cursor.mapping_start() {
             return self.block_map(self.cursor.column());
         }
+        let start = self.anchors.mark();
         let props = self.properties()?;
         let value = self.content(indent, mode, props.tag.as_ref())?;
         if let Some(anchor) = props.anchor {
-            self.anchors.insert(anchor, value.clone());
+            self.anchors.publish(anchor, value.clone(), start);
         }
         Ok(value)
     }
@@ -93,28 +93,23 @@ impl Parser<'_> {
         let value = match self.cursor.peek() {
             Some('*') => return self.alias(),
             Some('[' | '{') => self.flow_collection()?,
-            Some('-') if mode == Mode::Block && self.cursor.indicator('-') => {
+            Some('-') if mode.is_block() && self.cursor.indicator('-') => {
                 self.block_seq(self.cursor.column())?
             }
             Some('|' | '>') if mode != Mode::Flow && mode != Mode::Key => {
                 let text = self.block_scalar(indent)?;
+                self.anchors.leaf();
                 return Ok(values::scalar(
                     text,
                     super::resolve_flow_scalar::Style::Quoted,
                     tag,
                 ));
             }
-            Some('\n' | '#') => {
-                self.cursor.trivia();
-                if self.cursor.peek().is_none() || self.cursor.column() <= indent {
-                    FrontmatterValue::Null
-                } else {
-                    self.node(self.cursor.column(), Mode::Block)?
-                }
-            }
-            None => FrontmatterValue::Null,
+            Some('\n' | '#') => self.block_value(indent, mode)?,
+            None => self.null(),
             _ => {
                 let (text, style) = self.flow_scalar(indent, mode)?;
+                self.anchors.leaf();
                 return Ok(values::scalar(text, style, tag));
             }
         };
@@ -125,10 +120,13 @@ impl Parser<'_> {
     fn alias(&mut self) -> Result<FrontmatterValue, FrontmatterError> {
         self.cursor.next();
         let name = self.property_name();
-        self.anchors
-            .get(name)
-            .cloned()
-            .ok_or_else(|| FrontmatterError::new("Unresolved YAML alias"))
+        self.anchors.resolve(name)
+    }
+
+    /// An absent node, counted as a scalar for alias weighing.
+    fn null(&mut self) -> FrontmatterValue {
+        self.anchors.leaf();
+        FrontmatterValue::Null
     }
 
     /// Parse an optional value following a block indicator.
@@ -142,17 +140,19 @@ impl Parser<'_> {
         if self.cursor.peek() == Some('\n') {
             self.cursor.trivia();
             if self.cursor.peek().is_none() || self.cursor.document_end() {
-                return Ok(FrontmatterValue::Null);
+                return Ok(self.null());
             }
             let column = self.cursor.column();
             if column < indent
-                || column == indent && (mode == Mode::Block || !self.cursor.indicator('-'))
+                || column == indent
+                    && mode != Mode::Root
+                    && (mode == Mode::Block || !self.cursor.indicator('-'))
             {
-                return Ok(FrontmatterValue::Null);
+                return Ok(self.null());
             }
             self.node(indent, Mode::Block)
         } else if self.cursor.peek().is_none() {
-            Ok(FrontmatterValue::Null)
+            Ok(self.null())
         } else {
             self.node(indent, mode)
         }

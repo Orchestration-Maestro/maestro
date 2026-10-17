@@ -1,5 +1,6 @@
 //! Extract authored metadata without trimming ordinary text.
 
+mod alias_count;
 mod lexer;
 mod parser;
 mod resolve_block_map;
