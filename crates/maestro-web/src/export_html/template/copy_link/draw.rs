@@ -77,7 +77,14 @@ fn paint(
         .ctx()
         .animate_bool_with_time(state.id.with("success"), copied, 0.15);
     let p = view.presentation;
-    let (background, border, foreground) = colors(p, accent, success)?;
+    let border_role = if copied {
+        "success"
+    } else if hovered {
+        "accent"
+    } else {
+        "border"
+    };
+    let (background, border, foreground) = colors(p, accent, success, border_role)?;
     if opacity <= 0. {
         return Ok(());
     }
@@ -96,7 +103,7 @@ fn paint(
             view.rect.center(),
             egui::Align2::CENTER_CENTER,
             p.glyphs["passed"].symbol,
-            egui::TextStyle::Button.resolve(ui.style()),
+            egui::TextStyle::Button.resolve(child.style()),
             foreground,
         );
     } else {
@@ -110,11 +117,12 @@ fn paint(
     Ok(())
 }
 
-/// Resolve animated panel, boundary and glyph roles from the current pack.
+/// Resolve animated panel/glyph colors and the immediate boundary role.
 fn colors(
     p: &BrandPresentation<'_>,
     accent: f32,
     success: f32,
+    border_role: &str,
 ) -> Result<(egui::Color32, egui::Color32, egui::Color32), AttachmentUiError> {
     let mix = |a: egui::Color32, b: egui::Color32, t: f32| -> egui::Color32 {
         egui::lerp(egui::Rgba::from(a)..=egui::Rgba::from(b), t).into()
@@ -129,12 +137,7 @@ fn colors(
         attachment_content::color(p, "success")?,
         success,
     );
-    let border = mix(
-        attachment_content::color(p, "border")?,
-        attachment_content::color(p, "accent")?,
-        accent,
-    );
-    let border = mix(border, attachment_content::color(p, "success")?, success);
+    let border = attachment_content::color(p, border_role)?;
     let foreground = mix(
         attachment_content::color(p, "muted")?,
         attachment_content::color(p, "on-accent")?,

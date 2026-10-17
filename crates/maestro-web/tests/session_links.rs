@@ -464,6 +464,78 @@ fn copy_link_dispatches_only_its_target() {
 }
 
 #[test]
+fn copy_link_check_uses_selected_typography() {
+    for name in ["brand.json", "signal.json"] {
+        let mut canvas = Canvas::new();
+        canvas.context.all_styles_mut(|style| {
+            style
+                .text_styles
+                .insert(egui::TextStyle::Button, egui::FontId::monospace(40.));
+        });
+        canvas.activate().unwrap();
+        settle(&canvas, 0, true);
+        let output = canvas
+            .pack_frame(vec![], name, maestro_theme::BrandMode::Dark)
+            .1;
+        let text = output
+            .shapes
+            .iter()
+            .find_map(|shape| match &shape.shape {
+                egui::Shape::Text(text) if text.galley.text() == "✓" => Some(text),
+                _ => None,
+            })
+            .unwrap();
+        let expected_font = egui::FontId::proportional(16.);
+        assert_eq!(text.galley.job.sections[0].format.font_id, expected_font);
+        let expected = canvas.context.fonts_mut(|fonts| {
+            fonts.layout_no_wrap("✓".into(), expected_font, text.fallback_color)
+        });
+        assert_eq!(text.galley.size(), expected.size());
+        assert_eq!(text.pos + text.galley.size() / 2., canvas.rect.center());
+    }
+}
+
+#[test]
+fn copy_link_border_switches_on_first_transition_frame() {
+    for name in ["brand.json", "signal.json"] {
+        for mode in [
+            maestro_theme::BrandMode::Dark,
+            maestro_theme::BrandMode::Light,
+        ] {
+            let pack = maestro_theme::load_brand_pack(name, &brand::Pack).unwrap();
+            let presentation = pack.presentation(mode).unwrap();
+            let mut canvas = Canvas::new();
+            canvas.pack_frame(vec![], name, mode).0.unwrap();
+            canvas.time = 0.01;
+            for (events, role) in [
+                (
+                    vec![egui::Event::PointerMoved(canvas.rect.center())],
+                    "accent",
+                ),
+                (vec![egui::Event::PointerMoved(egui::Pos2::ZERO)], "border"),
+            ] {
+                let output = canvas.pack_frame(events, name, mode).1;
+                let border = painted_frame(&output, canvas.rect).stroke.color;
+                assert_eq!(
+                    border,
+                    egui::Color32::from_hex(presentation.colors[role]).unwrap()
+                );
+                canvas.time += 0.15;
+                canvas.pack_frame(vec![], name, mode).0.unwrap();
+            }
+            canvas.activate().unwrap();
+            settle(&canvas, 0, true);
+            let output = canvas.pack_frame(vec![], name, mode).1;
+            let border = painted_frame(&output, canvas.rect).stroke.color;
+            assert_eq!(
+                border,
+                egui::Color32::from_hex(presentation.colors["success"]).unwrap()
+            );
+        }
+    }
+}
+
+#[test]
 fn copy_link_paints_selected_pack_roles() {
     use maestro_theme::BrandMode;
     for name in ["brand.json", "signal.json"] {
@@ -474,16 +546,21 @@ fn copy_link_paints_selected_pack_roles() {
 }
 /// Inspect the actual full control decoration, not its supplied toolkit style.
 fn painted_roles(output: &egui::FullOutput, rect: egui::Rect, colors: [egui::Color32; 2]) {
-    let frame = output
+    let frame = painted_frame(output, rect);
+    assert_eq!(frame.fill, colors[0]);
+    assert_eq!(frame.stroke.color, colors[1]);
+}
+
+/// Inspect the frame submitted to the painter for the measured control slot.
+fn painted_frame(output: &egui::FullOutput, rect: egui::Rect) -> &egui::epaint::RectShape {
+    output
         .shapes
         .iter()
         .find_map(|shape| match &shape.shape {
             egui::Shape::Rect(frame) if frame.rect == rect => Some(frame),
             _ => None,
         })
-        .unwrap();
-    assert_eq!(frame.fill, colors[0]);
-    assert_eq!(frame.stroke.color, colors[1]);
+        .unwrap()
 }
 
 /// Draw two controls under a clickable containing message.

@@ -135,7 +135,10 @@ top/right edges and publishes the measured slot as a canvas hole. The control
 registers full geometry, applies the caller clip and existing primary-gesture
 admission, and returns the response for native focus reveal. It paints its own
 14-point link glyph, border and selected-pack roles; message hover controls
-visibility with a 150-ms transition. It owns no text root or viewport.
+visibility with a 150-ms transition. Background and foreground colors use the
+same transition; the border switches immediately on hover or successful copy.
+The copied check uses the selected pack's body typography, independent of the
+parent button style. It owns no text root or viewport.
 
 `AttachmentHost::copy_to_clipboard` starts the native call before local dispatch,
 returning owned local settlement work. The default browser host uses its canvas
