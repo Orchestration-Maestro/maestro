@@ -25,7 +25,7 @@ impl OpenXmlPackage {
             let entry = archive.by_index(index).map_err(archive_error)?;
             let candidate = (entry.central_header_start(), index);
             entries
-                .entry(utils::archive_name(entry.name()))
+                .entry(utils::archive_name(&entry.name().map_err(archive_error)?))
                 .and_modify(|current| *current = candidate.max(*current))
                 .or_insert(candidate);
         }

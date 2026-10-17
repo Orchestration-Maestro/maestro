@@ -28,3 +28,9 @@ MIT (zmij), and (MIT OR Apache-2.0) AND Unicode-3.0 (unicode-ident).
 development tool, not a Cargo dependency. It generates the marked dependency section
 of `maestro-dependencies`, whose manifest therefore repeats existing locked packages
 and features for native targets; it adds no package version of its own.
+
+Build-recipe tests in `maestro-tooling` use the existing `toml =1.1.6`
+(default features, MIT OR Apache-2.0) as a development dependency to copy local
+`path` sources from the root manifest's `[patch]` tables into disposable build
+fixtures. Registry/git patches need no local copy; production watching is
+unchanged.

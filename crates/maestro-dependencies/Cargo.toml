@@ -88,6 +88,7 @@ sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
+zip = { version = "9.0.3", default-features = false, features = ["deflate"] }
 
 [target.x86_64-unknown-linux-gnu.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
@@ -117,6 +118,7 @@ sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
+zip = { version = "9.0.3", default-features = false, features = ["deflate"] }
 
 [target.aarch64-unknown-linux-gnu.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
@@ -136,6 +138,7 @@ futures-util = { version = "0.3.34", default-features = false, features = ["asyn
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
+nix = { version = "0.31.3", default-features = false, features = ["fs", "poll", "signal"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 percent-encoding = { version = "2.3.2" }
 rustix = { version = "1.1.5", default-features = false, features = ["event", "pipe", "process", "pty", "std", "stdio", "system", "termios"] }
@@ -145,6 +148,7 @@ slab = { version = "0.4.12" }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
 zerocopy = { version = "0.8.62", default-features = false, features = ["derive", "simd"] }
+zip = { version = "9.0.3", default-features = false, features = ["deflate"] }
 
 [target.x86_64-apple-darwin.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
@@ -164,6 +168,7 @@ futures-util = { version = "0.3.34", default-features = false, features = ["asyn
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
+nix = { version = "0.31.3", default-features = false, features = ["fs", "poll", "signal"] }
 num-integer = { version = "0.1.47", features = ["i128"] }
 percent-encoding = { version = "2.3.2" }
 rustix = { version = "1.1.5", default-features = false, features = ["event", "pipe", "process", "pty", "std", "stdio", "system", "termios"] }
@@ -173,6 +178,7 @@ slab = { version = "0.4.12" }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
 zerocopy = { version = "0.8.62", default-features = false, features = ["derive", "simd"] }
+zip = { version = "9.0.3", default-features = false, features = ["deflate"] }
 
 [target.aarch64-apple-darwin.build-dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
@@ -197,6 +203,7 @@ slab = { version = "0.4.12" }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread"] }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
 windows-sys = { version = "0.61.2", features = ["Wdk_Foundation", "Wdk_Storage_FileSystem", "Wdk_System_IO", "Win32_Networking_WinSock", "Win32_Security_Authentication_Identity", "Win32_Security_Credentials", "Win32_Security_Cryptography", "Win32_Storage_FileSystem", "Win32_System_Console", "Win32_System_IO", "Win32_System_LibraryLoader", "Win32_System_Memory", "Win32_System_Pipes", "Win32_System_SystemInformation", "Win32_System_SystemServices", "Win32_System_Threading", "Win32_System_WindowsProgramming"] }
+zip = { version = "9.0.3", default-features = false, features = ["deflate"] }
 
 [target.x86_64-pc-windows-msvc.build-dependencies]
 fastrand = { version = "2.5.0" }

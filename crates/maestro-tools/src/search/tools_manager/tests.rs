@@ -1,6 +1,9 @@
 //! Release selection, downloads, archives and advice on chosen hosts.
 #![cfg(test)]
 
+#[cfg(unix)]
+mod archive_security;
+
 use super::*;
 use serde::Deserialize;
 use serde_json::Value;
