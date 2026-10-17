@@ -128,15 +128,7 @@ pub struct SessionBeforeSwitchEvent {
     pub target_session_file: Presence<String>,
 }
 
-/// Where a fork starts relative to its entry.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ForkPosition {
-    /// Before the entry.
-    Before,
-    /// At the entry.
-    At,
-}
+pub use maestro_entry::session_manager::ForkPosition;
 
 /// The session is about to fork.
 #[derive(Debug, Clone, Serialize, Deserialize)]

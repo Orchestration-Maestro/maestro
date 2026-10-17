@@ -1,8 +1,9 @@
 //! Raw entries and explicit session record views.
 #![doc = include_str!("../../../../docs/sessions/session_format.md")]
 pub use entry::{
-    BranchSummaryEntry, CompactionEntry, CustomEntry, CustomMessageEntry, LabelEntry,
-    ModelChangeEntry, SessionEntryBase, SessionHeader, SessionInfoEntry, ThinkingLevelChangeEntry,
+    BranchSummaryEntry, CompactionEntry, CustomEntry, CustomMessageEntry, ForkPosition, LabelEntry,
+    ModelChangeEntry, NavigateTreeOptions, SessionEntryBase, SessionHeader, SessionInfoEntry,
+    ThinkingLevelChangeEntry,
 };
 use maestro_entry::session_manager as entry;
 use maestro_request::presence::Presence;

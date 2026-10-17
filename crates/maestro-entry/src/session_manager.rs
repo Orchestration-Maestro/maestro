@@ -208,3 +208,30 @@ pub struct SessionContext<M, V: Omittable> {
     /// Selected model, if any.
     pub model: Option<SessionContextModel<V>>,
 }
+
+/// Where a fork starts relative to its entry.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ForkPosition {
+    /// Before the entry.
+    Before,
+    /// At the entry.
+    At,
+}
+#[derive(Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+/// Independently optional tree navigation choices.
+pub struct NavigateTreeOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Whether to request summarization.
+    pub summarize: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Literal optional instructions.
+    pub custom_instructions: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Whether to replace the host instructions.
+    pub replace_instructions: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Literal optional label.
+    pub label: Option<String>,
+}

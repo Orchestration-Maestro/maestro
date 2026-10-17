@@ -75,3 +75,63 @@ pub struct CompactionSummaryMessage {
     /// Recorded time.
     pub timestamp: f64,
 }
+
+/// The custom-message fields an extension supplies; the host adds the role and timestamp.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[serde(bound(deserialize = "T: serde::Deserialize<'de>"))]
+pub struct CustomMessageInput<T = serde_json::Value> {
+    /// Extension-defined classification.
+    pub custom_type: String,
+    /// Text or text/image blocks.
+    pub content: UserContent,
+    /// Whether the message is displayed.
+    pub display: bool,
+    /// Caller-defined details.
+    #[serde(default, skip_serializing_if = "Presence::is_missing")]
+    pub details: Presence<T>,
+}
+/// Custom-message delivery placement.
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MessageDelivery {
+    /// Request steering delivery.
+    Steer,
+    /// Request follow-up delivery.
+    FollowUp,
+    /// Request delivery at the next turn.
+    NextTurn,
+}
+/// User-message delivery placement.
+///
+/// User messages have no next-turn delivery variant:
+/// ```compile_fail,E0599
+/// let delivery = maestro_request::messages::UserMessageDelivery::NextTurn;
+/// ```
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum UserMessageDelivery {
+    /// Request steering delivery.
+    Steer,
+    /// Request follow-up delivery.
+    FollowUp,
+}
+/// Custom-message delivery options; no local defaults are applied.
+#[derive(Debug, Clone, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SendMessageOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Whether the host should trigger a turn.
+    pub trigger_turn: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Optional requested delivery placement.
+    pub deliver_as: Option<MessageDelivery>,
+}
+/// User-message delivery options.
+#[derive(Debug, Clone, Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SendUserMessageOptions {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Optional requested delivery placement.
+    pub deliver_as: Option<UserMessageDelivery>,
+}

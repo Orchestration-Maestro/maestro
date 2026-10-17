@@ -307,7 +307,7 @@ formatting shared by transcript components. JSON owns JSON boundary
 semantics: object acceptance, canonical keys, truth, compact and pretty text, and JSONL line framing.
 `maestro-entry` and `maestro-tool` are core record contracts below layer 0 that depend
 only on `maestro-request`: entry defines session interchange records, including the
-generic `CompactionResult<T>` shared by native generation and guest authoring; tool defines
+`ForkPosition`, `NavigateTreeOptions` and generic `CompactionResult<T>` shared by native generation and guest authoring; tool defines
 tool interchange records. `maestro-brand` is a core domain library below layer 0 that
 depends on text and JSON and projects a brand pack. These five owners are declared by
 policy and exist. `maestro-tool` owns `ToolExecutionMode`, `AgentToolResult`,
@@ -327,7 +327,8 @@ the guest re-export the command records; command discovery stays with its owner.
 Shared application messages include `BashExecutionMessage`,
 `CustomMessage`, `BranchSummaryMessage` and `CompactionSummaryMessage`, with the
 existing `Presence<T>` optional-field wrapper, and the custom-message renderer
-option record `MessageRenderOptions`, re-exported by session and the guest. It owns the declarations and their
+option record `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
+`UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`, re-exported by session and the guest. It owns the declarations and their
 serialization, plus the resolved request-auth record, default zero usage and the shared
 optional-field helper; `Presence<T>` stays single-source here. Existing models and resources public paths re-export their moved records. Provider
 invocation, scheduling, clock-dependent diagnostics, resource discovery and

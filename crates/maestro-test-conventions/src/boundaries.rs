@@ -188,9 +188,17 @@ fn check_declarations(
             "maestro-tools"
         } else if matches!(
             name.as_str(),
-            "SlashCommandInfo" | "SlashCommandSource" | "MessageRenderOptions"
+            "SlashCommandInfo"
+                | "SlashCommandSource"
+                | "MessageRenderOptions"
+                | "MessageDelivery"
+                | "UserMessageDelivery"
+                | "SendMessageOptions"
+                | "SendUserMessageOptions"
         ) {
             "maestro-request"
+        } else if matches!(name.as_str(), "ForkPosition" | "NavigateTreeOptions") {
+            "maestro-entry"
         } else {
             continue;
         };
@@ -204,7 +212,7 @@ fn check_declarations(
                 member.name
             ));
         }
-        if matches!(owner, "maestro-tools" | "maestro-request")
+        if matches!(owner, "maestro-tools" | "maestro-request" | "maestro-entry")
             && !declarations.insert(format!("{}::{name}", member.name))
         {
             return Err(format!(
