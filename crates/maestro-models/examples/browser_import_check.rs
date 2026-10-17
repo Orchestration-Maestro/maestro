@@ -17,12 +17,12 @@ use maestro_models::{
 #[cfg(target_arch = "wasm32")]
 fn local_client() -> (
     maestro_models::AnthropicClient,
-    std::rc::Rc<std::cell::Cell<u8>>,
+    std::sync::Arc<std::sync::atomic::AtomicU8>,
 ) {
-    let calls = std::rc::Rc::new(std::cell::Cell::new(0_u8));
-    let seen = std::rc::Rc::clone(&calls);
+    let calls = std::sync::Arc::new(std::sync::atomic::AtomicU8::new(0));
+    let seen = std::sync::Arc::clone(&calls);
     let client: maestro_models::AnthropicClient = std::sync::Arc::new(move |_, _| {
-        seen.set(seen.get() + 1);
+        seen.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         Box::pin(std::future::ready(Err(
             maestro_models::DiagnosticErrorInfo {
                 name: None,
@@ -77,7 +77,7 @@ fn main() {
         let (client, calls) = local_client();
         objects.insert(client);
         assert!(objects.get::<maestro_models::AnthropicClient>().is_some());
-        assert_eq!(calls.get(), 0);
+        assert_eq!(calls.load(std::sync::atomic::Ordering::Relaxed), 0);
     }
     #[cfg(not(target_arch = "wasm32"))]
     drop(ProviderObjects::default());
@@ -185,10 +185,10 @@ fn bedrock_surface() {
 /// Compile guide records and an explicit-key, injectable browser invocation without running it.
 #[cfg(target_arch = "wasm32")]
 fn guide_surface() {
-    factory_surface();
     use maestro_models::{
         AnthropicOptions, Context, Message, StreamOptions, Tool, UserContent, UserMessage,
     };
+    factory_surface();
     let Some(model) = get_model("anthropic", "claude-sonnet-4-5") else {
         return;
     };

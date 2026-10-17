@@ -82,7 +82,14 @@ impl Registration {
             Arc::new(model),
             (context, options, step),
         );
-        E::submit(future, submit, streaming::spawn)?;
+        #[cfg(not(target_arch = "wasm32"))]
+        let spawn = streaming::spawn;
+        #[cfg(target_arch = "wasm32")]
+        let spawn = |future| {
+            streaming::spawn(future);
+            Ok(())
+        };
+        E::submit(future, submit, spawn)?;
         Ok(outer)
     }
     /// Construct a zero-usage failure with invocation identity.

@@ -18,7 +18,7 @@ struct BrowserSocket {
     subscriptions: Vec<EventSubscription<Callback>>,
 }
 /// Convert a platform failure without including request credentials.
-fn native_error(value: JsValue) -> io::Error {
+fn native_error(value: &JsValue) -> io::Error {
     io::Error::other(
         value
             .as_string()
@@ -28,7 +28,7 @@ fn native_error(value: JsValue) -> io::Error {
 impl BrowserSocket {
     /// Install all handlers synchronously before awaiting the connection.
     fn new(url: &str) -> io::Result<Self> {
-        let socket = web_sys::WebSocket::new(url).map_err(native_error)?;
+        let socket = web_sys::WebSocket::new(url).map_err(|error| native_error(&error))?;
         socket.set_binary_type(web_sys::BinaryType::Arraybuffer);
         let mut connection = Self {
             socket,
@@ -42,7 +42,7 @@ impl BrowserSocket {
             });
             connection.subscriptions.push(
                 EventSubscription::new(connection.socket.clone().into(), name, callback)
-                    .map_err(native_error)?,
+                    .map_err(|error| native_error(&error))?,
             );
         }
         Ok(connection)
@@ -70,7 +70,9 @@ impl WebSocketConnection for BrowserSocket {
     fn send(&mut self, bytes: Vec<u8>) -> WebSocketFuture<'_, io::Result<()>> {
         Box::pin(async move {
             let text = String::from_utf8(bytes).map_err(io::Error::other)?;
-            self.socket.send_with_str(&text).map_err(native_error)
+            self.socket
+                .send_with_str(&text)
+                .map_err(|error| native_error(&error))
         })
     }
     fn receive(&mut self) -> WebSocketFuture<'_, io::Result<Option<Vec<u8>>>> {

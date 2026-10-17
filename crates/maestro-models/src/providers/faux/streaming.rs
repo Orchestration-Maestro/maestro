@@ -89,9 +89,8 @@ pub(super) fn spawn(future: BoxFuture<()>) -> Result<(), DiagnosticErrorInfo> {
 }
 #[cfg(target_arch = "wasm32")]
 /// Launch a producer on the target-owned asynchronous executor.
-pub(super) fn spawn(future: BoxFuture<()>) -> Result<(), DiagnosticErrorInfo> {
+pub(super) fn spawn(future: BoxFuture<()>) {
     wasm_bindgen_futures::spawn_local(future);
-    Ok(())
 }
 #[cfg(not(target_arch = "wasm32"))]
 /// Wait for the supplied duration through the target timer.
