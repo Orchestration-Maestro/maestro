@@ -65,17 +65,22 @@ impl<E: ExtensionExecution> ExtensionAPI<E> {
     #[must_use]
     pub fn new(
         extension: &ExtensionHandle<E>,
-        runtime: Arc<ExtensionRuntimeState>,
+        runtime: E::Shared<crate::types::ExtensionRuntime<E>>,
         events: EventBus<E>,
+        cwd: String,
     ) -> Self {
+        #[cfg(target_arch = "wasm32")]
+        drop(cwd);
         Self {
+            #[cfg(not(target_arch = "wasm32"))]
+            cwd,
             events,
             extension: E::downgrade(extension),
             runtime,
         }
     }
     /// Upgrades the live registration owner after checking invalidation.
-    fn owner(&self) -> Result<ExtensionHandle<E>, EventError> {
+    pub(super) fn owner(&self) -> Result<ExtensionHandle<E>, EventError> {
         self.runtime.assert_active()?;
         E::upgrade(&self.extension).ok_or_else(|| STALE_MESSAGE.into())
     }

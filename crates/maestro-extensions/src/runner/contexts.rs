@@ -9,7 +9,7 @@ use crate::{
     },
 };
 use maestro_catalog::ModelRegistry;
-use maestro_models::{Cancellation, Model};
+use maestro_models::{Cancellation, Model, SharedHandle};
 use maestro_session::session_manager::{NavigateTreeOptions, ReadonlySessionManager};
 use std::future::ready;
 use std::{
@@ -80,9 +80,9 @@ impl ExtensionContext {
     ///
     /// # Errors
     /// Returns the stale error.
-    pub fn model_registry(&self) -> Result<Rc<RefCell<ModelRegistry>>, EventError> {
+    pub fn model_registry(&self) -> Result<SharedHandle<ModelRegistry>, EventError> {
         self.binding.runtime.assert_active()?;
-        Ok(Rc::clone(&self.binding.session.model_registry))
+        Ok(SharedHandle::clone(&self.binding.session.model_registry))
     }
     /// Reads the current model through the reader captured at creation.
     ///

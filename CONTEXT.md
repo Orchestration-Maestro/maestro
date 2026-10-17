@@ -107,6 +107,8 @@ are later scope, not active foundation concepts.
 - **Extension:** Admitted behavior that owns declared capabilities.
 - **EventBus:** Shared literal event channels with ordered listener snapshots, explicit unsubscribe and callback-scoped foreign delivery; asynchronous listener tails are independently owned.
 - **Registration:** A host-admitted declaration of an owned capability.
+- **Runtime:** Shared extension action slots, queued provider registrations and the existing activity/flag state. Facades and their runner retain the same runtime.
+- **Actions:** Application-supplied extension operations selected at call time; an already-started model future retains its selected operation.
 - **Extension UI context:** An owned handle to the UI host current when it was obtained; without an installed host its operations return the defined headless results.
 - **Extension context:** The single-thread handle callbacks receive; each operation fails with the stale error once its runner is invalidated, otherwise it reads the runner's current session, UI and bound operations, except the model reader fixed at creation.
 - **Command context:** The single-thread extension context plus guarded, call-time session-control operations; replacement contexts add the creating session's unguarded message operations.

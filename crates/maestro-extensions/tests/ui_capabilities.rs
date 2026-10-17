@@ -27,10 +27,9 @@ use maestro_extensions::footer_data_provider::{
 use maestro_extensions::types::{
     ComponentDisposer, ComponentFactory, CustomClose, CustomComponentFactory, CustomDone,
     CustomFactory, CustomFactoryOutcome, CustomUIOptions, ExtensionCollection, ExtensionComponent,
-    ExtensionRuntimeState, ExtensionShortcutOptions, ExtensionUIContextPort, ExtensionUIFuture,
-    FooterFactory, NotificationType, OverlayHandleCallback, OverlayOptionsResolver,
-    OverlayOptionsSource, RegisteredCommandOptions, ThemeSelection, ThemeSetResult, UIUnsubscribe,
-    WidgetContent,
+    ExtensionShortcutOptions, ExtensionUIContextPort, ExtensionUIFuture, FooterFactory,
+    NotificationType, OverlayHandleCallback, OverlayOptionsResolver, OverlayOptionsSource,
+    RegisteredCommandOptions, ThemeSelection, ThemeSetResult, UIUnsubscribe, WidgetContent,
 };
 use maestro_extensions::{
     AutocompleteProviderFactory, CallbackEmitter, EditorFactory, EventBus, EventError,
@@ -239,7 +238,7 @@ fn reserved_shortcut(warnings: &Trace) -> (Loaded, ExtensionRunner<Local>) {
     let warnings = warnings.clone();
     let runner = ExtensionRunner::<Local>::new(
         owner.owners.clone(),
-        Arc::clone(&owner.runtime),
+        owner.runtime.clone(),
         local_support::session::runner_session("/work").0,
         Rc::new(move |line: &str| mark(&warnings, line)),
         LiveTheme::default(),
@@ -859,7 +858,7 @@ fn ui_capabilities_keep_factories_options_and_live_theme() {
     let state = published::unpublished();
     let runner = ExtensionRunner::<Local>::new(
         owner.owners.clone(),
-        Arc::clone(&owner.runtime),
+        owner.runtime.clone(),
         local_support::session::runner_session("/work").0,
         Rc::new(|_| {}),
         state.theme(),
@@ -2596,9 +2595,9 @@ fn ui_defaults_preserve_threaded_registration_contracts() {
         local_support::source("/default"),
     )));
     let owners = Arc::new(RwLock::new(vec![Arc::clone(&owner)]));
-    let runtime = Arc::new(ExtensionRuntimeState::new());
+    let runtime = maestro_extensions::create_extension_runtime::<maestro_models::Threaded>();
     let bus = create_event_bus(Arc::new(|tail| drop(tokio::spawn(tail))), Arc::new(|_| {}));
-    let api = DefaultApi::new(&owner, Arc::clone(&runtime), bus.for_extension());
+    let api = DefaultApi::new(&owner, runtime.clone(), bus.for_extension(), "/work".into());
     let renderer: DefaultRenderer<u32> = Arc::new(
         |message: Arc<CustomMessage<u32>>, options, theme: LiveTheme, _| {
             let details = matches!(message.details, Presence::Present(7));

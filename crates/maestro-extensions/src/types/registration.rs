@@ -144,7 +144,10 @@ pub struct ExtensionAPI<E: ExtensionExecution = Threaded> {
     /// Registration owner.
     pub(crate) extension: E::Weak<RwLock<Extension<E>>>,
     /// Shared values and activity guard.
-    pub(crate) runtime: Arc<ExtensionRuntimeState>,
+    pub(crate) runtime: E::Shared<super::ExtensionRuntime<E>>,
+    /// Directory supplied when the facade was created.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub(crate) cwd: String,
 }
 
 /// An owned mutable extension record.
@@ -174,7 +177,9 @@ impl<E: ExtensionExecution> Clone for ExtensionAPI<E> {
         Self {
             events: self.events.clone(),
             extension: self.extension.clone(),
-            runtime: Arc::clone(&self.runtime),
+            runtime: self.runtime.clone(),
+            #[cfg(not(target_arch = "wasm32"))]
+            cwd: self.cwd.clone(),
         }
     }
 }

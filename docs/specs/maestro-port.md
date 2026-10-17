@@ -458,7 +458,7 @@ test. It has no workspace dependencies except the native feature unifier, and it
 excluded from the foundation utility permission. Its only incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
-`maestro-credentials`, `maestro-models`, `maestro-packages`, `maestro-process`,
+`maestro-credentials`, `maestro-extensions`, `maestro-models`, `maestro-packages`, `maestro-process`,
 `maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-test-conventions`,
 `maestro-tooling`, `maestro-tools`, `maestro-tui` and `maestro-tui-crossterm`; a
 caller declares it only when it uses it. No normal, build, optional, unqualified or
@@ -533,3 +533,9 @@ its existing `ToolInfo<String>` alias. Identity-deduplicated live callback stora
 belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions
 and extension error delivery reuse it; dispatch and lifecycle policy remain with
 their callers. The collection returns removed ownership for release outside guards.
+
+Extension runner sessions and context catalog getters retain one direct shared
+`ModelRegistry` holder; its internal synchronization stays catalog-owned.
+The complete action runtime composes the existing activity/flag state.
+Binding installs action and base-context operations before provider flushing;
+command-context binding remains independent.

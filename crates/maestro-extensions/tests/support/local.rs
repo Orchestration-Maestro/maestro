@@ -3,7 +3,7 @@
 use maestro_extensions::{
     EventBus, EventBusController, EventListener, Extension, ExtensionAPI, ExtensionRunner,
     SourceInfo, create_event_bus_for,
-    types::{ExtensionCollection, ExtensionHandle, ExtensionRuntimeState},
+    types::{ExtensionCollection, ExtensionHandle},
 };
 use maestro_models::Local;
 use maestro_theme::LiveTheme;
@@ -58,7 +58,7 @@ pub struct Loaded {
     /// Current load order containing the owner.
     pub owners: ExtensionCollection<Local>,
     /// Shared flag values and activity.
-    pub runtime: Arc<ExtensionRuntimeState>,
+    pub runtime: Rc<maestro_extensions::ExtensionRuntime<maestro_models::Local>>,
 }
 
 /// Creates a loaded owner using the supplied bus identity.
@@ -68,9 +68,9 @@ pub fn loaded(path: &str, events: EventBus<Local>) -> Loaded {
         format!("{path}/index"),
         source(path),
     )));
-    let runtime = Arc::new(ExtensionRuntimeState::new());
+    let runtime = maestro_extensions::create_extension_runtime::<maestro_models::Local>();
     Loaded {
-        api: ExtensionAPI::new(&owner, Arc::clone(&runtime), events),
+        api: ExtensionAPI::new(&owner, runtime.clone(), events, "/workspace".into()),
         owners: Rc::new(RwLock::new(vec![owner.clone()])),
         owner,
         runtime,
@@ -81,7 +81,7 @@ pub fn loaded(path: &str, events: EventBus<Local>) -> Loaded {
 pub fn runner(owners: &ExtensionCollection<Local>) -> ExtensionRunner<Local> {
     ExtensionRunner::<Local>::new(
         owners.clone(),
-        Arc::new(ExtensionRuntimeState::new()),
+        maestro_extensions::create_extension_runtime::<maestro_models::Local>(),
         session::runner_session("/work").0,
         Rc::new(|_| {}),
         LiveTheme::default(),

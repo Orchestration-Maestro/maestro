@@ -16,11 +16,17 @@ use std::{rc::Rc, sync::RwLock};
 fn command_context_getters_remain_lazy() {
     let runner = runner(&Rc::new(RwLock::new(Vec::new())));
     let ctx = runner.create_command_context();
-    runner.bind_core(ExtensionContextActions {
-        is_idle: Rc::new(|| Ok(false)),
-        get_system_prompt: Rc::new(|| Ok("B prompt".into())),
-        ..ExtensionContextActions::default()
-    });
+    runner
+        .bind_core(
+            <maestro_models::Local as maestro_extensions::ExtensionExecution>::unbound_actions(),
+            ExtensionContextActions {
+                is_idle: Rc::new(|| Ok(false)),
+                get_system_prompt: Rc::new(|| Ok("B prompt".into())),
+                ..ExtensionContextActions::default()
+            },
+            maestro_extensions::types::ProviderActions::default(),
+        )
+        .unwrap();
     let (ui, _) = ui_host::Named::install("host");
     runner.set_ui_context(Some(ui));
     assert!(!ctx.is_idle().unwrap());
@@ -40,31 +46,29 @@ fn command_context_getters_remain_lazy() {
     assert_eq!(ctx.cwd().unwrap(), "/work");
     let model = model_support::model("A");
     let captured = model.clone();
-    runner.bind_core(ExtensionContextActions {
-        get_model: Rc::new(move || Ok(Some(captured.clone()))),
-        ..Default::default()
-    });
+    runner
+        .bind_core(
+            <maestro_models::Local as maestro_extensions::ExtensionExecution>::unbound_actions(),
+            ExtensionContextActions {
+                get_model: Rc::new(move || Ok(Some(captured.clone()))),
+                ..Default::default()
+            },
+            maestro_extensions::types::ProviderActions::default(),
+        )
+        .unwrap();
     let bound = runner.create_command_context();
-    runner.bind_core(ExtensionContextActions {
-        is_idle: Rc::new(|| Ok(false)),
-        get_system_prompt: Rc::new(|| Ok("B prompt".into())),
-        ..Default::default()
-    });
-    assert!(Arc::ptr_eq(&bound.model().unwrap().unwrap(), &model));
-    assert!(!bound.is_idle().unwrap());
-    assert_eq!(bound.get_system_prompt().unwrap(), "B prompt");
-    runner.set_ui_context(None);
-    assert!(!ctx.has_ui().unwrap());
-    local(async {
-        assert!(
-            ctx.ui()
-                .unwrap()
-                .select("fallback".into(), vec![], None)
-                .await
-                .unwrap()
-                .is_none()
-        );
-    });
+    runner
+        .bind_core(
+            <maestro_models::Local as maestro_extensions::ExtensionExecution>::unbound_actions(),
+            ExtensionContextActions {
+                is_idle: Rc::new(|| Ok(false)),
+                get_system_prompt: Rc::new(|| Ok("B prompt".into())),
+                ..Default::default()
+            },
+            maestro_extensions::types::ProviderActions::default(),
+        )
+        .unwrap();
+    check_late_contexts(&runner, &ctx, &bound, &model);
 }
 
 #[test]
@@ -214,7 +218,7 @@ fn registered_commands_receive_the_runner_command_context() {
     });
     let runner = maestro_extensions::ExtensionRunner::<maestro_models::Threaded>::new(
         Arc::new(RwLock::new(Vec::new())),
-        Arc::new(maestro_extensions::types::ExtensionRuntimeState::new()),
+        maestro_extensions::create_extension_runtime::<maestro_models::Threaded>(),
         local_support::session::runner_session("/work").0,
         Arc::new(|_| {}),
         maestro_theme::LiveTheme::default(),
@@ -498,7 +502,7 @@ async fn replace_session(
     old.invalidate(None);
     let fresh = maestro_extensions::ExtensionRunner::<maestro_models::Local>::new(
         Rc::new(RwLock::new(Vec::new())),
-        Arc::new(maestro_extensions::types::ExtensionRuntimeState::new()),
+        maestro_extensions::create_extension_runtime::<maestro_models::Local>(),
         session,
         Rc::new(|_| {}),
         maestro_theme::LiveTheme::default(),
@@ -703,12 +707,19 @@ fn base_and_command_bindings_are_independent() {
             *count.borrow_mut() += 1;
             Ok(())
         });
-        runner.bind_core(ExtensionContextActions {
-            shutdown,
-            is_idle: Rc::new(|| Ok(false)),
-            get_system_prompt: Rc::new(|| Ok("B".into())),
-            ..Default::default()
-        });
+        runner
+            .bind_core(
+                <maestro_models::Local as maestro_extensions::ExtensionExecution>::unbound_actions(
+                ),
+                ExtensionContextActions {
+                    shutdown,
+                    is_idle: Rc::new(|| Ok(false)),
+                    get_system_prompt: Rc::new(|| Ok("B".into())),
+                    ..Default::default()
+                },
+                maestro_extensions::types::ProviderActions::default(),
+            )
+            .unwrap();
         let ctx = runner.create_command_context();
         assert!(ctx.new_session(None).await.unwrap().cancelled);
         assert!(!ctx.is_idle().unwrap());
@@ -957,4 +968,27 @@ async fn full_option_commands(
         .await
         .map(|r| r.cancelled),
     ]
+}
+
+fn check_late_contexts(
+    runner: &maestro_extensions::ExtensionRunner<maestro_models::Local>,
+    ctx: &maestro_extensions::ExtensionCommandContext,
+    bound: &maestro_extensions::ExtensionCommandContext,
+    model: &Arc<RwLock<maestro_models::Model>>,
+) {
+    assert!(Arc::ptr_eq(&bound.model().unwrap().unwrap(), model));
+    assert!(!bound.is_idle().unwrap());
+    assert_eq!(bound.get_system_prompt().unwrap(), "B prompt");
+    runner.set_ui_context(None);
+    assert!(!ctx.has_ui().unwrap());
+    local(async {
+        assert!(
+            ctx.ui()
+                .unwrap()
+                .select("fallback".into(), vec![], None)
+                .await
+                .unwrap()
+                .is_none()
+        );
+    });
 }

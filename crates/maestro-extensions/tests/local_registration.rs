@@ -5,8 +5,8 @@ use maestro_extensions::{
     EventBus, EventBusController, EventError, EventListener, Extension, ExtensionAPI,
     ExtensionContext, ExtensionRunner,
     types::{
-        ExtensionCollection, ExtensionFlagOptions, ExtensionHandle, ExtensionRuntimeState,
-        ExtensionShortcutOptions, FlagType, RegisteredCommandOptions, ResolvedCommand,
+        ExtensionCollection, ExtensionFlagOptions, ExtensionHandle, ExtensionShortcutOptions,
+        FlagType, RegisteredCommandOptions, ResolvedCommand,
     },
 };
 use maestro_models::{Execution, Local};
@@ -911,8 +911,13 @@ fn default_callbacks_run_on_another_thread(bus: &EventBusController) {
         source("/default"),
     )));
     let owners = Arc::new(RwLock::new(vec![Arc::clone(&owner)]));
-    let runtime = Arc::new(ExtensionRuntimeState::new());
-    let api = ExtensionAPI::new(&owner, Arc::clone(&runtime), bus.for_extension());
+    let runtime = maestro_extensions::create_extension_runtime::<maestro_models::Threaded>();
+    let api = ExtensionAPI::new(
+        &owner,
+        runtime.clone(),
+        bus.for_extension(),
+        "/workspace".into(),
+    );
     let options = RegisteredCommandOptions::<maestro_models::Threaded> {
         description: None,
         get_argument_completions: None,
@@ -943,25 +948,7 @@ fn default_callbacks_run_on_another_thread(bus: &EventBusController) {
         Arc::new(|_| {}),
         LiveTheme::default(),
     );
-    let command = runner.get_command("hello").unwrap();
-    let shortcuts = runner.get_shortcuts(&Vec::new());
-    let shortcut = shortcuts["ctrl+y"].read().unwrap().handler.clone();
-    let invoked = send((command.handler)(
-        "/work".into(),
-        runner.create_command_context(),
-    ));
-    let pressed = send(shortcut(runner.create_context()));
-    let worker = std::thread::spawn(move || {
-        let executor = tokio::runtime::Builder::new_current_thread()
-            .build()
-            .unwrap();
-        let invoked = executor.block_on(invoked).is_ok();
-        (invoked, executor.block_on(pressed).unwrap_err().to_string())
-    });
-    assert_eq!(
-        worker.join().unwrap(),
-        (true, "pressed in /work".to_owned())
-    );
+    invoke_default_callbacks(&runner);
 }
 
 #[test]
@@ -1004,4 +991,27 @@ fn check_resolved_names(runner: &ExtensionRunner<Local>) {
         .collect();
     assert_eq!(names, ["dup:1", "other", "dup:2", "dup:1:2"]);
     assert!(runner.get_command("dup").is_none());
+}
+
+/// Invokes retained command and shortcut futures on a native worker.
+fn invoke_default_callbacks(runner: &ExtensionRunner) {
+    let command = runner.get_command("hello").unwrap();
+    let shortcuts = runner.get_shortcuts(&Vec::new());
+    let shortcut = shortcuts["ctrl+y"].read().unwrap().handler.clone();
+    let invoked = send((command.handler)(
+        "/work".into(),
+        runner.create_command_context(),
+    ));
+    let pressed = send(shortcut(runner.create_context()));
+    let worker = std::thread::spawn(move || {
+        let executor = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap();
+        let invoked = executor.block_on(invoked).is_ok();
+        (invoked, executor.block_on(pressed).unwrap_err().to_string())
+    });
+    assert_eq!(
+        worker.join().unwrap(),
+        (true, "pressed in /work".to_owned())
+    );
 }

@@ -266,6 +266,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-catalog",
     "maestro-chat",
     "maestro-credentials",
+    "maestro-extensions",
     "maestro-models",
     "maestro-packages",
     "maestro-process",

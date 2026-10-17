@@ -1,8 +1,10 @@
 //! Existing extensions owners exposed at the application root.
 
 pub use maestro_extensions::{
-    AutocompleteProviderFactory, CompactOptions, ContextUsage, ExtensionCommandContext,
-    ExtensionCommandContextActions, ExtensionContext, ExtensionContextActions, ExtensionUIContext,
+    AutocompleteProviderFactory, CompactOptions, ContextUsage, ExtensionActions,
+    ExtensionCommandContext, ExtensionCommandContextActions, ExtensionContext,
+    ExtensionContextActions, ExtensionError, ExtensionRuntime, ExtensionUIContext,
     ExtensionUIDialogOptions, ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer,
-    TerminalInputHandler, WidgetPlacement, WorkingIndicatorOptions,
+    ProviderConfig, ProviderModelConfig, TerminalInputHandler, ToolInfo, WidgetPlacement,
+    WorkingIndicatorOptions, create_extension_runtime,
 };

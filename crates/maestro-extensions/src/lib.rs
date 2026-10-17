@@ -61,3 +61,15 @@ pub use types::{
 /// Queries over current extension registrations.
 pub mod runner;
 pub use runner::ExtensionRunner;
+
+pub use loader::runtime::create_extension_runtime;
+pub use maestro_models::ToolInfo;
+#[cfg(not(target_arch = "wasm32"))]
+pub use maestro_tools::{ExecOptions, ExecResult};
+pub use types::{
+    AppendEntryHandler, ExtensionActions, ExtensionError, ExtensionErrorListener, ExtensionRuntime,
+    ExtensionRuntimeState, GetActiveToolsHandler, GetAllToolsHandler, GetCommandsHandler,
+    GetThinkingLevelHandler, ProviderConfig, ProviderModelConfig, SendMessageHandler,
+    SendUserMessageHandler, SetActiveToolsHandler, SetLabelHandler, SetModelHandler,
+    SetThinkingLevelHandler,
+};

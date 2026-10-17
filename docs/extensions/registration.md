@@ -18,7 +18,7 @@ use maestro_credentials::AuthStorage;
 use maestro_extensions::{create_event_bus, Extension, ExtensionAPI, ExtensionRunner, SourceInfo};
 use maestro_extensions::runner::ExtensionRunnerSession;
 use maestro_extensions::types::{
-    ExtensionRuntimeState, RegisteredCommandOptions, ExtensionFlagOptions,
+    RegisteredCommandOptions, ExtensionFlagOptions,
     ExtensionShortcutOptions, FlagType, FlagValue,
 };
 use maestro_session::SessionManager;
@@ -33,12 +33,12 @@ let owner = Arc::new(RwLock::new(Extension::<maestro_models::Threaded>::new(
     source.path.clone(), "/resolved/example".into(), Arc::new(RwLock::new(source)),
 )));
 let owners = Arc::new(RwLock::new(vec![Arc::clone(&owner)]));
-let runtime = Arc::new(ExtensionRuntimeState::new());
+let runtime = maestro_extensions::create_extension_runtime::<maestro_models::Threaded>();
 let bus = create_event_bus(
     Arc::new(|tail| { tokio::spawn(tail); }),
     Arc::new(|line| eprint!("{line}")),
 );
-let api = ExtensionAPI::new(&owner, Arc::clone(&runtime), bus.for_extension());
+let api = ExtensionAPI::new(&owner, runtime.clone(), bus.for_extension(), "/workspace".into());
 api.register_command("hello".into(), RegisteredCommandOptions {
     description: Some("Say hello".into()),
     get_argument_completions: None,
@@ -62,7 +62,7 @@ let auth = Arc::new(AuthStorage::in_memory(Default::default()));
 let session = ExtensionRunnerSession {
     cwd: "/work".into(),
     session_manager: Rc::new(RefCell::new(SessionManager::in_memory(Some("/work"))?)),
-    model_registry: Rc::new(RefCell::new(ModelRegistry::in_memory(auth)?)),
+    model_registry: maestro_models::SharedHandle::new(ModelRegistry::in_memory(auth)?),
 };
 let runner = ExtensionRunner::<maestro_models::Threaded>::new(
     owners, runtime, session, Arc::new(|line| eprint!("{line}")),
@@ -91,7 +91,7 @@ registration owner, one query algorithm and one event bus implementation.
 must admit local tails, for example through a Tokio local task set.
 
 ```rust
-use maestro_extensions::types::{ExtensionRuntimeState, RegisteredCommandOptions};
+use maestro_extensions::types::{RegisteredCommandOptions};
 use maestro_extensions::{create_event_bus_for, Extension, ExtensionAPI, ExtensionRunner, SourceInfo};
 use maestro_models::Local;
 use maestro_tui::Input;
@@ -106,12 +106,12 @@ fn local_callback_registration_example() -> Result<(), Box<dyn std::error::Error
         source.path.clone(), "/resolved/rename".into(), Arc::new(RwLock::new(source)),
     )));
     let owners = Rc::new(RwLock::new(vec![Rc::clone(&owner)]));
-    let runtime = Arc::new(ExtensionRuntimeState::new());
+    let runtime = maestro_extensions::create_extension_runtime::<maestro_models::Local>();
     let bus = create_event_bus_for::<Local>(
         Rc::new(|tail| { tokio::task::spawn_local(tail); }),
         Rc::new(|line| eprint!("{line}")),
     );
-    let api = ExtensionAPI::new(&owner, Arc::clone(&runtime), bus.for_extension());
+    let api = ExtensionAPI::new(&owner, runtime.clone(), bus.for_extension(), "/workspace".into());
     let input = Rc::new(Input::new());
     let captured_input = Rc::clone(&input);
     api.register_command("rename".into(), RegisteredCommandOptions {
@@ -130,7 +130,7 @@ fn local_callback_registration_example() -> Result<(), Box<dyn std::error::Error
 #   let session = maestro_extensions::runner::ExtensionRunnerSession {
 #       cwd: "/work".into(),
 #       session_manager: Rc::new(std::cell::RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
-#       model_registry: Rc::new(std::cell::RefCell::new(maestro_catalog::ModelRegistry::in_memory(auth)?)),
+#       model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth)?),
 #   };
     let runner = ExtensionRunner::<Local>::new(
         owners, runtime, session, Rc::new(|line| eprint!("{line}")),
@@ -225,7 +225,6 @@ suspension; a `Local` callback may keep it across suspensions.
 use maestro_catalog::ModelRegistry;
 use maestro_credentials::AuthStorage;
 use maestro_extensions::runner::ExtensionRunnerSession;
-use maestro_extensions::types::ExtensionRuntimeState;
 use maestro_extensions::{ExtensionContextActions, ExtensionRunner};
 use maestro_session::SessionManager;
 use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
@@ -236,18 +235,18 @@ let auth = Arc::new(AuthStorage::in_memory(Default::default()));
 let session = ExtensionRunnerSession {
     cwd: "/work".into(),
     session_manager: Rc::new(RefCell::new(SessionManager::in_memory(Some("/work"))?)),
-    model_registry: Rc::new(RefCell::new(ModelRegistry::in_memory(auth)?)),
+    model_registry: maestro_models::SharedHandle::new(ModelRegistry::in_memory(auth)?),
 };
 let runner = ExtensionRunner::<maestro_models::Threaded>::new(
-    Arc::new(RwLock::new(Vec::new())), Arc::new(ExtensionRuntimeState::new()), session,
+    Arc::new(RwLock::new(Vec::new())), maestro_extensions::create_extension_runtime::<maestro_models::Threaded>(), session,
     Arc::new(|line| eprint!("{line}")), maestro_theme::LiveTheme::default(),
 );
 let ctx = runner.create_context();
 assert!(ctx.is_idle()?);
-runner.bind_core(ExtensionContextActions {
+runner.bind_core(<maestro_models::Threaded as maestro_extensions::ExtensionExecution>::unbound_actions(), ExtensionContextActions {
     is_idle: Rc::new(|| Ok(false)),
     ..ExtensionContextActions::default()
-});
+}, maestro_extensions::types::ProviderActions::default()).unwrap();
 assert!(!ctx.is_idle()?);
 let history = ctx.session_manager()?;
 runner.invalidate(None);
@@ -281,7 +280,7 @@ context, run `setup` and `with_session` callbacks and create replacement session
 
 ```rust
 use maestro_extensions::{ExtensionCommandContextActions, ExtensionRunner, ReplacedSessionContext};
-use maestro_extensions::types::{ExtensionRuntimeState, NewSessionCommandOptions, SessionChangeResult};
+use maestro_extensions::types::{NewSessionCommandOptions, SessionChangeResult};
 use maestro_extensions::runner::ExtensionRunnerSession;
 use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
 # fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -289,10 +288,10 @@ use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
 # let session = ExtensionRunnerSession {
 #     cwd: "/work".into(),
 #     session_manager: Rc::new(RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
-#     model_registry: Rc::new(RefCell::new(maestro_catalog::ModelRegistry::in_memory(auth)?)),
+#     model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth)?),
 # };
 let runner = ExtensionRunner::<maestro_models::Threaded>::new(
-    Arc::new(RwLock::new(Vec::new())), Arc::new(ExtensionRuntimeState::new()), session,
+    Arc::new(RwLock::new(Vec::new())), maestro_extensions::create_extension_runtime::<maestro_models::Threaded>(), session,
     Arc::new(|_| {}), maestro_theme::LiveTheme::default(),
 );
 runner.bind_command_context(Some(ExtensionCommandContextActions {
@@ -325,6 +324,59 @@ executor.block_on(async {
     assert!(matches!(sent.borrow().as_slice(), [maestro_models::UserContent::Text(text)] if text == "hello"));
     Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
 })?;
+# Ok(())
+# }
+```
+
+## Actions and provider binding
+
+Create one `create_extension_runtime::<Local>()` or
+`create_extension_runtime::<Threaded>()` for the facade and runner. Supply the
+facade's creation directory explicitly; native `exec` delegates to the tools
+operation with that directory unless a call overrides it.
+
+`ExtensionExecution::unbound_actions()` supplies loading-time errors, except for
+its inert tool refresh. `bind_core(actions, context_actions, provider_actions)`
+installs action and base-context callbacks before flushing queued providers.
+Command binding remains independent. Facades check their existing owner/activity
+guard; direct runtime action access is unguarded. A started model-selection future
+retains the selected operation even after rebinding.
+
+Provider configuration is the catalog's complete input record, including stream
+and account callbacks. Before binding, registrations retain insertion order and
+originating paths; unregister removes every pending match. Flushes observe later
+config edits, additions and cancellations. Failures reach attributed error
+listeners and normally do not stop later registrations. If a listener fails,
+binding returns that error: successful registrations are consumed, while failed
+and unattempted work remains for the next bind. After a completed flush, each
+provider operation independently uses its supplied override or the same direct
+shared catalog returned by contexts.
+
+`on_error` deduplicates callback identity and returns an explicit remover.
+Dropping the remover does not unsubscribe. Delivery observes listener additions
+and removals live; the first listener error stops delivery. `emit_error` accepts
+supplied fields without manufacturing stack text and remains usable when stale.
+Local actions/futures may capture local values; native Threaded actions are
+`Send + Sync` with `Send` futures. No runtime guard is retained while calling an
+application callback.
+
+```rust
+use maestro_extensions::{ExtensionActions, ExtensionExecution, types::ProviderActions};
+use maestro_models::Local;
+use std::rc::Rc;
+# fn bind(runner: &maestro_extensions::ExtensionRunner<Local>) -> Result<(), maestro_extensions::EventError> {
+let mut actions: ExtensionActions<Local> = Local::unbound_actions();
+actions.get_session_name = Rc::new(|| Ok(Some("bound session".into())));
+let providers = ProviderActions::<Local> {
+    register_provider: Some(Rc::new(|name, config| {
+        // Application-supplied registration owns its policy.
+        assert_eq!(name, "example");
+        assert!(config.read().map_err(|error| error.to_string())?.models.is_none());
+        Ok(())
+    })),
+    unregister_provider: None,
+};
+runner.bind_core(actions, Default::default(), providers)?;
 # Ok(())
 # }
 ```
