@@ -79,3 +79,30 @@ fn lists(executable: &Path, test: &str, ignored: bool) -> Result<bool, TestProce
         .lines()
         .any(|line| line == wanted))
 }
+
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::require_eligible;
+
+    /// An executable that cannot be started is reported with its native cause.
+    #[test]
+    fn missing_executable_fails_the_discovery() {
+        let error =
+            require_eligible(Path::new("/definitely/missing/test-binary"), "t", false).unwrap_err();
+        assert!(error.to_string().contains("cannot list tests"), "{error}");
+        assert!(std::error::Error::source(&error).is_some());
+    }
+
+    /// A listing that exits unsuccessfully is reported, not read as an empty listing.
+    #[cfg(unix)]
+    #[test]
+    fn failing_listing_fails_the_discovery() {
+        let error = require_eligible(Path::new("/bin/false"), "t", false).unwrap_err();
+        assert!(
+            error.to_string().contains("the test listing failed"),
+            "{error}"
+        );
+    }
+}

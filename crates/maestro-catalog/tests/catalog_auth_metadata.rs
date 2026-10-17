@@ -241,7 +241,7 @@ fn display_table_mutations_are_shared_between_registries() {
             .output()
             .unwrap();
         assert!(output.status.success(), "display subprocess failed");
-        crate::subprocess::child_process::assert_executed(&output, &test);
+        crate::subprocess::child_process::assert_executed(&output, &test).unwrap();
         return;
     }
     let first = ModelRegistry::in_memory(support::auth()).unwrap();
@@ -397,7 +397,7 @@ fn metadata_known_environment() {
             .output()
             .unwrap();
         assert!(output.status.success(), "metadata subprocess failed");
-        crate::subprocess::child_process::assert_executed(&output, &test);
+        crate::subprocess::child_process::assert_executed(&output, &test).unwrap();
         return;
     }
     let registry = ModelRegistry::in_memory(support::auth()).unwrap();

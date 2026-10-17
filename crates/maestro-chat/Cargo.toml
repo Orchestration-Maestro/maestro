@@ -24,5 +24,8 @@ maestro-dependencies.workspace = true
 maestro-path = { path = "../maestro-path" }
 tokio = { version = "=1.53.2", default-features = false, features = ["process"] }
 
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-process.workspace = true
+
 [lints]
 workspace = true

@@ -8,7 +8,7 @@ use std::process::{Command, ExitStatus, Output, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use maestro_test_process::{
-    TestProcess, assert_executed, capture, child_case, rerun, selector, test_name,
+    TestProcess, assert_executed, capture, child_case, rerun, run_alone, selector, test_name,
 };
 
 /// The harness bytes that open a one-test run.
@@ -106,11 +106,7 @@ fn contains(haystack: &[u8], needle: &[u8]) -> bool {
 
 /// A real successful exit status.
 fn success() -> ExitStatus {
-    Command::new(std::env::current_exe().unwrap())
-        .arg("--list")
-        .output()
-        .unwrap()
-        .status
+    ExitStatus::default()
 }
 
 /// Output a wrapper could return, with the given bytes and a zero exit.
@@ -179,16 +175,14 @@ fn current_identity_keeps_module_and_unit_paths() {
 #[test]
 fn current_identity_rejects_mismatch_and_unnamed_threads() {
     assert!(TestProcess::current("some_other_test").is_err());
-    assert!(TestProcess::current("urrent_identity_rejects_mismatch_and_unnamed_threads").is_err());
-    let unnamed = std::thread::spawn(|| {
-        TestProcess::current("x")
-            .err()
-            .map(|error| error.to_string())
-    })
-    .join()
-    .unwrap()
-    .unwrap();
-    assert!(unnamed.contains("not a named test"), "{unnamed}");
+    assert!(TestProcess::current("identity_rejects_mismatch_and_unnamed_threads").is_err());
+    let unnamed = std::thread::spawn(|| TestProcess::current("x").unwrap_err())
+        .join()
+        .unwrap();
+    assert!(
+        unnamed.to_string().contains("not a named test"),
+        "{unnamed}"
+    );
     assert!(selector("some_other_test").is_err());
 }
 
@@ -403,6 +397,9 @@ fn live_reader_replays_prefix_without_consuming_product() {
 
 #[test]
 fn dropping_live_stdout_closes_the_only_read_end() {
+    if run_alone("dropping_live_stdout_closes_the_only_read_end").unwrap() {
+        return;
+    }
     let mut child = probe(&left_name(), "pipe")
         .stdin(Stdio::piped())
         .stderr(Stdio::piped())
@@ -443,14 +440,20 @@ fn failed_live_start_closes_and_reaps_direct_child() {
         error.contains("did not start exactly") && error.contains("stdout:\ni"),
         "{error}"
     );
-    let pid = std::fs::read_to_string(&pid_file).unwrap();
-    #[cfg(target_os = "linux")]
-    assert!(
-        !Path::new(&format!("/proc/{}", pid.trim())).exists(),
-        "child {pid} was not reaped"
-    );
-    #[cfg(not(target_os = "linux"))]
-    assert!(!pid.trim().is_empty());
+    assert_reaped(&pid_file);
+}
+
+/// Require that the process whose id `pid_file` holds no longer exists, so it was reaped.
+#[cfg(unix)]
+fn assert_reaped(pid_file: &Path) {
+    let pid = std::fs::read_to_string(pid_file).unwrap();
+    let alive = Command::new("kill")
+        .args(["-0", pid.trim()])
+        .stderr(Stdio::null())
+        .status()
+        .unwrap()
+        .success();
+    assert!(!alive, "child {pid} was not reaped");
 }
 
 #[test]
@@ -514,6 +517,57 @@ fn file_stdout_remains_a_file_and_preserves_shared_cursor() {
     }
     assert_eq!(held.stream_position().unwrap(), written.len() as u64);
     assert_eq!(std::fs::read_to_string(&err_path).unwrap(), "diagnostic\n");
+}
+
+#[test]
+fn file_stdout_refuses_existing_bytes_or_offset_before_launch() {
+    use std::io::{Seek, SeekFrom};
+    let scratch = Scratch::new();
+    for (index, contents, append, offset) in [
+        (0, b"existing bytes\n".as_slice(), true, 0),
+        (1, START, false, 0),
+        (2, b"".as_slice(), false, 1),
+    ] {
+        let path = scratch.join(&format!("out-{index}"));
+        let marker = scratch.join(&format!("marker-{index}"));
+        std::fs::write(&path, contents).unwrap();
+        let mut file = std::fs::OpenOptions::new()
+            .read(true)
+            .write(!append)
+            .append(append)
+            .open(&path)
+            .unwrap();
+        file.seek(SeekFrom::Start(offset)).unwrap();
+        let error = probe(&left_name(), "marker")
+            .env("MTP_MARKER", &marker)
+            .status_with_stdout(file)
+            .unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("must be empty with its cursor at zero"),
+            "{error}"
+        );
+        assert!(!marker.exists(), "child started for rejected file {index}");
+        assert_eq!(std::fs::read(path).unwrap(), contents);
+    }
+}
+
+#[test]
+fn file_stdout_accepts_an_empty_append_file() {
+    let scratch = Scratch::new();
+    let path = scratch.join("out");
+    let file = std::fs::OpenOptions::new()
+        .create_new(true)
+        .read(true)
+        .append(true)
+        .open(&path)
+        .unwrap();
+    let status = probe(&left_name(), "idle")
+        .status_with_stdout(file)
+        .unwrap();
+    assert!(status.success());
+    assert!(std::fs::read(path).unwrap().starts_with(START));
 }
 
 #[cfg(unix)]
@@ -782,6 +836,84 @@ fn startup_failures_name_selection_and_keep_diagnostics() {
         .output_with(|_| Err::<Output, _>(std::io::Error::other("invoker failed")))
         .unwrap_err();
     assert!(failure.to_string().contains("invoker failed"));
+    #[cfg(unix)]
+    {
+        let scratch = Scratch::new();
+        let pid_file = scratch.join("pid");
+        let setup = format!(
+            "echo $$ > '{}'; printf 'invalid startup\\n'; exit 0",
+            pid_file.display()
+        );
+        let error = this().shell_setup(setup).output().unwrap_err();
+        assert!(
+            error.to_string().contains("did not start exactly"),
+            "{error}"
+        );
+        assert_reaped(&pid_file);
+    }
+}
+
+#[test]
+fn alone_runs_the_test_once_in_a_fresh_one_test_process() {
+    let name = "alone_runs_the_test_once_in_a_fresh_one_test_process";
+    assert!(run_alone("some_other_test").is_err());
+    if let Some(path) = std::env::var_os("MTP_ALONE_COUNT") {
+        let mut log = std::fs::OpenOptions::new().append(true).open(path).unwrap();
+        writeln!(log, "{}", std::process::id()).unwrap();
+        if run_alone(name).unwrap() {
+            return;
+        }
+        let arguments: Vec<_> = std::env::args().skip(1).collect();
+        assert_eq!(arguments, ["--exact", &format!("checked_runs::{name}")]);
+        return;
+    }
+    let scratch = Scratch::new();
+    let path = scratch.join("launches");
+    std::fs::write(&path, "").unwrap();
+    let output = TestProcess::current(name)
+        .unwrap()
+        .env("MTP_ALONE_COUNT", &path)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{}", text(&output.stdout));
+    let log = std::fs::read_to_string(path).unwrap();
+    let pids: Vec<_> = log.lines().collect();
+    assert_eq!(pids.len(), 2, "one parent and one isolated child: {log}");
+    assert_ne!(pids[0], pids[1]);
+    println!(
+        "ISOLATION-LAUNCH-COUNT parent={} child={} body-entries={}",
+        pids[0],
+        pids[1],
+        pids.len()
+    );
+}
+
+#[test]
+fn alone_reports_the_failing_body_with_its_streams() {
+    if std::env::var_os("MTP_ALONE_FAILS").is_none() {
+        return;
+    }
+    if run_alone("alone_reports_the_failing_body_with_its_streams").unwrap() {
+        return;
+    }
+    panic!("the isolated body failed");
+}
+
+#[test]
+fn alone_failure_names_the_test_and_keeps_the_body_output() {
+    let name = "checked_runs::alone_reports_the_failing_body_with_its_streams";
+    let output = TestProcess::named(name)
+        .unwrap()
+        .env("MTP_ALONE_FAILS", "1")
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    let reported = text(&output.stdout);
+    assert!(
+        reported.contains("the isolated run failed")
+            && reported.contains("the isolated body failed"),
+        "{reported}"
+    );
 }
 
 #[test]
@@ -936,31 +1068,4 @@ fn checked_child_waits_keep_exit_and_raw_streams() {
     );
     assert!(contains(&output.stdout, b"out\0\xff") && contains(&output.stderr, b"err\0\xfe"));
     assert!(output.status.success());
-}
-
-#[test]
-fn live_child_holds_back_sibling_launches_until_waited() {
-    let name = left_name();
-    let mut live = probe(&name, "live").stdin(Stdio::piped()).spawn().unwrap();
-    let (events, observed) = std::sync::mpsc::channel();
-    let sibling = std::thread::spawn({
-        move || {
-            events.send("started").unwrap();
-            probe(&name, "idle").output().unwrap();
-            events.send("launched").unwrap();
-        }
-    });
-    assert_eq!(observed.recv().unwrap(), "started");
-    assert!(
-        observed.try_recv().is_err(),
-        "a sibling launched while a live child held the lock"
-    );
-    live.stdin
-        .as_mut()
-        .unwrap()
-        .write_all(b"continue\n")
-        .unwrap();
-    assert!(live.wait().unwrap().success());
-    assert_eq!(observed.recv().unwrap(), "launched");
-    sibling.join().unwrap();
 }

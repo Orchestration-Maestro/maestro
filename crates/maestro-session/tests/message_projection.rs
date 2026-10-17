@@ -97,7 +97,7 @@ fn in_timezone(name: &str, timezone: &str) -> bool {
         .output()
         .unwrap();
     assert!(output.status.success());
-    crate::child_process::assert_executed(&output, &test);
+    crate::child_process::assert_executed(&output, &test).unwrap();
     false
 }
 

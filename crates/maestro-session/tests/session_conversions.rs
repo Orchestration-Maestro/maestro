@@ -84,7 +84,7 @@ fn converted_context_uses_existing_local_timestamp_policy() {
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
-        crate::child_process::assert_executed(&output, &test);
+        crate::child_process::assert_executed(&output, &test).unwrap();
     }
 }
 

@@ -168,7 +168,7 @@ fn discovery_local_dates_use_native_local_zone() {
             .output()
             .unwrap();
         assert!(output.status.success());
-        crate::child_process::assert_executed(&output, &test);
+        crate::child_process::assert_executed(&output, &test).unwrap();
         return;
     }
     // Midnight local time in January is five hours after midnight UTC.

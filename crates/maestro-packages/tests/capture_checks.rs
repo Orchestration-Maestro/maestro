@@ -203,7 +203,8 @@ fn capture_inherits_environment_and_applies_scoped_overrides() {
         crate::child_process::assert_executed(
             &output,
             &crate::child_process::selector(NAME).unwrap(),
-        );
+        )
+        .unwrap();
         return;
     }
     let scratch = scratch::Scratch::new().unwrap();

@@ -5,20 +5,22 @@
 //! eligible to run, and requires the child's standard output to begin with the harness
 //! start prologue for exactly one test. A stale name therefore fails instead of passing
 //! with zero tests. A checked outcome says the selected body started, not that it passed:
-//! callers keep their exit, signal and product assertions.
+//! callers keep their exit, signal and product assertions. A test that closes a pipe end
+//! while a child is live runs alone through [`run_alone`].
 //!
 //! The owner exposes no unchecked `Command`, argument vector or success. Launches still
 //! built outside the builder use the `legacy` bridge items ([`capture`], [`rerun`],
 //! [`assert_executed`], [`selector`], [`child_case`], [`TestResult`]), which share the same
 //! prologue proof.
 
+mod alone;
 mod error;
 mod legacy;
 mod proof;
 mod selection;
-mod spawn_lock;
 mod test_process;
 
+pub use alone::run_alone;
 pub use error::TestProcessError;
 pub use legacy::{TestResult, assert_executed, capture, child_case, rerun, selector};
 pub use proof::{CheckedChild, CheckedStdout};

@@ -402,7 +402,7 @@ direct-dependency sets; every other dependency rule, including cycle and interna
 dev-dependency checks, still applies. The guest authoring crate
 (`maestro-extensions-wasm`), component runtime adapter
 (`maestro-extensions-wasmtime`), terminal scenario harness
-(`maestro-test-terminal`), cancellation leaf (`maestro-cancellation`), shared
+(`maestro-test-terminal`), checked test-process owner (`maestro-test-process`), cancellation leaf (`maestro-cancellation`), shared
 request owner (`maestro-request`), watch leaf (`maestro-watch`), lock leaf
 (`maestro-lock`), process leaf (`maestro-process`), file-pattern owner (`maestro-pattern`), text leaf (`maestro-text`),
 JSON leaf (`maestro-json`), entry and tool record contracts (`maestro-entry`,
@@ -443,14 +443,17 @@ excluded from the foundation utility permission. Its only incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
 `maestro-credentials`, `maestro-models`, `maestro-packages`, `maestro-process`,
-`maestro-session`, `maestro-settings`, `maestro-test-conventions`,
+`maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-test-conventions`,
 `maestro-tooling`, `maestro-tools`, `maestro-tui` and `maestro-tui-crossterm`; a
 caller declares it only when it uses it. No normal, build, optional, unqualified or
 non-native declaration, no other consumer and no other `maestro-test-*` crate is
 admitted by this rule, and the terminal scenario harness is not a reusable
 dependency. The edge is checked in declared metadata (native placement) and in
 host-resolved metadata, before the dependency-free and core-to-dedicated rules, and
-remains subject to both cycle checks.
+remains subject to both cycle checks. A live pipe-closure transaction first uses
+`run_alone` to run in a fresh single-test process, avoiding sibling forks that
+could inherit its pipe ends. File-backed proof accepts only an empty file with
+its cursor at zero, so earlier bytes cannot prove that the selected test started.
 
 The graph consists of the table entries, the foundation utility, the native
 feature unifier and these development-only exceptions. The
