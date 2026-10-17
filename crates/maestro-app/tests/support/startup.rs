@@ -1,13 +1,13 @@
 //! Strict corpus replay with isolated environment and native failure controls.
 use super::child;
 use base64::{Engine, engine::general_purpose::STANDARD};
+use maestro_test_process::TestProcess;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
     fs,
     os::unix::fs::{MetadataExt, PermissionsExt, symlink},
     path::Path,
-    process::Command,
 };
 
 #[derive(Deserialize)]
@@ -241,12 +241,12 @@ fn operation() {
 
 fn invoke(name: &str, cwd: &Path, envs: &[(&str, &str)], limit: Option<u64>) -> Outcome {
     let lines = if let Some(limit) = limit {
-        let name = &crate::child_process::selector(name).unwrap();
-        let output = Command::new("bash")
-            .args(["-c", "trap '' XFSZ; exec \"$@\"", "startup"])
+        let output = TestProcess::current(name)
+            .unwrap()
+            .shell_setup("trap '' XFSZ")
             .env("STARTUP_FILE_LIMIT", limit.to_string())
-            .arg(std::env::current_exe().unwrap())
-            .args(["--exact", name, "--nocapture", "--test-threads=1"])
+            .nocapture()
+            .single_threaded()
             .current_dir(cwd)
             .envs(envs.iter().copied())
             .output()
@@ -314,11 +314,11 @@ pub fn run(name: &str) {
         return;
     }
     if std::env::var_os("STARTUP_CORPUS_CHILD").is_none() {
-        let name = &crate::child_process::selector(name).unwrap();
-        let output = Command::new("bash")
-            .args(["-c", "umask 002; exec \"$@\"", "startup"])
-            .arg(std::env::current_exe().unwrap())
-            .args(["--exact", name, "--nocapture", "--test-threads=1"])
+        let output = TestProcess::current(name)
+            .unwrap()
+            .shell_setup("umask 002")
+            .nocapture()
+            .single_threaded()
             .env("STARTUP_CORPUS_CHILD", "1")
             .output()
             .unwrap();
@@ -328,7 +328,6 @@ pub fn run(name: &str) {
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
-        crate::child_process::assert_executed(&output, name);
         return;
     }
     let mut corpus: BTreeMap<String, Vec<Case>> =

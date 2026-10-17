@@ -27,6 +27,7 @@ maestro-dependencies.workspace = true
 tokio = { version = "=1.53.2", default-features = false, features = ["fs", "rt"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-process.workspace = true
 tokio = { version = "=1.53.2", default-features = false, features = ["rt"] }
 
 [target.'cfg(all(target_arch = "wasm32", target_os = "unknown"))'.dependencies]

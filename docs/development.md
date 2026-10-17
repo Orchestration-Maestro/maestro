@@ -218,6 +218,42 @@ a universal sandbox. Do not use it alongside another process editing that auth
 file. Tooling regressions instead use disposable authentication fixtures and
 controlled processes, without provider calls or operator credentials.
 
+### Child-process tests
+
+A test that re-runs one test in a fresh process starts it through
+`maestro-test-process`, a native dev-dependency, instead of building a `Command`
+for the test executable. `TestProcess::current(leaf)` resolves the running test's
+full name, `TestProcess::named(identity)` selects a sibling by its complete name
+(derive it from the function item with `test_name`), and the consuming
+`output`, `status`, `spawn`, `status_with_stdout` and `output_with` operations
+run it. The owner appends the exact filter and harness flags, confirms the test
+is listed and eligible (an ignored test runs only after `.ignored()`), and checks
+that the child's standard output begins with the one-test start prologue. A stale
+or misspelled name therefore fails instead of passing with zero tests. A checked
+outcome proves the test started, not that it passed: keep exit, signal and product
+assertions in the test.
+
+Choose the route by stream use. `output` captures both streams and returns them
+unchanged. `spawn` reads only the prologue from a piped standard output and replays
+it, preserving ready lines and acknowledgements. A test that depends on closing
+a live pipe end must first call `run_alone(test)` and return when it returns
+`true`: the transaction then runs in a fresh process with no sibling tests that
+could fork and inherit its pipe ends. `status` replays captured streams afterwards and is not a
+live route. `status_with_stdout` requires an empty regular file with its cursor at
+zero, sends standard output there and checks the prefix through that same open
+file. Nonempty files or nonzero cursors are rejected before launch, including
+append-mode files containing earlier output. `output_with` hands the final
+argument list to production code under test and accepts no environment, directory,
+descriptor or shell setting. `shell_setup` (Unix) runs shell text before the
+executable replaces the shell. `capture`, `rerun` and `assert_executed` remain for
+launches still built outside the builder.
+
+Every owner launch holds one process-wide lock while it forks, and a live child
+holds it until it is waited for, so no sibling test in the same program forks
+while a live pipe transaction is open (a forked child inherits open pipe ends
+until it execs). Do not start another owner launch on the same thread while a
+live child is unwaited; launches built outside the owner are not covered.
+
 ## Package commands and roles
 
 `models-`, `agent-`, `tui-` and `app-` each offer `clean`, `build`, `dev`, `test` and

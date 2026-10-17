@@ -2,6 +2,7 @@
 
 use super::super::request;
 use crate::{Context, MistralOptions, Model, StreamOptions};
+use maestro_test_process::{TestProcess, test_name};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -170,13 +171,10 @@ pub(super) async fn async_corpus(name: &str, count: usize) {
         }
         assert_eq!(case.operation, "send");
         if let Some(key) = case.input["envKey"].as_str() {
-            let result = std::process::Command::new(std::env::current_exe().unwrap())
-                .args([
-                    "--exact",
-                    "providers::reasoning::mistral::tests::request_corpus::credential_child",
-                    "--nocapture",
-                    "--ignored",
-                ])
+            let result = TestProcess::named(test_name(credential_child).unwrap())
+                .unwrap()
+                .ignored()
+                .nocapture()
                 .env("MISTRAL_API_KEY", key)
                 .env(
                     "MAESTRO_REQUEST_CASE",

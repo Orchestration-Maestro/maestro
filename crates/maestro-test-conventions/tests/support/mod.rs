@@ -226,6 +226,7 @@ impl Workspace {
         crate::child_process::assert_executed(
             &output,
             "architecture::metadata_graph_failures_cross_the_public_interface",
-        );
+        )
+        .unwrap();
     }
 }

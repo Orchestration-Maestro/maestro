@@ -25,7 +25,7 @@ fn memory_session_starts_with_current_header() {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    crate::child_process::assert_executed(&output, &test);
+    crate::child_process::assert_executed(&output, &test).unwrap();
 }
 
 #[test]
@@ -164,5 +164,5 @@ fn explicit_cwd_survives_a_missing_process_directory() {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    crate::child_process::assert_executed(&output, &test);
+    crate::child_process::assert_executed(&output, &test).unwrap();
 }

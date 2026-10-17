@@ -26,7 +26,8 @@ fn maestro_response_refresh_keeps_stderr_clean() {
             crate::child_process::assert_executed(
                 &output,
                 "response_account_authorization::maestro_response_refresh_keeps_stderr_clean",
-            );
+            )
+            .unwrap();
             assert!(
                 output.stderr.is_empty(),
                 "{}",

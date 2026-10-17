@@ -153,7 +153,7 @@ fn request_keys_preserve_lower_layer_precedence() {
             .output()
             .unwrap();
         assert!(output.status.success(), "key subprocess failed");
-        crate::subprocess::child_process::assert_executed(&output, &test);
+        crate::subprocess::child_process::assert_executed(&output, &test).unwrap();
         return;
     }
     let operations = request_support::Operations::default();
@@ -558,7 +558,7 @@ fn stored_commands_keep_lower_layer_cache_policy() {
             .output()
             .unwrap();
         assert!(output.status.success(), "cache subprocess failed");
-        crate::subprocess::child_process::assert_executed(&output, &test);
+        crate::subprocess::child_process::assert_executed(&output, &test).unwrap();
         return;
     }
     let registry = support::registry(&document(r#""apiKey":"!configured-cache-policy""#, ""));

@@ -100,13 +100,15 @@ Dependency descriptions below state domain edges; each also permits the
 This includes leaves, exact sets and the core-to-dedicated prohibition; the unifier itself has no workspace dependencies.
 
 - One job per crate, describable in one sentence without "and".
-- Dependencies point one way; core crates never depend on dedicated
-  (non-core) crates.
+- Dependencies point one way; core crates never use dedicated
+  (non-core) crates as normal or build dependencies; the declared native
+  test-process development edges are permitted.
 - `maestro-path` is the foundation utility for lexical path strings. It sits
   below layer 0 and depends on no workspace crate. Native crates may declare it
   as a production dependency without changing their layer; the guest authoring
   crate, the component runtime adapter, the shared request-record crate and the
-  terminal scenario harness, cancellation leaf, watch leaf, lock leaf, process leaf,
+  terminal scenario harness, checked test-process owner, cancellation leaf,
+  watch leaf, lock leaf, process leaf,
   file-pattern crate, text leaf, JSON leaf, entry and tool record crates and
   brand crate may not. Shared path helpers take supplied directory observations
   and add no global environment, filesystem service, directory cache, scheduler
@@ -184,20 +186,24 @@ extraction issues.
 Conventions enforce the [foundation graph](docs/specs/maestro-port.md#crates-and-delivery-order)
 through declared and host-resolved Cargo metadata, including optional, target and
 build edges. Classes are distinct from delivery layers: only the binary root,
-conventions checker, terminal scenario harness, repository tooling and the feature
-unifier (`maestro-dependencies`) are dedicated.
+conventions checker, terminal scenario harness, checked test-process owner,
+repository tooling and the feature unifier (`maestro-dependencies`) are dedicated.
 Repository tooling (`maestro-tooling`) is development-only, never shipped and has
 no internal dependencies apart from the optional utility and the unifier. Sparse workspaces need
 no placeholder crates. Frontends require the application edge and may declare
 only the other edges in their allowed sets, when used. The terminal adapter
 requires toolkit and text, and the scenario harness requires toolkit only. The
 utility edge never supplies a required edge. Other non-leaves permit subsets.
-Production and test graphs are separately acyclic. The only internal development
-edges are `maestro-tui-crossterm` to `maestro-brand`, for terminal examples, and
+Production and test graphs are separately acyclic. The internal development
+edges are `maestro-tui-crossterm` to `maestro-brand`, for terminal examples,
 the native-only `maestro-extensions` to `maestro-credentials`, for extension tests
-that build a real model catalog. Brand and theme remain forbidden as adapter
-normal/build dependencies, credentials as an extension one; the brand edge never
-satisfies the required toolkit/text set. The scenario harness is not a
+that build a real model catalog, and the native, non-optional dev-dependencies
+of the sixteen declared callers on `maestro-test-process`, the dependency-free
+owner of checked child tests (see
+[the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
+only when it uses it. Brand and theme remain forbidden as adapter normal/build
+dependencies, credentials as an extension one; the brand edge never satisfies
+the required toolkit/text set. The scenario harness is not a
 general dev-dependency target.
 
 The guest may declare `ToolDefinition` only in `src/types/tools.rs`, in addition to

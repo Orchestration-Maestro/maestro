@@ -10,7 +10,7 @@ pub(crate) mod metadata;
 mod policy;
 use metadata::{canonical, check_kind, members};
 pub(crate) use policy::UNIFIER;
-use policy::{UTILITY, rule, uses_utility};
+use policy::{TEST_PROCESS, TEST_PROCESS_CALLERS, UTILITY, rule, uses_utility};
 
 #[derive(Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -163,9 +163,17 @@ fn declared_edges(metadata: &Metadata) -> Result<BTreeSet<Edge>, String> {
             let member = path.as_ref().and_then(|path| names.get(path)).copied();
             let name = dependency.name.as_str();
             check_library_dependency(package.name.as_str(), name, &kind)?;
-            if member == Some(UNIFIER) && !native_normal(dependency, &kind) {
+            if member == Some(UNIFIER) && !native_declared(dependency, &kind, &Kind::Normal) {
                 return Err(format!(
                     "{}: {UNIFIER} must be a native, normal, non-optional dependency",
+                    package.name
+                ));
+            }
+            if member == Some(TEST_PROCESS)
+                && !native_declared(dependency, &kind, &Kind::Development)
+            {
+                return Err(format!(
+                    "{}: {TEST_PROCESS} must be a native, non-optional development dependency",
                     package.name
                 ));
             }
@@ -187,9 +195,9 @@ fn declared_edges(metadata: &Metadata) -> Result<BTreeSet<Edge>, String> {
     Ok(edges)
 }
 
-/// Report whether a declaration is a non-optional normal dependency outside WebAssembly targets.
-fn native_normal(dependency: &cargo_metadata::Dependency, kind: &Kind) -> bool {
-    *kind == Kind::Normal
+/// Report whether a declaration is a non-optional dependency of `wanted` kind on native targets.
+fn native_declared(dependency: &cargo_metadata::Dependency, kind: &Kind, wanted: &Kind) -> bool {
+    kind == wanted
         && !dependency.optional
         && dependency
             .target
@@ -240,6 +248,18 @@ fn validate_edge(edge: &Edge) -> Result<(), String> {
     let to = rule(&edge.to).ok_or("unknown scoped target")?;
     if edge.to == UNIFIER {
         return Ok(());
+    }
+    if edge.to == TEST_PROCESS {
+        return if edge.kind == Kind::Development
+            && TEST_PROCESS_CALLERS.contains(&edge.from.as_str())
+        {
+            Ok(())
+        } else {
+            Err(format!(
+                "{TEST_PROCESS} is reachable only as a native development dependency of its declared callers: {} -> {}",
+                edge.from, edge.to
+            ))
+        };
     }
     if edge.to == UTILITY && edge.kind != Kind::Development && uses_utility(&edge.from) {
         return Ok(());

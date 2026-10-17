@@ -57,10 +57,12 @@ Only the conventions checker is currently implemented. Planned crate classes
 and dependency boundaries remain defined by the foundation specification.
 
 The checker rejects unlisted members, dependency cycles, core-to-dedicated
-edges and all internal dependencies of leaf crates. Normal, build, dev,
-optional and target-specific dependencies all count; the one exception is the
-optional production edge to the foundation utility `maestro-path`. External
-dependencies are not workspace edges. A dependency with a workspace member's
+normal/build edges and all internal domain dependencies of leaf crates.
+Normal, build, dev,
+optional and target-specific dependencies all count, subject to the declared
+foundation utility, native feature-unifier and internal development exceptions
+in the [foundation contract](docs/specs/maestro-port.md#crates-and-delivery-order).
+External dependencies are not workspace edges. A dependency with a workspace member's
 package name must use a path to that member, not a registry/git source or a
 different path; this prevents Cargo patches or overrides from hiding internal
 edges.

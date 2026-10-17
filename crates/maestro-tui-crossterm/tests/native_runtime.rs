@@ -300,11 +300,18 @@ fn report_scenario() {
 
 #[test]
 fn failed_work_prints_each_source_and_keeps_running() {
+    if maestro_test_process::run_alone("failed_work_prints_each_source_and_keeps_running").unwrap()
+    {
+        return;
+    }
     if is_child() {
         report_scenario();
         return;
     }
-    let output = rerun("failed_work_prints_each_source_and_keeps_running", |_| {});
+    let output = rerun(
+        "failed_work_prints_each_source_and_keeps_running",
+        |process| process,
+    );
     assert_eq!(String::from_utf8_lossy(&output.stderr), EXPECTED_STDERR);
     #[cfg(unix)]
     {
@@ -312,9 +319,7 @@ fn failed_work_prints_each_source_and_keeps_running() {
         drop(reader);
         let output = rerun(
             "failed_work_prints_each_source_and_keeps_running",
-            |command| {
-                command.stderr(std::process::Stdio::from(writer));
-            },
+            |process| process.stderr(std::process::Stdio::from(writer)),
         );
         assert!(output.stderr.is_empty());
     }
@@ -409,16 +414,16 @@ fn environment_returns_values_without_normalization() {
     }
     rerun(
         "environment_returns_values_without_normalization",
-        |command| {
-            command.env_remove("MAESTRO_RUNTIME_MISSING");
-            for (key, value) in VALUES {
-                command.env(key, value);
-            }
+        |process| {
+            let process = process.env_remove("MAESTRO_RUNTIME_MISSING").envs(VALUES);
             #[cfg(unix)]
-            for (key, bytes, _) in BYTES {
-                use std::os::unix::ffi::OsStrExt;
-                command.env(key, std::ffi::OsStr::from_bytes(bytes));
-            }
+            let process = process.envs(BYTES.map(|(key, bytes, _)| {
+                (
+                    key,
+                    <std::ffi::OsStr as std::os::unix::ffi::OsStrExt>::from_bytes(bytes),
+                )
+            }));
+            process
         },
     );
 }
@@ -484,14 +489,15 @@ fn log_context_uses_native_home_and_current_wall_time() {
     ] {
         rerun(
             "log_context_uses_native_home_and_current_wall_time",
-            |command| {
-                command.env("TZ", "Pacific/Auckland");
-                match home {
-                    Some(home) => command.env("HOME", home),
-                    None => command.env_remove("HOME"),
+            |process| {
+                let process = process.env("TZ", "Pacific/Auckland");
+                let process = match home {
+                    Some(home) => process.env("HOME", home),
+                    None => process.env_remove("HOME"),
                 };
-                if let Some(exact) = home {
-                    command.env("MAESTRO_EXPECT_HOME", exact);
+                match home {
+                    Some(exact) => process.env("MAESTRO_EXPECT_HOME", exact),
+                    None => process,
                 }
             },
         );

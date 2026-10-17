@@ -168,7 +168,7 @@ fn native_adapter_forwards_launches_without_clipboard_access() {
         .output()
         .unwrap();
     assert!(output.status.success());
-    crate::child_process::assert_executed(&output, &test);
+    crate::child_process::assert_executed(&output, &test).unwrap();
     let frame = b"\x1b]52;c;YQDDqfCfmYI=\x07";
     assert_eq!(
         output

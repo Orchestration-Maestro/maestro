@@ -29,5 +29,5 @@ pub fn run_child(name: &str, environment: &[(&str, Option<&str>)]) {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    child_process::assert_executed(&output, &name);
+    child_process::assert_executed(&output, &name).unwrap();
 }

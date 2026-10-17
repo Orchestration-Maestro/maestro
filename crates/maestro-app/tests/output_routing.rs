@@ -6,11 +6,11 @@ use maestro_app::output_guard::{
     flush_raw_stdout, is_stdout_taken_over, restore_stdout, take_over_stdout, write_raw_stdout,
     write_stdout,
 };
+use maestro_test_process::{CheckedChild, TestProcess, run_alone};
 use serde::Deserialize;
 use std::{
     io::{self, BufRead, BufReader, Read, Write},
-    process::{Command, Stdio},
-    sync::{Mutex, MutexGuard, PoisonError},
+    process::Stdio,
 };
 /// Caller text, including empty and control-character inputs.
 #[derive(Deserialize)]
@@ -27,28 +27,16 @@ struct Routed {
     states: Vec<bool>,
 }
 /// Re-enter the named test with piped streams, bypassing harness teardown on exit.
-fn child(name: &str, mode: &str) -> Command {
-    let name = crate::child_process::selector(name).unwrap();
-    let mut command = Command::new(std::env::current_exe().unwrap());
-    command
-        .args([
-            "--exact",
-            &name,
-            "--nocapture",
-            "--test-threads=1",
-            "--quiet",
-        ])
+fn child(name: &str, mode: &str) -> TestProcess {
+    TestProcess::current(name)
+        .unwrap()
+        .nocapture()
+        .single_threaded()
+        .quiet()
         .env("MAESTRO_OUTPUT_PROBE", mode)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-    command
-}
-/// Orders this file's child launches; a fork elsewhere in the test program can still hold a pipe end until it execs.
-static LAUNCH: Mutex<()> = Mutex::new(());
-/// Acquire the launch lock; it stays held until the returned guard is dropped.
-fn launch_gate() -> MutexGuard<'static, ()> {
-    LAUNCH.lock().unwrap_or_else(PoisonError::into_inner)
+        .stderr(Stdio::piped())
 }
 /// The harness prologue is separate from product bytes.
 fn product(bytes: &[u8]) -> &[u8] {
@@ -81,7 +69,6 @@ fn takeover_routes_diagnostics_without_polluting_raw_stdout() {
         assert_eq!(states, case.expected.states);
         std::process::exit(0);
     }
-    let _gate = launch_gate();
     for case in cases {
         let output = child(
             "takeover_routes_diagnostics_without_polluting_raw_stdout",
@@ -186,7 +173,6 @@ fn pipe_case(name: &str, case: PipeCase) {
     if std::env::var("MAESTRO_OUTPUT_PROBE").is_ok() {
         pipe_probe(case);
     }
-    let _gate = launch_gate();
     let mut process = child(name, &mode).spawn().unwrap();
     let mut stdout = BufReader::new(process.stdout.take().unwrap());
     line(&mut stdout, "\n");
@@ -249,6 +235,9 @@ fn raw_stdout_preserves_unterminated_text_and_flushes() {
 /// Actual pipe closure propagates the native flush failure in both ownership states.
 #[test]
 fn raw_stdout_reports_flush_failure() {
+    if run_alone("raw_stdout_reports_flush_failure").unwrap() {
+        return;
+    }
     let cases = fixtures::cases::<FlushInput, FlushExpected>("flush-");
     if let Ok(mode) = std::env::var("MAESTRO_OUTPUT_PROBE") {
         pipe_probe(PipeCase {
@@ -279,6 +268,9 @@ fn raw_stdout_reports_flush_failure() {
 /// A healthy sibling pipe cannot hide a selected stream's write error.
 #[test]
 fn ordinary_stdout_reports_write_failure() {
+    if run_alone("ordinary_stdout_reports_write_failure").unwrap() {
+        return;
+    }
     if let Ok(mode) = std::env::var("MAESTRO_OUTPUT_PROBE") {
         let operation = if mode.starts_with("raw") {
             PipeOperation::Raw
@@ -340,7 +332,6 @@ fn package_children_observe_takeover_changes_after_construction() {
         package_probe();
         std::process::exit(0);
     }
-    let _gate = launch_gate();
     let mut process = child(
         "package_children_observe_takeover_changes_after_construction",
         &case.id,
@@ -358,11 +349,7 @@ fn package_children_observe_takeover_changes_after_construction() {
 }
 
 /// Observe unterminated bytes while the child is waiting for acknowledgement.
-fn observe_flushed(
-    process: &mut std::process::Child,
-    stdout: &mut impl Read,
-    stderr: &mut impl BufRead,
-) {
+fn observe_flushed(process: &mut CheckedChild, stdout: &mut impl Read, stderr: &mut impl BufRead) {
     // A second signal separates completed flush from the still-live child exit.
     process
         .stdin

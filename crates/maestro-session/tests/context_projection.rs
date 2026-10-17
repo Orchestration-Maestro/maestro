@@ -224,7 +224,7 @@ fn context_timestamps_use_local_time_only_for_offsetless_datetimes() {
             "{}",
             String::from_utf8_lossy(&output.stdout)
         );
-        crate::child_process::assert_executed(&output, &test);
+        crate::child_process::assert_executed(&output, &test).unwrap();
         return;
     }
     support::session_context::group(name);
