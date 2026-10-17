@@ -115,17 +115,7 @@ fn check(file: &str) {
         Outcome::Error { error } => {
             let error_value = result.unwrap_err();
             assert!(error_value.to_string().contains(file));
-            match error.kind.as_str() {
-                "invalid_archive" => assert!(matches!(error_value, WorkbookError::Archive(_))),
-                "invalid_workbook_xml" => assert!(matches!(error_value, WorkbookError::Xml(_))),
-                "missing_package_part" => {
-                    assert!(matches!(error_value, WorkbookError::MissingPart(_)));
-                }
-                _ => panic!("unexpected error kind"),
-            }
-            if let Some(part) = error.part {
-                assert!(error_value.to_string().contains(&part));
-            }
+            check_error(&error, &error_value);
             assert!(case.record.is_none());
         }
         Outcome::Ok { ok } => check_book(result.unwrap(), case.record.unwrap(), ok, file, &ssf),
@@ -179,16 +169,16 @@ fn check_cell(cell: &mut ssf::CellObject, expected: &Cell, ssf: &Ssf) {
         ExcelDataType::Date => "d",
     };
     assert_eq!(kind, expected.r#type);
-    assert_eq!(cell.v, expected.value.scalar());
+    assert_scalar(&cell.v, &expected.value.scalar());
     assert_eq!(cell.w, expected.w_after_read);
     assert_eq!(cell.f, expected.f);
     assert_eq!(cell.array_formula, expected.array_formula);
-    assert_eq!(
-        ssf::format_cell(Some(cell), None, &CellFormatOptions::default(), ssf),
-        expected.text.scalar()
+    assert_scalar(
+        &ssf::format_cell(Some(cell), None, &CellFormatOptions::default(), ssf),
+        &expected.text.scalar(),
     );
     assert_eq!(cell.w, expected.w_after_format);
-    assert_eq!(cell.v, expected.value.scalar());
+    assert_scalar(&cell.v, &expected.value.scalar());
 }
 
 #[test]
@@ -337,4 +327,65 @@ fn workbook_legacy_reader_failure_keeps_workbook_context() {
 #[test]
 fn workbook_format_code_escapes_share_one_decoder() {
     ssf_support::run("workbook_format_code_escapes_share_one_decoder");
+}
+
+fn assert_scalar(actual: &CellValue, expected: &CellValue) {
+    if let (CellValue::Number(a), CellValue::Number(b)) = (actual, expected)
+        && a.is_nan()
+        && b.is_nan()
+    {
+        return;
+    }
+    assert_eq!(actual, expected);
+}
+
+#[test]
+fn workbook_numeric_values_follow_decimal_prefix_rules() {
+    check("numeric-prefixes.xlsx");
+    let mut ssf = Ssf::default();
+    let book = ssf::read(
+        &legacy_workbook_support::bytes("numeric-prefixes.xlsx"),
+        "numeric-prefixes.xlsx",
+        &mut ssf,
+    )
+    .unwrap();
+    let CellValue::Number(number) = book.sheets["Data"].cells["B1"].v else {
+        panic!("expected number")
+    };
+    assert!(number.is_sign_negative());
+}
+
+#[test]
+fn workbook_boolean_tokens_keep_exact_defaults() {
+    check("boolean-tokens.xlsx");
+}
+
+#[test]
+fn workbook_missing_coordinates_follow_row_and_cell_progression() {
+    check("inferred-positions.xlsx");
+}
+
+#[test]
+fn workbook_string_values_share_one_decoding_owner() {
+    check("string-branches.xlsx");
+}
+
+#[test]
+fn workbook_corrupt_shared_string_indices_fail_as_reader_errors() {
+    check("bad-shared-index.xlsx");
+}
+
+fn check_error(error: &Error, error_value: &WorkbookError) {
+    match error.kind.as_str() {
+        "reader" => assert!(matches!(error_value, WorkbookError::Reader(_))),
+        "invalid_archive" => assert!(matches!(error_value, WorkbookError::Archive(_))),
+        "invalid_workbook_xml" => assert!(matches!(error_value, WorkbookError::Xml(_))),
+        "missing_package_part" => {
+            assert!(matches!(error_value, WorkbookError::MissingPart(_)));
+        }
+        _ => panic!("unexpected error kind"),
+    }
+    if let Some(part) = &error.part {
+        assert!(error_value.to_string().contains(part));
+    }
 }

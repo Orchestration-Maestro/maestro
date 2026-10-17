@@ -6,11 +6,6 @@ use crate::legacy_workbook_support;
 fn legacy_producer_date_format_repairs_display_and_tables() {
     use maestro_app::browser::ssf::{self, CellValue, Ssf};
     let file = "legacy-producer-date.xls";
-    assert!(
-        native(file)
-            .number_formats()
-            .contains(&(60, "d.m".to_owned()))
-    );
     let mut ssf = Ssf::default();
     let book = ssf::read(&legacy_workbook_support::bytes(file), file, &mut ssf).unwrap();
     let cell = &book.sheets["Data"].cells["A1"];
@@ -96,96 +91,137 @@ fn legacy_ranges_union_cells_and_handle_missing_dimensions() {
     ]);
 }
 
-fn native(file: &str) -> calamine::Xls<std::io::Cursor<Vec<u8>>> {
-    use calamine::Reader;
-    calamine::Xls::new(std::io::Cursor::new(legacy_workbook_support::bytes(file))).unwrap()
-}
-
-fn formats(file: &str) -> Vec<((u32, u32), Option<u16>)> {
-    native(file)
-        .worksheet_cell_formats("Data")
-        .unwrap()
-        .iter()
-        .map(|cell| (cell.position, cell.num_fmt_id))
-        .collect()
+#[test]
+fn compound_stream_sizes_keep_identical_workbooks() {
+    legacy_workbook_support::run_binary(&[
+        "compound-stream-1821.xls",
+        "compound-stream-4095.xls",
+        "compound-stream-4096.xls",
+        "compound-stream-4097.xls",
+        "compound-stream-8192.xls",
+    ]);
 }
 
 #[test]
-fn legacy_metadata_accessors_keep_absence_and_missing_sheet_errors() {
-    let book = native("legacy-table-overwrite.xls");
-    assert_eq!(
-        book.number_formats(),
-        &[
-            (56, "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \"".to_owned()),
-            (164, "\"first\"0".to_owned()),
-            (500, "\"high\"0".to_owned()),
-            (164, "\"last\"0".to_owned()),
-            (168, "\"unused\"0".to_owned()),
-        ]
-    );
-    assert!(
-        matches!(book.worksheet_dimensions("missing"), Err(calamine::XlsError::WorksheetNotFound(name)) if name == "missing")
-    );
-    assert!(
-        matches!(book.worksheet_cell_formats("missing"), Err(calamine::XlsError::WorksheetNotFound(name)) if name == "missing")
-    );
-    check_emitted_formats();
-    for (file, expected) in [
-        ("legacy-range-absent.xls", None),
-        ("legacy-empty-zero.xls", Some(((0, 0), (0, 0)))),
-        ("legacy-empty-one.xls", Some(((0, 0), (1, 1)))),
-        ("legacy-declared-offset.xls", Some(((4, 2), (20, 8)))),
-        ("legacy-empty-limit.xls", Some(((0, 0), (65536, 256)))),
-    ] {
-        assert_eq!(
-            native(file)
-                .worksheet_dimensions("Data")
-                .unwrap()
-                .map(|d| (d.start, d.end)),
-            expected
-        );
-    }
+fn compound_workbook_aliases_preserve_sheet_results() {
+    legacy_workbook_support::run_binary(&[
+        "compound-name-Book.xls",
+        "compound-name-WORKBOOK.xls",
+        "compound-name-BOOK.xls",
+        "compound-name-wOrKbOoK.xls",
+    ]);
 }
 
-fn check_emitted_formats() {
-    assert_eq!(
-        formats("legacy-record-duplicates.xls"),
-        vec![
-            ((8, 2), Some(164)),
-            ((0, 0), Some(164)),
-            ((8, 2), Some(165)),
-        ]
-    );
-    assert_eq!(
-        formats("legacy-record-kinds.xls"),
-        vec![
-            ((0, 0), Some(164)),
-            ((0, 1), Some(164)),
-            ((0, 2), Some(10)),
-            ((0, 3), Some(164)),
-            ((1, 0), Some(165)),
-            ((1, 1), Some(165)),
-            ((1, 2), Some(165)),
-            ((2, 0), Some(10)),
-            ((2, 1), Some(164)),
-            ((3, 0), Some(164)),
-            ((3, 1), Some(10)),
-            ((3, 2), Some(164)),
-            ((4, 0), Some(165)),
-            ((4, 1), Some(165)),
-        ]
-    );
-    assert_eq!(
-        formats("legacy-unresolved-xf.xls"),
-        vec![
-            ((0, 0), Some(0)),
-            ((0, 1), None),
-            ((0, 2), None),
-            ((0, 3), None),
-            ((1, 0), None),
-            ((1, 1), None),
-            ((1, 2), Some(10)),
-            ((2, 0), None),
-        ]
-    );
+#[test]
+fn compound_allocation_extension_sectors_extend_the_table() {
+    legacy_workbook_support::run_binary(&["compound-allocation-extension.xls"]);
+}
+
+#[test]
+fn compound_fragmented_chains_preserve_stream_order() {
+    legacy_workbook_support::run_binary(&[
+        "compound-fragmented-fat.xls",
+        "compound-fragmented-minifat.xls",
+    ]);
+}
+
+#[test]
+fn compound_sector_versions_keep_identical_values() {
+    legacy_workbook_support::run_binary(&["compound-sector-4096.xls"]);
+}
+
+#[test]
+fn compound_header_failures_keep_workbook_context() {
+    legacy_workbook_support::run_binary(&[
+        "compound-short-compound.xls",
+        "compound-bad-major.xls",
+        "compound-bad-sector-shift.xls",
+        "compound-bad-mini-shift.xls",
+    ]);
+}
+
+#[test]
+fn compound_missing_stream_fails_without_partial_result() {
+    legacy_workbook_support::run_binary(&["compound-no-workbook.xls"]);
+}
+
+#[test]
+fn compound_workbook_selection_ignores_nested_storages() {
+    legacy_workbook_support::run_binary(&["compound-nested-decoy.xls"]);
+}
+
+#[test]
+fn compound_short_final_sector_keeps_stream() {
+    legacy_workbook_support::run_binary(&["compound-short-final-sector.xls"]);
+}
+
+#[test]
+fn legacy_shared_strings_continue_across_width_changes() {
+    legacy_workbook_support::run_binary(&["legacy-sst-switch-width.xls"]);
+}
+
+#[test]
+fn legacy_shared_strings_keep_surrogate_pairs_and_skip_rich_payloads() {
+    legacy_workbook_support::run_binary(&[
+        "legacy-sst-surrogate-boundary.xls",
+        "legacy-sst-rich-extension.xls",
+    ]);
+}
+
+#[test]
+fn legacy_compressed_unicode_ignores_ansi_codepage() {
+    legacy_workbook_support::run_binary(&["legacy-sst-compressed.xls"]);
+}
+
+#[test]
+fn legacy_rk_storage_kinds_keep_numeric_bits() {
+    legacy_workbook_support::run_binary(&["legacy-rk-floating.xls"]);
+}
+
+#[test]
+fn legacy_encrypted_workbooks_fail_as_reader_errors() {
+    legacy_workbook_support::run_binary(&["legacy-protected.xls"]);
+}
+
+#[test]
+fn legacy_declared_code_pages_decode_text_without_mojibake() {
+    legacy_workbook_support::run_binary(&[
+        "legacy-biff5-windows-1252.xls",
+        "legacy-biff5-shift-jis.xls",
+    ]);
+}
+
+#[test]
+fn legacy_code_page_aliases_and_unmapped_pages_decode_bytes() {
+    legacy_workbook_support::run_binary(&["legacy-biff5-alias.xls", "legacy-biff5-unmapped.xls"]);
+}
+
+#[test]
+fn legacy_embedded_chart_substreams_keep_sheet_cells() {
+    legacy_workbook_support::run_binary(&["legacy-nested-chart.xls"]);
+}
+
+#[test]
+fn legacy_chart_sheets_shift_repeated_numbers() {
+    legacy_workbook_support::run_binary(&["legacy-chart-sheet.xls"]);
+}
+
+#[test]
+fn legacy_sheet_order_follows_stream_positions() {
+    legacy_workbook_support::run_binary(&["legacy-sheet-order.xls"]);
+}
+
+#[test]
+fn legacy_formula_caches_keep_result_kinds() {
+    legacy_workbook_support::run_binary(&["legacy-formula-caches.xls"]);
+}
+
+#[test]
+fn legacy_boolean_and_error_records_keep_exact_flags() {
+    legacy_workbook_support::run_binary(&["legacy-boolerr-flags.xls"]);
+}
+
+#[test]
+fn legacy_sheets_without_dimensions_start_unbounded() {
+    legacy_workbook_support::run_binary(&["legacy-range-per-sheet.xls"]);
 }

@@ -1,6 +1,7 @@
 //! In-memory Word package reading and borrowed XML queries.
 mod document;
 pub use document::common::{LengthUsage, convert_boolean, convert_length};
+pub(crate) use document::common::{float_prefix, integer_prefix};
 mod parser;
 pub(crate) use parser::xml_parser::decode_text;
 pub use parser::xml_parser::{

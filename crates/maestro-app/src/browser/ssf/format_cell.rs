@@ -120,13 +120,8 @@ pub fn format_cell(
         cell.z = Some(code.clone());
     }
     if cell.t == Some(ExcelDataType::Error) {
-        return ERRORS
-            .iter()
-            .find(|(code, _)| cell.v == CellValue::Number(f64::from(*code)))
-            .map_or_else(
-                || cell.v.clone(),
-                |(_, label)| CellValue::Text((*label).to_owned()),
-            );
+        return error_label(&cell.v)
+            .map_or_else(|| cell.v.clone(), |label| CellValue::Text(label.to_owned()));
     }
     let value = value
         .filter(|v| !matches!(v, CellValue::Null | CellValue::Missing))
@@ -178,4 +173,12 @@ pub(super) fn raw_text(value: &CellValue) -> String {
         CellValue::Null => "null".into(),
         CellValue::Missing => "undefined".into(),
     }
+}
+
+/// Resolve a numeric error code without changing an unknown scalar.
+pub(super) fn error_label(value: &CellValue) -> Option<&'static str> {
+    ERRORS
+        .iter()
+        .find(|(code, _)| *value == CellValue::Number(f64::from(*code)))
+        .map(|(_, label)| *label)
 }

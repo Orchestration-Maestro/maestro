@@ -128,7 +128,7 @@ fn coordinate_length(text: &str) -> Option<usize> {
     Some(row_start + row_length)
 }
 
-/// Delegate isolated coordinate arithmetic, preserving inactive axes and case.
+/// Advance coordinates through the shared address owner, preserving inactive axes and case.
 fn displace(text: &str, start: CellAddress, end: CellAddress) -> Result<String, WorkbookError> {
     let row = text
         .trim_start_matches('$')
@@ -150,20 +150,15 @@ fn displace(text: &str, start: CellAddress, end: CellAddress) -> Result<String, 
         } else {
             i64::from(end.r) - i64::from(start.r)
         };
-    let shifted = if (0..16_384).contains(&c) && (0..1_048_576).contains(&r) {
-        calamine::expand_shared_formula(&upper, (start.r, start.c), (end.r, end.c))
-            .map_err(|e| WorkbookError::Reader(e.to_string()))?
-    } else {
-        let column =
-            u32::try_from(c).map_err(|_| WorkbookError::Reader(format!("invalid column {c}")))?;
-        format!(
-            "{}{}{}{}",
-            if text.starts_with('$') { "$" } else { "" },
-            encode_col(column),
-            if row.starts_with('$') { "$" } else { "" },
-            r + 1
-        )
-    };
+    let column =
+        u32::try_from(c).map_err(|_| WorkbookError::Reader(format!("invalid column {c}")))?;
+    let shifted = format!(
+        "{}{}{}{}",
+        if text.starts_with('$') { "$" } else { "" },
+        encode_col(column),
+        if row.starts_with('$') { "$" } else { "" },
+        r + 1
+    );
     Ok(retain_column_case(text, &shifted))
 }
 

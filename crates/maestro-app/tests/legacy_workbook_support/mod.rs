@@ -124,8 +124,15 @@ struct Sequence {
 pub use crate::workbook_fixture::bytes;
 
 pub fn run(ids: &[&str]) {
-    let cases: Vec<Case> =
-        serde_json::from_str(include_str!("../fixtures/ssf/legacy_workbooks.json")).unwrap();
+    run_cases(ids, include_str!("../fixtures/ssf/legacy_workbooks.json"));
+}
+
+pub fn run_binary(ids: &[&str]) {
+    run_cases(ids, include_str!("../fixtures/ssf/binary_workbooks.json"));
+}
+
+fn run_cases(ids: &[&str], data: &str) {
+    let cases: Vec<Case> = serde_json::from_str(data).unwrap();
     let selected: Vec<_> = cases
         .into_iter()
         .filter(|c| ids.contains(&c.id.as_str()))
