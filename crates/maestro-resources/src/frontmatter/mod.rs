@@ -1,5 +1,14 @@
 //! Extract authored metadata without trimming ordinary text.
 
+mod alias_count;
+mod lexer;
+mod parser;
+mod resolve_block_map;
+mod resolve_block_scalar;
+mod resolve_block_seq;
+mod resolve_flow_collection;
+mod resolve_flow_scalar;
+mod resolve_props;
 mod values;
 
 /// An ordered YAML value retaining scalar kinds.
@@ -80,7 +89,7 @@ pub fn parse_frontmatter(content: &str) -> Result<ParsedFrontmatter, Frontmatter
     let frontmatter = if yaml.is_empty() {
         FrontmatterValue::Mapping(Vec::new())
     } else {
-        values::parse(yaml)?
+        parser::parse(yaml)?
     };
     Ok(ParsedFrontmatter {
         frontmatter,

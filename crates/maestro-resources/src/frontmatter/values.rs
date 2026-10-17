@@ -1,75 +1,21 @@
-//! Compose ordered metadata from native YAML events.
+//! Resolve core scalars and construct ordered typed-key mappings.
 
-use super::{FrontmatterError, FrontmatterValue};
+use super::{FrontmatterError, FrontmatterValue, resolve_flow_scalar::Style, resolve_props::Tag};
 use num_traits::ToPrimitive;
-use std::collections::HashMap;
-use yaml_rust2::{
-    parser::{Event, MarkedEventReceiver, Parser, Tag},
-    scanner::{Marker, TScalarStyle},
-};
-
-/// Native parser observations in authored order.
-#[derive(Default)]
-struct Events(Vec<(Event, Marker)>);
-impl MarkedEventReceiver for Events {
-    fn on_event(&mut self, event: Event, marker: Marker) {
-        self.0.push((event, marker));
-    }
-}
-
-/// Resolve an extracted metadata document.
-pub(super) fn parse(source: &str) -> Result<FrontmatterValue, FrontmatterError> {
-    let mut events = Events::default();
-    Parser::new_from_str(source)
-        .load(&mut events, true)
-        .map_err(|error| FrontmatterError {
-            message: error.to_string(),
-            line: Some(error.marker().line()),
-            column: Some(error.marker().col() + 1),
-        })?;
-    let mut reader = Reader {
-        events: events.0.into_iter().peekable(),
-        anchors: HashMap::new(),
-    };
-    while let Some((event, _)) = reader.events.next() {
-        if event == Event::DocumentStart {
-            let value = reader.value()?;
-            if reader
-                .events
-                .any(|(event, _)| event == Event::DocumentStart)
-            {
-                return Err(FrontmatterError::new("Source contains multiple documents"));
-            }
-            return Ok(if value == FrontmatterValue::Null {
-                FrontmatterValue::Mapping(Vec::new())
-            } else {
-                value
-            });
-        }
-    }
-    Ok(FrontmatterValue::Mapping(Vec::new()))
-}
 
 /// Resolve scalar text according to native style and authored tags.
-fn scalar(text: String, style: TScalarStyle, tag: Option<&Tag>) -> FrontmatterValue {
-    let tag = tag.filter(|tag| {
-        !(tag.handle == "tag:yaml.org,2002:"
-            && matches!(
-                tag.suffix.as_str(),
-                "binary" | "set" | "timestamp" | "omap" | "pairs"
-            ))
-    });
-    if let Some(tag) = tag {
-        let resolved = match (tag.handle.as_str(), tag.suffix.as_str()) {
-            ("tag:yaml.org,2002:", "int") => integer(&text).map(FrontmatterValue::Number),
-            ("tag:yaml.org,2002:", "float") => float(&text).map(FrontmatterValue::Number),
-            ("tag:yaml.org,2002:", "bool") => boolean(&text).map(FrontmatterValue::Bool),
-            ("tag:yaml.org,2002:", "null") if null(&text) => Some(FrontmatterValue::Null),
+pub(super) fn scalar(text: String, style: Style, tag: Option<&Tag>) -> FrontmatterValue {
+    if let Some(tag) = tag.filter(|tag| **tag != Tag::Data) {
+        let resolved = match tag {
+            Tag::Int => integer(&text).map(FrontmatterValue::Number),
+            Tag::Float => float(&text).map(FrontmatterValue::Number),
+            Tag::Bool => boolean(&text).map(FrontmatterValue::Bool),
+            Tag::Null if null(&text) => Some(FrontmatterValue::Null),
             _ => None,
         };
         return resolved.unwrap_or(FrontmatterValue::String(text));
     }
-    if style != TScalarStyle::Plain {
+    if style != Style::Plain {
         return FrontmatterValue::String(text);
     }
     if null(&text) {
@@ -141,70 +87,39 @@ fn key_text(value: &FrontmatterValue) -> Option<String> {
     }
 }
 
-/// Consume native events into owned values.
-struct Reader {
-    /// Unconsumed authored events.
-    events: std::iter::Peekable<std::vec::IntoIter<(Event, Marker)>>,
-    /// Completed anchor values available for aliases.
-    anchors: HashMap<usize, FrontmatterValue>,
+/// One mapping's typed duplicate keys and observable string-keyed members.
+#[derive(Default)]
+pub(super) struct Mapping {
+    /// Scalar keys before their string projection.
+    keys: Vec<FrontmatterValue>,
+    /// First insertion order with last distinct-kind value replacement.
+    values: Vec<(String, FrontmatterValue)>,
 }
-impl Reader {
-    /// Read one metadata node and register any completed anchor.
-    fn value(&mut self) -> Result<FrontmatterValue, FrontmatterError> {
-        let (event, _) = self
-            .events
-            .next()
-            .ok_or_else(|| FrontmatterError::new("Missing YAML value"))?;
-        let (anchor, value) = match event {
-            Event::Scalar(text, style, anchor, tag) => (anchor, scalar(text, style, tag.as_ref())),
-            Event::Alias(anchor) => {
-                return self
-                    .anchors
-                    .get(&anchor)
-                    .cloned()
-                    .ok_or_else(|| FrontmatterError::new("Unresolved YAML alias"));
-            }
-            Event::SequenceStart(anchor, _) => (anchor, self.sequence()?),
-            Event::MappingStart(anchor, _) => (anchor, self.mapping()?),
-            _ => return Err(FrontmatterError::new("Expected a YAML value")),
+
+impl Mapping {
+    /// Validate a complete pair before exposing its projected value.
+    pub fn insert(
+        &mut self,
+        key: FrontmatterValue,
+        value: FrontmatterValue,
+    ) -> Result<(), FrontmatterError> {
+        let Some(text) = key_text(&key) else {
+            return Ok(());
         };
-        if anchor != 0 {
-            self.anchors.insert(anchor, value.clone());
+        if self.keys.iter().any(|existing| existing == &key || matches!((existing, &key), (FrontmatterValue::Number(a), FrontmatterValue::Number(b)) if a.is_nan() && b.is_nan())) {
+            return Err(FrontmatterError::new("Duplicated key in mapping"));
         }
-        Ok(value)
+        self.keys.push(key);
+        if let Some((_, existing)) = self.values.iter_mut().find(|(k, _)| k == &text) {
+            *existing = value;
+        } else {
+            self.values.push((text, value));
+        }
+        Ok(())
     }
 
-    /// Read an ordered sequence.
-    fn sequence(&mut self) -> Result<FrontmatterValue, FrontmatterError> {
-        let mut values = Vec::new();
-        while !matches!(self.events.peek(), Some((Event::SequenceEnd, _))) {
-            values.push(self.value()?);
-        }
-        self.events.next();
-        Ok(FrontmatterValue::Sequence(values))
-    }
-
-    /// Read an ordered mapping.
-    fn mapping(&mut self) -> Result<FrontmatterValue, FrontmatterError> {
-        let mut values: Vec<(String, FrontmatterValue)> = Vec::new();
-        let mut keys = Vec::new();
-        while !matches!(self.events.peek(), Some((Event::MappingEnd, _))) {
-            let key = self.value()?;
-            let value = self.value()?;
-            let Some(text) = key_text(&key) else {
-                continue;
-            };
-            if keys.iter().any(|existing| existing == &key || matches!((existing, &key), (FrontmatterValue::Number(a), FrontmatterValue::Number(b)) if a.is_nan() && b.is_nan())) {
-                return Err(FrontmatterError::new("Duplicated key in mapping"));
-            }
-            keys.push(key);
-            if let Some((_, existing)) = values.iter_mut().find(|(k, _)| k == &text) {
-                *existing = value;
-            } else {
-                values.push((text, value));
-            }
-        }
-        self.events.next();
-        Ok(FrontmatterValue::Mapping(values))
+    /// Return the completed ordered mapping.
+    pub fn finish(self) -> FrontmatterValue {
+        FrontmatterValue::Mapping(self.values)
     }
 }
