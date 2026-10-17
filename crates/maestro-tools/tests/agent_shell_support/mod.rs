@@ -618,7 +618,7 @@ pub fn environment_sequence() {
             .output()
             .unwrap();
         assert!(output.status.success());
-        crate::child_process::assert_executed(&output, &test);
+        crate::child_process::assert_executed(&output, &test).unwrap();
         return;
     }
     assert_eq!(sequence.as_object().unwrap().len(), 3);

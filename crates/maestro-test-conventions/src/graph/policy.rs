@@ -45,6 +45,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ),
     ("maestro-settings", &["maestro-lock", "maestro-json"]),
     ("maestro-test-conventions", &[]),
+    ("maestro-test-process", &[]),
     ("maestro-tooling", &[]),
     (
         "maestro-tui",
@@ -209,6 +210,28 @@ pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[("maestro-tui-crossterm", "mae
 /// Foundation utility that native crates may use beyond their table row.
 pub(crate) const UTILITY: &str = "maestro-path";
 
+/// Dependency-free test-support crate reachable only through native development edges.
+pub(crate) const TEST_PROCESS: &str = "maestro-test-process";
+
+/// The only crates that may declare the test-process owner as a development dependency.
+pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
+    "maestro-agent",
+    "maestro-app",
+    "maestro-catalog",
+    "maestro-chat",
+    "maestro-credentials",
+    "maestro-models",
+    "maestro-packages",
+    "maestro-process",
+    "maestro-session",
+    "maestro-settings",
+    "maestro-test-conventions",
+    "maestro-tooling",
+    "maestro-tools",
+    "maestro-tui",
+    "maestro-tui-crossterm",
+];
+
 /// Generated crate that unifies native dependency features and exposes no API.
 pub(crate) const UNIFIER: &str = "maestro-dependencies";
 
@@ -216,6 +239,7 @@ pub(crate) const UNIFIER: &str = "maestro-dependencies";
 pub(crate) fn uses_utility(name: &str) -> bool {
     name != UTILITY
         && name != UNIFIER
+        && name != TEST_PROCESS
         && !matches!(
             name,
             "maestro-watch"
@@ -247,7 +271,11 @@ pub(crate) fn rule(name: &str) -> Option<Rule> {
     Some(Rule {
         class: if matches!(
             name,
-            "maestro" | "maestro-test-conventions" | "maestro-test-terminal" | "maestro-tooling"
+            "maestro"
+                | "maestro-test-conventions"
+                | "maestro-test-process"
+                | "maestro-test-terminal"
+                | "maestro-tooling"
         ) {
             "dedicated"
         } else {
