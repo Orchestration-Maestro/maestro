@@ -1,7 +1,6 @@
 #![cfg(unix)]
 
-#[cfg(test)]
-pub mod support;
+use crate::support;
 use maestro_resources::{
     LoadSkillsFromDirOptions, LoadSkillsOptions, NativeResourceOperations, canonicalize_path,
     load_skills, load_skills_from_dir,
@@ -12,6 +11,17 @@ use support::text;
 /// Only a path no operand anchors needs the working directory, which this test removes.
 #[test]
 fn maestro_paths_resolve_absolute_paths_without_a_working_directory() {
+    // Removing the process working directory would leave every other test in this
+    // executable without one, so this test runs alone in a child process.
+    if crate::child_process::child_case().is_none() {
+        crate::child_process::rerun(
+            "maestro_paths_resolve_absolute_paths_without_a_working_directory",
+            "removed-working-directory",
+            &[],
+        )
+        .unwrap();
+        return;
+    }
     let dir = support::Directory::new();
     let file = dir.file("target/skill.md", "hello");
     let skill = dir.file(

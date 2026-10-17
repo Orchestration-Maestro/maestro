@@ -7,7 +7,7 @@ use std::path::PathBuf;
 /// generated bindings need at `deny`.
 pub const GUEST_LINTS: &str = "[lints.rust]\nunsafe_code = \"forbid\"\nforbidden_lint_groups = \"forbid\"\n[lints.clippy]\npedantic = { level = \"deny\", priority = -1 }\nmissing_docs_in_private_items = \"forbid\"\nredundant_clone = \"forbid\"\ntoo_many_arguments = \"deny\"\nfn_params_excessive_bools = \"forbid\"\ntoo_many_lines = \"forbid\"\ncognitive_complexity = \"forbid\"\nexcessive_nesting = \"deny\"\nunwrap_used = \"forbid\"\nexpect_used = \"forbid\"\npanic = \"forbid\"\n";
 
-mod scratch;
+pub(crate) mod scratch;
 pub use scratch::Scratch;
 
 pub struct Workspace {
@@ -222,7 +222,7 @@ impl Workspace {
         let output = std::process::Command::new(std::env::current_exe().unwrap())
             .args([
                 "--exact",
-                "metadata_graph_failures_cross_the_public_interface",
+                "architecture::metadata_graph_failures_cross_the_public_interface",
                 "--nocapture",
             ])
             .env("MAESTRO_CONVENTIONS_PROBE_ROOT", &self.root)

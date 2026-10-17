@@ -1,8 +1,6 @@
 //! Terminal rows and escaped HTML keep every code character and each caller's policy.
-#[cfg(test)]
-mod published;
-#[cfg(test)]
-pub mod support;
+use crate::published;
+use crate::support;
 use support::highlighting::{Scripted, decode, native};
 
 use maestro_theme::{

@@ -1,6 +1,5 @@
 //! Text decorations, captured border callbacks and retained component styles.
-#[cfg(test)]
-mod published;
+use crate::published;
 
 use maestro_theme::{
     ColorMode, ColorValue, LiveTheme, SyntaxHighlighter, SyntaxSpan, Theme, ThemeColor,

@@ -1,8 +1,6 @@
 //! Brand pack loading, theme projection, presentation values, CSS and mark templates.
-#[cfg(test)]
-mod brand_support;
-#[cfg(test)]
-mod live;
+use crate::brand_support;
+use crate::live;
 
 use brand_support::{
     ALTERNATE_PATH, FORGE_NATIVE, FORGE_PATH, Mem, SIGNAL_NATIVE, alternate, check_prefixes, forge,

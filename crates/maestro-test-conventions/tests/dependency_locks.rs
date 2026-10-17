@@ -1,7 +1,6 @@
 #![cfg(test)]
 
-#[path = "support/scratch.rs"]
-mod scratch;
+use crate::support::scratch;
 
 use std::fs;
 use std::path::{Path, PathBuf};

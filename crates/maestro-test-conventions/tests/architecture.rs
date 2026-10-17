@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-mod support;
+use crate::support;
 
 use std::fmt::Write;
 

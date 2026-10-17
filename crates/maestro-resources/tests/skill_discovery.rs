@@ -1,7 +1,6 @@
 //! Skill discovery, validation, provenance and prompt behavior.
 #![cfg(not(target_arch = "wasm32"))]
-#[cfg(test)]
-pub mod support;
+use crate::support;
 use maestro_resources::{
     LoadSkillsFromDirOptions, NativeResourceOperations, SourceOrigin, SourceScope,
     load_skills_from_dir,

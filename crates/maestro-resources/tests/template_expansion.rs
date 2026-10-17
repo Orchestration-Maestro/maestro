@@ -1,14 +1,13 @@
 //! Prompt parsing, ordered loading and expansion through public interfaces.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+use crate::support;
 use maestro_resources::{
     LoadPromptTemplatesOptions, PromptTemplate, ResourceEntry, ResourceFileType,
     ResourceOperations, SourceOrigin, SourceScope, SyntheticSourceOptions,
     create_synthetic_source_info, expand_prompt_template, load_prompt_templates,
     parse_command_args, substitute_args,
 };
-#[cfg(test)]
-pub mod support;
 use std::{
     cell::RefCell,
     io,
