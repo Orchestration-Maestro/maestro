@@ -207,7 +207,7 @@ fn direct_response(protocol: &str) -> crate::transport::Attempt {
             &[],
             crate::response_endpoint::COMPLETE.as_bytes().to_vec(),
         ),
-        "google-generative-ai" => transport::Attempt::body(200, &[], b"data: {\"candidates\":[{\"content\":{\"parts\":[]},\"finishReason\":\"STOP\"}]}\n\n".to_vec()),
+        "google-generative-ai" | "google-vertex" => transport::Attempt::body(200, &[], b"data: {\"candidates\":[{\"content\":{\"parts\":[]},\"finishReason\":\"STOP\"}]}\n\n".to_vec()),
         "mistral-conversations" => transport::Attempt::body(200, &[("content-type", "text/event-stream")], b"data: {\"id\":\"controlled\",\"model\":\"controlled\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\n".to_vec()),
         _ => transport::Attempt::success(),
     }
@@ -246,8 +246,10 @@ async fn direct_local_case(protocol: &str, simple: bool) -> crate::TestResult {
     assert_eq!(result.error_message, None);
     assert_eq!(events, ["start", "done"]);
     assert_eq!(result.stop_reason, maestro_models::StopReason::Stop);
-    let expected: &[&str] = if matches!(protocol, "mistral-conversations" | "google-generative-ai")
-    {
+    let expected: &[&str] = if matches!(
+        protocol,
+        "mistral-conversations" | "google-generative-ai" | "google-vertex"
+    ) {
         &["payload-before", "payload-after"]
     } else {
         &[
@@ -268,7 +270,7 @@ async fn direct_local_case(protocol: &str, simple: bool) -> crate::TestResult {
 fn assert_sent_temperature(protocol: &str, body: &serde_json::Value) {
     use serde_json::json;
     assert_eq!(
-        if protocol == "google-generative-ai" {
+        if matches!(protocol, "google-generative-ai" | "google-vertex") {
             &body["generationConfig"]["temperature"]
         } else {
             &body["temperature"]
@@ -307,6 +309,15 @@ fn direct_stream<E: maestro_models::ProviderExecution>(
     }
     let common = options.unwrap_or_default();
     match protocol {
+        "google-vertex" => stream_google_vertex_for::<E>(
+            model,
+            context,
+            Some(GoogleVertexOptions {
+                common,
+                ..Default::default()
+            }),
+            spawn,
+        ),
         "google-generative-ai" => stream_google_for::<E>(
             model,
             context,
@@ -402,6 +413,7 @@ fn direct_simple_stream<E: maestro_models::ProviderExecution>(
         ..Default::default()
     });
     match protocol {
+        "google-vertex" => stream_simple_google_vertex_for::<E>(model, context, options, spawn),
         "google-generative-ai" => stream_simple_google_for::<E>(model, context, options, spawn),
         "openai-codex-responses" => {
             stream_simple_openai_codex_responses_for::<E>(model, context, options, spawn)
@@ -983,4 +995,12 @@ fn threaded_submission(
         tasks.lock().unwrap().push(task);
         true
     })
+}
+
+/// Exercise both cloud hook-capture families with the shared synchronized witnesses.
+pub(crate) fn cloud_affinity() -> crate::TestResult {
+    crate::chat::block_on(
+        false,
+        tokio::task::LocalSet::new().run_until(bundled_cases::cloud_affinity()),
+    )
 }

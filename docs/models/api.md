@@ -62,7 +62,7 @@ explicit generation commands acquire feeds.
 
 ### Bundled protocols and direct operations
 
-The registry initially contains eight protocols in the following order. Catalog
+The registry initially contains nine protocols in the following order. Catalog
 membership is separate: a catalog can contain descriptors whose API is not
 registered. The scripted API is opt-in.
 
@@ -80,6 +80,7 @@ see [linkage and setup-error boundaries](module-linkage.md).
 | `azure-openai-responses` | `responses::azure_openai_responses` / `AzureOpenAIResponsesOptions` | [Responses](responses.md); `bundled_options::maestro_azure_extras_select_target` |
 | `openai-codex-responses` | `response_sessions::openai_codex_responses` / `OpenAICodexResponsesOptions` | [Response sessions](response-sessions.md); `bundled_dispatch::maestro_response_session_cache_affinity_completes` |
 | `google-generative-ai` | `content::google` / `GoogleOptions` | [Content generation](content-generation.md); `content_generation_invocation::raw_request_projects_the_selected_payload` |
+| `google-vertex` | `content::google_vertex` / `GoogleVertexOptions` | [Cloud content generation](content-generation.md#cloud-invocation); `cloud_content_invocation::cloud_root_and_registry_entries_dispatch` |
 | `bedrock-converse-stream` | `cloud::amazon_bedrock` / `BedrockOptions` | [Cloud conversations](cloud-conversations.md); `cloud_conversation_streams::text_events_keep_shared_result_and_completion` |
 
 Each module exposes `stream_*` and `stream_simple_*` under its provider name;
@@ -92,13 +93,9 @@ reasoning quality, cache-hit rates or billing.
 
 ### Not available yet
 
-- Cloud content-generation invocation: [tracked work](https://github.com/Orchestration-Maestro/maestro/issues/937).
-- Native credentials for that cloud content-generation API: [tracked work](https://github.com/Orchestration-Maestro/maestro/issues/936).
 - Standalone model-account commands: [tracked work](https://github.com/Orchestration-Maestro/maestro/issues/247).
 
-Environment detection and pure cloud payload projection do not make these
-interfaces available. Cloud conversations in the table are a different,
-implemented protocol.
+Cloud content generation and cloud conversations in the table are distinct protocols.
 
 ## Conversation and JSON records
 
@@ -277,7 +274,7 @@ clients, reads end on their own and cancellation is checked before each read;
 HTTP transport reads race cancellation. Do not assume identical body ownership.
 
 Payload hooks receive and return the selected `PayloadHookInput`. Its JSON can
-be kept, edited or replaced; only public content generation consumes the edited
+be kept, edited or replaced; both public and cloud content generation consume the edited
 signal. Content generation does not use the response hook; cloud conversations
 invoke it after the first known service event or successful end of stream,
 including empty or unknown-only streams. A failure before either prevents the
@@ -332,7 +329,7 @@ and the existing controlled native-flow witnesses.
 from account providers. Replacement preserves a slot and retained old handles
 continue working after registry changes. Source-based API removal only removes
 entries still owned by that source. API clear stays empty until explicit
-registration/reset; reset restores the eight bundled entries. OAuth unregister
+registration/reset; reset restores the nine bundled entries. OAuth unregister
 restores a built-in implementation or removes a custom entry; OAuth reset restores
 the original three-provider membership. No parent environment is changed by these
 fresh-child examples.

@@ -14,8 +14,25 @@ pub struct ApiClient {
     pub(in crate::providers::content) api_version: String,
     /// Retained authentication choice.
     pub(in crate::providers::content) authentication: Authentication,
+    /// Resource routing independent of authentication.
+    pub(in crate::providers::content) resource: Resource,
     /// Constructor header layers after exact-spelling replacement.
     pub(in crate::providers::content) headers: IndexMap<String, String>,
+}
+
+/// Retained cloud resource identity, independent of the authentication header.
+#[derive(Default)]
+pub(in crate::providers::content) struct Resource {
+    /// Cloud projection and prefixing.
+    pub cloud: bool,
+    /// Normalized constructor project.
+    pub project: Option<String>,
+    /// Normalized constructor location.
+    pub location: Option<String>,
+    /// A nonempty resource-routing key suppresses prefixing.
+    pub has_key: bool,
+    /// Constructor collection scope.
+    pub collection: bool,
 }
 
 /// Authentication selected at construction, resolved only after request validation.
@@ -36,6 +53,22 @@ pub struct PreparedContentRequest {
 }
 
 impl ApiClient {
+    /// Project the selected hook payload using captured resource identity.
+    pub(in crate::providers::content) fn project(
+        &self,
+        payload: Value,
+    ) -> Result<ProjectedContentRequest, DiagnosticErrorInfo> {
+        if self.resource.cloud {
+            super::project_vertex_content_request(
+                payload,
+                self.resource.project.as_deref(),
+                self.resource.location.as_deref(),
+            )
+        } else {
+            super::project_content_request(payload)
+        }
+    }
+
     /// Prepare a projected body without sending or installing cancellation listeners.
     ///
     /// # Errors
@@ -84,6 +117,7 @@ impl ApiClient {
         Self {
             base_url,
             api_version,
+            resource: Resource::default(),
             authentication: api_key.map_or_else(
                 || Authentication::Native(super::node_auth::NodeAuth::default()),
                 Authentication::ApiKey,
@@ -131,7 +165,25 @@ impl ApiClient {
         } else {
             format!("{selected_version}/")
         };
-        let url = format!("{base}/{version}{model}:streamGenerateContent?alt=sse");
+        let collection = options
+            .and_then(|options| options.get("baseUrlResourceScope"))
+            .map_or(self.resource.collection, |value| {
+                value.as_str() == Some("COLLECTION")
+            });
+        let prefix = if self.resource.cloud
+            && !self.resource.has_key
+            && !collection
+            && !model.starts_with("projects/")
+        {
+            format!(
+                "projects/{}/locations/{}/",
+                self.resource.project.as_deref().unwrap_or("undefined"),
+                self.resource.location.as_deref().unwrap_or("undefined")
+            )
+        } else {
+            String::new()
+        };
+        let url = format!("{base}/{version}{prefix}{model}:streamGenerateContent?alt=sse");
         let mut url = url::Url::parse(&url)
             .map_err(|error| DiagnosticErrorInfo::error(format!("URL: {error}")))?;
         stream_query(&mut url);

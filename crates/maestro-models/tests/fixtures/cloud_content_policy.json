@@ -1,0 +1,321 @@
+[
+  {
+    "operation": "endpoint",
+    "input": "",
+    "expected": {
+      "version": false
+    }
+  },
+  {
+    "operation": "endpoint",
+    "input": " ",
+    "expected": {
+      "version": false
+    }
+  },
+  {
+    "operation": "endpoint",
+    "input": "﻿",
+    "expected": {
+      "version": false
+    }
+  },
+  {
+    "operation": "endpoint",
+    "input": "",
+    "expected": {
+      "base": "",
+      "version": false
+    }
+  },
+  {
+    "operation": "endpoint",
+    "input": "https://{location}-host",
+    "expected": {
+      "version": false
+    }
+  },
+  {
+    "operation": "endpoint",
+    "input": "https://host/v1",
+    "expected": {
+      "base": "https://host/v1",
+      "version": true
+    }
+  },
+  {
+    "operation": "endpoint",
+    "input": "https://host/v1beta",
+    "expected": {
+      "base": "https://host/v1beta",
+      "version": true
+    }
+  },
+  {
+    "operation": "endpoint",
+    "input": "https://host/v2beta9",
+    "expected": {
+      "base": "https://host/v2beta9",
+      "version": true
+    }
+  },
+  {
+    "operation": "endpoint",
+    "input": "https://host/V1",
+    "expected": {
+      "base": "https://host/V1",
+      "version": false
+    }
+  },
+  {
+    "operation": "endpoint",
+    "input": "https://host/v1alpha",
+    "expected": {
+      "base": "https://host/v1alpha",
+      "version": false
+    }
+  },
+  {
+    "operation": "endpoint",
+    "input": "relative/v1/path",
+    "expected": {
+      "base": "relative/v1/path",
+      "version": true
+    }
+  },
+  {
+    "operation": "endpoint",
+    "input": "https://host/path?x=/v1",
+    "expected": {
+      "base": "https://host/path?x=/v1",
+      "version": false
+    }
+  },
+  {
+    "operation": "endpoint",
+    "input": "https://host/%761",
+    "expected": {
+      "base": "https://host/%761",
+      "version": false
+    }
+  },
+  {
+    "operation": "endpoint",
+    "input": "https://host/v١",
+    "expected": {
+      "base": "https://host/v١",
+      "version": false
+    }
+  },
+  {
+    "operation": "endpoint",
+    "input": "relative/v١/path",
+    "expected": {
+      "base": "relative/v١/path",
+      "version": false
+    }
+  },
+  {
+    "operation": "key",
+    "input": {},
+    "expected": null
+  },
+  {
+    "operation": "key",
+    "input": {
+      "envKey": " environment-key "
+    },
+    "expected": "environment-key"
+  },
+  {
+    "operation": "key",
+    "input": {
+      "envKey": "<authenticated>"
+    },
+    "expected": null
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": ""
+    },
+    "expected": null
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "",
+      "envKey": " environment-key "
+    },
+    "expected": "environment-key"
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "",
+      "envKey": "<authenticated>"
+    },
+    "expected": null
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": " "
+    },
+    "expected": null
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": " ",
+      "envKey": " environment-key "
+    },
+    "expected": "environment-key"
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": " ",
+      "envKey": "<authenticated>"
+    },
+    "expected": null
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "﻿key﻿"
+    },
+    "expected": "key"
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "﻿key﻿",
+      "envKey": " environment-key "
+    },
+    "expected": "key"
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "﻿key﻿",
+      "envKey": "<authenticated>"
+    },
+    "expected": "key"
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "key"
+    },
+    "expected": "key"
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "key",
+      "envKey": " environment-key "
+    },
+    "expected": "key"
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "key",
+      "envKey": "<authenticated>"
+    },
+    "expected": "key"
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "<>"
+    },
+    "expected": "<>"
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "<>",
+      "envKey": " environment-key "
+    },
+    "expected": "<>"
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "<>",
+      "envKey": "<authenticated>"
+    },
+    "expected": "<>"
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "<authenticated>"
+    },
+    "expected": null
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "<authenticated>",
+      "envKey": " environment-key "
+    },
+    "expected": null
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "<authenticated>",
+      "envKey": "<authenticated>"
+    },
+    "expected": null
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "gcp-vertex-credentials"
+    },
+    "expected": null
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "gcp-vertex-credentials",
+      "envKey": " environment-key "
+    },
+    "expected": null
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "gcp-vertex-credentials",
+      "envKey": "<authenticated>"
+    },
+    "expected": null
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "real"
+    },
+    "expected": "real"
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "real",
+      "envKey": " environment-key "
+    },
+    "expected": "real"
+  },
+  {
+    "operation": "key",
+    "input": {
+      "apiKey": "real",
+      "envKey": "<authenticated>"
+    },
+    "expected": "real"
+  }
+]

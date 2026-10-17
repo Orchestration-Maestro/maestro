@@ -16,7 +16,8 @@ The registry starts with these protocols, in this order:
 5. `azure-openai-responses`
 6. `openai-codex-responses`
 7. `google-generative-ai`
-8. `bedrock-converse-stream`
+8. `google-vertex`
+9. `bedrock-converse-stream`
 
 The simulated provider is never registered implicitly, and no placeholder stands in
 for a protocol whose adapter this crate does not contain.
@@ -31,7 +32,7 @@ for a protocol whose adapter this crate does not contain.
 
 `stream_anthropic`, `stream_openai_completions`, `stream_mistral`,
 `stream_openai_responses`, `stream_azure_openai_responses` and
-`stream_openai_codex_responses` and `stream_google` take their typed
+`stream_openai_codex_responses` and `stream_google` and `stream_google_vertex` take their typed
 options and never consult the registry. Each `stream_simple_*` function of the
 same families takes `SimpleStreamOptions` and always returns a stream. A missing key,
 which the functions of the same names in the provider modules report as `Err`, ends
@@ -83,6 +84,7 @@ strings and a named function must be an object. Null handling is described below
 | `openai-responses` | `reasoningEffort`, `reasoningSummary` (`auto`, `detailed`, `concise`, nullable), `serviceTier` (`auto`, `default`, `flex`, `scale`, `priority`, nullable) |
 | `azure-openai-responses` | `reasoningEffort`, `reasoningSummary`, `azureApiVersion`, `azureResourceName`, `azureBaseUrl`, `azureDeploymentName` |
 | `google-generative-ai` | `toolChoice` (string, nullable), `thinking` (object, nullable; required boolean `enabled`, optional numeric `budgetTokens`, optional uppercase `level`) |
+| `google-vertex` | Content-generation fields above, plus nullable string `project` and `location` |
 | `bedrock-converse-stream` | `region`, `profile`, `bearerToken`, `toolChoice` (`auto`, `any`, `none` or a named tool object), `reasoning` (`minimal` to `xhigh`), `thinkingBudgets` (object), `interleavedThinking`, `thinkingDisplay` (`summarized`, `omitted`), `requestMetadata` (string-valued object) |
 | `openai-codex-responses` | `reasoningEffort` (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`), `reasoningSummary` (`auto`, `concise`, `detailed`, `off`, `on`, nullable), `serviceTier` (`auto`, `default`, `flex`, `scale`, `priority`, nullable), `textVerbosity` (`low`, `medium`, `high`) |
 
@@ -91,7 +93,7 @@ A `null` summary and a missing summary both reach the adapter as no summary. A
 one as no tier; the [responses page](responses.md) describes the payload built
 from them, including what a payload hook may change. Cloud response summaries also
 accept null as no summary. Content-generation `toolChoice` and `thinking` accept null as
-omitted; its thinking budget and level reject null when present. Other listed fields reject null. Within a cloud-conversation budget object, missing or null
+omitted; its thinking budget and level reject null when present. Cloud content-generation scope accepts null as omitted. Other listed fields reject null. Within a cloud-conversation budget object, missing or null
 level slots use the adapter's existing budget defaults.
 
 See the [response-session guide](response-sessions.md) for adapter-owned request behavior.
@@ -118,7 +120,7 @@ let apis: Vec<String> = get_api_providers().into_iter().map(|provider| provider.
 assert_eq!(apis, [
     "anthropic-messages", "openai-completions", "mistral-conversations",
     "openai-responses", "azure-openai-responses", "openai-codex-responses",
-    "google-generative-ai", "bedrock-converse-stream",
+    "google-generative-ai", "google-vertex", "bedrock-converse-stream",
 ]);
 
 let model: Model = serde_json::from_value(serde_json::json!({

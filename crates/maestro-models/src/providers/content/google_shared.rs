@@ -15,11 +15,14 @@ use crate::{
 };
 
 pub(super) mod api_client;
+pub(super) mod client_options;
+pub(super) mod invocation;
 #[cfg(not(target_arch = "wasm32"))]
 mod node_auth;
 mod projection;
 mod request;
 mod stream;
+pub(super) mod thinking;
 mod wire;
 
 pub use api_client::{ApiClient, PreparedContentRequest};

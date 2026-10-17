@@ -216,7 +216,7 @@ fn terminal_reason_and_partial_content_are_preserved() -> TestResult {
 #[test]
 fn public_stream_reuses_reduction_and_shared_message_identity() -> TestResult {
     content_invocation::assert_rows("public_stream_reuses_reduction_and_shared_message_identity")?;
-    chat::block_on(false, native::live_alias())
+    chat::block_on(false, native::live_alias("google-generative-ai"))
 }
 
 #[test]
@@ -237,7 +237,7 @@ fn removed_hook_signal_only_changes_transport_cancellation() -> TestResult {
 #[test]
 fn live_abort_releases_pending_body_and_retains_partial() -> TestResult {
     content_invocation::assert_rows("live_abort_releases_pending_body_and_retains_partial")?;
-    chat::block_on(false, native::held_body_abort())
+    chat::block_on(false, native::held_body_abort("google-generative-ai"))
 }
 
 #[test]
@@ -328,8 +328,8 @@ fn cancellation_during_setup_releases_the_request() -> TestResult {
 #[test]
 fn positive_timeout_covers_body_and_error_admission() -> TestResult {
     chat::block_on(true, async {
-        held_body_deadline(200).await?;
-        held_body_deadline(500).await
+        held_body_deadline(200, "google-generative-ai").await?;
+        held_body_deadline(500, "google-generative-ai").await
     })
 }
 
@@ -403,26 +403,7 @@ fn generated_call_numbers_survive_invocation_boundaries() -> TestResult {
 
 #[test]
 fn dropping_the_reader_keeps_the_producer_running() -> TestResult {
-    chat::block_on(false, async {
-        let response = HttpResponse {body: Box::pin(futures_util::stream::iter([Ok(b"data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"released producer\"}]}}]}\n\n".to_vec())])), ..empty_response()};
-        let (fetch, admission, release) = native::held_fetch(response);
-        let stream = native_stream(StreamOptions {
-            fetch: Some(fetch),
-            api_key: Some("fixture-key".into()),
-            ..Default::default()
-        })?;
-        let result = stream.result();
-        admission.await?;
-        drop(stream);
-        release.send(()).unwrap();
-        let output = result.await;
-        assert_eq!(output.read().unwrap().stop_reason, StopReason::Stop);
-        assert_eq!(
-            serde_json::to_value(&output.read().unwrap().content)?[0]["text"],
-            "released producer"
-        );
-        Ok(())
-    })
+    chat::block_on(false, native::dropped_reader("google-generative-ai"))
 }
 
 #[test]
@@ -563,7 +544,7 @@ fn registered_options_reject_wrong_native_shapes() -> TestResult {
 }
 
 #[cfg(test)]
-mod native {
+pub(crate) mod native {
     /// Select request cancellation independently of the caller's terminal signal.
     fn selected_signal_hook(
         mode: &'static str,
@@ -682,7 +663,7 @@ mod native {
 
     use super::*;
     /// Baseline public model and changed conversation.
-    pub(super) fn native_input() -> TestResult<(Model, Context)> {
+    pub(crate) fn native_input() -> TestResult<(Model, Context)> {
         Ok((
             chat::model(
                 &json!({"id":"gemini-2.5-flash", "api":"google-generative-ai", "provider":"google", "baseUrl":"https://fixture.invalid/v1beta"}),
@@ -693,21 +674,65 @@ mod native {
         ))
     }
     /// Start with the supplied controlled transport and native settings.
-    pub(super) fn native_stream(
+    pub(crate) fn native_stream(
         common: StreamOptions,
     ) -> TestResult<maestro_models::AssistantMessageEventStream> {
-        let (model, context) = native_input()?;
-        Ok(maestro_models::stream_google(
-            model,
-            context,
-            Some(GoogleOptions {
-                common,
+        native_stream_for("google-generative-ai", common)
+    }
+    /// Drive either content entry with the same synchronized transport fixtures.
+    pub(crate) fn native_stream_for(
+        api: &str,
+        common: StreamOptions,
+    ) -> TestResult<maestro_models::AssistantMessageEventStream> {
+        let (mut model, context) = native_input()?;
+        model.api = api.into();
+        if api == "google-vertex" {
+            model.provider = api.into();
+            Ok(maestro_models::stream_google_vertex(
+                model,
+                context,
+                Some(maestro_models::GoogleVertexOptions {
+                    common,
+                    ..Default::default()
+                }),
+            ))
+        } else {
+            Ok(maestro_models::stream_google(
+                model,
+                context,
+                Some(GoogleOptions {
+                    common,
+                    ..Default::default()
+                }),
+            ))
+        }
+    }
+    /// Dropping observation does not cancel an admitted producer.
+    pub(crate) async fn dropped_reader(api: &str) -> TestResult {
+        let response = HttpResponse {body: Box::pin(futures_util::stream::iter([Ok(b"data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"released producer\"}]}}]}\n\n".to_vec())])), ..empty_response()};
+        let (fetch, admission, release) = held_fetch(response);
+        let stream = native_stream_for(
+            api,
+            StreamOptions {
+                fetch: Some(fetch),
+                api_key: Some("fixture-key".into()),
                 ..Default::default()
-            }),
-        ))
+            },
+        )?;
+        let result = stream.result();
+        admission.await?;
+        drop(stream);
+        release.send(()).unwrap();
+        let output = result.await;
+        assert_eq!(output.read().unwrap().stop_reason, StopReason::Stop);
+        assert_eq!(
+            serde_json::to_value(&output.read().unwrap().content)?[0]["text"],
+            "released producer"
+        );
+        Ok(())
     }
     /// An empty successful streamed body.
-    pub(super) fn empty_response() -> HttpResponse {
+    pub(crate) fn empty_response() -> HttpResponse {
         HttpResponse {
             status: 200,
             status_text: String::new(),
@@ -716,7 +741,7 @@ mod native {
         }
     }
     /// Assert a selected deadline spans the held body and leaves the caller active.
-    pub(super) async fn held_body_deadline(status: u16) -> TestResult {
+    pub(crate) async fn held_body_deadline(status: u16, api: &str) -> TestResult {
         let BodyGate {
             fetch,
             admission,
@@ -724,39 +749,42 @@ mod native {
             release,
         } = body_gate(status, Vec::new(), Vec::new());
         let caller = Cancellation::new();
-        let stream = native_stream(StreamOptions {
-            fetch: Some(fetch),
-            signal: Some(caller.clone()),
-            api_key: Some("fixture-key".into()),
-            on_payload: Some(Arc::new(
-                |maestro_models::PayloadHookInput {
-                     mut payload,
-                     signal: hook_signal,
-                 },
-                 _| {
-                    payload["config"]["httpOptions"] = json!({"timeout":10});
-                    Box::pin(async {
-                        Ok(maestro_models::PayloadHookInput {
-                            payload,
-                            signal: hook_signal,
-                        })
-                    })
-                },
-            )),
-            ..Default::default()
-        })?;
+        let stream = native_stream_for(
+            api,
+            StreamOptions {
+                fetch: Some(fetch),
+                signal: Some(caller.clone()),
+                api_key: Some("fixture-key".into()),
+                on_payload: Some(Arc::new(|mut input, _| {
+                    input.payload["config"]["httpOptions"] = json!({"timeout":10});
+                    Box::pin(async { Ok(input) })
+                })),
+                ..Default::default()
+            },
+        )?;
         let request_signal = admission.await?.expect("owned signal");
         read_started.await?;
-        tokio::time::advance(std::time::Duration::from_millis(11)).await;
-        let output = stream.result().await;
+        let result = stream.result();
+        let mut result = std::pin::pin!(result);
+        tokio::time::advance(std::time::Duration::from_millis(9)).await;
+        assert!(
+            std::future::Future::poll(
+                result.as_mut(),
+                &mut std::task::Context::from_waker(std::task::Waker::noop())
+            )
+            .is_pending()
+        );
+        tokio::time::advance(std::time::Duration::from_millis(1)).await;
+        let output = result.await;
         assert_eq!(output.read().unwrap().stop_reason, StopReason::Error);
         assert!(!caller.is_aborted());
         assert!(request_signal.is_aborted());
         assert!(release.is_closed());
-        let mut kinds = Vec::new();
-        while let Some(event) = stream.next().await {
-            kinds.push(serde_json::to_value(event)?["type"].clone());
-        }
+        let (records, _) = response_output::collect(&stream).await?;
+        let kinds: Vec<_> = records
+            .into_iter()
+            .map(|event| event["type"].clone())
+            .collect();
         assert_eq!(
             kinds,
             if status == 200 {
@@ -768,7 +796,7 @@ mod native {
         Ok(())
     }
     /// A controlled successful stream carrying the supplied response bytes.
-    pub(super) fn body_fetch(body: Vec<u8>) -> Fetch {
+    pub(crate) fn body_fetch(body: Vec<u8>) -> Fetch {
         body_chunks_fetch(vec![body])
     }
 
@@ -785,7 +813,7 @@ mod native {
         })
     }
     /// Check supplied identifiers and parse the generated timestamp/counter form.
-    pub(super) fn generated_ids(
+    pub(crate) fn generated_ids(
         message: &maestro_models::AssistantMessage,
     ) -> TestResult<Vec<u64>> {
         let mut generated = Vec::new();
@@ -816,7 +844,7 @@ mod native {
         Ok(bytes)
     }
     /// Hold exactly one fetch after admission, retaining its request signal.
-    pub(super) fn held_fetch(
+    pub(crate) fn held_fetch(
         response: HttpResponse,
     ) -> (
         Fetch,
@@ -914,7 +942,7 @@ mod native {
     }
 
     /// Observe empty content at start and the same alias after gated reduction.
-    pub(super) async fn live_alias() -> TestResult {
+    pub(crate) async fn live_alias(api: &str) -> TestResult {
         let frame =
             b"data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"late content\"}]}}]}\n\n"
                 .to_vec();
@@ -924,11 +952,14 @@ mod native {
             read_started,
             release,
         } = body_gate(200, Vec::new(), frame);
-        let stream = native_stream(StreamOptions {
-            fetch: Some(fetch),
-            api_key: Some("fixture-key".into()),
-            ..Default::default()
-        })?;
+        let stream = native_stream_for(
+            api,
+            StreamOptions {
+                fetch: Some(fetch),
+                api_key: Some("fixture-key".into()),
+                ..Default::default()
+            },
+        )?;
         admission.await?;
         read_started.await?;
         let Some(maestro_models::AssistantMessageEvent::Start { partial }) = stream.next().await
@@ -948,7 +979,7 @@ mod native {
     }
 
     /// Abort the held body after a real delta, retaining content without a closing update.
-    pub(super) async fn held_body_abort() -> TestResult {
+    pub(crate) async fn held_body_abort(api: &str) -> TestResult {
         let prefix =
             b"data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"held partial\"}]}}]}\n\n"
                 .to_vec();
@@ -959,12 +990,15 @@ mod native {
             release,
         } = body_gate(200, prefix, Vec::new());
         let caller = Cancellation::new();
-        let stream = native_stream(StreamOptions {
-            fetch: Some(fetch),
-            signal: Some(caller.clone()),
-            api_key: Some("fixture-key".into()),
-            ..Default::default()
-        })?;
+        let stream = native_stream_for(
+            api,
+            StreamOptions {
+                fetch: Some(fetch),
+                signal: Some(caller.clone()),
+                api_key: Some("fixture-key".into()),
+                ..Default::default()
+            },
+        )?;
         let request_signal = admission.await?.expect("owned signal");
         read_started.await?;
         caller.abort();

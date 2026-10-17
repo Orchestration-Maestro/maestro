@@ -219,7 +219,7 @@ fn check(
 ) {
     if matches!(
         case.protocol,
-        "mistral-conversations" | "google-generative-ai"
+        "mistral-conversations" | "google-generative-ai" | "google-vertex"
     ) {
         assert_eq!(reads.responses.load(Ordering::SeqCst), 0);
         assert_eq!(reads.body.load(Ordering::SeqCst), 1);

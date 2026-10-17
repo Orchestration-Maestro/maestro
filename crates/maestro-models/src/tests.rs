@@ -8,3 +8,6 @@ pub mod loopback;
 pub mod socks;
 #[path = "../tests/support/tls.rs"]
 pub mod tls;
+
+#[path = "../tests/support/content_credentials.rs"]
+pub mod content_credentials;

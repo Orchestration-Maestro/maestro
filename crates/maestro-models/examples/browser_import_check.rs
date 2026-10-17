@@ -100,6 +100,7 @@ fn main() {
 
 /// Compile provider records and dedicated/root function paths on either target.
 fn response_session_surface() {
+    cloud_content_surface();
     std::hint::black_box((
         maestro_models::OpenAICodexResponsesOptions::<maestro_models::Threaded>::default(),
         maestro_models::OpenAICodexWebSocketDebugStats::default(),
@@ -293,4 +294,15 @@ impl<E: maestro_models::ProviderExecution, O>
             code: None,
         })
     }
+}
+
+/// Compile cloud options and all root entry points on either target.
+fn cloud_content_surface() {
+    std::hint::black_box((
+        maestro_models::GoogleVertexOptions::<maestro_models::Threaded>::default(),
+        maestro_models::stream_google_vertex,
+        maestro_models::stream_simple_google_vertex,
+        maestro_models::stream_google_vertex_for::<maestro_models::Local>,
+        maestro_models::stream_simple_google_vertex_for::<maestro_models::Local>,
+    ));
 }

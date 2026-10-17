@@ -431,12 +431,20 @@ pub(crate) fn google<E: ProviderExecution>(
     options: ProviderStreamOptions<E>,
 ) -> Result<crate::GoogleOptions<E>, serde_json::Error> {
     let extra: GoogleExtras = extras(options.extra)?;
+    google_fields(options.common, extra)
+}
+
+/// Assemble shared content fields once for both protocols.
+fn google_fields<E: ProviderExecution>(
+    common: crate::StreamOptions<E>,
+    extra: GoogleExtras,
+) -> Result<crate::GoogleOptions<E>, serde_json::Error> {
     let thinking = extra
         .thinking
         .map(extras::<GoogleThinkingExtras>)
         .transpose()?;
     Ok(crate::GoogleOptions {
-        common: options.common,
+        common,
         tool_choice: extra
             .tool_choice
             .as_deref()
@@ -450,4 +458,33 @@ pub(crate) fn google<E: ProviderExecution>(
             },
         ),
     })
+}
+
+/// Decode cloud scope together with the shared content-generation controls.
+pub(crate) fn google_vertex<E: ProviderExecution>(
+    options: ProviderStreamOptions<E>,
+) -> Result<crate::GoogleVertexOptions<E>, serde_json::Error> {
+    let extra: CloudContentExtras = extras(options.extra)?;
+    let project = extra.project;
+    let location = extra.location;
+    let shared = google_fields(options.common, extra.shared)?;
+    Ok(crate::GoogleVertexOptions {
+        common: shared.common,
+        tool_choice: shared.tool_choice,
+        thinking: shared.thinking,
+        project,
+        location,
+    })
+}
+
+/// Cloud-only scope fields decoded independently of public content options.
+#[derive(Deserialize)]
+struct CloudContentExtras {
+    /// Common content fields.
+    #[serde(flatten)]
+    shared: GoogleExtras,
+    /// Optional native project; null is omitted.
+    project: Option<String>,
+    /// Optional native location; null is omitted.
+    location: Option<String>,
 }

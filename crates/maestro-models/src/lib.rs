@@ -123,3 +123,8 @@ pub use providers::websocket::default_web_socket;
 pub use providers::websocket::{
     ConnectWebSocket, WebSocket, WebSocketConnection, WebSocketFuture, WebSocketRequest,
 };
+
+pub use providers::content::google_vertex::{
+    GoogleVertexOptions, stream_google_vertex, stream_google_vertex_for,
+    stream_simple_google_vertex, stream_simple_google_vertex_for,
+};

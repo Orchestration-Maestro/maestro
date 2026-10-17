@@ -24,14 +24,15 @@ enum Entry {
     /// Protocol-specific mode-aware SDK entry.
     Direct,
 }
-/// Eight delivered protocols, including the native SDK route.
-const PROTOCOLS: [&str; 8] = [
+/// Nine delivered protocols, including the native SDK route.
+const PROTOCOLS: [&str; 9] = [
     "openai-completions",
     "anthropic-messages",
     "openai-responses",
     "azure-openai-responses",
     "mistral-conversations",
     "google-generative-ai",
+    "google-vertex",
     "openai-codex-responses",
     "bedrock-converse-stream",
 ];
@@ -237,8 +238,10 @@ fn check(
     if let Some(events) = events {
         assert_eq!(events, ["start", "done"]);
     }
-    let expected: &[&str] = if matches!(protocol, "mistral-conversations" | "google-generative-ai")
-    {
+    let expected: &[&str] = if matches!(
+        protocol,
+        "mistral-conversations" | "google-generative-ai" | "google-vertex"
+    ) {
         &["payload-before", "payload-after"]
     } else {
         &[
@@ -358,5 +361,16 @@ async fn check_default_scripted(stream: &AssistantMessageEventStream) -> crate::
     assert_eq!(message.stop_reason, StopReason::Stop);
     assert_eq!(message.error_message, None);
     assert_eq!(message.content, [AssistantContent::Text(faux_text("ok"))]);
+    Ok(())
+}
+
+/// Reuse both registered and direct execution-family witnesses for cloud content.
+pub(super) async fn cloud_affinity() -> crate::TestResult {
+    for simple in [false, true] {
+        for entry in [Entry::Registered, Entry::Direct] {
+            local("google-vertex", simple, Observation::Drain, entry).await?;
+            threaded("google-vertex", simple, Observation::Drain, entry).await?;
+        }
+    }
     Ok(())
 }
