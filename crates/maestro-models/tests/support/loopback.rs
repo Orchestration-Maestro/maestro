@@ -211,12 +211,13 @@ pub struct Routed {
 }
 
 impl Routed {
-    /// Make the accept loop notice the stop flag; a loop that already ended has closed the
-    /// listener, which is the same outcome.
+    /// Wake the accept loop; refusal or peer closure means the listener already stopped.
     fn stop_accepting(&self) -> std::io::Result<()> {
         self.stop.store(true, std::sync::atomic::Ordering::SeqCst);
         match TcpStream::connect(self.address) {
-            Err(error) if error.kind() == std::io::ErrorKind::ConnectionRefused => Ok(()),
+            Err(error) if error.kind() == ErrorKind::ConnectionRefused || client_closed(&error) => {
+                Ok(())
+            }
             other => other.map(drop),
         }
     }
