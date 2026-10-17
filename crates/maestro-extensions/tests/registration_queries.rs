@@ -192,7 +192,7 @@ fn callback_lifetimes_end_after_last_retained_owner() {
         },
     )
     .unwrap();
-    let runner = ExtensionRunner::new(Arc::clone(&owners), runtime, Arc::new(|_| {}));
+    let runner = ExtensionRunner::<(), String>::new(Arc::clone(&owners), runtime, Arc::new(|_| {}));
     let command = runner.get_command("hello").unwrap();
     owners.write().unwrap().clear();
     drop((api, owner, runner, owners, bus));
@@ -341,7 +341,7 @@ mod tests {
             handler(()).await.unwrap();
             return;
         }
-        let options = if kind == "command" {
+        let options: RegisteredCommandOptions<()> = if kind == "command" {
             RegisteredCommandOptions {
                 description: None,
                 get_argument_completions: None,

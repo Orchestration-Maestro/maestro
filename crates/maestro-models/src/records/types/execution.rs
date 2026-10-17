@@ -36,7 +36,13 @@ pub trait Execution: sealed::Sealed + Sized + 'static {
     /// The owning pointer.
     type Shared<T: ?Sized>: Clone + Deref<Target = T>;
     /// The non-owning pointer.
-    type Weak<T: ?Sized>;
+    type Weak<T: ?Sized>: Clone;
+    /// Creates a non-owning pointer to the same allocation.
+    fn downgrade<T: ?Sized>(value: &Self::Shared<T>) -> Self::Weak<T>;
+    /// Returns an owning pointer while any owner remains.
+    fn upgrade<T: ?Sized>(value: &Self::Weak<T>) -> Option<Self::Shared<T>>;
+    /// Compares allocation addresses, ignoring trait-object metadata.
+    fn ptr_eq<T: ?Sized>(left: &Self::Shared<T>, right: &Self::Shared<T>) -> bool;
     /// Construct the owning pointer.
     fn share<T>(value: T) -> Self::Shared<T>;
 }
@@ -47,6 +53,15 @@ impl Execution for $mode {
     type Future<'a, T> = Pin<Box<dyn Future<Output = T> $($bound)* + 'a>>;
     type Shared<T: ?Sized> = $pointer<T>;
     type Weak<T: ?Sized> = $weak<T>;
+    fn downgrade<T: ?Sized>(value: &Self::Shared<T>) -> Self::Weak<T> {
+        $pointer::downgrade(value)
+    }
+    fn upgrade<T: ?Sized>(value: &Self::Weak<T>) -> Option<Self::Shared<T>> {
+        value.upgrade()
+    }
+    fn ptr_eq<T: ?Sized>(left: &Self::Shared<T>, right: &Self::Shared<T>) -> bool {
+        $pointer::ptr_eq(left, right)
+    }
     fn share<T>(value: T) -> Self::Shared<T> {
         $pointer::new(value)
     }

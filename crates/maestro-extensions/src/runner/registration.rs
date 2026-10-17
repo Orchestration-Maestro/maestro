@@ -1,10 +1,13 @@
 //! Command invocation resolution and current flag queries.
 use super::ExtensionRunner;
-use crate::types::{ExtensionFlag, FlagValue, ResolvedCommand, read, write};
+use crate::{
+    ExtensionExecution,
+    types::{ExtensionFlag, FlagValue, ResolvedCommand, read, write},
+};
 use indexmap::{IndexMap, IndexSet};
 use std::sync::{Arc, RwLock};
 
-impl<C, CC> ExtensionRunner<C, CC> {
+impl<C, CC, E: ExtensionExecution> ExtensionRunner<C, CC, E> {
     /// Returns supplied owner paths in current load order.
     #[must_use]
     pub fn get_extension_paths(&self) -> Vec<String> {
@@ -37,19 +40,19 @@ impl<C, CC> ExtensionRunner<C, CC> {
     }
     /// Resolves current commands and publishes fresh empty diagnostics.
     #[must_use]
-    pub fn get_registered_commands(&self) -> Vec<ResolvedCommand<CC>> {
+    pub fn get_registered_commands(&self) -> Vec<ResolvedCommand<CC, E>> {
         *write(&self.command_diagnostics) = Arc::default();
         self.resolve_registered_commands()
     }
     /// Looks up only the current resolved invocation name.
     #[must_use]
-    pub fn get_command(&self, name: &str) -> Option<ResolvedCommand<CC>> {
+    pub fn get_command(&self, name: &str) -> Option<ResolvedCommand<CC, E>> {
         self.resolve_registered_commands()
             .into_iter()
             .find(|command| command.invocation_name == name)
     }
     /// Copies registrations before allocating unique invocation names in order.
-    fn resolve_registered_commands(&self) -> Vec<ResolvedCommand<CC>> {
+    fn resolve_registered_commands(&self) -> Vec<ResolvedCommand<CC, E>> {
         let mut commands = Vec::new();
         let mut counts = IndexMap::new();
         for owner in read(&self.extensions).iter() {

@@ -1,6 +1,6 @@
 //! Registration and invalidation of owned extension records.
 use crate::{
-    EventBus, EventError, SourceInfo,
+    EventBus, EventError, ExtensionExecution, SourceInfo,
     types::{
         Extension, ExtensionAPI, ExtensionFlag, ExtensionFlagOptions, ExtensionHandle,
         ExtensionRuntimeState, ExtensionShortcut, ExtensionShortcutOptions, FlagValue,
@@ -14,7 +14,7 @@ use std::sync::{Arc, RwLock};
 /// Guidance for an invalidated or released registration facade.
 const STALE_MESSAGE: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
 
-impl<C, CC> Extension<C, CC> {
+impl<C, CC, E: ExtensionExecution> Extension<C, CC, E> {
     /// Creates an empty owner with supplied paths and provenance.
     #[must_use]
     pub fn new(path: String, resolved_path: String, source_info: Arc<RwLock<SourceInfo>>) -> Self {
@@ -58,25 +58,25 @@ impl Default for ExtensionRuntimeState {
         Self::new()
     }
 }
-impl<C, CC> ExtensionAPI<C, CC> {
+impl<C, CC, E: ExtensionExecution> ExtensionAPI<C, CC, E> {
     /// Borrows a registration owner, retaining shared state and event capability.
     /// The loader or runtime must keep a strong owner while the extension is live.
     #[must_use]
     pub fn new(
-        extension: &ExtensionHandle<C, CC>,
+        extension: &ExtensionHandle<C, CC, E>,
         runtime: Arc<ExtensionRuntimeState>,
-        events: EventBus,
+        events: EventBus<E>,
     ) -> Self {
         Self {
             events,
-            extension: Arc::downgrade(extension),
+            extension: E::downgrade(extension),
             runtime,
         }
     }
     /// Upgrades the live registration owner after checking invalidation.
-    fn owner(&self) -> Result<ExtensionHandle<C, CC>, EventError> {
+    fn owner(&self) -> Result<ExtensionHandle<C, CC, E>, EventError> {
         self.runtime.assert_active()?;
-        self.extension.upgrade().ok_or_else(|| STALE_MESSAGE.into())
+        E::upgrade(&self.extension).ok_or_else(|| STALE_MESSAGE.into())
     }
     /// Registers or replaces a command in its original ordered slot.
     ///
@@ -85,7 +85,7 @@ impl<C, CC> ExtensionAPI<C, CC> {
     pub fn register_command(
         &self,
         name: String,
-        options: RegisteredCommandOptions<CC>,
+        options: RegisteredCommandOptions<CC, E>,
     ) -> Result<(), EventError> {
         let extension = self.owner()?;
         let replaced = {
@@ -97,7 +97,7 @@ impl<C, CC> ExtensionAPI<C, CC> {
                 get_argument_completions: options.get_argument_completions,
                 handler: options.handler,
             };
-            owner.commands.insert(name, Arc::new(RwLock::new(command)))
+            owner.commands.insert(name, E::share(RwLock::new(command)))
         };
         drop(replaced);
         Ok(())
@@ -109,7 +109,7 @@ impl<C, CC> ExtensionAPI<C, CC> {
     pub fn register_shortcut(
         &self,
         shortcut: KeyId,
-        options: ExtensionShortcutOptions<C>,
+        options: ExtensionShortcutOptions<C, E>,
     ) -> Result<(), EventError> {
         let extension = self.owner()?;
         let replaced = {
@@ -122,7 +122,7 @@ impl<C, CC> ExtensionAPI<C, CC> {
             };
             owner
                 .shortcuts
-                .insert(shortcut, Arc::new(RwLock::new(record)))
+                .insert(shortcut, E::share(RwLock::new(record)))
         };
         drop(replaced);
         Ok(())

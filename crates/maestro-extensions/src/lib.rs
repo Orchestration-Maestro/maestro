@@ -39,7 +39,7 @@ pub mod event_bus;
 pub use callbacks::CallbackEmitter;
 pub use event_bus::{
     ErrorReporter, EventBus, EventBusController, EventError, EventListener, EventTail,
-    Subscription, TailSpawner, create_event_bus,
+    Subscription, TailSpawner, create_event_bus, create_event_bus_for,
 };
 
 mod loader;
@@ -47,7 +47,8 @@ mod loader;
 pub mod types;
 pub use maestro_resources::SourceInfo;
 pub use types::{
-    Extension, ExtensionAPI, ExtensionFlag, ExtensionShortcut, RegisteredCommand, ResolvedCommand,
+    Extension, ExtensionAPI, ExtensionExecution, ExtensionFlag, ExtensionShortcut,
+    RegisteredCommand, ResolvedCommand,
 };
 /// Queries over current extension registrations.
 pub mod runner;

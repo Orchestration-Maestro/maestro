@@ -249,6 +249,10 @@ representations for callable owners. They do not create tasks. Local uses `Rc`;
 `Threaded` uses `Arc` and `Send` futures natively, and `Rc` with local futures
 on browser targets. `SharedHandle<T>` selects the same native/browser pointer
 family for registered stream callbacks and account-provider handles.
+`Execution::downgrade`, `upgrade` and `ptr_eq` operate on a family's shared and
+weak pointers, and its weak pointer is `Clone`. Extension registration uses them
+for weak facade back-edges and allocation-identity subscription removal in
+either family.
 `EventStream::new_local_items` admits local retained items through the same FIFO;
 `new` keeps its existing native thread-safety bounds. Classifier and extractor
 callbacks retain their existing target-specific bounds.
