@@ -506,3 +506,26 @@ fn native_and_controlled_highlighters_share_public_operations() {
     );
     assert!(highlight_html(&failing, "42", Some("javascript")).is_err());
 }
+
+#[test]
+fn highlight_css_uses_shared_syntax_roles() {
+    let css = maestro_theme::highlight_css().unwrap();
+    for (class, role) in [
+        ("comment", "muted"),
+        ("keyword", "accent"),
+        ("function", "accent"),
+        ("variable", "text"),
+        ("string", "success"),
+        ("number", "warning"),
+        ("type", "live"),
+        ("operator", "text"),
+        ("punctuation", "text"),
+    ] {
+        assert!(
+            css.contains(&format!(
+                ".hljs-{class}{{color:var(--maestro-color-{role});}}"
+            )),
+            "{class}"
+        );
+    }
+}

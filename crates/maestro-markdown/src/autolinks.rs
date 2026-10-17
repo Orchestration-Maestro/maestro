@@ -1,5 +1,5 @@
 //! Extended URL and email recognition on mapped native text runs.
-use super::parse::{Kind, Node, Text};
+use crate::types::{Document, Kind, Node, Text};
 use regress::Regex;
 use std::{ops::Range, sync::LazyLock};
 
@@ -58,7 +58,7 @@ fn candidate(run: &Run, range: Range<usize>, email: bool) -> Option<(Range<usize
         if run.authored[..range.start]
             .chars()
             .next_back()
-            .is_some_and(|c| !c.is_whitespace() && !"*_~(".contains(c))
+            .is_some_and(|c| !maestro_text::is_whitespace_scalar(c) && !"*_~(".contains(c))
         {
             return None;
         }
@@ -218,18 +218,31 @@ impl Run {
             .units
             .iter()
             .find(|unit| unit.authored.end > range.start)
-            .map_or(0, |unit| unit.source.start);
+            .map_or(0, |unit| {
+                if unit.source.len() == unit.authored.len() {
+                    unit.source.start + range.start - unit.authored.start
+                } else {
+                    unit.source.start
+                }
+            });
         let end = self
             .units
             .iter()
             .rev()
             .find(|unit| unit.authored.start < range.end)
-            .map_or(start, |unit| unit.source.end);
+            .map_or(start, |unit| {
+                if unit.source.len() == unit.authored.len() {
+                    unit.source.start + range.end - unit.authored.start
+                } else {
+                    unit.source.end
+                }
+            });
         start..end
     }
     /// Constructs one surrounding text child without unused link spellings.
     fn node(&self, range: Range<usize>) -> Node {
         Node {
+            authored: self.authored[range.clone()].to_owned(),
             range: self.source_range(range.clone()),
             kind: Kind::Text(self.text(range)),
         }
@@ -237,7 +250,7 @@ impl Run {
 }
 
 /// Replaces accepted links while preserving native-decoded surrounding text.
-pub(super) fn extend(parts: Vec<Node>) -> Vec<Node> {
+fn extend(parts: Vec<Node>) -> Vec<Node> {
     if parts.is_empty() {
         return parts;
     }
@@ -251,6 +264,7 @@ pub(super) fn extend(parts: Vec<Node>) -> Vec<Node> {
         let label = run.authored[range.clone()].to_owned();
         let absolute = run.source_range(range.clone());
         let child = Node {
+            authored: label.clone(),
             range: absolute.clone(),
             kind: Kind::Text(Text {
                 decoded: label.clone(),
@@ -258,7 +272,17 @@ pub(super) fn extend(parts: Vec<Node>) -> Vec<Node> {
             }),
         };
         output.push(Node {
-            kind: Kind::Link(vec![child], label, href),
+            authored: label.clone(),
+            kind: Kind::Link(
+                vec![child],
+                label,
+                href,
+                crate::types::LinkMetadata {
+                    title: String::new(),
+                    link_type: pulldown_cmark::LinkType::Autolink,
+                    id: String::new(),
+                },
+            ),
             range: absolute,
         });
         end = range.end;
@@ -284,4 +308,52 @@ fn domain(label: &str) -> bool {
             .take(2)
             .any(|part| part.contains('_'))
     })
+}
+
+/// Scans only contiguous eligible text children of the same container.
+fn runs(nodes: Vec<Node>) -> Vec<Node> {
+    let mut result = Vec::new();
+    let mut parts = Vec::new();
+    for node in nodes {
+        if matches!(node.kind, Kind::Text(_)) {
+            parts.push(node);
+        } else {
+            result.extend(super::autolinks::extend(std::mem::take(&mut parts)));
+            result.push(node);
+        }
+    }
+    result.extend(super::autolinks::extend(parts));
+    result
+}
+
+/// Apply shared mapped extended links after any caller-owned inline admission.
+pub fn autolinks(document: &mut Document) {
+    map_links(&mut document.nodes);
+}
+/// Keep native opaque nodes intact while sharing the one mapped text-run scanner.
+fn map_links(nodes: &mut Vec<Node>) {
+    for node in nodes.iter_mut() {
+        match &mut node.kind {
+            Kind::Paragraph(children)
+            | Kind::Inline(children)
+            | Kind::Strong(children)
+            | Kind::Strike(children)
+            | Kind::Emphasis(children)
+            | Kind::Item(children)
+            | Kind::List(_, children)
+            | Kind::Heading(_, children, _)
+            | Kind::Quote(children, _) => map_links(children),
+            Kind::Table(table) => {
+                for cell in table
+                    .header
+                    .iter_mut()
+                    .chain(table.rows.iter_mut().flatten())
+                {
+                    map_links(&mut cell.children);
+                }
+            }
+            _ => {}
+        }
+    }
+    *nodes = runs(std::mem::take(nodes));
 }

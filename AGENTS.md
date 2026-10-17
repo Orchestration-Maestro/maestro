@@ -119,7 +119,10 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   pretty text). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
   interchange records and depend only on `maestro-request`; `maestro-brand`
   projects a brand pack and depends on text and JSON. Text, JSON, entry, tool and brand exist; add no `common`, `utils` or
-  `shared-types` crate. `maestro-pattern` depends only on text.
+  `shared-types` crate. `maestro-pattern` depends only on text. `maestro-markdown` owns native Markdown
+  parsing, owned source records and mapped extended links, depending only on text.
+  The toolkit consumes it; application re-exports it as `markdown`. Terminal
+  normalization and formatting remain in the toolkit.
   Keep authored paths as strings and convert to `PathBuf` only at I/O.
 - `maestro-dependencies` is the generated, API-free feature unifier (`cargo hakari`),
   dedicated, unpublished and without workspace dependencies. Members declare it only

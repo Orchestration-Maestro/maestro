@@ -2,7 +2,7 @@
 use super::{
     Renderer,
     inline::Style,
-    parse::{Kind, Node},
+    nodes::{Kind, Node},
 };
 
 impl Renderer<'_> {
@@ -36,6 +36,7 @@ impl Renderer<'_> {
     }
     /// Formats code through the supplied highlighter or plain code callback.
     pub(super) fn code_block(&self, text: &str, info: Option<&str>) -> Vec<String> {
+        let text = text.strip_suffix('\n').unwrap_or(text);
         let indent = self.theme.code_block_indent.as_deref().unwrap_or("  ");
         let mut rows = vec![(self.theme.code_block_border)(&format!(
             "```{}",

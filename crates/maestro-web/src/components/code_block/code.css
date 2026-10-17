@@ -1,0 +1,39 @@
+.maestro-code {
+  box-sizing: border-box;
+  border: 1px solid var(--maestro-color-border);
+  border-radius: var(--maestro-radii-panel);
+  overflow: hidden;
+  color: var(--maestro-color-text);
+  font-family: var(--maestro-type-mono-font);
+}
+.maestro-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem 0.75rem;
+}
+.maestro-code-label {
+  font-size: 0.75rem;
+  color: var(--maestro-color-muted);
+}
+.maestro-code .control-slot {
+  display: block;
+  flex-shrink: 0;
+}
+.maestro-code-scroll {
+  overflow: auto;
+  max-height: 24rem;
+}
+.maestro-code-scroll pre {
+  margin: 0;
+  padding: 0 1rem 1rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.maestro-code-scroll code {
+  display: block;
+  font-family: inherit;
+}

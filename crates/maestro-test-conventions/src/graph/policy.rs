@@ -20,6 +20,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-tool", &["maestro-request"]),
     ("maestro-brand", &["maestro-text", "maestro-json"]),
     ("maestro-pattern", &["maestro-text"]),
+    ("maestro-markdown", &["maestro-text"]),
     (
         "maestro-extensions-wasm",
         &[
@@ -48,7 +49,12 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-tooling", &[]),
     (
         "maestro-tui",
-        &["maestro-cancellation", "maestro-text", "maestro-process"],
+        &[
+            "maestro-cancellation",
+            "maestro-text",
+            "maestro-process",
+            "maestro-markdown",
+        ],
     ),
     (
         "maestro-agent",
@@ -150,6 +156,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     (
         "maestro-app",
         &[
+            "maestro-markdown",
             "maestro-models",
             "maestro-agent",
             "maestro-credentials",
@@ -222,6 +229,7 @@ pub(crate) fn uses_utility(name: &str) -> bool {
                 | "maestro-lock"
                 | "maestro-process"
                 | "maestro-pattern"
+                | "maestro-markdown"
                 | "maestro-cancellation"
                 | "maestro-request"
                 | "maestro-extensions-wasm"

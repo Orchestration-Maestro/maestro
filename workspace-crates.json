@@ -16,6 +16,7 @@
   "maestro-models": "core",
   "maestro-packages": "core",
   "maestro-path": "core",
+  "maestro-markdown": "core",
   "maestro-pattern": "core",
   "maestro-process": "core",
   "maestro-request": "core",

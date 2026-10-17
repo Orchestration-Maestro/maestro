@@ -1,7 +1,7 @@
 //! Canvas controls sharing the native reading surface's measured slots.
 use super::{CONTROLS, HeaderAction, HeaderState, HeaderView, SessionDocument, prepare};
 use crate::browser::attachment_content::{
-    self, AttachmentContent, AttachmentSurface, ReadingContent, ReadingPhase, ReadingPlacement,
+    self, ReadingContent, reading::controlled::ControlledReading,
 };
 use std::{io, rc::Rc};
 
@@ -17,68 +17,19 @@ struct Placement<'a> {
     view: HeaderView<'a>,
 }
 impl Placement<'_> {
-    /// Submit one explicit phase to the existing host.
-    fn place(
-        &self,
-        ui: &egui::Ui,
-        rect: egui::Rect,
-        phase: ReadingPhase,
-        holes: Vec<egui::Rect>,
-    ) -> io::Result<()> {
-        self.state
-            .host
-            .present(
-                AttachmentSurface {
-                    id: self.state.id,
-                    rect,
-                    clip_rect: ui.clip_rect(),
-                    pixels_per_point: ui.ctx().pixels_per_point(),
-                    opacity: 1.,
-                    occluders: holes,
-                    content: AttachmentContent::Reading(ReadingPlacement {
-                        content: Rc::clone(&self.content),
-                        phase,
-                        sizes: &self.sizes,
-                        modal: None,
-                        context: ui.ctx(),
-                    }),
-                },
-                self.view.presentation,
-            )
-            .map_err(io::Error::other)
-    }
-    /// Measure once, then use the same snapshot for publication and controls.
+    /// Measure and publish through the shared mixed-content flow.
     fn draw(&mut self, ui: &mut egui::Ui) -> io::Result<Vec<HeaderAction>> {
-        let available = ui.available_size().max(egui::Vec2::ZERO);
-        self.place(
-            ui,
-            egui::Rect::from_min_size(ui.next_widget_position(), available),
-            ReadingPhase::Measure,
-            vec![],
-        )?;
-        let layout = self
-            .state
-            .host
-            .reading_layout(self.state.id)
-            .map_err(io::Error::other)?;
-        let rect = ui
-            .allocate_space(egui::vec2(
-                available.x,
-                layout.height.min(available.y).max(0.),
-            ))
-            .1;
-        let controls: Vec<_> = layout
-            .controls
-            .into_iter()
-            .map(|(id, r)| (id, r.translate(rect.min.to_vec2())))
-            .collect();
-        self.place(
-            ui,
-            rect,
-            ReadingPhase::Publish,
-            controls.iter().map(|(_, r)| *r).collect(),
-        )?;
-        Ok(self.controls(ui, rect, &controls))
+        let layout = ControlledReading {
+            host: self.state.host.as_ref(),
+            id: self.state.id,
+            content: &self.content,
+            sizes: &self.sizes,
+            modal: None,
+            presentation: self.view.presentation,
+        }
+        .draw(ui)
+        .map_err(io::Error::other)?;
+        Ok(self.controls(ui, layout.response.rect, &layout.controls))
     }
     /// Paint full slots while retaining their visible intersections for gesture admission.
     fn controls(

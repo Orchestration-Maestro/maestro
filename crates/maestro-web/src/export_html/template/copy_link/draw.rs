@@ -65,7 +65,7 @@ fn paint(
     view: &CopyLinkView<'_>,
     response: &egui::Response,
 ) -> Result<(), AttachmentUiError> {
-    let copied = state.feedback.borrow().is_some();
+    let copied = state.feedback.copied();
     let hovered = response.hovered() || response.has_focus();
     let opacity =
         ui.ctx()
