@@ -2,6 +2,8 @@
 #![cfg(test)]
 use crate::native_support;
 use crate::sandbox;
+#[cfg(windows)]
+use crate::scratch;
 use maestro_packages::{
     InstalledSourceScope::{Project, User},
     PackageManager, ProgressAction, ProgressCallback, ProgressEventType as Phase, parse_git_url,
