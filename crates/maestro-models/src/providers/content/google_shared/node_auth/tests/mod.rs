@@ -76,7 +76,6 @@ fn client(
         headers,
         authentication: super::super::api_client::Authentication::Native(super::NodeAuth {
             credentials: tokio::sync::OnceCell::new_with(Some(credentials)),
-            ..Default::default()
         }),
     }
 }

@@ -33,7 +33,7 @@ pub(super) fn client_auth(value: &Value, headers: &mut IndexMap<String, String>)
     true
 }
 
-/// Status-only authentication diagnostic; bodies and URLs are never rendered.
+/// Fixed authentication diagnostic; bodies and URLs are never rendered.
 fn status_error(_: u16, _: &str) -> RequestFailure {
     RequestFailure::new(ACQUISITION_FAILED)
 }

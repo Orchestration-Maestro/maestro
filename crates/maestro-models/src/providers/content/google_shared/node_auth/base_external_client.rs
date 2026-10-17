@@ -57,12 +57,11 @@ pub(super) struct Token {
 impl Token {
     /// Reject unusable tokens before caching or impersonation.
     pub(super) fn from_response(
-        response: &TokenResponse,
+        response: TokenResponse,
         now: f64,
     ) -> Result<Self, CredentialsError> {
         let access = response
             .access_token
-            .clone()
             .filter(|value| !value.is_empty())
             .ok_or_else(invalid_token)?;
         Self::new(

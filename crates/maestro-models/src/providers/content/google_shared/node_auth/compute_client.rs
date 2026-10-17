@@ -47,7 +47,7 @@ impl TokenSource for Compute {
         super::metadata::validate_flavor(&response)?;
         let body: TokenResponse = decode(response).await?;
         Ok(Grant {
-            token: Token::from_response(&body, (effects.clock)())?,
+            token: Token::from_response(body, (effects.clock)())?,
             fetch: effects.fetch,
         })
     }

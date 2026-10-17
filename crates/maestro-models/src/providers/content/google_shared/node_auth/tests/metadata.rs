@@ -43,6 +43,15 @@ fn native_metadata_endpoint_chooses_ip_before_host() {
 
 #[test]
 fn metadata_detection_modes_choose_their_required_operations() {
+    if crate::tests::child_process::child_case().is_none() {
+        crate::tests::child_process::rerun(
+            "metadata_detection_modes_choose_their_required_operations",
+            "probe",
+            &[],
+        )
+        .unwrap();
+        return;
+    }
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
@@ -98,8 +107,7 @@ fn metadata_disable_wins_over_residency() {
             fetch,
             ..Default::default()
         };
-        let available = tokio::sync::OnceCell::new();
-        let error = super::run(super::super::metadata::credentials(effects, &available))
+        let error = super::run(super::super::metadata::credentials(effects))
             .err()
             .unwrap();
         assert_eq!(error.message, super::super::NO_CREDENTIALS);
@@ -118,40 +126,81 @@ fn metadata_disable_wins_over_residency() {
 }
 
 #[test]
-fn metadata_check_result_is_kept_once_per_owner() {
+fn metadata_unknown_policy_admits_resident_without_probe() {
     use crate::tests::child_process;
-    const TEST: &str = "metadata_check_result_is_kept_once_per_owner";
+    const TEST: &str = "metadata_unknown_policy_admits_resident_without_probe";
     if child_process::child_case().is_some() {
-        super::run_paused(async {
-            let (fetch, urls) = super::recording(|_| Err(FetchError::Timeout));
-            let effects = super::super::base_external_client::Effects {
-                fetch,
-                ..Default::default()
-            };
-            let available = tokio::sync::OnceCell::new();
-            let first = super::super::metadata::credentials(effects.clone(), &available).await;
-            assert_eq!(first.err().unwrap().message, super::super::NO_CREDENTIALS);
-            let probes = urls.lock().unwrap().len();
-            assert!(probes > 0);
-            let second = super::super::metadata::credentials(effects, &available).await;
-            assert_eq!(second.err().unwrap().message, super::super::NO_CREDENTIALS);
-            assert_eq!(urls.lock().unwrap().len(), probes);
-        });
+        let (fetch, urls) = super::recording(|_| panic!("resident host must not probe"));
+        let effects = super::super::base_external_client::Effects {
+            fetch,
+            ..Default::default()
+        };
+        assert!(super::run(super::super::metadata::credentials(effects)).is_ok());
+        assert!(urls.lock().unwrap().is_empty());
         return;
     }
     child_process::rerun(
         TEST,
-        "negative",
+        "resident",
         &[
-            ("METADATA_SERVER_DETECTION", "ping-only"),
-            ("GCE_METADATA_HOST", "m.invalid"),
+            ("METADATA_SERVER_DETECTION", "unknown"),
+            ("K_SERVICE", "service"),
         ],
     )
     .unwrap();
 }
 
 #[test]
+fn metadata_probe_result_is_kept_once_per_process() {
+    use crate::tests::child_process;
+    const TEST: &str = "metadata_probe_result_is_kept_once_per_process";
+    if let Some(case) = child_process::child_case() {
+        super::run_paused(async {
+            let succeeds = case == "positive";
+            let (fetch, urls) = super::recording(move |_| {
+                succeeds
+                    .then(super::google_response)
+                    .ok_or(FetchError::Timeout)
+            });
+            let effects = super::super::base_external_client::Effects {
+                fetch,
+                ..Default::default()
+            };
+            let first = super::super::metadata::credentials(effects.clone()).await;
+            let expected_error = (!succeeds).then(|| super::super::NO_CREDENTIALS.to_owned());
+            assert_eq!(first.err().map(|error| error.message), expected_error);
+            let probes = urls.lock().unwrap().len();
+            assert!(probes > 0);
+            let second = super::super::metadata::credentials(effects).await;
+            assert_eq!(second.err().map(|error| error.message), expected_error);
+            assert_eq!(urls.lock().unwrap().len(), probes);
+        });
+        return;
+    }
+    for case in ["positive", "negative"] {
+        child_process::rerun(
+            TEST,
+            case,
+            &[
+                ("METADATA_SERVER_DETECTION", "ping-only"),
+                ("GCE_METADATA_HOST", "m.invalid"),
+            ],
+        )
+        .unwrap();
+    }
+}
+
+#[test]
 fn metadata_probe_requires_successful_google_flavor() {
+    if crate::tests::child_process::child_case().is_none() {
+        crate::tests::child_process::rerun(
+            "metadata_probe_requires_successful_google_flavor",
+            "probe",
+            &[],
+        )
+        .unwrap();
+        return;
+    }
     super::run_paused(async {
         for (case, expected) in [(0, true), (1, false), (2, false), (3, false), (4, false)] {
             let (fetch, urls) = super::recording(move |_| match case {
@@ -184,6 +233,15 @@ fn wrong_flavor() -> HttpResponse {
 
 #[test]
 fn metadata_probe_uses_selected_deadline_and_retry_controls() {
+    if crate::tests::child_process::child_case().is_none() {
+        crate::tests::child_process::rerun(
+            "metadata_probe_uses_selected_deadline_and_retry_controls",
+            "probe",
+            &[],
+        )
+        .unwrap();
+        return;
+    }
     let nonresident = metadata(None, false, (None, Some("m.invalid")), 0);
     assert_eq!(
         nonresident.timeout,
@@ -203,6 +261,15 @@ fn metadata_probe_uses_selected_deadline_and_retry_controls() {
 
 #[test]
 fn metadata_default_candidates_accept_the_first_success() {
+    if crate::tests::child_process::child_case().is_none() {
+        crate::tests::child_process::rerun(
+            "metadata_default_candidates_accept_the_first_success",
+            "probe",
+            &[],
+        )
+        .unwrap();
+        return;
+    }
     super::run_paused(async {
         for (primary, secondary, expected) in [
             (true, false, true),

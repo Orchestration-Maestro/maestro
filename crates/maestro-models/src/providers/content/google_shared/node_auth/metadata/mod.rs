@@ -39,6 +39,9 @@ pub(super) fn base_url(
     Ok(url.into())
 }
 
+/// Process-wide probe outcome, including failure; policy and residency bypass this cache.
+static AVAILABLE: tokio::sync::OnceCell<bool> = tokio::sync::OnceCell::const_new();
+
 /// The documented metadata detection control when metadata is not disabled.
 #[derive(Clone, Copy)]
 pub(super) enum Detection {
@@ -184,14 +187,17 @@ pub(super) fn validate_flavor(
 
 /// Resolve and admit the one metadata source after file discovery is exhausted.
 ///
-/// The availability result is stored in `available`, a negative one included.
-pub(super) async fn credentials(
-    effects: Effects,
-    available: &tokio::sync::OnceCell<bool>,
-) -> Result<Credentials, DiagnosticErrorInfo> {
-    let Some(detection) = Detection::parse(env_value("METADATA_SERVER_DETECTION").as_deref())?
-    else {
+/// Only the probe result is retained for the process, a negative one included.
+pub(super) async fn credentials(effects: Effects) -> Result<Credentials, DiagnosticErrorInfo> {
+    let detection = Detection::parse(env_value("METADATA_SERVER_DETECTION").as_deref());
+    if matches!(detection, Ok(None)) {
         return Err(DiagnosticErrorInfo::error(super::NO_CREDENTIALS));
+    }
+    let resident = gcp_residency::detect_gcp_residency();
+    let detection = if resident {
+        Detection::AssumePresent
+    } else {
+        detection?.ok_or_else(|| DiagnosticErrorInfo::error(super::NO_CREDENTIALS))?
     };
     let ip = env_value("GCE_METADATA_IP");
     let host = env_value("GCE_METADATA_HOST");
@@ -205,14 +211,18 @@ pub(super) async fn credentials(
         .unwrap_or(0);
     let metadata = Metadata::new(
         detection,
-        gcp_residency::detect_gcp_residency(),
+        resident,
         (ip.as_deref(), host.as_deref()),
         retries,
     )?;
-    if !*available
-        .get_or_init(|| metadata.admitted(effects.fetch.clone()))
-        .await
-    {
+    let admitted = if matches!(metadata.admission, Admission::Probe) {
+        *AVAILABLE
+            .get_or_init(|| metadata.admitted(effects.fetch.clone()))
+            .await
+    } else {
+        metadata.admitted(effects.fetch.clone()).await
+    };
+    if !admitted {
         return Err(DiagnosticErrorInfo::error(super::NO_CREDENTIALS));
     }
     Ok(Credentials::from(BaseExternalAccountClient::new(

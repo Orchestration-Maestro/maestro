@@ -42,7 +42,7 @@ impl TokenSource for IdentityPoolClient {
         let fetch = (effects.identity)(material.identity)?;
         let response = self.sts.exchange(&material.subject, fetch.clone()).await?;
         Ok(Grant {
-            token: Token::from_response(&response, (effects.clock)())?,
+            token: Token::from_response(response, (effects.clock)())?,
             fetch,
         })
     }

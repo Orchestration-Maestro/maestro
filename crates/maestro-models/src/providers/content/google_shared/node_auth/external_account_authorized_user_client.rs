@@ -75,7 +75,7 @@ impl TokenSource for ExternalAccountAuthorizedUserClient {
             rotated.clone_into(&mut *self.refresh.lock().map_err(|_| invalid_token())?);
         }
         Ok(Grant {
-            token: Token::from_response(&response, (effects.clock)())?,
+            token: Token::from_response(response, (effects.clock)())?,
             fetch: effects.fetch,
         })
     }

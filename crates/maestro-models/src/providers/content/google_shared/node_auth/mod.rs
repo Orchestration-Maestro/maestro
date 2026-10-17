@@ -33,8 +33,6 @@ const NO_CREDENTIALS: &str = "Could not load the default credentials. Browse to 
 pub(in crate::providers::content) struct NodeAuth {
     /// The single lazily resolved credential owner.
     credentials: tokio::sync::OnceCell<Credentials>,
-    /// Whether the metadata server answered, decided at most once for this owner.
-    metadata_available: tokio::sync::OnceCell<bool>,
 }
 
 impl NodeAuth {
@@ -42,7 +40,7 @@ impl NodeAuth {
     pub(super) async fn headers(&self) -> Result<IndexMap<String, String>, DiagnosticErrorInfo> {
         let credentials = self
             .credentials
-            .get_or_try_init(|| google_auth::resolve(&self.metadata_available))
+            .get_or_try_init(google_auth::resolve)
             .await?;
         let resource = credentials
             .headers(hyper::http::Extensions::new())
@@ -89,7 +87,7 @@ fn fixed_error(
     google_cloud_auth::errors::CredentialsError::from_source(transient, Cause { message, status })
 }
 
-/// Safe diagnostic keeping the fixed text, stage and HTTP status found in the cause chain.
+/// Safe diagnostic keeping the fixed text and HTTP status found in the cause chain.
 fn failure(error: &google_cloud_auth::errors::CredentialsError) -> DiagnosticErrorInfo {
     let mut message = ACQUISITION_FAILED;
     let mut status = None;

@@ -28,14 +28,12 @@ fn well_known() -> Option<String> {
 }
 
 /// Resolve only the selected source; a selected-file failure never falls through.
-pub(super) async fn resolve(
-    metadata_available: &tokio::sync::OnceCell<bool>,
-) -> Result<Credentials, DiagnosticErrorInfo> {
+pub(super) async fn resolve() -> Result<Credentials, DiagnosticErrorInfo> {
     let selected = env_value("GOOGLE_APPLICATION_CREDENTIALS")
         .or_else(|| env_value("google_application_credentials"));
     let path = selected.or_else(|| well_known().filter(|path| std::path::Path::new(path).exists()));
     let Some(path) = path else {
-        return super::metadata::credentials(Effects::default(), metadata_available).await;
+        return super::metadata::credentials(Effects::default()).await;
     };
     let path = std::fs::canonicalize(path).map_err(|_| file_error())?;
     if !path.is_file() {
