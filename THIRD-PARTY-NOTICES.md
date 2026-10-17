@@ -697,3 +697,20 @@ SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+## Browser author fonts and tools
+
+Shared whole fonts in `assets/brand/fonts/` retain their original SIL Open Font
+License 1.1 notices:
+
+- Barlow Regular: [Barlow notice](assets/brand/fonts/barlow-OFL.txt).
+- Barlow Condensed Semibold/Bold: [Barlow Condensed notice](assets/brand/fonts/barlowcondensed-OFL.txt).
+- JetBrains Mono Regular v2.304: [JetBrains Mono notice](assets/brand/fonts/jetbrainsmono-official-OFL.txt).
+- Space Grotesk variable: [Space Grotesk notice](assets/brand/fonts/spacegrotesk-OFL.txt).
+- Noto Sans Symbols 2 Regular: [Noto notice](assets/brand/fonts/notosanssymbols2-OFL.txt).
+
+The external author binaries are not linked product dependencies. Trunk's
+lockfree-object-pool 0.1.6 retains its
+[Boost Software License 1.0 notice](docs/licenses/author-tools/lockfree-object-pool.txt).
+Versions and licence choices are recorded in the
+[repository-tooling library guide](docs/libraries/repository-tooling.md#external-browser-author-tools).

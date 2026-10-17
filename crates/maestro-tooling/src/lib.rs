@@ -16,6 +16,8 @@ pub mod run_source;
 /// Run explicitly credential-free tests.
 pub mod run_tests;
 
+/// Locked browser-author preparation and native dispatch.
+mod browser_author;
 /// Filesystem watching and Cargo compilation dispatch.
 mod watch;
 
@@ -60,13 +62,14 @@ pub(crate) const CREDENTIALS: &[&str] = &[
 /// Dispatch a development command using the supplied Cargo executable and checkout.
 ///
 /// # Errors
-/// Returns native process and filesystem failures.
+/// Returns command, configuration and filesystem failures.
 pub fn run(args: &[OsString], cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     let (name, args) = args
         .split_first()
         .ok_or_else(|| io::Error::other("missing development command"))?;
     match name.to_str() {
         Some("asset-output") => asset_output(args, cargo),
+        Some("browser-author") => browser_author::run(args, cargo, checkout),
         Some("clean-assets") => {
             for owner in ["app", "binary"] {
                 let path = asset_directory(owner, cargo)?;
@@ -196,19 +199,27 @@ fn browser_build(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
 
 /// Find the composition-root manifest in the checkout's Cargo metadata.
 fn binary_manifest(cargo: &Path, checkout: &Path) -> io::Result<std::path::PathBuf> {
-    let metadata = cargo_metadata::MetadataCommand::new()
-        .cargo_path(cargo)
-        .manifest_path(checkout.join("Cargo.toml"))
-        .no_deps()
-        .other_options(vec!["--locked".into()])
-        .exec()
-        .map_err(io::Error::other)?;
+    let metadata = locked_metadata(cargo, checkout)?;
     metadata
         .packages
         .into_iter()
         .find(|package| package.name.as_str() == "maestro")
         .map(|package| package.manifest_path.into_std_path_buf())
         .ok_or_else(|| io::Error::other("missing maestro binary package"))
+}
+
+/// Read locked root metadata with dependency packages omitted.
+pub(crate) fn locked_metadata(
+    cargo: &Path,
+    checkout: &Path,
+) -> io::Result<cargo_metadata::Metadata> {
+    cargo_metadata::MetadataCommand::new()
+        .cargo_path(cargo)
+        .manifest_path(checkout.join("Cargo.toml"))
+        .no_deps()
+        .other_options(vec!["--locked".into()])
+        .exec()
+        .map_err(io::Error::other)
 }
 
 /// Read a required path argument or name the missing parameter.

@@ -1,3 +1,4 @@
+additional_locked_manifests = ["crates/maestro-tooling/tests/fixtures/browser_author/Cargo.toml"]
 wasm_crates = ["maestro-agent", "maestro-app", "maestro-brand", "maestro-cancellation", "maestro-catalog", "maestro-chat", "maestro-credentials", "maestro-entry", "maestro-export", "maestro-extensions", "maestro-json", "maestro-lock", "maestro-models", "maestro-packages", "maestro-path", "maestro-pattern", "maestro-request", "maestro-resources", "maestro-session", "maestro-settings", "maestro-text", "maestro-theme", "maestro-tool", "maestro-tools", "maestro-tui", "maestro-watch", "maestro-web"]
 test_tools = true
 reserved_ports = [53692, 1455]

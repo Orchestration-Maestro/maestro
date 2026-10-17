@@ -126,6 +126,81 @@ checksum = "sha256:a227701b8551c35a9931d9f6da75503cf86d88e182d71fb849a70864c5d57
 url = "https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-x86_64-pc-windows-msvc.zip"
 url_api = "https://api.github.com/repos/sharkdp/fd/releases/assets/530482901"
 
+[[tools."github:WebAssembly/binaryen"]]
+version = "133"
+backend = "github:WebAssembly/binaryen"
+specifiers = ["133"]
+
+[tools."github:WebAssembly/binaryen".options]
+matching = "x86_64-linux"
+version_prefix = "version_"
+
+[tools."github:WebAssembly/binaryen"."platforms.linux-x64"]
+checksum = "sha256:2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489"
+url = "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz"
+url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580050094"
+
+[tools."github:WebAssembly/binaryen"."platforms.linux-x64-musl"]
+checksum = "sha256:2dc9c7813f5375db93d96ead4b78222fcc3e2677bbb832297af4797782a37489"
+url = "https://github.com/WebAssembly/binaryen/releases/download/version_133/binaryen-version_133-x86_64-linux.tar.gz"
+url_api = "https://api.github.com/repos/WebAssembly/binaryen/releases/assets/580050094"
+
+[[tools."github:svenstaro/miniserve"]]
+version = "0.35.0"
+backend = "github:svenstaro/miniserve"
+specifiers = ["0.35.0"]
+
+[tools."github:svenstaro/miniserve".options]
+matching = "x86_64-unknown-linux-musl"
+
+[tools."github:svenstaro/miniserve"."platforms.linux-x64"]
+checksum = "sha256:c630ee030d5d9d83c88c5cc72f43ae215b0c214d64fd7afc92244fe369af2964"
+url = "https://github.com/svenstaro/miniserve/releases/download/v0.35.0/miniserve-0.35.0-x86_64-unknown-linux-musl"
+url_api = "https://api.github.com/repos/svenstaro/miniserve/releases/assets/391553375"
+
+[tools."github:svenstaro/miniserve"."platforms.linux-x64-musl"]
+checksum = "sha256:c630ee030d5d9d83c88c5cc72f43ae215b0c214d64fd7afc92244fe369af2964"
+url = "https://github.com/svenstaro/miniserve/releases/download/v0.35.0/miniserve-0.35.0-x86_64-unknown-linux-musl"
+url_api = "https://api.github.com/repos/svenstaro/miniserve/releases/assets/391553375"
+
+[[tools."github:trunk-rs/trunk"]]
+version = "0.21.14"
+backend = "github:trunk-rs/trunk"
+specifiers = ["0.21.14"]
+
+[tools."github:trunk-rs/trunk".options]
+matching = "x86_64-unknown-linux-musl"
+
+[tools."github:trunk-rs/trunk"."platforms.linux-x64"]
+checksum = "sha256:a67f4054b249fe9acc5fabc25de1aebf19783aca3ad6ff64bf34d7da44d0ea20"
+url = "https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/trunk-rs/trunk/releases/assets/252890638"
+
+[tools."github:trunk-rs/trunk"."platforms.linux-x64-musl"]
+checksum = "sha256:a67f4054b249fe9acc5fabc25de1aebf19783aca3ad6ff64bf34d7da44d0ea20"
+url = "https://github.com/trunk-rs/trunk/releases/download/v0.21.14/trunk-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/trunk-rs/trunk/releases/assets/252890638"
+
+[[tools."github:wasm-bindgen/wasm-bindgen"]]
+version = "0.2.129"
+backend = "github:wasm-bindgen/wasm-bindgen"
+specifiers = ["0.2.129"]
+
+[tools."github:wasm-bindgen/wasm-bindgen".options]
+matching = "x86_64-unknown-linux-musl"
+
+[tools."github:wasm-bindgen/wasm-bindgen"."platforms.linux-x64"]
+checksum = "sha256:82d12bb940e2d4e72e0d5605387fc1b8ca179044e012b620f0ce4e7440e8320e"
+url = "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/wasm-bindgen/wasm-bindgen/releases/assets/587769529"
+provenance = "github-attestations"
+
+[tools."github:wasm-bindgen/wasm-bindgen"."platforms.linux-x64-musl"]
+checksum = "sha256:82d12bb940e2d4e72e0d5605387fc1b8ca179044e012b620f0ce4e7440e8320e"
+url = "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-unknown-linux-musl.tar.gz"
+url_api = "https://api.github.com/repos/wasm-bindgen/wasm-bindgen/releases/assets/587769529"
+provenance = "github-attestations"
+
 [[tools.just]]
 version = "1.58.0"
 backend = "aqua:casey/just"

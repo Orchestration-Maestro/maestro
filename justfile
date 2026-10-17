@@ -129,12 +129,17 @@ app-test *args:
 # Prepare app outputs without publication or root checks.
 app-prepublish: app-clean app-build
 
-# Watch every delivered owner, retaining compiler output.
-dev:
+# Watch existing Rust owners through the native Cargo watch graph.
+native-dev:
     cargo run --quiet --locked -p maestro-tooling --bin development -- watch build --workspace --locked
 
-# Select the model compiler without regeneration or asset copying.
-dev-compile: models-dev
+# Watch every delivered owner through the existing native graphs.
+[parallel]
+dev: native-dev browser-dev
+
+# Select compiler watches without starting an example server.
+[parallel]
+dev-compile: models-dev browser-dev-compile
 
 # Select the model compiler only.
 models-dev-compile: models-dev
@@ -183,3 +188,62 @@ extension-author-component:
 # Compile the real browser entry when its owner has supplied it.
 check-browser-smoke:
     cargo run --quiet --locked -p maestro-tooling --bin development -- check-browser-smoke
+
+# Remove only the prepared browser library output.
+browser-clean:
+    trunk clean --config {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Trunk.json")}} --dist {{quote(justfile_directory() / "target/maestro-browser/library")}}
+
+# Prepare the isolated browser author library through native tools.
+browser-library-build pack=(justfile_directory() / "assets/brand/brand.json") mode="dark" *args:
+    shift 2; just _browser-build library {{quote(pack)}} {{quote(mode)}} "$@"
+
+# Watch shared browser inputs and serve the editable example.
+browser-dev pack=(justfile_directory() / "assets/brand/brand.json") mode="dark" *args:
+    shift 2; just _browser-watch serve {{quote(pack)}} {{quote(mode)}} --address 127.0.0.1 "$@"
+
+# Watch browser Rust and stylesheet inputs without a server.
+browser-dev-compile pack=(justfile_directory() / "assets/brand/brand.json") mode="dark" *args:
+    shift 2; just _browser-watch watch {{quote(pack)}} {{quote(mode)}} "$@"
+
+# Format and strictly check the delivered browser library and author fixture.
+browser-check pack=(justfile_directory() / "assets/brand/brand.json") mode="dark":
+    cargo run --quiet --locked -p maestro-tooling --bin development -- browser-author check {{quote(pack)}} {{quote(mode)}}
+
+# Type-check shared example declarations without emitting a distribution.
+browser-example-check pack=(justfile_directory() / "assets/brand/brand.json") mode="dark":
+    cargo run --quiet --locked -p maestro-tooling --bin development -- browser-author example-check {{quote(pack)}} {{quote(mode)}}
+
+# Serve the example through the single shared browser watch graph.
+browser-example-dev pack=(justfile_directory() / "assets/brand/brand.json") mode="dark" *args:
+    shift 2; just browser-dev {{quote(pack)}} {{quote(mode)}} "$@"
+
+# Prepare the example with the same locked author inputs as the library.
+browser-example-build pack=(justfile_directory() / "assets/brand/brand.json") mode="dark" *args:
+    shift 2; just _browser-build example {{quote(pack)}} {{quote(mode)}} "$@"
+
+# Serve prepared example bytes without invoking author compilation.
+browser-example-preview *args:
+    miniserve {{quote(justfile_directory() / "target/maestro-browser/example")}} --interfaces 127.0.0.1 --index index.html --spa "$@"
+
+# Remove only the prepared browser example output.
+browser-example-clean:
+    trunk clean --config {{quote(justfile_directory() / "crates/maestro-tooling/tests/fixtures/browser_author/Trunk.json")}} --dist {{quote(justfile_directory() / "target/maestro-browser/example")}}
+
+# Retain source locations and declarations without an optimizer pass.
+browser-debug-build pack=(justfile_directory() / "assets/brand/brand.json") mode="dark" *args:
+    shift 2; cargo run --quiet --locked -p maestro-tooling --bin development -- browser-author debug-build {{quote(pack)}} {{quote(mode)}} "$@"
+
+# Caller-owned shared build interface, failing before the next build on error.
+browser-build pack=(justfile_directory() / "assets/brand/brand.json") mode="dark":
+    just browser-library-build {{quote(pack)}} {{quote(mode)}}
+    just browser-example-build {{quote(pack)}} {{quote(mode)}}
+
+# One library operation prepares and dispatches the native author tools.
+[private]
+_browser-build output pack mode *args:
+    shift 3; cargo run --quiet --locked -p maestro-tooling --bin development -- browser-author {{output}}-build {{quote(pack)}} {{quote(mode)}} "$@"
+
+# Trunk owns the only browser watch graph after shared native preparation.
+[private]
+_browser-watch command pack mode *args:
+    shift 3; cargo run --quiet --locked -p maestro-tooling --bin development -- browser-author {{command}} {{quote(pack)}} {{quote(mode)}} "$@"
