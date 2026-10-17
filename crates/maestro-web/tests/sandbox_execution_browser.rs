@@ -986,7 +986,6 @@ pub async fn lifecycle_removal_failures_retain_retryable_native_handles() {
 /// Raw native return kinds survive actual frames and reach the registered tool formatter.
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub async fn execution_retains_native_returns_through_repl_formatting() {
-    use maestro_web::browser::sandbox_value::BrowserSandboxValue;
     begin();
     let sandbox = adapter();
     for row in return_cases() {
@@ -1001,22 +1000,7 @@ pub async fn execution_retains_native_returns_through_repl_formatting() {
         assert_eq!(tool_output(&row.code).await.unwrap(), row.output);
         hidden_released();
     }
-    let message = Rc::new(RefCell::new(None::<BrowserSandboxValue>));
-    let observed = message.clone();
-    let ended = message.clone();
-    let provider: Provider = SharedHandle::new(Probe {
-        observe: Some(Rc::new(move |value| {
-            if tag(value) == "execution-complete" {
-                observed.replace(Some(value.clone()));
-            }
-        })),
-        end: Some(Rc::new(move || {
-            let value = field(ended.borrow().as_ref().unwrap(), "returnValue");
-            js_sys::Reflect::set(&value, &"answer".into(), &2.into()).unwrap();
-            Ok(())
-        })),
-        ..Probe::default()
-    });
+    let provider = terminal_editor("execution-complete", "m.returnValue.answer=2");
     let result = direct(&sandbox, "return {answer:1};", vec![provider.clone()]).await;
     assert_eq!(
         field(&result.return_value.unwrap(), "answer").as_f64(),
