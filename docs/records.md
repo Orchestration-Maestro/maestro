@@ -356,3 +356,10 @@ Remaining appends, names, labels and tree reads follow the same raw-record rule:
 see [appends](sessions/session_manager.md#appends-names-and-branch-summaries) and
 the [tree guide](tree.md). Branch extraction and forking are described in
 [the extraction guide](sessions/session_manager.md#branch-extraction-and-forking).
+
+Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
+Native callers use its default JSON schema through models; guest authoring keeps
+its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
+belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions
+and extension error delivery reuse it; dispatch and lifecycle policy remain with
+their callers. The collection returns removed ownership for release outside guards.

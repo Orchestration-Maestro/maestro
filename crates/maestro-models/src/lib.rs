@@ -118,6 +118,7 @@ pub use providers::json_text::compact_json;
 #[cfg(test)]
 pub mod tests;
 
+pub use maestro_request::tool_info::ToolInfo;
 #[cfg(not(target_arch = "wasm32"))]
 pub use providers::websocket::default_web_socket;
 pub use providers::websocket::{

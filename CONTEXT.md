@@ -213,3 +213,10 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Workspace action:** A declarative command, pane or hook delivered as package content and run by the daemon's command runner.
 - **Multiplexer:** The full-screen frontend attaching to a workspace daemon to show its frames.
 - **Attach / detach:** Connecting a multiplexer client to a daemon, and leaving the daemon running.
+
+Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
+Native callers use its default JSON schema through models; guest authoring keeps
+its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
+belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions
+and extension error delivery reuse it; dispatch and lifecycle policy remain with
+their callers. The collection returns removed ownership for release outside guards.

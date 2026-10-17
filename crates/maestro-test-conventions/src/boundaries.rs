@@ -50,7 +50,7 @@ const DECLARATION_KINDS: &[&str] = &["struct", "enum", "union", "trait", "type",
 /// Declarations and interface-generation macros found in one source.
 struct Records {
     /// Declaration names paired with their source lines.
-    declarations: Vec<(String, usize)>,
+    declarations: Vec<(String, String, usize)>,
     /// Interface-generation macro arguments paired with their source lines.
     inputs: Vec<(usize, proc_macro2::TokenStream)>,
 }
@@ -87,7 +87,7 @@ impl Records {
             return;
         }
         self.declarations
-            .push((name.unraw().to_string(), keyword.span().start().line));
+            .push((name.unraw().to_string(), kind, keyword.span().start().line));
     }
 
     /// Record supported interface-generation macro inputs.
@@ -178,7 +178,7 @@ fn check_declarations(
     records: &Records,
     declarations: &mut BTreeSet<String>,
 ) -> Result<(), String> {
-    for (name, line) in &records.declarations {
+    for (name, kind, line) in &records.declarations {
         let owner = if selector(name) {
             "maestro-chat"
         } else if matches!(
@@ -188,7 +188,8 @@ fn check_declarations(
             "maestro-tools"
         } else if matches!(
             name.as_str(),
-            "SlashCommandInfo"
+            "ToolInfo"
+                | "SlashCommandInfo"
                 | "SlashCommandSource"
                 | "MessageRenderOptions"
                 | "MessageDelivery"
@@ -205,7 +206,11 @@ fn check_declarations(
         let guest_tool = name == "ToolDefinition"
             && member.name == "maestro-extensions-wasm"
             && source.path == member.directory.join("src/types/tools.rs");
-        if member.name != owner && !guest_tool {
+        let guest_metadata = name == "ToolInfo"
+            && kind == "type"
+            && member.name == "maestro-extensions-wasm"
+            && source.path == member.directory.join("src/types/actions.rs");
+        if member.name != owner && !guest_tool && !guest_metadata {
             return Err(format!(
                 "{}:{line}: {name} declaration belongs to {owner}, not {}",
                 source.path.display(),
