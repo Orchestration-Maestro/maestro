@@ -43,3 +43,15 @@ The parser's dependency closure uses MIT or Apache-2.0 where offered, with
 BSD-3-Clause for encoding_rs, Unicode-3.0 for unicode-ident and Zlib for zlib-rs.
 Its ZIP and XML dependencies are implementation details; no additional direct
 ZIP/XML dependency or optional date feature is requested.
+
+## Local parser patch
+
+The published calamine 0.36.1 source is retained in
+[vendor/calamine](../../vendor/calamine), outside workspace membership, under
+its [MIT licence](../../vendor/calamine/LICENSE-MIT.md). The published archive's
+SHA-256 is `5fa68281b1a76b54a62156474adb06bb380a67e07dd60656e3217152b42183f3`.
+The root crates-io patch changes only the ZIP requirement to `=9.0.3`
+(defaults off, `deflate`) and propagates fallible archive names through the
+existing path cache and XLSX/XLSB constructors, including its unit-test setup.
+No name is skipped or decoded with a fallback, and no workbook metadata policy
+changes. The original manifest and source revision metadata remain alongside it.

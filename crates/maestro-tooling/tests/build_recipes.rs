@@ -836,14 +836,7 @@ fn prepare_tooling_owner(workspace: &Workspace) {
     let source = Path::new(env!("CARGO_MANIFEST_DIR"));
     let root = workspace.0.join("crates/maestro-tooling");
     copy_tree(&source.join("src"), &root.join("src"));
-    copy_tree(
-        &source.join("../../vendor/yaml-rust2"),
-        &workspace.0.join("vendor/yaml-rust2"),
-    );
-    copy_tree(
-        &source.join("../../vendor/hayro-interpret"),
-        &workspace.0.join("vendor/hayro-interpret"),
-    );
+    copy_patched_sources(&source.join("../.."), &workspace.0);
     let main = root.join("src/bin/development.rs");
     let contents = fs::read_to_string(&main).unwrap().replace(
         "fn main() -> std::process::ExitCode {",
@@ -876,6 +869,58 @@ fn prepare_tooling_owner(workspace: &Workspace) {
             .unwrap()
             .success()
     );
+}
+
+/// Copy local dependency patches from the source manifest into a build fixture.
+fn copy_patched_sources(source: &Path, destination: &Path) {
+    let manifest: toml::Table = fs::read_to_string(source.join("Cargo.toml"))
+        .unwrap()
+        .parse()
+        .unwrap();
+    for registry in manifest["patch"].as_table().unwrap().values() {
+        for patch in registry.as_table().unwrap().values() {
+            if let Some(path) = patch.get("path").and_then(toml::Value::as_str) {
+                copy_tree(&source.join(path), &destination.join(path));
+            }
+        }
+    }
+}
+
+#[test]
+fn patched_sources_follow_manifest_paths() {
+    let source = Workspace::new();
+    let destination = Workspace::new();
+    fs::write(
+        source.0.join("Cargo.toml"),
+        r#"
+[patch.crates-io]
+first = { path = "vendor/alpha" }
+remote = { git = "https://example.invalid/remote" }
+[patch."https://example.invalid/registry"]
+second = { path = "local/beta" }
+"#,
+    )
+    .unwrap();
+    for (path, bytes) in [
+        ("vendor/alpha/nested/input", b"first".as_slice()),
+        ("local/beta/nested/input", b"second".as_slice()),
+        ("unrelated/nested/input", b"excluded".as_slice()),
+    ] {
+        let file = source.0.join(path);
+        fs::create_dir_all(file.parent().unwrap()).unwrap();
+        fs::write(file, bytes).unwrap();
+    }
+    copy_patched_sources(&source.0, &destination.0);
+    assert_eq!(
+        fs::read(destination.0.join("vendor/alpha/nested/input")).unwrap(),
+        b"first"
+    );
+    assert_eq!(
+        fs::read(destination.0.join("local/beta/nested/input")).unwrap(),
+        b"second"
+    );
+    assert!(!destination.0.join("unrelated").exists());
+    assert!(!destination.0.join("remote").exists());
 }
 
 fn copy_tree(source: &Path, destination: &Path) {

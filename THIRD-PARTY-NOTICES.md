@@ -644,3 +644,20 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## Spreadsheet parser patch
+
+The published calamine 0.36.1 source is retained in
+[vendor/calamine](vendor/calamine), including its
+[MIT licence and copyright notice](vendor/calamine/LICENSE-MIT.md), original
+manifest and source revision metadata. The source archive from
+[crates.io](https://crates.io/api/v1/crates/calamine/0.36.1/download) has SHA-256
+`5fa68281b1a76b54a62156474adb06bb380a67e07dd60656e3217152b42183f3`.
+Local changes pin ZIP to 9.0.3 and propagate its fallible archive-name API through
+the path cache and both workbook constructors, including the internal test setup.
+No parser feature or workbook projection is changed.
+
+ZIP 9.0.3 uses MIT. Its reused closure retains the MIT/Apache-2.0 alternatives,
+BSD-3-Clause for encoding_rs, Unicode-3.0 for unicode-ident and Zlib for zlib-rs.
+See [spreadsheet library details](docs/libraries/spreadsheet-formats.md) and
+[archive library details](docs/libraries/document-formats.md) for feature choices.

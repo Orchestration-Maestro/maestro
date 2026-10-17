@@ -16,3 +16,6 @@ maestro-dependencies.workspace = true
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+toml = "=1.1.6"

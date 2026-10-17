@@ -6,7 +6,7 @@ share one package reader using these existing lockfile packages on native and br
 
 | Package | Pin | Direct features | License choice |
 |---|---|---|---|
-| zip | 6.0.0 | defaults off; `deflate-flate2` | MIT |
+| zip | 9.0.3 | defaults off; `deflate-flate2` | MIT |
 | indexmap | 2.14.2 | defaults (`std`); ordered package-name identity | MIT |
 | roxmltree | 0.21.1 | defaults off; `std`, `positions` | MIT |
 | url | 2.5.8 | defaults | MIT |
@@ -20,6 +20,13 @@ MIT/Apache-2.0 alternatives. The existing image/png dependency enables flate2's
 Rust backend on both targets; package reading itself adds no zlib or zlib-rs
 feature. The PDF engine below enables zlib-rs through its image decoder. roxmltree
 reuses memchr 2.8.3 and borrows its input rather than requiring a second XML tree.
+
+The shared ZIP closure also enables `deflate`, `deflate-flate2-zlib-rs` and
+`deflate-zopfli` through the spreadsheet parser. It reuses zlib-rs 0.6.8 (Zlib),
+zopfli 0.8.4, bumpalo 3.20.3 and typed-path 0.12.3 (MIT OR Apache-2.0).
+ZIP's macOS/BSD filesystem edge reuses nix 0.31.3 with defaults off and `fs`
+(MIT), bitflags 2.13.2, cfg-if 1.0.5, cfg_aliases 0.2.2 and libc 0.2.190
+(MIT OR Apache-2.0). No other archive codec is requested.
 
 URL resolution retains form_urlencoded 1.2.2, percent-encoding 2.3.2, idna 1.1.0,
 idna_adapter 1.2.2 and ICU 2.3's normalization, properties, collection, locale

@@ -96,9 +96,6 @@ name = "arbitrary"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3bc62ac97cc33321f50863d514c3bc38a453947a8f9e781137e47c7401020aed"
-dependencies = [
- "derive_arbitrary",
-]
 
 [[package]]
 name = "arc-swap"
@@ -821,8 +818,6 @@ dependencies = [
 [[package]]
 name = "calamine"
 version = "0.36.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fa68281b1a76b54a62156474adb06bb380a67e07dd60656e3217152b42183f3"
 dependencies = [
  "atoi_simd",
  "byteorder",
@@ -832,7 +827,7 @@ dependencies = [
  "log",
  "quick-xml",
  "serde",
- "zip 8.6.0",
+ "zip",
 ]
 
 [[package]]
@@ -1323,17 +1318,6 @@ name = "deranged"
 version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7cd812cc2bc1d69d4764bd80df88b4317eaef9e773c75226407d9bc0876b211c"
-
-[[package]]
-name = "derive_arbitrary"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b034bd7d5f032402a2479444dcc6f74e36a03f31854d41680fb240ef682a1ac"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 3.0.6",
-]
 
 [[package]]
 name = "digest"
@@ -2981,7 +2965,7 @@ dependencies = [
  "tokio",
  "url",
  "uuid",
- "zip 6.0.0",
+ "zip",
 ]
 
 [[package]]
@@ -3088,6 +3072,7 @@ dependencies = [
  "log",
  "memchr",
  "mio",
+ "nix",
  "num-integer",
  "num-traits",
  "percent-encoding",
@@ -3122,6 +3107,7 @@ dependencies = [
  "zerofrom",
  "zerotrie",
  "zerovec",
+ "zip",
 ]
 
 [[package]]
@@ -3458,6 +3444,7 @@ dependencies = [
  "maestro-dependencies",
  "serde",
  "serde_json",
+ "toml",
 ]
 
 [[package]]
@@ -3489,7 +3476,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
- "zip 6.0.0",
+ "zip",
 ]
 
 [[package]]
@@ -6963,27 +6950,15 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "6.0.0"
+version = "9.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb2a05c7c36fde6c09b08576c9f7fb4cda705990f73b58fe011abf7dfb24168b"
-dependencies = [
- "arbitrary",
- "crc32fast",
- "flate2",
- "indexmap",
- "memchr",
-]
-
-[[package]]
-name = "zip"
-version = "8.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b"
+checksum = "c2d98561b612a84ae525331a7a094429ef8a5772514ed507ff6db5f54badc971"
 dependencies = [
  "crc32fast",
  "flate2",
  "indexmap",
  "memchr",
+ "nix",
  "typed-path",
  "zopfli",
 ]
