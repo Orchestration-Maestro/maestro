@@ -2,11 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-/// Disposable native histories.
-mod support {
-    pub mod native;
-    pub mod scratch;
-}
+use crate::support;
 use maestro_request::presence::Presence;
 use maestro_session::SessionManager;
 use maestro_session::session_manager::{ReadonlySessionManager, parse_session_entries};
@@ -209,8 +205,9 @@ fn extracted_context_reuses_local_timestamp_conversion() {
         });
     let Some(zone) = zone else {
         for zone in ["America/New_York", "UTC"] {
+            let test = crate::child_process::selector(name).unwrap();
             let output = std::process::Command::new(std::env::current_exe().unwrap())
-                .args(["--exact", name, "--nocapture"])
+                .args(["--exact", &test, "--nocapture"])
                 .env("TZ", zone)
                 .env("MAESTRO_EXTRACTION_CHILD", format!("{name}:{zone}"))
                 .output()
@@ -221,6 +218,7 @@ fn extracted_context_reuses_local_timestamp_conversion() {
                 String::from_utf8_lossy(&output.stdout),
                 String::from_utf8_lossy(&output.stderr)
             );
+            crate::child_process::assert_executed(&output, &test);
         }
         return;
     };

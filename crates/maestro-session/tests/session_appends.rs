@@ -2,12 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-/// Strict fixture replay.
-mod support {
-    pub mod native;
-    pub mod scratch;
-    pub mod session_tree;
-}
+use crate::support;
 use maestro_models::UserContent;
 use maestro_request::presence::Presence;
 use maestro_session::SessionManager;

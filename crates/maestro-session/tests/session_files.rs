@@ -4,11 +4,7 @@
 use maestro_session::session_manager::load_entries_from_file;
 use serde_json::json;
 
-/// Strict fixtures and disposable native directories.
-mod support {
-    pub mod session_files;
-    pub mod value;
-}
+use crate::support;
 use maestro_request::presence::Presence;
 use maestro_session::session_manager::ReadonlySessionManager;
 use maestro_session::session_manager::{find_most_recent_session, get_default_session_dir};
@@ -149,12 +145,11 @@ fn continuation_probe_is_raw_first_line_with_a_512_byte_bound() {
 fn default_directory_encodes_authored_cwd_before_joining() {
     if std::env::var_os("MAESTRO_DIRECTORY_CHILD").is_none() {
         let directory = Directory::new();
+        let test =
+            crate::child_process::selector("default_directory_encodes_authored_cwd_before_joining")
+                .unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args([
-                "--exact",
-                "default_directory_encodes_authored_cwd_before_joining",
-                "--nocapture",
-            ])
+            .args(["--exact", &test, "--nocapture"])
             .current_dir(&directory.path)
             .env("MAESTRO_DIRECTORY_CHILD", "1")
             .output()
@@ -165,6 +160,7 @@ fn default_directory_encodes_authored_cwd_before_joining() {
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
+        crate::child_process::assert_executed(&output, &test);
         return;
     }
     for case in cases("default_directory_encodes_authored_cwd_before_joining") {
@@ -768,8 +764,9 @@ fn removed_cwd_child(name: &str) -> bool {
         return true;
     }
     let directory = Directory::new();
+    let test = crate::child_process::selector(name).unwrap();
     let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", name, "--nocapture"])
+        .args(["--exact", &test, "--nocapture"])
         .env("MAESTRO_REMOVED_CWD_CHILD", "1")
         .env("MAESTRO_REMOVED_CWD_PARENT", directory.text())
         .output()
@@ -780,6 +777,7 @@ fn removed_cwd_child(name: &str) -> bool {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
+    crate::child_process::assert_executed(&output, &test);
     false
 }
 

@@ -2,12 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
-/// Strict fixture replay.
-mod support {
-    pub mod native;
-    pub mod scratch;
-    pub mod session_tree;
-}
+use crate::support;
 use chrono::TimeZone;
 use maestro_request::presence::Presence;
 use maestro_session::SessionManager;
@@ -295,8 +290,9 @@ fn tree_local_dates_use_the_native_local_zone() {
         return;
     }
     for zone in ["UTC", "America/New_York"] {
+        let test = crate::child_process::selector(name).unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", name, "--nocapture"])
+            .args(["--exact", &test, "--nocapture"])
             .env("TZ", zone)
             .env("MAESTRO_TREE_ZONE", zone)
             .output()
@@ -307,6 +303,7 @@ fn tree_local_dates_use_the_native_local_zone() {
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
+        crate::child_process::assert_executed(&output, &test);
     }
 }
 

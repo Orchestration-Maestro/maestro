@@ -1,14 +1,6 @@
 //! Controlled summary generation through registered model adapters.
 #![cfg(test)]
-/// Registered adapter and recorded corpus support.
-mod support {
-    /// Summary operation consumer.
-    pub mod generation;
-    /// Consuming request control assertions.
-    pub mod summary_options;
-    /// Numeric-aware recorded value comparison.
-    pub mod value;
-}
+use crate::support;
 #[test]
 fn initial_prompt_preserves_full_request() {
     support::generation::group("initial_prompt_preserves_full_request");

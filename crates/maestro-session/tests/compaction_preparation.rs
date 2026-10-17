@@ -1,12 +1,6 @@
 //! Compaction preparation through the public session interface.
 #![cfg(test)]
-/// Recorded operation support.
-mod support {
-    /// Compaction corpus consumer.
-    pub mod compaction_cases;
-    /// Complete numeric comparison.
-    pub mod value;
-}
+use crate::support;
 #[test]
 fn compaction_defaults_match_supplied_policy() {
     support::compaction_cases::group("defaults");

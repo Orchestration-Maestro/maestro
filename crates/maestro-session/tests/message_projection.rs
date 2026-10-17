@@ -89,13 +89,15 @@ fn in_timezone(name: &str, timezone: &str) -> bool {
     if std::env::var("MAESTRO_DATE_CHILD").as_deref() == Ok(name) {
         return true;
     }
-    let status = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", name, "--nocapture"])
+    let test = crate::child_process::selector(name).unwrap();
+    let output = std::process::Command::new(std::env::current_exe().unwrap())
+        .args(["--exact", &test, "--nocapture"])
         .env("TZ", timezone)
         .env("MAESTRO_DATE_CHILD", name)
-        .status()
+        .output()
         .unwrap();
-    assert!(status.success());
+    assert!(output.status.success());
+    crate::child_process::assert_executed(&output, &test);
     false
 }
 
@@ -378,9 +380,6 @@ fn conversion_observes_changes_through_retained_inputs() {
     }
 }
 
-#[path = "../../maestro-catalog/tests/support/subprocess.rs"]
-mod subprocess;
-
 /// Recorded calendar parsing across isolated local time zones.
 #[test]
 fn parse_timestamp_millis_preserves_native_date_forms() {
@@ -404,8 +403,11 @@ fn parse_timestamp_millis_preserves_native_date_forms() {
     }
     if std::env::var_os("MAESTRO_DYNAMIC_CHILD").is_none() {
         for tz in ["UTC", "America/New_York", "Asia/Kathmandu"] {
-            subprocess::run_child(
-                "parse_timestamp_millis_preserves_native_date_forms",
+            crate::subprocess::run_child(
+                &crate::child_process::selector(
+                    "parse_timestamp_millis_preserves_native_date_forms",
+                )
+                .unwrap(),
                 &[("TZ", Some(tz))],
             );
         }

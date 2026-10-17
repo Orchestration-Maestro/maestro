@@ -1,11 +1,7 @@
 //! Memory-history operations through the public owner.
 #![cfg(test)]
 
-/// Recorded public operation support.
-mod support {
-    /// Memory-history corpus consumer.
-    pub mod session_history;
-}
+use crate::support;
 #[cfg(unix)]
 use maestro_session::session_manager::ReadonlySessionManager;
 
@@ -16,12 +12,9 @@ fn memory_session_starts_with_current_header() {
         support::session_history::group("memory_session_starts_with_current_header");
         return;
     }
+    let test = crate::child_process::selector("memory_session_starts_with_current_header").unwrap();
     let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            "memory_session_starts_with_current_header",
-            "--nocapture",
-        ])
+        .args(["--exact", &test, "--nocapture"])
         .env("MAESTRO_HISTORY_UTC_CHILD", "1")
         .env("TZ", "America/New_York")
         .output()
@@ -32,6 +25,7 @@ fn memory_session_starts_with_current_header() {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
+    crate::child_process::assert_executed(&output, &test);
 }
 
 #[test]
@@ -157,12 +151,10 @@ fn explicit_cwd_survives_a_missing_process_directory() {
         );
         return;
     }
+    let test = crate::child_process::selector("explicit_cwd_survives_a_missing_process_directory")
+        .unwrap();
     let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            "explicit_cwd_survives_a_missing_process_directory",
-            "--nocapture",
-        ])
+        .args(["--exact", &test, "--nocapture"])
         .env("MAESTRO_HISTORY_CWD_CHILD", "1")
         .output()
         .unwrap();
@@ -172,4 +164,5 @@ fn explicit_cwd_survives_a_missing_process_directory() {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
+    crate::child_process::assert_executed(&output, &test);
 }

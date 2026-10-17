@@ -1,12 +1,6 @@
 //! Shared summary-input formatting through the public interface.
 #![cfg(test)]
-/// Recorded operation support.
-mod support {
-    /// Compaction corpus consumer.
-    pub mod compaction_cases;
-    /// Complete numeric comparison.
-    pub mod value;
-}
+use crate::support;
 #[test]
 fn file_sections_preserve_tags_order_and_separators() {
     support::compaction_cases::group("file_format");

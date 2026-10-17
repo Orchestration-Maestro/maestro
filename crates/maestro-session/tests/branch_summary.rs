@@ -1,16 +1,6 @@
 //! Abandoned branch observations through the session library.
 #![cfg(test)]
-/// Scenario replay support.
-mod support {
-    /// Branch scenarios.
-    pub mod branch_summary;
-    /// Disposable directory.
-    pub mod scratch;
-    /// Consuming request controls.
-    pub mod summary_options;
-    /// Full value comparison.
-    pub mod value;
-}
+use crate::support;
 #[test]
 fn maestro_branch_collection_uses_deepest_common_ancestor() {
     support::branch_summary::group("maestro_branch_collection_uses_deepest_common_ancestor");
