@@ -64,6 +64,9 @@ mod installation_kind;
 mod javascript_execution;
 mod legacy_workbook_support;
 mod legacy_workbooks;
+mod lm_studio_discovery;
+#[cfg(not(target_arch = "wasm32"))]
+mod lm_studio_support;
 #[path = "docx_support/metadata.rs"]
 mod metadata;
 mod model_selector_exports;

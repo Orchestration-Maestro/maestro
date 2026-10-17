@@ -1,7 +1,9 @@
 //! Authenticated downloaded-model discovery through replaceable socket effects.
 #![cfg(not(target_arch = "wasm32"))]
-mod lm_studio_support;
-use lm_studio_support::*;
+use crate::lm_studio_support::{
+    case, connection_failures, empty, failure_phase, group, native, options, replay, run,
+    schema_records,
+};
 
 #[test]
 fn downloaded_models_keep_paths_order_and_fields() {
