@@ -12,9 +12,10 @@ syn's defaults (`derive`, `parsing`, `printing`, `clone-impls`, `proc-macro`).
 matching Unicode tables; the hold lifts when `unicode-properties` publishes
 the newer tables.
 
-Documentation parsing and the toolkit Markdown component use
-`pulldown-cmark =0.13.4` with defaults off (MIT). The shared Markdown parser enables only
-strikethrough and task-list parsing; task markers do not add checkbox rendering.
+Documentation parsing and the shared Markdown parser use
+`pulldown-cmark =0.13.4` with defaults off (MIT). The shared parser enables
+strikethrough, task lists and tables. It retains task markers as data; the
+terminal adapter does not render checkboxes.
 Its additional dependencies are `bitflags =2.13.2` and `unicase =2.10.0`
 (MIT OR Apache-2.0).
 
