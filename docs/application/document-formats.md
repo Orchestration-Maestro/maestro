@@ -336,6 +336,29 @@ Package-to-part composition and preview rendering remain separate from these
 factories; no inherited-style resolution or document rendering occurs in the
 application factories.
 
+## Word numbering and embedded fonts
+
+`maestro_app::browser::docx_preview::numbering::NumberingPart::parse_xml` returns
+ordered raw definitions, concrete references, overrides and nullable picture
+slots, plus an owned concrete level sequence. Each matching concrete instance
+keeps its identifier; ordered level/start overrides affect that instance only.
+Picture references resolve even when their declarations follow the definition.
+Raw records remain separate from the prepared levels. Reference binding uses the
+first immediate abstract-reference child, while raw scalar metadata keeps the last
+write. Numbering property groups reuse the [raw metadata](#owned-word-element-tree)
+and [CSS dispatcher](#word-default-properties-and-conditional-table-styles): raw
+groups replace, CSS accumulates, and `ignore_width` reaches both style maps.
+
+`font_table::FontTablePart::parse_xml` retains nullable font metadata and ordered
+embedded-face references. `WordDocument::load_font` takes the retained font-table
+`Part`, relationship ID and optional key through the existing
+[resource lookup](#word-package-reader). Missing resources return `None` before
+key validation; an existing resource, even an empty one, requires a key or returns
+`DocxError::FontKey` (`Embedded font key is missing`). It returns owned bytes,
+XOR-decoding at most the first 32 bytes with the reversed hexadecimal key and
+leaving the tail unchanged. The archive is not rewritten. These operations do
+not create browser URLs, load fonts into a browser or render a preview.
+
 ## Word stylesheet preparation
 
 The browser library's private stylesheet renderer prepares owned style records

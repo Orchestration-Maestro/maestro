@@ -10,6 +10,8 @@ pub use parser::xml_parser::{
 /// Failure opening an archive or one of its XML parts.
 #[derive(Debug)]
 pub enum DocxError {
+    /// An existing embedded resource has no supplied key.
+    FontKey,
     /// Archive decoding or entry-read failure.
     Archive(String),
     /// XML admission failure with an optional package path.
@@ -23,6 +25,7 @@ pub enum DocxError {
 impl std::fmt::Display for DocxError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::FontKey => f.write_str("Embedded font key is missing"),
             Self::Archive(message) => write!(f, "{message}"),
             Self::Xml { path, message } => {
                 write!(f, "{}: {message}", path.as_deref().unwrap_or("XML"))
@@ -103,3 +106,9 @@ pub use comments::{
     CommentsExtended, CommentsExtendedPart, CommentsPart, WmlComment, WmlCommentRangeEnd,
     WmlCommentRangeStart, WmlCommentReference,
 };
+
+/// Font declarations and embedded resource loading.
+pub mod font_table;
+/// Raw list definitions and concrete preparation.
+pub mod numbering;
+pub use document::dom::{IDomNumbering, NumberingPicBullet};

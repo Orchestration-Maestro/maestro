@@ -45,6 +45,7 @@ mod docx_drawing_records;
 mod docx_formatting;
 mod docx_metadata;
 mod docx_metadata_packages;
+mod docx_numbering_fonts;
 mod docx_packages;
 mod docx_paragraph_properties;
 mod docx_parts;
@@ -55,6 +56,8 @@ mod docx_values;
 mod docx_xml;
 mod extension_context_exports;
 mod extension_ui_exports;
+#[path = "docx_support/font_resources.rs"]
+mod font_resources;
 mod footer_cwd_identity;
 mod footer_metadata;
 #[path = "support/mod.rs"]
@@ -75,6 +78,8 @@ mod model_selector_exports;
 #[cfg(unix)]
 #[path = "support/native.rs"]
 mod native;
+#[path = "docx_support/numbering.rs"]
+mod numbering_observation;
 mod output_routing;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "support/package_fixtures.rs"]
