@@ -37,8 +37,10 @@ mod time_limits;
 /// allowed. This scan does not expand macros, infer receiver types, resolve
 /// arbitrary re-exports/function values or evaluate compound configurations.
 ///
-/// Migrated integration-test roots are checked structurally for one runnable
-/// target and unconditional out-of-line declarations of top-level test files.
+/// Members whose manifest sets `autotests = false` or declares an `integration`
+/// test target have their integration-test roots checked structurally for one
+/// runnable target and unconditional out-of-line declarations of top-level test
+/// files.
 ///
 /// Reads workspace manifests and Rust files, invoking Cargo and the compiler
 /// for metadata. Emits no output. Legal included fragments are counted without

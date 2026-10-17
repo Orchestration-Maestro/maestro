@@ -1,46 +1,50 @@
 //! Structural packaging of integration tests in migrated members.
 
+use std::path::Path;
+
 use crate::source::{Member, read_manifest};
 
-/// Check migrated members with top-level integration sources.
+/// Check every member whose manifest opts into one integration-test program.
 pub(super) fn check(members: &[Member]) -> Result<(), String> {
-    for member in members.iter().filter(|member| {
-        matches!(
-            member.name.as_str(),
-            "maestro-agent"
-                | "maestro-app"
-                | "maestro-catalog"
-                | "maestro-chat"
-                | "maestro-models"
-                | "maestro-packages"
-                | "maestro-resources"
-                | "maestro-session"
-                | "maestro-test-conventions"
-                | "maestro-text"
-                | "maestro-theme"
-                | "maestro-tools"
-                | "maestro-tui"
-        )
-    }) {
-        check_member(member)?;
+    for member in members {
+        let manifest_path = member.directory.join("Cargo.toml");
+        let manifest = read_manifest(&manifest_path)?;
+        if autotests_disabled(&manifest) || declares_integration_target(&manifest) {
+            check_member(member, &manifest_path, &manifest)?;
+        }
     }
     Ok(())
 }
 
+/// Whether the package turns off automatic integration-test discovery.
+fn autotests_disabled(manifest: &toml::Table) -> bool {
+    manifest
+        .get("package")
+        .and_then(|package| package.get("autotests"))
+        .and_then(toml::Value::as_bool)
+        == Some(false)
+}
+
+/// Whether any explicit test target is named `integration`.
+fn declares_integration_target(manifest: &toml::Table) -> bool {
+    manifest
+        .get("test")
+        .and_then(toml::Value::as_array)
+        .is_some_and(|targets| {
+            targets.iter().any(|target| {
+                target.get("name").and_then(toml::Value::as_str) == Some("integration")
+            })
+        })
+}
+
 /// Check the explicit Cargo target and automatic discovery policy.
-fn check_manifest(member: &Member) -> Result<(), String> {
-    let manifest_path = member.directory.join("Cargo.toml");
-    let manifest = read_manifest(&manifest_path)?;
+fn check_manifest(manifest_path: &Path, manifest: &toml::Table) -> Result<(), String> {
     let targets = manifest.get("test").and_then(toml::Value::as_array);
     let target = targets
         .filter(|targets| targets.len() == 1)
         .and_then(|targets| targets.first())
         .and_then(toml::Value::as_table);
-    if manifest
-        .get("package")
-        .and_then(|package| package.get("autotests"))
-        .and_then(toml::Value::as_bool)
-        != Some(false)
+    if !autotests_disabled(manifest)
         || target.is_none_or(|target| {
             target.get("name").and_then(toml::Value::as_str) != Some("integration")
                 || target.get("path").and_then(toml::Value::as_str) != Some("tests/integration.rs")
@@ -61,7 +65,11 @@ fn check_manifest(member: &Member) -> Result<(), String> {
 }
 
 /// With top-level integration sources, require one runnable target and one declaration per source.
-fn check_member(member: &Member) -> Result<(), String> {
+fn check_member(
+    member: &Member,
+    manifest_path: &Path,
+    manifest: &toml::Table,
+) -> Result<(), String> {
     let tests = member.directory.join("tests");
     let files: Vec<_> = member
         .sources
@@ -71,7 +79,7 @@ fn check_member(member: &Member) -> Result<(), String> {
     if files.is_empty() {
         return Ok(());
     }
-    check_manifest(member)?;
+    check_manifest(manifest_path, manifest)?;
     let root_path = tests.join("integration.rs");
     let root = files
         .iter()

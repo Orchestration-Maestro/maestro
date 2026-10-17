@@ -6,38 +6,30 @@ use crate::support;
 use maestro_test_conventions::check_workspace;
 use support::Workspace;
 
-const OWNERS: [&str; 5] = [
-    "maestro-catalog",
-    "maestro-models",
-    "maestro-tui",
-    "maestro-tools",
-    "maestro-agent",
-];
+const OWNER: &str = "maestro-path";
 
-fn workspace(owner: &str) -> Workspace {
+fn workspace() -> Workspace {
     let workspace = Workspace::new();
-    workspace.foundation(&[owner]);
-    let root = workspace.root.join("crates").join(owner);
+    workspace.foundation(&[OWNER]);
+    let root = workspace.root.join("crates").join(OWNER);
     std::fs::create_dir_all(root.join("tests")).unwrap();
-    workspace.integration(owner);
+    workspace.integration(OWNER);
     workspace
 }
 
 #[test]
 fn unlisted_test_file_is_rejected() {
-    for owner in OWNERS {
-        let workspace = workspace(owner);
-        let tests = workspace.root.join(format!("crates/{owner}/tests"));
-        std::fs::write(tests.join("added.rs"), "").unwrap();
-        let error = check_workspace(&workspace.root).unwrap_err();
-        assert!(error.contains("added.rs"), "{error}");
-        std::fs::write(tests.join("integration.rs"), "mod added;\n").unwrap();
-        check_workspace(&workspace.root).unwrap();
-    }
+    let workspace = workspace();
+    let tests = workspace.root.join(format!("crates/{OWNER}/tests"));
+    std::fs::write(tests.join("added.rs"), "").unwrap();
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(error.contains("added.rs"), "{error}");
+    std::fs::write(tests.join("integration.rs"), "mod added;\n").unwrap();
+    check_workspace(&workspace.root).unwrap();
 }
 
-fn rewrite(workspace: &Workspace, owner: &str, from: &str, to: &str) {
-    let path = workspace.root.join("crates").join(owner).join("Cargo.toml");
+fn rewrite(workspace: &Workspace, from: &str, to: &str) {
+    let path = workspace.root.join("crates").join(OWNER).join("Cargo.toml");
     let text = std::fs::read_to_string(&path).unwrap();
     assert!(text.contains(from));
     std::fs::write(path, text.replace(from, to)).unwrap();
@@ -45,116 +37,111 @@ fn rewrite(workspace: &Workspace, owner: &str, from: &str, to: &str) {
 
 #[test]
 fn listed_test_files_share_one_target() {
-    for owner in OWNERS {
-        let workspace = workspace(owner);
-        let tests = workspace.root.join(format!("crates/{owner}/tests"));
-        std::fs::create_dir_all(tests.join("support")).unwrap();
-        std::fs::write(tests.join("support/helper.rs"), "").unwrap();
-        std::fs::write(tests.join("case.rs"), "#![cfg(unix)]\n").unwrap();
-        std::fs::write(tests.join("integration.rs"), "mod case;\n").unwrap();
-        check_workspace(&workspace.root).unwrap();
-    }
+    let workspace = workspace();
+    let tests = workspace.root.join(format!("crates/{OWNER}/tests"));
+    std::fs::create_dir_all(tests.join("support")).unwrap();
+    std::fs::write(tests.join("support/helper.rs"), "").unwrap();
+    std::fs::write(tests.join("case.rs"), "#![cfg(unix)]\n").unwrap();
+    std::fs::write(tests.join("integration.rs"), "mod case;\n").unwrap();
+    check_workspace(&workspace.root).unwrap();
 }
 
 #[test]
 fn automatic_test_discovery_is_rejected() {
-    for owner in OWNERS {
-        for replacement in ["", "autotests = true"] {
-            let workspace = workspace(owner);
-            rewrite(&workspace, owner, "autotests = false", replacement);
-            assert!(
-                check_workspace(&workspace.root)
-                    .unwrap_err()
-                    .contains("autotests")
-            );
-        }
-        check_workspace(&workspace(owner).root).unwrap();
+    for replacement in ["", "autotests = true"] {
+        let workspace = workspace();
+        rewrite(&workspace, "autotests = false", replacement);
+        assert!(
+            check_workspace(&workspace.root)
+                .unwrap_err()
+                .contains("autotests")
+        );
     }
+    check_workspace(&workspace().root).unwrap();
+}
+
+#[test]
+fn custom_test_target_without_opt_in_is_unchecked() {
+    let workspace = workspace();
+    rewrite(&workspace, "autotests = false", "");
+    rewrite(&workspace, "name = \"integration\"", "name = \"custom\"");
+    check_workspace(&workspace.root).unwrap();
 }
 
 #[test]
 fn missing_or_extra_test_targets_are_rejected() {
-    for owner in OWNERS {
-        let target = "[[test]]\nname = \"integration\"\npath = \"tests/integration.rs\"";
-        for replacement in [
-            String::new(),
-            format!("{target}\n[[test]]\nname = \"extra\"\npath = \"tests/integration.rs\""),
-        ] {
-            let workspace = workspace(owner);
-            rewrite(&workspace, owner, target, &replacement);
-            assert!(check_workspace(&workspace.root).is_err());
-        }
-        check_workspace(&workspace(owner).root).unwrap();
+    let target = "[[test]]\nname = \"integration\"\npath = \"tests/integration.rs\"";
+    for replacement in [
+        String::new(),
+        format!("{target}\n[[test]]\nname = \"extra\"\npath = \"tests/integration.rs\""),
+    ] {
+        let workspace = workspace();
+        rewrite(&workspace, target, &replacement);
+        assert!(check_workspace(&workspace.root).is_err());
     }
+    check_workspace(&workspace().root).unwrap();
 }
 
 #[test]
 fn nonstandard_test_root_is_rejected() {
-    for owner in OWNERS {
-        for (from, to) in [
-            ("name = \"integration\"", "name = \"other\""),
-            ("tests/integration.rs", "tests/other.rs"),
-        ] {
-            let workspace = workspace(owner);
-            rewrite(&workspace, owner, from, to);
-            assert!(check_workspace(&workspace.root).is_err());
-        }
-        for contents in [None, Some("mod {")] {
-            let workspace = workspace(owner);
-            let root = workspace
-                .root
-                .join(format!("crates/{owner}/tests/integration.rs"));
-            std::fs::write(root.with_file_name("case.rs"), "").unwrap();
-            if let Some(contents) = contents {
-                std::fs::write(&root, contents).unwrap();
-            } else {
-                std::fs::remove_file(&root).unwrap();
-            }
-            assert!(check_workspace(&workspace.root).is_err());
-        }
-        check_workspace(&workspace(owner).root).unwrap();
+    for (from, to) in [
+        ("name = \"integration\"", "name = \"other\""),
+        ("tests/integration.rs", "tests/other.rs"),
+    ] {
+        let workspace = workspace();
+        rewrite(&workspace, from, to);
+        assert!(check_workspace(&workspace.root).is_err());
     }
+    for contents in [None, Some("mod {")] {
+        let workspace = workspace();
+        let root = workspace
+            .root
+            .join(format!("crates/{OWNER}/tests/integration.rs"));
+        std::fs::write(root.with_file_name("case.rs"), "").unwrap();
+        if let Some(contents) = contents {
+            std::fs::write(&root, contents).unwrap();
+        } else {
+            std::fs::remove_file(&root).unwrap();
+        }
+        assert!(check_workspace(&workspace.root).is_err());
+    }
+    check_workspace(&workspace().root).unwrap();
 }
 
 #[test]
 fn nonexecuting_test_target_is_rejected() {
-    for owner in OWNERS {
-        for option in [
-            "harness = false",
-            "test = false",
-            "required-features = [\"gated\"]",
-        ] {
-            let workspace = workspace(owner);
-            rewrite(
-                &workspace,
-                owner,
-                "path = \"tests/integration.rs\"",
-                &format!("path = \"tests/integration.rs\"\n{option}"),
-            );
-            assert!(check_workspace(&workspace.root).is_err());
-        }
-        check_workspace(&workspace(owner).root).unwrap();
+    for option in [
+        "harness = false",
+        "test = false",
+        "required-features = [\"gated\"]",
+    ] {
+        let workspace = workspace();
+        rewrite(
+            &workspace,
+            "path = \"tests/integration.rs\"",
+            &format!("path = \"tests/integration.rs\"\n{option}"),
+        );
+        assert!(check_workspace(&workspace.root).is_err());
     }
+    check_workspace(&workspace().root).unwrap();
 }
 
 #[test]
 fn test_module_decoys_are_rejected() {
-    for owner in OWNERS {
-        for contents in [
-            "// mod case;",
-            "const TEXT: &str = \"mod case;\";",
-            "mod case {}",
-            "#[cfg(unix)] mod case;",
-            "#[path = \"other.rs\"] mod case;",
-            "mod case; mod case;",
-        ] {
-            let workspace = workspace(owner);
-            let tests = workspace.root.join(format!("crates/{owner}/tests"));
-            std::fs::write(tests.join("case.rs"), "").unwrap();
-            std::fs::write(tests.join("integration.rs"), contents).unwrap();
-            let error = check_workspace(&workspace.root).unwrap_err();
-            assert!(error.contains("case.rs"), "{error}");
-        }
+    for contents in [
+        "// mod case;",
+        "const TEXT: &str = \"mod case;\";",
+        "mod case {}",
+        "#[cfg(unix)] mod case;",
+        "#[path = \"other.rs\"] mod case;",
+        "mod case; mod case;",
+    ] {
+        let workspace = workspace();
+        let tests = workspace.root.join(format!("crates/{OWNER}/tests"));
+        std::fs::write(tests.join("case.rs"), "").unwrap();
+        std::fs::write(tests.join("integration.rs"), contents).unwrap();
+        let error = check_workspace(&workspace.root).unwrap_err();
+        assert!(error.contains("case.rs"), "{error}");
     }
 }
 
