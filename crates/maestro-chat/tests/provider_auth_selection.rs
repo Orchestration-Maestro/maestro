@@ -1,26 +1,12 @@
 //! Provider selection through the public terminal component.
 #![cfg(test)]
-#[allow(dead_code, reason = "Only shared keybinding admission is reused.")]
-#[path = "support/keybindings.rs"]
-mod keybindings;
-#[allow(
-    dead_code,
-    reason = "Shared provider witnesses use the controlled runtime."
-)]
-#[path = "../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-mod manual_runtime;
+use crate::keybindings;
+use crate::manual_runtime;
+#[path = "provider_auth_support/mod.rs"]
 mod provider_auth_support;
-#[allow(dead_code, reason = "Only theme publication is reused.")]
-#[path = "../../maestro-theme/tests/published/mod.rs"]
-mod published;
-#[allow(dead_code, reason = "Only controlled writer input delivery is reused.")]
-#[path = "../../maestro-test-terminal/tests/support/recording_terminal.rs"]
-mod recording_terminal;
-#[allow(
-    dead_code,
-    reason = "Each selector consumes its own recorded input subset."
-)]
-mod selector_failure_support;
+use crate::published;
+use crate::recording_terminal;
+use crate::selector_failure_support;
 
 #[test]
 /// Provider panel preserves modes order and duplicates.

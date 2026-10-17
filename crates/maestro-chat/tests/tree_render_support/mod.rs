@@ -1,21 +1,10 @@
 //! Strict whole-frame corpus replay through the public list.
-#[path = "../support/recorded_keys/filter_mode.rs"]
-mod filter_mode;
-#[allow(
-    dead_code,
-    reason = "Only controlled environment and effect observations are used."
-)]
-#[path = "../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-mod manual_runtime;
-#[path = "../message_support/palette.rs"]
-mod palette;
-#[allow(dead_code, reason = "Only publication helpers are shared.")]
-#[path = "../../../maestro-theme/tests/published/mod.rs"]
-mod published;
-#[path = "../support/registry.rs"]
-mod registry;
-#[path = "../support/tree.rs"]
-mod tree;
+use crate::filter_mode;
+use crate::manual_runtime;
+use crate::palette;
+use crate::published;
+use crate::registry;
+use crate::tree;
 use filter_mode::mode;
 use maestro_app::{
     compact_json, format_read_line_range, presentation_data::keybindings::KEYBINDINGS,

@@ -1,6 +1,7 @@
 //! Retained tool rows through their public renderer and component interfaces.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+#[path = "tool_row_support/mod.rs"]
 mod tool_row_support;
 
 #[test]

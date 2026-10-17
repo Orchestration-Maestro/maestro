@@ -1,6 +1,5 @@
 //! Shared selector admission and configurable key publication.
-#[path = "registry.rs"]
-mod registry;
+use crate::registry;
 /// Restores bindings before releasing the transaction admission.
 pub struct BindingsGuard {
     /// Restored first, including assertion unwind.

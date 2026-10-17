@@ -1,5 +1,6 @@
 //! Public borrowed tree rendering.
 #![cfg(test)]
+#[path = "tree_render_support/mod.rs"]
 mod tree_render_support;
 /// Empty filters render their position and badge.
 #[test]

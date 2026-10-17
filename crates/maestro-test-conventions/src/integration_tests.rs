@@ -10,6 +10,7 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
             "maestro-agent"
                 | "maestro-app"
                 | "maestro-catalog"
+                | "maestro-chat"
                 | "maestro-models"
                 | "maestro-packages"
                 | "maestro-resources"

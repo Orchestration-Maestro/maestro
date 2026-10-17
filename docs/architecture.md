@@ -305,7 +305,7 @@ application dependency passes. Other listed frontend edges are permitted, not
 required, and are declared only when used. Source failures include the offending
 file and line.
 
-Integration tests in `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-models`, `maestro-packages`, `maestro-resources`, `maestro-session`, `maestro-test-conventions`, `maestro-text`, `maestro-theme`, `maestro-tools` and `maestro-tui` share `tests/integration.rs`. Add new
+Integration tests in `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`, `maestro-models`, `maestro-packages`, `maestro-resources`, `maestro-session`, `maestro-test-conventions`, `maestro-text`, `maestro-theme`, `maestro-tools` and `maestro-tui` share `tests/integration.rs`. Add new
 `tests/*.rs` files as unconditional out-of-line modules in that root; support
 modules stay in their existing directories. When top-level integration-test
 sources exist, the conventions check requires `autotests = false` and one

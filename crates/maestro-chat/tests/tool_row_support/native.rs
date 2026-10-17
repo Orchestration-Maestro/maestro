@@ -1,10 +1,6 @@
 //! Real native edit reads composed with the public retained row and differential writer.
-#[allow(dead_code)]
-#[path = "../../../maestro-theme/tests/live/mod.rs"]
-mod live;
-#[allow(dead_code)]
-#[path = "../../../maestro-test-terminal/tests/support/recording_terminal.rs"]
-mod recording_terminal;
+use crate::live;
+use crate::recording_terminal;
 use maestro_chat::{ToolExecutionComponent, ToolExecutionResult};
 use maestro_tui::{Component, TUI, Text};
 use serde::Deserialize;

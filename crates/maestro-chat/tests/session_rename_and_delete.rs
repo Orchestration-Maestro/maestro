@@ -1,11 +1,6 @@
 //! Session mutation behavior through retained public picker handles.
 #![cfg(test)]
-#[allow(
-    dead_code,
-    reason = "Shared picker witnesses use separate integration targets."
-)]
-#[path = "support/session_picker.rs"]
-mod session_picker;
+use crate::session_picker_support as session_picker;
 
 #[test]
 fn session_delete_keys_respect_query_ownership() {
@@ -204,5 +199,10 @@ fn session_rename_waits_for_visible_scope_load() {
 #[cfg(target_os = "linux")]
 #[test]
 fn session_native_file_effects_keep_process_and_unlink_failures() {
-    session_picker::session_picker_scopes::mutations::native();
+    session_picker::session_picker_scopes::mutations::native(
+        &crate::child_process::selector(
+            "session_native_file_effects_keep_process_and_unlink_failures",
+        )
+        .unwrap(),
+    );
 }

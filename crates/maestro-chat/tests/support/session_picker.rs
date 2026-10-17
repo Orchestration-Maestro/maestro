@@ -5,12 +5,12 @@ use maestro_tui::tui::InputHandler;
     reason = "The controlled host supports other terminal effects."
 )]
 #[path = "../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-mod manual_runtime;
+pub(crate) mod manual_runtime;
 #[allow(dead_code, reason = "Only theme publication helpers are shared.")]
 #[path = "../../../maestro-theme/tests/published/mod.rs"]
-mod published;
+pub(crate) mod published;
 #[path = "registry.rs"]
-mod registry;
+pub(crate) mod registry;
 use maestro_app::presentation_data::keybindings::KEYBINDINGS;
 use maestro_chat::{
     NameFilter, SessionScope, SessionSelectorHeader, SessionSelectorHeaderOptions, SortMode,

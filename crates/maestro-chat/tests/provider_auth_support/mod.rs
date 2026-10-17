@@ -304,9 +304,10 @@ fn run(expected: serde_json::Value, query: &mut Query, name: &str) {
 }
 /// Isolate environment cases in the existing test executable, waiting for process completion.
 fn child(name: &str, index: usize, env: &BTreeMap<String, String>) {
+    let test = crate::child_process::selector(name).unwrap();
     let output = std::process::Command::new(std::env::current_exe().unwrap())
         .arg("--exact")
-        .arg(name)
+        .arg(&test)
         .arg("--nocapture")
         .env_remove("OPENAI_API_KEY")
         .env_remove("ANTHROPIC_API_KEY")

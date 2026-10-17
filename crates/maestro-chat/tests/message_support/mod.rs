@@ -1,17 +1,14 @@
 //! Strict recorded message constructor and operation replay.
 mod input;
-mod palette;
-#[allow(dead_code, reason = "Only publication helpers are shared.")]
-#[path = "../../../maestro-theme/tests/published/mod.rs"]
-mod published;
+use crate::palette;
+use crate::published;
 mod widget;
+use crate::registry::REGISTRY;
 use input::{Action, Case};
 use maestro_tui::{Component, KeybindingsManager, get_keybindings, set_keybindings};
-use std::{collections::HashSet, rc::Rc, sync::Mutex};
+use std::{collections::HashSet, rc::Rc};
 use widget::Widget;
 
-/// Serializes replacements of the active key registry.
-static REGISTRY: Mutex<()> = Mutex::new(());
 /// Restores the registry even when an assertion fails.
 struct Restore(KeybindingsManager);
 impl Drop for Restore {

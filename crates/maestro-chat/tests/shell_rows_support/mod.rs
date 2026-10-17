@@ -366,8 +366,7 @@ pub fn default_bindings() {
     bindings(&Bindings::default());
 }
 
-/// Single admission owner for registry writes and every consuming display operation.
-static REGISTRY: std::sync::Mutex<()> = std::sync::Mutex::new(());
+use crate::registry::REGISTRY;
 /// Holds registry admission and restores the original registry after cleanup.
 pub struct RegistryGuard {
     /// Serial admission across this executable's witnesses.

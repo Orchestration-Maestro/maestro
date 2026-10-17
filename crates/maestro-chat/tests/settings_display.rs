@@ -1,19 +1,10 @@
 //! Display settings through the retained public settings list.
 #![cfg(test)]
-#[path = "support/keybindings.rs"]
-mod keybindings;
-#[allow(dead_code, reason = "Shared published theme support.")]
-#[path = "../../maestro-theme/tests/published/mod.rs"]
-mod published;
-#[allow(dead_code, reason = "Display queries use no empty constructor record.")]
-#[path = "support/selector.rs"]
-mod selector;
+use crate::keybindings;
+use crate::published;
+#[path = "settings_display_support/mod.rs"]
 mod settings_display_support;
-#[allow(
-    dead_code,
-    reason = "Shared settings corpus owners serve both test targets."
-)]
-mod settings_selection_support;
+use crate::settings_selection_support;
 use maestro_tui::Component;
 use settings_display_support::*;
 use settings_selection_support::*;

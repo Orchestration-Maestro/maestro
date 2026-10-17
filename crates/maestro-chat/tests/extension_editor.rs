@@ -1,27 +1,10 @@
 //! Multiline dialog behavior through public construction, input and child handles.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[allow(dead_code, reason = "Only registry admission is reused.")]
-#[path = "../../maestro-tui/tests/fixtures/input_support/mod.rs"]
-mod input_support;
-#[allow(
-    dead_code,
-    reason = "Shared controlled host exposes additional controls."
-)]
-#[path = "../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-mod manual_runtime;
-#[allow(dead_code, reason = "Only theme publication is reused.")]
-#[path = "../../maestro-theme/tests/published/mod.rs"]
-mod published;
-#[allow(dead_code, reason = "Shared terminal exposes additional controls.")]
-#[path = "../../maestro-test-terminal/tests/support/recording_terminal.rs"]
-mod recording_terminal;
-#[allow(
-    dead_code,
-    reason = "Shared scheduling observer exposes additional controls."
-)]
-#[path = "support/runtime_spy.rs"]
-mod runtime_spy;
+use crate::input_support;
+use crate::published;
+use crate::recording_terminal;
+use crate::runtime_spy;
 use maestro_chat::{ExtensionEditorComponent, ExtensionEditorOptions};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions};
 use maestro_tui::{Component, EditorOptions, Focusable, KeybindingsManager, TUI, TerminalImage};
@@ -322,8 +305,9 @@ fn isolated(name: &str) -> bool {
     let directory =
         std::env::temp_dir().join(format!("maestro-dialog-{}-{name}", std::process::id()));
     std::fs::create_dir(&directory).unwrap();
+    let test = crate::child_process::selector(name).unwrap();
     let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", name, "--nocapture"])
+        .args(["--exact", &test, "--nocapture"])
         .env("MAESTRO_EDITOR_CHILD", name)
         .env("TMPDIR", &directory)
         .env("TEMP", &directory)

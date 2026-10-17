@@ -1,5 +1,6 @@
 //! Recorded transcript frames through public component operations.
 #![cfg(test)]
+#[path = "message_support/mod.rs"]
 mod message_support;
 
 #[test]

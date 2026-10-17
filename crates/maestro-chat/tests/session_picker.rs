@@ -1,7 +1,6 @@
 //! Whole-frame session header and list behavior.
 #![cfg(test)]
-#[path = "support/session_picker.rs"]
-mod session_picker;
+use crate::session_picker_support as session_picker;
 #[test]
 fn session_header_keeps_independent_constructor_policies() {
     session_picker::header_constructor("session_header_keeps_independent_constructor_policies");

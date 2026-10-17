@@ -4,6 +4,7 @@ use maestro_app::SessionTreeNode as InputNode;
 use maestro_chat::components::tree_selector::TreeList;
 use serde_json::json;
 
+#[path = "tree_folding_support/mod.rs"]
 mod tree_folding_support;
 
 /// Replays the complete recorded fold then unfold and jump observations.

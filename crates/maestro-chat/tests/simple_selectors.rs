@@ -1,18 +1,10 @@
 //! Public selector behavior against recorded terminal rows.
 #![cfg(test)]
-#[path = "support/keybindings.rs"]
-mod keybindings;
-#[allow(
-    dead_code,
-    reason = "Shared host exposes controls used by other components."
-)]
-#[path = "../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-mod manual_runtime;
-#[allow(dead_code, reason = "Only theme publication is reused.")]
-#[path = "../../maestro-theme/tests/published/mod.rs"]
-mod published;
-#[path = "support/selector.rs"]
-mod selector;
+use crate::keybindings;
+use crate::manual_runtime;
+use crate::published;
+use crate::selector;
+#[path = "simple_selector_support/mod.rs"]
 mod simple_selector_support;
 use keybindings::bindings;
 use maestro_app::ThinkingLevel;
@@ -111,12 +103,7 @@ fn image_choices_render_and_report_both_boolean_values() {
     }
 }
 
-#[allow(
-    dead_code,
-    reason = "Native theme fixture supplies discovery and custom documents."
-)]
-#[path = "../../maestro-theme/tests/live/mod.rs"]
-mod live;
+use crate::live;
 #[test]
 fn theme_inventory_marks_only_the_current_name() {
     let _bindings = bindings_guard();
@@ -636,9 +623,7 @@ fn empty_message_auto_cancel_uses_one_original_delayed_callback() {
     }
 }
 
-#[allow(dead_code, reason = "Only input delivery is reused.")]
-#[path = "../../maestro-test-terminal/tests/support/recording_terminal.rs"]
-mod recording_terminal;
+use crate::recording_terminal;
 #[test]
 fn selector_focus_handles_outlive_chrome_without_retaining_it() {
     let _bindings = bindings_guard();

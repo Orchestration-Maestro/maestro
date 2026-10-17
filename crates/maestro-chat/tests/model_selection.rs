@@ -1,27 +1,12 @@
 //! Model selection through real catalog, settings and toolkit owners.
 #![cfg(test)]
-#[allow(
-    dead_code,
-    reason = "Shared host controls are reused by other components."
-)]
-#[path = "../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-mod manual_runtime;
-mod model_selector_support;
-#[allow(dead_code, reason = "Only theme publication is reused.")]
-#[path = "../../maestro-theme/tests/published/mod.rs"]
-mod published;
-#[allow(dead_code, reason = "Only controlled terminal construction is reused.")]
-#[path = "../../maestro-test-terminal/tests/support/recording_terminal.rs"]
-mod recording_terminal;
-#[path = "support/runtime_spy.rs"]
-mod runtime_spy;
-#[allow(
-    dead_code,
-    reason = "Each selector consumes its own recorded input subset."
-)]
-mod selector_failure_support;
-#[path = "../../maestro-catalog/tests/support/subprocess.rs"]
-mod subprocess;
+use crate::manual_runtime;
+use crate::model_selector_support;
+use crate::published;
+use crate::recording_terminal;
+use crate::runtime_spy;
+use crate::selector_failure_support;
+use crate::subprocess;
 use maestro_app::{Model, ScopedModel, SettingsManager};
 use maestro_chat::{ModelSelectorCallbacks, ModelSelectorComponent, ModelSelectorOptions};
 use maestro_tui::{

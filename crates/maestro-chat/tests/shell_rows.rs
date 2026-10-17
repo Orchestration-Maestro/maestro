@@ -1,17 +1,12 @@
 //! Direct shell rows through their retained public component.
 #![cfg(test)]
-#[allow(dead_code, reason = "Shared terminal fixture.")]
-#[path = "../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-mod manual_runtime;
-#[allow(dead_code, reason = "Shared theme publication fixture.")]
-#[path = "../../maestro-theme/tests/published/mod.rs"]
-mod published;
-#[allow(dead_code, reason = "Shared terminal fixture.")]
-#[path = "../../maestro-test-terminal/tests/support/recording_terminal.rs"]
-mod recording_terminal;
+use crate::manual_runtime;
+use crate::published;
+use crate::recording_terminal;
 use maestro_chat::BashExecutionComponent;
 use maestro_tui::{Component, TUI, TerminalImage};
 use std::rc::Rc;
+#[path = "shell_rows_support/mod.rs"]
 mod shell_rows_support;
 #[test]
 fn shell_initial_frame_retains_command_and_cancel_keys() {

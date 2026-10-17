@@ -47,7 +47,7 @@ pub fn launch() {
         child(&mode);
         return;
     }
-    let scratch = super::super::live::Scratch::new("browser");
+    let scratch = crate::live::Scratch::new("browser");
     scratch.write("helper-source", HELPER);
     for program in ["open", "explorer.exe", "xdg-open"] {
         assert!(
@@ -63,15 +63,15 @@ pub fn launch() {
                 .success()
         );
     }
+    let test = crate::child_process::selector(
+        "native_browser_launch_is_detached_and_uses_one_literal_argument",
+    )
+    .unwrap();
     for program in ["open", "explorer.exe", "xdg-open", "missing"] {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let mut command = Command::new(std::env::current_exe().unwrap());
         command
-            .args([
-                "--exact",
-                "native_browser_launch_is_detached_and_uses_one_literal_argument",
-                "--nocapture",
-            ])
+            .args(["--exact", &test, "--nocapture"])
             .env("MAESTRO_BROWSER_CHILD", program)
             .env(
                 "MAESTRO_BROWSER_PORT",

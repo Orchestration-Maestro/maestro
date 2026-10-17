@@ -1,27 +1,10 @@
 //! Sign-in dialog behavior against recorded terminal output.
 #![cfg(test)]
-#[allow(dead_code, reason = "Only shared keybinding admission is reused.")]
-#[path = "support/keybindings.rs"]
-mod keybindings;
-#[allow(
-    dead_code,
-    reason = "Shared theme filesystem fixture supplies registry helpers."
-)]
-#[path = "../../maestro-theme/tests/live/mod.rs"]
-mod live;
+use crate::keybindings;
+#[path = "login_support/mod.rs"]
 mod login_support;
-#[allow(
-    dead_code,
-    reason = "Shared sign-in witnesses use the controlled runtime."
-)]
-#[path = "../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-mod manual_runtime;
-#[allow(
-    dead_code,
-    reason = "Shared theme fixture includes other publication controls."
-)]
-#[path = "../../maestro-theme/tests/published/mod.rs"]
-mod published;
+use crate::manual_runtime;
+use crate::published;
 #[test]
 fn login_title_uses_registry_and_override_precedence() {
     login_support::replay("login_title_uses_registry_and_override_precedence");
@@ -107,12 +90,7 @@ fn login_wrapping_and_escapes_use_existing_text() {
 fn browser_launcher_receives_literal_url_without_shell_expansion() {
     login_support::replay("browser_launcher_receives_literal_url_without_shell_expansion");
 }
-#[allow(
-    dead_code,
-    reason = "Recording terminal exposes controls used by other writer tests."
-)]
-#[path = "../../maestro-test-terminal/tests/support/recording_terminal.rs"]
-mod recording_terminal;
+use crate::recording_terminal;
 use maestro_chat::{LoginDialogComponent, LoginDialogOptions, LoginDialogPlatform};
 use maestro_tui::{Component, Focusable, tui::InputHandler};
 use std::{
