@@ -73,9 +73,10 @@ policy is checked.
 
 The checker first runs offline `cargo metadata --format-version 1 --no-deps`.
 It then detects the compiler host with `rustc -vV` and requests offline,
-host-filtered full metadata with default features, not all features. Package IDs
-and canonical member paths establish identity, not dependency aliases. Optional,
-build, dev and inactive foreign-target declarations remain subject to policy.
+host-filtered full metadata with default features, not all features. Both metadata
+children omit `RUSTC_WRAPPER`; the calling process and build commands retain it.
+Package IDs and canonical member paths establish identity, not dependency aliases.
+Optional, build, dev and inactive foreign-target declarations remain subject to policy.
 Malformed metadata and command failures return diagnostics, not acceptance.
 
 The cancellation leaf has no internal dependencies; only models and the toolkit

@@ -6,7 +6,7 @@ use cargo_metadata::{DependencyKind, Metadata, MetadataCommand, Package, Package
 
 use super::{Edge, Kind};
 
-/// Read declared or host-resolved Cargo metadata using offline resolution.
+/// Read offline declared or host-resolved metadata, omitting `RUSTC_WRAPPER` in children.
 pub(super) fn load(root: &Path, host: Option<&str>) -> Result<Metadata, String> {
     let mut command = MetadataCommand::new();
     command
@@ -26,6 +26,7 @@ pub(super) fn load(root: &Path, host: Option<&str>) -> Result<Metadata, String> 
     }
     let output = command
         .cargo_command()
+        .env_remove("RUSTC_WRAPPER")
         .output()
         .map_err(|error| format!("cargo metadata failed: {error}"))?;
     if !output.status.success() {

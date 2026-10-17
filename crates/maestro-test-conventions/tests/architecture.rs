@@ -1061,6 +1061,46 @@ fn metadata_fixtures_run_while_scenario_data_is_open() {
 
 #[cfg(unix)]
 #[test]
+fn metadata_queries_leave_compiler_wrappers_to_builds() {
+    const PROBE: &str = "MAESTRO_CONVENTIONS_WRAPPER_PROBE";
+    if std::env::var_os(PROBE).is_some() {
+        let wrapper = std::env::var_os("RUSTC_WRAPPER");
+        let workspace = Workspace::new();
+        workspace.foundation(&["maestro-models"]);
+        let result = check_workspace(&workspace.root);
+        assert_eq!(std::env::var_os("RUSTC_WRAPPER"), wrapper);
+        assert_eq!(result, Ok(()));
+        return;
+    }
+    let workspace = Workspace::new();
+    let failing =
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/metadata-command.sh");
+    let missing = workspace.root.join("missing-wrapper");
+    let selector =
+        crate::child_process::selector("metadata_queries_leave_compiler_wrappers_to_builds")
+            .unwrap();
+    for wrapper in [None, Some(failing), Some(missing)] {
+        let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+        command
+            .args(["--exact", &selector, "--nocapture"])
+            .env(PROBE, "1")
+            .env_remove("RUSTC_WRAPPER");
+        if let Some(wrapper) = wrapper {
+            command.env("RUSTC_WRAPPER", wrapper);
+        }
+        let output = command.output().unwrap();
+        assert!(
+            output.status.success(),
+            "wrapper probe failed:\n{}\n{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        crate::child_process::assert_executed(&output, &selector);
+    }
+}
+
+#[cfg(unix)]
+#[test]
 fn metadata_graph_failures_cross_the_public_interface() {
     if let Some(root) = std::env::var_os("MAESTRO_CONVENTIONS_PROBE_ROOT") {
         let result = check_workspace(std::path::Path::new(&root));
