@@ -10,7 +10,7 @@ mod browser {
 
     use futures_util::FutureExt;
     use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
-    use maestro_models::{AssistantMessageEvent, StopReason, StreamOptions};
+    use maestro_models::{AssistantMessageEvent, SharedHandle, StopReason, StreamOptions};
     use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
     /// Independent counters retained by the witness and each supplied callback.
@@ -32,11 +32,11 @@ mod browser {
             let sender = Arc::clone(&self.sender);
             BedrockOptions {
                 common: StreamOptions {
-                    on_payload: Some(Arc::new(move |input, _| {
+                    on_payload: Some(SharedHandle::new(move |input, _| {
                         payload.fetch_add(1, Ordering::SeqCst);
                         Box::pin(std::future::ready(Ok(input)))
                     })),
-                    on_response: Some(Arc::new(move |_, _| {
+                    on_response: Some(SharedHandle::new(move |_, _| {
                         response.fetch_add(1, Ordering::SeqCst);
                         Box::pin(std::future::ready(Ok(())))
                     })),

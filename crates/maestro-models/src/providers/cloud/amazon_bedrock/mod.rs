@@ -35,9 +35,10 @@ use crate::providers::assistant_output::start_producer_for;
 use crate::providers::http::RequestFailure;
 use crate::providers::messages::anthropic::AnthropicThinkingDisplay;
 use crate::{
-    AssistantMessageEventStream, Context, Local, Model, ProviderExecution, ProviderInvocation,
-    ProviderSpawner, SimpleStreamOptions, StreamOptions, StreamOptionsFamily, ThinkingBudgets,
-    ThinkingLevel, Threaded, ToolChoice, adjust_max_tokens_for_thinking, build_base_options_for,
+    AssistantMessageEventStream, Context, Local, Model, ProviderCall, ProviderExecution,
+    ProviderInvocation, ProviderSpawner, SimpleStreamOptions, StreamOptions, StreamOptionsFamily,
+    ThinkingBudgets, ThinkingLevel, Threaded, ToolChoice, adjust_max_tokens_for_thinking,
+    build_base_options_for,
 };
 use thinking::{is_anthropic_claude_model, supports_adaptive_thinking};
 
@@ -108,12 +109,18 @@ pub(crate) fn dispatch(
     invocation: ProviderInvocation<BedrockOptions>,
 ) -> AssistantMessageEventStream {
     match invocation {
-        ProviderInvocation::Local(options, submit) => {
-            start::<Local>(model, context, options.unwrap_or_default(), submit)
-        }
-        ProviderInvocation::Threaded(options, submit) => {
-            start::<Threaded>(model, context, options.unwrap_or_default(), submit)
-        }
+        ProviderInvocation::Local(options, submit) => start::<Local>(ProviderCall {
+            model,
+            context,
+            options,
+            submit,
+        }),
+        ProviderInvocation::Threaded(options, submit) => start::<Threaded>(ProviderCall {
+            model,
+            context,
+            options,
+            submit,
+        }),
     }
 }
 
@@ -220,28 +227,25 @@ producer!(Threaded);
 
 /// End the stream with the existing browser failure without starting SDK work.
 #[cfg(target_arch = "wasm32")]
-fn start<E: Producer>(
-    model: Model,
-    _context: Context,
-    options: BedrockOptions<E>,
-    _submit: E::Submission,
-) -> AssistantMessageEventStream {
+fn start<E: Producer>(call: ProviderCall<E, BedrockOptions<E>>) -> AssistantMessageEventStream {
     let stream = AssistantMessageEventStream::new();
-    let output = Arc::new(RwLock::new(initial_message(&model)));
+    let output = Arc::new(RwLock::new(initial_message(&call.model)));
     let failure = RequestFailure::new("Bedrock is not supported in browsers.");
-    let signal = options.common.signal;
+    let signal = call.options.unwrap_or_default().common.signal;
     fail(&stream, &output, signal.as_ref(), failure);
     stream
 }
 
 /// Capture SDK setup and submit the same independently owned request once.
 #[cfg(not(target_arch = "wasm32"))]
-fn start<E: Producer>(
-    model: Model,
-    context: Context,
-    options: BedrockOptions<E>,
-    submit: E::Submission,
-) -> AssistantMessageEventStream {
+fn start<E: Producer>(call: ProviderCall<E, BedrockOptions<E>>) -> AssistantMessageEventStream {
+    let ProviderCall {
+        model,
+        context,
+        options,
+        submit,
+    } = call;
+    let options = options.unwrap_or_default();
     let stream = AssistantMessageEventStream::new();
     let output = Arc::new(RwLock::new(initial_message(&model)));
     let signal = options.common.signal.clone();
