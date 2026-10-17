@@ -53,6 +53,7 @@ mod docx_section_properties;
 mod docx_support;
 mod docx_values;
 mod docx_xml;
+mod extension_context_exports;
 mod extension_ui_exports;
 mod footer_cwd_identity;
 mod footer_metadata;

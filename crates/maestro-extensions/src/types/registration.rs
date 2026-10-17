@@ -29,8 +29,8 @@ pub enum FlagValue {
 pub type CommandHandler<C, E = Threaded> =
     <E as Execution>::Shared<<E as ExtensionExecution>::Command<C>>;
 /// An owned asynchronous shortcut callback.
-pub type ShortcutHandler<C, E = Threaded> =
-    <E as Execution>::Shared<<E as ExtensionExecution>::Shortcut<C>>;
+pub type ShortcutHandler<E = Threaded> =
+    <E as Execution>::Shared<<E as ExtensionExecution>::Shortcut>;
 /// An owned asynchronous argument completion callback.
 pub type ArgumentCompletions<E = Threaded> =
     <E as Execution>::Shared<<E as ExtensionExecution>::Completions>;
@@ -92,27 +92,27 @@ pub struct ExtensionFlag {
 }
 
 /// Shortcut registration options.
-pub struct ExtensionShortcutOptions<C, E: ExtensionExecution = Threaded> {
+pub struct ExtensionShortcutOptions<E: ExtensionExecution = Threaded> {
     /// Optional shortcut description.
     pub description: Option<String>,
     /// Shortcut invocation callback.
-    pub handler: ShortcutHandler<C, E>,
+    pub handler: ShortcutHandler<E>,
 }
 
 /// One retained shortcut registration.
-pub struct ExtensionShortcut<C, E: ExtensionExecution = Threaded> {
+pub struct ExtensionShortcut<E: ExtensionExecution = Threaded> {
     /// Raw shortcut identifier.
     pub shortcut: KeyId,
     /// Optional shortcut description.
     pub description: Option<String>,
     /// Shortcut invocation callback.
-    pub handler: ShortcutHandler<C, E>,
+    pub handler: ShortcutHandler<E>,
     /// Supplied registration-owner path.
     pub extension_path: String,
 }
 
 /// A mutable owner of extension registrations.
-pub struct Extension<C, CC, E: ExtensionExecution = Threaded> {
+pub struct Extension<CC, E: ExtensionExecution = Threaded> {
     /// Supplied extension path.
     pub path: String,
     /// Supplied resolved extension path.
@@ -124,7 +124,7 @@ pub struct Extension<C, CC, E: ExtensionExecution = Threaded> {
     /// Ordered flag registrations.
     pub flags: IndexMap<String, Arc<RwLock<ExtensionFlag>>>,
     /// Ordered shortcut registrations.
-    pub shortcuts: IndexMap<KeyId, E::Shared<RwLock<ExtensionShortcut<C, E>>>>,
+    pub shortcuts: IndexMap<KeyId, E::Shared<RwLock<ExtensionShortcut<E>>>>,
     /// Ordered custom-message renderers by custom type.
     pub message_renderers: IndexMap<String, E::RendererRegistration>,
 }
@@ -138,21 +138,20 @@ pub struct ExtensionRuntimeState {
 }
 
 /// Registration facade borrowing its owner and retaining runtime and event bus.
-pub struct ExtensionAPI<C, CC, E: ExtensionExecution = Threaded> {
+pub struct ExtensionAPI<CC, E: ExtensionExecution = Threaded> {
     /// Existing shared event capability.
     pub events: EventBus<E>,
     /// Registration owner.
-    pub(crate) extension: E::Weak<RwLock<Extension<C, CC, E>>>,
+    pub(crate) extension: E::Weak<RwLock<Extension<CC, E>>>,
     /// Shared values and activity guard.
     pub(crate) runtime: Arc<ExtensionRuntimeState>,
 }
 
 /// An owned mutable extension record.
-pub type ExtensionHandle<C, CC, E = Threaded> =
-    <E as Execution>::Shared<RwLock<Extension<C, CC, E>>>;
+pub type ExtensionHandle<CC, E = Threaded> = <E as Execution>::Shared<RwLock<Extension<CC, E>>>;
 /// The shared current extension load order.
-pub type ExtensionCollection<C, CC, E = Threaded> =
-    <E as Execution>::Shared<RwLock<Vec<ExtensionHandle<C, CC, E>>>>;
+pub type ExtensionCollection<CC, E = Threaded> =
+    <E as Execution>::Shared<RwLock<Vec<ExtensionHandle<CC, E>>>>;
 impl<C, E: ExtensionExecution> Clone for RegisteredCommand<C, E> {
     fn clone(&self) -> Self {
         Self {
@@ -170,7 +169,7 @@ impl<C, E: ExtensionExecution> Deref for ResolvedCommand<C, E> {
         &self.command
     }
 }
-impl<C, CC, E: ExtensionExecution> Clone for ExtensionAPI<C, CC, E> {
+impl<CC, E: ExtensionExecution> Clone for ExtensionAPI<CC, E> {
     fn clone(&self) -> Self {
         Self {
             events: self.events.clone(),

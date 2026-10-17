@@ -19,7 +19,10 @@ Both representations use one loop, admission path, listener traversal, progress
 FIFO and lifecycle. Extension command, shortcut, completion and event-bus
 callbacks select the same families through `maestro-extensions`'
 `ExtensionExecution`; one registration owner, query algorithm and bus serve
-both, and their contexts remain caller-chosen types. Message renderers also
+both. The base context shortcuts receive is the concrete single-thread
+`ExtensionContext`, while command contexts remain a caller-chosen type. A
+thread-safe shortcut callback can read its context only before it suspends; a
+local callback may keep it. Message renderers also
 follow the family, stored per family without their details type. The extension
 UI handle and its factories are always local: a runner that retains a UI host or
 the live headless theme is not thread-safe, while registrations, the API facade

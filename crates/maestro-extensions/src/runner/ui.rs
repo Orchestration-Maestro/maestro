@@ -23,20 +23,20 @@ impl ExtensionUIContext {
         }
     }
 }
-impl<C, CC, E: ExtensionExecution> ExtensionRunner<C, CC, E> {
+impl<CC, E: ExtensionExecution> ExtensionRunner<CC, E> {
     /// Installs a UI context, or restores this runner's headless fallback with `None`.
     pub fn set_ui_context(&self, context: Option<ExtensionUIContext>) {
-        let context = context.unwrap_or_else(|| self.no_ui.clone());
-        drop(self.ui.replace(context));
+        let context = context.unwrap_or_else(|| self.binding.no_ui.clone());
+        drop(self.binding.ui.replace(context));
     }
     /// Returns the current UI context; it keeps its host after later changes.
     #[must_use]
     pub fn get_ui_context(&self) -> ExtensionUIContext {
-        self.ui.borrow().clone()
+        self.binding.get_ui_context()
     }
     /// Whether an installed context, rather than a headless fallback, is current.
     #[must_use]
     pub fn has_ui(&self) -> bool {
-        !self.ui.borrow().fallback
+        self.binding.has_ui()
     }
 }

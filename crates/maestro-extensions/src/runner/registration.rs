@@ -7,7 +7,7 @@ use crate::{
 use indexmap::{IndexMap, IndexSet};
 use std::sync::{Arc, RwLock};
 
-impl<C, CC, E: ExtensionExecution> ExtensionRunner<C, CC, E> {
+impl<CC, E: ExtensionExecution> ExtensionRunner<CC, E> {
     /// Returns supplied owner paths in current load order.
     #[must_use]
     pub fn get_extension_paths(&self) -> Vec<String> {
@@ -31,12 +31,12 @@ impl<C, CC, E: ExtensionExecution> ExtensionRunner<C, CC, E> {
     }
     /// Sets a shared value even when no owner registered that name.
     pub fn set_flag_value(&self, name: String, value: FlagValue) {
-        write(&self.runtime.flag_values).insert(name, value);
+        write(&self.binding.runtime.flag_values).insert(name, value);
     }
     /// Returns an independent ordered snapshot of shared values.
     #[must_use]
     pub fn get_flag_values(&self) -> IndexMap<String, FlagValue> {
-        read(&self.runtime.flag_values).clone()
+        read(&self.binding.runtime.flag_values).clone()
     }
     /// Returns the first owner's renderer for `custom_type` when it has details type `T`.
     ///

@@ -50,10 +50,11 @@ mod loader;
 pub mod types;
 pub use maestro_resources::SourceInfo;
 pub use types::{
-    AutocompleteProviderFactory, EditorFactory, Extension, ExtensionAPI, ExtensionExecution,
-    ExtensionFlag, ExtensionShortcut, ExtensionUIContext, ExtensionUIDialogOptions,
-    ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer, RegisteredCommand,
-    ResolvedCommand, TerminalInputHandler, WidgetPlacement, WorkingIndicatorOptions,
+    AutocompleteProviderFactory, CompactOptions, ContextUsage, EditorFactory, Extension,
+    ExtensionAPI, ExtensionContext, ExtensionContextActions, ExtensionExecution, ExtensionFlag,
+    ExtensionShortcut, ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions,
+    MessageRenderOptions, MessageRenderer, RegisteredCommand, ResolvedCommand,
+    TerminalInputHandler, WidgetPlacement, WorkingIndicatorOptions,
 };
 /// Queries over current extension registrations.
 pub mod runner;

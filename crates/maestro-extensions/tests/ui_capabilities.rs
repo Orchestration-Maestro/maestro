@@ -12,8 +12,11 @@ mod published;
 #[allow(dead_code, reason = "Shared terminal fixture.")]
 #[path = "../../maestro-test-terminal/tests/support/recording_terminal.rs"]
 mod recording_terminal;
+#[path = "support/ui_host.rs"]
+mod ui_host;
 #[path = "support/ui_toolkit.rs"]
 mod ui_toolkit;
+use ui_host::Named;
 
 use local_support::{
     Loaded, LocalBus, Released, STALE, Trace, listener, loaded, local, mark, runner,
@@ -207,7 +210,7 @@ fn headless_queries(ui: &Ui, rejected: &Rejecting) {
 #[test]
 fn no_ui_methods_return_their_defined_fallbacks() {
     local(async {
-        let owners: ExtensionCollection<Ui, Ui, Local> = Rc::new(RwLock::new(Vec::new()));
+        let owners: ExtensionCollection<Ui, Local> = Rc::new(RwLock::new(Vec::new()));
         let ui = runner(&owners).get_ui_context();
         let rejected = Rejecting(Trace::default());
         let signal = Cancellation::new();
@@ -222,10 +225,10 @@ fn no_ui_methods_return_their_defined_fallbacks() {
 }
 
 /// Registers a shortcut on a reserved effective key and returns its runner.
-fn reserved_shortcut(warnings: &Trace) -> (Loaded<Ui>, ExtensionRunner<Ui, Ui, Local>) {
+fn reserved_shortcut(warnings: &Trace) -> (Loaded<Ui>, ExtensionRunner<Ui, Local>) {
     let bus = LocalBus::new();
     let owner = loaded::<Ui>("/reserved", bus.controller.for_extension());
-    let options = ExtensionShortcutOptions::<Ui, Local> {
+    let options = ExtensionShortcutOptions::<Local> {
         description: None,
         handler: Rc::new(|_| Box::pin(async { Ok(()) })),
     };
@@ -234,9 +237,10 @@ fn reserved_shortcut(warnings: &Trace) -> (Loaded<Ui>, ExtensionRunner<Ui, Ui, L
         .register_shortcut("Ctrl+C".into(), options)
         .unwrap();
     let warnings = warnings.clone();
-    let runner = ExtensionRunner::<Ui, Ui, Local>::new(
+    let runner = ExtensionRunner::<Ui, Local>::new(
         owner.owners.clone(),
         Arc::clone(&owner.runtime),
+        local_support::session::runner_session("/work").0,
         Rc::new(move |line: &str| mark(&warnings, line)),
         LiveTheme::default(),
     );
@@ -269,16 +273,16 @@ fn installed_ui_presence_does_not_claim_mode_support() {
     let fallback = runner.get_ui_context();
     runner.set_ui_context(Some(fallback.clone()));
     assert!(!runner.has_ui());
-    let owners: ExtensionCollection<Ui, Ui, Local> = Rc::new(RwLock::new(Vec::new()));
+    let owners: ExtensionCollection<Ui, Local> = Rc::new(RwLock::new(Vec::new()));
     let other = runner_with_fallback_of(&owners, fallback);
     assert!(!other.has_ui());
 }
 
 /// A second runner given another runner's retained fallback.
 fn runner_with_fallback_of(
-    owners: &ExtensionCollection<Ui, Ui, Local>,
+    owners: &ExtensionCollection<Ui, Local>,
     fallback: Ui,
-) -> ExtensionRunner<Ui, Ui, Local> {
+) -> ExtensionRunner<Ui, Local> {
     let other = runner(owners);
     other.set_ui_context(Some(ExtensionUIContext::new(Rc::new(Limited))));
     assert!(other.has_ui());
@@ -286,49 +290,10 @@ fn runner_with_fallback_of(
     other
 }
 
-/// A host whose editor text and selection answers identify it.
-struct Named {
-    /// Host identity.
-    name: &'static str,
-    /// Current editor text.
-    text: RefCell<String>,
-}
-impl Named {
-    /// An installed context around a fresh named host, and the host itself.
-    fn install(name: &'static str) -> (Ui, Rc<Self>) {
-        let host = Rc::new(Self {
-            name,
-            text: RefCell::default(),
-        });
-        (ExtensionUIContext::new(host.clone()), host)
-    }
-}
-impl ExtensionUIContextPort for Named {
-    fn select(
-        &self,
-        title: String,
-        options: Vec<String>,
-        _: Option<ExtensionUIDialogOptions>,
-    ) -> ExtensionUIFuture<Option<String>> {
-        let answer = format!("{}:{title}:{}", self.name, options.join(","));
-        Box::pin(async move { Ok(Some(answer)) })
-    }
-    fn set_editor_text(&self, text: String) -> Result<(), EventError> {
-        *self.text.borrow_mut() = text;
-        Ok(())
-    }
-    fn get_editor_text(&self) -> Result<String, EventError> {
-        Ok(self.text.borrow().clone())
-    }
-    fn theme(&self) -> LiveTheme {
-        LiveTheme::default()
-    }
-}
-
 #[test]
 fn retained_ui_handles_keep_old_hosts_after_rebinding() {
     local(async {
-        let owners: ExtensionCollection<Ui, Ui, Local> = Rc::new(RwLock::new(Vec::new()));
+        let owners: ExtensionCollection<Ui, Local> = Rc::new(RwLock::new(Vec::new()));
         let runner = runner(&owners);
         let (first, host) = Named::install("a");
         let released = Rc::downgrade(&host);
@@ -888,9 +853,10 @@ fn ui_capabilities_keep_factories_options_and_live_theme() {
         }),
     );
     let state = published::unpublished();
-    let runner = ExtensionRunner::<Ui, Ui, Local>::new(
+    let runner = ExtensionRunner::<Ui, Local>::new(
         owner.owners.clone(),
         Arc::clone(&owner.runtime),
+        local_support::session::runner_session("/work").0,
         Rc::new(|_| {}),
         state.theme(),
     );
@@ -2196,7 +2162,7 @@ fn render<T>(
 
 /// The label the current renderer for `custom_type` records, if one is selected.
 fn rendered_by(
-    runner: &ExtensionRunner<Ui, Ui, Local>,
+    runner: &ExtensionRunner<Ui, Local>,
     bus: &LocalBus,
     trace: &Trace,
     custom_type: &str,
@@ -2220,7 +2186,7 @@ fn message_renderer_lookup_keeps_the_first_owner() {
         loaded::<Ui>("/a", bus.controller.for_extension()),
         loaded::<Ui>("/b", bus.controller.for_extension()),
     );
-    let owners: ExtensionCollection<Ui, Ui, Local> =
+    let owners: ExtensionCollection<Ui, Local> =
         Rc::new(RwLock::new(vec![a.owner.clone(), b.owner.clone()]));
     let runner = runner(&owners);
     for (owner, label) in [(&a, "a"), (&b, "b")] {
@@ -2263,8 +2229,8 @@ fn message_renderer_lookup_keeps_the_first_owner() {
 
 /// Reordering, removing and appending owners changes the selected owner.
 fn collection_changes(
-    runner: &ExtensionRunner<Ui, Ui, Local>,
-    owners: &ExtensionCollection<Ui, Ui, Local>,
+    runner: &ExtensionRunner<Ui, Local>,
+    owners: &ExtensionCollection<Ui, Local>,
     bus: &LocalBus,
     trace: &Trace,
 ) {
@@ -2523,7 +2489,7 @@ fn message_renderer_registration_uses_existing_activity_guard() {
 
 /// A renderer using a captured facade, emitting to other extensions before returning.
 fn facade_renderer(
-    api: &ExtensionAPI<Ui, Ui, Local>,
+    api: &ExtensionAPI<Ui, Local>,
     trace: &Trace,
     released: Released,
 ) -> MessageRenderer<Value, Local> {
@@ -2539,7 +2505,7 @@ fn facade_renderer(
 }
 
 /// An editor factory using a captured facade.
-fn facade_editor(api: &ExtensionAPI<Ui, Ui, Local>, released: Released) -> EditorFactory {
+fn facade_editor(api: &ExtensionAPI<Ui, Local>, released: Released) -> EditorFactory {
     let api = api.clone();
     Rc::new(move |_, _, _, _| {
         let _ = &released;
@@ -2616,11 +2582,11 @@ fn ui_defaults_preserve_threaded_registration_contracts() {
     use maestro_extensions::{Extension, ExtensionAPI as DefaultApi, create_event_bus};
     send_sync::<DefaultRenderer>();
     send_sync::<DefaultRenderer<Vec<u8>>>();
-    send_sync::<Extension<String, String>>();
-    send_sync::<ExtensionHandle<String, String>>();
-    send_sync::<ExtensionCollection<String, String>>();
-    send_sync::<DefaultApi<String, String>>();
-    let owner = Arc::new(RwLock::new(Extension::<String, String>::new(
+    send_sync::<Extension<String>>();
+    send_sync::<ExtensionHandle<String>>();
+    send_sync::<ExtensionCollection<String>>();
+    send_sync::<DefaultApi<String>>();
+    let owner = Arc::new(RwLock::new(Extension::<String>::new(
         "/default".into(),
         "/resolved".into(),
         local_support::source("/default"),
@@ -2637,9 +2603,10 @@ fn ui_defaults_preserve_threaded_registration_contracts() {
         },
     );
     api.register_message_renderer("n".into(), renderer).unwrap();
-    let runner = ExtensionRunner::<String, String>::new(
+    let runner = ExtensionRunner::<String>::new(
         owners,
         runtime,
+        local_support::session::runner_session("/work").0,
         Arc::new(|_| {}),
         LiveTheme::default(),
     );
