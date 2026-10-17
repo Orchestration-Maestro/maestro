@@ -270,7 +270,7 @@ impl Owner {
         let timer =
             timer::native(window, 120_000, false, callback).map_err(|error| diagnostic(&error))?;
         run.timer.replace(Some(timer));
-        let html = self.prepare_html_document(
+        let html = Self::prepare_html_document(
             &run.id,
             &request.code,
             &run.providers,
