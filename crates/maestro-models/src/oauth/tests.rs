@@ -72,8 +72,8 @@ fn record(expires: f64) -> OAuthCredentials {
         )]),
     }
 }
-/// Drive the controlled operation to completion.
-fn run<T>(future: impl std::future::Future<Output = T>) -> T {
+/// Drive the controlled operation to completion on one current-thread runtime.
+pub(super) fn run<T>(future: impl std::future::Future<Output = T>) -> T {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()

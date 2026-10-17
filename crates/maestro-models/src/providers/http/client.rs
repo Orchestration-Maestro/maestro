@@ -165,10 +165,6 @@ fn configured_clients(
                 .filter(|proxy| matches!(proxy.scheme(), "http" | "https"))
         }));
     }
-    if route.http1_only {
-        builder = builder.http1_only();
-    }
-
     let tls = super::proxy_agent::tls(route.http1_only)
         .map_err(|error| connection(chain(error.as_ref())))?;
     let socks = route

@@ -1,16 +1,8 @@
 //! Controlled manual-input publication and ownership witnesses.
 use super::start_manual;
 use crate::oauth::native::CallbackOutcome;
+use crate::oauth::tests::run;
 use crate::{DiagnosticCode, DiagnosticErrorInfo, EventStream, OAuthError};
-
-/// Drive owned manual work on the same single-thread executor as its observers.
-fn run(work: impl std::future::Future<Output = ()>) {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(work);
-}
 
 #[test]
 fn manual_completion_preserves_supplied_outcome() {

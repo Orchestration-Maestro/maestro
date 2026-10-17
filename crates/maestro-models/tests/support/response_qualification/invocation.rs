@@ -159,17 +159,7 @@ fn controlled(
         if !gated {
             feed.chunks.send(body(wire)?)?;
         }
-        let body = Mutex::new(Some(body_stream));
-        let attempt = transport::Attempt::streaming(move || {
-            body.lock()
-                .unwrap_or_else(PoisonError::into_inner)
-                .take()
-                .unwrap_or_else(|| {
-                    Box::pin(futures_util::stream::iter([Err(
-                        maestro_models::FetchError::Aborted,
-                    )]))
-                })
-        });
+        let attempt = transport::Attempt::streaming_once(body_stream);
         Ok((transport::transport(vec![attempt]), Some(feed)))
     } else {
         if let Some(http) = &wire.http {

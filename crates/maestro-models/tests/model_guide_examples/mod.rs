@@ -36,18 +36,8 @@ fn weather_tool() -> maestro_models::Tool {
 /// Wire the existing gated body into the existing controlled HTTP transport.
 fn fed_options() -> (crate::messages::Feed, StreamOptions) {
     let (feed, body) = crate::messages::feed();
-    let body = std::sync::Mutex::new(Some(body));
     let transport =
-        crate::transport::transport(vec![crate::transport::Attempt::streaming(move || {
-            body.lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .take()
-                .unwrap_or_else(|| {
-                    Box::pin(futures_util::stream::iter([Err(
-                        maestro_models::FetchError::Aborted,
-                    )]))
-                })
-        })]);
+        crate::transport::transport(vec![crate::transport::Attempt::streaming_once(body)]);
     (
         feed,
         StreamOptions {
