@@ -276,8 +276,9 @@ No other member may declare its own lint table.
 
 The workspace daemon is core design: the root always wires the daemon,
 multiplexer and engine adapter. Required direct edges are root → application,
-multiplexer and engine adapter, and multiplexer → application. Like the CLI and
-chat, the multiplexer may use only application, toolkit, terminal adapter and
+multiplexer and engine adapter, and multiplexer → application. The required root
+edges must be non-optional normal dependencies active on native builds. Like the
+CLI and chat, the multiplexer may use only application, toolkit, terminal adapter and
 theme, plus the foundation utility and native feature-unifier exceptions.
 Declared-but-absent core owners require no placeholder crates.
 

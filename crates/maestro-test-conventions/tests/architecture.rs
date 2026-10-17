@@ -288,9 +288,13 @@ fn core_to_dedicated_dependency_is_rejected() {
             ("maestro-multiplexer", "core"),
             ("maestro-terminal-ghostty", "core"),
         ]);
-        // Keep the tested dependency category for every required root edge.
+        let wiring_kind = if kind == "build-dependencies" {
+            "dependencies"
+        } else {
+            kind
+        };
         workspace.member("root", "maestro", &format!(
-            "[{kind}]\nmaestro-app = {{ path = \"../maestro-app\" }}\nmaestro-multiplexer = {{ path = \"../maestro-multiplexer\" }}\nmaestro-terminal-ghostty = {{ path = \"../maestro-terminal-ghostty\" }}"
+            "[{wiring_kind}]\nmaestro-app = {{ path = \"../maestro-app\" }}\nmaestro-multiplexer = {{ path = \"../maestro-multiplexer\" }}\nmaestro-terminal-ghostty = {{ path = \"../maestro-terminal-ghostty\" }}"
         ));
         let expected = if kind == "dev-dependencies" {
             Err("internal dev dependency requires declared dependency-free test support: maestro -> maestro-app".into())
@@ -1325,18 +1329,35 @@ fn check_permitted_declarations(workspace: &Workspace, from: &str, to: &str, tar
             .collect();
         let mut declarations = format!("[{kind}]\n");
         for (index, target) in selected.iter().enumerate() {
+            if from == "maestro" && required_targets(from).contains(target) {
+                continue;
+            }
             writeln!(
                 declarations,
                 "renamed{index} = {{ package = {target:?}, path = \"../{target}\"{extra} }}"
             )
             .unwrap();
         }
+        append_required_root_wiring(&mut declarations, from, kind);
         workspace.member(from, from, &declarations);
         assert_eq!(
             check_workspace(&workspace.root),
             Ok(()),
             "{from} -> {to} ({kind}{extra})"
         );
+    }
+}
+
+/// Keep mandatory root wiring normal while varying other allowed declarations.
+fn append_required_root_wiring(declarations: &mut String, from: &str, kind: &str) {
+    if from != "maestro" {
+        return;
+    }
+    if kind != "dependencies" {
+        declarations.push_str("[dependencies]\n");
+    }
+    for target in required_targets(from) {
+        writeln!(declarations, "{target} = {{ path = \"../{target}\" }}").unwrap();
     }
 }
 
@@ -1813,13 +1834,20 @@ fn complete_permitted_graph_is_acyclic() {
             let mut declarations = format!("[{kind}]\n");
             let utility = (from != "maestro-path" && !UTILITY_EXCLUDED.contains(&from))
                 .then_some("maestro-path");
-            for (index, target) in targets.iter().copied().chain(utility).enumerate() {
+            for (index, target) in targets
+                .iter()
+                .copied()
+                .chain(utility)
+                .filter(|target| from != "maestro" || !required_targets(from).contains(target))
+                .enumerate()
+            {
                 writeln!(
                     declarations,
                     "edge{index} = {{ package = {target:?}, path = \"../{target}\"{extra} }}"
                 )
                 .unwrap();
             }
+            append_required_root_wiring(&mut declarations, from, kind);
             workspace.member(from, from, &declarations);
         }
         assert_eq!(check_workspace(&workspace.root), Ok(()), "{kind}{extra}");
@@ -2249,6 +2277,67 @@ fn workspace_daemon_owners_are_core() {
             Err(format!("invalid scoped layer for {name}: expected core"))
         );
     }
+}
+
+#[test]
+fn workspace_root_rejects_optional_wiring() {
+    check_root_dependency_form("dependencies", ", optional = true");
+}
+
+#[test]
+fn workspace_root_rejects_build_only_wiring() {
+    check_root_dependency_form("build-dependencies", "");
+}
+
+#[test]
+fn workspace_root_rejects_inactive_target_wiring() {
+    check_root_dependency_form("target.'cfg(target_os = \"none\")'.dependencies", "");
+}
+
+/// Reject each runtime dependency's invalid form while retaining its neighbours.
+fn check_root_dependency_form(kind: &str, extra: &str) {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro"]);
+    for target in required_targets("maestro") {
+        let mut declarations = String::from("[dependencies]\n");
+        for other in required_targets("maestro")
+            .iter()
+            .filter(|other| *other != target)
+        {
+            writeln!(declarations, "{other} = {{ path = \"../{other}\" }}").unwrap();
+        }
+        if kind != "dependencies" {
+            writeln!(declarations, "[{kind}]").unwrap();
+        }
+        writeln!(
+            declarations,
+            "renamed = {{ package = {target:?}, path = \"../{target}\"{extra} }}"
+        )
+        .unwrap();
+        workspace.member("maestro", "maestro", &declarations);
+        assert_eq!(
+            check_workspace(&workspace.root),
+            Err(format!(
+                "maestro: missing required direct dependency {target}"
+            )),
+            "{target} ({kind}{extra})"
+        );
+    }
+    workspace.foundation(&["maestro"]);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn workspace_root_accepts_native_target_wiring() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro"]);
+    let mut declarations =
+        String::from("[target.'cfg(not(target_arch = \"wasm32\"))'.dependencies]\n");
+    for target in required_targets("maestro") {
+        writeln!(declarations, "{target} = {{ path = \"../{target}\" }}").unwrap();
+    }
+    workspace.member("maestro", "maestro", &declarations);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
 }
 
 #[test]
