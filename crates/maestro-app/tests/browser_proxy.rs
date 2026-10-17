@@ -108,10 +108,7 @@ use maestro_app::{
 };
 use std::sync::{Arc, Mutex};
 
-mod support {
-    /// Controlled browser-provider test runtime.
-    pub mod browser_providers;
-}
+use crate::support;
 use support::browser_providers::run;
 
 /// Load a complete controlled model.

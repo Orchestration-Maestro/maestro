@@ -1,10 +1,7 @@
 //! Typed Word metadata through public factories.
 #![cfg(test)]
-#[path = "docx_support/body_tree.rs"]
-pub mod body_tree;
-mod docx_support;
-#[path = "docx_support/metadata.rs"]
-pub mod metadata;
+use crate::docx_support;
+use crate::metadata;
 use docx_support::cases;
 use maestro_app::browser::docx_preview::{
     CorePropsPart, CustomPropsPart, DocxError, ExtendedPropsPart, parse_xml_string,

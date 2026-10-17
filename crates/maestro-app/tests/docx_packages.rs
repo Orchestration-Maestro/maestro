@@ -1,6 +1,6 @@
 //! Package loading through the public Word reader.
 #![cfg(test)]
-mod docx_support;
+use crate::docx_support;
 use docx_support::cases;
 use maestro_app::browser::docx_preview::{DocxError, Options, Relationship, WordDocument};
 use serde::Deserialize;

@@ -1,9 +1,8 @@
 //! Literal viewer fragments and the common hosted-service origin.
 #![cfg(test)]
 #![cfg(unix)]
+use crate::service_observations as services;
 use maestro_app::configuration::config::{SERVICE_ORIGIN, get_share_viewer_url};
-#[path = "support/service_observations.rs"]
-pub mod services;
 #[test]
 fn share_links_keep_the_literal_fragment() {
     for case in services::cases("share") {

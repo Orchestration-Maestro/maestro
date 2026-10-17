@@ -1,9 +1,7 @@
 //! Application-selected settings persistence qualification.
 #![cfg(test)]
 #![cfg(unix)]
-/// Shared recorded queries and assertions.
-#[path = "support/default_configuration.rs"]
-pub mod fixture;
+use crate::default_configuration as fixture;
 #[test]
 fn externally_removed_packages_survive_unrelated_write() {
     fixture::settings(

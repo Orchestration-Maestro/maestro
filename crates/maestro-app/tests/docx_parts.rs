@@ -1,7 +1,6 @@
 //! Recorded Word part preparation through public factories.
 #![cfg(test)]
-#[path = "docx_support/body_tree.rs"]
-pub mod body_tree;
+use crate::body_tree;
 #[path = "docx_support/parts.rs"]
 mod parts;
 use maestro_app::browser::docx_preview::{

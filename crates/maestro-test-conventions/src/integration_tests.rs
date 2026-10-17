@@ -7,7 +7,7 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
     for member in members.iter().filter(|member| {
         matches!(
             member.name.as_str(),
-            "maestro-agent" | "maestro-models" | "maestro-tools" | "maestro-tui"
+            "maestro-agent" | "maestro-app" | "maestro-models" | "maestro-tools" | "maestro-tui"
         )
     }) {
         check_member(member)?;

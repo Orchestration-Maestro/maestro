@@ -1,10 +1,9 @@
 //! Install reporting policy and bounded request observations.
 #![cfg(test)]
 #![cfg(unix)]
+use crate::service_observations as services;
 use maestro_app::configuration::telemetry::is_install_telemetry_enabled;
 use maestro_settings::SettingsManager;
-#[path = "support/service_observations.rs"]
-pub mod services;
 #[test]
 fn unset_telemetry_uses_the_existing_enabled_default() {
     let case = services::cases("telemetry").remove(0);

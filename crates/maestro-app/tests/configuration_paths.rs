@@ -171,10 +171,9 @@ fn identity_constants_share_branding() {
     assert_eq!(SERVICE_ORIGIN, "");
 }
 
-use std::cell::Cell;
-#[path = "support/directories.rs"]
-mod directories;
+use crate::directories;
 use directories::Directories;
+use std::cell::Cell;
 
 #[derive(Debug, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
@@ -445,8 +444,7 @@ fn packaged_text_paths_read_cwd_only_when_needed() {
 }
 
 #[cfg(unix)]
-#[path = "support/child.rs"]
-mod child;
+use crate::child;
 #[cfg(unix)]
 #[test]
 fn native_agent_root_reads_disposable_environment() {
@@ -466,7 +464,8 @@ fn native_agent_root_reads_disposable_environment() {
         ("../raw/./agent", "../raw/./agent".to_owned()),
     ] {
         let output = child::probe(
-            "native_agent_root_reads_disposable_environment",
+            &crate::child_process::selector("native_agent_root_reads_disposable_environment")
+                .unwrap(),
             &scratch.0,
             &[
                 ("MAESTRO_CONFIGURATION_CHILD", "1"),

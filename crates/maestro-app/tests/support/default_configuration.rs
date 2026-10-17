@@ -191,12 +191,10 @@ pub fn instantiate<T: serde::de::DeserializeOwned>(value: &Value, root: &str, pa
     serde_json::from_value(value).unwrap()
 }
 
-#[path = "child.rs"]
 /// Shared subprocess owner.
-pub(crate) mod child;
-#[path = "browser_providers.rs"]
+pub(crate) use crate::child;
 /// Shared current-thread executor.
-mod runtime;
+use crate::support::browser_providers as runtime;
 use maestro_app::SettingsManager;
 use maestro_settings::{
     InMemorySettingsStorage, PackageSource, SettingsListEntry, SettingsScope, SettingsStorage,
@@ -536,7 +534,7 @@ pub fn settings(name: &str, group: Group) {
         let home = scratch.join("home");
         std::fs::create_dir(&home).unwrap();
         let output = child::probe(
-            name,
+            &crate::child_process::selector(name).unwrap(),
             &scratch.0,
             &[
                 ("HOME", &home),

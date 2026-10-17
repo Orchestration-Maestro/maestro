@@ -63,8 +63,7 @@ fn prereleases_use_the_prepared_locale_comparator() {
 fn unparsed_versions_compare_trimmed_text() {
     versions(28..35);
 }
-#[path = "support/service_observations.rs"]
-pub mod services;
+use crate::service_observations as services;
 use maestro_app::configuration::version_check::{VersionCheckOptions, get_latest_maestro_release};
 use services::{ORIGIN, Transport};
 #[cfg(unix)]

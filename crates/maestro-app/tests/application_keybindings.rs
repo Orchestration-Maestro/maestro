@@ -1,8 +1,7 @@
 //! Configurable application actions through the public application boundary.
 #![cfg(test)]
 #![cfg(unix)]
-#[path = "support/child.rs"]
-mod child;
+use crate::child;
 use maestro_app::presentation_data::keybindings::migrate_keybindings_config;
 use maestro_app::presentation_data::keybindings::{KeyId, Keybinding, KeybindingsConfig};
 use maestro_app::{AppKeybinding, KeybindingsManager};
@@ -379,7 +378,7 @@ fn isolated(name: &str, run: impl FnOnce(&std::path::Path)) {
     } else {
         let dir = child::Scratch::new();
         child::probe(
-            name,
+            &crate::child_process::selector(name).unwrap(),
             &dir.0,
             &[
                 ("MAESTRO_KEYS_CHILD", name),

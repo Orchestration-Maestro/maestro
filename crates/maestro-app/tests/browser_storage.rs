@@ -1,9 +1,7 @@
 //! Browser collection behavior through application-owned stores.
 #![cfg(test)]
-#[path = "support/browser_providers.rs"]
-mod runtime;
-#[path = "support/browser_storage.rs"]
-mod support;
+use crate::browser_storage_support as support;
+use crate::support::browser_providers as runtime;
 use maestro_app::{
     CustomProvidersStore, IndexedDBConfig, ProviderKeysStore, SettingsStore, Store, StoreConfig,
 };

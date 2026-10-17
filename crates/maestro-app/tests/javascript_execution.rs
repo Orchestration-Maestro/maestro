@@ -46,10 +46,7 @@ fn repl_accepts_whitespace_code() {
     });
 }
 
-mod support {
-    /// Recorded sandbox replay.
-    pub mod javascript_execution;
-}
+use crate::support;
 #[test]
 fn repl_output_preserves_console_return_and_file_order() {
     run(async {

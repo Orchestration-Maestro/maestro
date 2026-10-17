@@ -1,6 +1,6 @@
 //! Borrowed Word XML queries.
 #![cfg(test)]
-mod docx_support;
+use crate::docx_support;
 use docx_support::cases;
 use maestro_app::browser::docx_preview::{
     DocxError, LengthUsage, XmlElement, XmlParser, parse_xml_string,

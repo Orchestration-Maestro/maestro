@@ -1,0 +1,127 @@
+//! Shared integration-test executable.
+#![cfg(test)]
+
+mod application_keybindings;
+mod attachment_loading;
+#[path = "docx_support/body_tree.rs"]
+mod body_tree;
+mod browser_decimal;
+mod browser_discovery;
+mod browser_messages;
+mod browser_proxy;
+mod browser_sessions;
+mod browser_storage;
+#[path = "support/browser_storage.rs"]
+mod browser_storage_support;
+#[cfg(unix)]
+#[path = "support/child.rs"]
+mod child;
+#[allow(
+    dead_code,
+    reason = "This binary uses part of the shared child-process helper."
+)]
+#[path = "../../maestro-models/tests/support/child_process.rs"]
+mod child_process;
+mod clipboard_copy;
+mod clipboard_images;
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "support/clipboard_platform.rs"]
+mod clipboard_platform;
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "support/clipboard_status.rs"]
+mod clipboard_status;
+mod configuration_paths;
+#[cfg(unix)]
+#[path = "support/default_configuration.rs"]
+mod default_configuration;
+mod default_path_routes;
+mod diff_root_exports;
+#[path = "support/directories.rs"]
+mod directories;
+mod document_extraction;
+mod docx_body;
+mod docx_comments;
+mod docx_drawing_records;
+mod docx_formatting;
+mod docx_metadata;
+mod docx_metadata_packages;
+mod docx_packages;
+mod docx_paragraph_properties;
+mod docx_parts;
+mod docx_properties;
+mod docx_section_properties;
+mod docx_support;
+mod docx_values;
+mod docx_xml;
+mod footer_cwd_identity;
+mod footer_metadata;
+#[path = "support/mod.rs"]
+mod footer_support;
+mod footer_watch;
+mod helper_launches;
+mod install_reporting;
+mod installation_kind;
+mod javascript_execution;
+mod legacy_workbook_support;
+mod legacy_workbooks;
+mod lm_studio_discovery;
+#[cfg(not(target_arch = "wasm32"))]
+mod lm_studio_support;
+#[path = "docx_support/metadata.rs"]
+mod metadata;
+mod model_selector_exports;
+#[cfg(unix)]
+#[path = "support/native.rs"]
+mod native;
+mod output_routing;
+#[cfg(not(target_arch = "wasm32"))]
+#[path = "support/package_fixtures.rs"]
+mod package_fixtures;
+mod package_manager_checks;
+mod pdf_attachments;
+mod pdf_pages;
+mod pptx_attachments;
+mod prompt_templates_checks;
+mod runtime_agent;
+mod sandbox_runtime_providers;
+mod self_update_native;
+mod self_update_selection;
+#[cfg(unix)]
+#[path = "support/service_observations.rs"]
+mod service_observations;
+mod service_releases;
+mod session_facade;
+mod settings_manager_bug_checks;
+mod settings_manager_checks;
+mod share_links;
+mod shell_root_exports;
+mod spreadsheet_attachments;
+mod spreadsheet_html;
+mod spreadsheet_support;
+mod ssf_detection;
+mod ssf_format;
+mod ssf_support;
+mod ssf_values;
+mod ssf_writers;
+mod startup_completion;
+mod startup_conversions;
+mod startup_timings;
+/// Strict recorded observations shared by several test modules.
+mod support {
+    pub mod attachment_observation;
+    pub mod attachments;
+    pub mod browser_providers;
+    pub mod browser_records;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub mod document_extraction;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub mod javascript_execution;
+    pub mod pdf;
+    #[cfg(not(target_arch = "wasm32"))]
+    pub mod pptx;
+    mod shared_operands;
+    pub mod spreadsheet;
+}
+mod tree_interface;
+mod workbook_fixture;
+mod workbooks;

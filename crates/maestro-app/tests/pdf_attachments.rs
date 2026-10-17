@@ -1,15 +1,10 @@
 //! PDF loading through the application boundary.
 #![cfg(test)]
+use crate::support;
 use maestro_app::browser::utils::attachment_utils::{
     AttachmentSource, AttachmentType, load_attachment,
 };
 use std::sync::Arc;
-mod support {
-    /// Complete identifier-aware observations.
-    pub mod attachment_observation;
-    /// Strict PDF fixture consumers.
-    pub mod pdf;
-}
 
 #[test]
 fn pdf_detection_prioritizes_mime_or_suffix() {

@@ -109,8 +109,7 @@ fn slash_command_records_keep_owned_source_metadata() {
 }
 
 #[cfg(unix)]
-#[path = "support/child.rs"]
-mod child;
+use crate::child;
 #[cfg(unix)]
 #[path = "support/startup_completion.rs"]
 mod filesystem;

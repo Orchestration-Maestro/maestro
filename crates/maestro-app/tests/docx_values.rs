@@ -1,6 +1,6 @@
 //! Word scalar conversion behavior.
 #![cfg(test)]
-mod docx_support;
+use crate::docx_support;
 use docx_support::cases;
 use maestro_app::browser::docx_preview::{LengthUsage, convert_boolean, convert_length};
 use serde::Deserialize;

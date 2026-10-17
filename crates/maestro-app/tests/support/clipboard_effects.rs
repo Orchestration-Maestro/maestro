@@ -82,8 +82,7 @@ pub struct Admission {
 pub fn corpus() -> Corpus {
     serde_json::from_str(include_str!("../fixtures/clipboard_copy.json")).unwrap()
 }
-#[path = "clipboard_platform.rs"]
-mod recorded;
+use crate::clipboard_platform as recorded;
 pub use recorded::platform;
 /// A single operation's effects; no process-global state is mutated.
 pub struct Effects<'a> {
@@ -209,8 +208,7 @@ impl ClipboardOperations for Effects<'_> {
         Ok(())
     }
 }
-#[path = "clipboard_status.rs"]
-mod completed;
+use crate::clipboard_status as completed;
 use completed::status;
 
 /// Replays the exact rows assigned to one behavior through the root export.

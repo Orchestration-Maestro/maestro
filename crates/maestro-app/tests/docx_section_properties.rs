@@ -1,8 +1,7 @@
 //! Owned section records through the existing paragraph and body operations.
 #![cfg(test)]
-#[path = "docx_support/body_tree.rs"]
-pub mod body_tree;
-mod docx_support;
+use crate::body_tree;
+use crate::docx_support;
 use docx_support::cases;
 use maestro_app::browser::docx_preview::{
     OwnedXmlElement, parse_body_elements, parse_paragraph, parse_xml_string,

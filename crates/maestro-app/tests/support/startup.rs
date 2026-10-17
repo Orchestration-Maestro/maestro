@@ -241,6 +241,7 @@ fn operation() {
 
 fn invoke(name: &str, cwd: &Path, envs: &[(&str, &str)], limit: Option<u64>) -> Outcome {
     let lines = if let Some(limit) = limit {
+        let name = &crate::child_process::selector(name).unwrap();
         let output = Command::new("bash")
             .args(["-c", "trap '' XFSZ; exec \"$@\"", "startup"])
             .env("STARTUP_FILE_LIMIT", limit.to_string())
@@ -261,7 +262,12 @@ fn invoke(name: &str, cwd: &Path, envs: &[(&str, &str)], limit: Option<u64>) -> 
             .filter_map(|line| line.strip_prefix("PROBE ").map(str::to_owned))
             .collect()
     } else {
-        child::probe(name, cwd, envs, &[])
+        child::probe(
+            &crate::child_process::selector(name).unwrap(),
+            cwd,
+            envs,
+            &[],
+        )
     };
     assert_eq!(lines.len(), 1);
     serde_json::from_str(&lines[0]).unwrap()
@@ -308,6 +314,7 @@ pub fn run(name: &str) {
         return;
     }
     if std::env::var_os("STARTUP_CORPUS_CHILD").is_none() {
+        let name = &crate::child_process::selector(name).unwrap();
         let output = Command::new("bash")
             .args(["-c", "umask 002; exec \"$@\"", "startup"])
             .arg(std::env::current_exe().unwrap())
@@ -321,6 +328,7 @@ pub fn run(name: &str) {
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
+        crate::child_process::assert_executed(&output, name);
         return;
     }
     let mut corpus: BTreeMap<String, Vec<Case>> =

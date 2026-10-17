@@ -1,8 +1,7 @@
 //! Controlled native command helpers.
 use std::{path::Path, process::Command};
 
-#[path = "child.rs"]
-mod child;
+use crate::child;
 pub use child::{Scratch, probe};
 
 #[cfg(unix)]

@@ -8,10 +8,7 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 use std::sync::{Arc, Mutex};
 
-mod support {
-    /// Controlled browser-provider test runtime.
-    pub mod browser_providers;
-}
+use crate::support;
 use support::browser_providers::run;
 
 #[derive(Deserialize)]

@@ -1,9 +1,7 @@
 //! Qualification through selected application resource roots.
 #![cfg(test)]
 #![cfg(unix)]
-/// Shared recorded queries and assertions.
-#[path = "support/default_configuration.rs"]
-pub mod fixture;
+use crate::default_configuration as fixture;
 use fixture::{Group, child};
 use maestro_app::configuration::config::{CONFIG_DIR_NAME, paths};
 use maestro_resources::prompt_templates::{LoadPromptTemplatesOptions, load_prompt_templates};

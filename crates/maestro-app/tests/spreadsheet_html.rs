@@ -1,6 +1,6 @@
 //! Public workbook HTML projection against independently recorded inputs.
 #![cfg(test)]
-mod spreadsheet_support;
+use crate::spreadsheet_support;
 use spreadsheet_support::*;
 
 #[test]

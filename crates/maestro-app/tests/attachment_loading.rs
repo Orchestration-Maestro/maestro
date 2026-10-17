@@ -1,12 +1,7 @@
 //! Attachment loading through the public application boundary.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-mod support {
-    /// Shared complete attachment observations.
-    pub mod attachment_observation;
-    /// Strict recorded observations.
-    pub mod attachments;
-}
+use crate::support;
 use maestro_app::browser::utils::attachment_utils::{
     AttachmentError, AttachmentSource, load_attachment,
 };
