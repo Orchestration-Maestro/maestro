@@ -27,7 +27,9 @@ callbacks retain single-thread objects. `AgentTool`, `AgentContext`,
 `AgentLoopConfig` and `AgentLoopOptions` keep their native thread-safe struct-literal
 aliases (browser targets use `Rc` callbacks and local futures); the corresponding `LocalAgent*` aliases select local callables. Generic
 code can use their `*Record` owners. Agent hooks borrow mutable arguments across
-awaits in either representation. Model payload/response hooks remain thread-safe.
+awaits in either representation. Model payload and response hooks follow the same
+representation: local hooks and their futures may retain `Rc` state, while the default
+agent keeps thread-safe hooks.
 
 ```rust
 use maestro_agent::{Agent, AgentOptions, Local};
@@ -54,6 +56,40 @@ assert!(agent.signal().is_none());
 The caller must drive the local task facility for admitted work to finish, just
 as the native thread-safe examples below require a running task facility. See
 [owned runs](../agent.md) and [raw local operations](../loop.md).
+
+A run uses the hooks captured when it was admitted; replacing `on_payload` or
+`on_response` affects later runs only. The registered provider calls `on_payload`
+with its request body: the returned record is the body it sends, and a rejection
+ends the run with an error assistant message whose text the agent also retains as
+its error. `on_response` observes the response status and headers at the provider's
+usual point and cannot replace them; a rejection ends the run the same way. In the
+default agent, hook closures need no type annotations:
+
+```rust
+use maestro_agent::{Agent, AgentOptions};
+use maestro_models::SharedHandle;
+
+fn default_agent_hook_closures_keep_inference() -> Agent {
+    Agent::new(AgentOptions {
+        on_payload: Some(SharedHandle::new(|mut input, model| {
+            Box::pin(async move {
+                input.payload["model"] = model.id.as_str().into();
+                Ok(input)
+            })
+        })),
+        on_response: Some(SharedHandle::new(|response, _| {
+            Box::pin(async move {
+                assert!(response.status > 0.0);
+                Ok(())
+            })
+        })),
+        ..Default::default()
+    })
+}
+let agent = default_agent_hook_closures_keep_inference();
+assert!(agent.on_payload.read().unwrap().is_some());
+assert!(agent.on_response.read().unwrap().is_some());
+```
 
 ## Quick start
 

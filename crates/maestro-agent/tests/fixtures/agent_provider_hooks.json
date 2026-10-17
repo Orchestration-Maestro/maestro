@@ -1,0 +1,112 @@
+{
+  "rows": [
+    {
+      "input": {
+        "operation": "prompt",
+        "outcome": "selected"
+      },
+      "expected": {
+        "trace": [
+          "response-before",
+          "response-after",
+          "factory",
+          "payload-before",
+          "payload-after"
+        ],
+        "responses": [
+          {
+            "status": 200,
+            "headers": {}
+          }
+        ],
+        "factoryCalls": 1,
+        "text": "11",
+        "stopReason": "stop",
+        "errorMessage": null,
+        "stateError": null,
+        "streaming": false,
+        "callCount": 1,
+        "pending": 0
+      }
+    },
+    {
+      "input": {
+        "operation": "prompt",
+        "outcome": "payload_failure"
+      },
+      "expected": {
+        "trace": [
+          "response-before",
+          "response-after",
+          "factory",
+          "payload-before"
+        ],
+        "responses": [
+          {
+            "status": 200,
+            "headers": {}
+          }
+        ],
+        "factoryCalls": 1,
+        "text": "",
+        "stopReason": "error",
+        "errorMessage": "payload stopped",
+        "stateError": "payload stopped",
+        "streaming": false,
+        "callCount": 1,
+        "pending": 0
+      }
+    },
+    {
+      "input": {
+        "operation": "prompt",
+        "outcome": "response_failure"
+      },
+      "expected": {
+        "trace": [
+          "response-before"
+        ],
+        "responses": [
+          {
+            "status": 200,
+            "headers": {}
+          }
+        ],
+        "factoryCalls": 0,
+        "text": "",
+        "stopReason": "error",
+        "errorMessage": "response stopped",
+        "stateError": "response stopped",
+        "streaming": false,
+        "callCount": 1,
+        "pending": 0
+      }
+    },
+    {
+      "input": {
+        "operation": "prompt_prompt_continue",
+        "outcome": "replace_after_capture"
+      },
+      "expected": {
+        "outputs": [
+          "11",
+          "22",
+          "22"
+        ],
+        "responseOwners": [
+          "old",
+          "new",
+          "new"
+        ],
+        "captures": [
+          "old",
+          "new",
+          "new"
+        ],
+        "callCount": 3,
+        "pending": 0,
+        "streaming": false
+      }
+    }
+  ]
+}
