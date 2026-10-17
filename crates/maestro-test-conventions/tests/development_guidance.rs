@@ -1,7 +1,7 @@
 //! Native Git qualification of local package cache ignores.
 #![cfg(not(target_arch = "wasm32"))]
 
-mod support;
+use crate::support;
 
 use std::fs;
 use std::path::Path;

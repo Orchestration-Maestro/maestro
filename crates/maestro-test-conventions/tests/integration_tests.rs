@@ -1,7 +1,7 @@
 //! Integration-test packaging through the workspace checker.
 #![cfg(test)]
 
-mod support;
+use crate::support;
 
 use maestro_test_conventions::check_workspace;
 use support::Workspace;
@@ -161,8 +161,8 @@ fn test_module_decoys_are_rejected() {
 #[test]
 fn unmigrated_test_layout_is_unchanged() {
     let workspace = Workspace::new();
-    workspace.foundation(&["maestro-models", "maestro-text"]);
-    let tests = workspace.root.join("crates/maestro-text/tests");
+    workspace.foundation(&["maestro-models", "maestro-path"]);
+    let tests = workspace.root.join("crates/maestro-path/tests");
     std::fs::create_dir_all(&tests).unwrap();
     std::fs::write(tests.join("standalone.rs"), "").unwrap();
     check_workspace(&workspace.root).unwrap();

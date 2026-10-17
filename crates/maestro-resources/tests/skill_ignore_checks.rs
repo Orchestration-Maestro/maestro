@@ -1,8 +1,7 @@
 //! Directory-local ignore decisions through native skill discovery.
 #![cfg(unix)]
 #![cfg(test)]
-#[cfg(test)]
-pub mod support;
+use crate::support;
 use maestro_resources::{
     DiagnosticType, LoadSkillsFromDirOptions, NativeResourceOperations, load_skills_from_dir,
 };

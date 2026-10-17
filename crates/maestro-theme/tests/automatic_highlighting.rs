@@ -1,6 +1,5 @@
 //! HTML detection keeps surface membership separate from the native painter.
-#[cfg(test)]
-pub mod support;
+use crate::support;
 use maestro_theme::{HighlightProfile, SyntaxSpan, ThemeColor, highlight_auto};
 use serde::Deserialize;
 use support::highlighting::{Scripted, decode, native};

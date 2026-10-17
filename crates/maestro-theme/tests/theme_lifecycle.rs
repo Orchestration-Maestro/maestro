@@ -2,8 +2,7 @@
 #[path = "live/fake.rs"]
 #[cfg(test)]
 mod fake;
-#[cfg(test)]
-mod live;
+use crate::live;
 
 use fake::Fake;
 use live::{Ops, Scratch, custom_json, state};

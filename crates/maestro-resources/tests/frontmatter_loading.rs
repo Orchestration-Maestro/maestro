@@ -1,7 +1,6 @@
 //! Native resource loading through shared escaped metadata.
 #![cfg(not(target_arch = "wasm32"))]
-#[cfg(test)]
-pub mod support;
+use crate::support;
 use maestro_resources::{
     DiagnosticType, LoadPromptTemplatesOptions, LoadSkillsFromDirOptions, NativeResourceOperations,
     PromptTemplate, SourceOrigin, SourceScope, load_prompt_templates, load_skills_from_dir,

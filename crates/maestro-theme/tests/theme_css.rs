@@ -1,6 +1,5 @@
 //! Resolved color records and optional export colors.
-#[cfg(test)]
-mod live;
+use crate::live;
 
 use live::{Ops, Scratch, custom_json, state};
 use maestro_theme::{

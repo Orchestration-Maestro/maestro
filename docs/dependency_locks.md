@@ -45,7 +45,7 @@ Registry checksums live in `Cargo.lock`; path dependencies have no registry
 checksum. A lock records the native dependency closure, not a foreign package
 tree or proof that a library implements its promised behavior.
 
-The `dependency_locks` integration target in `maestro-test-conventions` verifies:
+The `dependency_locks` integration module in `maestro-test-conventions` verifies:
 
 - Complete delivered-workspace metadata resolves twice with equal typed packages
   and graphs, leaving tracked manifests and lock bytes unchanged.
@@ -60,7 +60,7 @@ The `dependency_locks` integration target in `maestro-test-conventions` verifies
 Run the focused target:
 
 ```sh
-mise exec -- cargo test -p maestro-test-conventions --locked --test dependency_locks
+mise exec -- cargo test -p maestro-test-conventions --locked --test integration -- dependency_locks::
 ```
 
 These tests invoke Cargo metadata, not recursive compilation or package installs.

@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-mod support;
+use crate::support;
 
 use maestro_test_conventions::check_workspace;
 use support::Workspace;

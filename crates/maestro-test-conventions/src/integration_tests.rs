@@ -12,7 +12,11 @@ pub(super) fn check(members: &[Member]) -> Result<(), String> {
                 | "maestro-catalog"
                 | "maestro-models"
                 | "maestro-packages"
+                | "maestro-resources"
                 | "maestro-session"
+                | "maestro-test-conventions"
+                | "maestro-text"
+                | "maestro-theme"
                 | "maestro-tools"
                 | "maestro-tui"
         )

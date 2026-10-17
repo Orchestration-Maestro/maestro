@@ -1,5 +1,4 @@
-#[cfg(test)]
-pub mod support;
+use crate::support;
 use maestro_resources::{NativeResourceOperations, canonicalize_path, is_local_path};
 use support::text;
 
