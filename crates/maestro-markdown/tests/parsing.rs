@@ -165,3 +165,69 @@ fn mapped_links_retain_source_boundaries_before_escaped_math() {
         }
     }
 }
+
+#[test]
+fn inline_context_keeps_original_reference_operands_and_consumed_suffixes() {
+    use maestro_markdown::{InlineAtom, InlineContext};
+    for label in ["[$x$]", "[$x$][]", "[$x$][r]"] {
+        let document = parse(format!(
+            "{label}\n\n[$x$]: /docs \"tip\"\n[r]: /docs \"tip\""
+        ));
+        let context = InlineContext::new(&document);
+        let scope = context.scope(&document.nodes[0].range, false).unwrap();
+        let run = scope.interpret(0..scope.text().len(), &[]);
+        assert_eq!(run.atoms.len(), 1);
+        let InlineAtom::Resolved(node) = run.atoms[0] else {
+            panic!("resolved anchor")
+        };
+        let Kind::Link(_, _, href, meta) = &node.kind else {
+            panic!("anchor")
+        };
+        assert_eq!(href, "/docs");
+        assert_eq!(meta.title, "tip");
+        assert_eq!(&scope.text()[scope.operands[0].0.clone()], label);
+        let label = context.scope(&node.range, true).unwrap();
+        assert_eq!(label.text(), "$x$");
+        let run = label.interpret(0..3, std::slice::from_ref(&(0..3)));
+        assert!(matches!(run.atoms[0], InlineAtom::Opaque(0)));
+        let Kind::Paragraph(c) = &run.nodes[0].kind else {
+            panic!("inline paragraph")
+        };
+        assert!(matches!(c[0].kind, Kind::Atom(0)));
+    }
+}
+
+#[test]
+fn inline_scopes_map_container_prefixes_escaped_labels_and_table_pipes() {
+    use maestro_markdown::InlineContext;
+    let mut document = parse("> - [\\[$x$\\]][r] and \\(x\n>   y\\)\n\n[r]: /docs\n\n| cell |\n| - |\n| https://example.test/a\\|b/$x$ $y$ |".into());
+    maestro_markdown::autolinks(&mut document);
+    let context = InlineContext::new(&document);
+    let Kind::Quote(c, _) = &document.nodes[0].kind else {
+        panic!("quote")
+    };
+    let Kind::List(_, c) = &c[0].kind else {
+        panic!("list")
+    };
+    let Kind::Item(c) = &c[0].kind else {
+        panic!("item")
+    };
+    let scope = context.scope(&c[0].range, false).unwrap();
+    assert_eq!(scope.text(), "[\\[$x$\\]][r] and \\(x\ny\\)");
+    let label = context.scope(&scope.operands[0].1.range, true).unwrap();
+    assert_eq!(label.text(), "\\[$x$\\]");
+    let table = document
+        .nodes
+        .iter()
+        .find_map(|node| match &node.kind {
+            Kind::Table(t) => Some(t),
+            _ => None,
+        })
+        .unwrap();
+    let scope = context.scope(&table.rows[0][0].range, false).unwrap();
+    assert_eq!(scope.text(), " https://example.test/a|b/$x$ $y$ ");
+    assert_eq!(
+        &scope.text()[scope.operands[0].0.clone()],
+        "https://example.test/a|b/$x$"
+    );
+}

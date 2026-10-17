@@ -150,6 +150,7 @@ impl NativeReading {
         &mut self,
         frame: &Element,
         transform: &Transform,
+        retained: Option<&Scroll>,
     ) -> Result<ReadingLayout, AttachmentUiError> {
         let (layout, scroll) = transaction(
             (frame, &self.viewport),
@@ -159,7 +160,7 @@ impl NativeReading {
                 size_slots(&self.root.slots, &self.sizes)?;
                 attr(frame, &self.measurement)?;
                 attr(&self.viewport, &self.viewport_measurement)?;
-                saved.apply(&self.viewport)?;
+                retained.unwrap_or(saved).apply(&self.viewport)?;
                 let layout = ReadingLayout {
                     height: transform.height(bounds(&self.root.element)?.height()),
                     controls: self.controls(frame, transform)?,
@@ -330,6 +331,20 @@ impl BrowserAttachmentHost {
             .remove(&id)
             .ok_or_else(|| AttachmentUiError::Host("Missing reading surface".into()))?;
         let result = (|| {
+            let retained = if surface.pending.as_ref().is_some_and(|candidate| {
+                candidate
+                    .reading
+                    .as_ref()
+                    .is_some_and(|r| r.root.commit.is_some())
+            }) {
+                surface
+                    .reading
+                    .as_ref()
+                    .map(|r| Scroll::read(&r.viewport))
+                    .transpose()?
+            } else {
+                None
+            };
             let target = match surface.pending.as_deref_mut() {
                 Some(pending) => pending,
                 None => &mut surface,
@@ -339,7 +354,7 @@ impl BrowserAttachmentHost {
                 .as_mut()
                 .ok_or_else(|| AttachmentUiError::Host("Surface is not reading content".into()))?;
             let transform = self.transform(r.pixels)?;
-            r.measure(&target.wrapper, &transform)
+            r.measure(&target.wrapper, &transform, retained.as_ref())
         })();
         if result.is_err() {
             drop(surface.pending.take());
@@ -450,6 +465,9 @@ fn reconcile(
         },
     )?;
     commit(&previous.root);
+    if let Some(scroll) = &next.scroll {
+        scroll.commit(&previous.viewport);
+    }
     previous.content = Rc::clone(&next.content);
     surface.style.clone_from(&candidate.style);
     surface.modal = candidate.modal;

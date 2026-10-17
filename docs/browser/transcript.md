@@ -29,14 +29,18 @@ on; code starts with empty code and language. Both render through
 `CodeBlockView`, which borrows one frame's localization, brand presentation,
 syntax engine and containing-modal identity and is never retained.
 
-Markdown parsing and contextual fragment parsing use the shared [Markdown owner](../markdown.md), reached
-through `maestro_app::markdown`. Tag-like text outside code and angle autolinks is
+Markdown parsing and scoped inline interpretation use the shared
+[Markdown owner](../markdown.md), reached through `maestro_app::markdown`.
+One document-scoped context retains resolved operands and original label scopes;
+formula atoms precede ordinary inline grammar without resolving rewritten labels. Tag-like text outside code and angle autolinks is
 shown literally when escaping is on. Formulas written with `$…$`, `\(…\)`,
 `$$…$$` and `\[…\]` render through the math library as HTML with errors shown
 inline; display delimiters open a block in paragraphs, quotes and loose items,
 and a tight item only when it starts with one, while headings and table cells
-admit inline formulas. Code, link destinations, titles, plain URLs and angle
-autolinks are never formulas; link labels may contain them. The selected pack's
+admit inline formulas. Code, images, plain URLs and angle autolinks remain opaque.
+Selected links retain literal destinations and titles while their labels may contain
+formulas. A formula that starts before authored link syntax consumes that syntax
+rather than creating an anchor. The selected pack's
 error role colors formula errors when painted, and the matching math stylesheet
 and fonts are inserted once per document.
 
@@ -53,7 +57,9 @@ replaces its root and copy controls only after the replacement is published, so 
 failed publication keeps the old document and mounted owner; reasoning presentation changes without
 replacing content. A standalone block updates its label and body in place and keeps
 its copy control and its active success indication. Updates are staged for measurement;
-only successful publication reconciles changed native nodes. A replacement syntax
+only successful publication reconciles changed native nodes. The first returned
+control geometry uses the retained viewport's prospective layout and clamped
+fractional scroll on both axes, including presentation-only changes. A replacement syntax
 engine is consumed even when Markdown content is unchanged. A control that gains keyboard
 focus is scrolled into view. Dropping the owner removes the native root and revokes
 pending feedback.

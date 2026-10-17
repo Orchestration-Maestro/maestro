@@ -124,8 +124,10 @@ frame/viewport/slot style attributes and fractional viewport scroll positions on
 axes after measurement or failed publication.
 All restoration attempts run: the original operation error takes precedence,
 otherwise the first cleanup error is returned. A failed native restoration write
-cannot itself be guaranteed recovered. Publication applies the staged sizes and
-clamped offsets before committing placement. Feature roots must contain their trailing flow spacing within
+cannot itself be guaranteed recovered. Publication applies staged sizes and placement before the infallible feature
+commit. Reconciled candidates are measured with the retained viewport's offsets
+under bounded prospective geometry; after the native commit, the retained viewport
+receives those measured clamped offsets before controls are returned. Feature roots must contain their trailing flow spacing within
 the measured root, rather than leaving an external margin outside its bounds.
 
 The frame, including typography, uses the existing canvas's separate

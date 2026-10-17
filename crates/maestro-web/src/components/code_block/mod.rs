@@ -123,7 +123,7 @@ pub struct CodeBlock {
     prepared: Rc<Prepared>,
     /// Mounted owner, referenced weakly so dropping the surface releases it.
     mounted: Rc<RefCell<Weak<browser::Mounted>>>,
-    /// Native factory, created once and reused for the retained root.
+    /// Candidate factory for the current preparation; successful publication retains the mounted root.
     content: Option<Rc<ReadingContent>>,
     /// Canvas copy control, retained across updates.
     copy: Option<CopyButton>,

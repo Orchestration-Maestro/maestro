@@ -286,6 +286,48 @@ mod tests {
         check("maestro.root().querySelector('.katex') !== null");
     }
 
+    /// Resolved shortcut and collapsed references retain their identity while labels render math.
+    #[wasm_bindgen]
+    pub fn markdown_formula_labels_keep_reference_identity() {
+        let mut surface = Surface::new();
+        for label in ["[$x$]", "[$x$][]", "[$x$][r]"] {
+            let block = surface.markdown(&format!(
+                "{label}\n\n[$x$]: /docs \"tip\"\n[r]: /docs \"tip\""
+            ));
+            check("maestro.root().querySelectorAll('a[href=\"/docs\"]').length === 1");
+            check("maestro.root().querySelector('a').title === 'tip'");
+            check("maestro.root().querySelectorAll('a .katex').length === 1");
+            check(
+                "!maestro.root().textContent.includes('[]') && !maestro.root().textContent.includes('[r]')",
+            );
+            drop(block);
+        }
+    }
+
+    /// A formula beginning before link syntax wins; a formula inside a label keeps its anchor.
+    #[wasm_bindgen]
+    pub fn markdown_formula_order_keeps_resolved_label_scope() {
+        let mut surface = Surface::new();
+        for (source, anchors) in [
+            ("$[f](x)$", 0),
+            ("$[f][r]$\n\n[r]: x", 0),
+            ("[$x$][r]\n\n[r]: /docs \"tip\"", 1),
+            ("$f(x)$", 0),
+        ] {
+            let block = surface.markdown(source);
+            assert_eq!(
+                js("maestro.root().querySelectorAll('a').length").as_f64(),
+                Some(f64::from(anchors))
+            );
+            check("maestro.root().querySelectorAll('.katex').length === 1");
+            drop(block);
+        }
+        let _block = surface.markdown("$x `y$`");
+        check(
+            "maestro.root().querySelector('.katex') === null && maestro.root().querySelector('code').textContent === 'y$'",
+        );
+    }
+
     /// A formula cannot close inside an opaque code span.
     #[wasm_bindgen]
     pub fn markdown_math_rejects_opaque_overlap() {
@@ -294,6 +336,29 @@ mod tests {
         check(
             "maestro.root().querySelector('.katex') === null && maestro.root().querySelector('code').textContent === 'y$'",
         );
+    }
+
+    /// Display math keeps native block grammar in the following source slice.
+    #[wasm_bindgen]
+    pub fn markdown_display_math_keeps_following_native_blocks() {
+        let mut surface = Surface::new();
+        for (source, selector, text, math) in [
+            ("$$x$$ # heading", "h1", "heading", 1),
+            ("$$x$$ - item", "li", "item", 1),
+            ("$$x$$ # heading $y$", "h1", "heading", 2),
+        ] {
+            let block = surface.markdown(source);
+            publish("blockSelector", &selector.into());
+            publish("blockText", &text.into());
+            check(
+                "maestro.root().querySelector(blockSelector)?.textContent.startsWith(blockText) === true",
+            );
+            assert_eq!(
+                js("maestro.root().querySelectorAll('.katex').length").as_f64(),
+                Some(f64::from(math))
+            );
+            drop(block);
+        }
     }
 
     /// Authored slot-like markup never receives a generated listing.

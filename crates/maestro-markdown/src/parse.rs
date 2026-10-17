@@ -3,33 +3,32 @@ use crate::{
     source::{Frame, Prefix, Source, strip_quote},
     types::{Cell, Cells, Document, ImageMetadata, Kind, LinkMetadata, Node, Table, Text},
 };
-use pulldown_cmark::{
-    BrokenLink, CodeBlockKind, CowStr, Event, LinkType, Options, Parser, Tag, TagEnd,
-};
-use std::ops::Range;
+use pulldown_cmark::{CodeBlockKind, Event, LinkType, Options, Parser, Tag, TagEnd};
+use std::{cell::RefCell, collections::HashMap, ops::Range};
 /// Parse caller-normalized owned source into native structure.
 #[must_use]
 pub fn parse(source: String) -> Document {
-    parse_using(source, None::<fn(&str) -> Option<(String, String)>>)
+    let scopes = RefCell::new(HashMap::new());
+    let mut document = native(source, Some(&scopes));
+    document.scopes = scopes.into_inner();
+    document
 }
-/// Parse a fragment using the complete document's resolved reference metadata.
-#[must_use]
-pub fn parse_with_references(source: String, document: &Document) -> Document {
-    let references = crate::references::collect(&document.nodes);
-    parse_using(source, Some(move |id: &str| references.get(id).cloned()))
-}
-/// Adapt the one native parser, optionally resolving document-wide references.
-fn parse_using(
+/// Adapt native grammar with optional document-scoped provenance capture.
+pub(crate) fn native(
     source: String,
-    mut callback: Option<impl FnMut(&str) -> Option<(String, String)>>,
+    scopes: Option<&RefCell<HashMap<crate::inline::ScopeKey, crate::source::ScopeSource>>>,
 ) -> Document {
-    let parser = Parser::new_with_broken_link_callback(
+    #[cfg(test)]
+    crate::tests::WORK.with_borrow_mut(|work| {
+        if scopes.is_some() {
+            work.documents += 1;
+        } else {
+            work.local_bytes += source.len();
+        }
+    });
+    let parser = Parser::new_ext(
         &source,
         Options::ENABLE_STRIKETHROUGH | Options::ENABLE_TASKLISTS | Options::ENABLE_TABLES,
-        Some(move |link: BrokenLink<'_>| {
-            callback.as_mut()?(link.reference.as_ref())
-                .map(|(href, title)| (CowStr::from(href), CowStr::from(title)))
-        }),
     );
     let mut events = parser.into_offset_iter();
     let nodes = gaps(
@@ -39,16 +38,22 @@ fn parse_using(
                 text: &source,
                 frame: None,
                 cell: false,
+                scopes,
             },
         ),
         &Source {
             text: &source,
             frame: None,
             cell: false,
+            scopes,
         },
         0..source.len(),
     );
-    Document { source, nodes }
+    Document {
+        source,
+        nodes,
+        scopes: HashMap::new(),
+    }
 }
 /// Consumes the current native container without rebuilding its source.
 fn children<'a>(
@@ -58,7 +63,10 @@ fn children<'a>(
     let mut nodes = Vec::new();
     while let Some((event, mut range)) = events.next() {
         let kind = match event {
-            Event::Start(tag) => container(tag, events, source, &range),
+            Event::Start(tag) => {
+                range = consumed(&tag, range, source.text);
+                container(tag, events, source, &range)
+            }
             Event::Html(text) | Event::InlineHtml(text) => {
                 Kind::Html(source.spelling(text.into_string()))
             }
@@ -93,6 +101,7 @@ fn children<'a>(
             Event::End(_) => break,
             _ => continue,
         };
+        capture_scope(&kind, &range, source);
         nodes.push(Node {
             kind,
             authored: source.authored(range.clone()),
@@ -100,6 +109,39 @@ fn children<'a>(
         });
     }
     nodes
+}
+/// Retain the full consumed extent of collapsed link and image suffixes.
+fn consumed(tag: &Tag<'_>, mut range: Range<usize>, text: &str) -> Range<usize> {
+    if matches!(
+        tag,
+        Tag::Link {
+            link_type: LinkType::Collapsed,
+            ..
+        } | Tag::Image {
+            link_type: LinkType::Collapsed,
+            ..
+        }
+    ) && text.get(range.end..range.end + 2) == Some("[]")
+    {
+        range.end += 2;
+    }
+    range
+}
+/// Capture only independently interpreted inline scopes while framing is available.
+fn capture_scope(kind: &Kind, range: &Range<usize>, source: &Source<'_>) {
+    match kind {
+        Kind::Paragraph(_) | Kind::Inline(_) => source.scope(range, range.clone(), false),
+        Kind::Heading(_, c, _) => {
+            if let Some(first) = c.first().zip(c.last()) {
+                source.scope(range, first.0.range.start..first.1.range.end, false);
+            }
+        }
+        Kind::Link(c, ..) if source.text[range.clone()].starts_with('[') => {
+            let end = c.last().map_or(range.start + 1, |node| node.range.end);
+            source.scope(range, range.start + 1..end, true);
+        }
+        _ => {}
+    }
 }
 /// Retains blank source gaps around top-level blocks.
 fn gaps(nodes: Vec<Node>, source: &Source<'_>, extent: Range<usize>) -> Vec<Node> {
@@ -257,6 +299,7 @@ fn quote<'a>(
         text: source.text,
         frame: Some(&frame),
         cell: false,
+        scopes: source.scopes,
     };
     let children = children(events, &nested);
     let extent = children
@@ -300,6 +343,7 @@ fn item<'a>(
         text: source.text,
         frame: Some(&frame),
         cell: false,
+        scopes: source.scopes,
     };
     Kind::Item(tight(children(events, &nested), &nested))
 }
@@ -345,6 +389,11 @@ fn table<'a>(
                         ..*source
                     },
                 );
+                Source {
+                    cell: true,
+                    ..*source
+                }
+                .scope(&range, range.clone(), false);
                 if let Some(row) = rows.last_mut() {
                     row.push(Cell {
                         children: cell,
@@ -454,6 +503,7 @@ fn flush(output: &mut Vec<Node>, pending: &mut Vec<Node>, source: &Source<'_>) {
         return;
     };
     let range = first.range.start..last.range.end;
+    source.scope(&range, range.clone(), false);
     output.push(Node {
         authored: source.authored(range.clone()),
         range,

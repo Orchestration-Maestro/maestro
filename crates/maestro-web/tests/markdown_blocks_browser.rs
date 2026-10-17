@@ -86,6 +86,75 @@ mod tests {
         surface.draw(|ui, view| block.render(ui, view).unwrap());
     }
 
+    /// One returned frame uses the retained viewport's clamped scroll after presentation changes.
+    #[wasm_bindgen]
+    pub fn markdown_first_reconciled_frame_uses_retained_scroll() {
+        let mut surface = Surface::new();
+        surface.size = (350., 170.);
+        let mut block = MarkdownBlock::new(surface.host());
+        block.escape_html = false;
+        block.content = format!(
+            "<div style=\"width:900px;height:1px\"></div>\n\n{}\n\n```js\nlet end;\n```",
+            "filler paragraph\n\n".repeat(40)
+        );
+        surface.settle(&mut block);
+        let _ = js(
+            "globalThis.retainedViewport = maestro.root().closest('.maestro-reading-viewport'); retainedViewport.scrollTop = 1e6; retainedViewport.scrollLeft = 23.5; globalThis.oldTop = retainedViewport.scrollTop; globalThis.oldLeft = retainedViewport.scrollLeft",
+        );
+        check("oldTop > 0 && oldLeft > 0 && oldLeft % 1 !== 0");
+        block.is_thinking = true;
+        let response = surface.draw(|ui, view| block.render(ui, view).unwrap());
+        check(
+            "maestro.root().closest('.maestro-reading-viewport') === retainedViewport && retainedViewport.scrollTop < oldTop && retainedViewport.scrollLeft === oldLeft",
+        );
+        assert_first_control(&surface, response.rect);
+    }
+
+    /// The shared standalone-code route measures changed-height clamping before returning.
+    #[wasm_bindgen]
+    pub fn code_first_reconciled_frame_uses_retained_scroll() {
+        let mut surface = Surface::new();
+        surface.size = (350., 170.);
+        let mut block = CodeBlock::new(surface.host());
+        block.code = "line\n".repeat(80);
+        surface.draw(|ui, view| block.render(ui, view).unwrap());
+        let _ = js(
+            "globalThis.retainedViewport = document.querySelector('.maestro-reading-viewport'); retainedViewport.scrollTop = 10.5; globalThis.oldTop = retainedViewport.scrollTop",
+        );
+        check("oldTop > 0");
+        block.code = "line\n".repeat(60);
+        block.language = "text".into();
+        let response = surface.draw(|ui, view| block.render(ui, view).unwrap());
+        check(
+            "document.querySelector('.maestro-reading-viewport') === retainedViewport && retainedViewport.scrollTop === oldTop",
+        );
+        assert_first_control(&surface, response.rect);
+        block.code = "short".into();
+        let response = surface.draw(|ui, view| block.render(ui, view).unwrap());
+        check(
+            "document.querySelector('.maestro-reading-viewport') === retainedViewport && retainedViewport.scrollTop === 0",
+        );
+        assert_first_control(&surface, response.rect);
+    }
+
+    /// Compare the first readback and canvas paint with the retained native slot, without settling.
+    fn assert_first_control(surface: &Surface, response: egui::Rect) {
+        let measured = surface.effects.controls.borrow()[0].translate(response.min.to_vec2());
+        let native = first_slot_center();
+        assert!(
+            measured.center().distance(native) < 0.8,
+            "measured {measured:?}, native {native:?}"
+        );
+        let painted = surface
+            .painted
+            .iter()
+            .any(|(label, rect)| label == "image" && rect.contains(native));
+        assert!(
+            painted,
+            "canvas copy glyph must paint inside the retained native slot"
+        );
+    }
+
     /// Modal identity is forwarded through both native phases.
     fn modal_placements(surface: &mut Surface) {
         let modal = egui::Id::new("modal");

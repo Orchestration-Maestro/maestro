@@ -2,7 +2,7 @@
 use super::admission::{Formula, escape_tags, scan, starts_display};
 use maestro_app::{
     is_whitespace_scalar,
-    markdown::{self, Alignment, Kind, Node, Table},
+    markdown::{self, Alignment, InlineAtom, InlineContext, InlineScope, Kind, Node, Table},
     markup::{EscapeMode, escape_into},
     normalize_to_lf,
 };
@@ -87,47 +87,48 @@ pub(super) fn prepare(content: &str, escape_html: bool) -> Prepared {
     }
     let mut document = markdown::parse(source);
     markdown::autolinks(&mut document);
+    let inline = InlineContext::new(&document);
     let mut writer = Writer {
         context: katex::KatexContext::default(),
-        document: &document,
-        slots: Vec::new(),
+        inline: &inline,
         prepared: Prepared {
             slot_attribute,
             ..Prepared::default()
         },
     };
     let mut html = String::new();
-    writer.blocks(&document.nodes, &mut html);
+    writer.blocks(&document.nodes, None, &mut html);
     writer.prepared.html = html;
     writer.prepared
 }
 
+/// Local atom operands paired with their caller-admitted formulas.
+type Atoms<'a, 'b> = Option<(&'b [InlineAtom<'a>], &'b [Formula])>;
+
 /// Document walker with the math renderer and generated-slot table.
-struct Writer<'a> {
-    /// Complete document supplying resolved references to fragment parsing.
-    document: &'a markdown::Document,
+struct Writer<'a, 'd> {
+    /// One resolved context with original container and label scopes.
+    inline: &'a InlineContext<'d>,
     /// Reused font and macro tables.
     context: katex::KatexContext,
-    /// Generated inline slots of the document currently being written.
-    slots: Vec<(Range<usize>, Formula)>,
     /// Output under construction.
     prepared: Prepared,
 }
-impl Writer<'_> {
+impl Writer<'_, '_> {
     /// Write block nodes in order.
-    fn blocks(&mut self, nodes: &[Node], out: &mut String) {
+    fn blocks(&mut self, nodes: &[Node], atoms: Atoms<'_, '_>, out: &mut String) {
         for node in nodes {
-            self.block(node, out);
+            self.block(node, atoms, out);
         }
     }
     /// Write one block node.
-    fn block(&mut self, node: &Node, out: &mut String) {
+    fn block(&mut self, node: &Node, atoms: Atoms<'_, '_>, out: &mut String) {
         match &node.kind {
-            Kind::Paragraph(c) => self.flow(c, &node.authored, Flow::Paragraph, out),
-            Kind::Inline(c) => self.flow(c, &node.authored, Flow::Item, out),
-            Kind::Heading(level, c, authored) => {
+            Kind::Paragraph(c) => self.flow(c, (&node.range, Flow::Paragraph), atoms, out),
+            Kind::Inline(c) => self.flow(c, (&node.range, Flow::Item), atoms, out),
+            Kind::Heading(level, c, _) => {
                 let _ = write!(out, "<h{level}>");
-                self.flow(c, authored, Flow::Inline, out);
+                self.flow(c, (&node.range, Flow::Inline), atoms, out);
                 let _ = writeln!(out, "</h{level}>");
             }
             Kind::List(start, items) => {
@@ -137,25 +138,25 @@ impl Writer<'_> {
                     Some(n) => ("ol", format!(" start=\"{n}\"")),
                 };
                 let _ = writeln!(out, "<{tag}{attr}>");
-                self.blocks(items, out);
+                self.blocks(items, atoms, out);
                 let _ = writeln!(out, "</{tag}>");
             }
             Kind::Item(c) => {
                 out.push_str("<li>");
-                self.blocks(c, out);
+                self.blocks(c, atoms, out);
                 out.push_str("</li>\n");
             }
             Kind::Quote(c, _) => {
                 out.push_str("<blockquote>\n");
-                self.blocks(c, out);
+                self.blocks(c, atoms, out);
                 out.push_str("</blockquote>\n");
             }
             Kind::HtmlBlock(html) => out.push_str(html),
             Kind::Rule => out.push_str("<hr>\n"),
             Kind::CodeBlock(code, info) => self.code(code, info.as_deref(), out),
-            Kind::Table(table) => self.table(table, out),
+            Kind::Table(table) => self.table(table, atoms, out),
             Kind::Gap => {}
-            _ => self.inline(std::slice::from_ref(node), out),
+            _ => self.inline(std::slice::from_ref(node), atoms, out),
         }
     }
     /// Reserve a listing slot for a code block.
@@ -180,12 +181,12 @@ impl Writer<'_> {
         });
     }
     /// Write a table inside its own horizontal scroller.
-    fn table(&mut self, table: &Table, out: &mut String) {
+    fn table(&mut self, table: &Table, atoms: Atoms<'_, '_>, out: &mut String) {
         out.push_str("<div class=\"maestro-table-scroll\"><table>\n<thead>\n");
-        self.row(&table.header, &table.alignments, "th", out);
+        self.row(&table.header, (&table.alignments, "th"), atoms, out);
         out.push_str("</thead>\n<tbody>");
         for row in &table.rows {
-            self.row(row, &table.alignments, "td", out);
+            self.row(row, (&table.alignments, "td"), atoms, out);
         }
         out.push_str("</tbody></table>\n</div>");
     }
@@ -193,8 +194,8 @@ impl Writer<'_> {
     fn row(
         &mut self,
         cells: &[markdown::Cell],
-        alignments: &[Alignment],
-        tag: &str,
+        (alignments, tag): (&[Alignment], &str),
+        atoms: Atoms<'_, '_>,
         out: &mut String,
     ) {
         out.push_str("<tr>\n");
@@ -206,95 +207,118 @@ impl Writer<'_> {
                 Alignment::None => "",
             };
             let _ = write!(out, "<{tag}{align}>");
-            self.flow(&cell.children, &cell.authored, Flow::Inline, out);
+            self.flow(&cell.children, (&cell.range, Flow::Inline), atoms, out);
             let _ = writeln!(out, "</{tag}>");
         }
         out.push_str("</tr>\n");
     }
 
-    /// Write one inline run, admitting display formulas as the context allows.
-    fn flow(&mut self, children: &[Node], authored: &str, flow: Flow, out: &mut String) {
-        let source = if flow == Flow::Paragraph {
-            authored.trim_end_matches('\n')
+    /// Write a contextual run using the document's captured original scope.
+    fn flow(
+        &mut self,
+        children: &[Node],
+        (range, flow): (&Range<usize>, Flow),
+        atoms: Atoms<'_, '_>,
+        out: &mut String,
+    ) {
+        if atoms.is_some() {
+            let mut body = String::new();
+            self.inline(children, atoms, &mut body);
+            wrapped(&body, flow == Flow::Paragraph, out);
+            return;
+        }
+        let Some(scope) = self.inline.scope(range, false) else {
+            self.inline(children, None, out);
+            return;
+        };
+        let source = scope.text();
+        let end = if flow == Flow::Paragraph {
+            source.trim_end_matches('\n').len()
         } else {
-            authored
+            source.len()
         };
         let block = flow == Flow::Paragraph || (flow == Flow::Item && starts_display(source));
         let displays = if block {
-            scan(source, true, self.document)
+            scan(scope, 0..source.len(), true)
         } else {
             Vec::new()
         };
         let wrap = flow == Flow::Paragraph;
         if displays.is_empty() {
-            let formulas = scan(source, false, self.document);
-            let mut body = String::new();
+            let formulas = scan(scope, 0..scope.text().len(), false);
             if formulas.is_empty() {
-                self.inline(children, &mut body);
+                let mut body = String::new();
+                self.inline(children, None, &mut body);
+                wrapped(&body, wrap, out);
             } else {
-                self.reparsed(source, &formulas, false, &mut body);
+                self.piece(scope, 0..end, (&formulas, wrap, false), out);
             }
-            wrapped(&body, wrap, out);
             return;
         }
-        let mut end = 0;
+        let mut begin = 0;
         for formula in &displays {
-            self.piece(
-                source[end..formula.range.start].trim_end_matches('\n'),
-                wrap,
-                out,
-            );
+            let trimmed = source[begin..formula.range.start]
+                .trim_end_matches('\n')
+                .len();
+            let range = begin..begin + trimmed;
+            let formulas = scan(scope, range.clone(), false);
+            self.piece(scope, range, (&formulas, wrap, true), out);
             out.push_str(&self.math(formula));
-            end = formula.range.end;
+            begin = formula.range.end;
         }
-        self.piece(&source[end..], wrap, out);
+        let formulas = scan(scope, begin..end, false);
+        self.piece(scope, begin..end, (&formulas, wrap, true), out);
     }
-    /// Write a text piece between display formulas.
-    fn piece(&mut self, text: &str, wrap: bool, out: &mut String) {
-        if text.is_empty() {
+    /// Interpret a local slice with admitted formulas and retained native operands as atoms.
+    fn piece(
+        &mut self,
+        scope: &InlineScope<'_>,
+        range: Range<usize>,
+        (formulas, wrap, edges): (&[Formula], bool, bool),
+        out: &mut String,
+    ) {
+        if range.is_empty() {
             return;
         }
-        let formulas = scan(text, false, self.document);
-        let mut body = String::new();
-        self.reparsed(text, &formulas, true, &mut body);
-        wrapped(&body, wrap, out);
-    }
-
-    /// Parse `source` again with each formula replaced by an owned generated slot.
-    fn reparsed(&mut self, source: &str, formulas: &[Formula], edges: bool, out: &mut String) {
-        let (mut generated, mut end) = (String::new(), 0);
-        let mut slots = Vec::new();
-        for formula in formulas {
-            generated.push_str(&source[end..formula.range.start]);
-            let start = generated.len();
-            generated.push_str("<m></m>");
-            slots.push((start..generated.len(), formula.clone()));
-            end = formula.range.end;
-        }
-        generated.push_str(&source[end..]);
-        let mut document = markdown::parse_with_references(generated, self.document);
-        markdown::autolinks(&mut document);
-        let outer = std::mem::replace(&mut self.slots, slots);
+        let first = formulas.partition_point(|formula| formula.range.start < range.start);
+        let last = formulas.partition_point(|formula| formula.range.end <= range.end);
+        let formulas = &formulas[first.min(last)..last];
+        let spans: Vec<_> = formulas
+            .iter()
+            .map(|formula| formula.range.clone())
+            .collect();
+        let run = scope.interpret(range.clone(), &spans);
+        let source = &scope.text()[range];
+        let inline = run
+            .nodes
+            .iter()
+            .all(|node| matches!(node.kind, Kind::Paragraph(_)));
+        let edges = edges && inline;
         let edge = |c: char| c == ' ' || c == '\t';
-        let leading = &source[..source.len() - source.trim_start_matches(edge).len()];
-        let trailing = &source[source.trim_end_matches([' ', '\t', '\n']).len()..];
+        let mut body = String::new();
         if edges {
-            escape(leading, out);
+            escape(
+                &source[..source.len() - source.trim_start_matches(edge).len()],
+                &mut body,
+            );
         }
-        for node in &document.nodes {
+        for node in &run.nodes {
             match &node.kind {
-                Kind::Paragraph(children) => self.inline(children, out),
-                _ => self.block(node, out),
+                Kind::Paragraph(c) => self.inline(c, Some((&run.atoms, formulas)), &mut body),
+                _ => self.block(node, Some((&run.atoms, formulas)), &mut body),
             }
         }
         if edges {
-            escape(trailing, out);
+            escape(
+                &source[source.trim_end_matches([' ', '\t', '\n']).len()..],
+                &mut body,
+            );
         }
-        self.slots = outer;
+        wrapped(&body, wrap && inline, out);
     }
 
     /// Write inline nodes.
-    fn inline(&mut self, nodes: &[Node], out: &mut String) {
+    fn inline(&mut self, nodes: &[Node], atoms: Atoms<'_, '_>, out: &mut String) {
         for node in nodes {
             match &node.kind {
                 Kind::Text(text) => escape(&text.decoded, out),
@@ -304,51 +328,61 @@ impl Writer<'_> {
                     out.push_str("</code>");
                 }
                 Kind::Break => out.push_str("<br>"),
-                Kind::Strong(c) => self.tagged("strong", c, out),
-                Kind::Strike(c) => self.tagged("del", c, out),
-                Kind::Emphasis(c) => self.tagged("em", c, out),
-                Kind::Link(c, _, href, meta) => self.link(c, (href, &meta.title), out),
+                Kind::Strong(c) => self.tagged("strong", c, atoms, out),
+                Kind::Strike(c) => self.tagged("del", c, atoms, out),
+                Kind::Emphasis(c) => self.tagged("em", c, atoms, out),
+                Kind::Link(..) => self.link(node, out),
                 Kind::Image(_, meta) => image(meta, out),
                 Kind::TaskListMarker(checked) => task(*checked, out),
-                Kind::Html(html) => self.html(node, html, out),
+                Kind::Html(html) => out.push_str(html),
+                Kind::Atom(index) => self.atom(*index, atoms, out),
                 _ => {}
             }
         }
     }
     /// Write an anchor that opens separately with the safe relation.
-    fn link(&mut self, children: &[Node], (href, tooltip): (&str, &str), out: &mut String) {
+    fn link(&mut self, node: &Node, out: &mut String) {
+        let Kind::Link(children, _, href, meta) = &node.kind else {
+            return;
+        };
         out.push_str("<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"");
         escape(&utf8_percent_encode(href, URL_SAFE).to_string(), out);
         out.push('"');
-        title(tooltip, out);
+        title(&meta.title, out);
         out.push('>');
-        self.inline(children, out);
+        if let Some(scope) = self.inline.scope(&node.range, true) {
+            let formulas = scan(scope, 0..scope.text().len(), false);
+            if formulas.is_empty() {
+                self.inline(children, None, out);
+            } else {
+                self.piece(scope, 0..scope.text().len(), (&formulas, false, true), out);
+            }
+        } else {
+            self.inline(children, None, out);
+        }
         out.push_str("</a>");
     }
     /// Write formatted children inside `tag`.
-    fn tagged(&mut self, tag: &str, children: &[Node], out: &mut String) {
+    fn tagged(&mut self, tag: &str, children: &[Node], atoms: Atoms<'_, '_>, out: &mut String) {
         let _ = write!(out, "<{tag}>");
-        self.inline(children, out);
+        self.inline(children, atoms, out);
         let _ = write!(out, "</{tag}>");
     }
-    /// Emit a generated slot's formula once, or authored inline markup verbatim.
-    fn html(&self, node: &Node, html: &str, out: &mut String) {
-        let index = match html {
-            "<m>" => self
-                .slots
-                .binary_search_by_key(&node.range.start, |(range, _)| range.start),
-            "</m>" => self
-                .slots
-                .binary_search_by_key(&node.range.end, |(range, _)| range.end),
-            _ => Err(0),
+    /// Emit a typed local atom, preserving resolved operands without lookup by display text.
+    fn atom(&mut self, index: usize, atoms: Atoms<'_, '_>, out: &mut String) {
+        let Some((atoms, formulas)) = atoms else {
+            return;
         };
-        let slot = index.ok().map(|index| &self.slots[index]);
-        match slot {
-            Some((range, formula)) if range.start == node.range.start => {
-                out.push_str(&self.math(formula));
+        match atoms.get(index) {
+            Some(InlineAtom::Opaque(id)) => {
+                if let Some(formula) = formulas.get(*id) {
+                    out.push_str(&self.math(formula));
+                }
             }
-            Some(_) => {}
-            None => out.push_str(html),
+            Some(InlineAtom::Resolved(node)) => {
+                self.inline(std::slice::from_ref(node), None, out);
+            }
+            None => {}
         }
     }
 

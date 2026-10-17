@@ -4,9 +4,15 @@
 source and all native nodes, metadata and authored ranges. The same operations
 are exposed through `maestro_app::markdown` for frontend consumers.
 
-`parse_with_references(source, &document)` parses a fragment with the complete
-document's resolved reference destinations and titles. Contextual renderers use
-this operation to preserve links and images alongside formulas.
+After mapped-link selection, `InlineContext::new(&document)` indexes original
+container and link-label scopes. `scope(range, label)` exposes authored bytes,
+resolved operands and opaque ranges without parsing a fragment for admission.
+`InlineScope::interpret` applies native inline grammar locally with caller spans
+and resolved operands as typed atoms. The caller supplies ordered, disjoint spans
+within the selected UTF-8 source range. Link hrefs, titles and reference identities
+remain those of the original document; label interpretation does not resolve them
+again. Captured table-pipe provenance also keeps mapped URLs separate from their
+neighboring inline source.
 
 Parsing preserves native structure before extended links are selected. Call
 `autolinks(&mut document)` separately to map bare URL, www and email spans.

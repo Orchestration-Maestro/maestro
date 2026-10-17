@@ -188,6 +188,8 @@ mod tests {
         pub fail_next: RefCell<Option<String>>,
         /// Phase rejected before native publication.
         pub fail_phase: Cell<Option<ReadingPhase>>,
+        /// Last measured slot rectangles, before publication.
+        pub controls: RefCell<Vec<egui::Rect>>,
         /// Reject the next native measurement readback.
         pub fail_measure: Cell<bool>,
     }
@@ -218,7 +220,9 @@ mod tests {
                     "controlled measurement failure".into(),
                 ));
             }
-            self.native.reading_layout(id)
+            let layout = self.native.reading_layout(id)?;
+            *self.controls.borrow_mut() = layout.controls.iter().map(|(_, rect)| *rect).collect();
+            Ok(layout)
         }
         fn present(
             &self,
@@ -360,6 +364,7 @@ mod tests {
                     fail_next: RefCell::default(),
                     fail_phase: Cell::default(),
                     fail_measure: Cell::default(),
+                    controls: RefCell::default(),
                 }),
                 pack: Rc::new(maestro_theme::load_brand_pack("brand.json", &Pack).unwrap()),
                 alternate: Rc::new(maestro_theme::load_brand_pack("signal.json", &Pack).unwrap()),

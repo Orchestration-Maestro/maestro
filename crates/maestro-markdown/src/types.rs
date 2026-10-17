@@ -13,6 +13,8 @@ pub struct Node {
 }
 /// Block and inline structures admitted by the configured parser.
 pub enum Kind {
+    /// Opaque atom in a locally interpreted inline run, indexed by that run.
+    Atom(usize),
     /// Ordinary paragraph children.
     Paragraph(Vec<Node>),
     /// Tight-item inline container with its full authored source.
@@ -109,6 +111,9 @@ pub struct ImageMetadata {
 }
 /// Owned shared document; source coordinates name this exact string.
 pub struct Document {
+    /// Captured inline source provenance, owned by this document.
+    pub(crate) scopes:
+        std::collections::HashMap<crate::inline::ScopeKey, crate::source::ScopeSource>,
     /// Input supplied by the caller's normalization policy.
     pub source: String,
     /// Complete native semantic content.

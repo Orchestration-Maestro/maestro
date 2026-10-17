@@ -147,45 +147,31 @@ fn matching(source: &str, index: usize, display: bool) -> Option<Formula> {
     })
 }
 
-/// Source ranges where a formula may neither start nor be recognized.
-fn opaque(document: &Document) -> Vec<Range<usize>> {
-    let mut ranges = Vec::new();
-    visit(&document.nodes, &mut |node| match &node.kind {
-        Kind::Code(_)
-        | Kind::CodeBlock(..)
-        | Kind::Html(_)
-        | Kind::HtmlBlock(_)
-        | Kind::Image(..) => {
-            ranges.push(node.range.clone());
-        }
-        Kind::Link(children, ..) => match children.last() {
-            Some(last) if authored_label(document, node) => {
-                ranges.push(node.range.start..node.range.start + 1);
-                ranges.push(last.range.end..node.range.end);
-            }
-            _ => ranges.push(node.range.clone()),
-        },
-        _ => {}
-    });
-    ranges.sort_by_key(|range| range.start);
-    ranges
-}
-
-/// Formulas of one display class outside opaque ranges, in source order.
-pub(super) fn scan(source: &str, display: bool, references: &Document) -> Vec<Formula> {
-    if !source.contains(['$', '\\']) {
+/// Formulas of one display class, using original mapped operands without reparsing.
+pub(super) fn scan(
+    scope: &markdown::InlineScope<'_>,
+    range: Range<usize>,
+    display: bool,
+) -> Vec<Formula> {
+    let source = &scope.text()[..range.end];
+    if !source[range.start..].contains(['$', '\\']) {
         return Vec::new();
     }
-    let mut document = markdown::parse_with_references(source.to_owned(), references);
-    markdown::autolinks(&mut document);
-    let opaque = opaque(&document);
-    let (mut found, mut next, mut slashes) = (Vec::new(), 0, 0_usize);
-    let mut index = 0;
+    let opaque = &scope.operands;
+    let (mut found, mut next, mut slashes) = (
+        Vec::new(),
+        opaque.partition_point(|(span, _)| span.end <= range.start),
+        0_usize,
+    );
+    let mut index = range.start;
     while index < source.len() {
-        while opaque.get(next).is_some_and(|range| range.end <= index) {
+        while opaque
+            .get(next)
+            .is_some_and(|(range, _)| range.end <= index)
+        {
             next += 1;
         }
-        if let Some(range) = opaque.get(next).filter(|r| r.contains(&index)) {
+        if let Some((range, _)) = opaque.get(next).filter(|(r, _)| r.contains(&index)) {
             index = range.end;
             slashes = 0;
             continue;
@@ -193,9 +179,11 @@ pub(super) fn scan(source: &str, display: bool, references: &Document) -> Vec<Fo
         let formula = (slashes % 2 == 0)
             .then(|| matching(source, index, display))
             .flatten();
+        let barrier = scope.opaque.partition_point(|range| range.end <= index);
         if let Some(formula) = formula.filter(|formula| {
-            opaque
-                .get(next)
+            scope
+                .opaque
+                .get(barrier)
                 .is_none_or(|range| range.start >= formula.range.end)
         }) {
             index = formula.range.end;
