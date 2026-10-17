@@ -2,7 +2,10 @@
 #![cfg(test)]
 use maestro_theme::BrandPresentation;
 use maestro_web::{Attachment, Input, browser::attachment_content::*, browser::timer::Timer};
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
 /// Presentation observer, called outside any host borrow.
 pub type Inspect = dyn Fn(&AttachmentSurface<'_>, &BrandPresentation<'_>);
 /// Operands-only conformance adapter, not a native DOM emulator.
@@ -11,8 +14,27 @@ pub struct Host {
     inspect: Box<Inspect>,
     /// Removed native identities.
     pub removed: RefCell<Vec<egui::Id>>,
+    /// Ordered lifecycle effects for controlled dialog callers.
+    pub effects: Rc<RefCell<Vec<&'static str>>>,
+    /// Next controlled animation-frame restoration.
+    pub frame: RefCell<Option<Rc<FocusTarget>>>,
+    /// Literal CSS operands passed to native measurement.
+    pub dimensions: RefCell<Vec<[String; 2]>>,
+    /// Native pending Escape observation.
+    pub escape: Cell<bool>,
+    /// Next named native effect failure.
+    pub failure: RefCell<Option<&'static str>>,
 }
 impl Host {
+    /// Inject a reached failure without replacing the caller's operation.
+    fn effect(&self, name: &'static str) -> Result<(), AttachmentUiError> {
+        self.effects.borrow_mut().push(name);
+        if self.failure.borrow().as_ref() == Some(&name) {
+            self.failure.take();
+            return Err(AttachmentUiError::Host(name.into()));
+        }
+        Ok(())
+    }
     /// Retain an observer for the public presentation boundary.
     pub fn new(
         inspect: impl Fn(&AttachmentSurface<'_>, &BrandPresentation<'_>) + 'static,
@@ -20,6 +42,11 @@ impl Host {
         Rc::new(Self {
             inspect: Box::new(inspect),
             removed: RefCell::default(),
+            effects: Rc::default(),
+            frame: RefCell::default(),
+            dimensions: RefCell::default(),
+            escape: Cell::new(false),
+            failure: RefCell::default(),
         })
     }
 }
@@ -30,23 +57,64 @@ impl AttachmentHost for Host {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
         unreachable!("unexpected clipboard operation")
     }
+    fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentUiError> {
+        self.effect("capture")?;
+        let effects = self.effects.clone();
+        Ok(Some(Rc::new(move || {
+            effects.borrow_mut().push("restore");
+            Ok(())
+        })))
+    }
+    fn restore_focus(&self, target: Rc<FocusTarget>) -> Result<Timer, AttachmentUiError> {
+        self.effect("schedule")?;
+        *self.frame.borrow_mut() = Some(target);
+        Ok(Timer::new(|| {}))
+    }
+    fn dialog_bounds(
+        &self,
+        _: egui::Id,
+        dimensions: [&str; 2],
+    ) -> Result<egui::Rect, AttachmentUiError> {
+        self.effect("bounds")?;
+        self.dimensions
+            .borrow_mut()
+            .push(dimensions.map(str::to_owned));
+        Ok(egui::Rect::from_min_size(
+            egui::pos2(100., 100.),
+            egui::vec2(400., 300.),
+        ))
+    }
+    fn native_key(&self, _: &web_sys::KeyboardEvent, _: &egui::Context) {
+        unreachable!()
+    }
 
     fn reading_layout(
         &self,
         _: egui::Id,
     ) -> Result<maestro_web::browser::attachment_content::ReadingLayout, AttachmentUiError> {
-        unreachable!("this suite does not create reading content")
+        Ok(ReadingLayout {
+            height: 300.,
+            controls: vec![],
+        })
     }
     fn present(
         &self,
         s: AttachmentSurface<'_>,
         p: &BrandPresentation<'_>,
     ) -> Result<(), AttachmentUiError> {
+        if let AttachmentContent::Reading(placement) = &s.content {
+            self.effect(if placement.phase == ReadingPhase::Publish {
+                "publish"
+            } else {
+                "measure"
+            })?;
+        }
         (self.inspect)(&s, p);
         Ok(())
     }
     fn remove(&self, id: egui::Id) {
         self.removed.borrow_mut().push(id);
+        self.effects.borrow_mut().push("remove");
     }
     fn set_retained_visibility(
         &self,
@@ -56,8 +124,8 @@ impl AttachmentHost for Host {
     ) -> Result<(), AttachmentUiError> {
         Ok(())
     }
-    fn set_overlay(&self, _: egui::Id, _: bool) -> Result<(), AttachmentUiError> {
-        Ok(())
+    fn set_overlay(&self, _: egui::Id, open: bool) -> Result<(), AttachmentUiError> {
+        self.effect(if open { "admit" } else { "release" })
     }
     fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
         Ok(false)
@@ -69,7 +137,7 @@ impl AttachmentHost for Host {
         unreachable!()
     }
     fn take_escape(&self) -> bool {
-        false
+        self.escape.replace(false)
     }
     fn timer(&self, _: i32, _: bool, _: Rc<dyn Fn()>) -> Result<Timer, AttachmentUiError> {
         unreachable!()
@@ -79,6 +147,8 @@ impl AttachmentHost for Host {
     }
 }
 /// Render one input in a caller-sized parent, returning actual painted text.
+/// # Panics
+/// Panics if the controlled input cannot render.
 pub fn render(input: &mut Input, width: f32) -> Vec<String> {
     let mut frame = crate::attachment_support::Frame::default();
     frame.run(vec![], |ctx, i18n, presentation| {

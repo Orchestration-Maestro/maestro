@@ -187,17 +187,7 @@ impl ArtifactsPanel {
         view: ArtifactView<'_>,
     ) -> Result<(), AttachmentUiError> {
         let border = color(view.presentation, "border")?;
-        for (offset, blur, shrink) in [(1, 3, 0.), (8, 10, 1.)] {
-            ui.painter().add(
-                egui::epaint::Shadow {
-                    offset: [0, offset],
-                    blur,
-                    spread: 0,
-                    color: border.gamma_multiply(0.1),
-                }
-                .as_shape(rect.shrink(shrink), 0.),
-            );
-        }
+        crate::browser::attachment_content::panel_shadow(ui, rect, 0., border);
         ui.painter()
             .rect_filled(rect, 0., color(view.presentation, "background")?);
         if !self.overlay() {

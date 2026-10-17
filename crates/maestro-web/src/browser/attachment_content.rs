@@ -151,6 +151,8 @@ impl From<io::Error> for AttachmentUiError {
         Self::Presentation(error.to_string())
     }
 }
+/// Captured native focus restoration, retaining the original target.
+pub type FocusTarget = dyn Fn() -> Result<(), AttachmentUiError>;
 /// Replaceable browser content, download and clipboard effects.
 pub trait AttachmentHost {
     /// Begin copying literal text, owning native operands before returning local work.
@@ -159,6 +161,29 @@ pub trait AttachmentHost {
         &self,
         text: &str,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>>;
+
+    /// Capture the currently focused native target before modal admission.
+    /// # Errors
+    /// Returns native focus lookup failures.
+    fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentUiError>;
+    /// Defer restoration until the next frame after removal.
+    /// # Errors
+    /// Returns native frame registration failures.
+    fn restore_focus(
+        &self,
+        target: Rc<FocusTarget>,
+    ) -> Result<crate::browser::timer::Timer, AttachmentUiError>;
+    /// Evaluate literal CSS dimensions against the staged reading body.
+    /// # Errors
+    /// Returns native measurement failures.
+    fn dialog_bounds(
+        &self,
+        id: egui::Id,
+        dimensions: [&str; 2],
+    ) -> Result<egui::Rect, AttachmentUiError>;
+    /// Admit native Escape through the same bridge used by editable fields.
+    fn native_key(&self, event: &web_sys::KeyboardEvent, context: &egui::Context);
+
     /// Measure the admitted reading root in the current canvas frame.
     /// # Errors
     /// Returns missing-surface or native geometry failures.
@@ -391,5 +416,20 @@ fn visibility_style(id: egui::Id, modal: Option<egui::Id>, top: Option<egui::Id>
         None => "visibility:visible;z-index:1;",
         Some(top) if top == id || modal == Some(top) => "visibility:visible;z-index:51;",
         Some(_) => "visibility:hidden;z-index:1;",
+    }
+}
+
+/// Paint the shared two-caster panel shadow outside the reading viewport.
+pub(crate) fn panel_shadow(ui: &egui::Ui, rect: egui::Rect, radius: f32, border: egui::Color32) {
+    for (offset, blur, shrink) in [(1, 3, 0.), (8, 10, 1.)] {
+        ui.painter().add(
+            egui::epaint::Shadow {
+                offset: [0, offset],
+                blur,
+                spread: 0,
+                color: border.gamma_multiply(0.1),
+            }
+            .as_shape(rect.shrink(shrink), radius),
+        );
     }
 }

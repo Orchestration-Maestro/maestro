@@ -7,6 +7,7 @@ use maestro_theme::BrandPresentation;
 use std::collections::HashMap;
 use std::{cell::RefCell, rc::Rc};
 use web_sys::{Document, Element, HtmlCanvasElement};
+mod dialog;
 mod reading;
 /// Browser objects scoped to the supplied canvas's document.
 pub struct BrowserAttachmentHost {
@@ -274,6 +275,38 @@ impl AttachmentHost for BrowserAttachmentHost {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
         crate::utils::clipboard::copy_to_clipboard(&self.document, text)
     }
+    fn capture_focus(&self) -> Result<Option<Rc<super::FocusTarget>>, AttachmentUiError> {
+        self.capture_native_focus()
+    }
+    fn restore_focus(
+        &self,
+        target: Rc<super::FocusTarget>,
+    ) -> Result<crate::browser::timer::Timer, AttachmentUiError> {
+        let window = self
+            .document
+            .default_view()
+            .ok_or_else(|| AttachmentUiError::Host("Document has no window".into()))?;
+        crate::browser::timer::frame(
+            window,
+            Rc::new(move || {
+                if let Err(error) = target() {
+                    wasm_bindgen::throw_str(&error.to_string());
+                }
+            }),
+        )
+        .map_err(|e| host_error(&e))
+    }
+    fn dialog_bounds(
+        &self,
+        id: egui::Id,
+        dimensions: [&str; 2],
+    ) -> Result<egui::Rect, AttachmentUiError> {
+        self.measure_dialog(id, dimensions)
+    }
+    fn native_key(&self, event: &web_sys::KeyboardEvent, context: &egui::Context) {
+        super::input::admit_escape(event, &self.escape, context);
+    }
+
     fn reading_layout(&self, id: egui::Id) -> Result<super::ReadingLayout, AttachmentUiError> {
         self.measure_reading(id)
     }

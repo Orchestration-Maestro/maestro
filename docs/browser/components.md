@@ -1,4 +1,4 @@
-# Browser input and timers
+# Browser input, timers and dialogs
 
 [`Input`](../../crates/maestro-web/src/components/input.rs) is a retained
 single-line field. Construct it with owned `InputProps` and an `Rc` to the
@@ -39,7 +39,7 @@ association. Validation remains available through the native input handle.
 The separate dialog shell owns canvas layout, not a native form.
 
 [`Timer`](../../crates/maestro-web/src/browser/timer.rs) owns cancellation of one
-native timeout or interval. `AttachmentHost::timer` takes the caller's delay and
+native timeout, interval or next-frame callback. `AttachmentHost::timer` takes the caller's delay and
 repeat policy; explicit `cancel` and drop revoke future delivery. `spawn_local`
 uses the browser's local future dispatcher. Cancelling a timer does not abort
 unrelated asynchronous work already started by its callback.
@@ -49,5 +49,41 @@ and exhaustive content matches handle `AttachmentContent::Input`. Native tests
 exercise the public presentation and ownership seams. WebAssembly compilation
 qualifies the browser types; browser interaction qualification remains tracked
 in [the browser frontend issue](https://github.com/Orchestration-Maestro/maestro/issues/113).
-The reusable dialog shell is separate work in
-[the dialog-shell issue](https://github.com/Orchestration-Maestro/maestro/issues/1053).
+
+## Dialog shells
+
+[`DialogContext`](../../crates/maestro-web/src/dialogs/dialog_base.rs) retains the
+canvas and the same native host. Retain each `DialogBase` while it is needed;
+`open` eagerly captures focus and admits its modal without waiting for a render
+or a result future. Call the context's `render` once per canvas frame. Its weak
+registrations do not keep dropped dialogs alive. One Escape snapshot, including
+the native input bridge, reaches every still-open owner even with a popup open.
+Closing revokes admission and removes owned native children before notification;
+drop performs the same cleanup without notification. Captured native/canvas focus
+is restored on the next frame, with the existing timer owner retaining cancellation.
+
+`DialogBody` owns an arbitrary native reading factory, control-slot dimensions
+and a canvas painter. The painter receives the complete measured `ReadingLayout`
+and a UI whose origin is the panel; translate relative slot rectangles by that
+origin. The existing reading transaction preserves unchanged roots, selection,
+editing and scrolling, and retains the old root until a replacement publishes.
+Mounted child guards and Close subscriptions share the single `ReadingRoot.owner`.
+Use weak captures when child callbacks can reach their containing owner.
+
+`DialogProps` forwards literal CSS width/height and classes. Base dimensions are
+`min(600px, 90vw)` by `min(600px, 80vh)`; the standalone `dialog` helper defaults
+to natural `auto` height instead. Empty dimensions remain supplied native CSS
+values. Literal CSS, including intrinsic keywords, is resolved before the shared
+frame transform; text and controls receive that transform once. `dialog_header`
+creates a literal heading and omits only absent/empty
+descriptions; `dialog_content` composes ordered native children with padding/gap.
+The canvas draws the panel, outer shadow and sixteen-point localized Close glyph.
+One non-painting native Close button supplies keyboard/accessibility activation
+and forwards native focus to the canvas focus ring. Reading text remains native,
+selectable, findable and accessible; no second hidden text tree or focus trap is
+added. Platform failures remain `AttachmentUiError`.
+
+Full-viewport dimming/blur is intentionally absent, owned by
+[the shared backdrop work](https://github.com/Orchestration-Maestro/maestro/issues/1145).
+Canvas paint is qualified through visible tessellated primitives; pixel raster
+qualification follows [the canvas runner](https://github.com/Orchestration-Maestro/maestro/issues/822).

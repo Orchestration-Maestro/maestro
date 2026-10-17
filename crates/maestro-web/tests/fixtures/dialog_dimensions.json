@@ -1,0 +1,26 @@
+[
+  {
+    "width": null,
+    "height": null,
+    "expected": [
+      "min(600px, 90vw)",
+      "auto"
+    ]
+  },
+  {
+    "width": "min(500px, 90vw)",
+    "height": "min(700px, 90vh)",
+    "expected": [
+      "min(500px, 90vw)",
+      "min(700px, 90vh)"
+    ]
+  },
+  {
+    "width": "",
+    "height": "",
+    "expected": [
+      "",
+      ""
+    ]
+  }
+]
