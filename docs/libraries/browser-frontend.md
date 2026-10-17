@@ -140,7 +140,7 @@ runtime, executor or timer implementation is added. The adapter reuses the nativ
 browser timer, cancellation and event-subscription owners. See
 [hidden execution](../browser/sandbox.md#hidden-javascript-execution).
 
-Transcript Markdown directly declares `katex-rs =0.3.0` (MIT, defaults off) for HTML
+Transcript Markdown directly declares `katex-rs =0.3.0` as `katex` (MIT, defaults off) for HTML
 math output and the already-locked `regress =0.12.0` (`prohibit-unsafe`) for its
 tag-escaping expressions. Its closure resolves bon, bon-macros, darling,
 darling_core, darling_macro, ident_case, the phf family, rapidhash and strsim
