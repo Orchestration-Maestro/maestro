@@ -96,10 +96,29 @@ fn system_rpc_authenticates_before_listing() {
     use base64::{Engine as _, engine::general_purpose::STANDARD};
     run(async {
         let (options, trace) = options(empty());
-        discover_lm_studio_models("https://user:password@HOST:1235/path?q#f", None, &options)
-            .await
-            .unwrap();
+        let (release, authentication) = tokio::sync::oneshot::channel();
+        trace.lock().unwrap().authentication = Some(authentication);
+        let mut discovery = Box::pin(discover_lm_studio_models(
+            "https://user:password@HOST:1235/path?q#f",
+            None,
+            &options,
+        ));
+        assert!(
+            std::future::Future::poll(
+                discovery.as_mut(),
+                &mut std::task::Context::from_waker(std::task::Waker::noop()),
+            )
+            .is_pending()
+        );
+        {
+            let trace = trace.lock().unwrap();
+            assert_eq!(trace.sent.len(), 1);
+            assert_eq!(trace.phases, ["send"]);
+        }
+        release.send(()).unwrap();
+        discovery.await.unwrap();
         let trace = trace.lock().unwrap();
+        assert_eq!(trace.phases, ["send", "receive", "send", "receive"]);
         let request = trace.request.as_ref().unwrap();
         assert_eq!(request.url, "ws://host:1235/system");
         assert!(request.headers.is_empty());
@@ -119,6 +138,15 @@ fn system_rpc_authenticates_before_listing() {
             rpc,
             json!({"type":"rpcCall","endpoint":"listDownloadedModels","callId":0})
         );
+    });
+}
+#[test]
+fn authentication_refusal_never_sends_rpc() {
+    run(async {
+        let trace = replay("authentication_denied").await;
+        let trace = trace.lock().unwrap();
+        assert_eq!(trace.sent.len(), 1);
+        assert_eq!(trace.phases, ["send", "receive"]);
     });
 }
 #[test]
@@ -186,7 +214,34 @@ fn unmatched_and_control_messages_leave_current_rpc_pending() {
             "valid_unowned_channel_and_signal_messages",
             "unmatched_result_then_success",
         ] {
-            replay(name).await;
+            let trace = replay(name).await;
+            assert_eq!(trace.lock().unwrap().reads, case(name).replies.len());
+        }
+    });
+}
+#[test]
+fn unowned_messages_are_consumed_through_nonempty_correlated_result() {
+    run(async {
+        for name in [
+            "valid_control_messages_then_success",
+            "valid_unowned_channel_and_signal_messages",
+            "unmatched_result_then_success",
+        ] {
+            let mut selected = case(name);
+            let mut listing = case("ordered_fields_and_duplicates");
+            *selected.replies.last_mut().unwrap() = listing.replies.pop().unwrap();
+            let reads = selected.replies.len();
+            let (options, trace) = options(selected.replies);
+            let base = listing.base.replace("$PORT", "12345");
+            let mut expected = listing.expected.models.unwrap();
+            for model in &mut expected {
+                model.base_url = model.base_url.replace("$PORT", "12345");
+            }
+            let actual = discover_lm_studio_models(&base, None, &options)
+                .await
+                .unwrap();
+            assert_eq!(actual, expected, "operation {name}");
+            assert_eq!(trace.lock().unwrap().reads, reads, "operation {name}");
         }
     });
 }

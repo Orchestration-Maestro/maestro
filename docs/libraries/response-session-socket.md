@@ -12,7 +12,7 @@ The application uses the same pinned library for its native test peers. No
 library type appears in the public socket-effect interface.
 
 The browser adapter uses the existing `web-sys =0.3.106` bindings with `WebSocket`,
-`BinaryType`, `CloseEvent` and `ErrorEvent` enabled, alongside existing event APIs.
+`BinaryType` enabled, alongside existing generic event APIs.
 It retains registrations through the browser's event-subscription owner, with weak
 queue captures and synchronous release. No additional browser socket library,
 retry loop or worker is introduced.

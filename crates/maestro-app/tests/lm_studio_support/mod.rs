@@ -96,6 +96,10 @@ pub struct Trace {
     pub drops: usize,
     /// Number of reads performed.
     pub reads: usize,
+    /// Completed send and receive boundaries.
+    pub phases: Vec<&'static str>,
+    /// Optional release signal withholding the authentication response.
+    pub authentication: Option<tokio::sync::oneshot::Receiver<()>>,
 }
 /// Controlled owned connection.
 struct Socket {
@@ -106,13 +110,24 @@ struct Socket {
 }
 impl WebSocketConnection for Socket {
     fn send(&mut self, bytes: Vec<u8>) -> WebSocketFuture<'_, io::Result<()>> {
-        self.trace.lock().unwrap().sent.push(bytes);
+        let mut trace = self.trace.lock().unwrap();
+        trace.sent.push(bytes);
+        trace.phases.push("send");
         Box::pin(async { Ok(()) })
     }
     fn receive(&mut self) -> WebSocketFuture<'_, io::Result<Option<Vec<u8>>>> {
-        self.trace.lock().unwrap().reads += 1;
-        let reply = self.replies.pop_front();
-        Box::pin(async move { Ok(reply) })
+        let authentication = {
+            let mut trace = self.trace.lock().unwrap();
+            trace.reads += 1;
+            trace.authentication.take()
+        };
+        Box::pin(async move {
+            if let Some(authentication) = authentication {
+                authentication.await.unwrap();
+            }
+            self.trace.lock().unwrap().phases.push("receive");
+            Ok(self.replies.pop_front())
+        })
     }
     fn close(&mut self) {
         self.trace.lock().unwrap().closes += 1;

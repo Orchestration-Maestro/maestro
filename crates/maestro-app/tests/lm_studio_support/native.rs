@@ -158,9 +158,6 @@ pub async fn connection_failures() {
             peer.await.unwrap();
         }
     }
-    // The original empty-result operation is also a real native success.
-    let selected = case("empty_listing");
-    assert!(selected.expected.success);
     super::replay("empty_listing").await;
 }
 
