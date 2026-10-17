@@ -69,6 +69,8 @@ pub fn dialog(
 struct Placement<'a> {
     /// Retained handle for this frame only.
     state: &'a Rc<super::dialog_base::State>,
+    /// Mount identity captured before any draw effects.
+    mount: u64,
     /// Live caller snapshot.
     props: DialogProps,
     /// Caller-selected colors and typography.
@@ -150,6 +152,9 @@ impl Placement<'_> {
         let mut body = ui.new_child(egui::UiBuilder::new().max_rect(rect));
         body.set_clip_rect(rect.intersect(ui.clip_rect()));
         (self.props.children.render_content)(&mut body, self.state.id, &layout, self.presentation)?;
+        if self.state.mount.get() != self.mount {
+            return Ok(false);
+        }
         self.controls(ui, rect, close_name)
     }
     /// Draw the sixteen-point control and admit only full two-endpoint gestures.
@@ -203,7 +208,12 @@ impl Placement<'_> {
                 .get_or_insert_with(|| close::CloseTransitions::new(&operands))
                 .sample(now, &operands)
         };
-        paint.draw(ui, close, self.presentation)
+        paint.draw(
+            ui,
+            close,
+            self.presentation,
+            &mut self.state.ring.borrow_mut(),
+        )
     }
 }
 /// Paint one retained shell without borrowing its live props across effects.
@@ -212,6 +222,7 @@ pub(super) fn draw<F: ?Sized>(
     i18n: &crate::I18n<F>,
     presentation: &BrandPresentation<'_>,
 ) -> Result<(), AttachmentUiError> {
+    let mount = state.mount.get();
     let props = state.props.borrow().clone();
     let name = i18n.text("Close")?;
     let context = state.context.drawing();
@@ -232,6 +243,7 @@ pub(super) fn draw<F: ?Sized>(
             );
             Placement {
                 state,
+                mount,
                 props,
                 presentation,
             }
@@ -309,3 +321,6 @@ fn outside_rects(screen: egui::Rect, rect: egui::Rect) -> [egui::Rect; 4] {
 
 /// Mounted Close property values and shadow composition.
 pub(super) mod close;
+
+/// Fractional raster coverage for Close decoration.
+pub(super) mod ring;

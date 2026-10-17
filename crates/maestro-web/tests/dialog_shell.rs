@@ -10,6 +10,7 @@ use maestro_web::{
         dialog_base::DialogContext,
     },
 };
+use num_traits::ToPrimitive as _;
 use std::{cell::Cell, rc::Rc};
 
 #[test]
@@ -491,16 +492,8 @@ fn geometry(filename: &str, mode: maestro_theme::BrandMode) {
     for _ in 0..12 {
         frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
     }
-    let focus: Vec<_> = frame
-        .shapes
-        .iter()
-        .filter(|shape| matches!(&shape.shape, egui::Shape::Rect(rect) if (rect.stroke.width-2.).abs()<f32::EPSILON))
-        .collect();
-    assert_eq!(focus.len(), 2);
-    for shape in focus {
-        let primitives = frame.ctx.tessellate(vec![shape.clone()], 1.);
-        assert!(primitives.iter().any(|p| matches!(&p.primitive, egui::epaint::Primitive::Mesh(mesh) if !mesh.indices.is_empty()&&mesh.calc_bounds().intersect(p.clip_rect).is_positive())));
-    }
+    assert_eq!(focus_alpha(&frame), 255);
+    assert_ring_spread(&frame, 2., 1.);
 }
 
 #[test]
@@ -564,27 +557,11 @@ fn dialog_close_focus_paint_has_whole_control_opacity_and_transition() {
 
 /// Read maximum alpha from visible tessellated focus-ring paint.
 fn focus_alpha(frame: &attachment_support::Frame) -> u8 {
-    let shapes: Vec<_> = frame
-        .shapes
-        .iter()
-        .filter(|s| matches!(&s.shape, egui::Shape::Rect(r) if r.rect.width() < 40.))
-        .cloned()
-        .collect();
-    frame
-        .ctx
-        .tessellate(shapes, 1.)
-        .iter()
-        .filter_map(|p| {
-            let egui::epaint::Primitive::Mesh(mesh) = &p.primitive else {
-                return None;
-            };
-            mesh.vertices
-                .iter()
-                .filter(|v| p.clip_rect.contains(v.pos))
-                .map(|v| v.color.a())
-                .max()
-        })
-        .max()
+    ring_paint(frame)
+        .into_iter()
+        .fold(0., f32::max)
+        .round()
+        .to_u8()
         .unwrap()
 }
 
@@ -658,13 +635,17 @@ fn focus_fade(frame: &mut attachment_support::Frame, dialogs: &DialogContext, id
     frame.ctx.memory_mut(|m| m.surrender_focus(id));
     frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
     frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
-    let ring = ring_paint(frame);
     assert_eq!(
-        ring[1].stroke.color.a(),
+        frame
+            .paint
+            .alpha(&frame.ctx, &frame.shapes, egui::pos2(475.5, 114.5))
+            .round()
+            .to_u8()
+            .unwrap(),
         247,
         "outer shadow fades through the same curve"
     );
-    assert!((ring[0].stroke.width - 1.934_399).abs() < 0.000_01);
+    assert_ring_spread(frame, 1.934_399, 1.);
     for _ in 0..12 {
         frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
     }
@@ -736,7 +717,9 @@ fn glyph_alpha(frame: &attachment_support::Frame) -> u8 {
         .shapes
         .iter()
         .filter_map(|s| match &s.shape {
-            egui::Shape::Mesh(mesh) => mesh.vertices.iter().map(|v| v.color.a()).max(),
+            egui::Shape::Mesh(mesh) if (mesh.calc_bounds().width() - 16.).abs() < 0.001 => {
+                mesh.vertices.iter().map(|v| v.color.a()).max()
+            }
             _ => None,
         })
         .max()
@@ -770,43 +753,63 @@ fn dialog_interrupted_focus_paint_is_continuous() {
         frame.time = Some(1. + milliseconds / 1000.);
         frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
         let before = ring_paint(&frame);
-        assert!(
-            (before[0].stroke.width - spread).abs() < 0.000_01,
-            "shadow spread follows paint at {milliseconds}"
-        );
+        assert_ring_spread(&frame, spread, 0.7);
         frame.ctx.memory_mut(|m| m.surrender_focus(id.get()));
         frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
         assert_eq!(ring_paint(&frame), before, "focus reversal must not jump");
         assert_eq!(glyph_alpha(&frame), 179);
         if milliseconds.total_cmp(&75.).is_eq() {
             assert_eq!(
-                before[0].stroke.color.a(),
+                focus_alpha(&frame),
                 170,
                 "overlap composited before group opacity"
             );
-            assert_eq!(before[1].stroke.color.a(), 138);
+            assert_eq!(
+                frame
+                    .paint
+                    .alpha(&frame.ctx, &frame.shapes, egui::pos2(475.5, 114.5))
+                    .round()
+                    .to_u8()
+                    .unwrap(),
+                138
+            );
         }
         let origin = 1. + milliseconds / 1000.;
         for (elapsed, expected) in [(1. / 60., next), (duration / 2., half)] {
             frame.time = Some(origin + elapsed);
             frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
-            let rings = ring_paint(&frame);
-            assert!((rings[0].stroke.width - expected).abs() < 0.000_01);
+            assert_ring_spread(&frame, expected, 0.7);
             assert_eq!(glyph_alpha(&frame), 179);
         }
     }
 }
 
 /// Read the two painted annuli, excluding the panel border.
-fn ring_paint(frame: &attachment_support::Frame) -> Vec<egui::epaint::RectShape> {
-    frame
-        .shapes
-        .iter()
-        .filter_map(|s| match &s.shape {
-            egui::Shape::Rect(r) if r.rect.width() < 40. => Some(r.clone()),
-            _ => None,
+fn ring_paint(frame: &attachment_support::Frame) -> Vec<f32> {
+    let density = frame.ctx.pixels_per_point();
+    let top = (117. * density).floor().to_i32().unwrap();
+    (top - 10..=top)
+        .map(|y| {
+            frame.paint.alpha(
+                &frame.ctx,
+                &frame.shapes,
+                egui::pos2(475.5, (y.to_f32().unwrap() + 0.5) / density),
+            )
         })
+        .filter(|a| *a > 0.)
         .collect()
+}
+
+/// Compare integrated pixel opacity to independent fractional shadow coverage.
+fn assert_ring_spread(frame: &attachment_support::Frame, spread: f32, opacity: f32) {
+    let progress = spread / 2.;
+    let expected = spread * opacity * 255. * progress * (3. - progress);
+    let close = egui::Rect::from_min_size(egui::pos2(467., 117.), egui::vec2(16., 16.));
+    let actual = frame.paint.top_alpha(&frame.ctx, &frame.shapes, close);
+    assert!(
+        (actual - expected).abs() < 3.,
+        "painted coverage {actual}, expected {expected} for spread {spread}"
+    );
 }
 
 #[test]
@@ -892,13 +895,21 @@ fn dialog_repeated_reversal_keeps_painted_progress() {
         frame.time = Some(time);
         frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
         let before = if focused {
-            ring_paint(&frame)[0].stroke.width
+            frame.paint.top_alpha(
+                &frame.ctx,
+                &frame.shapes,
+                egui::Rect::from_min_size(egui::pos2(467., 117.), egui::vec2(16., 16.)),
+            )
         } else {
             f32::from(glyph_alpha(&frame))
         };
         transition_input(&mut frame, &dialogs, id.get(), [focused, true], time);
         let after = if focused {
-            ring_paint(&frame)[0].stroke.width
+            frame.paint.top_alpha(
+                &frame.ctx,
+                &frame.shapes,
+                egui::Rect::from_min_size(egui::pos2(467., 117.), egui::vec2(16., 16.)),
+            )
         } else {
             f32::from(glyph_alpha(&frame))
         };
@@ -906,7 +917,7 @@ fn dialog_repeated_reversal_keeps_painted_progress() {
         frame.time = Some(time + 0.123_890_105_427_931 / 2.);
         frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
         if focused {
-            assert!((ring_paint(&frame)[0].stroke.width - 1.629_257).abs() < 0.000_01);
+            assert_ring_spread(&frame, 1.629_257, 0.7);
         } else {
             assert_eq!(glyph_alpha(&frame), 241);
         }
@@ -969,4 +980,155 @@ fn dialog_unmount_preserves_another_controls_focus() {
     assert_eq!(frame.ctx.memory(egui::Memory::focused), Some(other.get()));
     frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
     assert_eq!(ring_paint(&frame), before);
+}
+
+#[test]
+fn dialog_body_callback_close_does_not_retain_hover_on_reopen() {
+    for reopen_in_callback in [false, true] {
+        let mut frame = attachment_support::Frame::default();
+        let host = input_support::Host::new(|_, _| {});
+        let dialogs = DialogContext::new(frame.ctx.clone(), host);
+        let slot = Rc::new(std::cell::RefCell::new(
+            None::<std::rc::Weak<maestro_web::dialogs::dialog_base::DialogBase>>,
+        ));
+        let closing = Rc::new(Cell::new(false));
+        let callback_slot = slot.clone();
+        let callback_closing = closing.clone();
+        let mut children = body(Rc::default());
+        children.render_content = Rc::new(move |_, _, _, _| {
+            if !callback_closing.replace(false) {
+                return Ok(());
+            }
+            let owner = callback_slot.borrow().as_ref().unwrap().upgrade().unwrap();
+            owner.close()?;
+            if reopen_in_callback {
+                owner.open()?;
+            }
+            Ok(())
+        });
+        let owner = Rc::new(dialog(&dialogs, DialogProps::new(true, children)).unwrap());
+        *slot.borrow_mut() = Some(Rc::downgrade(&owner));
+        frame.time = Some(0.);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        frame.time = Some(1.);
+        frame.run(
+            vec![egui::Event::PointerMoved(egui::pos2(475., 125.))],
+            |_, i, p| dialogs.render(i, p).unwrap(),
+        );
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        frame.time = Some(2.);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        assert_eq!(glyph_alpha(&frame), 255);
+        closing.set(true);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        frame.run(
+            vec![egui::Event::PointerMoved(egui::pos2(20., 20.))],
+            |_, i, p| dialogs.render(i, p).unwrap(),
+        );
+        owner.open().unwrap();
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        assert_eq!(
+            glyph_alpha(&frame),
+            179,
+            "reopened first paint must be resting"
+        );
+    }
+}
+
+#[test]
+fn dialog_fractional_focus_annuli_preserve_pixel_coverage() {
+    for density in [1., 1.25, 2.] {
+        let mut frame = attachment_support::Frame {
+            density,
+            time: Some(0.),
+            ..Default::default()
+        };
+        let host = input_support::Host::new(|_, _| {});
+        let dialogs = DialogContext::new(frame.ctx.clone(), host);
+        let id = Rc::new(Cell::new(egui::Id::NULL));
+        let saved = id.clone();
+        let mut children = body(Rc::default());
+        children.render_content = Rc::new(move |_, modal, _, _| {
+            saved.set(modal.with("close"));
+            Ok(())
+        });
+        let _owner = dialog(&dialogs, DialogProps::new(true, children)).unwrap();
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        frame.ctx.memory_mut(|m| m.request_focus(id.get()));
+        frame.time = Some(1.);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        for (time, spread) in [(0.0375, 0.473_174), (0.075, 1.551_123), (0.1125, 1.918_735)] {
+            frame.time = Some(1. + time);
+            frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+            assert_ring_spread(&frame, spread, 0.7);
+            assert_fractional_pixels(&frame, spread);
+            let uploads = frame.paint.ring_uploads(&frame.shapes);
+            frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+            assert_eq!(
+                frame.paint.ring_uploads(&frame.shapes),
+                uploads,
+                "unchanged paint reuses its texture without upload"
+            );
+            assert_eq!(
+                uploads,
+                if time < 0.05 {
+                    1
+                } else if time < 0.1 {
+                    2
+                } else {
+                    3
+                },
+                "one retained texture updated in place"
+            );
+        }
+    }
+}
+
+/// Independently integrate circular CSS boundaries over physical pixels, not submitted geometry.
+fn assert_fractional_pixels(frame: &attachment_support::Frame, spread: f32) {
+    let density = frame.density;
+    let left = (462. * density).floor().to_i32().unwrap();
+    let top = (112. * density).floor().to_i32().unwrap();
+    let extent = (26. * density).ceil().to_i32().unwrap();
+    for row in top..top + extent {
+        for col in left..left + extent {
+            let origin = egui::pos2(
+                col.to_f32().unwrap() / density,
+                row.to_f32().unwrap() / density,
+            );
+            let expected = expected_pixel_alpha(origin, density, spread);
+            let center = origin + egui::vec2(0.5 / density, 0.5 / density);
+            let actual = frame.paint.alpha(&frame.ctx, &frame.shapes, center);
+            assert!(
+                (actual - expected).abs() <= 2.,
+                "density {density}, spread {spread}, pixel {col}/{row}: {actual} != {expected}"
+            );
+        }
+    }
+}
+
+/// Source shadow alpha and disjoint disk-offset coverage, integrated independently on a 64-square grid.
+fn expected_pixel_alpha(origin: egui::Pos2, density: f32, spread: f32) -> f32 {
+    let mut alpha = 0.;
+    let progress = spread / 2.;
+    for row in 0_u16..64 {
+        for col in 0_u16..64 {
+            let point = origin
+                + egui::vec2((f32::from(col) + 0.5) / 64., (f32::from(row) + 0.5) / 64.) / density;
+            let offset = (point - egui::pos2(475., 125.)).abs() - egui::vec2(6., 6.);
+            let distance = offset.max(egui::Vec2::ZERO).length();
+            if distance <= 2. {
+                continue;
+            }
+            alpha += if distance <= 2. + spread {
+                progress * (2. - progress)
+            } else if distance <= 2. + 2. * spread {
+                progress
+            } else {
+                0.
+            };
+        }
+    }
+    alpha / 4096. * 0.7 * 255.
 }

@@ -1,5 +1,6 @@
 //! Controlled attachment effects and genuine native drawing frames.
 #![cfg(test)]
+pub mod dialog_paint;
 use egui::{Context, Event, Pos2, RawInput, Rect, Shape, Vec2};
 use maestro_app::browser::utils::attachment_utils::AttachmentType;
 use maestro_theme::{BrandMode, BrandPack};
@@ -199,6 +200,8 @@ pub struct Frame {
     pub mode: BrandMode,
     /// Localized text context.
     pub i18n: I18n,
+    /// Retained texture paint for final pixel observations.
+    pub paint: dialog_paint::Paint,
     /// Last emitted shapes.
     pub shapes: Vec<egui::epaint::ClippedShape>,
     /// Raster images actually submitted to the renderer.
@@ -217,11 +220,15 @@ impl Default for Frame {
             ctx: Context::default(),
             pack: maestro_theme::load_brand_pack(
                 concat!(env!("CARGO_MANIFEST_DIR"), "/../../assets/brand/brand.json"),
+                #[cfg(not(target_arch = "wasm32"))]
                 &maestro_theme::theme::NativeThemeOperations,
+                #[cfg(target_arch = "wasm32")]
+                &crate::support::brand::Pack,
             )
             .unwrap(),
             mode: BrandMode::Dark,
             i18n: I18n::new(host).unwrap(),
+            paint: dialog_paint::Paint::default(),
             shapes: vec![],
             images: vec![],
             screen: Rect::from_min_size(Pos2::ZERO, Vec2::new(800., 600.)),
@@ -257,6 +264,7 @@ impl Frame {
             &self.pack.presentation(self.mode).unwrap(),
         );
         let mut output = self.ctx.end_pass();
+        self.paint.update(&output);
         self.images = output
             .textures_delta
             .set

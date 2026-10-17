@@ -38,6 +38,10 @@ pub(super) struct State {
     focus: RefCell<Option<Rc<FocusTarget>>>,
     /// Last admitted pointer gesture, independent of stale toolkit clicks.
     pub(super) pressed: RefCell<Option<bool>>,
+    /// Retained Close texture, updated only when its painted operands change.
+    pub(super) ring: RefCell<super::dialog::ring::Painter>,
+    /// Mount identity invalidated before removal effects or caller callbacks.
+    pub(super) mount: Cell<u64>,
     /// Mounted Close properties, discarded before any removal effects.
     pub(super) transitions: RefCell<Option<super::dialog::close::CloseTransitions>>,
     /// Non-owning aliases for the existing reading transaction.
@@ -122,6 +126,8 @@ impl DialogBase {
                 props: RefCell::new(props),
                 focus: RefCell::default(),
                 pressed: RefCell::default(),
+                ring: RefCell::default(),
+                mount: Cell::new(0),
                 transitions: RefCell::default(),
                 #[cfg(target_arch = "wasm32")]
                 native: RefCell::default(),
@@ -194,6 +200,7 @@ impl State {
             props.is_open = false;
             props.on_close.clone()
         };
+        self.mount.set(self.mount.get().wrapping_add(1));
         self.transitions.take();
         self.context
             .inner

@@ -107,6 +107,7 @@ impl Paint {
         ui: &mut egui::Ui,
         close: egui::Rect,
         p: &BrandPresentation<'_>,
+        painter: &mut super::ring::Painter,
     ) -> Result<(), AttachmentUiError> {
         if self.active {
             ui.ctx().request_repaint();
@@ -130,23 +131,20 @@ impl Paint {
             for (i, value) in composed.iter_mut().enumerate() {
                 *value = self.shadow[i] + self.shadow[i + 5] * (1. - self.shadow[3]);
             }
-            let radius = content::points(p.radii["control"] / 2.);
-            for (rect, width, color, rounding) in [
-                (close, inner, shadow_color(&composed, self.opacity), radius),
-                (
-                    close.expand(inner),
-                    outer - inner,
-                    shadow_color(&self.shadow[5..9], self.opacity),
-                    radius + inner,
-                ),
-            ] {
-                ui.painter().rect_stroke(
-                    rect,
-                    rounding,
-                    egui::Stroke::new(width, color),
-                    egui::StrokeKind::Outside,
-                );
-            }
+            let radius = content::points(p.radii["control"] / 2.).min(close.width() / 2.);
+            painter.draw(
+                ui,
+                super::ring::Ring {
+                    rect: close,
+                    radius,
+                    spreads: [inner, outer],
+                    colors: [
+                        shadow_color(&composed, self.opacity),
+                        shadow_color(&self.shadow[5..9], self.opacity),
+                    ],
+                    density: ui.ctx().pixels_per_point(),
+                },
+            )?;
         }
         Ok(())
     }
@@ -156,11 +154,11 @@ fn channel(value: f32) -> u8 {
     value.round().clamp(0., 255.).to_u8().unwrap_or_default()
 }
 /// Encode premultiplied sRGB after whole-control opacity.
-fn shadow_color(value: &[f32], opacity: f32) -> egui::Color32 {
-    egui::Color32::from_rgba_premultiplied(
-        channel(value[0] * opacity),
-        channel(value[1] * opacity),
-        channel(value[2] * opacity),
-        channel(value[3] * opacity * 255.),
-    )
+fn shadow_color(value: &[f32], opacity: f32) -> [f32; 4] {
+    [
+        value[0] * opacity,
+        value[1] * opacity,
+        value[2] * opacity,
+        value[3] * opacity * 255.,
+    ]
 }

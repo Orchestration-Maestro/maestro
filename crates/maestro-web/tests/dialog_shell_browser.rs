@@ -35,6 +35,7 @@ pub fn dialog_header_retains_title_description_and_literal_text() {
     }
 }
 
+pub mod attachment_support;
 pub mod support;
 use maestro_web::{
     I18n,
@@ -49,6 +50,8 @@ use std::rc::Rc;
 struct View {
     /// Actual replaceable native surface owner.
     host: Rc<BrowserAttachmentHost>,
+    /// Renderer textures retained across updates.
+    paint: std::cell::RefCell<attachment_support::dialog_paint::Paint>,
     /// Paint delivered by the most recent frame.
     shapes: std::cell::RefCell<Vec<egui::epaint::ClippedShape>>,
     /// Canvas context retained across frames.
@@ -102,6 +105,7 @@ impl View {
         );
         let owner = dialog(&dialogs, props.clone()).unwrap();
         Self {
+            paint: std::cell::RefCell::default(),
             shapes: std::cell::RefCell::default(),
             host,
             context,
@@ -134,6 +138,7 @@ impl View {
                 .unwrap(),
         );
         let mut output = self.context.end_pass();
+        self.paint.borrow_mut().update(&output);
         output.textures_delta.clear();
         *self.shapes.borrow_mut() = output.shapes;
         result.unwrap();
@@ -656,40 +661,31 @@ pub async fn dialog_semantic_close_paints_nothing_and_tracks_canvas_focus() {
     for _ in 0..12 {
         view.draw();
     }
-    let shapes = view.shapes.borrow();
-    let focus: Vec<_> = shapes
-        .iter()
-        .filter(|shape| matches!(&shape.shape, egui::Shape::Rect(r) if r.stroke.width==2.))
-        .collect();
-    assert_eq!(focus.len(), 2);
     let presentation = view
         .pack
         .presentation(maestro_theme::BrandMode::Dark)
         .unwrap();
-    for ((shape, extent), role) in focus.iter().zip([16., 20.]).zip(["background", "accent"]) {
-        assert!(visible(&view, shape, None));
-        if let egui::Shape::Rect(rect) = &shape.shape {
-            assert_eq!(rect.rect.size(), egui::vec2(extent, extent));
-            assert_eq!(
-                rect.stroke.color,
-                egui::Color32::from_hex(presentation.colors[role])
-                    .unwrap()
-                    .gamma_multiply(0.7)
-            );
+    for (distance, role) in [(0.5, "background"), (2.5, "accent")] {
+        let color = view.paint.borrow().pixel(
+            &view.context,
+            &view.shapes.borrow(),
+            egui::pos2(
+                native_close(&view).center().x,
+                native_close(&view).top() - distance,
+            ),
+        );
+        let expected = egui::Color32::from_hex(presentation.colors[role])
+            .unwrap()
+            .gamma_multiply(0.7);
+        for (actual, expected) in color.into_iter().zip(expected.to_array()) {
+            assert!((actual - f32::from(expected)).abs() <= 1.);
         }
     }
-    drop(shapes);
     js("document.querySelector('.maestro-dialog-semantic-close').blur()");
     for _ in 0..12 {
         view.draw();
     }
-    assert!(
-        !view
-            .shapes
-            .borrow()
-            .iter()
-            .any(|shape| matches!(&shape.shape, egui::Shape::Rect(r) if r.stroke.width==2.))
-    );
+    assert!(native_rings(&view).is_empty());
 }
 
 /// Prove decoration survives clipping and scroll.
@@ -844,22 +840,12 @@ pub async fn dialog_native_focus_transition_retargets_and_resets() {
         view.draw_at(Some(1.));
         view.draw_at(Some(1. + time));
         let before = native_rings(&view);
-        assert!((before[0].stroke.width - width).abs() < 0.000_01);
-        for ring in &before {
-            assert!(visible(
-                &view,
-                &egui::epaint::ClippedShape {
-                    clip_rect: view.context.content_rect(),
-                    shape: egui::Shape::Rect(ring.clone())
-                },
-                None
-            ));
-        }
+        assert_native_spread(&view, width);
         js("document.querySelector('.maestro-dialog-semantic-close').blur()");
         view.draw_at(Some(1. + time));
         assert_eq!(native_rings(&view), before);
         view.draw_at(Some(1. + time + 1. / 60.));
-        assert!((native_rings(&view)[0].stroke.width - next_width).abs() < 0.000_01);
+        assert_native_spread(&view, next_width);
         view.owner.close().unwrap();
         view.owner.open().unwrap();
         view.draw_at(Some(2.));
@@ -870,13 +856,46 @@ pub async fn dialog_native_focus_transition_retargets_and_resets() {
 }
 
 /// Collect only the Close shadow annuli from the actual submitted paint.
-fn native_rings(view: &View) -> Vec<egui::epaint::RectShape> {
+fn native_rings(view: &View) -> Vec<f32> {
+    use num_traits::ToPrimitive as _;
+    let close = native_close(view);
+    let top = close.top().floor().to_i32().unwrap();
+    (top - 6..=top)
+        .map(|y| {
+            view.paint.borrow().alpha(
+                &view.context,
+                &view.shapes.borrow(),
+                egui::pos2(close.center().x, y.to_f32().unwrap() + 0.5),
+            )
+        })
+        .filter(|a| *a > 0.)
+        .collect()
+}
+
+/// Read the actual canvas glyph extent, independent of the native body's natural height.
+fn native_close(view: &View) -> egui::Rect {
     view.shapes
         .borrow()
         .iter()
-        .filter_map(|s| match &s.shape {
-            egui::Shape::Rect(r) if r.rect.width() < 40. => Some(r.clone()),
+        .find_map(|shape| match &shape.shape {
+            egui::Shape::Mesh(mesh) if (mesh.calc_bounds().width() - 16.).abs() < 0.001 => {
+                Some(mesh.calc_bounds())
+            }
             _ => None,
         })
-        .collect()
+        .unwrap()
+}
+
+/// Compare actual keyboard-focus pixel coverage with the recorded fractional spread.
+fn assert_native_spread(view: &View, spread: f32) {
+    let actual =
+        view.paint
+            .borrow()
+            .top_alpha(&view.context, &view.shapes.borrow(), native_close(view));
+    let progress = spread / 2.;
+    let expected = spread * 0.7 * 255. * progress * (3. - progress);
+    assert!(
+        (actual - expected).abs() < 3.,
+        "painted coverage {actual}, expected {expected}"
+    );
 }

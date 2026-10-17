@@ -86,11 +86,15 @@ including its focus ring, has seventy-percent resting opacity and full hover
 opacity; colour, opacity and focus decoration use mounted property transitions
 with the 150-ms cubic-bezier(0.4, 0, 0.2, 1) curve. Interrupted transitions
 continue from their current paint with shortened reversals; reopening starts
-with the current resting style. Reading text remains native,
+with the current resting style. Closing from a body callback also ends the current
+draw's Close paint, even when the callback immediately reopens the handle.
+Focus decoration retains fractional coverage in one reusable raster texture,
+compositing the two disjoint annuli before control opacity. Reading text remains native,
 selectable, findable and accessible; no second hidden text tree or focus trap is
 added. Platform failures remain `AttachmentUiError`.
 
 Full-viewport dimming/blur is intentionally absent, owned by
 [the shared backdrop work](https://github.com/Orchestration-Maestro/maestro/issues/1145).
-Canvas paint is qualified through visible tessellated primitives; pixel raster
-qualification follows [the canvas runner](https://github.com/Orchestration-Maestro/maestro/issues/822).
+Close focus decoration is qualified through sampled raster pixels at multiple
+densities; other canvas paint is qualified through visible tessellated primitives.
+Broader canvas raster qualification follows [the canvas runner](https://github.com/Orchestration-Maestro/maestro/issues/822).
