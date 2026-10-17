@@ -15,6 +15,17 @@ fn directory(name: &str, content: &str) -> PathBuf {
 
 #[test]
 fn footer_native_effects_keep_admission_directory_after_cwd_change() {
+    const CASE: &str = "footer-cwd-identity";
+    if crate::child_process::child_case().as_deref() != Some(CASE) {
+        let path = std::env::var("PATH").unwrap();
+        crate::child_process::rerun(
+            "footer_native_effects_keep_admission_directory_after_cwd_change",
+            CASE,
+            &[("PATH", &path)],
+        )
+        .unwrap();
+        return;
+    }
     let first = directory("first", "seven77");
     let second = directory("second", "decoy");
     let runtime = tokio::runtime::Builder::new_current_thread()
