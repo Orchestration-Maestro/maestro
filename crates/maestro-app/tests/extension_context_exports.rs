@@ -37,19 +37,7 @@ fn native_context_exports_share_the_extension_records() {
         }),
         ..ExtensionContextActions::default()
     };
-    let auth = Arc::new(AuthStorage::in_memory(AuthStorageData::default()));
-    let session = ExtensionRunnerSession {
-        cwd: "/work".into(),
-        session_manager: Rc::new(RefCell::new(SessionManager::in_memory(None).unwrap())),
-        model_registry: Rc::new(RefCell::new(ModelRegistry::in_memory(auth).unwrap())),
-    };
-    let runner = ExtensionRunner::<maestro_models::Threaded>::new(
-        Arc::new(RwLock::new(Vec::new())),
-        Arc::new(ExtensionRuntimeState::new()),
-        session,
-        Arc::new(|_| {}),
-        default_operand(),
-    );
+    let runner = runner();
     runner.bind_core(actions);
     let ctx: ExtensionContext = runner.create_context();
     assert_eq!(ctx.get_context_usage().unwrap(), Some(usage));
@@ -63,19 +51,7 @@ fn native_context_exports_share_the_extension_records() {
 
 #[test]
 fn native_command_context_exports_share_the_extension_records() {
-    let auth = Arc::new(AuthStorage::in_memory(AuthStorageData::default()));
-    let session = ExtensionRunnerSession {
-        cwd: "/work".into(),
-        session_manager: Rc::new(RefCell::new(SessionManager::in_memory(None).unwrap())),
-        model_registry: Rc::new(RefCell::new(ModelRegistry::in_memory(auth).unwrap())),
-    };
-    let runner = ExtensionRunner::<maestro_models::Threaded>::new(
-        Arc::new(RwLock::new(Vec::new())),
-        Arc::new(ExtensionRuntimeState::new()),
-        session,
-        Arc::new(|_| {}),
-        default_operand(),
-    );
+    let runner = runner();
     let actions = maestro_app::ExtensionCommandContextActions {
         new_session: Rc::new(|_| {
             Box::pin(async {
@@ -92,4 +68,21 @@ fn native_command_context_exports_share_the_extension_records() {
         .block_on(async {
             assert!(ctx.new_session(None).await.unwrap().cancelled);
         });
+}
+
+/// Builds the real in-memory runner shared by application context export witnesses.
+fn runner() -> ExtensionRunner {
+    let auth = Arc::new(AuthStorage::in_memory(AuthStorageData::default()));
+    let session = ExtensionRunnerSession {
+        cwd: "/work".into(),
+        session_manager: Rc::new(RefCell::new(SessionManager::in_memory(None).unwrap())),
+        model_registry: Rc::new(RefCell::new(ModelRegistry::in_memory(auth).unwrap())),
+    };
+    ExtensionRunner::<maestro_models::Threaded>::new(
+        Arc::new(RwLock::new(Vec::new())),
+        Arc::new(ExtensionRuntimeState::new()),
+        session,
+        Arc::new(|_| {}),
+        default_operand(),
+    )
 }
