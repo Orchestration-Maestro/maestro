@@ -43,7 +43,7 @@ fn native_context_exports_share_the_extension_records() {
         session_manager: Rc::new(RefCell::new(SessionManager::in_memory(None).unwrap())),
         model_registry: Rc::new(RefCell::new(ModelRegistry::in_memory(auth).unwrap())),
     };
-    let runner = ExtensionRunner::<()>::new(
+    let runner = ExtensionRunner::<maestro_models::Threaded>::new(
         Arc::new(RwLock::new(Vec::new())),
         Arc::new(ExtensionRuntimeState::new()),
         session,
@@ -59,4 +59,37 @@ fn native_context_exports_share_the_extension_records() {
     };
     ctx.compact(Some(request)).unwrap();
     assert_eq!(*requests.borrow(), [Some("keep".to_owned())]);
+}
+
+#[test]
+fn native_command_context_exports_share_the_extension_records() {
+    let auth = Arc::new(AuthStorage::in_memory(AuthStorageData::default()));
+    let session = ExtensionRunnerSession {
+        cwd: "/work".into(),
+        session_manager: Rc::new(RefCell::new(SessionManager::in_memory(None).unwrap())),
+        model_registry: Rc::new(RefCell::new(ModelRegistry::in_memory(auth).unwrap())),
+    };
+    let runner = ExtensionRunner::<maestro_models::Threaded>::new(
+        Arc::new(RwLock::new(Vec::new())),
+        Arc::new(ExtensionRuntimeState::new()),
+        session,
+        Arc::new(|_| {}),
+        default_operand(),
+    );
+    let actions = maestro_app::ExtensionCommandContextActions {
+        new_session: Rc::new(|_| {
+            Box::pin(async {
+                Ok(maestro_extensions::types::SessionChangeResult { cancelled: true })
+            })
+        }),
+        ..Default::default()
+    };
+    runner.bind_command_context(Some(actions));
+    let ctx: maestro_app::ExtensionCommandContext = runner.create_command_context();
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            assert!(ctx.new_session(None).await.unwrap().cancelled);
+        });
 }

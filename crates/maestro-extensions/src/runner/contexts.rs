@@ -3,19 +3,22 @@ use super::{ContextBinding, ExtensionRunner};
 use crate::{
     EventError, ExtensionExecution,
     types::{
-        CompactOptions, ContextUsage, ExtensionContext, ExtensionContextActions, ExtensionUIContext,
+        CompactOptions, ContextFuture, ContextUsage, ExtensionCommandContext,
+        ExtensionCommandContextActions, ExtensionContext, ExtensionUIContext, ForkOptions,
+        NewSessionCommandOptions, SessionChangeResult, SwitchSessionOptions,
     },
 };
 use maestro_catalog::ModelRegistry;
 use maestro_models::{Cancellation, Model};
-use maestro_session::session_manager::ReadonlySessionManager;
+use maestro_session::session_manager::{NavigateTreeOptions, ReadonlySessionManager};
+use std::future::ready;
 use std::{
     cell::RefCell,
     rc::Rc,
     sync::{Arc, RwLock},
 };
 
-impl<CC, E: ExtensionExecution> ExtensionRunner<CC, E> {
+impl<E: ExtensionExecution> ExtensionRunner<E> {
     /// Creates a context that reads this runner's state when used.
     ///
     /// The model reader is the one bound now; later bindings do not replace it.
@@ -30,12 +33,13 @@ impl<CC, E: ExtensionExecution> ExtensionRunner<CC, E> {
 
 impl ContextBinding {
     /// Returns the selected bound operation after the stale check.
-    fn action<F: ?Sized>(
+    fn action<A, F: ?Sized>(
         &self,
-        select: fn(&ExtensionContextActions) -> &Rc<F>,
+        cell: &RefCell<A>,
+        select: fn(&A) -> &Rc<F>,
     ) -> Result<Rc<F>, EventError> {
         self.runtime.assert_active()?;
-        Ok(Rc::clone(select(&self.actions.borrow())))
+        Ok(Rc::clone(select(&cell.borrow())))
     }
 }
 
@@ -93,57 +97,151 @@ impl ExtensionContext {
     /// # Errors
     /// Returns the stale error or the bound operation's error.
     pub fn is_idle(&self) -> Result<bool, EventError> {
-        (self.binding.action(|actions| &actions.is_idle)?)()
+        (self
+            .binding
+            .action(&self.binding.actions, |actions| &actions.is_idle)?)()
     }
     /// Returns the current operation's cancellation, if streaming.
     ///
     /// # Errors
     /// Returns the stale error or the bound operation's error.
     pub fn signal(&self) -> Result<Option<Cancellation>, EventError> {
-        (self.binding.action(|actions| &actions.get_signal)?)()
+        (self
+            .binding
+            .action(&self.binding.actions, |actions| &actions.get_signal)?)()
     }
     /// Aborts the current agent operation.
     ///
     /// # Errors
     /// Returns the stale error or the bound operation's error.
     pub fn abort(&self) -> Result<(), EventError> {
-        (self.binding.action(|actions| &actions.abort)?)()
+        (self
+            .binding
+            .action(&self.binding.actions, |actions| &actions.abort)?)()
     }
     /// Whether queued messages are waiting.
     ///
     /// # Errors
     /// Returns the stale error or the bound operation's error.
     pub fn has_pending_messages(&self) -> Result<bool, EventError> {
-        (self
-            .binding
-            .action(|actions| &actions.has_pending_messages)?)()
+        (self.binding.action(&self.binding.actions, |actions| {
+            &actions.has_pending_messages
+        })?)()
     }
     /// Requests a graceful shutdown.
     ///
     /// # Errors
     /// Returns the stale error or the bound operation's error.
     pub fn shutdown(&self) -> Result<(), EventError> {
-        (self.binding.action(|actions| &actions.shutdown)?)()
+        (self
+            .binding
+            .action(&self.binding.actions, |actions| &actions.shutdown)?)()
     }
     /// Returns the current context usage, if known.
     ///
     /// # Errors
     /// Returns the stale error or the bound operation's error.
     pub fn get_context_usage(&self) -> Result<Option<ContextUsage>, EventError> {
-        (self.binding.action(|actions| &actions.get_context_usage)?)()
+        (self
+            .binding
+            .action(&self.binding.actions, |actions| &actions.get_context_usage)?)()
     }
     /// Starts compaction and returns without waiting for it.
     ///
     /// # Errors
     /// Returns the stale error or the bound operation's error.
     pub fn compact(&self, options: Option<CompactOptions>) -> Result<(), EventError> {
-        (self.binding.action(|actions| &actions.compact)?)(options)
+        (self
+            .binding
+            .action(&self.binding.actions, |actions| &actions.compact)?)(options)
     }
     /// Returns the current effective system prompt.
     ///
     /// # Errors
     /// Returns the stale error or the bound operation's error.
     pub fn get_system_prompt(&self) -> Result<String, EventError> {
-        (self.binding.action(|actions| &actions.get_system_prompt)?)()
+        (self
+            .binding
+            .action(&self.binding.actions, |actions| &actions.get_system_prompt)?)()
+    }
+}
+
+impl<E: ExtensionExecution> ExtensionRunner<E> {
+    /// Creates a command context that reads this runner's state when used.
+    ///
+    /// Its model reader is the one bound now, as for [`Self::create_context`].
+    #[must_use]
+    pub fn create_command_context(&self) -> ExtensionCommandContext {
+        ExtensionCommandContext {
+            context: self.create_context(),
+        }
+    }
+}
+
+impl ExtensionCommandContext {
+    /// Selects and starts the bound operation now, or yields the stale error.
+    fn start<F: ?Sized, T: 'static>(
+        &self,
+        select: fn(&ExtensionCommandContextActions) -> &Rc<F>,
+        run: impl FnOnce(&F) -> ContextFuture<T>,
+    ) -> ContextFuture<T> {
+        let binding = &self.context.binding;
+        match binding.action(&binding.command_actions, select) {
+            Ok(operation) => run(&operation),
+            Err(error) => Box::pin(ready(Err(error))),
+        }
+    }
+    /// Waits for the agent to finish streaming.
+    ///
+    /// The returned future yields the stale error or the bound operation's result.
+    #[must_use]
+    pub fn wait_for_idle(&self) -> ContextFuture<()> {
+        self.start(|actions| &actions.wait_for_idle, |wait| wait())
+    }
+    /// Starts a new session.
+    #[must_use]
+    pub fn new_session(
+        &self,
+        options: Option<NewSessionCommandOptions>,
+    ) -> ContextFuture<SessionChangeResult> {
+        self.start(|actions| &actions.new_session, |start| start(options))
+    }
+    /// Forks the session from an entry.
+    #[must_use]
+    pub fn fork(
+        &self,
+        entry_id: String,
+        options: Option<ForkOptions>,
+    ) -> ContextFuture<SessionChangeResult> {
+        self.start(|actions| &actions.fork, |fork| fork(entry_id, options))
+    }
+    /// Moves to another point of the session tree.
+    #[must_use]
+    pub fn navigate_tree(
+        &self,
+        target_id: String,
+        options: Option<NavigateTreeOptions>,
+    ) -> ContextFuture<SessionChangeResult> {
+        self.start(
+            |actions| &actions.navigate_tree,
+            |navigate| navigate(target_id, options),
+        )
+    }
+    /// Switches to another session file.
+    #[must_use]
+    pub fn switch_session(
+        &self,
+        session_path: String,
+        options: Option<SwitchSessionOptions>,
+    ) -> ContextFuture<SessionChangeResult> {
+        self.start(
+            |actions| &actions.switch_session,
+            |switch| switch(session_path, options),
+        )
+    }
+    /// Reloads extensions, skills, prompts and themes.
+    #[must_use]
+    pub fn reload(&self) -> ContextFuture<()> {
+        self.start(|actions| &actions.reload, |reload| reload())
     }
 }

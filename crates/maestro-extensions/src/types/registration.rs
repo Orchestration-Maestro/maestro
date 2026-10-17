@@ -26,8 +26,8 @@ pub enum FlagValue {
     String(String),
 }
 /// An owned asynchronous command callback.
-pub type CommandHandler<C, E = Threaded> =
-    <E as Execution>::Shared<<E as ExtensionExecution>::Command<C>>;
+pub type CommandHandler<E = Threaded> =
+    <E as Execution>::Shared<<E as ExtensionExecution>::Command>;
 /// An owned asynchronous shortcut callback.
 pub type ShortcutHandler<E = Threaded> =
     <E as Execution>::Shared<<E as ExtensionExecution>::Shortcut>;
@@ -36,17 +36,17 @@ pub type ArgumentCompletions<E = Threaded> =
     <E as Execution>::Shared<<E as ExtensionExecution>::Completions>;
 
 /// Command registration options.
-pub struct RegisteredCommandOptions<C, E: ExtensionExecution = Threaded> {
+pub struct RegisteredCommandOptions<E: ExtensionExecution = Threaded> {
     /// Optional command description.
     pub description: Option<String>,
     /// Optional argument completion callback.
     pub get_argument_completions: Option<ArgumentCompletions<E>>,
     /// Command invocation callback.
-    pub handler: CommandHandler<C, E>,
+    pub handler: CommandHandler<E>,
 }
 
 /// One owned command registration.
-pub struct RegisteredCommand<C, E: ExtensionExecution = Threaded> {
+pub struct RegisteredCommand<E: ExtensionExecution = Threaded> {
     /// Raw command name.
     pub name: String,
     /// Retained source object.
@@ -56,13 +56,13 @@ pub struct RegisteredCommand<C, E: ExtensionExecution = Threaded> {
     /// Optional argument completion callback.
     pub get_argument_completions: Option<ArgumentCompletions<E>>,
     /// Command invocation callback.
-    pub handler: CommandHandler<C, E>,
+    pub handler: CommandHandler<E>,
 }
 
 /// A shallow command copy with its current invocation name.
-pub struct ResolvedCommand<C, E: ExtensionExecution = Threaded> {
+pub struct ResolvedCommand<E: ExtensionExecution = Threaded> {
     /// Copied registration retaining callback and source owners.
-    pub command: RegisteredCommand<C, E>,
+    pub command: RegisteredCommand<E>,
     /// Invocation name supplied by the resolving query.
     pub invocation_name: String,
 }
@@ -112,7 +112,7 @@ pub struct ExtensionShortcut<E: ExtensionExecution = Threaded> {
 }
 
 /// A mutable owner of extension registrations.
-pub struct Extension<CC, E: ExtensionExecution = Threaded> {
+pub struct Extension<E: ExtensionExecution = Threaded> {
     /// Supplied extension path.
     pub path: String,
     /// Supplied resolved extension path.
@@ -120,7 +120,7 @@ pub struct Extension<CC, E: ExtensionExecution = Threaded> {
     /// Current owner-produced provenance object.
     pub source_info: Arc<RwLock<SourceInfo>>,
     /// Ordered command registrations.
-    pub commands: IndexMap<String, E::Shared<RwLock<RegisteredCommand<CC, E>>>>,
+    pub commands: IndexMap<String, E::Shared<RwLock<RegisteredCommand<E>>>>,
     /// Ordered flag registrations.
     pub flags: IndexMap<String, Arc<RwLock<ExtensionFlag>>>,
     /// Ordered shortcut registrations.
@@ -138,21 +138,21 @@ pub struct ExtensionRuntimeState {
 }
 
 /// Registration facade borrowing its owner and retaining runtime and event bus.
-pub struct ExtensionAPI<CC, E: ExtensionExecution = Threaded> {
+pub struct ExtensionAPI<E: ExtensionExecution = Threaded> {
     /// Existing shared event capability.
     pub events: EventBus<E>,
     /// Registration owner.
-    pub(crate) extension: E::Weak<RwLock<Extension<CC, E>>>,
+    pub(crate) extension: E::Weak<RwLock<Extension<E>>>,
     /// Shared values and activity guard.
     pub(crate) runtime: Arc<ExtensionRuntimeState>,
 }
 
 /// An owned mutable extension record.
-pub type ExtensionHandle<CC, E = Threaded> = <E as Execution>::Shared<RwLock<Extension<CC, E>>>;
+pub type ExtensionHandle<E = Threaded> = <E as Execution>::Shared<RwLock<Extension<E>>>;
 /// The shared current extension load order.
-pub type ExtensionCollection<CC, E = Threaded> =
-    <E as Execution>::Shared<RwLock<Vec<ExtensionHandle<CC, E>>>>;
-impl<C, E: ExtensionExecution> Clone for RegisteredCommand<C, E> {
+pub type ExtensionCollection<E = Threaded> =
+    <E as Execution>::Shared<RwLock<Vec<ExtensionHandle<E>>>>;
+impl<E: ExtensionExecution> Clone for RegisteredCommand<E> {
     fn clone(&self) -> Self {
         Self {
             name: self.name.clone(),
@@ -163,13 +163,13 @@ impl<C, E: ExtensionExecution> Clone for RegisteredCommand<C, E> {
         }
     }
 }
-impl<C, E: ExtensionExecution> Deref for ResolvedCommand<C, E> {
-    type Target = RegisteredCommand<C, E>;
+impl<E: ExtensionExecution> Deref for ResolvedCommand<E> {
+    type Target = RegisteredCommand<E>;
     fn deref(&self) -> &Self::Target {
         &self.command
     }
 }
-impl<CC, E: ExtensionExecution> Clone for ExtensionAPI<CC, E> {
+impl<E: ExtensionExecution> Clone for ExtensionAPI<E> {
     fn clone(&self) -> Self {
         Self {
             events: self.events.clone(),

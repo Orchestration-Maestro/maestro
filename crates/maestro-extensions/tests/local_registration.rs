@@ -54,7 +54,7 @@ fn completions(prefix: &str) -> Result<Option<Vec<AutocompleteItem>>, EventError
 }
 
 /// Registers a command whose callbacks capture and edit the terminal object.
-fn register_edit(api: &ExtensionAPI<Ui, Local>, input: &Ui) {
+fn register_edit(api: &ExtensionAPI<Local>, input: &Ui) {
     let (ui, handler_ui) = (input.clone(), input.clone());
     api.register_command(
         "edit".into(),
@@ -72,11 +72,11 @@ fn register_edit(api: &ExtensionAPI<Ui, Local>, input: &Ui) {
                 let ui = handler_ui.clone();
                 Box::pin(async move {
                     yield_now().await;
-                    assert!(Rc::ptr_eq(&ui, &ctx));
+                    assert_eq!(ctx.cwd()?, "/work");
                     if args == "fail" {
                         return Err("command failed".into());
                     }
-                    ctx.set_value(args);
+                    ui.set_value(args);
                     Ok(())
                 })
             }),
@@ -95,7 +95,7 @@ fn register_edit(api: &ExtensionAPI<Ui, Local>, input: &Ui) {
 }
 
 /// Registers a shortcut that edits its supplied terminal context.
-fn register_edit_shortcut(api: &ExtensionAPI<Ui, Local>, input: &Ui) {
+fn register_edit_shortcut(api: &ExtensionAPI<Local>, input: &Ui) {
     let ui = input.clone();
     api.register_shortcut(
         "ctrl+y".into(),
@@ -119,16 +119,18 @@ fn register_edit_shortcut(api: &ExtensionAPI<Ui, Local>, input: &Ui) {
 }
 
 /// Invokes the resolved command and its completions, observing the terminal object.
-async fn check_edit_command(runner: &ExtensionRunner<Ui, Local>, input: &Ui) {
+async fn check_edit_command(runner: &ExtensionRunner<Local>, input: &Ui) {
     let command = runner.get_command("edit").unwrap();
     assert_eq!(command.description.as_deref(), Some("edit text"));
     let bare = runner.get_command("bare").unwrap();
     assert!(bare.description.is_none());
     assert!(bare.get_argument_completions.is_none());
     let raw = " \u{feff}雪 \u{85}a ";
-    (command.handler)(raw.into(), input.clone()).await.unwrap();
+    (command.handler)(raw.into(), runner.create_command_context())
+        .await
+        .unwrap();
     assert_eq!(input.get_value(), raw);
-    let error = (command.handler)("fail".into(), input.clone())
+    let error = (command.handler)("fail".into(), runner.create_command_context())
         .await
         .unwrap_err();
     assert_eq!(error.to_string(), "command failed");
@@ -137,7 +139,7 @@ async fn check_edit_command(runner: &ExtensionRunner<Ui, Local>, input: &Ui) {
 }
 
 /// Distinguishes absent, empty, ordered and failed completions.
-async fn check_edit_completions(command: &ResolvedCommand<Ui, Local>, input: &Ui) {
+async fn check_edit_completions(command: &ResolvedCommand<Local>, input: &Ui) {
     let complete = command.get_argument_completions.clone().unwrap();
     assert_eq!(complete(String::new()).await.unwrap(), None);
     assert_eq!(input.get_value(), "completing ");
@@ -176,16 +178,22 @@ fn local_registered_callbacks_retain_terminal_objects() {
 }
 
 /// A command recording its label and arguments after a suspension.
-fn recording_command(trace: &Trace, label: &'static str) -> RegisteredCommandOptions<Ui, Local> {
-    let trace = trace.clone();
+fn recording_command(
+    trace: &Trace,
+    input: &Ui,
+    label: &'static str,
+) -> RegisteredCommandOptions<Local> {
+    let (trace, input) = (trace.clone(), input.clone());
     RegisteredCommandOptions {
         description: Some(label.into()),
         get_argument_completions: None,
-        handler: Rc::new(move |args, ctx: Ui| {
+        handler: Rc::new(move |args, ctx| {
+            let input = input.clone();
             let trace = trace.clone();
             Box::pin(async move {
                 yield_now().await;
-                ctx.set_value(format!("{label}:{args}"));
+                assert_eq!(ctx.cwd()?, "/work");
+                input.set_value(format!("{label}:{args}"));
                 mark(&trace, format!("{label}:{args}"));
                 Ok(())
             })
@@ -215,7 +223,7 @@ fn recording_shortcut(
 }
 
 /// Invokes each current resolved command and the selected shortcut.
-async fn invoke_current(runner: &ExtensionRunner<Ui, Local>, input: &Ui) {
+async fn invoke_current(runner: &ExtensionRunner<Local>, input: &Ui) {
     for (name, label) in [
         ("dup:1", "a-new"),
         ("dup:2", "b-dup"),
@@ -223,7 +231,9 @@ async fn invoke_current(runner: &ExtensionRunner<Ui, Local>, input: &Ui) {
     ] {
         let command = runner.get_command(name).unwrap();
         assert_eq!(command.description.as_deref(), Some(label));
-        (command.handler)(name.into(), input.clone()).await.unwrap();
+        (command.handler)(name.into(), runner.create_command_context())
+            .await
+            .unwrap();
         assert_eq!(input.get_value(), format!("{label}:{name}"));
     }
     let shortcuts = runner.get_shortcuts(&Vec::new());
@@ -239,11 +249,12 @@ fn local_registration_keeps_order_and_retained_callbacks() {
         let bus = LocalBus::new();
         let a = loaded("/a", bus.controller.for_extension());
         let shortcut = |label| recording_shortcut(&trace, &input, label);
+        let command = |label| recording_command(&trace, &input, label);
         a.api
-            .register_command("dup".into(), recording_command(&trace, "a-old"))
+            .register_command("dup".into(), command("a-old"))
             .unwrap();
         a.api
-            .register_command("other".into(), recording_command(&trace, "other"))
+            .register_command("other".into(), command("other"))
             .unwrap();
         a.api
             .register_shortcut("ctrl+k".into(), shortcut("key-old"))
@@ -259,7 +270,7 @@ fn local_registration_keeps_order_and_retained_callbacks() {
             .handler
             .clone();
         a.api
-            .register_command("dup".into(), recording_command(&trace, "a-new"))
+            .register_command("dup".into(), command("a-new"))
             .unwrap();
         a.api
             .register_shortcut("ctrl+k".into(), shortcut("key-new"))
@@ -267,20 +278,16 @@ fn local_registration_keeps_order_and_retained_callbacks() {
         let b = loaded("/b", bus.controller.for_extension());
         a.owners.write().unwrap().push(b.owner.clone());
         b.api
-            .register_command("dup".into(), recording_command(&trace, "b-dup"))
+            .register_command("dup".into(), command("b-dup"))
             .unwrap();
         b.api
-            .register_command("dup:1".into(), recording_command(&trace, "b-literal"))
+            .register_command("dup:1".into(), command("b-literal"))
             .unwrap();
-        let names: Vec<_> = runner
-            .get_registered_commands()
-            .into_iter()
-            .map(|command| command.invocation_name)
-            .collect();
-        assert_eq!(names, ["dup:1", "other", "dup:2", "dup:1:2"]);
-        assert!(runner.get_command("dup").is_none());
+        check_resolved_names(&runner);
         invoke_current(&runner, &input).await;
-        (old.handler)("old".into(), input.clone()).await.unwrap();
+        (old.handler)("old".into(), runner.create_command_context())
+            .await
+            .unwrap();
         assert_eq!(input.get_value(), "a-old:old");
         old_key(runner.create_context()).await.unwrap();
         let expected = [
@@ -298,9 +305,9 @@ fn local_registration_keeps_order_and_retained_callbacks() {
 
 /// Edits and replaces the owner's source after a command was resolved.
 fn retained_sources_follow_owner(
-    a: &Loaded<Ui>,
-    runner: &ExtensionRunner<Ui, Local>,
-    old: &ResolvedCommand<Ui, Local>,
+    a: &Loaded,
+    runner: &ExtensionRunner<Local>,
+    old: &ResolvedCommand<Local>,
 ) {
     a.owner.read().unwrap().source_info.write().unwrap().path = "/a/moved".into();
     assert_eq!(old.source_info.read().unwrap().path, "/a/moved");
@@ -310,7 +317,10 @@ fn retained_sources_follow_owner(
     assert!(Arc::ptr_eq(&current.source_info, &old.source_info));
     let trace = Trace::default();
     a.api
-        .register_command("late".into(), recording_command(&trace, "late"))
+        .register_command(
+            "late".into(),
+            recording_command(&trace, &Rc::new(Input::new()), "late"),
+        )
         .unwrap();
     let late = runner.get_command("late").unwrap();
     assert_eq!(late.source_info.read().unwrap().path, "/a/replaced");
@@ -320,7 +330,7 @@ fn retained_sources_follow_owner(
 type Invoke = Box<dyn Fn() -> LocalFuture<Result<(), EventError>>>;
 
 /// Registers a callback that captures the facade and retains its alias.
-fn capture_facade(kind: &str, loaded: &Loaded<Ui>, released: Released) -> Invoke {
+fn capture_facade(kind: &str, loaded: &Loaded, released: Released) -> Invoke {
     let captured = loaded.api.clone();
     let probe = Rc::new(move || {
         let _keep = &released;
@@ -340,22 +350,22 @@ fn capture_facade(kind: &str, loaded: &Loaded<Ui>, released: Released) -> Invoke
             .unwrap()
             .handler
             .clone();
-        let context = runner::<Ui>(&Rc::new(RwLock::new(Vec::new()))).create_context();
+        let context = runner(&Rc::new(RwLock::new(Vec::new()))).create_context();
         return Box::new(move || handler(context.clone()));
     }
     let options = if kind == "command" {
-        RegisteredCommandOptions::<Ui, Local> {
+        RegisteredCommandOptions::<Local> {
             description: None,
             get_argument_completions: None,
-            handler: Rc::new(move |_, _: Ui| Box::pin(std::future::ready(probe()))),
+            handler: Rc::new(move |_, _| Box::pin(std::future::ready(probe()))),
         }
     } else {
-        RegisteredCommandOptions::<Ui, Local> {
+        RegisteredCommandOptions::<Local> {
             description: None,
             get_argument_completions: Some(Rc::new(move |_| {
                 Box::pin(std::future::ready(probe().map(|()| None)))
             })),
-            handler: Rc::new(|_, _: Ui| Box::pin(std::future::ready(Ok(())))),
+            handler: Rc::new(|_, _| Box::pin(std::future::ready(Ok(())))),
         }
     };
     loaded
@@ -367,7 +377,8 @@ fn capture_facade(kind: &str, loaded: &Loaded<Ui>, released: Released) -> Invoke
         .unwrap()
         .clone();
     if kind == "command" {
-        return Box::new(move || (command.handler)(String::new(), Rc::new(Input::new())));
+        let ctx = runner(&Rc::new(RwLock::new(Vec::new()))).create_command_context();
+        return Box::new(move || (command.handler)(String::new(), ctx.clone()));
     }
     let complete = command.get_argument_completions.unwrap();
     Box::new(move || {
@@ -414,9 +425,10 @@ fn invalidated_registration_has_no_effect(message: Option<&str>) {
     loaded.runtime.invalidate(Some("later".into()));
     let expected = message.unwrap_or(STALE);
     let trace = Trace::default();
-    let command = loaded
-        .api
-        .register_command("c".into(), recording_command(&trace, "c"));
+    let command = loaded.api.register_command(
+        "c".into(),
+        recording_command(&trace, &Rc::new(Input::new()), "c"),
+    );
     assert_eq!(command.unwrap_err().to_string(), expected);
     let shortcut = loaded.api.register_shortcut(
         "ctrl+y".into(),
@@ -872,7 +884,7 @@ fn default_bounds() {
         ShortcutHandler,
     };
     use maestro_extensions::{ErrorReporter, EventTail, Subscription, TailSpawner};
-    send_sync::<CommandHandler<String>>();
+    send_sync::<CommandHandler>();
     send_sync::<ShortcutHandler>();
     send_sync::<ArgumentCompletions>();
     send_sync::<EventListener>();
@@ -881,19 +893,19 @@ fn default_bounds() {
     send_sync::<EventBus>();
     send_sync::<EventBusController>();
     send_sync::<Subscription>();
-    send_sync::<RegisteredCommand<String>>();
-    send_sync::<ResolvedCommand<String>>();
+    send_sync::<RegisteredCommand>();
+    send_sync::<ResolvedCommand>();
     send_sync::<ExtensionShortcut>();
-    send_sync::<Extension<String>>();
-    send_sync::<ExtensionHandle<String>>();
-    send_sync::<ExtensionCollection<String>>();
-    send_sync::<ExtensionAPI<String>>();
+    send_sync::<Extension>();
+    send_sync::<ExtensionHandle>();
+    send_sync::<ExtensionCollection>();
+    send_sync::<ExtensionAPI>();
     let _ = send::<EventTail>;
 }
 
 /// Registers default callbacks and runs their futures on another thread.
 fn default_callbacks_run_on_another_thread(bus: &EventBusController) {
-    let owner = Arc::new(RwLock::new(Extension::<String>::new(
+    let owner = Arc::new(RwLock::new(Extension::<maestro_models::Threaded>::new(
         "/default".into(),
         "/resolved".into(),
         source("/default"),
@@ -901,12 +913,13 @@ fn default_callbacks_run_on_another_thread(bus: &EventBusController) {
     let owners = Arc::new(RwLock::new(vec![Arc::clone(&owner)]));
     let runtime = Arc::new(ExtensionRuntimeState::new());
     let api = ExtensionAPI::new(&owner, Arc::clone(&runtime), bus.for_extension());
-    let options = RegisteredCommandOptions::<String> {
+    let options = RegisteredCommandOptions::<maestro_models::Threaded> {
         description: None,
         get_argument_completions: None,
-        handler: Arc::new(|args, ctx: String| {
+        handler: Arc::new(|args, ctx| {
+            let cwd = ctx.cwd().map(str::to_owned);
             Box::pin(async move {
-                if args == ctx {
+                if args == cwd? {
                     Ok(())
                 } else {
                     Err("mismatch".into())
@@ -923,7 +936,7 @@ fn default_callbacks_run_on_another_thread(bus: &EventBusController) {
         }),
     };
     api.register_shortcut("ctrl+y".into(), options).unwrap();
-    let runner = ExtensionRunner::<String>::new(
+    let runner = ExtensionRunner::<maestro_models::Threaded>::new(
         owners,
         runtime,
         local_support::session::runner_session("/work").0,
@@ -933,7 +946,10 @@ fn default_callbacks_run_on_another_thread(bus: &EventBusController) {
     let command = runner.get_command("hello").unwrap();
     let shortcuts = runner.get_shortcuts(&Vec::new());
     let shortcut = shortcuts["ctrl+y"].read().unwrap().handler.clone();
-    let invoked = send((command.handler)("same".into(), "same".into()));
+    let invoked = send((command.handler)(
+        "/work".into(),
+        runner.create_command_context(),
+    ));
     let pressed = send(shortcut(runner.create_context()));
     let worker = std::thread::spawn(move || {
         let executor = tokio::runtime::Builder::new_current_thread()
@@ -977,4 +993,15 @@ fn default_registration_retains_thread_safe_sdk_contracts() {
         completed.recv().await.unwrap();
     });
     assert_eq!(*errors.lock().unwrap(), ["Event handler error (x): tail\n"]);
+}
+
+/// Checks collision resolution before any command invocation.
+fn check_resolved_names(runner: &ExtensionRunner<Local>) {
+    let names: Vec<_> = runner
+        .get_registered_commands()
+        .into_iter()
+        .map(|command| command.invocation_name)
+        .collect();
+    assert_eq!(names, ["dup:1", "other", "dup:2", "dup:1:2"]);
+    assert!(runner.get_command("dup").is_none());
 }

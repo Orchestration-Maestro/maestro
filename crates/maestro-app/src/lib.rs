@@ -26,10 +26,10 @@ pub use maestro_tools::{
 };
 
 pub use maestro_extensions::{
-    AutocompleteProviderFactory, CompactOptions, ContextUsage, ExtensionContext,
-    ExtensionContextActions, ExtensionUIContext, ExtensionUIDialogOptions, ExtensionWidgetOptions,
-    MessageRenderOptions, MessageRenderer, TerminalInputHandler, WidgetPlacement,
-    WorkingIndicatorOptions,
+    AutocompleteProviderFactory, CompactOptions, ContextUsage, ExtensionCommandContext,
+    ExtensionCommandContextActions, ExtensionContext, ExtensionContextActions, ExtensionUIContext,
+    ExtensionUIDialogOptions, ExtensionWidgetOptions, MessageRenderOptions, MessageRenderer,
+    TerminalInputHandler, WidgetPlacement, WorkingIndicatorOptions,
 };
 pub use presentation_data::footer_data_provider::ReadonlyFooterDataProvider;
 

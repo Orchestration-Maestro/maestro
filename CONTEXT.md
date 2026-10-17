@@ -109,6 +109,7 @@ are later scope, not active foundation concepts.
 - **Registration:** A host-admitted declaration of an owned capability.
 - **Extension UI context:** An owned handle to the UI host current when it was obtained; without an installed host its operations return the defined headless results.
 - **Extension context:** The single-thread handle callbacks receive; each operation fails with the stale error once its runner is invalidated, otherwise it reads the runner's current session, UI and bound operations, except the model reader fixed at creation.
+- **Command context:** The single-thread extension context plus guarded, call-time session-control operations; replacement contexts add the creating session's unguarded message operations.
 - **Message renderer:** An extension callback that renders a custom message type; the first extension in load order that registered the type supplies it.
 - **Package:** An npm, Git or local source containing extension components or resources; consumer installation does not compile Rust code.
 - **File pattern:** A glob or ignore rule matched against relative file paths.

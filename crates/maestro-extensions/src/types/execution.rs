@@ -1,7 +1,7 @@
 //! Execution-family declarations for retained extension callbacks.
 use crate::{
     CallbackEmitter, EventBus, EventError, EventTail,
-    types::{ExtensionContext, MessageRenderer},
+    types::{ExtensionCommandContext, ExtensionContext, MessageRenderer},
 };
 use maestro_models::{Execution, Local, Threaded};
 use maestro_session::messages::{CustomMessage, MessageRenderOptions};
@@ -31,7 +31,8 @@ use std::{any::Any, sync::Arc};
 /// ```
 pub trait ExtensionExecution: Execution + Clone + Default {
     /// Command invocation callback.
-    type Command<C>: Fn(String, C) -> Self::Future<'static, Result<(), EventError>> + ?Sized;
+    type Command: Fn(String, ExtensionCommandContext) -> Self::Future<'static, Result<(), EventError>>
+        + ?Sized;
     /// Shortcut invocation callback.
     type Shortcut: Fn(ExtensionContext) -> Self::Future<'static, Result<(), EventError>> + ?Sized;
     /// Argument completion callback.
@@ -77,8 +78,8 @@ pub trait ExtensionExecution: Execution + Clone + Default {
 macro_rules! family {
     ($mode:ty, [$($bound:tt)*]) => {
         impl ExtensionExecution for $mode {
-            type Command<C> =
-                dyn Fn(String, C) -> Self::Future<'static, Result<(), EventError>> $($bound)*;
+            type Command =
+                dyn Fn(String, ExtensionCommandContext) -> Self::Future<'static, Result<(), EventError>> $($bound)*;
             type Shortcut =
                 dyn Fn(ExtensionContext) -> Self::Future<'static, Result<(), EventError>> $($bound)*;
             type Completions = dyn Fn(String) -> Self::Future<

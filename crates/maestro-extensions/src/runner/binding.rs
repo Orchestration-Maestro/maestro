@@ -2,7 +2,10 @@
 use super::ExtensionRunner;
 use crate::{
     EventError, ExtensionExecution,
-    types::{ExtensionContextActions, ExtensionRuntimeState, ExtensionUIContext},
+    types::{
+        ExtensionCommandContextActions, ExtensionContextActions, ExtensionRuntimeState,
+        ExtensionUIContext,
+    },
 };
 use maestro_catalog::ModelRegistry;
 use maestro_session::session_manager::ReadonlySessionManager;
@@ -26,6 +29,8 @@ pub(crate) struct ContextBinding {
     pub(super) session: ExtensionRunnerSession,
     /// Currently bound application operations.
     pub(super) actions: RefCell<ExtensionContextActions>,
+    /// Currently bound command operations.
+    pub(super) command_actions: RefCell<ExtensionCommandContextActions>,
     /// The headless fallback restored by a reset.
     pub(super) no_ui: ExtensionUIContext,
     /// The current UI context.
@@ -43,7 +48,7 @@ impl ContextBinding {
     }
 }
 
-impl<CC, E: ExtensionExecution> ExtensionRunner<CC, E> {
+impl<E: ExtensionExecution> ExtensionRunner<E> {
     /// Binds the application operations read by current and later contexts.
     pub fn bind_core(&self, context_actions: ExtensionContextActions) {
         drop(self.binding.actions.replace(context_actions));
@@ -61,5 +66,18 @@ impl<CC, E: ExtensionExecution> ExtensionRunner<CC, E> {
     pub fn shutdown(&self) -> Result<(), EventError> {
         let shutdown = Rc::clone(&self.binding.actions.borrow().shutdown);
         shutdown()
+    }
+}
+
+impl<E: ExtensionExecution> ExtensionRunner<E> {
+    /// Binds the command operations read by current and later command contexts.
+    ///
+    /// `None` restores the defaults: no-op waits and reloads, uncancelled results.
+    pub fn bind_command_context(&self, actions: Option<ExtensionCommandContextActions>) {
+        drop(
+            self.binding
+                .command_actions
+                .replace(actions.unwrap_or_default()),
+        );
     }
 }

@@ -29,7 +29,7 @@ let source: SourceInfo = serde_json::from_value(serde_json::json!({
     "path": "/extensions/example", "source": "cli",
     "scope": "temporary", "origin": "top-level"
 }))?;
-let owner = Arc::new(RwLock::new(Extension::<()>::new(
+let owner = Arc::new(RwLock::new(Extension::<maestro_models::Threaded>::new(
     source.path.clone(), "/resolved/example".into(), Arc::new(RwLock::new(source)),
 )));
 let owners = Arc::new(RwLock::new(vec![Arc::clone(&owner)]));
@@ -42,7 +42,7 @@ let api = ExtensionAPI::new(&owner, Arc::clone(&runtime), bus.for_extension());
 api.register_command("hello".into(), RegisteredCommandOptions {
     description: Some("Say hello".into()),
     get_argument_completions: None,
-    handler: Arc::new(|args, ()| Box::pin(async move {
+    handler: Arc::new(|args, _ctx| Box::pin(async move {
         assert_eq!(args, "raw arguments");
         Ok(())
     })),
@@ -64,7 +64,7 @@ let session = ExtensionRunnerSession {
     session_manager: Rc::new(RefCell::new(SessionManager::in_memory(Some("/work"))?)),
     model_registry: Rc::new(RefCell::new(ModelRegistry::in_memory(auth)?)),
 };
-let runner = ExtensionRunner::<()>::new(
+let runner = ExtensionRunner::<maestro_models::Threaded>::new(
     owners, runtime, session, Arc::new(|line| eprint!("{line}")),
     maestro_theme::LiveTheme::default(),
 );
@@ -72,7 +72,7 @@ assert_eq!(api.get_flag("quiet")?, Some(FlagValue::Boolean(false)));
 assert!(runner.get_shortcuts(&vec![]).contains_key("ctrl+x"));
 let command = runner.get_command("hello").ok_or("command missing")?;
 let executor = tokio::runtime::Builder::new_current_thread().build()?;
-executor.block_on((command.handler)("raw arguments".into(), ()))?;
+executor.block_on((command.handler)("raw arguments".into(), runner.create_command_context()))?;
 let shortcuts = runner.get_shortcuts(&vec![]);
 let shortcut = Arc::clone(&shortcuts["ctrl+x"].read().map_err(|e| e.to_string())?.handler);
 executor.block_on(shortcut(runner.create_context()))?;
@@ -102,7 +102,7 @@ fn local_callback_registration_example() -> Result<(), Box<dyn std::error::Error
         "path": "/extensions/rename", "source": "cli",
         "scope": "temporary", "origin": "top-level"
     }))?;
-    let owner = Rc::new(RwLock::new(Extension::<Rc<Input>, Local>::new(
+    let owner = Rc::new(RwLock::new(Extension::<Local>::new(
         source.path.clone(), "/resolved/rename".into(), Arc::new(RwLock::new(source)),
     )));
     let owners = Rc::new(RwLock::new(vec![Rc::clone(&owner)]));
@@ -112,13 +112,19 @@ fn local_callback_registration_example() -> Result<(), Box<dyn std::error::Error
         Rc::new(|line| eprint!("{line}")),
     );
     let api = ExtensionAPI::new(&owner, Arc::clone(&runtime), bus.for_extension());
+    let input = Rc::new(Input::new());
+    let captured_input = Rc::clone(&input);
     api.register_command("rename".into(), RegisteredCommandOptions {
         description: Some("Replace the input text".into()),
         get_argument_completions: None,
-        handler: Rc::new(|args, input: Rc<Input>| Box::pin(async move {
-            input.set_value(args);
-            Ok(())
-        })),
+        handler: Rc::new(move |args, ctx| {
+            let input = Rc::clone(&captured_input);
+            Box::pin(async move {
+                assert_eq!(ctx.cwd()?, "/work");
+                input.set_value(args);
+                Ok(())
+            })
+        }),
     })?;
 #   let auth = Arc::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
 #   let session = maestro_extensions::runner::ExtensionRunnerSession {
@@ -126,14 +132,13 @@ fn local_callback_registration_example() -> Result<(), Box<dyn std::error::Error
 #       session_manager: Rc::new(std::cell::RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
 #       model_registry: Rc::new(std::cell::RefCell::new(maestro_catalog::ModelRegistry::in_memory(auth)?)),
 #   };
-    let runner = ExtensionRunner::<Rc<Input>, Local>::new(
+    let runner = ExtensionRunner::<Local>::new(
         owners, runtime, session, Rc::new(|line| eprint!("{line}")),
         maestro_theme::LiveTheme::default(),
     );
     let command = runner.get_command("rename").ok_or("command missing")?;
-    let input = Rc::new(Input::new());
     let executor = tokio::runtime::Builder::new_current_thread().build()?;
-    executor.block_on((command.handler)("draft.md".into(), Rc::clone(&input)))?;
+    executor.block_on((command.handler)("draft.md".into(), runner.create_command_context()))?;
     assert_eq!(input.get_value(), "draft.md");
     Ok(())
 }
@@ -145,8 +150,8 @@ fn local_callback_registration_example() -> Result<(), Box<dyn std::error::Error
 The family is a type parameter resolved through associated pointer types, so
 the compiler cannot infer it from a callback alone. Name it where nothing else
 fixes it: a struct literal bound before registration
-(`RegisteredCommandOptions::<()> { .. }`) or a runner built from a collection
-(`ExtensionRunner::<CC>::new`). Literals passed directly to a facade method
+(`RegisteredCommandOptions::<maestro_models::Threaded> { .. }`) or a runner built from a collection
+(`ExtensionRunner::<maestro_models::Threaded>::new`). Literals passed directly to a facade method
 infer the facade's family.
 
 ## Commands
@@ -174,7 +179,7 @@ returned flag records retain their owners.
 
 Invalidation, through `ExtensionRunner::invalidate` or the shared runtime state,
 retains the first message, including an empty string. Registration, facade flag
-reads and every context operation then return that error before effects. Runner
+reads and every guarded context operation then return that error before effects. Runner
 queries and its flag setter remain available. Omitting the message uses guidance
 about stale contexts after session replacement or reload.
 
@@ -212,7 +217,7 @@ working; nothing is revoked or retargeted. Creating contexts, the runner's
 queries and `ExtensionRunner::shutdown`, which calls the bound shutdown
 operation, stay available.
 
-A context is a single-thread handle. A thread-safe shortcut callback receives it
+A context is a single-thread handle. A thread-safe command or shortcut callback receives it
 by value and returns a `Send` future, so it reads the context before its first
 suspension; a `Local` callback may keep it across suspensions.
 
@@ -233,7 +238,7 @@ let session = ExtensionRunnerSession {
     session_manager: Rc::new(RefCell::new(SessionManager::in_memory(Some("/work"))?)),
     model_registry: Rc::new(RefCell::new(ModelRegistry::in_memory(auth)?)),
 };
-let runner = ExtensionRunner::<()>::new(
+let runner = ExtensionRunner::<maestro_models::Threaded>::new(
     Arc::new(RwLock::new(Vec::new())), Arc::new(ExtensionRuntimeState::new()), session,
     Arc::new(|line| eprint!("{line}")), maestro_theme::LiveTheme::default(),
 );
@@ -248,6 +253,78 @@ let history = ctx.session_manager()?;
 runner.invalidate(None);
 assert_eq!(ctx.cwd().unwrap_err().to_string(), STALE);
 assert_eq!(history.borrow().get_cwd(), "/work");
+# Ok(())
+# }
+```
+
+### Command and replacement contexts
+
+Commands receive `ExtensionCommandContext`, the base context plus six operations:
+`wait_for_idle`, `new_session`, `fork`, `navigate_tree`, `switch_session` and `reload`.
+`bind_command_context(Some(actions))` replaces these independently of `bind_core`;
+`None` restores no-op waits and reloads and uncancelled session-change results.
+Defaults never run supplied setup or continuation callbacks.
+
+Each call checks activity, selects the current operation and starts it immediately,
+before its returned local future is polled. A later rebind or invalidation does not
+change work already started. Options and errors pass through unchanged. Command
+contexts capture their model reader at creation and keep all other base reads lazy.
+Like base contexts, they are single-thread handles: use local command handlers to
+keep one across suspension. Reload can finish the old command frame, but later
+context calls fail with the stale error.
+
+`ReplacedSessionContext` combines a replacement runner's command context with the
+creating session's custom- and user-message operations. Those two operations are
+unguarded and keep reaching their supplied session even after runner invalidation;
+base and command members still apply the guard. Application operations, not the
+context, run `setup` and `with_session` callbacks and create replacement sessions.
+
+```rust
+use maestro_extensions::{ExtensionCommandContextActions, ExtensionRunner, ReplacedSessionContext};
+use maestro_extensions::types::{ExtensionRuntimeState, NewSessionCommandOptions, SessionChangeResult};
+use maestro_extensions::runner::ExtensionRunnerSession;
+use std::{cell::RefCell, rc::Rc, sync::{Arc, RwLock}};
+# fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+# let auth = Arc::new(maestro_credentials::AuthStorage::in_memory(Default::default()));
+# let session = ExtensionRunnerSession {
+#     cwd: "/work".into(),
+#     session_manager: Rc::new(RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
+#     model_registry: Rc::new(RefCell::new(maestro_catalog::ModelRegistry::in_memory(auth)?)),
+# };
+let runner = ExtensionRunner::<maestro_models::Threaded>::new(
+    Arc::new(RwLock::new(Vec::new())), Arc::new(ExtensionRuntimeState::new()), session,
+    Arc::new(|_| {}), maestro_theme::LiveTheme::default(),
+);
+runner.bind_command_context(Some(ExtensionCommandContextActions {
+    new_session: Rc::new(|options| {
+        assert_eq!(options.unwrap().parent_session.as_deref(), Some("/parent.jsonl"));
+        Box::pin(async { Ok(SessionChangeResult { cancelled: true }) })
+    }),
+    ..Default::default()
+}));
+let ctx = runner.create_command_context();
+let executor = tokio::runtime::Builder::new_current_thread().build()?;
+executor.block_on(async {
+    assert!(ctx.new_session(Some(NewSessionCommandOptions {
+        parent_session: Some("/parent.jsonl".into()), ..Default::default()
+    })).await?.cancelled);
+    runner.bind_command_context(None);
+    assert!(!ctx.new_session(None).await?.cancelled);
+    let sent = Rc::new(RefCell::new(Vec::new()));
+    let output = Rc::clone(&sent);
+    let replacement = ReplacedSessionContext::new(ctx,
+        Rc::new(|_, _| Box::pin(async { Ok(()) })),
+        Rc::new(move |content, _| {
+            output.borrow_mut().push(content);
+            Box::pin(async { Ok(()) })
+        }),
+    );
+    runner.invalidate(None);
+    assert!(replacement.cwd().is_err());
+    replacement.send_user_message(maestro_models::UserContent::Text("hello".into()), None).await?;
+    assert!(matches!(sent.borrow().as_slice(), [maestro_models::UserContent::Text(text)] if text == "hello"));
+    Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
+})?;
 # Ok(())
 # }
 ```

@@ -4,6 +4,8 @@
 #[allow(dead_code, reason = "Shared local fixture.")]
 #[path = "support/local.rs"]
 mod local_support;
+#[path = "support/model.rs"]
+mod model_support;
 #[path = "support/ui_host.rs"]
 mod ui_host;
 use ui_host::Named;
@@ -18,19 +20,22 @@ use maestro_extensions::{
     CompactOptions, ContextUsage, EventError, Extension, ExtensionAPI, ExtensionContext,
     ExtensionContextActions, ExtensionRunner, create_event_bus,
 };
-use maestro_models::{Cancellation, Local, Model, ModelCost};
+use maestro_models::{Cancellation, Local, Model};
 use maestro_session::SessionManager;
 use maestro_theme::LiveTheme;
+#[path = "support/error.rs"]
+mod error_support;
+use error_support::Marker;
+use model_support::model;
 use std::{
     cell::{Cell, RefCell},
-    fmt,
     rc::Rc,
     sync::{Arc, Mutex, RwLock},
 };
 use tokio::task::yield_now;
 
 /// A local runner without registrations.
-type Runner = ExtensionRunner<(), Local>;
+type Runner = ExtensionRunner<Local>;
 /// A shared model handle.
 type SharedModel = Arc<RwLock<Model>>;
 /// Names of the bound operations called, in order.
@@ -49,7 +54,7 @@ struct Served {
 /// Serves `cwd` for the supplied registrations and activity state.
 fn served_with(
     cwd: &str,
-    owners: &ExtensionCollection<(), Local>,
+    owners: &ExtensionCollection<Local>,
     runtime: &Arc<ExtensionRuntimeState>,
 ) -> Served {
     let (session, history) = runner_session(cwd);
@@ -75,25 +80,6 @@ fn served(cwd: &str) -> Served {
         &Rc::new(RwLock::new(Vec::new())),
         &Arc::new(ExtensionRuntimeState::new()),
     )
-}
-
-/// A model descriptor with the supplied identity.
-fn model(id: &str) -> SharedModel {
-    Arc::new(RwLock::new(Model {
-        id: id.into(),
-        name: id.into(),
-        api: "fixture".into(),
-        provider: "fixture".into(),
-        base_url: "https://example.invalid".into(),
-        reasoning: false,
-        thinking_level_map: None,
-        input: Vec::new(),
-        cost: ModelCost::default(),
-        context_window: 200_000.0,
-        max_tokens: 20.0,
-        headers: None,
-        compat: None,
-    }))
 }
 
 /// Whether two optional model handles are the same model.
@@ -383,7 +369,7 @@ fn unbound_context_actions_return_runner_defaults() {
 #[test]
 fn stale_access_is_catchable_without_revoking_retained_raw_objects() {
     let bus = LocalBus::new();
-    let owner = loaded::<()>("/stale", bus.controller.for_extension());
+    let owner = loaded("/stale", bus.controller.for_extension());
     let s = served_with("/work", &owner.owners, &owner.runtime);
     let recorder = Recorder::new();
     s.runner.bind_core(recorder.actions());
@@ -412,10 +398,10 @@ fn stale_access_is_catchable_without_revoking_retained_raw_objects() {
     assert_eq!(s.runner.get_ui_context().get_editor_text().unwrap(), "kept");
     s.runner.shutdown().unwrap();
     assert_eq!(recorder.take(), ["shutdown"]);
-    let command = RegisteredCommandOptions::<(), Local> {
+    let command = RegisteredCommandOptions::<Local> {
         description: None,
         get_argument_completions: None,
-        handler: Rc::new(|_, ()| Box::pin(async { Ok(()) })),
+        handler: Rc::new(|_, _| Box::pin(async { Ok(()) })),
     };
     let registered = owner.api.register_command("late".into(), command);
     assert_eq!(registered.unwrap_err().to_string(), STALE);
@@ -434,10 +420,10 @@ fn flag() -> ExtensionFlagOptions {
 fn independent_context_operations_survive_a_caught_stale_error() {
     local(async {
         let bus = LocalBus::new();
-        let a_owner = loaded::<()>("/a-ext", bus.controller.for_extension());
+        let a_owner = loaded("/a-ext", bus.controller.for_extension());
         a_owner.api.register_flag("verbose".into(), flag()).unwrap();
         let a = served_with("/a", &a_owner.owners, &a_owner.runtime);
-        let b_owner = loaded::<()>("/b-ext", bus.controller.for_extension());
+        let b_owner = loaded("/b-ext", bus.controller.for_extension());
         let b = served_with("/b", &b_owner.owners, &b_owner.runtime);
         let a_ctx = a.runner.create_context();
         a.runner.invalidate(None);
@@ -474,7 +460,7 @@ fn independent_context_operations_survive_a_caught_stale_error() {
 fn runner_invalidation_keeps_the_first_message_including_empty() {
     let bus = LocalBus::new();
     for (messages, expected) in [(["first", "second"], "first"), (["", "later"], "")] {
-        let owner = loaded::<()>("/stale", bus.controller.for_extension());
+        let owner = loaded("/stale", bus.controller.for_extension());
         let s = served_with("/work", &owner.owners, &owner.runtime);
         let ctx = s.runner.create_context();
         for message in messages {
@@ -486,16 +472,6 @@ fn runner_invalidation_keeps_the_first_message_including_empty() {
     }
 }
 
-/// An error identified by the operation that returned it.
-#[derive(Debug)]
-struct Marker(&'static str);
-impl fmt::Display for Marker {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(self.0)
-    }
-}
-impl std::error::Error for Marker {}
-
 /// Fails with the marker naming `operation`.
 fn fail<T>(operation: &'static str) -> Result<T, EventError> {
     Err(Box::new(Marker(operation)))
@@ -503,7 +479,12 @@ fn fail<T>(operation: &'static str) -> Result<T, EventError> {
 
 /// The marker inside an operation's error.
 fn marker<T>(result: Result<T, EventError>) -> &'static str {
-    result.err().unwrap().downcast_ref::<Marker>().unwrap().0
+    result
+        .err()
+        .unwrap()
+        .downcast_ref::<Marker<&'static str>>()
+        .unwrap()
+        .0
 }
 
 #[test]
@@ -577,7 +558,7 @@ fn send_sync<T: Send + Sync>() {}
 fn shortcut_handlers_receive_the_runner_context() {
     local(async {
         let bus = LocalBus::new();
-        let owner = loaded::<()>("/keys", bus.controller.for_extension());
+        let owner = loaded("/keys", bus.controller.for_extension());
         let seen = Rc::new(RefCell::new(Vec::new()));
         let output = Rc::clone(&seen);
         let options = ExtensionShortcutOptions::<Local> {
@@ -613,8 +594,8 @@ fn shortcut_handlers_receive_the_runner_context() {
 /// A thread-safe shortcut reads its context synchronously and returns a `Send` future.
 fn threaded_shortcut_reads_its_context_before_suspending() {
     send_sync::<ShortcutHandler>();
-    send_sync::<Extension<()>>();
-    let owner = Arc::new(RwLock::new(Extension::<()>::new(
+    send_sync::<Extension>();
+    let owner = Arc::new(RwLock::new(Extension::<maestro_models::Threaded>::new(
         "/threaded".into(),
         "/resolved".into(),
         local_support::source("/threaded"),
@@ -637,7 +618,7 @@ fn threaded_shortcut_reads_its_context_before_suspending() {
         }),
     };
     api.register_shortcut("ctrl+t".into(), options).unwrap();
-    let runner = ExtensionRunner::<()>::new(
+    let runner = ExtensionRunner::<maestro_models::Threaded>::new(
         owners,
         runtime,
         runner_session("/threaded").0,
@@ -657,7 +638,7 @@ fn threaded_shortcut_reads_its_context_before_suspending() {
 #[test]
 fn context_callbacks_can_rebind_without_retaining_the_registration_owner() {
     let bus = LocalBus::new();
-    let owner = loaded::<()>("/context", bus.controller.for_extension());
+    let owner = loaded("/context", bus.controller.for_extension());
     let s = served_with("/work", &owner.owners, &owner.runtime);
     let runner = Rc::new(s.runner);
     let weak_runner = Rc::downgrade(&runner);

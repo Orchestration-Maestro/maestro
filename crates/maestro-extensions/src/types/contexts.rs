@@ -1,6 +1,14 @@
 //! Records and the base context handed to extension callbacks.
 use crate::{EventError, runner::ContextBinding};
 use maestro_models::{Cancellation, Model};
+use maestro_models::{Execution, Local, UserContent};
+use maestro_session::{
+    SessionManager,
+    messages::{CustomMessageInput, SendMessageOptions, SendUserMessageOptions},
+    session_manager::{ForkPosition, NavigateTreeOptions},
+};
+use std::{cell::RefCell, future::ready, ops::Deref};
+
 use maestro_session::CompactionResult;
 use std::{
     rc::Rc,
@@ -49,7 +57,7 @@ pub struct ExtensionContextActions {
     /// Whether queued messages are waiting.
     pub has_pending_messages: Rc<dyn Fn() -> Result<bool, EventError>>,
     /// Requests a graceful shutdown.
-    pub shutdown: Rc<dyn Fn() -> Result<(), EventError>>,
+    pub shutdown: ShutdownHandler,
     /// Reads the current context usage, if known.
     pub get_context_usage: Rc<dyn Fn() -> Result<Option<ContextUsage>, EventError>>,
     /// Starts compaction without waiting for it.
@@ -99,4 +107,178 @@ pub struct ExtensionContext {
     pub(crate) binding: Rc<ContextBinding>,
     /// Model reader captured when the context was created.
     pub(crate) get_model: ModelReader,
+}
+
+/// The local future returned by command and replacement operations.
+pub(crate) type ContextFuture<T> = <Local as Execution>::Future<'static, Result<T, EventError>>;
+/// Prepares a new session through its writable history.
+type SetupSession = Rc<dyn Fn(Rc<RefCell<SessionManager>>) -> ContextFuture<()>>;
+/// Continues against the replacement session.
+type WithSession = Rc<dyn Fn(ReplacedSessionContext) -> ContextFuture<()>>;
+/// Sends a custom message to the creating session.
+type SendCustomMessage =
+    Rc<dyn Fn(CustomMessageInput, Option<SendMessageOptions>) -> ContextFuture<()>>;
+/// Sends a user message to the creating session.
+type SendUserMessage = Rc<dyn Fn(UserContent, Option<SendUserMessageOptions>) -> ContextFuture<()>>;
+
+/// Whether a session-changing command operation was cancelled.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SessionChangeResult {
+    /// The operation was cancelled.
+    pub cancelled: bool,
+}
+
+/// Options of a command-started session.
+#[derive(Default)]
+pub struct NewSessionCommandOptions {
+    /// Session file the new session starts from.
+    pub parent_session: Option<String>,
+    /// Prepares the replacement session.
+    pub setup: Option<SetupSession>,
+    /// Continues against the replacement session.
+    pub with_session: Option<WithSession>,
+}
+
+/// Options of a command fork.
+#[derive(Default)]
+pub struct ForkOptions {
+    /// Where the fork starts relative to its entry.
+    pub position: Option<ForkPosition>,
+    /// Continues against the replacement session.
+    pub with_session: Option<WithSession>,
+}
+
+/// Options of a command session switch.
+#[derive(Default)]
+pub struct SwitchSessionOptions {
+    /// Continues against the replacement session.
+    pub with_session: Option<WithSession>,
+}
+
+/// Starts a new session.
+pub type NewSessionHandler =
+    Rc<dyn Fn(Option<NewSessionCommandOptions>) -> ContextFuture<SessionChangeResult>>;
+/// Forks the session from an entry.
+pub type ForkHandler =
+    Rc<dyn Fn(String, Option<ForkOptions>) -> ContextFuture<SessionChangeResult>>;
+/// Moves to another point of the session tree.
+pub type NavigateTreeHandler =
+    Rc<dyn Fn(String, Option<NavigateTreeOptions>) -> ContextFuture<SessionChangeResult>>;
+/// Switches to another session file.
+pub type SwitchSessionHandler =
+    Rc<dyn Fn(String, Option<SwitchSessionOptions>) -> ContextFuture<SessionChangeResult>>;
+/// Reloads extensions, skills, prompts and themes.
+pub type ReloadHandler = Rc<dyn Fn() -> ContextFuture<()>>;
+/// Requests a graceful shutdown.
+pub type ShutdownHandler = Rc<dyn Fn() -> Result<(), EventError>>;
+
+/// Application operations behind every command context.
+pub struct ExtensionCommandContextActions {
+    /// Waits for the agent to finish streaming.
+    pub wait_for_idle: Rc<dyn Fn() -> ContextFuture<()>>,
+    /// Starts a new session.
+    pub new_session: NewSessionHandler,
+    /// Forks the session from an entry.
+    pub fork: ForkHandler,
+    /// Moves to another point of the session tree.
+    pub navigate_tree: NavigateTreeHandler,
+    /// Switches to another session file.
+    pub switch_session: SwitchSessionHandler,
+    /// Reloads extensions, skills, prompts and themes.
+    pub reload: ReloadHandler,
+}
+
+impl Default for ExtensionCommandContextActions {
+    /// The results a runner gives before operations are bound or after they are unbound.
+    fn default() -> Self {
+        let uncancelled = || -> ContextFuture<SessionChangeResult> {
+            Box::pin(ready(Ok(SessionChangeResult::default())))
+        };
+        Self {
+            wait_for_idle: Rc::new(|| Box::pin(ready(Ok(())))),
+            new_session: Rc::new(move |_| uncancelled()),
+            fork: Rc::new(move |_, _| uncancelled()),
+            navigate_tree: Rc::new(move |_, _| uncancelled()),
+            switch_session: Rc::new(move |_, _| uncancelled()),
+            reload: Rc::new(|| Box::pin(ready(Ok(())))),
+        }
+    }
+}
+
+/// The context passed to command handlers: the base context plus session control.
+///
+/// ```compile_fail,E0277
+/// use maestro_extensions::{ExtensionCommandContext, types::CommandHandler};
+/// use std::sync::Arc;
+///
+/// fn threaded_command_future_cannot_capture_context() -> CommandHandler {
+///     Arc::new(|_, ctx: ExtensionCommandContext| Box::pin(async move {
+///         let _ = ctx.cwd();
+///         Ok(())
+///     }))
+/// }
+/// ```
+#[derive(Clone)]
+pub struct ExtensionCommandContext {
+    /// The base view with its own captured model reader.
+    pub(crate) context: ExtensionContext,
+}
+
+impl Deref for ExtensionCommandContext {
+    type Target = ExtensionContext;
+    fn deref(&self) -> &ExtensionContext {
+        &self.context
+    }
+}
+
+/// A command context bound to a replacement session, with that session's message operations.
+#[derive(Clone)]
+pub struct ReplacedSessionContext {
+    /// The command view of the replacement runner.
+    command: ExtensionCommandContext,
+    /// Sends a custom message to the creating session.
+    send_message: SendCustomMessage,
+    /// Sends a user message to the creating session.
+    send_user_message: SendUserMessage,
+}
+
+impl Deref for ReplacedSessionContext {
+    type Target = ExtensionCommandContext;
+    fn deref(&self) -> &ExtensionCommandContext {
+        &self.command
+    }
+}
+
+impl ReplacedSessionContext {
+    /// Combines a replacement runner's command context with its session's message operations.
+    #[must_use]
+    pub fn new(
+        command: ExtensionCommandContext,
+        send_message: SendCustomMessage,
+        send_user_message: SendUserMessage,
+    ) -> Self {
+        Self {
+            command,
+            send_message,
+            send_user_message,
+        }
+    }
+    /// Sends a custom message to the creating session, even after invalidation.
+    #[must_use]
+    pub fn send_message(
+        &self,
+        message: CustomMessageInput,
+        options: Option<SendMessageOptions>,
+    ) -> ContextFuture<()> {
+        (self.send_message)(message, options)
+    }
+    /// Sends a user message to the creating session, even after invalidation.
+    #[must_use]
+    pub fn send_user_message(
+        &self,
+        content: UserContent,
+        options: Option<SendUserMessageOptions>,
+    ) -> ContextFuture<()> {
+        (self.send_user_message)(content, options)
+    }
 }

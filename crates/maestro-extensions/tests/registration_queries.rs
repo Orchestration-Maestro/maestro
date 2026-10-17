@@ -169,7 +169,7 @@ fn callback_lifetimes_end_after_last_retained_owner() {
     let released = Arc::new(AtomicBool::new(false));
     let capture = Capture(Arc::clone(&released));
     let source: SourceInfo = serde_json::from_value(serde_json::json!({"path":"/owned", "source":"cli", "scope":"temporary", "origin":"top-level"})).unwrap();
-    let owner = Arc::new(RwLock::new(Extension::<String>::new(
+    let owner = Arc::new(RwLock::new(Extension::<maestro_models::Threaded>::new(
         "/owned".into(),
         "/resolved".into(),
         Arc::new(RwLock::new(source)),
@@ -183,16 +183,16 @@ fn callback_lifetimes_end_after_last_retained_owner() {
         RegisteredCommandOptions {
             description: None,
             get_argument_completions: None,
-            handler: Arc::new(move |args, ctx: String| {
+            handler: Arc::new(move |args, ctx| {
                 assert!(!capture.0.load(Ordering::SeqCst));
                 assert_eq!(args, "raw args");
-                assert_eq!(ctx, "owned context");
+                assert_eq!(ctx.cwd().unwrap(), "/workspace");
                 Box::pin(std::future::ready(Ok(())))
             }),
         },
     )
     .unwrap();
-    let runner = ExtensionRunner::<String>::new(
+    let runner = ExtensionRunner::<maestro_models::Threaded>::new(
         Arc::clone(&owners),
         runtime,
         support::session::runner_session("/workspace").0,
@@ -201,12 +201,13 @@ fn callback_lifetimes_end_after_last_retained_owner() {
     );
     let command = runner.get_command("hello").unwrap();
     owners.write().unwrap().clear();
+    let context = runner.create_command_context();
     drop((api, owner, runner, owners, bus));
     let executor = tokio::runtime::Builder::new_current_thread()
         .build()
         .unwrap();
     executor
-        .block_on((command.handler)("raw args".into(), "owned context".into()))
+        .block_on((command.handler)("raw args".into(), context))
         .unwrap();
     assert!(!released.load(Ordering::SeqCst));
     drop(command);
@@ -246,7 +247,7 @@ mod tests {
     };
     use std::sync::{Arc, RwLock};
 
-    fn live_facade() -> (ExtensionHandle<()>, ExtensionAPI<()>) {
+    fn live_facade() -> (ExtensionHandle, ExtensionAPI) {
         let source: SourceInfo = serde_json::from_value(serde_json::json!({
             "path":"/captured", "source":"cli", "scope":"temporary", "origin":"top-level"
         }))
@@ -322,22 +323,29 @@ mod tests {
         );
     }
 
-    /// A context from a runner without registrations.
-    fn context() -> ExtensionContext {
-        ExtensionRunner::<()>::new(
+    /// A runner without registrations serving the replay workspace.
+    fn context_runner() -> ExtensionRunner {
+        ExtensionRunner::<maestro_models::Threaded>::new(
             Arc::new(RwLock::new(Vec::new())),
             Arc::new(ExtensionRuntimeState::new()),
             crate::support::session::runner_session("/workspace").0,
             Arc::new(|_| {}),
             maestro_theme::LiveTheme::default(),
         )
-        .create_context()
+    }
+    /// A base context from an unbound runner.
+    fn context() -> ExtensionContext {
+        context_runner().create_context()
+    }
+    /// A command context from an unbound runner.
+    fn command_context() -> maestro_extensions::ExtensionCommandContext {
+        context_runner().create_command_context()
     }
 
     async fn install_and_invoke(
         kind: &str,
-        owner: &ExtensionHandle<()>,
-        api: &ExtensionAPI<()>,
+        owner: &ExtensionHandle,
+        api: &ExtensionAPI,
         read_flag: impl Fn() + Send + Sync + 'static,
     ) {
         if kind == "shortcut" {
@@ -361,11 +369,11 @@ mod tests {
             handler(context()).await.unwrap();
             return;
         }
-        let options: RegisteredCommandOptions<()> = if kind == "command" {
+        let options: RegisteredCommandOptions = if kind == "command" {
             RegisteredCommandOptions {
                 description: None,
                 get_argument_completions: None,
-                handler: Arc::new(move |_, ()| {
+                handler: Arc::new(move |_, _| {
                     read_flag();
                     Box::pin(std::future::ready(Ok(())))
                 }),
@@ -377,14 +385,14 @@ mod tests {
                     read_flag();
                     Box::pin(std::future::ready(Ok(None)))
                 })),
-                handler: Arc::new(|_, ()| Box::pin(std::future::ready(Ok(())))),
+                handler: Arc::new(|_, _| Box::pin(std::future::ready(Ok(())))),
             }
         };
         api.register_command("captured".into(), options).unwrap();
         let command = Arc::clone(&owner.read().unwrap().commands["captured"]);
         if kind == "command" {
             let handler = Arc::clone(&command.read().unwrap().handler);
-            handler(String::new(), ()).await.unwrap();
+            handler(String::new(), command_context()).await.unwrap();
         } else {
             let complete = command
                 .read()
