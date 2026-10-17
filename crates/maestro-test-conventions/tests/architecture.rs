@@ -659,13 +659,13 @@ fn theme_shared_records_edge_is_scoped() {
 #[test]
 fn permitted_downward_edges_pass_without_absent_crates() {
     documented_foundation_graph_matches_policy();
-    assert_eq!(support::policy::POLICY.len(), 37);
+    assert_eq!(support::policy::POLICY.len(), 38);
     assert_eq!(
         support::policy::POLICY
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        115
+        118
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
@@ -696,6 +696,7 @@ const UTILITY_EXCLUDED: &[&str] = &[
     "maestro-lock",
     "maestro-process",
     "maestro-pattern",
+    "maestro-markdown",
     "maestro-cancellation",
     "maestro-request",
     "maestro-extensions-wasm",
@@ -743,7 +744,7 @@ fn path_utility_edges_preserve_native_layer_rules() {
         .map(|row| row.0)
         .filter(|name| *name != "maestro-path" && !UTILITY_EXCLUDED.contains(name))
         .collect();
-    assert_eq!(rows.len(), 37);
+    assert_eq!(rows.len(), 38);
     assert_eq!(consumers.len(), 22);
     assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 10);
     for from in consumers {
