@@ -9,7 +9,10 @@ struct AuthorInput(String);
 
 impl eframe::App for AuthorInput {
     fn ui(&mut self, ui: &mut egui::Ui, _: &mut eframe::Frame) {
-        ui.label(include_str!(concat!(env!("MAESTRO_BROWSER_INPUTS"), "/wordmark.txt")));
+        ui.label(include_str!(concat!(
+            env!("MAESTRO_BROWSER_INPUTS"),
+            "/wordmark.txt"
+        )));
         editor::show(ui, &mut self.0);
         ui.label(&self.0);
     }
@@ -68,12 +71,30 @@ fn prepare(context: &egui::Context) {
 
 /// Apply the fixture widget roles from the shared projection.
 fn style(context: &egui::Context) -> std::io::Result<()> {
-    let text = color(include_str!(concat!(env!("MAESTRO_BROWSER_INPUTS"), "/text.txt")))?;
-    let background = color(include_str!(concat!(env!("MAESTRO_BROWSER_INPUTS"), "/background.txt")))?;
-    let panel = color(include_str!(concat!(env!("MAESTRO_BROWSER_INPUTS"), "/panel.txt")))?;
-    let border = color(include_str!(concat!(env!("MAESTRO_BROWSER_INPUTS"), "/border.txt")))?;
-    let accent = color(include_str!(concat!(env!("MAESTRO_BROWSER_INPUTS"), "/accent.txt")))?;
-    let on_accent = color(include_str!(concat!(env!("MAESTRO_BROWSER_INPUTS"), "/on-accent.txt")))?;
+    let text = color(include_str!(concat!(
+        env!("MAESTRO_BROWSER_INPUTS"),
+        "/text.txt"
+    )))?;
+    let background = color(include_str!(concat!(
+        env!("MAESTRO_BROWSER_INPUTS"),
+        "/background.txt"
+    )))?;
+    let panel = color(include_str!(concat!(
+        env!("MAESTRO_BROWSER_INPUTS"),
+        "/panel.txt"
+    )))?;
+    let border = color(include_str!(concat!(
+        env!("MAESTRO_BROWSER_INPUTS"),
+        "/border.txt"
+    )))?;
+    let accent = color(include_str!(concat!(
+        env!("MAESTRO_BROWSER_INPUTS"),
+        "/accent.txt"
+    )))?;
+    let on_accent = color(include_str!(concat!(
+        env!("MAESTRO_BROWSER_INPUTS"),
+        "/on-accent.txt"
+    )))?;
     context.set_visuals(editor::visuals([
         text, background, panel, border, accent, on_accent,
     ]));
@@ -92,7 +113,10 @@ async fn start() -> Result<(), wasm_bindgen::JsValue> {
         .document()
         .ok_or("missing document")?;
     let stylesheet = document.create_element("style")?;
-    stylesheet.set_text_content(Some(include_str!(concat!(env!("MAESTRO_BROWSER_INPUTS"), "/brand.css"))));
+    stylesheet.set_text_content(Some(include_str!(concat!(
+        env!("MAESTRO_BROWSER_INPUTS"),
+        "/brand.css"
+    ))));
     document
         .body()
         .ok_or("missing body")?
@@ -100,7 +124,10 @@ async fn start() -> Result<(), wasm_bindgen::JsValue> {
     document
         .get_element_by_id("maestro-mark")
         .ok_or("missing mark")?
-        .set_inner_html(include_str!(concat!(env!("MAESTRO_BROWSER_INPUTS"), "/mark.svg")));
+        .set_inner_html(include_str!(concat!(
+            env!("MAESTRO_BROWSER_INPUTS"),
+            "/mark.svg"
+        )));
     let canvas = document
         .get_element_by_id("maestro-canvas")
         .ok_or("missing canvas")?

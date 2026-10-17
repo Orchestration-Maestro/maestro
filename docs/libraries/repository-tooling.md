@@ -35,6 +35,7 @@ Build-recipe tests in `maestro-tooling` use the existing `toml =1.1.6`
 `path` sources from the root manifest's `[patch]` tables into disposable build
 fixtures. Registry/git patches need no local copy; production watching is
 unchanged.
+
 ## External browser author tools
 
 Mise pins Trunk 0.21.14 and wasm-bindgen-cli 0.2.129 (MIT OR Apache-2.0),
