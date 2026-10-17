@@ -6,10 +6,11 @@ use maestro_app::output_guard::{
     flush_raw_stdout, is_stdout_taken_over, restore_stdout, take_over_stdout, write_raw_stdout,
     write_stdout,
 };
+use maestro_test_process::{CheckedChild, TestProcess};
 use serde::Deserialize;
 use std::{
     io::{self, BufRead, BufReader, Read, Write},
-    process::{Command, Stdio},
+    process::Stdio,
 };
 /// Caller text, including empty and control-character inputs.
 #[derive(Deserialize)]
@@ -26,22 +27,16 @@ struct Routed {
     states: Vec<bool>,
 }
 /// Re-enter the named test with piped streams, bypassing harness teardown on exit.
-fn child(name: &str, mode: &str) -> Command {
-    let name = crate::child_process::selector(name).unwrap();
-    let mut command = Command::new(std::env::current_exe().unwrap());
-    command
-        .args([
-            "--exact",
-            &name,
-            "--nocapture",
-            "--test-threads=1",
-            "--quiet",
-        ])
+fn child(name: &str, mode: &str) -> TestProcess {
+    TestProcess::current(name)
+        .unwrap()
+        .nocapture()
+        .single_threaded()
+        .quiet()
         .env("MAESTRO_OUTPUT_PROBE", mode)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-    command
+        .stderr(Stdio::piped())
 }
 /// The harness prologue is separate from product bytes.
 fn product(bytes: &[u8]) -> &[u8] {
@@ -348,11 +343,7 @@ fn package_children_observe_takeover_changes_after_construction() {
 }
 
 /// Observe unterminated bytes while the child is waiting for acknowledgement.
-fn observe_flushed(
-    process: &mut std::process::Child,
-    stdout: &mut impl Read,
-    stderr: &mut impl BufRead,
-) {
+fn observe_flushed(process: &mut CheckedChild, stdout: &mut impl Read, stderr: &mut impl BufRead) {
     // A second signal separates completed flush from the still-live child exit.
     process
         .stdin

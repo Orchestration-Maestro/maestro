@@ -451,7 +451,7 @@ fn maestro_raw_failure_reports_without_finishing_stream() {
         .output()
         .unwrap();
     assert!(output.status.success());
-    child_process::assert_executed(&output, &test);
+    child_process::assert_executed(&output, &test).unwrap();
     assert_eq!(
         String::from_utf8(output.stderr).unwrap(),
         "transform failure\nconversion failure\nmodel failure\nstop failure\ntransform failure\nconversion failure\nmodel failure\nstop failure\n"

@@ -394,7 +394,7 @@ fn bash_artifact_creation_failure_is_reported() {
             .output()
             .unwrap();
         assert!(output.status.success());
-        crate::child_process::assert_executed(&output, &test);
+        crate::child_process::assert_executed(&output, &test).unwrap();
         return;
     }
     agent_shell_support::runtime().block_on(async {

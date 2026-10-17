@@ -7,6 +7,7 @@ use maestro_packages::{
     PackageOperations,
 };
 use maestro_settings::{Settings, SettingsManager};
+use maestro_test_process::TestProcess;
 use scratch::Scratch;
 use serde_json::json;
 use std::{
@@ -162,18 +163,20 @@ fn native_stdio_obeys_live_takeover_and_literal_arguments() {
     }
     std::fs::write(at(&root, "input"), "line1\nline2\nline3\n").unwrap();
     let (out, err) = (at(&root, "out"), at(&root, "err"));
-    let status = Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            "native_stdio_obeys_live_takeover_and_literal_arguments",
-            "--nocapture",
-        ])
+    let stdout = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create_new(true)
+        .open(&out)
+        .unwrap();
+    let status = TestProcess::current("native_stdio_obeys_live_takeover_and_literal_arguments")
+        .unwrap()
+        .nocapture()
         .env(STDIO_CHILD, &root.0)
         .current_dir(at(&root, "ambient"))
         .stdin(std::fs::File::open(at(&root, "input")).unwrap())
-        .stdout(std::fs::File::create(&out).unwrap())
         .stderr(std::fs::File::create(&err).unwrap())
-        .status()
+        .status_with_stdout(stdout)
         .unwrap();
     assert!(status.success());
     let (out, err) = (
