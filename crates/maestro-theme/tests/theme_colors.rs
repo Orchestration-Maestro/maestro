@@ -1,6 +1,6 @@
 //! Terminal color construction and byte-level output.
 #[cfg(test)]
-mod support;
+pub mod support;
 
 use maestro_theme::{
     ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeOptions, load_theme_from_path,

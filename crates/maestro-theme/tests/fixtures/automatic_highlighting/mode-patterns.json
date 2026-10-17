@@ -1,0 +1,126 @@
+[
+  {
+    "pattern": "\\w+",
+    "flags": "gm"
+  },
+  {
+    "pattern": "\\b(class)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "class",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\B|\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "[A-Z]{3}",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\d{3}(?=\\s+)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?=\\b|\\+|-|\\.)(?=\\.\\d|\\d)(?:\\d+)?(?:\\.?\\d*)(?:[de][+-]?\\d+)?\\b\\.?",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\[",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\w+",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\]",
+    "flags": "m"
+  },
+  {
+    "pattern": "(abc)(hit)(xyz)",
+    "flags": "m"
+  },
+  {
+    "pattern": "123",
+    "flags": "m"
+  },
+  {
+    "pattern": "!",
+    "flags": "m"
+  },
+  {
+    "pattern": "(a)(hit)(z)",
+    "flags": "m"
+  },
+  {
+    "pattern": "hit",
+    "flags": "m"
+  },
+  {
+    "pattern": "end",
+    "flags": "m"
+  },
+  {
+    "pattern": "ab",
+    "flags": "m"
+  },
+  {
+    "pattern": "a",
+    "flags": "m"
+  },
+  {
+    "pattern": "b",
+    "flags": "m"
+  },
+  {
+    "pattern": "z",
+    "flags": "m"
+  },
+  {
+    "pattern": "x",
+    "flags": "m"
+  },
+  {
+    "pattern": "one",
+    "flags": "m"
+  },
+  {
+    "pattern": "two",
+    "flags": "m"
+  },
+  {
+    "pattern": "three",
+    "flags": "m"
+  },
+  {
+    "pattern": "([\"'])",
+    "flags": "m"
+  },
+  {
+    "pattern": "<",
+    "flags": "m"
+  },
+  {
+    "pattern": ">",
+    "flags": "m"
+  },
+  {
+    "pattern": "$",
+    "flags": "m"
+  },
+  {
+    "pattern": "a\\nb",
+    "flags": "gm"
+  }
+]

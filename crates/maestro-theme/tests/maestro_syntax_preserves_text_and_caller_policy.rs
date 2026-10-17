@@ -1,6 +1,9 @@
 //! Terminal rows and escaped HTML keep every code character and each caller's policy.
 #[cfg(test)]
 mod published;
+#[cfg(test)]
+pub mod support;
+use support::highlighting::{Scripted, decode, native};
 
 use maestro_theme::{
     LiveTheme, SyntaxHighlighter, SyntaxSpan, SyntectHighlighter, ThemeColor, ThemeState,
@@ -8,67 +11,7 @@ use maestro_theme::{
 };
 use published::{published, theme};
 use serde_json::Value;
-use std::cell::RefCell;
-use std::error::Error;
 use std::rc::Rc;
-use std::sync::OnceLock;
-
-/// Supports fixed labels and answers every highlight with one scripted outcome.
-struct Scripted {
-    /// Labels reported as supported.
-    languages: &'static [&'static str],
-    /// Spans returned, or the message of the failure returned.
-    outcome: Result<Vec<SyntaxSpan>, &'static str>,
-    /// `supports:<label>` and `highlight:<label>` entries in call order.
-    log: RefCell<Vec<String>>,
-}
-
-impl Scripted {
-    /// Support `languages` and answer with `outcome`.
-    fn new(
-        languages: &'static [&'static str],
-        outcome: Result<Vec<SyntaxSpan>, &'static str>,
-    ) -> Self {
-        Self {
-            languages,
-            outcome,
-            log: RefCell::default(),
-        }
-    }
-
-    /// Fail every highlight of a supported `javascript` label.
-    fn failing() -> Self {
-        Self::new(&["javascript"], Err("controlled engine failure"))
-    }
-
-    /// The decisions recorded so far.
-    fn calls(&self) -> Vec<String> {
-        self.log.borrow().clone()
-    }
-}
-
-impl SyntaxHighlighter for Scripted {
-    fn supports_language(&self, language: &str) -> bool {
-        self.log.borrow_mut().push(format!("supports:{language}"));
-        self.languages.contains(&language)
-    }
-
-    fn highlight(
-        &self,
-        _code: &str,
-        language: &str,
-    ) -> Result<Vec<SyntaxSpan>, Box<dyn Error + Send + Sync>> {
-        self.log.borrow_mut().push(format!("highlight:{language}"));
-        self.outcome.clone().map_err(Into::into)
-    }
-}
-
-/// The production highlighter, loaded once for the whole target.
-#[cfg(test)]
-fn native() -> &'static SyntectHighlighter {
-    static NATIVE: OnceLock<SyntectHighlighter> = OnceLock::new();
-    NATIVE.get_or_init(|| SyntectHighlighter::new().unwrap())
-}
 
 /// A span of `range` with a syntax color.
 fn span(range: std::ops::Range<usize>, color: Option<ThemeColor>) -> SyntaxSpan {
@@ -485,25 +428,6 @@ fn explicit_plaintext_markdown_rows_stay_unstyled() {
     let markdown = get_markdown_theme(live, Rc::new(SyntectHighlighter::new().unwrap()), true);
     let highlight = markdown.highlight_code.as_ref().unwrap();
     assert_eq!(highlight(PROSE, Some("plaintext")), [PROSE]);
-}
-
-/// Undo [`escape`]d HTML text: remove tags, then decode the five entities once.
-fn decode(html: &str) -> String {
-    let mut text = String::new();
-    let mut in_tag = false;
-    for c in html.chars() {
-        match c {
-            '<' => in_tag = true,
-            '>' if in_tag => in_tag = false,
-            c if !in_tag => text.push(c),
-            _ => {}
-        }
-    }
-    text.replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&quot;", "\"")
-        .replace("&#x27;", "'")
-        .replace("&amp;", "&")
 }
 
 #[test]

@@ -1,0 +1,3278 @@
+[
+  {
+    "pattern": "^#![ ]*\\/.*\\b(fish|bash|zsh|sh|csh|ksh|tcsh|dash|scsh)\\b.*",
+    "flags": "m"
+  },
+  {
+    "pattern": "^#![ ]*\\/",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\w[\\w\\d_]*\\s*\\(\\s*\\)\\s*\\{",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$?\\(\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "#",
+    "flags": "m"
+  },
+  {
+    "pattern": "<<-?\\s*(?=\\w+)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\/[a-z._-]+)+",
+    "flags": "m"
+  },
+  {
+    "pattern": "\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "'",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\'",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$[\\w\\d#@][\\w\\d_]*(?![\\w\\d])(?![$])",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$\\{",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b[a-z][a-z0-9._-]+\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "$",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\w[\\w\\d_]*",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\B|\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\d+#[0-9a-f]+",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b\\d+(\\.\\d+)?",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\)\\)",
+    "flags": "m"
+  },
+  {
+    "pattern": ":-",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\}",
+    "flags": "m"
+  },
+  {
+    "pattern": "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)",
+    "flags": "m"
+  },
+  {
+    "pattern": "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}",
+    "flags": "m"
+  },
+  {
+    "pattern": "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\w+)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\[\\s\\S]",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\)",
+    "flags": "m"
+  },
+  {
+    "pattern": "=",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(new|throw|return|else)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "#\\s*[a-z]+\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b[a-z\\d_]*_t\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\/\\/",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\/\\*",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(0b[01']+)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(-?)\\b([\\d']+(\\.[\\d']*)?|\\.[\\d']+)((ll|LL|l|L)(u|U)?|(u|U)(ll|LL|l|L)?|f|F|b|B)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(-?)(\\b0[xX][a-fA-F0-9']+|(\\b[\\d']+(\\.[\\d']*)?|\\.[\\d']+)([eE][-+]?[\\d']+)?)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(u8?|U|L)?\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "(u8?|U|L)?'(\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4,8}|[0-7]{3}|\\S)|.)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:u8?|U|L)?R\"([^()\\\\ ]{0,16})\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "[a-zA-Z]\\w*::",
+    "flags": "m"
+  },
+  {
+    "pattern": "<\\/",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\w+",
+    "flags": "m"
+  },
+  {
+    "pattern": ";",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\\\n",
+    "flags": "m"
+  },
+  {
+    "pattern": "<.*?>",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\n",
+    "flags": "m"
+  },
+  {
+    "pattern": ".",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\)([^()\\\\ ]{0,16})\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\*\\/",
+    "flags": "m"
+  },
+  {
+    "pattern": "decltype\\(auto\\)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:[a-zA-Z_]\\w*::)?[a-zA-Z]\\w*\\s*\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": ",",
+    "flags": "m"
+  },
+  {
+    "pattern": "[{;=]",
+    "flags": "m"
+  },
+  {
+    "pattern": "[^\\w\\s\\*&:<>.]",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:[a-zA-Z_]\\w*::)?[a-zA-Z]\\w*",
+    "flags": "m"
+  },
+  {
+    "pattern": "[a-zA-Z]\\w*",
+    "flags": "m"
+  },
+  {
+    "pattern": "((?!struct)(decltype\\(auto\\)|(?:[a-zA-Z_]\\w*::)?[a-zA-Z_]\\w*(?:<[^<>]+>)?)[\\*&\\s]+)+(?:[a-zA-Z_]\\w*::)?[a-zA-Z]\\w*\\s*\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(?!decltype)(?!if)(?!for)(?!switch)(?!while)[a-zA-Z]\\w*(?=(<[^<>]+>|)\\s*\\()",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(deque|list|queue|priority_queue|pair|stack|vector|map|set|bitset|multiset|multimap|unordered_map|unordered_set|unordered_multiset|unordered_multimap|array|tuple|optional|variant|function)\\s*<(?!<)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\b(?:enum(?:\\s+(?:class|struct))?|class|struct|union))(\\s+)(\\w+)",
+    "flags": "m"
+  },
+  {
+    "pattern": "::",
+    "flags": "m"
+  },
+  {
+    "pattern": ":",
+    "flags": "m"
+  },
+  {
+    "pattern": ">",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\/\\/\\/",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$@\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "@\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "(-?)\\b([\\d']+(\\.[\\d']*)?|\\.[\\d']+)(u|U|l|L|ul|UL|f|F|b|B)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(class|interface)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(namespace)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(record)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "^\\s*\\[(?=[\\w])",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(new|return|throw|await|else)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "([a-zA-Z]\\w*(<[a-zA-Z]\\w*(\\s*,\\s*[a-zA-Z]\\w*)*>)?(\\[\\])?\\s+)+[a-zA-Z]\\w*\\s*(<[^=]+>\\s*)?\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "@[a-zA-Z]\\w*",
+    "flags": "m"
+  },
+  {
+    "pattern": "<!--|-->",
+    "flags": "m"
+  },
+  {
+    "pattern": "<\\/?",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\{\\{",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\}\\}",
+    "flags": "m"
+  },
+  {
+    "pattern": "\"\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\{",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(where|class)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "[a-zA-Z](\\.?\\w)*",
+    "flags": "m"
+  },
+  {
+    "pattern": "<",
+    "flags": "m"
+  },
+  {
+    "pattern": "[^\\s:,]",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(in|out)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "[^\\s:]",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\]",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(public|private|protected|static|internal|protected|abstract|async|extern|override|unsafe|virtual|new|sealed|partial)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "[a-zA-Z]\\w*\\s*(<[^=]+>\\s*)?\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\(\\)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\s*[{;=]",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\/\\*",
+    "flags": "mi"
+  },
+  {
+    "pattern": "-(webkit|moz|ms|o)-(?=[a-z])",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\b\\d+(\\.\\d+)?(%|em|ex|ch|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|px|deg|grad|rad|turn|s|ms|Hz|kHz|dpi|dpcm|dppx)?",
+    "flags": "mi"
+  },
+  {
+    "pattern": "#[A-Za-z0-9_-]+",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\.[a-zA-Z-][a-zA-Z0-9_-]*",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\[",
+    "flags": "mi"
+  },
+  {
+    "pattern": ":(active|any-link|blank|checked|current|default|defined|dir|disabled|drop|empty|enabled|first|first-child|first-of-type|fullscreen|future|focus|focus-visible|focus-within|has|host|host-context|hover|indeterminate|in-range|invalid|is|lang|last-child|last-of-type|left|link|local-link|not|nth-child|nth-col|nth-last-child|nth-last-col|nth-last-of-type|nth-of-type|only-child|only-of-type|optional|out-of-range|past|placeholder-shown|read-only|read-write|required|right|root|scope|target|target-within|user-invalid|valid|visited|where)",
+    "flags": "mi"
+  },
+  {
+    "pattern": ":(:)?(after|backdrop|before|cue|cue-region|first-letter|first-line|grammar-error|marker|part|placeholder|selection|slotted|spelling-error)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "--[A-Za-z_][A-Za-z0-9_-]*",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\b(z-index|writing-mode|word-wrap|word-spacing|word-break|will-change|width|widows|white-space|voice-volume|voice-stress|voice-rate|voice-range|voice-pitch|voice-family|voice-duration|voice-balance|visibility|vertical-align|unicode-bidi|transition-timing-function|transition-property|transition-duration|transition-delay|transition|transform-style|transform-origin|transform-box|transform|top|text-underline-position|text-transform|text-shadow|text-rendering|text-overflow|text-orientation|text-justify|text-indent|text-emphasis-style|text-emphasis-position|text-emphasis-color|text-emphasis|text-decoration-style|text-decoration-line|text-decoration-color|text-decoration|text-combine-upright|text-align-last|text-align-all|text-align|table-layout|tab-size|src|speak-as|speak|shape-outside|shape-margin|shape-image-threshold|scrollbar-width|scrollbar-gutter|scrollbar-color|scroll-snap-type|scroll-snap-stop|scroll-snap-align|scroll-padding-top|scroll-padding-right|scroll-padding-left|scroll-padding-inline-start|scroll-padding-inline-end|scroll-padding-inline|scroll-padding-bottom|scroll-padding-block-start|scroll-padding-block-end|scroll-padding-block|scroll-padding|scroll-margin-top|scroll-margin-right|scroll-margin-left|scroll-margin-inline-start|scroll-margin-inline-end|scroll-margin-inline|scroll-margin-bottom|scroll-margin-block-start|scroll-margin-block-end|scroll-margin-block|scroll-margin|row-gap|right|rest-before|rest-after|rest|resize|quotes|position|pointer-events|perspective-origin|perspective|pause-before|pause-after|pause|page-break-inside|page-break-before|page-break-after|padding-top|padding-right|padding-left|padding-inline-start|padding-inline-end|padding-inline|padding-bottom|padding-block-start|padding-block-end|padding-block|padding|overflow-y|overflow-x|overflow-wrap|overflow|outline-width|outline-style|outline-offset|outline-color|outline|orphans|order|opacity|object-position|object-fit|normal|none|nav-up|nav-right|nav-left|nav-index|nav-down|mix-blend-mode|min-width|min-inline-size|min-height|min-block-size|max-width|max-inline-size|max-height|max-block-size|mask-type|mask-size|mask-repeat|mask-position|mask-origin|mask-mode|mask-image|mask-composite|mask-clip|mask-border-width|mask-border-source|mask-border-slice|mask-border-repeat|mask-border-outset|mask-border-mode|mask-border|mask|marks|margin-top|margin-right|margin-left|margin-inline-start|margin-inline-end|margin-inline|margin-bottom|margin-block-start|margin-block-end|margin-block|margin|list-style-type|list-style-position|list-style-image|list-style|line-height|line-break|letter-spacing|left|justify-content|isolation|inline-size|ime-mode|image-resolution|image-rendering|image-orientation|icon|hyphens|height|hanging-punctuation|grid-template-rows|grid-template-columns|grid-template-areas|grid-template|grid-row-start|grid-row-end|grid-row|grid-gap|grid-column-start|grid-column-end|grid-column|grid-auto-rows|grid-auto-flow|grid-auto-columns|grid-area|grid|glyph-orientation-vertical|gap|font-weight|font-variation-settings|font-variant-position|font-variant-numeric|font-variant-ligatures|font-variant-east-asian|font-variant-caps|font-variant|font-synthesis|font-style|font-stretch|font-smoothing|font-size-adjust|font-size|font-language-override|font-kerning|font-feature-settings|font-family|font-display|font|flow|float|flex-wrap|flex-shrink|flex-grow|flex-flow|flex-direction|flex-basis|flex|filter|empty-cells|display|direction|cursor|cue-before|cue-after|cue|counter-reset|counter-increment|content-visibility|content|contain|columns|column-width|column-span|column-rule-width|column-rule-style|column-rule-color|column-rule|column-gap|column-fill|column-count|color|clip-rule|clip-path|clip|clear|caret-color|caption-side|break-inside|break-before|break-after|box-sizing|box-shadow|box-decoration-break|bottom|border-width|border-top-width|border-top-style|border-top-right-radius|border-top-left-radius|border-top-color|border-top|border-style|border-spacing|border-right-width|border-right-style|border-right-color|border-right|border-radius|border-left-width|border-left-style|border-left-color|border-left|border-inline-width|border-inline-style|border-inline-start-width|border-inline-start-style|border-inline-start-color|border-inline-start|border-inline-end-width|border-inline-end-style|border-inline-end-color|border-inline-end|border-inline-color|border-inline|border-image-width|border-image-source|border-image-slice|border-image-repeat|border-image-outset|border-image|border-color|border-collapse|border-bottom-width|border-bottom-style|border-bottom-right-radius|border-bottom-left-radius|border-bottom-color|border-bottom|border-block-width|border-block-style|border-block-start-width|border-block-start-style|border-block-start-color|border-block-start|border-block-end-width|border-block-end-style|border-block-end-color|border-block-end|border-block-color|border-block|border|block-size|background-size|background-repeat|background-position|background-origin|background-image|background-color|background-clip|background-blend-mode|background-attachment|background|backface-visibility|animation-timing-function|animation-play-state|animation-name|animation-iteration-count|animation-fill-mode|animation-duration|animation-direction|animation-delay|animation|all|align-self|align-items|align-content)\\b",
+    "flags": "mi"
+  },
+  {
+    "pattern": ":",
+    "flags": "mi"
+  },
+  {
+    "pattern": "(?=@)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\b(a|abbr|address|article|aside|audio|b|blockquote|body|button|canvas|caption|cite|code|dd|del|details|dfn|div|dl|dt|em|fieldset|figcaption|figure|footer|form|h1|h2|h3|h4|h5|h6|header|hgroup|html|i|iframe|img|input|ins|kbd|label|legend|li|main|mark|menu|nav|object|ol|p|q|quote|samp|section|span|strong|summary|sup|table|tbody|td|textarea|tfoot|th|thead|time|tr|ul|var|video)\\b",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[=|'\\$]",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\w+",
+    "flags": "im"
+  },
+  {
+    "pattern": "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\*\\/",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\*\\/",
+    "flags": "im"
+  },
+  {
+    "pattern": "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):",
+    "flags": "mi"
+  },
+  {
+    "pattern": "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):",
+    "flags": "im"
+  },
+  {
+    "pattern": "\\B|\\b",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\B|\\b",
+    "flags": "im"
+  },
+  {
+    "pattern": "'",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\"",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\]",
+    "flags": "mi"
+  },
+  {
+    "pattern": "$",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\]",
+    "flags": "im"
+  },
+  {
+    "pattern": "\\\\[\\s\\S]",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\n",
+    "flags": "mi"
+  },
+  {
+    "pattern": "'",
+    "flags": "im"
+  },
+  {
+    "pattern": "\"",
+    "flags": "im"
+  },
+  {
+    "pattern": "#(([0-9a-fA-F]{3,4})|(([0-9a-fA-F]{2}){3,4}))\\b",
+    "flags": "mi"
+  },
+  {
+    "pattern": "!important",
+    "flags": "mi"
+  },
+  {
+    "pattern": "(url|data-uri)\\(",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[\\w-]+(?=\\()",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[;}{]",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[;}{]",
+    "flags": "im"
+  },
+  {
+    "pattern": "[^)]",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\)",
+    "flags": "im"
+  },
+  {
+    "pattern": "@-?\\w[\\w]*(-\\w+)*",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\s",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[{;]",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[{;]",
+    "flags": "im"
+  },
+  {
+    "pattern": "[a-z-]+(?=:)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[a-z-]+",
+    "flags": "im"
+  },
+  {
+    "pattern": "(?:^@@ +-\\d+,\\d+ +\\+\\d+,\\d+ +@@|^\\*\\*\\* +\\d+,\\d+ +\\*\\*\\*\\*$|^--- +\\d+,\\d+ +----$)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:Index: |^index|={3,}|^-{3}|^\\*{3} |^\\+{3}|^diff --git)",
+    "flags": "m"
+  },
+  {
+    "pattern": "^\\*{15}$",
+    "flags": "m"
+  },
+  {
+    "pattern": "^\\+",
+    "flags": "m"
+  },
+  {
+    "pattern": "^-",
+    "flags": "m"
+  },
+  {
+    "pattern": "^!",
+    "flags": "m"
+  },
+  {
+    "pattern": "`",
+    "flags": "m"
+  },
+  {
+    "pattern": "(-?)(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)[i]",
+    "flags": "m"
+  },
+  {
+    "pattern": "(-?)(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)",
+    "flags": "m"
+  },
+  {
+    "pattern": ":=",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(func)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\s*(\\{|$)",
+    "flags": "m"
+  },
+  {
+    "pattern": "[\"']",
+    "flags": "m"
+  },
+  {
+    "pattern": "#",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\b\\d+(\\.\\d+)?",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[.]{3}",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[\\!\\(\\)\\:\\=\\[\\]\\{\\|\\}]{1}",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\$",
+    "flags": "mi"
+  },
+  {
+    "pattern": "@\\w+",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[_A-Za-z][_0-9A-Za-z]*(?=\\s*:)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "(?:[;<']|BEGIN)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "$",
+    "flags": "im"
+  },
+  {
+    "pattern": "\\W",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\W",
+    "flags": "im"
+  },
+  {
+    "pattern": ";",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\[+",
+    "flags": "mi"
+  },
+  {
+    "pattern": "(?:[A-Za-z0-9_-]+|\"(\\\\\"|[^\"])*\"|'[^']*')(\\s*\\.\\s*(?:[A-Za-z0-9_-]+|\"(\\\\\"|[^\"])*\"|'[^']*'))*(?=\\s*=\\s*[^#\\s])",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\S",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\]+",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\]+",
+    "flags": "im"
+  },
+  {
+    "pattern": "\\bon|off|true|false|yes|no\\b",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\$[\\w\\d\"][\\w\\d_]*",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\$\\{(.*?)\\}",
+    "flags": "mi"
+  },
+  {
+    "pattern": "'''",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\"\"\"",
+    "flags": "mi"
+  },
+  {
+    "pattern": "([+-]+)?[\\d]+_[\\d_]+",
+    "flags": "mi"
+  },
+  {
+    "pattern": "'''",
+    "flags": "im"
+  },
+  {
+    "pattern": "\"\"\"",
+    "flags": "im"
+  },
+  {
+    "pattern": "\\/\\*\\*",
+    "flags": "m"
+  },
+  {
+    "pattern": "import java\\.[a-z]+\\.",
+    "flags": "m"
+  },
+  {
+    "pattern": "\"\"\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\b(?:class|interface|enum|extends|implements|new))(\\s+)([À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "non-sealed",
+    "flags": "m"
+  },
+  {
+    "pattern": "((?!else)[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*)(\\s+)([À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*)(\\s+)(=(?!=))",
+    "flags": "m"
+  },
+  {
+    "pattern": "(record)(\\s+)([À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "((?:[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*(?:<[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*(?:<[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*(?:<[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*(?:\\s*,\\s*[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*)*>)?(?:\\s*,\\s*[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*(?:<[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*(?:\\s*,\\s*[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*)*>)?)*>)?(?:\\s*,\\s*[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*(?:<[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*(?:<[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*(?:\\s*,\\s*[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*)*>)?(?:\\s*,\\s*[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*(?:<[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*(?:\\s*,\\s*[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*)*>)?)*>)?)*>)?\\s+))([a-zA-Z_]\\w*)(\\s*(?=\\())",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\b([0-9](_*[0-9])*)((\\.([0-9](_*[0-9])*))|\\.)?|(\\.([0-9](_*[0-9])*)))[eE][+-]?([0-9](_*[0-9])*)[fFdD]?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b([0-9](_*[0-9])*)((\\.([0-9](_*[0-9])*))[fFdD]?\\b|\\.([fFdD]\\b)?)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\.([0-9](_*[0-9])*))[fFdD]?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b([0-9](_*[0-9])*)[fFdD]\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0[xX](([0-9a-fA-F](_*[0-9a-fA-F])*)\\.?|([0-9a-fA-F](_*[0-9a-fA-F])*)?\\.([0-9a-fA-F](_*[0-9a-fA-F])*))[pP][+-]?([0-9](_*[0-9])*)[fFdD]?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(0|[1-9](_*[0-9])*)[lL]?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0[xX]([0-9a-fA-F](_*[0-9a-fA-F])*)[lL]?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0(_*[0-7])*[lL]?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0[bB][01](_*[01])*[lL]?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "@[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*",
+    "flags": "m"
+  },
+  {
+    "pattern": "<\\/|#",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\w+@",
+    "flags": "m"
+  },
+  {
+    "pattern": "@[A-Za-z]+",
+    "flags": "m"
+  },
+  {
+    "pattern": "^#![ ]*\\/.*\\bnode\\b.*",
+    "flags": "m"
+  },
+  {
+    "pattern": "^\\s*['\"]use (strict|asm)['\"]",
+    "flags": "m"
+  },
+  {
+    "pattern": "html`",
+    "flags": "m"
+  },
+  {
+    "pattern": "css`",
+    "flags": "m"
+  },
+  {
+    "pattern": "gql`",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\/\\*\\*(?!\\/)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$\\d+",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\b(0|[1-9](_?[0-9])*|0[0-7]*[89][0-9]*)((\\.([0-9](_?[0-9])*))|\\.)?|(\\.([0-9](_?[0-9])*)))[eE][+-]?([0-9](_?[0-9])*)\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(0|[1-9](_?[0-9])*|0[0-7]*[89][0-9]*)\\b((\\.([0-9](_?[0-9])*))\\b|\\.)?|(\\.([0-9](_?[0-9])*))\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(0|[1-9](_?[0-9])*)n\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0[xX][0-9a-fA-F](_?[0-9a-fA-F])*n?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0[bB][0-1](_?[0-1])*n?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0[oO][0-7](_?[0-7])*n?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0[0-7]+n?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:\\bJSON|\\b[A-Z][a-z]+([A-Z][a-z]*|\\d)*|\\b[A-Z]{2,}([A-Z][a-z]+|\\d)+([A-Z][a-z]*)*|\\b[A-Z]{2,}[a-z]+([A-Z][a-z]+|\\d)*([A-Z][a-z]*)*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "[A-Za-z$_][0-9A-Za-z$_]*(?=:)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(const|var|let)(\\s+)([A-Za-z$_][0-9A-Za-z$_]*)(\\s*)(=\\s*)((async\\s*)?)((?=(\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)|[a-zA-Z_]\\w*)\\s*=>))",
+    "flags": "m"
+  },
+  {
+    "pattern": "(!|!=|!==|%|%=|&|&&|&=|\\*|\\*=|\\+|\\+=|,|-|-=|\\/=|\\/|:|;|<<|<<=|<=|<|===|==|=|>>>=|>>=|>=|>>>|>>|>|\\?|\\[|\\{|\\(|\\^|\\^=|\\||\\|=|\\|\\||~|\\b(case|return|throw)\\b)\\s*",
+    "flags": "m"
+  },
+  {
+    "pattern": "(function)(\\s+)([A-Za-z$_][0-9A-Za-z$_]*)((?=\\s*\\())",
+    "flags": "m"
+  },
+  {
+    "pattern": "(function)(\\s*(?=\\())",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(while|if|switch|catch|for)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(?!function)[a-zA-Z_]\\w*\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)\\s*\\{",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\.\\.\\.",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\.(?=[A-Za-z$_][0-9A-Za-z$_]*(?![0-9A-Za-z$_(]))",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$[A-Za-z$_][0-9A-Za-z$_]*",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\bconstructor(?=\\s*\\())",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(?!setInterval|setTimeout|clearInterval|clearTimeout|require|exports|eval|isFinite|isNaN|parseFloat|parseInt|decodeURI|decodeURIComponent|encodeURI|encodeURIComponent|escape|unescape|super|import)[A-Za-z$_][0-9A-Za-z$_]*(?=\\()",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b[A-Z][A-Z_0-9]+\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "(class)(\\s+)([A-Za-z$_][0-9A-Za-z$_]*)(\\s+)(extends)(\\s+)([A-Za-z$_][0-9A-Za-z$_]*(\\.[A-Za-z$_][0-9A-Za-z$_]*)*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(class)(\\s+)([A-Za-z$_][0-9A-Za-z$_]*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(get|set)(\\s+)([A-Za-z$_][0-9A-Za-z$_]*)((?=\\())",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$[(.]",
+    "flags": "m"
+  },
+  {
+    "pattern": "#(?![$_A-z])",
+    "flags": "m"
+  },
+  {
+    "pattern": "[A-Za-z$_][0-9A-Za-z$_]*",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?=@[A-Za-z]+)",
+    "flags": "m"
+  },
+  {
+    "pattern": "[A-Za-z$_][0-9A-Za-z$_]*(?=\\s*(-)|$)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?=[^\\n])\\s",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\/(?=[^/\\n]*\\/)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)|[a-zA-Z_]\\w*)\\s*=>",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\s+",
+    "flags": "m"
+  },
+  {
+    "pattern": "<>",
+    "flags": "m"
+  },
+  {
+    "pattern": "<[A-Za-z0-9\\\\._:-]+\\s*\\/>",
+    "flags": "m"
+  },
+  {
+    "pattern": "<[A-Za-z0-9\\\\._:-]+",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\[",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\/[gimuy]*",
+    "flags": "m"
+  },
+  {
+    "pattern": "[a-zA-Z_]\\w*",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\(\\s*\\)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\s*=>",
+    "flags": "m"
+  },
+  {
+    "pattern": "<\\/>",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\/[A-Za-z0-9\\\\._:-]+>|\\/>",
+    "flags": "m"
+  },
+  {
+    "pattern": "%",
+    "flags": "m"
+  },
+  {
+    "pattern": "\"(\\\\.|[^\\\\\"\\r\\n])*\"(?=\\s*:)",
+    "flags": "m"
+  },
+  {
+    "pattern": "[{}[\\],:]",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(true|false|null)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\S",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(break|continue|return|this)\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "[a-zA-Z_]\\w*@",
+    "flags": "m"
+  },
+  {
+    "pattern": "@(?:file|property|field|get|set|receiver|param|setparam|delegate)\\s*:(?:\\s*[a-zA-Z_]\\w*)?",
+    "flags": "m"
+  },
+  {
+    "pattern": "@[a-zA-Z_]\\w*",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(fun)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(class|interface|trait)(\\s+)([a-zA-Z_]\\w*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "^#!\\/usr\\/bin\\/env",
+    "flags": "m"
+  },
+  {
+    "pattern": "@\\w+",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$[a-zA-Z_]\\w*",
+    "flags": "m"
+  },
+  {
+    "pattern": "\"\"\"(?=[^\"])",
+    "flags": "m"
+  },
+  {
+    "pattern": "[a-zA-Z_]\\w*\\s*\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "[(]|$",
+    "flags": "m"
+  },
+  {
+    "pattern": "[=,\\/]|\\)",
+    "flags": "m"
+  },
+  {
+    "pattern": "[=,\\/]",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(public|protected|internal|private|constructor)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "[,:]\\s*",
+    "flags": "m"
+  },
+  {
+    "pattern": "[:\\{(]|$",
+    "flags": "m"
+  },
+  {
+    "pattern": "extends implements",
+    "flags": "m"
+  },
+  {
+    "pattern": "[<\\(,){\\s]|$",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\/\\/",
+    "flags": "mi"
+  },
+  {
+    "pattern": "@(import|media|charset|font-face|(-[a-z]+-)?keyframes|supports|document|namespace|page|viewport|host)\\b",
+    "flags": "mi"
+  },
+  {
+    "pattern": "@[\\w-]+\\s*:",
+    "flags": "mi"
+  },
+  {
+    "pattern": "@[\\w-]+",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[\\w-]+:(:)?(active|any-link|blank|checked|current|default|defined|dir|disabled|drop|empty|enabled|first|first-child|first-of-type|fullscreen|future|focus|focus-visible|focus-within|has|host|host-context|hover|indeterminate|in-range|invalid|is|lang|last-child|last-of-type|left|link|local-link|not|nth-child|nth-col|nth-last-child|nth-last-col|nth-last-of-type|nth-of-type|only-child|only-of-type|optional|out-of-range|past|placeholder-shown|read-only|read-write|required|right|root|scope|target|target-within|user-invalid|valid|visited|where|after|backdrop|before|cue|cue-region|first-letter|first-line|grammar-error|marker|part|placeholder|selection|slotted|spelling-error)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "([\\w-]+|@\\{[\\w-]+\\})\\s*:",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[\\.#:&\\[>]",
+    "flags": "mi"
+  },
+  {
+    "pattern": "([\\w-]+|@\\{[\\w-]+\\})",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\b(when)(?!\\.)(?=\\b|\\s)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[=>'/<($\"]",
+    "flags": "mi"
+  },
+  {
+    "pattern": "~?'.*?'",
+    "flags": "mi"
+  },
+  {
+    "pattern": "~?\".*?\"",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\(",
+    "flags": "mi"
+  },
+  {
+    "pattern": "@@?[\\w-]+",
+    "flags": "mi"
+  },
+  {
+    "pattern": "@\\{[\\w-]+\\}",
+    "flags": "mi"
+  },
+  {
+    "pattern": "~?`[^`]*?`",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[\\w-]+\\s*:",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\b(and|not)(?!\\.)(?=\\b|\\s)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[;{}]",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[;{}]",
+    "flags": "im"
+  },
+  {
+    "pattern": "[\\)\\n]",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[\\)\\n]",
+    "flags": "im"
+  },
+  {
+    "pattern": ":",
+    "flags": "im"
+  },
+  {
+    "pattern": "\\{",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[;}]",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[;}]",
+    "flags": "im"
+  },
+  {
+    "pattern": "\\}",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\}",
+    "flags": "im"
+  },
+  {
+    "pattern": "all\\b",
+    "flags": "mi"
+  },
+  {
+    "pattern": "#([\\w-]+|@\\{[\\w-]+\\})",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\.([\\w-]+|@\\{[\\w-]+\\})",
+    "flags": "mi"
+  },
+  {
+    "pattern": "&",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[<='$\"]",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\{",
+    "flags": "im"
+  },
+  {
+    "pattern": "-(webkit|moz|ms|o)-",
+    "flags": "mi"
+  },
+  {
+    "pattern": "(?=:)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "(?=:)",
+    "flags": "im"
+  },
+  {
+    "pattern": "[<=$]",
+    "flags": "mi"
+  },
+  {
+    "pattern": "--(?!\\[=*\\[)",
+    "flags": "m"
+  },
+  {
+    "pattern": "--\\[=*\\[",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(function)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\[=*\\[",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\]=*\\]",
+    "flags": "m"
+  },
+  {
+    "pattern": "([_a-zA-Z]\\w*\\.)*([_a-zA-Z]\\w*:)?[_a-zA-Z]\\w*",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$\\([a-zA-Z_]\\w*\\)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$[@%<?\\^\\+\\*]",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$\\([\\w-]+\\s",
+    "flags": "m"
+  },
+  {
+    "pattern": "^[a-zA-Z_]\\w*\\s*(?=[:+?]?=)",
+    "flags": "m"
+  },
+  {
+    "pattern": "^\\.PHONY:",
+    "flags": "m"
+  },
+  {
+    "pattern": "^[^\\s]+:",
+    "flags": "m"
+  },
+  {
+    "pattern": "[\\w-]+",
+    "flags": "m"
+  },
+  {
+    "pattern": "[\\.\\w]+",
+    "flags": "m"
+  },
+  {
+    "pattern": "^#{1,6}",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?=^.+?\\n[=-]{2,}$)",
+    "flags": "m"
+  },
+  {
+    "pattern": "<\\/?[A-Za-z_]",
+    "flags": "m"
+  },
+  {
+    "pattern": "^[ \t]*([*+-]|(\\d+\\.))(?=\\s+)",
+    "flags": "m"
+  },
+  {
+    "pattern": "_{2}(?!\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\*{2}(?!\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\*(?![*\\s])",
+    "flags": "m"
+  },
+  {
+    "pattern": "_(?![_\\s])",
+    "flags": "m"
+  },
+  {
+    "pattern": "^>\\s+",
+    "flags": "m"
+  },
+  {
+    "pattern": "(`{3,})[^`](.|\\n)*?\\1`*[ ]*",
+    "flags": "m"
+  },
+  {
+    "pattern": "(~{3,})[^~](.|\\n)*?\\1~*[ ]*",
+    "flags": "m"
+  },
+  {
+    "pattern": "```",
+    "flags": "m"
+  },
+  {
+    "pattern": "~~~",
+    "flags": "m"
+  },
+  {
+    "pattern": "`.+?`",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?=^( {4}|\\t))",
+    "flags": "m"
+  },
+  {
+    "pattern": "^[-\\*]{3,}",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\[.+?\\]\\[.*?\\]",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\[.+?\\]\\(((data|javascript|mailto):|(?:http|ftp)s?:\\/\\/).*?\\)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\[.+?\\]\\([A-Za-z][A-Za-z0-9+.-]*:\\/\\/.*?\\)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\[.+?\\]\\([./?&#].*?\\)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\[.*?\\]\\(.*?\\)",
+    "flags": "m"
+  },
+  {
+    "pattern": "^\\[[^\\n]+\\]:",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\[(?=\\])",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\]\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\]\\[",
+    "flags": "m"
+  },
+  {
+    "pattern": "_{2}",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\*",
+    "flags": "m"
+  },
+  {
+    "pattern": "_",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\*{2}",
+    "flags": "m"
+  },
+  {
+    "pattern": "^[=-]*$",
+    "flags": "m"
+  },
+  {
+    "pattern": "^",
+    "flags": "m"
+  },
+  {
+    "pattern": "```+[ ]*$",
+    "flags": "m"
+  },
+  {
+    "pattern": "~~~+[ ]*$",
+    "flags": "m"
+  },
+  {
+    "pattern": "^( {4}|\\t)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\n)$",
+    "flags": "m"
+  },
+  {
+    "pattern": ":\\s*",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(AV|CA|CF|CG|CI|CL|CM|CN|CT|MK|MP|MTK|MTL|NS|SCN|SK|UI|WK|XC)\\w+",
+    "flags": "m"
+  },
+  {
+    "pattern": "(@interface|@class|@protocol|@implementation)\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\.[a-zA-Z_]\\w*",
+    "flags": "m"
+  },
+  {
+    "pattern": "[a-zA-Z@][a-zA-Z0-9_]*",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\{|$)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$\\d",
+    "flags": "m"
+  },
+  {
+    "pattern": "[$%@](\\^\\w\\b|#\\w+(::\\w+)*|\\{\\w+\\}|\\w+(::\\w*)*)(?![A-Za-z])(?![@$%])",
+    "flags": "m"
+  },
+  {
+    "pattern": "[$%@][^\\s\\w{]",
+    "flags": "m"
+  },
+  {
+    "pattern": "^=\\w",
+    "flags": "m"
+  },
+  {
+    "pattern": "->\\{",
+    "flags": "m"
+  },
+  {
+    "pattern": "q[qwxr]?\\s*\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "q[qwxr]?\\s*\\[",
+    "flags": "m"
+  },
+  {
+    "pattern": "q[qwxr]?\\s*\\{",
+    "flags": "m"
+  },
+  {
+    "pattern": "q[qwxr]?\\s*\\|",
+    "flags": "m"
+  },
+  {
+    "pattern": "q[qwxr]?\\s*<",
+    "flags": "m"
+  },
+  {
+    "pattern": "qw\\s+q",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\{\\w+\\}",
+    "flags": "m"
+  },
+  {
+    "pattern": "-?\\w+\\s*=>",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\b0[0-7_]+)|(\\b0x[0-9a-fA-F_]+)|(\\b[1-9][0-9_]*(\\.[0-9_]+)?)|[0_]\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\/\\/|!|!=|!==|%|%=|&|&&|&=|\\*|\\*=|\\+|\\+=|,|-|-=|\\/=|\\/|:|;|<<|<<=|<=|<|===|==|=|>>>=|>>=|>=|>>>|>>|>|\\?|\\[|\\{|\\(|\\^|\\^=|\\||\\|=|\\|\\||~|\\b(split|return|print|reverse|grep)\\b)\\s*",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(sub)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "-\\w\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "^__DATA__$",
+    "flags": "m"
+  },
+  {
+    "pattern": "[\\w.]+",
+    "flags": "m"
+  },
+  {
+    "pattern": "=cut",
+    "flags": "m"
+  },
+  {
+    "pattern": "=cut|\\}",
+    "flags": "m"
+  },
+  {
+    "pattern": "[$@]\\{",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\|",
+    "flags": "m"
+  },
+  {
+    "pattern": "q",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:s|tr|y)(!|\\/|\\||\\?|'|\"|#)(?:\\\\.|[^\\\\\\/])*?\\1(?:\\\\.|[^\\\\\\/])*?\\1[dualxmsipngr]{0,12}",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:s|tr|y)\\((?:\\\\.|[^\\\\\\/])*?\\)\\((?:\\\\.|[^\\\\\\/])*?\\)[dualxmsipngr]{0,12}",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:s|tr|y)\\[(?:\\\\.|[^\\\\\\/])*?\\]\\[(?:\\\\.|[^\\\\\\/])*?\\][dualxmsipngr]{0,12}",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:s|tr|y)\\{(?:\\\\.|[^\\\\\\/])*?\\}\\{(?:\\\\.|[^\\\\\\/])*?\\}[dualxmsipngr]{0,12}",
+    "flags": "m"
+  },
+  {
+    "pattern": "(m|qr)\\/\\/",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:(?:m|qr)?)\\/(?:\\\\.|[^\\\\\\/])*?\\/[dualxmsipngr]{0,12}",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:m|qr)(!|\\/|\\||\\?|'|\"|#)(?:\\\\.|[^\\\\\\/])*?\\1[dualxmsipngr]{0,12}",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:m|qr)\\((?:\\\\.|[^\\\\\\/])*?\\)[dualxmsipngr]{0,12}",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:m|qr)\\[(?:\\\\.|[^\\\\\\/])*?\\][dualxmsipngr]{0,12}",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:m|qr)\\{(?:\\\\.|[^\\\\\\/])*?\\}[dualxmsipngr]{0,12}",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\s*\\(.*?\\))?[;{]",
+    "flags": "m"
+  },
+  {
+    "pattern": "^@@.*",
+    "flags": "m"
+  },
+  {
+    "pattern": "^__END__$",
+    "flags": "m"
+  },
+  {
+    "pattern": "#\\[\\s*(\\\\?[A-Z][a-z0-9_\\x7f-\\xff]+|\\\\?[A-Z]+(?=[A-Z][a-z0-9_\\x7f-\\xff])){1,}(?![A-Za-z0-9])(?![$])",
+    "flags": "m"
+  },
+  {
+    "pattern": "__halt_compiler\\(\\);",
+    "flags": "m"
+  },
+  {
+    "pattern": "<\\?php",
+    "flags": "m"
+  },
+  {
+    "pattern": "<\\?=",
+    "flags": "m"
+  },
+  {
+    "pattern": "<\\?",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\?>",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$this\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$+[a-zA-Z_\\x7f-\\xff][a-zA-Z0-9_\\x7f-\\xff]*(?![A-Za-z0-9])(?![$])",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\b)((?!fn\\b|function\\b|__CLASS__\\b|__DIR__\\b|__FILE__\\b|__FUNCTION__\\b|__COMPILER_HALT_OFFSET__\\b|__LINE__\\b|__METHOD__\\b|__NAMESPACE__\\b|__TRAIT__\\b|die\\b|echo\\b|exit\\b|include\\b|include_once\\b|print\\b|require\\b|require_once\\b|array\\b|abstract\\b|and\\b|as\\b|binary\\b|bool\\b|boolean\\b|break\\b|callable\\b|case\\b|catch\\b|class\\b|clone\\b|const\\b|continue\\b|declare\\b|default\\b|do\\b|double\\b|else\\b|elseif\\b|empty\\b|enddeclare\\b|endfor\\b|endforeach\\b|endif\\b|endswitch\\b|endwhile\\b|enum\\b|eval\\b|extends\\b|final\\b|finally\\b|float\\b|for\\b|foreach\\b|from\\b|global\\b|goto\\b|if\\b|implements\\b|instanceof\\b|insteadof\\b|int\\b|integer\\b|interface\\b|isset\\b|iterable\\b|list\\b|match\\b|mixed\\b|new\\b|never\\b|object\\b|or\\b|private\\b|protected\\b|public\\b|readonly\\b|real\\b|return\\b|string\\b|switch\\b|throw\\b|trait\\b|try\\b|unset\\b|use\\b|var\\b|void\\b|while\\b|xor\\b|yield|Error\\b|AppendIterator\\b|ArgumentCountError\\b|ArithmeticError\\b|ArrayIterator\\b|ArrayObject\\b|AssertionError\\b|BadFunctionCallException\\b|BadMethodCallException\\b|CachingIterator\\b|CallbackFilterIterator\\b|CompileError\\b|Countable\\b|DirectoryIterator\\b|DivisionByZeroError\\b|DomainException\\b|EmptyIterator\\b|ErrorException\\b|Exception\\b|FilesystemIterator\\b|FilterIterator\\b|GlobIterator\\b|InfiniteIterator\\b|InvalidArgumentException\\b|IteratorIterator\\b|LengthException\\b|LimitIterator\\b|LogicException\\b|MultipleIterator\\b|NoRewindIterator\\b|OutOfBoundsException\\b|OutOfRangeException\\b|OuterIterator\\b|OverflowException\\b|ParentIterator\\b|ParseError\\b|RangeException\\b|RecursiveArrayIterator\\b|RecursiveCachingIterator\\b|RecursiveCallbackFilterIterator\\b|RecursiveDirectoryIterator\\b|RecursiveFilterIterator\\b|RecursiveIterator\\b|RecursiveIteratorIterator\\b|RecursiveRegexIterator\\b|RecursiveTreeIterator\\b|RegexIterator\\b|RuntimeException\\b|SeekableIterator\\b|SplDoublyLinkedList\\b|SplFileInfo\\b|SplFileObject\\b|SplFixedArray\\b|SplHeap\\b|SplMaxHeap\\b|SplMinHeap\\b|SplObjectStorage\\b|SplObserver\\b|SplPriorityQueue\\b|SplQueue\\b|SplStack\\b|SplSubject\\b|SplTempFileObject\\b|TypeError\\b|UnderflowException\\b|UnexpectedValueException\\b|UnhandledMatchError\\b|ArrayAccess\\b|BackedEnum\\b|Closure\\b|Fiber\\b|Generator\\b|Iterator\\b|IteratorAggregate\\b|Serializable\\b|Stringable\\b|Throwable\\b|Traversable\\b|UnitEnum\\b|WeakReference\\b|WeakMap\\b|Directory\\b|__PHP_Incomplete_Class\\b|parent\\b|php_user_filter\\b|self\\b|static\\b|stdClass\\b))([a-zA-Z_\\x7f-\\xff][a-zA-Z0-9_\\x7f-\\xff]*(?![A-Za-z0-9])(?![$]))([ \t\\n]*)((?=(?=\\()))",
+    "flags": "m"
+  },
+  {
+    "pattern": "(::(?=(?!class\\b)))([a-zA-Z_\\x7f-\\xff][a-zA-Z0-9_\\x7f-\\xff]*(?![A-Za-z0-9])(?![$])\\b(?!\\())",
+    "flags": "m"
+  },
+  {
+    "pattern": "(::)(class)",
+    "flags": "m"
+  },
+  {
+    "pattern": "((\\\\?[A-Z][a-z0-9_\\x7f-\\xff]+|\\\\?[A-Z]+(?=[A-Z][a-z0-9_\\x7f-\\xff])){1,}(?![A-Za-z0-9])(?![$]))(::(?=(?!class\\b)))([a-zA-Z_\\x7f-\\xff][a-zA-Z0-9_\\x7f-\\xff]*(?![A-Za-z0-9])(?![$])\\b(?!\\())",
+    "flags": "m"
+  },
+  {
+    "pattern": "((\\\\?[A-Z][a-z0-9_\\x7f-\\xff]+|\\\\?[A-Z]+(?=[A-Z][a-z0-9_\\x7f-\\xff])){1,}(?![A-Za-z0-9])(?![$]))(::(?=(?!class\\b)))",
+    "flags": "m"
+  },
+  {
+    "pattern": "((\\\\?[A-Z][a-z0-9_\\x7f-\\xff]+|\\\\?[A-Z]+(?=[A-Z][a-z0-9_\\x7f-\\xff])){1,}(?![A-Za-z0-9])(?![$]))(::)(class)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(const)(\\s)([a-zA-Z_\\x7f-\\xff][a-zA-Z0-9_\\x7f-\\xff]*(?![A-Za-z0-9])(?![$]))",
+    "flags": "m"
+  },
+  {
+    "pattern": "(new)([ \t\\n]+)((?!Error\\b|AppendIterator\\b|ArgumentCountError\\b|ArithmeticError\\b|ArrayIterator\\b|ArrayObject\\b|AssertionError\\b|BadFunctionCallException\\b|BadMethodCallException\\b|CachingIterator\\b|CallbackFilterIterator\\b|CompileError\\b|Countable\\b|DirectoryIterator\\b|DivisionByZeroError\\b|DomainException\\b|EmptyIterator\\b|ErrorException\\b|Exception\\b|FilesystemIterator\\b|FilterIterator\\b|GlobIterator\\b|InfiniteIterator\\b|InvalidArgumentException\\b|IteratorIterator\\b|LengthException\\b|LimitIterator\\b|LogicException\\b|MultipleIterator\\b|NoRewindIterator\\b|OutOfBoundsException\\b|OutOfRangeException\\b|OuterIterator\\b|OverflowException\\b|ParentIterator\\b|ParseError\\b|RangeException\\b|RecursiveArrayIterator\\b|RecursiveCachingIterator\\b|RecursiveCallbackFilterIterator\\b|RecursiveDirectoryIterator\\b|RecursiveFilterIterator\\b|RecursiveIterator\\b|RecursiveIteratorIterator\\b|RecursiveRegexIterator\\b|RecursiveTreeIterator\\b|RegexIterator\\b|RuntimeException\\b|SeekableIterator\\b|SplDoublyLinkedList\\b|SplFileInfo\\b|SplFileObject\\b|SplFixedArray\\b|SplHeap\\b|SplMaxHeap\\b|SplMinHeap\\b|SplObjectStorage\\b|SplObserver\\b|SplPriorityQueue\\b|SplQueue\\b|SplStack\\b|SplSubject\\b|SplTempFileObject\\b|TypeError\\b|UnderflowException\\b|UnexpectedValueException\\b|UnhandledMatchError\\b|ArrayAccess\\b|BackedEnum\\b|Closure\\b|Fiber\\b|Generator\\b|Iterator\\b|IteratorAggregate\\b|Serializable\\b|Stringable\\b|Throwable\\b|Traversable\\b|UnitEnum\\b|WeakReference\\b|WeakMap\\b|Directory\\b|__PHP_Incomplete_Class\\b|parent\\b|php_user_filter\\b|self\\b|static\\b|stdClass\\b))((\\\\?[A-Z][a-z0-9_\\x7f-\\xff]+|\\\\?[A-Z]+(?=[A-Z][a-z0-9_\\x7f-\\xff])){1,}(?![A-Za-z0-9])(?![$]))",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(fn|function)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(enum)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(class|interface|trait)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(use)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "<<<[ \\t]*(?:(\\w+)|\"(\\w+)\")\\n",
+    "flags": "m"
+  },
+  {
+    "pattern": "<<<[ \\t]*'(\\w+)'\\n",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0[bB][01]+(?:_[01]+)*\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0[oO][0-7]+(?:_[0-7]+)*\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0[xX][\\da-fA-F]+(?:_[\\da-fA-F]+)*\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:\\b\\d+(?:_\\d+)*(\\.(?:\\d+(?:_\\d+)*))?|\\B\\.\\d+)(?:[eE][+-]?\\d+)?",
+    "flags": "m"
+  },
+  {
+    "pattern": "[a-zA-Z_\\x7f-\\xff][a-zA-Z0-9_\\x7f-\\xff]*(?![A-Za-z0-9])(?![$])(?=:)(?=(?!::))",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\\\?[A-Z][a-z0-9_\\x7f-\\xff]+|\\\\?[A-Z]+(?=[A-Z][a-z0-9_\\x7f-\\xff])){1,}(?![A-Za-z0-9])(?![$])",
+    "flags": "m"
+  },
+  {
+    "pattern": "]",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$\\w+",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\{\\$",
+    "flags": "m"
+  },
+  {
+    "pattern": "[ \\t]*(\\w+)\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b\\B",
+    "flags": "m"
+  },
+  {
+    "pattern": "=>",
+    "flags": "m"
+  },
+  {
+    "pattern": "[;{]",
+    "flags": "m"
+  },
+  {
+    "pattern": "[$%\\[]",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(extends|implements)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "[($\"]",
+    "flags": "m"
+  },
+  {
+    "pattern": "[:($\"]",
+    "flags": "m"
+  },
+  {
+    "pattern": "[.']",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(as|const|function)\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "<\\?(php|=)?",
+    "flags": "m"
+  },
+  {
+    "pattern": "b\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "b'",
+    "flags": "m"
+  },
+  {
+    "pattern": "^(>>>|\\.\\.\\.) ",
+    "flags": "mu"
+  },
+  {
+    "pattern": "(\\b([0-9](_?[0-9])*)|((\\b([0-9](_?[0-9])*))?\\.([0-9](_?[0-9])*)|\\b([0-9](_?[0-9])*)\\.))[eE][+-]?([0-9](_?[0-9])*)[jJ]?(?=\\b|and|as|assert|async|await|break|case|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|match|nonlocal|10|not|or|pass|raise|return|try|while|with|yield)",
+    "flags": "mu"
+  },
+  {
+    "pattern": "((\\b([0-9](_?[0-9])*))?\\.([0-9](_?[0-9])*)|\\b([0-9](_?[0-9])*)\\.)[jJ]?",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\b([1-9](_?[0-9])*|0+(_?0)*)[lLjJ]?(?=\\b|and|as|assert|async|await|break|case|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|match|nonlocal|10|not|or|pass|raise|return|try|while|with|yield)",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\b0[bB](_?[01])+[lL]?(?=\\b|and|as|assert|async|await|break|case|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|match|nonlocal|10|not|or|pass|raise|return|try|while|with|yield)",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\b0[oO](_?[0-7])+[lL]?(?=\\b|and|as|assert|async|await|break|case|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|match|nonlocal|10|not|or|pass|raise|return|try|while|with|yield)",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\b0[xX](_?[0-9a-fA-F])+[lL]?(?=\\b|and|as|assert|async|await|break|case|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|match|nonlocal|10|not|or|pass|raise|return|try|while|with|yield)",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\b([0-9](_?[0-9])*)[jJ](?=\\b|and|as|assert|async|await|break|case|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|match|nonlocal|10|not|or|pass|raise|return|try|while|with|yield)",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\bself\\b",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\b(if)(?!\\.)(?=\\b|\\s)",
+    "flags": "mu"
+  },
+  {
+    "pattern": "([uU]|[bB]|[rR]|[bB][rR]|[rR][bB])?'''",
+    "flags": "mu"
+  },
+  {
+    "pattern": "([uU]|[bB]|[rR]|[bB][rR]|[rR][bB])?\"\"\"",
+    "flags": "mu"
+  },
+  {
+    "pattern": "([fF][rR]|[rR][fF]|[fF])'''",
+    "flags": "mu"
+  },
+  {
+    "pattern": "([fF][rR]|[rR][fF]|[fF])\"\"\"",
+    "flags": "mu"
+  },
+  {
+    "pattern": "([uU]|[rR])'",
+    "flags": "mu"
+  },
+  {
+    "pattern": "([uU]|[rR])\"",
+    "flags": "mu"
+  },
+  {
+    "pattern": "([bB]|[bB][rR]|[rR][bB])'",
+    "flags": "mu"
+  },
+  {
+    "pattern": "([bB]|[bB][rR]|[rR][bB])\"",
+    "flags": "mu"
+  },
+  {
+    "pattern": "([fF][rR]|[rR][fF]|[fF])'",
+    "flags": "mu"
+  },
+  {
+    "pattern": "([fF][rR]|[rR][fF]|[fF])\"",
+    "flags": "mu"
+  },
+  {
+    "pattern": "'",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\"",
+    "flags": "mu"
+  },
+  {
+    "pattern": "(?=# type:)",
+    "flags": "mu"
+  },
+  {
+    "pattern": "#",
+    "flags": "mu"
+  },
+  {
+    "pattern": "(\\bdef)(\\s+)([\\p{XID_Start}_]\\p{XID_Continue}*)",
+    "flags": "mu"
+  },
+  {
+    "pattern": "(\\bclass)(\\s+)([\\p{XID_Start}_]\\p{XID_Continue}*)(\\s*)(\\(\\s*)([\\p{XID_Start}_]\\p{XID_Continue}*)(\\s*\\))",
+    "flags": "mu"
+  },
+  {
+    "pattern": "(\\bclass)(\\s+)([\\p{XID_Start}_]\\p{XID_Continue}*)",
+    "flags": "mu"
+  },
+  {
+    "pattern": "^[\\t ]*@",
+    "flags": "mu"
+  },
+  {
+    "pattern": "(<\\/|\\?)|=>",
+    "flags": "mu"
+  },
+  {
+    "pattern": "[A-Za-z]\\w+|__\\w+__",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\B|\\b",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\w+",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\\\[\\s\\S]",
+    "flags": "mu"
+  },
+  {
+    "pattern": "'''",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\"\"\"",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\{\\{",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\{",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\}",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\n",
+    "flags": "mu"
+  },
+  {
+    "pattern": "# type:",
+    "flags": "mu"
+  },
+  {
+    "pattern": "$",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\b\\B|$",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\b\\B",
+    "flags": "mu"
+  },
+  {
+    "pattern": "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)",
+    "flags": "mu"
+  },
+  {
+    "pattern": "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}",
+    "flags": "mu"
+  },
+  {
+    "pattern": "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\(\\s*\\)",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\(",
+    "flags": "mu"
+  },
+  {
+    "pattern": "\\)",
+    "flags": "mu"
+  },
+  {
+    "pattern": "(?=#)|$",
+    "flags": "mu"
+  },
+  {
+    "pattern": "^>>>(?=[ ]|$)",
+    "flags": "m"
+  },
+  {
+    "pattern": "^\\.\\.\\.(?=[ ]|$)",
+    "flags": "m"
+  },
+  {
+    "pattern": " |$",
+    "flags": "m"
+  },
+  {
+    "pattern": "#'",
+    "flags": "m"
+  },
+  {
+    "pattern": "[rR]\"(-*)\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "[rR]\"(-*)\\{",
+    "flags": "m"
+  },
+  {
+    "pattern": "[rR]\"(-*)\\[",
+    "flags": "m"
+  },
+  {
+    "pattern": "[rR]'(-*)\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "[rR]'(-*)\\{",
+    "flags": "m"
+  },
+  {
+    "pattern": "[rR]'(-*)\\[",
+    "flags": "m"
+  },
+  {
+    "pattern": "([=!<>:]=|\\|\\||&&|:::?|<-|<<-|->>|->|\\|>|[-+*\\/?!$&|:<=>@^~]|\\*\\*)((?:0[xX][0-9a-fA-F]+\\.[0-9a-fA-F]*[pP][+-]?\\d+i?|0[xX][0-9a-fA-F]+(?:[pP][+-]?\\d+)?[Li]?|(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?[Li]?))",
+    "flags": "m"
+  },
+  {
+    "pattern": "(%[^%]*%)((?:0[xX][0-9a-fA-F]+\\.[0-9a-fA-F]*[pP][+-]?\\d+i?|0[xX][0-9a-fA-F]+(?:[pP][+-]?\\d+)?[Li]?|(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?[Li]?))",
+    "flags": "m"
+  },
+  {
+    "pattern": "((?:[()]|[{}]|\\[\\[|[[\\]]|\\\\|,))((?:0[xX][0-9a-fA-F]+\\.[0-9a-fA-F]*[pP][+-]?\\d+i?|0[xX][0-9a-fA-F]+(?:[pP][+-]?\\d+)?[Li]?|(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?[Li]?))",
+    "flags": "m"
+  },
+  {
+    "pattern": "([^a-zA-Z0-9._]|^)((?:0[xX][0-9a-fA-F]+\\.[0-9a-fA-F]*[pP][+-]?\\d+i?|0[xX][0-9a-fA-F]+(?:[pP][+-]?\\d+)?[Li]?|(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:[eE][+-]?\\d+)?[Li]?))",
+    "flags": "m"
+  },
+  {
+    "pattern": "((?:(?:[a-zA-Z]|\\.[._a-zA-Z])[._a-zA-Z0-9]*)|\\.(?!\\d))(\\s+)(<-)(\\s+)",
+    "flags": "m"
+  },
+  {
+    "pattern": "[=!<>:]=|\\|\\||&&|:::?|<-|<<-|->>|->|\\|>|[-+*\\/?!$&|:<=>@^~]|\\*\\*",
+    "flags": "m"
+  },
+  {
+    "pattern": "%[^%]*%",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:[()]|[{}]|\\[\\[|[[\\]]|\\\\|,)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:(?:[a-zA-Z]|\\.[._a-zA-Z])[._a-zA-Z0-9]*)|\\.(?!\\d)",
+    "flags": "m"
+  },
+  {
+    "pattern": "@examples",
+    "flags": "m"
+  },
+  {
+    "pattern": "@param",
+    "flags": "m"
+  },
+  {
+    "pattern": "@[a-zA-Z]+",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\[a-zA-Z]+",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?=(?:\\n^#'\\s*(?=@[a-zA-Z]+)|\\n^(?!#')))",
+    "flags": "m"
+  },
+  {
+    "pattern": "`(?:\\\\.|[^`\\\\])+`",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\)(-*)\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\}(-*)\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\](-*)\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\)(-*)'",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\}(-*)'",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\](-*)'",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\.",
+    "flags": "m"
+  },
+  {
+    "pattern": "^#![ ]*\\/.*\\bruby\\b.*",
+    "flags": "m"
+  },
+  {
+    "pattern": "^\\s*=>",
+    "flags": "m"
+  },
+  {
+    "pattern": "^([>?]>|[\\w#]+\\(\\w+\\):\\d+:\\d+[>*]|(\\w+-)?\\d+\\.\\d+\\.\\d+(p\\d+)?[^\\d][^>]+>)(?=[ ])",
+    "flags": "m"
+  },
+  {
+    "pattern": "#<",
+    "flags": "m"
+  },
+  {
+    "pattern": "^=begin",
+    "flags": "m"
+  },
+  {
+    "pattern": "^__END__",
+    "flags": "m"
+  },
+  {
+    "pattern": "%[qQwWx]?\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "%[qQwWx]?\\[",
+    "flags": "m"
+  },
+  {
+    "pattern": "%[qQwWx]?\\{",
+    "flags": "m"
+  },
+  {
+    "pattern": "%[qQwWx]?<",
+    "flags": "m"
+  },
+  {
+    "pattern": "%[qQwWx]?\\/",
+    "flags": "m"
+  },
+  {
+    "pattern": "%[qQwWx]?%",
+    "flags": "m"
+  },
+  {
+    "pattern": "%[qQwWx]?-",
+    "flags": "m"
+  },
+  {
+    "pattern": "%[qQwWx]?\\|",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\B\\?(\\\\\\d{1,3})",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\B\\?(\\\\x[A-Fa-f0-9]{1,2})",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\B\\?(\\\\u\\{?[A-Fa-f0-9]{1,6}\\}?)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\B\\?(\\\\M-\\\\C-|\\\\M-\\\\c|\\\\c\\\\M-|\\\\M-|\\\\C-\\\\M-)[\\x20-\\x7e]",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\B\\?\\\\(c|C-)[\\x20-\\x7e]",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\B\\?\\\\?\\S",
+    "flags": "m"
+  },
+  {
+    "pattern": "<<[-~]?'?(?=(\\w+)(?=\\W)[^\\n]*\\n(?:[^\\n]*\\n)*?\\s*\\1\\b)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(class\\s+)((?:\\b([A-Z]+[a-z0-9]+)+|\\b([A-Z]+[a-z0-9]+)+[A-Z]+)(::\\w+)*)(\\s+<\\s+)((?:\\b([A-Z]+[a-z0-9]+)+|\\b([A-Z]+[a-z0-9]+)+[A-Z]+)(::\\w+)*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\b(class|module)\\s+)((?:\\b([A-Z]+[a-z0-9]+)+|\\b([A-Z]+[a-z0-9]+)+[A-Z]+)(::\\w+)*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "((include|extend)\\s+)((?:\\b([A-Z]+[a-z0-9]+)+|\\b([A-Z]+[a-z0-9]+)+[A-Z]+)(::\\w+)*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "((?:\\b([A-Z]+[a-z0-9]+)+|\\b([A-Z]+[a-z0-9]+)+[A-Z]+)(::\\w+)*)(\\.new[. (])",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:\\b([A-Z]+[a-z0-9]+)+|\\b([A-Z]+[a-z0-9]+)+[A-Z]+)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(def)(\\s+)(([a-zA-Z_]\\w*[!?=]?|[-+~]@|<<|>>|=~|===?|<=>|[<>]=?|\\*\\*|[-/+%^&*~`|]|\\[\\]=?))",
+    "flags": "m"
+  },
+  {
+    "pattern": "[a-zA-Z_]\\w*(!|\\?)?:",
+    "flags": "m"
+  },
+  {
+    "pattern": ":(?!\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b([1-9](_?[0-9])*|0)(\\.([0-9](_?[0-9])*))?([eE][+-]?([0-9](_?[0-9])*)|r)?i?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0[dD][0-9](_?[0-9])*r?i?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0[bB][0-1](_?[0-1])*r?i?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0[oO][0-7](_?[0-7])*r?i?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0[xX][0-9a-fA-F](_?[0-9a-fA-F])*r?i?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0(_?[0-7])+r?i?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\$\\W)|((\\$|@@?)(\\w+))(?=[^@$?])(?![A-Za-z])(?![@$?'])",
+    "flags": "m"
+  },
+  {
+    "pattern": "(!|!=|!==|%|%=|&|&&|&=|\\*|\\*=|\\+|\\+=|,|-|-=|\\/=|\\/|:|;|<<|<<=|<=|<|===|==|=|>>>=|>>=|>=|>>>|>>|>|\\?|\\[|\\{|\\(|\\^|\\^=|\\||\\|=|\\|\\||~|unless)\\s*",
+    "flags": "m"
+  },
+  {
+    "pattern": "#\\{",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\/",
+    "flags": "m"
+  },
+  {
+    "pattern": "-",
+    "flags": "m"
+  },
+  {
+    "pattern": "([a-zA-Z_]\\w*[!?=]?|[-+~]@|<<|>>|=~|===?|<=>|[<>]=?|\\*\\*|[-/+%^&*~`|]|\\[\\]=?)",
+    "flags": "m"
+  },
+  {
+    "pattern": "%r\\{",
+    "flags": "m"
+  },
+  {
+    "pattern": "%r\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "%r!",
+    "flags": "m"
+  },
+  {
+    "pattern": "%r\\[",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\/[a-z]*",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\}[a-z]*",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\)[a-z]*",
+    "flags": "m"
+  },
+  {
+    "pattern": "![a-z]*",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\][a-z]*",
+    "flags": "m"
+  },
+  {
+    "pattern": "^=end",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?=\\))",
+    "flags": "m"
+  },
+  {
+    "pattern": "b?\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "b?r(#*)\"(.|\\n)*?\"\\1(?!#)",
+    "flags": "m"
+  },
+  {
+    "pattern": "b?'\\\\?(x\\w{2}|u\\w{4}|U\\w{8}|.)'",
+    "flags": "m"
+  },
+  {
+    "pattern": "'[a-zA-Z_][a-zA-Z0-9_]*",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0b([01_]+)([ui](8|16|32|64|128|size)|f(32|64))?",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0o([0-7_]+)([ui](8|16|32|64|128|size)|f(32|64))?",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0x([A-Fa-f0-9_]+)([ui](8|16|32|64|128|size)|f(32|64))?",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(\\d[\\d_]*(\\.[0-9_]+)?([eE][+-]?[0-9_]+)?)([ui](8|16|32|64|128|size)|f(32|64))?",
+    "flags": "m"
+  },
+  {
+    "pattern": "(fn)(\\s+)([a-zA-Z_]\\w*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "#!?\\[",
+    "flags": "m"
+  },
+  {
+    "pattern": "(let)(\\s+)((?:mut\\s+)?)([a-zA-Z_]\\w*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(for)(\\s+)([a-zA-Z_]\\w*)(\\s+)(in)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(type)(\\s+)([a-zA-Z_]\\w*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "((?:trait|enum|struct|union|impl|for))(\\s+)([a-zA-Z_]\\w*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "->",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(?!let|for|while|if|else|match\\b)[a-zA-Z]\\w*(?=\\s*\\()",
+    "flags": "m"
+  },
+  {
+    "pattern": "[a-zA-Z]\\w*!?",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\.[A-Za-z0-9_-]+",
+    "flags": "mi"
+  },
+  {
+    "pattern": "(\\$[a-zA-Z-][a-zA-Z0-9_-]*)\\b",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\b(whitespace|wait|w-resize|visible|vertical-text|vertical-ideographic|uppercase|upper-roman|upper-alpha|underline|transparent|top|thin|thick|text|text-top|text-bottom|tb-rl|table-header-group|table-footer-group|sw-resize|super|strict|static|square|solid|small-caps|separate|se-resize|scroll|s-resize|rtl|row-resize|ridge|right|repeat|repeat-y|repeat-x|relative|progress|pointer|overline|outside|outset|oblique|nowrap|not-allowed|normal|none|nw-resize|no-repeat|no-drop|newspaper|ne-resize|n-resize|move|middle|medium|ltr|lr-tb|lowercase|lower-roman|lower-alpha|loose|list-item|line|line-through|line-edge|lighter|left|keep-all|justify|italic|inter-word|inter-ideograph|inside|inset|inline|inline-block|inherit|inactive|ideograph-space|ideograph-parenthesis|ideograph-numeric|ideograph-alpha|horizontal|hidden|help|hand|groove|fixed|ellipsis|e-resize|double|dotted|distribute|distribute-space|distribute-letter|distribute-all-lines|disc|disabled|default|decimal|dashed|crosshair|collapse|col-resize|circle|char|center|capitalize|break-word|break-all|bottom|both|bolder|bold|block|bidi-override|below|baseline|auto|always|all-scroll|absolute|table|table-cell)\\b",
+    "flags": "mi"
+  },
+  {
+    "pattern": "@(page|font-face)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "@",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[=/|']",
+    "flags": "mi"
+  },
+  {
+    "pattern": "@[a-z-]+",
+    "flags": "im"
+  },
+  {
+    "pattern": "@[a-z-]+",
+    "flags": "mi"
+  },
+  {
+    "pattern": "^\\s{0,3}[/~\\w\\d[\\]()@-]*[>%$#][ ]?",
+    "flags": "m"
+  },
+  {
+    "pattern": "[^\\\\](?=\\s*$)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:create table|insert into|primary key|foreign key|not null|alter table|add constraint|grouping sets|on overflow|character set|respect nulls|ignore nulls|nulls first|nulls last|depth first|breadth first)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "(?:double precision|large object|with timezone|without timezone)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\b(?:abs|acos|array_agg|asin|atan|avg|cast|ceil|ceiling|coalesce|corr|cos|cosh|count|covar_pop|covar_samp|cume_dist|dense_rank|deref|element|exp|extract|first_value|floor|json_array|json_arrayagg|json_exists|json_object|json_objectagg|json_query|json_table|json_table_primitive|json_value|lag|last_value|lead|listagg|ln|log|log10|lower|max|min|mod|nth_value|ntile|nullif|percent_rank|percentile_cont|percentile_disc|position|position_regex|power|rank|regr_avgx|regr_avgy|regr_count|regr_intercept|regr_r2|regr_slope|regr_sxx|regr_sxy|regr_syy|row_number|sin|sinh|sqrt|stddev_pop|stddev_samp|substring|substring_regex|sum|tan|tanh|translate|translate_regex|treat|trim|trim_array|unnest|upper|value_of|var_pop|var_samp|width_bucket)\\s*\\(",
+    "flags": "mi"
+  },
+  {
+    "pattern": "@[a-z0-9][a-z0-9_]*",
+    "flags": "mi"
+  },
+  {
+    "pattern": "(-?)(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "--",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[-+*/=%^~]|&&?|\\|\\|?|!=?|<(?:=>?|<|>)?|>[>=]?",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[{}]|<\\/",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\b[\\w\\.]+",
+    "flags": "im"
+  },
+  {
+    "pattern": "[\\w\\.]+",
+    "flags": "im"
+  },
+  {
+    "pattern": "''",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\"\"",
+    "flags": "mi"
+  },
+  {
+    "pattern": "((func|macro))(\\s+)((?:`(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])(?:(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])|\\d|[\\u0300-\\u036F\\u1DC0-\\u1DFF\\u20D0-\\u20FF\\uFE20-\\uFE2F])*`|(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])(?:(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])|\\d|[\\u0300-\\u036F\\u1DC0-\\u1DFF\\u20D0-\\u20FF\\uFE20-\\uFE2F])*|(?:[/=\\-+!*%<>&|^~?]|[\\u00A1-\\u00A7]|[\\u00A9\\u00AB]|[\\u00AC\\u00AE]|[\\u00B0\\u00B1]|[\\u00B6\\u00BB\\u00BF\\u00D7\\u00F7]|[\\u2016-\\u2017]|[\\u2020-\\u2027]|[\\u2030-\\u203E]|[\\u2041-\\u2053]|[\\u2055-\\u205E]|[\\u2190-\\u23FF]|[\\u2500-\\u2775]|[\\u2794-\\u2BFF]|[\\u2E00-\\u2E7F]|[\\u3001-\\u3003]|[\\u3008-\\u3020]|[\\u3030])(?:(?:[/=\\-+!*%<>&|^~?]|[\\u00A1-\\u00A7]|[\\u00A9\\u00AB]|[\\u00AC\\u00AE]|[\\u00B0\\u00B1]|[\\u00B6\\u00BB\\u00BF\\u00D7\\u00F7]|[\\u2016-\\u2017]|[\\u2020-\\u2027]|[\\u2030-\\u203E]|[\\u2041-\\u2053]|[\\u2055-\\u205E]|[\\u2190-\\u23FF]|[\\u2500-\\u2775]|[\\u2794-\\u2BFF]|[\\u2E00-\\u2E7F]|[\\u3001-\\u3003]|[\\u3008-\\u3020]|[\\u3030])|[\\u0300-\\u036F]|[\\u1DC0-\\u1DFF]|[\\u20D0-\\u20FF]|[\\uFE00-\\uFE0F]|[\\uFE20-\\uFE2F])*))",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\b(?:subscript|init[?!]?))(\\s*(?=[<(]))",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(struct|protocol|class|extension|enum|actor)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(operator)(\\s+)((?:[/=\\-+!*%<>&|^~?]|[\\u00A1-\\u00A7]|[\\u00A9\\u00AB]|[\\u00AC\\u00AE]|[\\u00B0\\u00B1]|[\\u00B6\\u00BB\\u00BF\\u00D7\\u00F7]|[\\u2016-\\u2017]|[\\u2020-\\u2027]|[\\u2030-\\u203E]|[\\u2041-\\u2053]|[\\u2055-\\u205E]|[\\u2190-\\u23FF]|[\\u2500-\\u2775]|[\\u2794-\\u2BFF]|[\\u2E00-\\u2E7F]|[\\u3001-\\u3003]|[\\u3008-\\u3020]|[\\u3030])(?:(?:[/=\\-+!*%<>&|^~?]|[\\u00A1-\\u00A7]|[\\u00A9\\u00AB]|[\\u00AC\\u00AE]|[\\u00B0\\u00B1]|[\\u00B6\\u00BB\\u00BF\\u00D7\\u00F7]|[\\u2016-\\u2017]|[\\u2020-\\u2027]|[\\u2030-\\u203E]|[\\u2041-\\u2053]|[\\u2055-\\u205E]|[\\u2190-\\u23FF]|[\\u2500-\\u2775]|[\\u2794-\\u2BFF]|[\\u2E00-\\u2E7F]|[\\u3001-\\u3003]|[\\u3008-\\u3020]|[\\u3030])|[\\u0300-\\u036F]|[\\u1DC0-\\u1DFF]|[\\u20D0-\\u20FF]|[\\uFE00-\\uFE0F]|[\\uFE20-\\uFE2F])*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(precedencegroup)(\\s+)([A-Z](?:(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])|\\d|[\\u0300-\\u036F\\u1DC0-\\u1DFF\\u20D0-\\u20FF\\uFE20-\\uFE2F])*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(import)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "###\\/",
+    "flags": "m"
+  },
+  {
+    "pattern": "##\\/",
+    "flags": "m"
+  },
+  {
+    "pattern": "#\\/",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\/[^\\s](?=[^/\\n]*\\/)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\.)((?:\\bProtocol\\b|\\bType\\b|\\binit\\b|\\bself\\b))",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\.(?:actor|any|associatedtype|async|await|as\\?|as!|as|borrowing|break|case|catch|class|consume|consuming|continue|convenience|copy|default|defer|deinit|didSet|distributed|do|dynamic|each|else|enum|extension|fallthrough|fileprivate\\(set\\)|fileprivate|final|for|func|get|guard|if|import|indirect|infix|init\\?|init!|inout|internal\\(set\\)|internal|in|is|isolated|nonisolated|lazy|let|macro|mutating|nonmutating|open\\(set\\)|open|operator|optional|override|postfix|precedencegroup|prefix|private\\(set\\)|private|protocol|public\\(set\\)|public|repeat|required|rethrows|return|set|some|static|struct|subscript|super|switch|throws|throw|try\\?|try!|try|typealias|unowned\\(safe\\)|unowned\\(unsafe\\)|unowned|var|weak|where|while|willSet)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:\\bas\\?\\B|\\bas!\\B|\\bfileprivate\\(set\\)\\B|\\binit\\?\\B|\\binit!\\B|\\binternal\\(set\\)\\B|\\bopen\\(set\\)\\B|\\bprivate\\(set\\)\\B|\\bpublic\\(set\\)\\B|\\btry\\?\\B|\\btry!\\B|\\bunowned\\(safe\\)\\B|\\bunowned\\(unsafe\\)\\B|\\bAny\\b|\\bSelf\\b|\\binit\\b|\\bself\\b)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\.(?:abs|all|any|assert|assertionFailure|debugPrint|dump|fatalError|getVaList|isKnownUniquelyReferenced|max|min|numericCast|pointwiseMax|pointwiseMin|precondition|preconditionFailure|print|readLine|repeatElement|sequence|stride|swap|swift_unboxFromSwiftValueWithType|transcode|type|unsafeBitCast|unsafeDowncast|withExtendedLifetime|withUnsafeMutablePointer|withUnsafePointer|withVaList|withoutActuallyEscaping|zip)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(?:abs|all|any|assert|assertionFailure|debugPrint|dump|fatalError|getVaList|isKnownUniquelyReferenced|max|min|numericCast|pointwiseMax|pointwiseMin|precondition|preconditionFailure|print|readLine|repeatElement|sequence|stride|swap|swift_unboxFromSwiftValueWithType|transcode|type|unsafeBitCast|unsafeDowncast|withExtendedLifetime|withUnsafeMutablePointer|withUnsafePointer|withVaList|withoutActuallyEscaping|zip)(?=\\()",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:[/=\\-+!*%<>&|^~?]|[\\u00A1-\\u00A7]|[\\u00A9\\u00AB]|[\\u00AC\\u00AE]|[\\u00B0\\u00B1]|[\\u00B6\\u00BB\\u00BF\\u00D7\\u00F7]|[\\u2016-\\u2017]|[\\u2020-\\u2027]|[\\u2030-\\u203E]|[\\u2041-\\u2053]|[\\u2055-\\u205E]|[\\u2190-\\u23FF]|[\\u2500-\\u2775]|[\\u2794-\\u2BFF]|[\\u2E00-\\u2E7F]|[\\u3001-\\u3003]|[\\u3008-\\u3020]|[\\u3030])(?:(?:[/=\\-+!*%<>&|^~?]|[\\u00A1-\\u00A7]|[\\u00A9\\u00AB]|[\\u00AC\\u00AE]|[\\u00B0\\u00B1]|[\\u00B6\\u00BB\\u00BF\\u00D7\\u00F7]|[\\u2016-\\u2017]|[\\u2020-\\u2027]|[\\u2030-\\u203E]|[\\u2041-\\u2053]|[\\u2055-\\u205E]|[\\u2190-\\u23FF]|[\\u2500-\\u2775]|[\\u2794-\\u2BFF]|[\\u2E00-\\u2E7F]|[\\u3001-\\u3003]|[\\u3008-\\u3020]|[\\u3030])|[\\u0300-\\u036F]|[\\u1DC0-\\u1DFF]|[\\u20D0-\\u20FF]|[\\uFE00-\\uFE0F]|[\\uFE20-\\uFE2F])*",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\.(\\.|(?:(?:[/=\\-+!*%<>&|^~?]|[\\u00A1-\\u00A7]|[\\u00A9\\u00AB]|[\\u00AC\\u00AE]|[\\u00B0\\u00B1]|[\\u00B6\\u00BB\\u00BF\\u00D7\\u00F7]|[\\u2016-\\u2017]|[\\u2020-\\u2027]|[\\u2030-\\u203E]|[\\u2041-\\u2053]|[\\u2055-\\u205E]|[\\u2190-\\u23FF]|[\\u2500-\\u2775]|[\\u2794-\\u2BFF]|[\\u2E00-\\u2E7F]|[\\u3001-\\u3003]|[\\u3008-\\u3020]|[\\u3030])|[\\u0300-\\u036F]|[\\u1DC0-\\u1DFF]|[\\u20D0-\\u20FF]|[\\uFE00-\\uFE0F]|[\\uFE20-\\uFE2F]))+",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(([0-9]_*)+)(\\.(([0-9]_*)+))?([eE][+-]?(([0-9]_*)+))?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0x(([0-9a-fA-F]_*)+)(\\.(([0-9a-fA-F]_*)+))?([pP][+-]?(([0-9]_*)+))?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0o([0-7]_*)+\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b0b([01]_*)+\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "#\"\"\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "##\"\"\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "###\"\"\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "#\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "##\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "###\"",
+    "flags": "m"
+  },
+  {
+    "pattern": "`(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])(?:(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])|\\d|[\\u0300-\\u036F\\u1DC0-\\u1DFF\\u20D0-\\u20FF\\uFE20-\\uFE2F])*`",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$(?:(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])|\\d|[\\u0300-\\u036F\\u1DC0-\\u1DFF\\u20D0-\\u20FF\\uFE20-\\uFE2F])+",
+    "flags": "m"
+  },
+  {
+    "pattern": "(@|#(un)?)available",
+    "flags": "m"
+  },
+  {
+    "pattern": "@(?:attached|autoclosure|convention\\((?:swift|block|c)\\)|discardableResult|dynamicCallable|dynamicMemberLookup|escaping|freestanding|frozen|GKInspectable|IBAction|IBDesignable|IBInspectable|IBOutlet|IBSegueAction|inlinable|main|nonobjc|NSApplicationMain|NSCopying|NSManaged|objc\\((?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])(?:(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])|\\d|[\\u0300-\\u036F\\u1DC0-\\u1DFF\\u20D0-\\u20FF\\uFE20-\\uFE2F])*\\)|objc|objcMembers|propertyWrapper|requires_stored_property_inits|resultBuilder|Sendable|testable|UIApplicationMain|unchecked|unknown|usableFromInline|warn_unqualified_access)",
+    "flags": "m"
+  },
+  {
+    "pattern": "@(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])(?:(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])|\\d|[\\u0300-\\u036F\\u1DC0-\\u1DFF\\u20D0-\\u20FF\\uFE20-\\uFE2F])*",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?=\\b[A-Z])",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:\\b\\w+|#\\w+)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:\\[|%)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(AV|CA|CF|CG|CI|CL|CM|CN|CT|MK|MP|MTK|MTL|NS|SCN|SK|UI|WK|XC)(?:(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])|\\d|[\\u0300-\\u036F\\u1DC0-\\u1DFF\\u20D0-\\u20FF\\uFE20-\\uFE2F])+",
+    "flags": "m"
+  },
+  {
+    "pattern": "[A-Z](?:(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])|\\d|[\\u0300-\\u036F\\u1DC0-\\u1DFF\\u20D0-\\u20FF\\uFE20-\\uFE2F])*",
+    "flags": "m"
+  },
+  {
+    "pattern": "[?!]+",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\s+&\\s+(?=[A-Z](?:(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])|\\d|[\\u0300-\\u036F\\u1DC0-\\u1DFF\\u20D0-\\u20FF\\uFE20-\\uFE2F])*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\[0\\\\tnr\"']",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\u\\{[0-9a-fA-F]{1,8}\\}",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\[\\t ]*(?:[\\r\\n]|\\r\\n)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\#[0\\\\tnr\"']",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\#u\\{[0-9a-fA-F]{1,8}\\}",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\#[\\t ]*(?:[\\r\\n]|\\r\\n)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\#\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "\"\"\"#",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\##[0\\\\tnr\"']",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\##u\\{[0-9a-fA-F]{1,8}\\}",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\##[\\t ]*(?:[\\r\\n]|\\r\\n)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\##\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "\"\"\"##",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\###[0\\\\tnr\"']",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\###u\\{[0-9a-fA-F]{1,8}\\}",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\###[\\t ]*(?:[\\r\\n]|\\r\\n)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\\\###\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "\"\"\"###",
+    "flags": "m"
+  },
+  {
+    "pattern": "\"#",
+    "flags": "m"
+  },
+  {
+    "pattern": "\"##",
+    "flags": "m"
+  },
+  {
+    "pattern": "\"###",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:(?=(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])(?:(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])|\\d|[\\u0300-\\u036F\\u1DC0-\\u1DFF\\u20D0-\\u20FF\\uFE20-\\uFE2F])*\\s*:)|(?=(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])(?:(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])|\\d|[\\u0300-\\u036F\\u1DC0-\\u1DFF\\u20D0-\\u20FF\\uFE20-\\uFE2F])*\\s+(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])(?:(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])|\\d|[\\u0300-\\u036F\\u1DC0-\\u1DFF\\u20D0-\\u20FF\\uFE20-\\uFE2F])*\\s*:))",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b_\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])(?:(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])|\\d|[\\u0300-\\u036F\\u1DC0-\\u1DFF\\u20D0-\\u20FF\\uFE20-\\uFE2F])*",
+    "flags": "m"
+  },
+  {
+    "pattern": "(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])(?:(?:[a-zA-Z_]|[\\u00A8\\u00AA\\u00AD\\u00AF\\u00B2-\\u00B5\\u00B7-\\u00BA]|[\\u00BC-\\u00BE\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF]|[\\u0100-\\u02FF\\u0370-\\u167F\\u1681-\\u180D\\u180F-\\u1DBF]|[\\u1E00-\\u1FFF]|[\\u200B-\\u200D\\u202A-\\u202E\\u203F-\\u2040\\u2054\\u2060-\\u206F]|[\\u2070-\\u20CF\\u2100-\\u218F\\u2460-\\u24FF\\u2776-\\u2793]|[\\u2C00-\\u2DFF\\u2E80-\\u2FFF]|[\\u3004-\\u3007\\u3021-\\u302F\\u3031-\\u303F\\u3040-\\uD7FF]|[\\uF900-\\uFD3D\\uFD40-\\uFDCF\\uFDF0-\\uFE1F\\uFE30-\\uFE44]|[\\uFE47-\\uFEFE\\uFF00-\\uFFFD])|\\d|[\\u0300-\\u036F\\u1DC0-\\u1DFF\\u20D0-\\u20FF\\uFE20-\\uFE2F])*\\s*:",
+    "flags": "m"
+  },
+  {
+    "pattern": "#(?!.*\\/###)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\/###",
+    "flags": "m"
+  },
+  {
+    "pattern": "#(?!.*\\/##)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\/##",
+    "flags": "m"
+  },
+  {
+    "pattern": "#(?!.*\\/#)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\/#",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\[|%",
+    "flags": "m"
+  },
+  {
+    "pattern": "[A-Za-z$_][\\u00C0-\\u02B80-9A-Za-z$_]*",
+    "flags": "m"
+  },
+  {
+    "pattern": "}",
+    "flags": "m"
+  },
+  {
+    "pattern": "^\\s*['\"]use strict['\"]",
+    "flags": "m"
+  },
+  {
+    "pattern": "@[A-Za-z$_][0-9A-Za-z$_]*",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(interface)(?!\\.)(?=\\b|\\s)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\"(\"\"|[^/n])\"C\\b",
+    "flags": "mi"
+  },
+  {
+    "pattern": "# *(?:\\d{4}-\\d{1,2}-\\d{1,2}|\\d{1,2}\\/\\d{1,2}\\/\\d{4}) *#",
+    "flags": "mi"
+  },
+  {
+    "pattern": "# *\\d{1,2}(:\\d{1,2}){1,2} *#",
+    "flags": "mi"
+  },
+  {
+    "pattern": "# *(\\d|1[012])(:\\d+){0,2} *(AM|PM) *#",
+    "flags": "mi"
+  },
+  {
+    "pattern": "# *(?:\\d{4}-\\d{1,2}-\\d{1,2}|\\d{1,2}\\/\\d{1,2}\\/\\d{4}) +(?:(\\d|1[012])(:\\d+){0,2} *(AM|PM)|\\d{1,2}(:\\d{1,2}){1,2}) *#",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\b\\d[\\d_]*((\\.[\\d_]+(E[+-]?[\\d_]+)?)|(E[+-]?[\\d_]+))[RFD@!#]?",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\b\\d[\\d_]*((U?[SIL])|[%&])?",
+    "flags": "mi"
+  },
+  {
+    "pattern": "&H[\\dA-F_]+((U?[SIL])|[%&])?",
+    "flags": "mi"
+  },
+  {
+    "pattern": "&O[0-7_]+((U?[SIL])|[%&])?",
+    "flags": "mi"
+  },
+  {
+    "pattern": "&B[01_]+((U?[SIL])|[%&])?",
+    "flags": "mi"
+  },
+  {
+    "pattern": "^\\w+:",
+    "flags": "mi"
+  },
+  {
+    "pattern": "([\\t ]|^)REM(?=\\s)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[\\t ]*#(const|disable|else|elseif|enable|end|externalsource|if|region)\\b",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\/\\/|\\{|\\}|endif|gosub|variant|wend|^\\$ ",
+    "flags": "mi"
+  },
+  {
+    "pattern": "<\\/?",
+    "flags": "mi"
+  },
+  {
+    "pattern": ">",
+    "flags": "mi"
+  },
+  {
+    "pattern": ">",
+    "flags": "im"
+  },
+  {
+    "pattern": ";;",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\(;",
+    "flags": "m"
+  },
+  {
+    "pattern": "((?:offset|align))(\\s*)(=)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\$[\\w_]+",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\((?!;)|\\))+",
+    "flags": "m"
+  },
+  {
+    "pattern": "((?:func|call|call_indirect))(\\s+)(\\$[^\\s)]+)",
+    "flags": "m"
+  },
+  {
+    "pattern": "(i32|i64|f32|f64)(?!\\.)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(f32|f64|i32|i64)(?:\\.(?:abs|add|and|ceil|clz|const|convert_[su]\\/i(?:32|64)|copysign|ctz|demote\\/f64|div(?:_[su])?|eqz?|extend_[su]\\/i32|floor|ge(?:_[su])?|gt(?:_[su])?|le(?:_[su])?|load(?:(?:8|16|32)_[su])?|lt(?:_[su])?|max|min|mul|nearest|neg?|or|popcnt|promote\\/f32|reinterpret\\/[fi](?:32|64)|rem_[su]|rot[lr]|shl|shr_[su]|store(?:8|16|32)?|sqrt|sub|trunc(?:_[su]\\/f(?:32|64))?|wrap\\/i64|xor))\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": "[+-]?\\b(?:\\d(?:_?\\d)*(?:\\.\\d(?:_?\\d)*)?(?:[eE][+-]?\\d(?:_?\\d)*)?|0x[\\da-fA-F](?:_?[\\da-fA-F])*(?:\\.[\\da-fA-F](?:_?[\\da-fA-D])*)?(?:[pP][+-]?\\d(?:_?\\d)*)?)\\b|\\binf\\b|\\bnan(?::0x[\\da-fA-F](?:_?[\\da-fA-D])*)?\\b",
+    "flags": "m"
+  },
+  {
+    "pattern": ";\\)",
+    "flags": "m"
+  },
+  {
+    "pattern": "<![a-z]",
+    "flags": "miu"
+  },
+  {
+    "pattern": "<!--",
+    "flags": "miu"
+  },
+  {
+    "pattern": "<!\\[CDATA\\[",
+    "flags": "miu"
+  },
+  {
+    "pattern": "&[a-z]+;|&#[0-9]+;|&#x[a-f0-9]+;",
+    "flags": "miu"
+  },
+  {
+    "pattern": "<\\?xml",
+    "flags": "miu"
+  },
+  {
+    "pattern": "<\\?[a-z][a-z0-9]+",
+    "flags": "miu"
+  },
+  {
+    "pattern": "<style(?=\\s|>)",
+    "flags": "miu"
+  },
+  {
+    "pattern": "<script(?=\\s|>)",
+    "flags": "miu"
+  },
+  {
+    "pattern": "<>|<\\/>",
+    "flags": "miu"
+  },
+  {
+    "pattern": "<(?=[\\p{L}_](?:[\\p{L}0-9_.-]*:)?[\\p{L}0-9_.-]*(?:\\/>|>|\\s))",
+    "flags": "miu"
+  },
+  {
+    "pattern": "<\\/(?=[\\p{L}_](?:[\\p{L}0-9_.-]*:)?[\\p{L}0-9_.-]*>)",
+    "flags": "miu"
+  },
+  {
+    "pattern": "\\s",
+    "flags": "miu"
+  },
+  {
+    "pattern": "\"",
+    "flags": "miu"
+  },
+  {
+    "pattern": "'",
+    "flags": "miu"
+  },
+  {
+    "pattern": "\\(",
+    "flags": "miu"
+  },
+  {
+    "pattern": "\\[",
+    "flags": "miu"
+  },
+  {
+    "pattern": ">",
+    "flags": "miu"
+  },
+  {
+    "pattern": ">",
+    "flags": "imu"
+  },
+  {
+    "pattern": "#?[a-z_][a-z1-9_-]+",
+    "flags": "miu"
+  },
+  {
+    "pattern": "\\B|\\b",
+    "flags": "miu"
+  },
+  {
+    "pattern": "\\B|\\b",
+    "flags": "imu"
+  },
+  {
+    "pattern": "\\n",
+    "flags": "miu"
+  },
+  {
+    "pattern": "\\\\[\\s\\S]",
+    "flags": "miu"
+  },
+  {
+    "pattern": "\"",
+    "flags": "imu"
+  },
+  {
+    "pattern": "'",
+    "flags": "imu"
+  },
+  {
+    "pattern": "\\)",
+    "flags": "miu"
+  },
+  {
+    "pattern": "\\)",
+    "flags": "imu"
+  },
+  {
+    "pattern": "\\]",
+    "flags": "miu"
+  },
+  {
+    "pattern": "\\]",
+    "flags": "imu"
+  },
+  {
+    "pattern": "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)",
+    "flags": "miu"
+  },
+  {
+    "pattern": "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}",
+    "flags": "miu"
+  },
+  {
+    "pattern": "-->",
+    "flags": "miu"
+  },
+  {
+    "pattern": "-->",
+    "flags": "imu"
+  },
+  {
+    "pattern": "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):",
+    "flags": "miu"
+  },
+  {
+    "pattern": "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):",
+    "flags": "imu"
+  },
+  {
+    "pattern": "\\]\\]>",
+    "flags": "miu"
+  },
+  {
+    "pattern": "\\]\\]>",
+    "flags": "imu"
+  },
+  {
+    "pattern": "\\?>",
+    "flags": "miu"
+  },
+  {
+    "pattern": "\\?>",
+    "flags": "imu"
+  },
+  {
+    "pattern": "\\w+",
+    "flags": "imu"
+  },
+  {
+    "pattern": "[\\p{L}0-9._:-]+",
+    "flags": "miu"
+  },
+  {
+    "pattern": "=\\s*",
+    "flags": "miu"
+  },
+  {
+    "pattern": "<",
+    "flags": "miu"
+  },
+  {
+    "pattern": "[^\\s\"'=<>`]+",
+    "flags": "miu"
+  },
+  {
+    "pattern": "<\\/style>",
+    "flags": "miu"
+  },
+  {
+    "pattern": "<\\/style>",
+    "flags": "imu"
+  },
+  {
+    "pattern": "<\\/script>",
+    "flags": "miu"
+  },
+  {
+    "pattern": "<\\/script>",
+    "flags": "imu"
+  },
+  {
+    "pattern": "[\\p{L}_](?:[\\p{L}0-9_.-]*:)?[\\p{L}0-9_.-]*",
+    "flags": "miu"
+  },
+  {
+    "pattern": "\\/?>",
+    "flags": "miu"
+  },
+  {
+    "pattern": "\\/?>",
+    "flags": "imu"
+  },
+  {
+    "pattern": "\\w[\\w :\\/.-]*:(?=[ \t]|$)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\"\\w[\\w :\\/.-]*\":(?=[ \t]|$)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "'\\w[\\w :\\/.-]*':(?=[ \t]|$)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "^---\\s*$",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[\\|>]([1-9]?[+-])?[ ]*\\n( +)[^ ][^\\n]*\\n(\\2[^\\n]+\\n?)*",
+    "flags": "mi"
+  },
+  {
+    "pattern": "<%[%=-]?",
+    "flags": "mi"
+  },
+  {
+    "pattern": "!\\w+![\\w#;/?:@&=+$,.~*'()[\\]]+",
+    "flags": "mi"
+  },
+  {
+    "pattern": "!<[\\w#;/?:@&=+$,.~*'()[\\]]+>",
+    "flags": "mi"
+  },
+  {
+    "pattern": "![\\w#;/?:@&=+$,.~*'()[\\]]+",
+    "flags": "mi"
+  },
+  {
+    "pattern": "!![\\w#;/?:@&=+$,.~*'()[\\]]+",
+    "flags": "mi"
+  },
+  {
+    "pattern": "&[a-zA-Z_]\\w*$",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\*[a-zA-Z_]\\w*$",
+    "flags": "mi"
+  },
+  {
+    "pattern": "-(?=[ ]|$)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\b(true|false|yes|no|null)(?!\\.)(?=\\b|\\s)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\b[0-9]{4}(-[0-9][0-9]){0,2}([Tt \\t][0-9][0-9]?(:[0-9][0-9]){2})?(\\.[0-9]*)?([ \\t])*(Z|[-+][0-9][0-9]?(:[0-9][0-9])?)?\\b",
+    "flags": "mi"
+  },
+  {
+    "pattern": "(-?)(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)\\b",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\S+",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[%-]?%>",
+    "flags": "mi"
+  },
+  {
+    "pattern": "[%-]?%>",
+    "flags": "im"
+  },
+  {
+    "pattern": "[^\\s,{}[\\]]+",
+    "flags": "mi"
+  },
+  {
+    "pattern": ",|\\}",
+    "flags": "mi"
+  },
+  {
+    "pattern": ",",
+    "flags": "im"
+  },
+  {
+    "pattern": ",|\\]",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\{\\{",
+    "flags": "mi"
+  },
+  {
+    "pattern": "%\\{",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\}\\}",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\}\\}",
+    "flags": "im"
+  },
+  {
+    "pattern": ".?html`",
+    "flags": "m"
+  },
+  {
+    "pattern": ".?css`",
+    "flags": "m"
+  },
+  {
+    "pattern": ".?gql`",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(?!setInterval\\s*\\(|setTimeout\\s*\\(|clearInterval\\s*\\(|clearTimeout\\s*\\(|require\\s*\\(|exports\\s*\\(|eval\\s*\\(|isFinite\\s*\\(|isNaN\\s*\\(|parseFloat\\s*\\(|parseInt\\s*\\(|decodeURI\\s*\\(|decodeURIComponent\\s*\\(|encodeURI\\s*\\(|encodeURIComponent\\s*\\(|escape\\s*\\(|unescape\\s*\\(|super\\s*\\(|import\\s*\\()[A-Za-z$_][0-9A-Za-z$_]*(?=\\s*\\()",
+    "flags": "m"
+  },
+  {
+    "pattern": "(\\s*)\\(",
+    "flags": "m"
+  },
+  {
+    "pattern": "(namespace)(\\s+)([a-zA-Z]\\w*)",
+    "flags": "m"
+  },
+  {
+    "pattern": "[A-Za-z$_][0-9A-Za-z$_]*(?=\\s*\\?:)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\bor\\b",
+    "flags": "mu"
+  },
+  {
+    "pattern": ":(where|visited|valid|user-invalid|target-within|target|scope|root|right|required|read-write|read-only|placeholder-shown|past|out-of-range|optional|only-of-type|only-child|nth-of-type|nth-last-of-type|nth-last-col|nth-last-child|nth-col|nth-child|not|local-link|link|left|last-of-type|last-child|lang|is|invalid|indeterminate|in-range|hover|host-context|host|has|future|fullscreen|focus-within|focus-visible|focus|first-of-type|first-child|first|enabled|empty|drop|disabled|dir|defined|default|current|checked|blank|any-link|active)",
+    "flags": "mi"
+  },
+  {
+    "pattern": ":(:)?(spelling-error|slotted|selection|placeholder|part|marker|grammar-error|first-line|first-letter|cue-region|cue|before|backdrop|after)",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\b(zoom|z-index|y|x|writing-mode|word-wrap|word-spacing|word-break|will-change|width|widows|white-space-collapse|white-space|voice-volume|voice-stress|voice-rate|voice-range|voice-pitch|voice-family|voice-duration|voice-balance|visibility|view-transition-name|view-timeline-name|view-timeline-inset|view-timeline-axis|view-timeline|vertical-align|vector-effect|user-select|user-modify|unicode-bidi|translate|transition-timing-function|transition-property|transition-duration|transition-delay|transition-behavior|transition|transform-style|transform-origin|transform-box|transform|touch-action|top|timeline-scope|text-wrap-style|text-wrap-mode|text-wrap|text-underline-position|text-underline-offset|text-transform|text-size-adjust|text-shadow|text-rendering|text-overflow|text-orientation|text-justify|text-indent|text-emphasis-style|text-emphasis-position|text-emphasis-color|text-emphasis|text-decoration-thickness|text-decoration-style|text-decoration-skip-ink|text-decoration-skip|text-decoration-line|text-decoration-color|text-decoration|text-combine-upright|text-anchor|text-align-last|text-align-all|text-align|table-layout|tab-size|stroke-width|stroke-opacity|stroke-miterlimit|stroke-linejoin|stroke-linecap|stroke-dashoffset|stroke-dasharray|stroke|stop-opacity|stop-color|src|speak-as|speak|shape-rendering|shape-outside|shape-margin|shape-image-threshold|scrollbar-width|scrollbar-gutter|scrollbar-color|scroll-timeline-name|scroll-timeline-axis|scroll-timeline|scroll-snap-type|scroll-snap-stop|scroll-snap-align|scroll-padding-top|scroll-padding-right|scroll-padding-left|scroll-padding-inline-start|scroll-padding-inline-end|scroll-padding-inline|scroll-padding-bottom|scroll-padding-block-start|scroll-padding-block-end|scroll-padding-block|scroll-padding|scroll-margin-top|scroll-margin-right|scroll-margin-left|scroll-margin-inline-start|scroll-margin-inline-end|scroll-margin-inline|scroll-margin-bottom|scroll-margin-block-start|scroll-margin-block-end|scroll-margin-block|scroll-margin|scroll-behavior|scale|ruby-position|ruby-align|row-gap|rotate|right|rest-before|rest-after|rest|resize|r|quotes|print-color-adjust|position-visibility|position-anchor|position|pointer-events|place-self|place-items|place-content|perspective-origin|perspective|pause-before|pause-after|pause|paint-order|page-break-inside|page-break-before|page-break-after|page|padding-top|padding-right|padding-left|padding-inline-start|padding-inline-end|padding-inline|padding-bottom|padding-block-start|padding-block-end|padding-block|padding|overscroll-behavior-y|overscroll-behavior-x|overscroll-behavior-inline|overscroll-behavior-block|overscroll-behavior|overlay|overflow-y|overflow-x|overflow-wrap|overflow-inline|overflow-clip-margin|overflow-block|overflow-anchor|overflow|outline-width|outline-style|outline-offset|outline-color|outline|orphans|order|opacity|offset-rotate|offset-position|offset-path|offset-distance|offset-anchor|offset|object-position|object-fit|normal|none|nav-up|nav-right|nav-left|nav-index|nav-down|mix-blend-mode|min-width|min-inline-size|min-height|min-block-size|max-width|max-inline-size|max-height|max-block-size|math-style|math-shift|math-depth|masonry-auto-flow|mask-type|mask-size|mask-repeat|mask-position|mask-origin|mask-mode|mask-image|mask-composite|mask-clip|mask-border-width|mask-border-source|mask-border-slice|mask-border-repeat|mask-border-outset|mask-border-mode|mask-border|mask|marks|marker-start|marker-mid|marker-end|marker|margin-trim|margin-top|margin-right|margin-left|margin-inline-start|margin-inline-end|margin-inline|margin-bottom|margin-block-start|margin-block-end|margin-block|margin|list-style-type|list-style-position|list-style-image|list-style|line-height-step|line-height|line-break|lighting-color|letter-spacing|left|kerning|justify-self|justify-items|justify-content|isolation|inset-inline-start|inset-inline-end|inset-inline|inset-block-start|inset-block-end|inset-block|inset-area|inset|inline-size|initial-letter-align|initial-letter|ime-mode|image-resolution|image-rendering|image-orientation|icon|hyphens|hyphenate-limit-chars|hyphenate-character|height|hanging-punctuation|grid-template-rows|grid-template-columns|grid-template-areas|grid-template|grid-row-start|grid-row-end|grid-row|grid-gap|grid-column-start|grid-column-end|grid-column|grid-auto-rows|grid-auto-flow|grid-auto-columns|grid-area|grid|glyph-orientation-vertical|glyph-orientation-horizontal|gap|forced-color-adjust|font-weight|font-variation-settings|font-variant-position|font-variant-numeric|font-variant-ligatures|font-variant-emoji|font-variant-east-asian|font-variant-caps|font-variant-alternates|font-variant|font-synthesis-weight|font-synthesis-style|font-synthesis-small-caps|font-synthesis-position|font-synthesis|font-style|font-stretch|font-smoothing|font-smooth|font-size-adjust|font-size|font-palette|font-optical-sizing|font-language-override|font-kerning|font-feature-settings|font-family|font-display|font|flow|flood-opacity|flood-color|float|flex-wrap|flex-shrink|flex-grow|flex-flow|flex-direction|flex-basis|flex|filter|fill-rule|fill-opacity|fill|field-sizing|enable-background|empty-cells|dominant-baseline|display|direction|cy|cx|cursor|cue-before|cue-after|cue|counter-set|counter-reset|counter-increment|content-visibility|content|container-type|container-name|container|contain-intrinsic-width|contain-intrinsic-size|contain-intrinsic-inline-size|contain-intrinsic-height|contain-intrinsic-block-size|contain|columns|column-width|column-span|column-rule-width|column-rule-style|column-rule-color|column-rule|column-gap|column-fill|column-count|color-scheme|color-rendering|color-profile|color-interpolation-filters|color-interpolation|color|clip-rule|clip-path|clip|clear|caret-color|caption-side|break-inside|break-before|break-after|box-sizing|box-shadow|box-pack|box-orient|box-ordinal-group|box-lines|box-flex-group|box-flex|box-direction|box-decoration-break|box-align|bottom|border-width|border-top-width|border-top-style|border-top-right-radius|border-top-left-radius|border-top-color|border-top|border-style|border-start-start-radius|border-start-end-radius|border-spacing|border-right-width|border-right-style|border-right-color|border-right|border-radius|border-left-width|border-left-style|border-left-color|border-left|border-inline-width|border-inline-style|border-inline-start-width|border-inline-start-style|border-inline-start-color|border-inline-start|border-inline-end-width|border-inline-end-style|border-inline-end-color|border-inline-end|border-inline-color|border-inline|border-image-width|border-image-source|border-image-slice|border-image-repeat|border-image-outset|border-image|border-end-start-radius|border-end-end-radius|border-color|border-collapse|border-bottom-width|border-bottom-style|border-bottom-right-radius|border-bottom-left-radius|border-bottom-color|border-bottom|border-block-width|border-block-style|border-block-start-width|border-block-start-style|border-block-start-color|border-block-start|border-block-end-width|border-block-end-style|border-block-end-color|border-block-end|border-block-color|border-block|border|block-size|baseline-shift|background-size|background-repeat|background-position-y|background-position-x|background-position|background-origin|background-image|background-color|background-clip|background-blend-mode|background-attachment|background|backface-visibility|backdrop-filter|aspect-ratio|appearance|animation-timing-function|animation-timeline|animation-range-start|animation-range-end|animation-range|animation-play-state|animation-name|animation-iteration-count|animation-fill-mode|animation-duration|animation-direction|animation-delay|animation-composition|animation|anchor-name|all|alignment-baseline|align-self|align-items|align-content|accent-color)\\b",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\b(a|abbr|address|article|aside|audio|b|blockquote|body|button|canvas|caption|cite|code|dd|del|details|dfn|div|dl|dt|em|fieldset|figcaption|figure|footer|form|h1|h2|h3|h4|h5|h6|header|hgroup|html|i|iframe|img|input|ins|kbd|label|legend|li|main|mark|menu|nav|object|ol|optgroup|option|p|picture|q|quote|samp|section|select|source|span|strong|summary|sup|table|tbody|td|textarea|tfoot|th|thead|time|tr|ul|var|video|defs|g|marker|mask|pattern|svg|switch|symbol|feBlend|feColorMatrix|feComponentTransfer|feComposite|feConvolveMatrix|feDiffuseLighting|feDisplacementMap|feFlood|feGaussianBlur|feImage|feMerge|feMorphology|feOffset|feSpecularLighting|feTile|feTurbulence|linearGradient|radialGradient|stop|circle|ellipse|image|line|path|polygon|polyline|rect|text|use|textPath|tspan|foreignObject|clipPath)\\b",
+    "flags": "mi"
+  },
+  {
+    "pattern": "((^|\\s))(#.*$)",
+    "flags": "m"
+  },
+  {
+    "pattern": "\\b(?:double\\s+precision|large\\s+object|with\\s+timezone|without\\s+timezone)\\b",
+    "flags": "mi"
+  },
+  {
+    "pattern": "\\b(?:create\\s+table|insert\\s+into|primary\\s+key|foreign\\s+key|not\\s+null|alter\\s+table|add\\s+constraint|grouping\\s+sets|on\\s+overflow|character\\s+set|respect\\s+nulls|ignore\\s+nulls|nulls\\s+first|nulls\\s+last|depth\\s+first|breadth\\s+first)\\b",
+    "flags": "mi"
+  }
+]

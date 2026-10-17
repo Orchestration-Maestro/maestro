@@ -1,0 +1,58 @@
+[
+  {
+    "farmer": 1,
+    "river": 1,
+    "weeds": 1,
+    "and": 0,
+    "of": 0
+  },
+  {
+    "farmer": 1,
+    "river": 1,
+    "weeds": 1,
+    "and": 0,
+    "of": 10
+  },
+  {
+    "farmer": 1,
+    "river": 1,
+    "weeds": 1,
+    "and": 0,
+    "of": 1
+  },
+  {
+    "bob": 1,
+    "suzy": 2
+  },
+  {},
+  {
+    "class": 1
+  },
+  {
+    "hit": 1
+  },
+  {
+    "hit": 1,
+    "end": 1
+  },
+  {
+    "hit": 2,
+    "end": 3
+  },
+  {
+    "hit": 5,
+    "end": 7
+  },
+  {
+    "end": 1
+  },
+  {
+    "a\nb": 1
+  },
+  {
+    "bob": 999
+  },
+  {
+    "same": 1
+  }
+]

@@ -3419,6 +3419,7 @@ dependencies = [
  "maestro-watch",
  "num-traits",
  "owo-colors",
+ "regress",
  "serde",
  "serde_json",
  "syntect",

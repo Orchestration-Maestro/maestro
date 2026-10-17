@@ -17,11 +17,12 @@ mod loading;
 mod registry;
 mod styles;
 mod watching;
+pub use crate::highlight::HighlightProfile;
 pub use brand::{
     BrandFont, BrandGlyph, BrandMark, BrandMode, BrandPack, BrandPresentation, BrandType,
     load_brand_pack,
 };
-pub use code::{highlight_code, highlight_html};
+pub use code::{highlight_auto, highlight_code, highlight_html};
 pub use components::{
     get_editor_theme, get_markdown_theme, get_select_list_theme, get_settings_list_theme,
 };
