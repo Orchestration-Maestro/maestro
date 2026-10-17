@@ -6,7 +6,6 @@ use base64::{
     Engine as _, alphabet,
     engine::{DecodePaddingMode, GeneralPurpose, GeneralPurposeConfig},
 };
-use futures_util::StreamExt as _;
 use serde::Deserialize;
 
 /// Public application identifier.
@@ -154,11 +153,10 @@ pub(super) fn account_id(token: &str) -> Option<String> {
 }
 
 /// Read all bytes before decoding UTF-8.
-async fn read_text(mut body: crate::HttpBody) -> Result<String, OAuthError> {
-    let mut bytes = Vec::new();
-    while let Some(chunk) = body.next().await {
-        bytes.extend(chunk.map_err(fetch_error)?);
-    }
+async fn read_text(body: crate::HttpBody) -> Result<String, OAuthError> {
+    let bytes = crate::providers::http::collect_body(body)
+        .await
+        .map_err(fetch_error)?;
     Ok(decode_utf8(&bytes).into_owned())
 }
 /// Preserve supplied transport messages.

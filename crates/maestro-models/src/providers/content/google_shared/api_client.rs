@@ -6,16 +6,25 @@ use serde_json::Value;
 use super::ProjectedContentRequest;
 use crate::{DiagnosticErrorInfo, HttpRequest};
 
-/// Captured endpoint, version, key and exact-spelling headers; no transport is installed.
+/// Captured endpoint, version, authentication choice and exact-spelling headers.
 pub struct ApiClient {
     /// Selected constructor endpoint.
     pub(in crate::providers::content) base_url: String,
     /// Selected constructor API version.
     pub(in crate::providers::content) api_version: String,
-    /// Supplied authentication key.
-    pub(in crate::providers::content) api_key: String,
+    /// Retained authentication choice.
+    pub(in crate::providers::content) authentication: Authentication,
     /// Constructor header layers after exact-spelling replacement.
     pub(in crate::providers::content) headers: IndexMap<String, String>,
+}
+
+/// Authentication selected at construction, resolved only after request validation.
+pub(in crate::providers::content) enum Authentication {
+    /// Supplied key, including a present empty key.
+    ApiKey(String),
+    /// Lazily retained native credentials.
+    #[cfg(not(target_arch = "wasm32"))]
+    Native(super::node_auth::NodeAuth),
 }
 
 /// A prepared POST request and its selected positive timeout in milliseconds.
@@ -31,7 +40,7 @@ impl ApiClient {
     ///
     /// # Errors
     /// Fails when the selected URL, headers or authentication cannot be prepared.
-    pub fn prepare_request(
+    pub async fn prepare_request(
         &self,
         mut projected: ProjectedContentRequest,
         http_options: Option<&Value>,
@@ -46,7 +55,9 @@ impl ApiClient {
         {
             merge_body(&mut projected.body, extra);
         }
-        let headers = self.request_headers(http_options, timeout)?;
+        let mut headers = self.request_headers(http_options, timeout)?;
+        self.authenticate(&mut headers).await?;
+        headers.sort_keys();
         Ok(PreparedContentRequest {
             request: HttpRequest {
                 method: "POST".to_owned(),
@@ -59,6 +70,51 @@ impl ApiClient {
             },
             timeout,
         })
+    }
+
+    /// Capture native or key authentication without reading the environment or credentials.
+    #[cfg(not(target_arch = "wasm32"))]
+    #[must_use]
+    pub fn new(
+        base_url: String,
+        api_version: String,
+        api_key: Option<String>,
+        headers: IndexMap<String, String>,
+    ) -> Self {
+        Self {
+            base_url,
+            api_version,
+            authentication: api_key.map_or_else(
+                || Authentication::Native(super::node_auth::NodeAuth::default()),
+                Authentication::ApiKey,
+            ),
+            headers,
+        }
+    }
+
+    /// Acquire authentication before inserting only absent header names.
+    async fn authenticate(
+        &self,
+        headers: &mut IndexMap<String, String>,
+    ) -> Result<(), DiagnosticErrorInfo> {
+        let generated = match &self.authentication {
+            Authentication::ApiKey(key) => {
+                if key.starts_with("auth_tokens/") {
+                    return Err(DiagnosticErrorInfo::error(
+                        "Authentication: ephemeral tokens are not supported",
+                    ));
+                }
+                IndexMap::from([("x-goog-api-key".to_owned(), key.clone())])
+            }
+            #[cfg(not(target_arch = "wasm32"))]
+            Authentication::Native(auth) => auth.headers().await?,
+        };
+        let generated = generated
+            .into_iter()
+            .filter(|(name, _)| !headers.contains_key(name))
+            .collect();
+        crate::providers::http::layer_request_headers(headers, &generated, true)
+            .map_err(|error| DiagnosticErrorInfo::error(format!("Authentication: {error}")))
     }
 
     /// Concatenate the selected endpoint, version and resource before URL parsing.
@@ -118,20 +174,6 @@ impl ApiClient {
             )
             .map_err(|error| DiagnosticErrorInfo::error(format!("Header: {error}")))?;
         }
-        if self.api_key.starts_with("auth_tokens/") {
-            return Err(DiagnosticErrorInfo::error(
-                "Authentication: ephemeral tokens are not supported",
-            ));
-        }
-        if !headers.contains_key("x-goog-api-key") {
-            crate::providers::http::layer_request_headers(
-                &mut headers,
-                &IndexMap::from([("x-goog-api-key".to_owned(), self.api_key.clone())]),
-                true,
-            )
-            .map_err(|error| DiagnosticErrorInfo::error(format!("Authentication: {error}")))?;
-        }
-        headers.sort_keys();
         Ok(headers)
     }
 }
@@ -201,15 +243,13 @@ impl ApiClient {
         crate::providers::http::RequestFailure,
     > {
         use crate::providers::http::{RequestFailure, SseMessages, decode_utf8};
-        use futures_util::StreamExt;
-        let mut response = fetch(request)
+        let response = fetch(request)
             .await
             .map_err(|error| RequestFailure::new(error.to_string()))?;
         if !(200..300).contains(&response.status) {
-            let mut bytes = Vec::new();
-            while let Some(chunk) = response.body.next().await {
-                bytes.extend(chunk.map_err(|error| RequestFailure::new(error.to_string()))?);
-            }
+            let bytes = crate::providers::http::collect_body(response.body)
+                .await
+                .map_err(|error| RequestFailure::new(error.to_string()))?;
             let text = decode_utf8(&bytes);
             let value = if response
                 .headers

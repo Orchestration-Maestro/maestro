@@ -68,11 +68,14 @@ syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", features = ["full
 
 [target.x86_64-unknown-linux-gnu.dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
+bytes = { version = "1.12.1", features = ["serde"] }
 digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
 fastrand = { version = "2.5.0" }
 form_urlencoded = { version = "1.2.2" }
+futures = { version = "0.3.34" }
 futures-channel = { version = "0.3.34", features = ["sink"] }
 futures-core = { version = "0.3.34" }
+futures-io = { version = "0.3.34", default-features = false, features = ["std"] }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
@@ -98,11 +101,14 @@ syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features 
 
 [target.aarch64-unknown-linux-gnu.dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
+bytes = { version = "1.12.1", features = ["serde"] }
 digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
 fastrand = { version = "2.5.0" }
 form_urlencoded = { version = "1.2.2" }
+futures = { version = "0.3.34" }
 futures-channel = { version = "0.3.34", features = ["sink"] }
 futures-core = { version = "0.3.34" }
+futures-io = { version = "0.3.34", default-features = false, features = ["std"] }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
@@ -128,11 +134,14 @@ syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features 
 
 [target.x86_64-apple-darwin.dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
+bytes = { version = "1.12.1", features = ["serde"] }
 digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
 fastrand = { version = "2.5.0" }
 form_urlencoded = { version = "1.2.2" }
+futures = { version = "0.3.34" }
 futures-channel = { version = "0.3.34", features = ["sink"] }
 futures-core = { version = "0.3.34" }
+futures-io = { version = "0.3.34", default-features = false, features = ["std"] }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
@@ -158,11 +167,14 @@ syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features 
 
 [target.aarch64-apple-darwin.dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
+bytes = { version = "1.12.1", features = ["serde"] }
 digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
 fastrand = { version = "2.5.0" }
 form_urlencoded = { version = "1.2.2" }
+futures = { version = "0.3.34" }
 futures-channel = { version = "0.3.34", features = ["sink"] }
 futures-core = { version = "0.3.34" }
+futures-io = { version = "0.3.34", default-features = false, features = ["std"] }
 futures-sink = { version = "0.3.34" }
 futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
@@ -187,6 +199,7 @@ libc = { version = "0.2.190", features = ["extra_traits"] }
 syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features = false, features = ["extra-traits", "visit-mut"] }
 
 [target.x86_64-pc-windows-msvc.dependencies]
+bytes = { version = "1.12.1", features = ["serde"] }
 digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
 fastrand = { version = "2.5.0" }
 form_urlencoded = { version = "1.2.2" }

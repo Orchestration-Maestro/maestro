@@ -260,9 +260,9 @@ in the order model, contents, configuration wins.
 `google_shared::project_vertex_content_request(params, project, location)` projects the
 selected cloud payload using the same content grouping and [schema/JSON owners](#request-projection).
 It reads no environment, calls no hook, authenticates nothing and sends nothing.
-Cloud invocation and native credentials are tracked separately in
-[#937](https://github.com/Orchestration-Maestro/maestro/issues/937) and
-[#936](https://github.com/Orchestration-Maestro/maestro/issues/936).
+Cloud invocation is tracked separately in
+[#937](https://github.com/Orchestration-Maestro/maestro/issues/937); the
+[native credentials](#native-credentials) it consumes are described below.
 
 Cloud model resources retain `projects/`, `publishers/` and `models/`; other names gain
 `publishers/google/models/`, or use the first two segments as publisher and model.
@@ -330,7 +330,10 @@ let mut selected = json!({
 let controls = selected.get_mut("config").and_then(Value::as_object_mut)
     .and_then(|config| config.shift_remove("httpOptions"));
 let projected = project_content_request(selected).expect("supported payload");
-let prepared = client.prepare_request(projected, controls.as_ref()).expect("valid transport");
+let runtime = tokio::runtime::Builder::new_current_thread().build().expect("runtime");
+let prepared = runtime
+    .block_on(client.prepare_request(projected, controls.as_ref()))
+    .expect("valid transport");
 assert_eq!(prepared.request.url,
     "https://example.invalid/v1beta/models/gemini-fixture:streamGenerateContent?alt=sse");
 assert_eq!(prepared.timeout, Some(1001.0));
@@ -387,3 +390,49 @@ boundaries; other complete non-data segments are ignored.
 Source and framing failures preserve
 prior content without closing its active block; [reducer failures](#response-reduction)
 retain the effects preceding their failing conversion. Clean EOF uses the shared conclusion policy.
+
+## Native credentials
+
+`ApiClient::new(base_url, api_version, api_key, headers)` selects the authentication once:
+`Some(key)`, including an empty key, uses that key and never starts application-default
+credentials; `None` selects them. The constructor reads nothing and starts no work.
+`ApiClient::prepare_request` is asynchronous: it validates the URL and authored headers first,
+then acquires credentials, then inserts the generated authorization (or quota) header only when
+the same header name, in any case, was not authored. Authentication still runs when both are
+authored.
+
+Native credentials resolve lazily, on the first preparation, and the successful owner is
+retained for later requests; a failed resolution is not cached. Discovery order:
+
+1. `GOOGLE_APPLICATION_CREDENTIALS`, then `google_application_credentials`, when nonempty;
+2. the platform's well-known application-default file (`HOME/.config/gcloud` or `APPDATA\gcloud`);
+3. the metadata server, when `METADATA_SERVER_DETECTION` admits it.
+
+A selected file is canonicalized, must be a regular file and is parsed once; a failure there
+never falls through to a lower source. Supported files are authorized user, service account,
+impersonated service account, external account (file, URL, AWS and executable sources;
+certificate sources) and external-account authorized user. A nonempty
+`GOOGLE_CLOUD_QUOTA_PROJECT` replaces the file's quota project on the outer credential only.
+An impersonated file keeps its source credentials as a typed handle and takes its target from
+the last segment of `service_account_impersonation_url`.
+
+Tokens refresh on use, five minutes before their known expiry, and a token whose expiry is
+already reached is rejected rather than sent. Concurrent callers share one in-flight
+acquisition. Workforce refresh tokens rotate and the rotated value is kept even when the
+access token it came with is rejected.
+
+Certificate sources read their configuration from `certificate_config_location`, then
+`GOOGLE_API_CERTIFICATE_CONFIG`, then `CLOUDSDK_CONFIG` or the platform gcloud directory. The
+leaf is prepended to the trust chain when absent, a late leaf is rejected, and the token
+exchange runs over HTTPS with the client certificate and no environment proxy.
+
+Metadata detection honors `none` (always disabled), `assume-present`, `bios-only` and
+`ping-only`; `GCE_METADATA_IP` takes precedence over `GCE_METADATA_HOST`, and a scheme in either
+is kept. The probe waits 3000 ms off Google hosts and has no deadline on them;
+`DETECT_GCP_RETRIES` sets its no-response retries. Residency comes from serverless variables,
+Linux DMI data and `/sys/class/net/*/address`; other platforms' network data is tracked in
+[#1188](https://github.com/Orchestration-Maestro/maestro/issues/1188).
+
+Failures expose only a fixed `Authentication: ...` message, the stage, whether the failure is
+transient, and the HTTP status when one exists; tokens, keys, response bodies and credential
+URLs never appear in any rendering.

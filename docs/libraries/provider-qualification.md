@@ -57,6 +57,19 @@ features. One TLS configuration supplies platform trust to reqwest and the SOCKS
 Hyper's HTTP/1 connection is driven by its request and response body, without detached work
 or automatic replay. None of these declarations reaches the browser build.
 
+## Native credentials
+
+Native application-default credentials in `maestro-models` use `google-cloud-auth =1.17.0` with
+its default features (`default-idtoken-backend`, `default-rustls-provider`); `idtoken`,
+`jsonwebtoken` and `gdch` stay off. It is Apache-2.0, declared only for non-browser targets,
+and adds 34 packages to the lockfile. Its typed user, service-account, external-account and
+impersonated builders handle the ordinary file forms and nested impersonation over a retained
+source. Its discovery and metadata resolver are never called: it cannot honor the metadata
+endpoint precedence, and it lacks external-account authorized-user and certificate-sourced
+forms, which `maestro-models` implements over the shared HTTP sender with one demand-driven
+token cache. The library has no HTTP-client injection, so its nested clients keep their own
+transport. `maestro-path` is added as the native path-join utility edge.
+
 ## Fixed image fixture qualification
 
 Native `maestro-models` tests use `image =0.24.9` with defaults off and only the

@@ -1,5 +1,6 @@
 //! Replaceable HTTP transport with the shared request, retry and failure policy.
 
+mod body;
 mod client;
 mod failure;
 mod headers;
@@ -24,7 +25,10 @@ use indexmap::IndexMap;
 use crate::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) use client::{ProxySelector, Route, configured_fetch};
+pub(crate) use body::buffered;
+pub(crate) use body::collect_body;
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) use client::{ProxySelector, Route, configured_fetch, supplied_fetch};
 pub(crate) use failure::{
     RequestFailure, endpoint_url, envelope_failure, sdk_status_failure, sdk_stream_failure,
     stream_failure,
@@ -35,6 +39,8 @@ pub(crate) use headers::{
     copied, edge_whitespace, layer, layer_request_headers, normalize_request,
 };
 pub(crate) use maestro_text::decode_utf8;
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) use retry::{RequestPolicy, RetryStatuses, send_with_policy};
 pub(crate) use retry::{send, send_with_status_error};
 pub(crate) use runtime::sleep;
 pub(crate) use runtime::spawn_detached;
