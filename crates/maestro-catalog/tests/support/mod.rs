@@ -128,8 +128,7 @@ fn check_case(
     }
 }
 
-mod descriptors;
-use descriptors::descriptors;
+use crate::descriptors::descriptors;
 
 /// Compare nested compatibility-object key order independently of map equality.
 fn key_order(object: &maestro_models::JsonObject) -> Vec<Vec<String>> {

@@ -38,7 +38,7 @@ fn memory_and_missing_files_use_complete_offline_catalog() {
         assert!(actual == expected, "complete ordered offline descriptors");
     }
 }
-mod support;
+use crate::support;
 #[test]
 fn schema_rejects_wrong_types_with_ordered_paths() {
     support::corpus("schema_rejects_wrong_types_with_ordered_paths");

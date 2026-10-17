@@ -1,26 +1,9 @@
 #![cfg(test)]
 //! Saved model restoration and fallback notices.
-#[allow(
-    dead_code,
-    reason = "Recorded callback diagnostics are shared across operation witnesses."
-)]
-#[path = "../../maestro-credentials/tests/fallback_support/mod.rs"]
-mod credential_fallback;
-#[path = "support/descriptors.rs"]
-mod descriptors;
-#[allow(
-    dead_code,
-    reason = "Each public operation uses its own recorded inputs."
-)]
-#[path = "support/fallback.rs"]
-mod fallback;
-#[path = "support/isolation.rs"]
-mod isolation;
-#[path = "selection/scopes.rs"]
-mod scopes;
-#[allow(dead_code, reason = "Only controlled registry construction is reused.")]
-#[path = "support/common.rs"]
-mod support;
+use crate::credential_fallback;
+use crate::fallback;
+use crate::isolation;
+use crate::scopes;
 use maestro_catalog::{
     ModelResolverOutput, RestoreModelFromSessionOptions, restore_model_from_session,
 };

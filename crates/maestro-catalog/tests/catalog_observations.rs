@@ -1,8 +1,7 @@
 #![cfg(test)]
 //! Shared catalog state and reload observations.
-#[path = "support/dynamic.rs"]
-pub mod dynamic;
-mod support;
+use crate::dynamic;
+use crate::support;
 use maestro_catalog::ModelRegistry;
 use maestro_models::get_model;
 use std::sync::{Arc, Mutex, RwLock};

@@ -1,10 +1,8 @@
 //! Typed dynamic definitions and subprocess isolation.
+pub use crate::isolation::isolated;
 use maestro_catalog::{ProviderConfigInput, ProviderModelInput};
 use maestro_models::{ModelCost, ModelInput};
 use std::sync::{Arc, RwLock};
-#[path = "isolation.rs"]
-mod isolation;
-pub use isolation::isolated;
 /// Complete definition with distinguishable supplied metadata.
 #[must_use]
 pub fn model(id: &str) -> ProviderModelInput {

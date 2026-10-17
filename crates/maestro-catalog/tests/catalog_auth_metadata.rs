@@ -1,24 +1,10 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 //! Authentication metadata and shared descriptor observations.
-#[allow(
-    dead_code,
-    reason = "Recorded callback diagnostics are shared across operation witnesses."
-)]
-#[path = "../../maestro-credentials/tests/fallback_support/mod.rs"]
-mod credential_fallback;
-#[path = "support/dynamic.rs"]
-pub mod dynamic;
-#[allow(
-    dead_code,
-    reason = "Each public operation uses its own recorded inputs."
-)]
-#[path = "support/fallback.rs"]
-mod fallback;
-#[path = "support/request.rs"]
-pub mod request_support;
-#[path = "support/common.rs"]
-pub mod support;
+use crate::credential_fallback;
+use crate::fallback;
+use crate::request_support;
+use crate::support;
 #[test]
 fn configured_auth_rereads_identity_after_fallback() {
     let registry = support::registry(

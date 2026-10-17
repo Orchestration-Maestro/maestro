@@ -1,22 +1,9 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 //! Request authentication through the public registry.
-#[allow(
-    dead_code,
-    reason = "Recorded callback diagnostics are shared across operation witnesses."
-)]
-#[path = "../../maestro-credentials/tests/fallback_support/mod.rs"]
-mod credential_fallback;
-#[allow(
-    dead_code,
-    reason = "Each public operation uses its own recorded inputs."
-)]
-#[path = "support/fallback.rs"]
-mod fallback;
-#[path = "support/request.rs"]
-pub mod request_support;
-#[path = "support/common.rs"]
-pub mod support;
+use crate::fallback;
+use crate::request_support;
+use crate::support;
 use maestro_credentials::ConfigValueOperations;
 use std::sync::Arc;
 
@@ -155,13 +142,18 @@ fn configured_environment_is_read_on_each_call() {
 #[test]
 fn request_keys_preserve_lower_layer_precedence() {
     if std::env::var_os("MAESTRO_KEYS_CHILD").is_none() {
+        let test = crate::subprocess::child_process::selector(
+            "request_keys_preserve_lower_layer_precedence",
+        )
+        .unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", "request_keys_preserve_lower_layer_precedence"])
+            .args(["--exact", &test])
             .env("MAESTRO_KEYS_CHILD", "1")
             .env("OPENAI_API_KEY", "ambient-key")
             .output()
             .unwrap();
         assert!(output.status.success(), "key subprocess failed");
+        crate::subprocess::child_process::assert_executed(&output, &test);
         return;
     }
     let operations = request_support::Operations::default();
@@ -556,12 +548,17 @@ fn selected_request_fields_keep_last_member_values() {
 #[test]
 fn stored_commands_keep_lower_layer_cache_policy() {
     if std::env::var_os("MAESTRO_CACHE_CHILD").is_none() {
+        let test = crate::subprocess::child_process::selector(
+            "stored_commands_keep_lower_layer_cache_policy",
+        )
+        .unwrap();
         let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", "stored_commands_keep_lower_layer_cache_policy"])
+            .args(["--exact", &test])
             .env("MAESTRO_CACHE_CHILD", "1")
             .output()
             .unwrap();
         assert!(output.status.success(), "cache subprocess failed");
+        crate::subprocess::child_process::assert_executed(&output, &test);
         return;
     }
     let registry = support::registry(&document(r#""apiKey":"!configured-cache-policy""#, ""));
@@ -1303,8 +1300,7 @@ fn numeric_header_boundaries_and_merge() {
     );
 }
 
-#[path = "support/dynamic.rs"]
-pub mod dynamic;
+use crate::dynamic;
 
 #[test]
 fn provider_request_lookup_avoids_auth_fallback() {

@@ -11,5 +11,4 @@ pub fn isolated(name: &str) -> bool {
     true
 }
 
-#[path = "subprocess.rs"]
-mod subprocess;
+use crate::subprocess;
