@@ -58,6 +58,8 @@ canvas and the same native host. Retain each `DialogBase` while it is needed;
 or a result future. Call the context's `render` once per canvas frame. Its weak
 registrations do not keep dropped dialogs alive. One Escape snapshot, including
 the native input bridge, reaches every still-open owner even with a popup open.
+A bubbling window keydown subscription also admits Escape with native predecessor
+or body focus; the mounted reading root owns and releases that subscription.
 Closing revokes admission and removes owned native children before notification;
 drop performs the same cleanup without notification. Captured native/canvas focus
 is restored on the next frame, with the existing timer owner retaining cancellation.
@@ -79,7 +81,10 @@ creates a literal heading and omits only absent/empty
 descriptions; `dialog_content` composes ordered native children with padding/gap.
 The canvas draws the panel, outer shadow and sixteen-point localized Close glyph.
 One non-painting native Close button supplies keyboard/accessibility activation
-and forwards native focus to the canvas focus ring. Reading text remains native,
+and forwards native focus to the canvas focus ring. The entire Close control,
+including its focus ring, has seventy-percent resting opacity and full hover
+opacity; colour, opacity and focus decoration transition over 150 ms through the
+canvas animation owner. Reading text remains native,
 selectable, findable and accessible; no second hidden text tree or focus trap is
 added. Platform failures remain `AttachmentUiError`.
 

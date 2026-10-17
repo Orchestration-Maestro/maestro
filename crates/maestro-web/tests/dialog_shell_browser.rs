@@ -223,13 +223,16 @@ pub fn dialog_body_keeps_owned_mixed_content() {
 
 /// Prove css size changes preserve native root and body identity.
 #[wasm_bindgen]
-pub fn dialog_css_size_changes_preserve_native_root_and_body_identity() {
+pub async fn dialog_css_size_changes_preserve_native_root_and_body_identity() {
     let mut view = View::new();
     view.owner.close().unwrap();
     view.props.width = "min(500px, 90vw)".into();
     view.props.height = "min(700px, 90vh)".into();
     view.props.class_name = "caller-panel literal-class".into();
     view.owner = dialog(&view.dialogs, view.props.clone()).unwrap();
+    js(
+        "document.getElementById('canvas').style.left='13.25px';document.getElementById('canvas').style.top='7.5px'",
+    );
     view.draw();
     assert_eq!(
         js("document.querySelector('.maestro-dialog-native').getAttribute('class')")
@@ -238,7 +241,7 @@ pub fn dialog_css_size_changes_preserve_native_root_and_body_identity() {
         Some("maestro-dialog-native caller-panel literal-class")
     );
     js(
-        "globalThis.dialogRoot=document.querySelector('.maestro-dialog-native');globalThis.dialogHeading=dialogRoot.querySelector('h2');getSelection().selectAllChildren(dialogHeading)",
+        "globalThis.dialogRoot=document.querySelector('.maestro-dialog-native');globalThis.dialogHeading=dialogRoot.querySelector('h2');globalThis.editedDialogField=document.createElement('input');dialogRoot.append(editedDialogField);editedDialogField.value='retained edit';getSelection().selectAllChildren(dialogHeading)",
     );
     for (width, height) in [
         ("min(500px, 90vw)", "auto"),
@@ -249,8 +252,16 @@ pub fn dialog_css_size_changes_preserve_native_root_and_body_identity() {
         view.props.height = height.into();
         view.owner.set_props(view.props.clone()).unwrap();
         view.draw();
-        assert_eq!(js("document.querySelector('.maestro-dialog-native')===dialogRoot && getSelection().anchorNode===dialogHeading").as_bool(), Some(true));
+        assert_eq!(js("document.querySelector('.maestro-dialog-native')===dialogRoot && getSelection().anchorNode===dialogHeading && dialogRoot.contains(editedDialogField) && editedDialogField.value==='retained edit'").as_bool(), Some(true));
     }
+
+    view.props.width = "80vw".into();
+    view.owner.set_props(view.props.clone()).unwrap();
+    view.draw();
+    support::reading_paint::observe("dialog-resize").await;
+    view.draw();
+    assert_eq!(js("document.querySelector('.maestro-dialog-native')===dialogRoot && editedDialogField.value==='retained edit' && getSelection().anchorNode===dialogHeading").as_bool(), Some(true));
+    assert_eq!(js("(()=>{const r=dialogRoot.parentElement.parentElement.getBoundingClientRect();return Math.abs(r.width-innerWidth*.8)<.03 && Math.abs(r.left+r.width/2-(13.25+innerWidth/2))<.03 && Math.abs(r.top+r.height/2-(7.5+innerHeight/2))<.03})()").as_bool(), Some(true));
 }
 
 /// Prove css measurement keeps fractional axes and empty auto dimensions.
@@ -374,6 +385,39 @@ pub fn dialog_native_field_escape_reaches_every_open_owner() {
         js("document.querySelectorAll('.maestro-dialog-native').length").as_f64(),
         Some(0.)
     );
+}
+
+/// Prove global Escape follows native predecessor/body focus and releases its registration.
+#[wasm_bindgen]
+pub fn dialog_escape_from_native_predecessor_and_body_releases_listener() {
+    js(
+        "globalThis.dialogAdd=window.addEventListener;globalThis.dialogRemove=window.removeEventListener;globalThis.dialogKeys=new Set();window.addEventListener=function(n,f,...rest){if(n==='keydown')dialogKeys.add(f);return dialogAdd.call(this,n,f,...rest)};window.removeEventListener=function(n,f,...rest){if(n==='keydown')dialogKeys.delete(f);return dialogRemove.call(this,n,f,...rest)}",
+    );
+    for predecessor in [true, false] {
+        js(
+            "globalThis.escapePredecessor=document.createElement('button');document.body.append(escapePredecessor);escapePredecessor.focus()",
+        );
+        if !predecessor {
+            js("escapePredecessor.blur()");
+        }
+        let view = View::new();
+        view.draw();
+        let registered = js("dialogKeys.size").as_f64();
+        js(
+            "document.activeElement.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}))",
+        );
+        view.draw();
+        assert_eq!(
+            js("document.querySelector('.maestro-dialog-native')===null").as_bool(),
+            Some(true)
+        );
+        assert_eq!(registered, Some(1.));
+        assert_eq!(js("dialogKeys.size").as_f64(), Some(0.));
+        js("document.body.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))");
+        assert!(!view.host.take_escape());
+        js("escapePredecessor.remove()");
+    }
+    js("window.addEventListener=dialogAdd;window.removeEventListener=dialogRemove");
 }
 
 /// Let native next-frame callbacks settle without a test deadline.
@@ -604,7 +648,9 @@ pub async fn dialog_semantic_close_paints_nothing_and_tracks_canvas_focus() {
     view.draw();
     support::reading_paint::observe("dialog-semantic").await;
     js("document.querySelector('.maestro-dialog-semantic-close').focus()");
-    view.draw();
+    for _ in 0..12 {
+        view.draw();
+    }
     let shapes = view.shapes.borrow();
     let focus: Vec<_> = shapes
         .iter()
@@ -621,13 +667,17 @@ pub async fn dialog_semantic_close_paints_nothing_and_tracks_canvas_focus() {
             assert_eq!(rect.rect.size(), egui::vec2(extent, extent));
             assert_eq!(
                 rect.stroke.color,
-                egui::Color32::from_hex(presentation.colors[role]).unwrap()
+                egui::Color32::from_hex(presentation.colors[role])
+                    .unwrap()
+                    .gamma_multiply(0.7)
             );
         }
     }
     drop(shapes);
     js("document.querySelector('.maestro-dialog-semantic-close').blur()");
-    view.draw();
+    for _ in 0..12 {
+        view.draw();
+    }
     assert!(
         !view
             .shapes

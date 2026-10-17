@@ -50,3 +50,22 @@ pub(crate) fn install_stylesheet(
         .map_err(|error| host_error(&error))?;
     Ok(())
 }
+
+/// Map linear progress through the default cubic-bezier(0.4, 0, 0.2, 1) transition.
+pub(crate) fn transition_easing(progress: f32) -> f32 {
+    if progress <= 0. || progress >= 1. {
+        return progress;
+    }
+    let (mut low, mut high) = (0., 1.);
+    for _ in 0..24 {
+        let t = f32::midpoint(low, high);
+        let x = ((1.6 * t - 1.8) * t + 1.2) * t;
+        if x < progress {
+            low = t;
+        } else {
+            high = t;
+        }
+    }
+    let t = f32::midpoint(low, high);
+    (3. - 2. * t) * t * t
+}

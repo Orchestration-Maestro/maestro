@@ -156,7 +156,7 @@ fn mount(
         let name = owner.native.borrow().close_name.clone();
         update(&semantic, &name, &classes)?;
     }
-    let mut listeners = Vec::new();
+    let mut listeners = vec![escape_listener(document, state)?];
     for name in ["click", "focus", "blur", "keydown"] {
         let owner = state.clone();
         let target = Rc::downgrade(&semantic);
@@ -183,6 +183,28 @@ fn mount(
             },
         ))),
     })
+}
+/// Retain bubbling window Escape with the mounted reading root.
+fn escape_listener(
+    document: &Document,
+    owner: &Weak<State>,
+) -> Result<SemanticSubscription, AttachmentUiError> {
+    let owner = owner.clone();
+    let handler = Closure::wrap(Box::new(move |event: web_sys::Event| {
+        if let Some(owner) = owner.upgrade()
+            && owner.props.borrow().is_open
+            && let Ok(event) = event.dyn_into()
+        {
+            owner
+                .context
+                .host()
+                .native_key(&event, owner.context.drawing());
+        }
+    }) as Box<dyn FnMut(web_sys::Event)>);
+    let window = document
+        .default_view()
+        .ok_or_else(|| AttachmentUiError::Host("dialog document has no window".into()))?;
+    EventSubscription::new(window.into(), "keydown", handler).map_err(|e| host_error(&e))
 }
 /// Forward native activation and focus through weak existing owners.
 fn dispatch(owner: &Weak<State>, target: &Weak<Semantic>, name: &str, event: web_sys::Event) {

@@ -62,7 +62,11 @@ fn dialog_open_is_eager_and_focus_restores_after_removal() {
         render_content: Rc::new(|_, _, _, _| Ok(())),
     };
     let owner = maestro_web::dialogs::dialog_base::DialogBase::new(context, body);
+    let predecessor = egui::Id::new("canvas-predecessor");
+    let other = egui::Id::new("dialog-focus");
+    drawing.memory_mut(|m| m.request_focus(predecessor));
     owner.open().unwrap();
+    drawing.memory_mut(|m| m.request_focus(other));
     assert!(drawing.has_requested_repaint());
     owner.open().unwrap();
     assert_eq!(&*host.effects.borrow(), &["capture", "admit"]);
@@ -71,8 +75,10 @@ fn dialog_open_is_eager_and_focus_restores_after_removal() {
         &*host.effects.borrow(),
         &["capture", "admit", "remove", "release", "schedule"]
     );
+    assert_eq!(drawing.memory(egui::Memory::focused), Some(other));
     let restore = host.frame.borrow_mut().take().unwrap();
     restore().unwrap();
+    assert_eq!(drawing.memory(egui::Memory::focused), Some(predecessor));
     assert_eq!(host.effects.borrow().last(), Some(&"restore"));
     owner.close().unwrap();
     assert_eq!(
@@ -468,13 +474,16 @@ fn geometry(filename: &str, mode: maestro_theme::BrandMode) {
             |shape| matches!(&shape.shape, egui::Shape::Mesh(mesh) if mesh.calc_bounds()==close)
         )
     );
-    let resting_images = frame.images.clone();
+    let resting_images = control_paint(&frame);
     frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
     frame.run(
         vec![egui::Event::PointerMoved(close.center())],
         |_, i, p| dialogs.render(i, p).unwrap(),
     );
-    assert_ne!(frame.images, resting_images);
+    for _ in 0..12 {
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    }
+    assert_ne!(control_paint(&frame), resting_images);
     frame
         .ctx
         .memory_mut(|memory| memory.request_focus(modal.get().with("close")));
@@ -489,4 +498,170 @@ fn geometry(filename: &str, mode: maestro_theme::BrandMode) {
         let primitives = frame.ctx.tessellate(vec![shape.clone()], 1.);
         assert!(primitives.iter().any(|p| matches!(&p.primitive, egui::epaint::Primitive::Mesh(mesh) if !mesh.indices.is_empty()&&mesh.calc_bounds().intersect(p.clip_rect).is_positive())));
     }
+}
+
+#[test]
+fn dialog_close_focus_paint_has_whole_control_opacity_and_transition() {
+    let host = input_support::Host::new(|_, _| {});
+    let mut frame = attachment_support::Frame::default();
+    let dialogs = DialogContext::new(frame.ctx.clone(), host);
+    let modal = Rc::new(Cell::new(egui::Id::NULL));
+    let id = modal.clone();
+    let mut children = body(Rc::default());
+    children.render_content = Rc::new(move |_, modal, _, _| {
+        id.set(modal);
+        Ok(())
+    });
+    let _owner = dialog(&dialogs, DialogProps::new(true, children)).unwrap();
+    frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    let resting_glyph = frame.images.clone();
+    frame
+        .ctx
+        .memory_mut(|m| m.request_focus(modal.get().with("close")));
+    for _ in 0..12 {
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    }
+    let resting = focus_alpha(&frame);
+    assert_eq!(
+        resting, 179,
+        "unhovered keyboard focus is seventy percent opaque"
+    );
+    frame.run(
+        vec![egui::Event::PointerMoved(egui::pos2(475., 125.))],
+        |_, i, p| dialogs.render(i, p).unwrap(),
+    );
+    let intermediate = focus_alpha(&frame);
+    // The independent cubic-bezier sample at 1/9 progress is 0.032800723766655.
+    assert_eq!(
+        intermediate, 181,
+        "paint follows the default transition curve"
+    );
+    let intermediate_glyph = frame.images.clone();
+    assert!(!intermediate_glyph.is_empty());
+    assert_ne!(intermediate_glyph, resting_glyph);
+    assert!(
+        resting < intermediate && intermediate < 255,
+        "hover must paint an intermediate opacity"
+    );
+    frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    // The independent cubic-bezier sample at 2/9 progress is 0.1751682975396243.
+    assert_eq!(focus_alpha(&frame), 192);
+    let mut endpoint_glyph = intermediate_glyph.clone();
+    for _ in 0..12 {
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        if !frame.images.is_empty() {
+            endpoint_glyph = frame.images.clone();
+        }
+    }
+    assert_ne!(intermediate_glyph, endpoint_glyph);
+    assert_eq!(focus_alpha(&frame), 255);
+    focus_fade(&mut frame, &dialogs, modal.get().with("close"));
+}
+
+/// Read maximum alpha from visible tessellated focus-ring paint.
+fn focus_alpha(frame: &attachment_support::Frame) -> u8 {
+    let shapes: Vec<_> = frame
+        .shapes
+        .iter()
+        .filter(|s| matches!(&s.shape, egui::Shape::Rect(r) if (r.stroke.width - 2.).abs() < f32::EPSILON))
+        .cloned()
+        .collect();
+    frame
+        .ctx
+        .tessellate(shapes, 1.)
+        .iter()
+        .filter_map(|p| {
+            let egui::epaint::Primitive::Mesh(mesh) = &p.primitive else {
+                return None;
+            };
+            mesh.vertices
+                .iter()
+                .filter(|v| p.clip_rect.contains(v.pos))
+                .map(|v| v.color.a())
+                .max()
+        })
+        .max()
+        .unwrap()
+}
+
+#[test]
+fn dialog_pointer_requires_both_endpoints_in_current_clip_and_layer() {
+    for (press_blocked, release_blocked, cover) in [(true, false), (false, true), (true, true)]
+        .into_iter()
+        .flat_map(|(p, r)| [false, true].map(move |cover| (p, r, cover)))
+    {
+        let host = input_support::Host::new(|_, _| {});
+        let mut frame = attachment_support::Frame::default();
+        let dialogs = DialogContext::new(frame.ctx.clone(), host.clone());
+        let owner = dialog(&dialogs, DialogProps::new(true, body(Rc::default()))).unwrap();
+        let close = egui::pos2(475., 125.);
+        for (down, blocked) in [(true, press_blocked), (false, release_blocked)] {
+            frame.screen.max.x = if blocked && !cover { 470. } else { 800. };
+            for _ in 0..2 {
+                pointer_frame(&mut frame, &dialogs, vec![], cover && blocked);
+            }
+            let mut events = attachment_support::click(close);
+            events.retain(
+                |e| !matches!(e, egui::Event::PointerButton { pressed, .. } if *pressed != down),
+            );
+            pointer_frame(&mut frame, &dialogs, events, cover && blocked);
+        }
+        assert!(
+            host.removed.borrow().is_empty(),
+            "blocked endpoints {press_blocked}/{release_blocked}, layer={cover}"
+        );
+        owner.close().unwrap();
+    }
+}
+
+/// Place an actual foreground blocker before the dialog consumes its pointer snapshot.
+fn pointer_frame(
+    frame: &mut attachment_support::Frame,
+    dialogs: &DialogContext,
+    events: Vec<egui::Event>,
+    covered: bool,
+) {
+    frame.run(events, |ctx, i, p| {
+        if covered {
+            egui::Area::new(egui::Id::new("cover"))
+                .order(egui::Order::Tooltip)
+                .fixed_pos(egui::pos2(460., 110.))
+                .show(ctx, |ui| {
+                    ui.set_min_size(egui::vec2(40., 40.));
+                });
+        }
+        dialogs.render(i, p).unwrap();
+    });
+}
+
+/// Observe both raster tint and the opacity emitted on the glyph mesh.
+fn control_paint(
+    frame: &attachment_support::Frame,
+) -> (Vec<egui::ColorImage>, Vec<egui::epaint::ClippedShape>) {
+    (
+        frame.images.clone(),
+        frame
+            .shapes
+            .iter()
+            .filter(|s| matches!(s.shape, egui::Shape::Mesh(_)))
+            .cloned()
+            .collect(),
+    )
+}
+
+/// Observe focus decoration fading after the keyboard target releases focus.
+fn focus_fade(frame: &mut attachment_support::Frame, dialogs: &DialogContext, id: egui::Id) {
+    frame.ctx.memory_mut(|m| m.surrender_focus(id));
+    frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    assert_eq!(
+        focus_alpha(frame),
+        247,
+        "focus shadow fades through the same curve"
+    );
+    for _ in 0..12 {
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    }
+    assert!(!frame.shapes.iter().any(
+        |s| matches!(&s.shape, egui::Shape::Rect(r) if (r.stroke.width-2.).abs() < f32::EPSILON)
+    ));
 }

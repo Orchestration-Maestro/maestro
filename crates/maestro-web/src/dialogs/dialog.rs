@@ -159,9 +159,7 @@ impl Placement<'_> {
         rect: egui::Rect,
         name: &str,
     ) -> Result<bool, AttachmentUiError> {
-        use crate::browser::attachment_content::{
-            self as content, reading::controls::pointer_actions,
-        };
+        use crate::browser::attachment_content::reading::controls::pointer_actions;
         let close = close_rect(rect);
         let response = ui
             .interact(
@@ -171,27 +169,11 @@ impl Placement<'_> {
             )
             .on_hover_cursor(egui::CursorIcon::PointingHand);
         response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, name));
-        let tint = content::color(
-            self.presentation,
-            if response.hovered() { "text" } else { "muted" },
-        )?;
-        content::glyph(
-            ui,
-            close,
-            "X",
-            if response.hovered() {
-                tint
-            } else {
-                tint.gamma_multiply(0.7)
-            },
-        )?;
         #[cfg(target_arch = "wasm32")]
         let native_focus = browser::focused(self.state);
         #[cfg(not(target_arch = "wasm32"))]
         let native_focus = false;
-        if response.has_focus() || native_focus {
-            paint_focus(ui, close, self.presentation)?;
-        }
+        self.paint_control(ui, close, &response, native_focus)?;
         let screen = ui.ctx().content_rect();
         let mut slots = vec![(true, close.intersect(ui.clip_rect()), ui.layer_id())];
         for outside in outside_rects(screen, rect) {
@@ -204,6 +186,42 @@ impl Placement<'_> {
         let clicked = !pointer_actions(&events, &mut pressed, &slots, ui.ctx()).is_empty();
         *self.state.pressed.borrow_mut() = pressed;
         Ok(clicked || (response.clicked() && !response.clicked_by(egui::PointerButton::Primary)))
+    }
+    /// Animate glyph and focus decoration through the shared canvas animation owner.
+    fn paint_control(
+        &self,
+        ui: &mut egui::Ui,
+        close: egui::Rect,
+        response: &egui::Response,
+        native_focus: bool,
+    ) -> Result<(), AttachmentUiError> {
+        use crate::browser::attachment_content as content;
+        let hover = ui.ctx().animate_bool_with_time_and_easing(
+            self.state.id.with("hover"),
+            response.hovered(),
+            0.15,
+            crate::browser::transition_easing,
+        );
+        let focus = ui.ctx().animate_bool_with_time_and_easing(
+            self.state.id.with("focus"),
+            response.has_focus() || native_focus,
+            0.15,
+            crate::browser::transition_easing,
+        );
+        let tint = egui::lerp(
+            egui::Rgba::from(content::color(self.presentation, "muted")?)
+                ..=egui::Rgba::from(content::color(self.presentation, "text")?),
+            hover,
+        )
+        .into();
+        let mut child = ui.new_child(egui::UiBuilder::new().max_rect(close));
+        child.set_opacity(egui::lerp(0.7..=1., hover));
+        content::glyph(&child, close, "X", tint)?;
+        if focus > 0. {
+            child.multiply_opacity(focus);
+            paint_focus(&child, close, self.presentation)?;
+        }
+        Ok(())
     }
 }
 /// Paint one retained shell without borrowing its live props across effects.
