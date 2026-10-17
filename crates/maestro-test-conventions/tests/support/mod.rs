@@ -196,6 +196,27 @@ impl Workspace {
         resolved: &serde_json::Value,
         expectation: &str,
     ) {
+        let (cargo, rustc) = self.metadata_commands(declared, resolved);
+        self.probe(&cargo, &rustc, expectation);
+    }
+
+    /// Check every policy edge case in one probe child, which rewrites the declared metadata
+    /// per case instead of starting a child per case.
+    pub fn policy_probe(&self, valid: &serde_json::Value, dev: bool) {
+        let (cargo, rustc) = self.metadata_commands(valid, valid);
+        let matrix = if dev { "dev" } else { "production" };
+        run_probe(
+            self.probe_command(&cargo, &rustc)
+                .env("MAESTRO_CONVENTIONS_POLICY_MATRIX", matrix),
+        );
+    }
+
+    /// Serve `declared` to the declared pass and `resolved` to the host pass.
+    fn metadata_commands(
+        &self,
+        declared: &serde_json::Value,
+        resolved: &serde_json::Value,
+    ) -> (PathBuf, PathBuf) {
         fs::write(
             self.root.join("declared.json"),
             serde_json::to_vec(declared).unwrap(),
@@ -211,36 +232,53 @@ impl Workspace {
             "case \" $* \" in *' --no-deps '*) cat declared.json ;; *) cat resolved.json ;; esac",
         );
         let rustc = self.command("rustc-probe", "printf 'host: x86_64-unknown-linux-gnu\\n'");
-        self.probe(&cargo, &rustc, expectation);
+        (cargo, rustc)
     }
 
     pub fn probe(&self, cargo: &std::path::Path, rustc: &std::path::Path, expectation: &str) {
+        run_probe(
+            self.probe_command(cargo, rustc)
+                .env("MAESTRO_CONVENTIONS_EXPECT", expectation),
+        );
+    }
+
+    /// The probe child with fake Cargo and compiler commands.
+    fn probe_command(
+        &self,
+        cargo: &std::path::Path,
+        rustc: &std::path::Path,
+    ) -> std::process::Command {
         let launcher =
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/metadata-command.sh");
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
+        let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+        command
             .args([
                 "--exact",
                 "architecture::metadata_graph_failures_cross_the_public_interface",
                 "--nocapture",
             ])
             .env("MAESTRO_CONVENTIONS_PROBE_ROOT", &self.root)
-            .env("MAESTRO_CONVENTIONS_EXPECT", expectation)
             .env("CARGO", if cargo.is_file() { &launcher } else { cargo })
             .env("RUSTC", if rustc.is_file() { &launcher } else { rustc })
             .env("MAESTRO_FAKE_CARGO_SCENARIO", cargo)
-            .env("MAESTRO_FAKE_RUSTC_SCENARIO", rustc)
-            .output()
-            .unwrap();
-        assert!(
-            output.status.success(),
-            "{}{}",
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr)
-        );
-        crate::child_process::assert_executed(
-            &output,
-            "architecture::metadata_graph_failures_cross_the_public_interface",
-        )
-        .unwrap();
+            .env("MAESTRO_FAKE_RUSTC_SCENARIO", rustc);
+        command
     }
+}
+
+/// Run a probe child and require that it ran its one probe test successfully.
+#[cfg(unix)]
+fn run_probe(command: &mut std::process::Command) {
+    let output = command.output().unwrap();
+    assert!(
+        output.status.success(),
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    crate::child_process::assert_executed(
+        &output,
+        "architecture::metadata_graph_failures_cross_the_public_interface",
+    )
+    .unwrap();
 }
