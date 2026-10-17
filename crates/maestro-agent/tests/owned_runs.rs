@@ -895,9 +895,6 @@ fn synthetic_failure_defaults_preserve_content() {
 
 /// Exercise both callback error classifications on admitted producers.
 async fn synthetic_failure_case() {
-    let defaults: Agent = Agent::default();
-    let default_model = Arc::clone(&defaults.state().read().unwrap().model);
-    let default_snapshot = default_model.read().unwrap().clone();
     let rows: Vec<serde_json::Value> =
         serde_json::from_str(include_str!("fixtures/assistant-output.json")).unwrap();
     for row in rows.iter().filter(|row| row["kind"] == "synthetic_failure") {
@@ -907,10 +904,6 @@ async fn synthetic_failure_case() {
         model.provider = row["input"]["model"]["provider"].as_str().unwrap().into();
         model.id = row["input"]["model"]["id"].as_str().unwrap().into();
         agent.state().write().unwrap().model = Arc::new(std::sync::RwLock::new(model));
-        assert!(!Arc::ptr_eq(
-            &agent.state().read().unwrap().model,
-            &default_model
-        ));
         let text = row["input"]["message"].as_str().unwrap().to_owned();
         let aborted = row["input"]["aborted"].as_bool().unwrap();
         *agent.stream_fn.write().unwrap() = Some(Arc::new(move |_, _, _, signal| {
@@ -935,11 +928,6 @@ async fn synthetic_failure_case() {
         let expected: maestro_models::AssistantMessage =
             serde_json::from_value(row["expected"].clone()).unwrap();
         assert_eq!(actual, expected);
-        assert_eq!(*default_model.read().unwrap(), default_snapshot);
-        let later: Agent = Agent::default();
-        let later_model = Arc::clone(&later.state().read().unwrap().model);
-        assert!(Arc::ptr_eq(&default_model, &later_model));
-        assert_eq!(*later_model.read().unwrap(), default_snapshot);
     }
 }
 

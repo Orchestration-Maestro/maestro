@@ -289,7 +289,7 @@ every listener finished its work for it.
 | Option | Default |
 | --- | --- |
 | `initial_state.system_prompt` | empty text |
-| `initial_state.model` | an inert descriptor named `unknown` |
+| `initial_state.model` | a new inert descriptor named `unknown` for each agent |
 | `initial_state.thinking_level` | `Off` |
 | `initial_state.tools`, `initial_state.messages` | empty |
 | `convert_to_llm` | standard roles kept, `Custom` dropped |

@@ -30,7 +30,7 @@
         "pendingToolCalls": [],
         "errorMessage": null
       },
-      "sameDefaultModel": true,
+      "sameDefaultModel": false,
       "steeringMode": "one-at-a-time",
       "followUpMode": "one-at-a-time",
       "hasQueuedMessages": false
@@ -987,6 +987,145 @@
           "timestamp": 123
         }
       ]
+    }
+  },
+  {
+    "name": "maestro_default_models_stay_agent_local",
+    "input": {
+      "id": "edited-model",
+      "api": "edited-api",
+      "provider": "edited-provider"
+    },
+    "expected": {
+      "replaced": {
+        "id": "model-2",
+        "name": "Second",
+        "api": "test-api",
+        "provider": "local",
+        "baseUrl": "http://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 8192,
+        "maxTokens": 2048
+      },
+      "replacedKeepsSupplied": true,
+      "beforeReplacement": {
+        "id": "unknown",
+        "name": "unknown",
+        "api": "unknown",
+        "provider": "unknown",
+        "baseUrl": "",
+        "reasoning": false,
+        "input": [],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 0,
+        "maxTokens": 0
+      },
+      "afterReplacement": {
+        "id": "unknown",
+        "name": "unknown",
+        "api": "unknown",
+        "provider": "unknown",
+        "baseUrl": "",
+        "reasoning": false,
+        "input": [],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 0,
+        "maxTokens": 0
+      },
+      "suppliedShared": true,
+      "suppliedEdit": {
+        "id": "edited-model",
+        "name": "Second",
+        "api": "test-api",
+        "provider": "local",
+        "baseUrl": "http://example.invalid",
+        "reasoning": true,
+        "input": [
+          "text",
+          "image"
+        ],
+        "cost": {
+          "input": 1,
+          "output": 2,
+          "cacheRead": 3,
+          "cacheWrite": 4
+        },
+        "contextWindow": 8192,
+        "maxTokens": 2048
+      },
+      "edited": {
+        "id": "edited-model",
+        "name": "unknown",
+        "api": "edited-api",
+        "provider": "edited-provider",
+        "baseUrl": "",
+        "reasoning": false,
+        "input": [],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 0,
+        "maxTokens": 0
+      },
+      "existing": {
+        "id": "unknown",
+        "name": "unknown",
+        "api": "unknown",
+        "provider": "unknown",
+        "baseUrl": "",
+        "reasoning": false,
+        "input": [],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 0,
+        "maxTokens": 0
+      },
+      "later": {
+        "id": "unknown",
+        "name": "unknown",
+        "api": "unknown",
+        "provider": "unknown",
+        "baseUrl": "",
+        "reasoning": false,
+        "input": [],
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0
+        },
+        "contextWindow": 0,
+        "maxTokens": 0
+      },
+      "sameExisting": false,
+      "sameLater": false
     }
   }
 ]

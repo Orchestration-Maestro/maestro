@@ -152,7 +152,7 @@ fn policies(agent: &Agent) -> Value {
     json!({"steeringMode": mode_text(agent.steering_mode()),
         "followUpMode": mode_text(agent.follow_up_mode()), "hasQueuedMessages": agent.has_queued_messages()})
 }
-/// Default state is inert and its complete descriptor is shared.
+/// Default state is inert and each agent owns its complete descriptor.
 #[test]
 fn maestro_new_agent_has_inert_defaults() {
     let agent: Agent = Agent::default();
@@ -167,6 +167,67 @@ fn maestro_new_agent_has_inert_defaults() {
             "hasQueuedMessages":agent.has_queued_messages()}),
         );
     }
+}
+/// A default agent's descriptor changes only that agent, while a supplied descriptor stays shared.
+#[test]
+fn maestro_default_models_stay_agent_local() {
+    for mut case in cases("maestro_default_models_stay_agent_local") {
+        let before: Agent = Agent::default();
+        let replaced: Agent = Agent::default();
+        let supplied = chosen_model();
+        replaced.state().write().unwrap().model = Arc::clone(&supplied);
+        let after: Agent = Agent::default();
+        let mut actual = json!({"replaced": model_value(&replaced),
+            "replacedKeepsSupplied": Arc::ptr_eq(&model_handle(&replaced), &supplied),
+            "beforeReplacement": model_value(&before), "afterReplacement": model_value(&after)});
+        let shared = chosen_model();
+        let (first, second) = (supplied_agent(&shared), supplied_agent(&shared));
+        let id: String = take(&mut case.input, "id");
+        model_handle(&first).write().unwrap().id.clone_from(&id);
+        actual["suppliedShared"] = json!(
+            Arc::ptr_eq(&model_handle(&first), &shared)
+                && Arc::ptr_eq(&model_handle(&second), &shared)
+        );
+        actual["suppliedEdit"] = model_value(&second);
+        let (edited, existing): (Agent, Agent) = (Agent::default(), Agent::default());
+        {
+            let handle = model_handle(&edited);
+            let mut model = handle.write().unwrap();
+            model.id = id;
+            model.api = take(&mut case.input, "api");
+            model.provider = take(&mut case.input, "provider");
+        }
+        let later: Agent = Agent::default();
+        for (key, agent) in [
+            ("edited", &edited),
+            ("existing", &existing),
+            ("later", &later),
+        ] {
+            actual[key] = model_value(agent);
+        }
+        let edited_model = model_handle(&edited);
+        actual["sameExisting"] = json!(Arc::ptr_eq(&edited_model, &model_handle(&existing)));
+        actual["sameLater"] = json!(Arc::ptr_eq(&edited_model, &model_handle(&later)));
+        check(case, actual);
+    }
+}
+/// The agent's current model handle.
+fn model_handle(agent: &Agent) -> Arc<RwLock<Model>> {
+    Arc::clone(&agent.state().read().unwrap().model)
+}
+/// The agent's current model descriptor as recorded JSON.
+fn model_value(agent: &Agent) -> Value {
+    json!(*model_handle(agent).read().unwrap())
+}
+/// An agent constructed with a caller-supplied model handle.
+fn supplied_agent(model: &Arc<RwLock<Model>>) -> Agent {
+    Agent::new(AgentOptions {
+        initial_state: AgentInitialState {
+            model: Some(Arc::clone(model)),
+            ..Default::default()
+        },
+        ..Default::default()
+    })
 }
 /// Supplied initialization preserves every thinking level and caller record.
 #[test]

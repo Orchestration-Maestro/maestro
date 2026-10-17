@@ -2,7 +2,7 @@
 use crate::types::{AgentExecution, Threaded};
 use crate::types::{AgentMessage, CustomAgentMessages, SharedAgentTool, ThinkingLevel};
 use maestro_models::{Model, ModelCost};
-use std::sync::{Arc, OnceLock, RwLock};
+use std::sync::{Arc, RwLock};
 /// Caller-owned initialization fields; runtime fields cannot be initialized.
 ///
 /// ```compile_fail
@@ -113,25 +113,21 @@ impl<C: CustomAgentMessages, E: AgentExecution> AgentState<C, E> {
         self.error_message.as_deref()
     }
 }
-/// The inert descriptor shared by default agents.
+/// A new inert descriptor for one agent constructed without a model.
 fn default_model() -> Arc<RwLock<Model>> {
-    /// Shared descriptor storage.
-    static MODEL: OnceLock<Arc<RwLock<Model>>> = OnceLock::new();
-    Arc::clone(MODEL.get_or_init(|| {
-        Arc::new(RwLock::new(Model {
-            id: "unknown".into(),
-            name: "unknown".into(),
-            api: "unknown".into(),
-            provider: "unknown".into(),
-            base_url: String::new(),
-            reasoning: false,
-            thinking_level_map: None,
-            input: Vec::new(),
-            cost: ModelCost::default(),
-            context_window: 0.0,
-            max_tokens: 0.0,
-            headers: None,
-            compat: None,
-        }))
+    Arc::new(RwLock::new(Model {
+        id: "unknown".into(),
+        name: "unknown".into(),
+        api: "unknown".into(),
+        provider: "unknown".into(),
+        base_url: String::new(),
+        reasoning: false,
+        thinking_level_map: None,
+        input: Vec::new(),
+        cost: ModelCost::default(),
+        context_window: 0.0,
+        max_tokens: 0.0,
+        headers: None,
+        compat: None,
     }))
 }
