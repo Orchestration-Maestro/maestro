@@ -3,7 +3,7 @@
 #[test]
 fn simple_options_select_model_reasoning() {
     let model = crate::get_model("mistral", "mistral-small-2603").unwrap();
-    let options = crate::SimpleStreamOptions {
+    let options: crate::SimpleStreamOptions = crate::SimpleStreamOptions {
         reasoning: Some(crate::ThinkingLevel::Medium),
         ..Default::default()
     };

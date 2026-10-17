@@ -7,7 +7,7 @@ use super::failure::status_failure;
 use super::headers::normalize_request;
 use super::runtime::{Raced, race, sleep, unit_random};
 use super::{FetchError, HttpRequest, HttpResponse, RequestFailure, client, decode_utf8};
-use crate::{Cancellation, StreamOptions};
+use crate::{Cancellation, ProviderExecution, StreamOptions};
 
 /// Milliseconds a response may take to start before the attempt times out.
 const DEFAULT_TIMEOUT_MS: f64 = 600_000.0;
@@ -162,9 +162,9 @@ async fn read_text(
 /// Fails on a header that breaks the Fetch Standard's header rules (see
 /// [`HttpRequest::headers`]), invalid timeout or retry settings, cancellation, exhausted
 /// retries and non-success responses.
-pub(crate) async fn send(
+pub(crate) async fn send<E: ProviderExecution>(
     request: HttpRequest,
-    options: &StreamOptions,
+    options: &StreamOptions<E>,
 ) -> Result<HttpResponse, RequestFailure> {
     send_with_status_error(request, options, status_failure).await
 }
@@ -174,9 +174,9 @@ pub(crate) async fn send(
 ///
 /// # Errors
 /// Fails as [`send`] does.
-pub(crate) async fn send_with_status_error(
+pub(crate) async fn send_with_status_error<E: ProviderExecution>(
     mut request: HttpRequest,
-    options: &StreamOptions,
+    options: &StreamOptions<E>,
     format_error: fn(u16, &str) -> RequestFailure,
 ) -> Result<HttpResponse, RequestFailure> {
     normalize_request(&mut request.headers).map_err(RequestFailure::new)?;

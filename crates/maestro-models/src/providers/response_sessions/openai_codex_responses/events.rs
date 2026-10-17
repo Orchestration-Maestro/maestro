@@ -210,10 +210,10 @@ pub(super) fn resolve_codex_service_tier(
 pub(super) use crate::providers::responses::openai_responses::price as apply_service_tier_pricing;
 
 /// Reduce selected events into `output`, pricing the echoed tier against the requested one.
-pub(super) async fn reduce<S>(
+pub(super) async fn reduce<S, E: crate::ProviderExecution>(
     events: S,
     model: &Model,
-    options: &OpenAICodexResponsesOptions,
+    options: &OpenAICodexResponsesOptions<E>,
     output: &SharedAssistantMessage,
     stream: &AssistantMessageEventStream,
 ) -> Result<(), DiagnosticErrorInfo>

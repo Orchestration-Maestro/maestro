@@ -156,13 +156,13 @@ struct Compat {
 }
 
 /// One invocation's inputs with the cache policy resolved from them.
-pub(super) struct Invocation<'a> {
+pub(super) struct Invocation<'a, E: crate::ProviderExecution> {
     /// Target model.
     model: &'a Model,
     /// Conversation to send.
     context: &'a Context,
     /// Caller options.
-    options: &'a AnthropicOptions,
+    options: &'a AnthropicOptions<E>,
     /// Thinking provenance from the simple entry.
     thinking: &'a ThinkingInput,
     /// Effective cache retention.
@@ -177,13 +177,13 @@ pub(super) struct Invocation<'a> {
     pub(super) naming: Naming,
 }
 
-impl<'a> Invocation<'a> {
+impl<'a, E: crate::ProviderExecution> Invocation<'a, E> {
     /// Resolve the cache retention for the inputs: the explicit option, otherwise `long` when
     /// `MAESTRO_CACHE_RETENTION` is exactly `long`, otherwise `short`.
     pub(super) fn new(
         model: &'a Model,
         context: &'a Context,
-        call: &'a CallOptions,
+        call: &'a CallOptions<E>,
     ) -> Result<Self, RequestFailure> {
         let options = &call.raw;
         let retention = resolve_cache_retention(options.common.cache_retention);

@@ -297,7 +297,7 @@ fn common(
     signal: &Cancellation,
 ) -> TestResult<StreamOptions> {
     let value = input.common.clone().unwrap_or_default();
-    let mut options = StreamOptions {
+    let mut options = StreamOptions::<maestro_models::Threaded> {
         temperature: value.temperature,
         max_tokens: value.max_tokens,
         timeout_ms: value.timeout_ms,

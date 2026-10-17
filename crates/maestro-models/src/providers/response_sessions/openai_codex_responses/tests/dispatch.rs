@@ -254,7 +254,7 @@ fn maestro_response_sessions_preserve_transport_diagnostics() {
         super::fixture_rows(include_str!("fixtures/public-diagnostic.json"), &["input"]).unwrap();
     assert_eq!(rows.len(), 8);
     for row in rows {
-        let mut options = super::super::OpenAICodexResponsesOptions::default();
+        let mut options = super::super::OpenAICodexResponsesOptions::<crate::Threaded>::default();
         options.common.transport = Some(row.input.transport);
         let error = crate::DiagnosticErrorInfo {
             name: Some("WebSocketCloseError".into()),

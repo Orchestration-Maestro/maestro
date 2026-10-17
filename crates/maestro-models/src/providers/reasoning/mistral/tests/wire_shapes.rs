@@ -24,7 +24,7 @@ fn wire_raw_options_keep_distinct_literals() {
             },
             _ => panic!("unexpected fixture choice"),
         };
-        let options = MistralOptions {
+        let options: MistralOptions = MistralOptions {
             tool_choice: Some(choice),
             reasoning_effort: case.input.get("reasoningEffort").map(|value| {
                 match value.as_str().unwrap() {

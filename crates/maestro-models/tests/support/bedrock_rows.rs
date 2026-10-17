@@ -343,7 +343,7 @@ async fn observe(row: &Row) -> TestResult<Observed> {
         },
     )]);
     let responded = Arc::clone(&phases);
-    let mut common = StreamOptions {
+    let mut common = StreamOptions::<maestro_models::Threaded> {
         fetch: Some(scripted.fetch.clone()),
         on_payload: Some(payload_hook(&row.change, &phases, &seen)),
         ..StreamOptions::default()

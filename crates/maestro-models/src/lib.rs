@@ -8,9 +8,12 @@ mod builtins;
 pub use builtins::{
     BedrockProviderModule, find_env_keys, get_env_api_key, register_built_in_api_providers,
     reset_api_providers, set_bedrock_provider_module, stream_simple_anthropic,
-    stream_simple_azure_openai_responses, stream_simple_google, stream_simple_mistral,
-    stream_simple_openai_codex_responses, stream_simple_openai_completions,
-    stream_simple_openai_responses,
+    stream_simple_anthropic_for, stream_simple_azure_openai_responses,
+    stream_simple_azure_openai_responses_for, stream_simple_google, stream_simple_google_for,
+    stream_simple_mistral, stream_simple_mistral_for, stream_simple_openai_codex_responses,
+    stream_simple_openai_codex_responses_for, stream_simple_openai_completions,
+    stream_simple_openai_completions_for, stream_simple_openai_responses,
+    stream_simple_openai_responses_for,
 };
 
 pub mod cancellation;
@@ -20,8 +23,8 @@ mod catalog;
 pub mod catalog_generation;
 mod options;
 pub use options::{
-    AdjustedMaxTokens, adjust_max_tokens_for_thinking, build_base_options, clamp_reasoning,
-    is_context_overflow, reasoning_from_thinking_level,
+    AdjustedMaxTokens, adjust_max_tokens_for_thinking, build_base_options, build_base_options_for,
+    clamp_reasoning, is_context_overflow, reasoning_from_thinking_level,
 };
 /// Conversation adaptation for the destination model.
 mod projection;
@@ -35,23 +38,26 @@ pub use catalog::models::{
 };
 
 pub use providers::chat::openai_completions::{
-    OpenAICompletionsOptions, stream_openai_completions,
+    OpenAICompletionsOptions, stream_openai_completions, stream_openai_completions_for,
 };
 pub use providers::cloud::amazon_bedrock::{BedrockOptions, BedrockThinkingDisplay};
-pub use providers::content::google::{GoogleOptions, stream_google};
+pub use providers::content::google::{GoogleOptions, stream_google, stream_google_for};
 pub use providers::content::google_shared::GoogleThinkingLevel;
 pub use providers::http::{Fetch, FetchError, HttpBody, HttpRequest, HttpResponse, default_fetch};
 pub use providers::messages::anthropic::{
     AnthropicClient, AnthropicEffort, AnthropicOptions, AnthropicRequestOptions,
-    AnthropicThinkingDisplay, stream_anthropic,
+    AnthropicThinkingDisplay, stream_anthropic, stream_anthropic_for,
 };
 pub use providers::reasoning::mistral::{
     MistralOptions, MistralPromptMode, MistralReasoningEffort, MistralToolChoice, stream_mistral,
+    stream_mistral_for,
 };
 pub use providers::responses::azure_openai_responses::{
-    AzureOpenAIResponsesOptions, stream_azure_openai_responses,
+    AzureOpenAIResponsesOptions, stream_azure_openai_responses, stream_azure_openai_responses_for,
 };
-pub use providers::responses::openai_responses::{OpenAIResponsesOptions, stream_openai_responses};
+pub use providers::responses::openai_responses::{
+    OpenAIResponsesOptions, stream_openai_responses, stream_openai_responses_for,
+};
 pub use records::api_registry::{
     ApiProvider, ApiStreamFunction, ApiStreamSimpleFunction, clear_api_providers, get_api_provider,
     get_api_providers, register_api_provider, unregister_api_providers,
@@ -69,7 +75,10 @@ pub use records::session_resources::{
     SessionResourceCleanup, SessionResourceCleanupError, SessionResourceRemoval,
     cleanup_session_resources, register_session_resource_cleanup,
 };
-pub use records::stream::{complete, complete_simple, stream, stream_simple};
+pub use records::stream::{
+    complete, complete_for, complete_simple, complete_simple_for, stream, stream_for,
+    stream_simple, stream_simple_for,
+};
 pub use records::typebox_helpers::{StringEnumOptions, string_enum};
 pub use records::types::*;
 
@@ -101,6 +110,7 @@ pub use oauth::{
 
 pub use providers::response_sessions::openai_codex_responses::{
     OpenAICodexResponsesOptions, OpenAICodexWebSocketDebugStats, stream_openai_codex_responses,
+    stream_openai_codex_responses_for,
 };
 
 pub use providers::json_text::compact_json;

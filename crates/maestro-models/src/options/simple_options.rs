@@ -2,8 +2,8 @@
 use std::borrow::Cow;
 
 use crate::{
-    CacheRetention, Model, ModelThinkingLevel, SimpleStreamOptions, StreamOptions, ThinkingBudgets,
-    ThinkingLevel, get_env_api_key,
+    CacheRetention, Model, ModelThinkingLevel, ProviderExecution, SimpleStreamOptions,
+    StreamOptions, ThinkingBudgets, ThinkingLevel, get_env_api_key,
 };
 
 /// Keep a nonempty supplied key as written, otherwise look the provider's key up in the environment.
@@ -26,6 +26,16 @@ pub fn build_base_options(
     options: Option<&SimpleStreamOptions>,
     api_key: Option<&str>,
 ) -> StreamOptions {
+    build_base_options_for(model, options, api_key)
+}
+
+/// Copy family-correct common options without invoking or transferring hooks.
+#[must_use]
+pub fn build_base_options_for<E: ProviderExecution>(
+    model: &Model,
+    options: Option<&SimpleStreamOptions<E>>,
+    api_key: Option<&str>,
+) -> StreamOptions<E> {
     let mut common = options.map_or_else(StreamOptions::default, |options| options.common.clone());
     if common.max_tokens.is_none() && model.max_tokens > 0.0 {
         common.max_tokens = Some(model.max_tokens.min(32_000.0));

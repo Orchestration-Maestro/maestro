@@ -196,3 +196,23 @@ pub fn record_events(agent: &Arc<Agent>) -> Arc<Mutex<Vec<&'static str>>> {
     }));
     events
 }
+
+/// Erase the two future representations beside a generic scripted response body.
+macro_rules! factory {
+    ($owner:ty, $erase:expr) => {
+        $crate::support::scripted::factory!($owner, maestro_models::Local, $erase);
+        $crate::support::scripted::factory!($owner, maestro_models::Threaded, $erase);
+    };
+    ($owner:ty, $mode:ty, $erase:expr) => {
+        impl maestro_models::Invoke<$mode, maestro_models::FauxResponseInput<$mode>> for $owner {
+            type Return = <$mode as maestro_models::Execution>::Future<
+                'static,
+                Result<maestro_models::AssistantMessage, maestro_models::DiagnosticErrorInfo>,
+            >;
+            fn invoke(&self, input: maestro_models::FauxResponseInput<$mode>) -> Self::Return {
+                Box::pin(($erase)(self, input))
+            }
+        }
+    };
+}
+pub(crate) use factory;

@@ -46,7 +46,10 @@ path; see the provider pages: [messages](messages.md), [chat completions](chat-c
 An unregistered `api` returns `No API provider registered for api: {api}`. A
 registered custom callback keeps returning its own setup error immediately (inside
 the future for `complete`). A bundled callback never does: its setup failures are
-settled error streams.
+settled error streams. Their `_for` counterparts take the hook family's options and
+mandatory caller-owned submission facility. Raw projection and simple preparation
+retain that family through the same protocol producer. `complete_for` and
+`complete_simple_for` start invocation before returning an independent result future.
 
 ## Cloud-conversation callback replacement
 

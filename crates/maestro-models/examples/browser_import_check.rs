@@ -38,7 +38,10 @@ fn local_client() -> (
 fn main() {
     response_session_surface();
     bedrock_surface();
-    std::hint::black_box((stream_bedrock, BedrockOptions::default()));
+    std::hint::black_box((
+        stream_bedrock,
+        BedrockOptions::<maestro_models::Threaded>::default(),
+    ));
     let model = get_model("google", "gemini-2.5-flash");
     std::hint::black_box((
         model,
@@ -53,12 +56,12 @@ fn main() {
         ),
         stream_azure_openai_responses,
         stream_simple_azure_openai_responses,
-        maestro_models::AzureOpenAIResponsesOptions::default(),
+        maestro_models::AzureOpenAIResponsesOptions::<maestro_models::Threaded>::default(),
         stream_openai_responses,
         stream_simple_openai_responses,
         register_built_in_api_providers,
         reset_api_providers,
-        maestro_models::OpenAIResponsesOptions::default(),
+        maestro_models::OpenAIResponsesOptions::<maestro_models::Threaded>::default(),
         login_openai_codex,
         OPENAI_CODEX_OAUTH_PROVIDER,
     ));
@@ -98,7 +101,7 @@ fn main() {
 /// Compile provider records and dedicated/root function paths on either target.
 fn response_session_surface() {
     std::hint::black_box((
-        maestro_models::OpenAICodexResponsesOptions::default(),
+        maestro_models::OpenAICodexResponsesOptions::<maestro_models::Threaded>::default(),
         maestro_models::OpenAICodexWebSocketDebugStats::default(),
         Nullable::<OpenAICodexReasoningSummary>::Null,
         OpenAICodexTextVerbosity::Low,
@@ -130,8 +133,8 @@ fn response_session_callbacks() {
     };
     let state = std::rc::Rc::new(std::cell::Cell::new(0));
     let seen = std::rc::Rc::clone(&state);
-    let common = maestro_models::StreamOptions {
-        on_payload: Some(std::sync::Arc::new(move |body, _| {
+    let common = maestro_models::StreamOptions::<maestro_models::Threaded> {
+        on_payload: Some(maestro_models::SharedHandle::new(move |body, _| {
             seen.set(seen.get() + 1);
             Box::pin(async { Ok(body) })
         })),
@@ -171,15 +174,9 @@ fn bedrock_surface() {
         let calls = std::rc::Rc::new(std::cell::Cell::new(0_u8));
         let seen = std::rc::Rc::clone(&calls);
         let mut module = maestro_models::bedrock_provider::bedrock_provider_module();
-        module.stream_bedrock = maestro_models::SharedHandle::new(move |_, _, _| {
-            seen.set(seen.get() + 1);
-            Err(maestro_models::DiagnosticErrorInfo {
-                name: None,
-                message: String::new(),
-                stack: None,
-                code: None,
-            })
-        });
+        let owner = maestro_models::SharedHandle::new(BrowserProvider(seen));
+        module.stream_bedrock = owner.clone();
+        module.stream_simple_bedrock = owner;
         maestro_models::set_bedrock_provider_module(module);
         assert_eq!(calls.get(), 0);
     }
@@ -188,6 +185,7 @@ fn bedrock_surface() {
 /// Compile guide records and an explicit-key, injectable browser invocation without running it.
 #[cfg(target_arch = "wasm32")]
 fn guide_surface() {
+    factory_surface();
     use maestro_models::{
         AnthropicOptions, Context, Message, StreamOptions, Tool, UserContent, UserMessage,
     };
@@ -218,4 +216,81 @@ fn guide_surface() {
         ..Default::default()
     };
     let _invocation = std::hint::black_box(move || stream_anthropic(model, context, Some(options)));
+}
+
+/// Browser factory owners may retain single-thread state.
+#[cfg(target_arch = "wasm32")]
+struct BrowserFactory(std::rc::Rc<std::cell::Cell<u8>>);
+#[cfg(target_arch = "wasm32")]
+impl BrowserFactory {
+    /// Retain the caller-local state in the original factory future.
+    fn respond<E: maestro_models::ProviderExecution>(
+        &self,
+        input: maestro_models::FauxResponseInput<E>,
+    ) -> impl std::future::Future<
+        Output = Result<maestro_models::AssistantMessage, maestro_models::DiagnosticErrorInfo>,
+    >
+    + 'static
+    + use<E> {
+        let calls = std::rc::Rc::clone(&self.0);
+        async move {
+            std::future::ready(()).await;
+            calls.set(calls.get() + 1);
+            Ok(maestro_models::faux_assistant_message(
+                input.state.call_count().to_string(),
+                maestro_models::FauxAssistantMessageOptions::default(),
+            ))
+        }
+    }
+}
+/// Erase the same factory future for the two browser invocation families.
+#[cfg(target_arch = "wasm32")]
+macro_rules! browser_factory {
+    ($mode:ty) => {
+        impl maestro_models::Invoke<$mode, maestro_models::FauxResponseInput<$mode>>
+            for BrowserFactory
+        {
+            type Return = <$mode as maestro_models::Execution>::Future<
+                'static,
+                Result<maestro_models::AssistantMessage, maestro_models::DiagnosticErrorInfo>,
+            >;
+            fn invoke(&self, input: maestro_models::FauxResponseInput<$mode>) -> Self::Return {
+                Box::pin(self.respond(input))
+            }
+        }
+    };
+}
+#[cfg(target_arch = "wasm32")]
+browser_factory!(maestro_models::Local);
+#[cfg(target_arch = "wasm32")]
+browser_factory!(maestro_models::Threaded);
+
+/// Admit an `Rc`-capturing factory through the public retained-factory type.
+#[cfg(target_arch = "wasm32")]
+fn factory_surface() {
+    let calls = std::rc::Rc::new(std::cell::Cell::new(0));
+    let factory: maestro_models::FauxResponseFactory =
+        maestro_models::SharedHandle::new(BrowserFactory(std::rc::Rc::clone(&calls)));
+    std::hint::black_box(factory);
+    assert_eq!(calls.get(), 0);
+}
+
+/// Browser registered owner may capture single-threaded state in either invocation family.
+#[cfg(target_arch = "wasm32")]
+struct BrowserProvider(std::rc::Rc<std::cell::Cell<u8>>);
+#[cfg(target_arch = "wasm32")]
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for BrowserProvider
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        self.0.set(self.0.get() + 1);
+        Err(maestro_models::DiagnosticErrorInfo {
+            name: None,
+            message: String::new(),
+            stack: None,
+            code: None,
+        })
+    }
 }

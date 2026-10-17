@@ -9,15 +9,17 @@ use super::google_shared::{
 };
 use crate::options::resolve_api_key;
 use crate::{
-    Context, DiagnosticErrorInfo, Model, ModelThinkingLevel, SimpleStreamOptions, StreamOptions,
-    ThinkingBudgets, ThinkingLevel, build_base_options, clamp_reasoning, clamp_thinking_level,
+    Context, DiagnosticErrorInfo, Local, Model, ModelThinkingLevel, ProviderExecution,
+    ProviderInvocation, ProviderSpawner, SimpleStreamOptions, StreamOptions, StreamOptionsFamily,
+    ThinkingBudgets, ThinkingLevel, Threaded, build_base_options_for, clamp_reasoning,
+    clamp_thinking_level,
 };
 
 /// Content-generation options: common settings, tool choice and optional raw thinking.
 #[derive(Clone, Default)]
-pub struct GoogleOptions {
+pub struct GoogleOptions<E: ProviderExecution = Threaded> {
     /// Settings shared by every provider.
-    pub common: StreamOptions,
+    pub common: StreamOptions<E>,
     /// Tool-calling mode, used only when the context declares tools.
     pub tool_choice: Option<FunctionCallingConfigMode>,
     /// Raw thinking request; absent leaves thinking unspecified.
@@ -46,6 +48,15 @@ pub fn build_params(
     model: &Model,
     context: &Context,
     options: Option<&GoogleOptions>,
+) -> Result<GenerateContentParameters, DiagnosticErrorInfo> {
+    params(model, context, options)
+}
+
+/// Assemble parameters with family-correct borrowed common controls.
+fn params<E: ProviderExecution>(
+    model: &Model,
+    context: &Context,
+    options: Option<&GoogleOptions<E>>,
 ) -> Result<GenerateContentParameters, DiagnosticErrorInfo> {
     let default = GoogleOptions::default();
     let options = options.unwrap_or(&default);
@@ -83,6 +94,14 @@ pub fn build_simple_options(
     model: &Model,
     options: Option<&SimpleStreamOptions>,
 ) -> Result<GoogleOptions, DiagnosticErrorInfo> {
+    simple_options(model, options)
+}
+
+/// Select simple settings without changing the hook capture family.
+fn simple_options<E: ProviderExecution>(
+    model: &Model,
+    options: Option<&SimpleStreamOptions<E>>,
+) -> Result<GoogleOptions<E>, DiagnosticErrorInfo> {
     let key = resolve_api_key(
         &model.provider,
         options
@@ -100,7 +119,7 @@ pub fn build_simple_options(
         }
     };
     Ok(GoogleOptions {
-        common: build_base_options(model, options, Some(&key)),
+        common: build_base_options_for(model, options, Some(&key)),
         tool_choice: None,
         thinking: Some(thinking),
     })
@@ -237,7 +256,77 @@ pub fn stream_google(
     context: Context,
     options: Option<GoogleOptions>,
 ) -> crate::AssistantMessageEventStream {
-    use crate::providers::assistant_output::{fail, initial_message, start_producer};
+    dispatch(model, context, ProviderInvocation::Threaded(options, None))
+}
+
+/// Start content generation using caller-owned admission and hook captures.
+#[must_use]
+pub fn stream_google_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<GoogleOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> crate::AssistantMessageEventStream {
+    dispatch(model, context, E::submission(options, E::provided(submit)))
+}
+
+impl StreamOptionsFamily for GoogleOptions {
+    type Options<E: ProviderExecution> = GoogleOptions<E>;
+}
+
+/// Select concrete future bounds before running one shared producer.
+pub(crate) fn dispatch(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<GoogleOptions>,
+) -> crate::AssistantMessageEventStream {
+    match invocation {
+        ProviderInvocation::Local(options, submit) => {
+            start::<Local>(model, context, options, submit)
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            start::<Threaded>(model, context, options, submit)
+        }
+    }
+}
+
+/// Future erasure local to the content-generation producer.
+trait Producer: ProviderExecution {
+    /// Box the already-selected worker under this family's future bounds.
+    fn drive(
+        invocation: Invocation,
+        options: GoogleOptions<Self>,
+        events: crate::AssistantMessageEventStream,
+        output: crate::SharedAssistantMessage,
+    ) -> Self::Future<'static, ()>;
+}
+
+/// Only future auto-trait bounds differ between the concrete families.
+macro_rules! producer {
+    ($mode:ty) => {
+        impl Producer for $mode {
+            fn drive(
+                invocation: Invocation,
+                options: GoogleOptions<Self>,
+                events: crate::AssistantMessageEventStream,
+                output: crate::SharedAssistantMessage,
+            ) -> Self::Future<'static, ()> {
+                Box::pin(run::<Self>(invocation, options, events, output))
+            }
+        }
+    };
+}
+producer!(Local);
+producer!(Threaded);
+
+/// Capture client configuration before asynchronous hooks and submit once.
+fn start<E: Producer>(
+    model: Model,
+    context: Context,
+    options: Option<GoogleOptions<E>>,
+    submit: E::Submission,
+) -> crate::AssistantMessageEventStream {
+    use crate::providers::assistant_output::{initial_message, start_producer_for};
     use std::sync::{Arc, RwLock};
     let options = options.unwrap_or_default();
     let default_base_url = endpoint_default();
@@ -257,18 +346,8 @@ pub fn stream_google(
     };
     let events = crate::AssistantMessageEventStream::new();
     let output = Arc::new(RwLock::new(initial_message(&invocation.model)));
-    let producer = events.clone();
-    let message = Arc::clone(&output);
-    start_producer(
-        &events,
-        &output,
-        None,
-        Box::pin(async move {
-            if let Err(error) = invoke(invocation, &options, &producer, &message).await {
-                fail(&producer, &message, options.common.signal.as_ref(), error);
-            }
-        }),
-    );
+    let task = E::drive(invocation, options, events.clone(), Arc::clone(&output));
+    start_producer_for::<E>(&events, &output, None, task, submit);
     events
 }
 
@@ -281,18 +360,46 @@ pub fn stream_simple_google(
     context: Context,
     options: Option<SimpleStreamOptions>,
 ) -> Result<crate::AssistantMessageEventStream, DiagnosticErrorInfo> {
-    let options = options.unwrap_or_default();
-    let selected = build_simple_options(&model, Some(&options))?;
-    Ok(stream_google(model, context, Some(selected)))
+    dispatch_simple(model, context, ProviderInvocation::Threaded(options, None))
+}
+
+/// Resolve simple settings using caller-owned admission.
+///
+/// # Errors
+/// Returns the existing missing-key diagnostic before producing a stream.
+pub fn stream_simple_google_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> Result<crate::AssistantMessageEventStream, DiagnosticErrorInfo> {
+    dispatch_simple(model, context, E::submission(options, E::provided(submit)))
+}
+
+/// Drive the same content-generation request under either hook family.
+async fn run<E: ProviderExecution>(
+    invocation: Invocation,
+    options: GoogleOptions<E>,
+    producer: crate::AssistantMessageEventStream,
+    message: crate::SharedAssistantMessage,
+) {
+    if let Err(error) = invoke(invocation, &options, &producer, &message).await {
+        crate::providers::assistant_output::fail(
+            &producer,
+            &message,
+            options.common.signal.as_ref(),
+            error,
+        );
+    }
 }
 
 /// Counter shared across independently produced invocations.
 static TOOL_CALL_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
 /// Prepare the selected payload and run its whole transport operation once.
-async fn invoke(
+async fn invoke<E: ProviderExecution>(
     invocation: Invocation,
-    options: &GoogleOptions,
+    options: &GoogleOptions<E>,
     events: &crate::AssistantMessageEventStream,
     output: &crate::SharedAssistantMessage,
 ) -> Result<(), crate::providers::http::RequestFailure> {
@@ -301,7 +408,7 @@ async fn invoke(
     use crate::providers::http::{Raced, RequestFailure, race};
     let model = invocation.model;
     let client = invocation.client;
-    let params = build_params(&model, &invocation.context, Some(options))?;
+    let params = params(&model, &invocation.context, Some(options))?;
     let payload =
         serde_json::to_value(params).map_err(|error| RequestFailure::new(error.to_string()))?;
     let mut selected = crate::PayloadHookInput {
@@ -382,4 +489,35 @@ fn endpoint_default() -> Option<String> {
     {
         None
     }
+}
+
+/// Resolve simple content settings before selecting concrete producer bounds.
+pub(crate) fn dispatch_simple(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<SimpleStreamOptions>,
+) -> Result<crate::AssistantMessageEventStream, DiagnosticErrorInfo> {
+    match invocation {
+        ProviderInvocation::Local(options, submit) => {
+            simple::<Local>(model, context, options, submit)
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            simple::<Threaded>(model, context, options, submit)
+        }
+    }
+}
+/// Prepare the original simple options once for either hook family.
+fn simple<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: E::Submission,
+) -> Result<crate::AssistantMessageEventStream, DiagnosticErrorInfo> {
+    let selected = simple_options(&model, options.as_ref())?;
+    drop(options);
+    Ok(dispatch(
+        model,
+        context,
+        E::submission(Some(selected), submit),
+    ))
 }

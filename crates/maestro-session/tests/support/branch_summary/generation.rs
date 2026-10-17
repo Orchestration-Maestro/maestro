@@ -37,21 +37,8 @@ fn adapter(script: Value) -> Arc<Adapter> {
     maestro_models::register_api_provider(
         ApiProvider {
             api: api.clone(),
-            stream: Arc::new(|_, _, _| unreachable!()),
-            stream_simple: Arc::new(move |model, context, options| {
-                let state = weak.upgrade().unwrap();
-                state
-                    .calls
-                    .lock()
-                    .unwrap()
-                    .push((model, context, options.unwrap()));
-                if let Some(error) = script.get("throw") {
-                    return Err(DiagnosticErrorInfo::error(error.as_str().unwrap()));
-                }
-                let stream = AssistantMessageEventStream::new();
-                stream.end(Some(Arc::new(RwLock::new(response(&script)))));
-                Ok(stream)
-            }),
+            stream: Arc::new(UnexpectedRaw),
+            stream_simple: Arc::new(BranchProvider { weak, script }),
         },
         Some(api),
     );
@@ -212,20 +199,107 @@ fn register_pending(
     maestro_models::register_api_provider(
         ApiProvider {
             api: state.api.clone(),
-            stream: Arc::new(|_, _, _| unreachable!()),
-            stream_simple: Arc::new(move |model, context, options| {
-                let state = captured.upgrade().unwrap();
-                state
-                    .calls
-                    .lock()
-                    .unwrap()
-                    .push((model, context, options.unwrap()));
-                recorded.lock().unwrap().push("request-start".into());
-                let stream = AssistantMessageEventStream::new();
-                *retained.lock().unwrap() = Some(stream.clone());
-                Ok(stream)
+            stream: Arc::new(UnexpectedRaw),
+            stream_simple: Arc::new(PendingBranch {
+                captured,
+                recorded,
+                retained,
             }),
         },
         Some(state.api.clone()),
     );
+}
+
+/// Retained invocation owner for the controlled provider.
+struct BranchProvider {
+    weak: std::sync::Weak<Adapter>,
+    script: Value,
+}
+impl<E: maestro_models::ProviderExecution>
+    maestro_models::Invoke<
+        E,
+        maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+    > for BranchProvider
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(
+        &self,
+        call: maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+    ) -> Self::Return {
+        let maestro_models::ProviderCall {
+            model,
+            context,
+            options,
+            ..
+        } = call;
+        let weak = &self.weak;
+        let script = &self.script;
+
+        let state = weak.upgrade().unwrap();
+        state.calls.lock().unwrap().push((
+            model,
+            context,
+            crate::support::summary_options::observe(options.unwrap()),
+        ));
+        if let Some(error) = script.get("throw") {
+            return Err(DiagnosticErrorInfo::error(error.as_str().unwrap()));
+        }
+        let stream = AssistantMessageEventStream::new();
+        stream.end(Some(Arc::new(RwLock::new(response(script)))));
+        Ok(stream)
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct UnexpectedRaw;
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for UnexpectedRaw
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        panic!("raw dispatch selected")
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct PendingBranch {
+    captured: std::sync::Weak<Adapter>,
+    recorded: Arc<Mutex<Vec<String>>>,
+    retained: Arc<Mutex<Option<AssistantMessageEventStream>>>,
+}
+impl<E: maestro_models::ProviderExecution>
+    maestro_models::Invoke<
+        E,
+        maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+    > for PendingBranch
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(
+        &self,
+        call: maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+    ) -> Self::Return {
+        let maestro_models::ProviderCall {
+            model,
+            context,
+            options,
+            ..
+        } = call;
+        let captured = &self.captured;
+        let recorded = &self.recorded;
+        let retained = &self.retained;
+
+        let state = captured.upgrade().unwrap();
+        state.calls.lock().unwrap().push((
+            model,
+            context,
+            crate::support::summary_options::observe(options.unwrap()),
+        ));
+        recorded.lock().unwrap().push("request-start".into());
+        let stream = AssistantMessageEventStream::new();
+        *retained.lock().unwrap() = Some(stream.clone());
+        Ok(stream)
+    }
 }

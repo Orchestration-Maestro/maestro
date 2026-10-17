@@ -45,7 +45,7 @@ pub(crate) async fn run_for<C: CustomAgentMessages + 'static, E: crate::Executio
     mut context: AgentContextRecord<C, E>,
     config: &AgentLoopConfigRecord<C, E>,
     emit: AgentEventSink<C, E>,
-    options: AgentLoopOptionsRecord<E>,
+    options: CapturedOptions<E>,
 ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
     let prompts = if let Some(prompts) = prompts {
         context = prepare_prompt(&prompts, context);
@@ -62,7 +62,7 @@ async fn prepared_loop<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<
     context: AgentContextRecord<C, E>,
     config: &AgentLoopConfigRecord<C, E>,
     emit: AgentEventSink<C, E>,
-    options: AgentLoopOptionsRecord<E>,
+    options: CapturedOptions<E>,
 ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo> {
     emit(AgentEvent::AgentStart).await?;
     emit(AgentEvent::TurnStart).await?;
@@ -106,7 +106,7 @@ struct Driver<'a, C: CustomAgentMessages, E: AgentExecution> {
     /// Awaited observation callback.
     emit: AgentEventSink<C, E>,
     /// Invocation overrides.
-    options: AgentLoopOptionsRecord<E>,
+    options: CapturedOptions<E>,
 }
 impl<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>> Driver<'_, C, E> {
     /// Complete turns until controls and ordinary continuation are exhausted.
@@ -164,8 +164,77 @@ fn failure(message: impl Into<String>) -> DiagnosticErrorInfo {
 
 /// Thread-safe default representation of the `AgentLoopOptions` record.
 pub type AgentLoopOptions = AgentLoopOptionsRecord<Threaded>;
-/// Local representation of the `AgentLoopOptions` record.
-pub type LocalAgentLoopOptions = AgentLoopOptionsRecord<crate::Local>;
+/// Awaited local invocation with admission required only for registered dispatch.
+///
+/// Registered local calls cannot omit their task facility:
+///
+/// ```compile_fail
+/// use maestro_agent::agent_loop::LocalAgentLoopOptions;
+/// fn local_registered_dispatch_requires_submission() {
+///     let _options = LocalAgentLoopOptions::RegisteredDispatch { signal: None };
+/// }
+/// ```
+pub enum LocalAgentLoopOptions {
+    /// Invoke the registered model through the caller's task facility.
+    RegisteredDispatch {
+        /// Signal replacing the configured request signal.
+        signal: Option<Cancellation>,
+        /// Caller-owned provider task admission.
+        spawn: AgentSpawner<crate::Local>,
+    },
+    /// Invoke a replacement stream without admitting a provider task.
+    ReplacementStream {
+        /// Signal replacing the configured request signal.
+        signal: Option<Cancellation>,
+        /// Caller-supplied stream construction.
+        stream_fn: StreamFn<crate::Local>,
+    },
+}
+/// Invocation overrides retained with their selected provider route.
+pub(crate) struct CapturedOptions<E: AgentExecution> {
+    /// Signal replacing the configured request signal.
+    pub signal: Option<Cancellation>,
+    /// Registered admission or the replacement callable.
+    pub route: StreamRoute<E>,
+}
+/// Mutually exclusive registered and replacement invocation inputs.
+pub(crate) enum StreamRoute<E: AgentExecution> {
+    /// Original family-specific admission.
+    Registered(E::Submission),
+    /// Caller-owned stream construction.
+    Replacement(StreamFn<E>),
+}
+impl<E: AgentExecution> CapturedOptions<E> {
+    /// Capture overrides and admission once before executing the operation.
+    pub fn new(options: AgentLoopOptionsRecord<E>, submission: E::Submission) -> Self {
+        Self {
+            signal: options.signal,
+            route: match options.stream_fn {
+                Some(stream) => StreamRoute::Replacement(stream),
+                None => StreamRoute::Registered(submission),
+            },
+        }
+    }
+}
+impl From<AgentLoopOptionsRecord> for CapturedOptions<Threaded> {
+    fn from(options: AgentLoopOptionsRecord) -> Self {
+        Self::new(options, None)
+    }
+}
+impl From<LocalAgentLoopOptions> for CapturedOptions<crate::Local> {
+    fn from(options: LocalAgentLoopOptions) -> Self {
+        match options {
+            LocalAgentLoopOptions::RegisteredDispatch { signal, spawn } => Self {
+                signal,
+                route: StreamRoute::Registered(crate::Local::provider_submission(spawn)),
+            },
+            LocalAgentLoopOptions::ReplacementStream { signal, stream_fn } => Self {
+                signal,
+                route: StreamRoute::Replacement(stream_fn),
+            },
+        }
+    }
+}
 
 /// Check continuation admission without converting custom entries.
 fn check_continuation<C: CustomAgentMessages, E: AgentExecution>(

@@ -1,6 +1,9 @@
 //! Ordered protocol registration retaining checked invocation callbacks.
 use super::diagnostics::DiagnosticErrorInfo;
-use super::types::{Api, ProviderStreamOptions, SimpleStreamOptions, StreamFunction};
+use super::types::{
+    Api, Invoke, ProviderCall, ProviderExecution, ProviderStreamOptions, SimpleStreamOptions,
+    StreamFunction, StreamOptionsFamily,
+};
 use crate::SharedHandle;
 use crate::builtins::built_in_providers;
 use indexmap::IndexMap;
@@ -38,17 +41,34 @@ crate::records::platform_store_accessor!(
     /// Access the native shared or browser-local registration map.
     with_registry, REGISTRY, IndexMap<String, Registration>
 );
-/// Wrap a stream callback with an API-identity check.
-fn checked<O: 'static>(api: String, callback: StreamFunction<O>) -> StreamFunction<O> {
-    SharedHandle::new(move |model, context, options| {
-        if model.api != api {
+/// API guard retaining the original callback independently of registry changes.
+struct Checked<K: StreamOptionsFamily> {
+    /// Registered protocol identity.
+    api: String,
+    /// Caller-supplied callback owner.
+    callback: StreamFunction<K>,
+}
+impl<E: ProviderExecution, K: StreamOptionsFamily> Invoke<E, ProviderCall<E, K::Options<E>>>
+    for Checked<K>
+{
+    type Return = Result<super::types::AssistantMessageEventStream, DiagnosticErrorInfo>;
+    fn invoke(&self, input: ProviderCall<E, K::Options<E>>) -> Self::Return {
+        if input.model.api != self.api {
             return Err(DiagnosticErrorInfo::error(format!(
-                "Mismatched api: {} expected {api}",
-                model.api
+                "Mismatched api: {} expected {}",
+                input.model.api, self.api
             )));
         }
-        callback(model, context, options)
-    })
+        self.callback.call(
+            input.model,
+            input.context,
+            E::submission(input.options, input.submit),
+        )
+    }
+}
+/// Wrap a stream callback with the shared API-identity check.
+fn checked<K: StreamOptionsFamily>(api: String, callback: StreamFunction<K>) -> StreamFunction<K> {
+    SharedHandle::new(Checked { api, callback })
 }
 /// Pair checked callbacks with their owner.
 fn registration(provider: ApiProvider, source_id: Option<String>) -> Registration {

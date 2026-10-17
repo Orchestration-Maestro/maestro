@@ -15,13 +15,14 @@ use std::sync::{Arc, RwLock};
 pub use compat::ResolvedOpenAICompletionsCompat;
 
 use crate::options::resolve_api_key;
-use crate::providers::assistant_output::{fail, initial_message, start_producer};
+use crate::providers::assistant_output::{fail, initial_message, start_producer_for};
 use crate::providers::http::{HttpRequest, HttpResponse, RequestFailure, endpoint_url, send};
 use crate::providers::json_text::compact_json;
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, Cancellation, Context, DiagnosticErrorInfo,
-    Model, ProviderResponse, SharedAssistantMessage, SimpleStreamOptions, StopReason,
-    StreamOptions, ThinkingLevel, ToolChoice, build_base_options, clamp_thinking_level,
+    Local, Model, ProviderExecution, ProviderInvocation, ProviderResponse, ProviderSpawner,
+    SharedAssistantMessage, SimpleStreamOptions, StopReason, StreamOptions, StreamOptionsFamily,
+    ThinkingLevel, Threaded, ToolChoice, build_base_options_for, clamp_thinking_level,
 };
 use events::Reducer;
 use request::{ENDPOINT_PATH, Invocation};
@@ -33,9 +34,9 @@ const ABORTED_TEXT: &str = "Request was aborted";
 
 /// Options for a direct chat-completion invocation.
 #[derive(Clone, Default)]
-pub struct OpenAICompletionsOptions {
+pub struct OpenAICompletionsOptions<E: ProviderExecution = Threaded> {
     /// Settings common to every protocol.
-    pub common: StreamOptions,
+    pub common: StreamOptions<E>,
     /// Whether the model may call tools, must call one, or must call a named one.
     pub tool_choice: Option<ToolChoice>,
     /// Requested reasoning effort. A reasoning model asked for none is told to turn reasoning
@@ -58,18 +59,90 @@ pub fn stream_openai_completions(
     context: Context,
     options: Option<OpenAICompletionsOptions>,
 ) -> AssistantMessageEventStream {
+    dispatch(model, context, ProviderInvocation::Threaded(options, None))
+}
+
+/// Start a chat completion using the caller's producer admission and hook family.
+#[must_use]
+pub fn stream_openai_completions_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<OpenAICompletionsOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> AssistantMessageEventStream {
+    dispatch(model, context, E::submission(options, E::provided(submit)))
+}
+
+impl StreamOptionsFamily for OpenAICompletionsOptions {
+    type Options<E: ProviderExecution> = OpenAICompletionsOptions<E>;
+}
+
+/// Select concrete future erasure before starting the shared producer.
+pub(crate) fn dispatch(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<OpenAICompletionsOptions>,
+) -> AssistantMessageEventStream {
+    match invocation {
+        ProviderInvocation::Local(options, submit) => {
+            produce::<Local>(model, context, options, submit)
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            produce::<Threaded>(model, context, options, submit)
+        }
+    }
+}
+
+/// Box the same producer with this concrete family's future bounds.
+trait Producer: ProviderExecution {
+    /// Erase a producer future without changing its work or admission.
+    fn drive(
+        model: Arc<Model>,
+        context: Context,
+        options: OpenAICompletionsOptions<Self>,
+        stream: AssistantMessageEventStream,
+        output: SharedAssistantMessage,
+    ) -> Self::Future<'static, ()>;
+}
+
+/// Only the concrete future auto-trait bounds differ.
+macro_rules! producer {
+    ($mode:ty) => {
+        impl Producer for $mode {
+            fn drive(
+                model: Arc<Model>,
+                context: Context,
+                options: OpenAICompletionsOptions<Self>,
+                stream: AssistantMessageEventStream,
+                output: SharedAssistantMessage,
+            ) -> Self::Future<'static, ()> {
+                Box::pin(run::<Self>(model, context, options, stream, output))
+            }
+        }
+    };
+}
+producer!(Local);
+producer!(Threaded);
+
+/// Prepare one retained invocation and submit its producer once.
+fn produce<E: Producer>(
+    model: Model,
+    context: Context,
+    options: Option<OpenAICompletionsOptions<E>>,
+    submit: E::Submission,
+) -> AssistantMessageEventStream {
     let stream = AssistantMessageEventStream::new();
     let output: SharedAssistantMessage = Arc::new(RwLock::new(initial_message(&model)));
     let options = options.unwrap_or_default();
     let signal = options.common.signal.clone();
-    let task = run(
+    let task = E::drive(
         Arc::new(model),
         context,
         options,
         stream.clone(),
         Arc::clone(&output),
     );
-    start_producer(&stream, &output, signal.as_ref(), Box::pin(task));
+    start_producer_for::<E>(&stream, &output, signal.as_ref(), task, submit);
     stream
 }
 
@@ -82,6 +155,46 @@ pub fn stream_simple_openai_completions(
     context: Context,
     options: Option<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    simple(model, context, options, None)
+}
+
+/// Start a simple chat completion with caller-owned producer admission.
+///
+/// # Errors
+/// Returns the existing missing-key setup failure before creating a stream.
+pub fn stream_simple_openai_completions_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    // The common carrier selects the concrete family before future erasure.
+    dispatch_simple(model, context, E::submission(options, E::provided(submit)))
+}
+
+/// Select concrete simple preparation while preserving the original submission.
+pub(crate) fn dispatch_simple(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<SimpleStreamOptions>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    match invocation {
+        ProviderInvocation::Local(options, submit) => {
+            simple::<Local>(model, context, options, submit)
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            simple::<Threaded>(model, context, options, submit)
+        }
+    }
+}
+
+/// Resolve simple options once before using the same retained producer.
+fn simple<E: Producer>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: E::Submission,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
     let api_key = resolve_api_key(
         &model.provider,
         options
@@ -92,7 +205,7 @@ pub fn stream_simple_openai_completions(
     .ok_or_else(|| {
         DiagnosticErrorInfo::error(format!("No API key for provider: {}", model.provider))
     })?;
-    let common = build_base_options(&model, options.as_ref(), Some(&api_key));
+    let common = build_base_options_for(&model, options.as_ref(), Some(&api_key));
     let reasoning_effort = options
         .as_ref()
         .and_then(|options| options.reasoning)
@@ -100,7 +213,7 @@ pub fn stream_simple_openai_completions(
             crate::reasoning_from_thinking_level(&clamp_thinking_level(&model, level.into()))
         });
     let tool_choice = options.and_then(|options| options.tool_choice);
-    Ok(stream_openai_completions(
+    Ok(produce::<E>(
         model,
         context,
         Some(OpenAICompletionsOptions {
@@ -108,14 +221,15 @@ pub fn stream_simple_openai_completions(
             tool_choice,
             reasoning_effort,
         }),
+        submit,
     ))
 }
 
 /// Drive one invocation to its terminal update.
-async fn run(
+async fn run<E: ProviderExecution>(
     model: Arc<Model>,
     context: Context,
-    options: OpenAICompletionsOptions,
+    options: OpenAICompletionsOptions<E>,
     stream: AssistantMessageEventStream,
     output: SharedAssistantMessage,
 ) {
@@ -127,10 +241,10 @@ async fn run(
 
 /// Send the request and reduce the response into the shared message; a normal end concludes
 /// with a done update.
-async fn invoke(
+async fn invoke<E: ProviderExecution>(
     model: &Arc<Model>,
     context: &Context,
-    options: &OpenAICompletionsOptions,
+    options: &OpenAICompletionsOptions<E>,
     stream: &AssistantMessageEventStream,
     output: &SharedAssistantMessage,
 ) -> Result<(), RequestFailure> {

@@ -63,32 +63,8 @@ fn adapter(responses: Value) -> Arc<Adapter> {
     maestro_models::register_api_provider(
         ApiProvider {
             api: api.clone(),
-            stream: Arc::new(|_, _, _| unreachable!()),
-            stream_simple: Arc::new(move |model, context, options| {
-                let state = retained.upgrade().unwrap();
-                let prefix =
-                    serde_json::to_value(&context).unwrap()["messages"][0]["content"][0]["text"]
-                        .as_str()
-                        .unwrap()
-                        .contains("This is the PREFIX of a turn");
-                let response = state
-                    .responses
-                    .get(if prefix { "prefix" } else { "history" })
-                    .cloned()
-                    .unwrap_or_else(default_response);
-                state
-                    .calls
-                    .lock()
-                    .unwrap()
-                    .push((model, context, options.unwrap()));
-                if let Some(message) = response.get("throw") {
-                    return Err(DiagnosticErrorInfo::error(message.as_str().unwrap()));
-                }
-                let response: AssistantMessage = serde_json::from_value(response).unwrap();
-                let stream = AssistantMessageEventStream::new();
-                stream.end(Some(Arc::new(RwLock::new(response))));
-                Ok(stream)
-            }),
+            stream: Arc::new(UnexpectedRaw),
+            stream_simple: Arc::new(SummaryProvider(retained)),
         },
         Some(api),
     );
@@ -312,3 +288,62 @@ pub use lifetime::lifetime;
 /// Full-history generation and application.
 mod large;
 pub use large::large_history;
+
+/// Retained invocation owner for the controlled provider.
+struct SummaryProvider(std::sync::Weak<Adapter>);
+impl<E: maestro_models::ProviderExecution>
+    maestro_models::Invoke<
+        E,
+        maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+    > for SummaryProvider
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(
+        &self,
+        call: maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+    ) -> Self::Return {
+        let maestro_models::ProviderCall {
+            model,
+            context,
+            options,
+            ..
+        } = call;
+        let retained = &self.0;
+
+        let state = retained.upgrade().unwrap();
+        let prefix = serde_json::to_value(&context).unwrap()["messages"][0]["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("This is the PREFIX of a turn");
+        let response = state
+            .responses
+            .get(if prefix { "prefix" } else { "history" })
+            .cloned()
+            .unwrap_or_else(default_response);
+        state.calls.lock().unwrap().push((
+            model,
+            context,
+            crate::support::summary_options::observe(options.unwrap()),
+        ));
+        if let Some(message) = response.get("throw") {
+            return Err(DiagnosticErrorInfo::error(message.as_str().unwrap()));
+        }
+        let response: AssistantMessage = serde_json::from_value(response).unwrap();
+        let stream = AssistantMessageEventStream::new();
+        stream.end(Some(Arc::new(RwLock::new(response))));
+        Ok(stream)
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct UnexpectedRaw;
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for UnexpectedRaw
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        panic!("raw dispatch selected")
+    }
+}

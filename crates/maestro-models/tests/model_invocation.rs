@@ -82,8 +82,8 @@ mod tests {
     fn provider(api: &str, timestamp: f64) -> maestro_models::records::api_registry::ApiProvider {
         maestro_models::records::api_registry::ApiProvider {
             api: api.into(),
-            stream: Arc::new(move |_, _, _| Ok(final_stream(timestamp))),
-            stream_simple: Arc::new(move |_, _, _| Ok(final_stream(timestamp + 1.0))),
+            stream: Arc::new(TimestampProvider(timestamp)),
+            stream_simple: Arc::new(TimestampProvider(timestamp + 1.0)),
         }
     }
 
@@ -92,6 +92,20 @@ mod tests {
             ready(stream.result()).read().unwrap().timestamp.to_bits(),
             expected.to_bits()
         );
+    }
+
+    /// Invoke a retained default-family callback without changing its result observer.
+    fn assert_retained_timestamp<K: maestro_models::StreamOptionsFamily>(
+        callback: &maestro_models::StreamFunction<K>,
+        expected: f64,
+    ) -> crate::child_process::TestResult {
+        let stream = callback.call(
+            model("separate"),
+            context(),
+            maestro_models::ProviderInvocation::Threaded(None, None),
+        )?;
+        assert_timestamp(&stream, expected);
+        Ok(())
     }
 
     fn assert_cloud_selection() -> crate::child_process::TestResult {
@@ -134,20 +148,14 @@ mod tests {
         });
         reset_oauth_providers();
         let account = get_oauth_provider("anthropic").unwrap();
-        assert_timestamp(
-            &(retained.stream)(model("separate"), context(), None)?,
-            71.0,
-        );
+        assert_retained_timestamp(&retained.stream, 71.0)?;
         cleanup_session_resources(Some("before"))?;
         clear_api_providers();
         assert!(Arc::ptr_eq(
             &account,
             &get_oauth_provider("anthropic").unwrap()
         ));
-        assert_timestamp(
-            &(retained.stream_simple)(model("separate"), context(), None)?,
-            72.0,
-        );
+        assert_retained_timestamp(&retained.stream_simple, 72.0)?;
         cleanup_session_resources(Some("cleared"))?;
         maestro_models::reset_api_providers();
         assert!(Arc::ptr_eq(
@@ -161,38 +169,29 @@ mod tests {
             *visits.lock().unwrap(),
             [Some("before".into()), Some("cleared".into())]
         );
-        assert_timestamp(
-            &(retained.stream)(model("separate"), context(), None)?,
-            71.0,
-        );
+        assert_retained_timestamp(&retained.stream, 71.0)?;
         Ok(())
     }
 
     fn assert_retained_provider(retained: &maestro_models::records::api_registry::ApiProvider) {
-        assert_eq!(
-            ready(
-                (retained.stream)(model("2"), context(), None)
-                    .unwrap()
-                    .result()
-            )
-            .read()
-            .unwrap()
-            .timestamp
-            .to_bits(),
-            20.0_f64.to_bits()
-        );
-        assert_eq!(
-            ready(
-                (retained.stream_simple)(model("2"), context(), None)
-                    .unwrap()
-                    .result()
-            )
-            .read()
-            .unwrap()
-            .timestamp
-            .to_bits(),
-            21.0_f64.to_bits()
-        );
+        assert_retained_families(&retained.stream, 20.0);
+        assert_retained_families(&retained.stream_simple, 21.0);
+    }
+
+    /// Source removal retains both raw/simple handles in either invocation family.
+    fn assert_retained_families<K: maestro_models::StreamOptionsFamily>(
+        callback: &maestro_models::StreamFunction<K>,
+        expected: f64,
+    ) {
+        let spawn: maestro_models::ProviderSpawner<maestro_models::Local> =
+            std::rc::Rc::new(|_| panic!("synchronous retained callback must not submit"));
+        for invocation in [
+            maestro_models::ProviderInvocation::Local(None, spawn),
+            maestro_models::ProviderInvocation::Threaded(None, None),
+        ] {
+            let stream = callback.call(model("2"), context(), invocation).unwrap();
+            assert_timestamp(&stream, expected);
+        }
     }
 
     #[test]
@@ -254,37 +253,92 @@ mod tests {
         let _serial = crate::bundled::registry();
         clear_api_providers();
         let calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
-        let raw = Arc::clone(&calls);
-        let simple = Arc::clone(&calls);
         register_api_provider(
             ApiProvider {
                 api: "expected".into(),
-                stream: Arc::new(move |_, _, _| {
-                    raw.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                    Ok(final_stream(1.0))
-                }),
-                stream_simple: Arc::new(move |_, _, _| {
-                    simple.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                    Ok(final_stream(2.0))
-                }),
+                stream: Arc::new(CountProvider(Arc::clone(&calls), 1.0)),
+                stream_simple: Arc::new(CountProvider(Arc::clone(&calls), 2.0)),
             },
             None,
         );
         let provider = get_api_provider("expected").unwrap();
         for result in [
-            (provider.stream)(model("wrong"), context(), None),
-            (provider.stream_simple)(model("wrong"), context(), None),
+            provider.stream.call(
+                model("wrong"),
+                context(),
+                maestro_models::ProviderInvocation::Threaded(None, None),
+            ),
+            provider.stream_simple.call(
+                model("wrong"),
+                context(),
+                maestro_models::ProviderInvocation::Threaded(None, None),
+            ),
         ] {
             let failure = result.err().unwrap();
             assert_eq!(failure.message, "Mismatched api: wrong expected expected");
             assert_eq!(failure.name.as_deref(), Some("Error"));
         }
+        assert_local_wrong_models(&provider);
+        assert_threaded_wrong_models(&provider);
         assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 0);
         clear_api_providers();
     }
 
+    /// Guard rejection precedes local callback and task admission.
+    fn assert_local_wrong_models(provider: &maestro_models::ApiProvider) {
+        let spawn: maestro_models::ProviderSpawner<maestro_models::Local> =
+            std::rc::Rc::new(|_| panic!("mismatch must not submit local work"));
+        for failure in [
+            provider.stream.call(
+                model("wrong"),
+                context(),
+                maestro_models::ProviderInvocation::Local(None, spawn.clone()),
+            ),
+            provider.stream_simple.call(
+                model("wrong"),
+                context(),
+                maestro_models::ProviderInvocation::Local(None, spawn),
+            ),
+        ] {
+            assert_mismatch(failure);
+        }
+    }
+    /// Supplied threaded admission is inert when the model API is wrong.
+    fn assert_threaded_wrong_models(provider: &maestro_models::ApiProvider) {
+        let spawn: maestro_models::ProviderSpawner<maestro_models::Threaded> =
+            Arc::new(|_| panic!("mismatch must not submit threaded work"));
+        for failure in [
+            provider.stream.call(
+                model("wrong"),
+                context(),
+                maestro_models::ProviderInvocation::Threaded(None, Some(spawn.clone())),
+            ),
+            provider.stream_simple.call(
+                model("wrong"),
+                context(),
+                maestro_models::ProviderInvocation::Threaded(None, Some(spawn)),
+            ),
+        ] {
+            assert_mismatch(failure);
+        }
+    }
+    /// Check exact checked-callback failure without observing a stream.
+    fn assert_mismatch(
+        result: Result<maestro_models::AssistantMessageEventStream, DiagnosticErrorInfo>,
+    ) {
+        let failure = result.err().unwrap();
+        assert_eq!(failure.message, "Mismatched api: wrong expected expected");
+        assert_eq!(failure.name.as_deref(), Some("Error"));
+    }
+
     fn assert_missing_api() {
         use maestro_models::records::stream::*;
+        assert_missing_api_for::<maestro_models::Local>(std::rc::Rc::new(|_| {
+            panic!("missing API must not submit")
+        }));
+        assert_missing_api_for::<maestro_models::Threaded>(Arc::new(|_| {
+            panic!("missing API must not submit")
+        }));
         for failure in [
             stream(model("missing"), context(), None).err().unwrap(),
             stream_simple(model("missing"), context(), None)
@@ -292,6 +346,31 @@ mod tests {
                 .unwrap(),
             ready(complete(model("missing"), context(), None)).unwrap_err(),
             ready(complete_simple(model("missing"), context(), None)).unwrap_err(),
+        ] {
+            assert_eq!(
+                failure.message,
+                "No API provider registered for api: missing"
+            );
+            assert_eq!(failure.name.as_deref(), Some("Error"));
+        }
+    }
+
+    /// All mode-aware lookup failures retain their ordinary synchronous/eager boundary.
+    fn assert_missing_api_for<E: maestro_models::ProviderExecution>(
+        spawn: maestro_models::ProviderSpawner<E>,
+    ) {
+        use maestro_models::{complete_for, complete_simple_for, stream_for, stream_simple_for};
+        let raw = complete_for::<E>(model("missing"), context(), None, spawn.clone());
+        let simple = complete_simple_for::<E>(model("missing"), context(), None, spawn.clone());
+        for failure in [
+            stream_for::<E>(model("missing"), context(), None, spawn.clone())
+                .err()
+                .unwrap(),
+            stream_simple_for::<E>(model("missing"), context(), None, spawn)
+                .err()
+                .unwrap(),
+            ready(raw).unwrap_err(),
+            ready(simple).unwrap_err(),
         ] {
             assert_eq!(
                 failure.message,
@@ -324,14 +403,8 @@ mod tests {
         register_api_provider(
             ApiProvider {
                 api: "failure".into(),
-                stream: Arc::new(move |_, _, _| {
-                    raw_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                    Err(raw.clone())
-                }),
-                stream_simple: Arc::new(move |_, _, _| {
-                    simple_calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                    Err(simple.clone())
-                }),
+                stream: Arc::new(FailedProvider(raw, raw_calls)),
+                stream_simple: Arc::new(FailedProvider(simple, simple_calls)),
             },
             None,
         );
@@ -351,7 +424,45 @@ mod tests {
         assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 4);
         assert_eq!(ready(raw).unwrap_err(), failure);
         assert_eq!(ready(simple).unwrap_err(), failure);
+        assert_setup_failure_for::<maestro_models::Local>(
+            std::rc::Rc::new(|_| panic!("setup failure must not submit")),
+            &failure,
+            &calls,
+        );
+        assert_setup_failure_for::<maestro_models::Threaded>(
+            Arc::new(|_| panic!("setup failure must not submit")),
+            &failure,
+            &calls,
+        );
         clear_api_providers();
+        assert_missing_api();
+    }
+
+    /// Setup errors preserve the original diagnostic and call immediately in both families.
+    fn assert_setup_failure_for<E: maestro_models::ProviderExecution>(
+        spawn: maestro_models::ProviderSpawner<E>,
+        failure: &DiagnosticErrorInfo,
+        calls: &std::sync::atomic::AtomicUsize,
+    ) {
+        use maestro_models::{complete_for, complete_simple_for, stream_for, stream_simple_for};
+        let before = calls.load(std::sync::atomic::Ordering::SeqCst);
+        assert_eq!(
+            &stream_for::<E>(model("failure"), context(), None, spawn.clone())
+                .err()
+                .unwrap(),
+            failure
+        );
+        assert_eq!(
+            &stream_simple_for::<E>(model("failure"), context(), None, spawn.clone())
+                .err()
+                .unwrap(),
+            failure
+        );
+        let raw = complete_for::<E>(model("failure"), context(), None, spawn.clone());
+        let simple = complete_simple_for::<E>(model("failure"), context(), None, spawn);
+        assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), before + 4);
+        assert_eq!(&ready(raw).unwrap_err(), failure);
+        assert_eq!(&ready(simple).unwrap_err(), failure);
     }
 
     fn common_options() -> maestro_models::records::types::StreamOptions {
@@ -381,8 +492,8 @@ mod tests {
             })),
         }
     }
-    fn check_common(
-        actual: &maestro_models::records::types::StreamOptions,
+    fn check_common<E: maestro_models::ProviderExecution>(
+        actual: &maestro_models::records::types::StreamOptions<E>,
         expected: &maestro_models::records::types::StreamOptions,
     ) {
         assert_eq!(actual.temperature, expected.temperature);
@@ -396,19 +507,19 @@ mod tests {
         assert_eq!(actual.max_retries, expected.max_retries);
         assert_eq!(actual.max_retry_delay_ms, expected.max_retry_delay_ms);
         assert_eq!(actual.metadata, expected.metadata);
-        assert!(Arc::ptr_eq(
-            actual.on_payload.as_ref().unwrap(),
-            expected.on_payload.as_ref().unwrap()
+        assert!(std::ptr::addr_eq(
+            &raw const **actual.on_payload.as_ref().unwrap(),
+            &raw const **expected.on_payload.as_ref().unwrap()
         ));
-        assert!(Arc::ptr_eq(
-            actual.on_response.as_ref().unwrap(),
-            expected.on_response.as_ref().unwrap()
+        assert!(std::ptr::addr_eq(
+            &raw const **actual.on_response.as_ref().unwrap(),
+            &raw const **expected.on_response.as_ref().unwrap()
         ));
         actual.signal.as_ref().unwrap().abort();
         assert!(expected.signal.as_ref().unwrap().is_aborted());
     }
-    fn check_fetch(
-        actual: &maestro_models::records::types::StreamOptions,
+    fn check_fetch<E: maestro_models::ProviderExecution>(
+        actual: &maestro_models::records::types::StreamOptions<E>,
         expected: &maestro_models::records::types::StreamOptions,
     ) {
         assert!(Arc::ptr_eq(
@@ -422,50 +533,17 @@ mod tests {
         count: &Arc<std::sync::atomic::AtomicUsize>,
     ) -> maestro_models::records::api_registry::ApiProvider {
         use maestro_models::records::api_registry::ApiProvider;
-        use maestro_models::records::types::*;
-        let output = output.clone();
-        let raw_expected = expected.clone();
-        let simple_expected = expected.clone();
-        let raw = Arc::clone(count);
-        let simple = Arc::clone(count);
-        let output_simple = output.clone();
         ApiProvider {
             api: "custom".into(),
-            stream: Arc::new(move |descriptor, conversation, options| {
-                raw.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                assert_eq!(descriptor, model("custom"));
-                assert_eq!(conversation, context());
-                let options = options.unwrap();
-                check_common(&options.common, &raw_expected);
-                check_fetch(&options.common, &raw_expected);
-                assert_eq!(
-                    options.extra,
-                    serde_json::json!({"providerSpecific":"present","maxTokens":999})
-                        .as_object()
-                        .unwrap()
-                        .clone()
-                );
-                Ok(output.clone())
+            stream: Arc::new(CompleteRaw {
+                output: output.clone(),
+                expected: expected.clone(),
+                count: Arc::clone(count),
             }),
-            stream_simple: Arc::new(move |descriptor, conversation, options| {
-                simple.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                assert_eq!(descriptor, model("custom"));
-                assert_eq!(conversation, context());
-                let options = options.unwrap();
-                check_common(&options.common, &simple_expected);
-                check_fetch(&options.common, &simple_expected);
-                assert_eq!(options.tool_choice, Some(ToolChoice::Required));
-                assert_eq!(options.reasoning, Some(ThinkingLevel::Xhigh));
-                assert_eq!(
-                    options.thinking_budgets,
-                    Some(ThinkingBudgets {
-                        minimal: Some(1.0),
-                        low: Some(2.0),
-                        medium: Some(3.0),
-                        high: Some(4.0)
-                    })
-                );
-                Ok(output_simple.clone())
+            stream_simple: Arc::new(CompleteSimple {
+                output: output.clone(),
+                expected: expected.clone(),
+                count: Arc::clone(count),
             }),
         }
     }
@@ -579,35 +657,10 @@ mod tests {
 
     fn hook_provider() -> maestro_models::records::api_registry::ApiProvider {
         use maestro_models::records::api_registry::ApiProvider;
-        use maestro_models::records::types::*;
         ApiProvider {
             api: "hooks".into(),
-            stream: Arc::new(|descriptor, conversation, options| {
-                let options = options.unwrap().common;
-                let mode = conversation.system_prompt.unwrap();
-                let payload = serde_json::json!({"mode":mode,"stamp":1});
-                let descriptor = Arc::new(descriptor);
-                let submitted = ready(options.on_payload.unwrap()(
-                    PayloadHookInput {
-                        payload,
-                        signal: None,
-                    },
-                    Arc::clone(&descriptor),
-                ))?;
-                ready(options.on_response.unwrap()(
-                    ProviderResponse {
-                        status: if mode == "response_error" {
-                            500.0
-                        } else {
-                            200.0
-                        },
-                        headers: [("x".into(), "response".into())].into(),
-                    },
-                    descriptor,
-                ))?;
-                Ok(final_stream(submitted.payload["stamp"].as_f64().unwrap()))
-            }),
-            stream_simple: Arc::new(|_, _, _| Ok(final_stream(0.0))),
+            stream: Arc::new(HookProvider),
+            stream_simple: Arc::new(TimestampProvider(0.0)),
         }
     }
 
@@ -673,13 +726,8 @@ mod tests {
         let probe = ReenterDrop(Arc::clone(drops));
         ApiProvider {
             api: api.into(),
-            stream: Arc::new(move |_, _, _| {
-                let _probe = &probe;
-                assert!(get_api_provider("reentrant").is_some());
-                register_api_provider(provider("added", 5.0), None);
-                Ok(final_stream(1.0))
-            }),
-            stream_simple: Arc::new(|_, _, _| Ok(final_stream(2.0))),
+            stream: Arc::new(ReentrantProvider { _probe: probe }),
+            stream_simple: Arc::new(TimestampProvider(2.0)),
         }
     }
     #[test]
@@ -721,5 +769,211 @@ mod tests {
         removal.remove();
         drop(removal);
         assert_eq!(drops.load(std::sync::atomic::Ordering::SeqCst), 4);
+    }
+
+    /// Retained invocation owner for the controlled provider.
+    struct TimestampProvider(f64);
+    impl<E: maestro_models::ProviderExecution, O>
+        maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for TimestampProvider
+    {
+        type Return = Result<
+            maestro_models::AssistantMessageEventStream,
+            maestro_models::DiagnosticErrorInfo,
+        >;
+        fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+            Ok(final_stream(self.0))
+        }
+    }
+
+    /// Retained invocation owner for the controlled provider.
+    struct CountProvider(Arc<std::sync::atomic::AtomicUsize>, f64);
+    impl<E: maestro_models::ProviderExecution, O>
+        maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for CountProvider
+    {
+        type Return = Result<
+            maestro_models::AssistantMessageEventStream,
+            maestro_models::DiagnosticErrorInfo,
+        >;
+        fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+            self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Ok(final_stream(self.1))
+        }
+    }
+
+    /// Retained invocation owner for the controlled provider.
+    struct FailedProvider(DiagnosticErrorInfo, Arc<std::sync::atomic::AtomicUsize>);
+    impl<E: maestro_models::ProviderExecution, O>
+        maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for FailedProvider
+    {
+        type Return = Result<
+            maestro_models::AssistantMessageEventStream,
+            maestro_models::DiagnosticErrorInfo,
+        >;
+        fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+            self.1.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Err(self.0.clone())
+        }
+    }
+
+    /// Retained invocation owner for the controlled provider.
+    struct CompleteRaw {
+        output: maestro_models::AssistantMessageEventStream,
+        expected: maestro_models::StreamOptions,
+        count: Arc<std::sync::atomic::AtomicUsize>,
+    }
+    impl<E: maestro_models::ProviderExecution>
+        maestro_models::Invoke<
+            E,
+            maestro_models::ProviderCall<E, maestro_models::ProviderStreamOptions<E>>,
+        > for CompleteRaw
+    {
+        type Return = Result<
+            maestro_models::AssistantMessageEventStream,
+            maestro_models::DiagnosticErrorInfo,
+        >;
+        fn invoke(
+            &self,
+            call: maestro_models::ProviderCall<E, maestro_models::ProviderStreamOptions<E>>,
+        ) -> Self::Return {
+            let maestro_models::ProviderCall {
+                model: descriptor,
+                context: conversation,
+                options,
+                ..
+            } = call;
+
+            self.count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            assert_eq!(descriptor, model("custom"));
+            assert_eq!(conversation, context());
+            let options = options.unwrap();
+            check_common(&options.common, &self.expected);
+            check_fetch(&options.common, &self.expected);
+            assert_eq!(
+                options.extra,
+                serde_json::json!({"providerSpecific":"present","maxTokens":999})
+                    .as_object()
+                    .unwrap()
+                    .clone()
+            );
+            Ok(self.output.clone())
+        }
+    }
+
+    /// Retained invocation owner for the controlled provider.
+    struct CompleteSimple {
+        output: maestro_models::AssistantMessageEventStream,
+        expected: maestro_models::StreamOptions,
+        count: Arc<std::sync::atomic::AtomicUsize>,
+    }
+    impl<E: maestro_models::ProviderExecution>
+        maestro_models::Invoke<
+            E,
+            maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+        > for CompleteSimple
+    {
+        type Return = Result<
+            maestro_models::AssistantMessageEventStream,
+            maestro_models::DiagnosticErrorInfo,
+        >;
+        fn invoke(
+            &self,
+            call: maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+        ) -> Self::Return {
+            use maestro_models::*;
+            let maestro_models::ProviderCall {
+                model: descriptor,
+                context: conversation,
+                options,
+                ..
+            } = call;
+
+            self.count.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            assert_eq!(descriptor, model("custom"));
+            assert_eq!(conversation, context());
+            let options = options.unwrap();
+            check_common(&options.common, &self.expected);
+            check_fetch(&options.common, &self.expected);
+            assert_eq!(options.tool_choice, Some(ToolChoice::Required));
+            assert_eq!(options.reasoning, Some(ThinkingLevel::Xhigh));
+            assert_eq!(
+                options.thinking_budgets,
+                Some(ThinkingBudgets {
+                    minimal: Some(1.0),
+                    low: Some(2.0),
+                    medium: Some(3.0),
+                    high: Some(4.0)
+                })
+            );
+            Ok(self.output.clone())
+        }
+    }
+
+    /// Retained invocation owner for the controlled provider.
+    struct HookProvider;
+    impl<E: maestro_models::ProviderExecution>
+        maestro_models::Invoke<
+            E,
+            maestro_models::ProviderCall<E, maestro_models::ProviderStreamOptions<E>>,
+        > for HookProvider
+    {
+        type Return = Result<
+            maestro_models::AssistantMessageEventStream,
+            maestro_models::DiagnosticErrorInfo,
+        >;
+        fn invoke(
+            &self,
+            call: maestro_models::ProviderCall<E, maestro_models::ProviderStreamOptions<E>>,
+        ) -> Self::Return {
+            use maestro_models::*;
+            let maestro_models::ProviderCall {
+                model: descriptor,
+                context: conversation,
+                options,
+                ..
+            } = call;
+
+            let options = options.unwrap().common;
+            let mode = conversation.system_prompt.unwrap();
+            let payload = serde_json::json!({"mode":mode,"stamp":1});
+            let descriptor = Arc::new(descriptor);
+            let submitted = ready(options.on_payload.unwrap()(
+                PayloadHookInput {
+                    payload,
+                    signal: None,
+                },
+                Arc::clone(&descriptor),
+            ))?;
+            ready(options.on_response.unwrap()(
+                ProviderResponse {
+                    status: if mode == "response_error" {
+                        500.0
+                    } else {
+                        200.0
+                    },
+                    headers: [("x".into(), "response".into())].into(),
+                },
+                descriptor,
+            ))?;
+            Ok(final_stream(submitted.payload["stamp"].as_f64().unwrap()))
+        }
+    }
+
+    /// Retained invocation owner for the controlled provider.
+    struct ReentrantProvider {
+        _probe: ReenterDrop,
+    }
+    impl<E: maestro_models::ProviderExecution, O>
+        maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for ReentrantProvider
+    {
+        type Return = Result<
+            maestro_models::AssistantMessageEventStream,
+            maestro_models::DiagnosticErrorInfo,
+        >;
+        fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+            use maestro_models::records::api_registry::*;
+            assert!(get_api_provider("reentrant").is_some());
+            register_api_provider(provider("added", 5.0), None);
+            Ok(final_stream(1.0))
+        }
     }
 }

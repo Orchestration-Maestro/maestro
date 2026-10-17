@@ -93,10 +93,10 @@ fn serialize_empty_object<T, S: Serializer>(_value: &T, serializer: S) -> Result
 ///
 /// A tool mode is emitted only with declared tools. An already-aborted signal fails
 /// with `Request aborted`; an active one is retained.
-pub(crate) fn build_parameters(
+pub(crate) fn build_parameters<E: crate::ProviderExecution>(
     model: &Model,
     context: &Context,
-    common: &StreamOptions,
+    common: &StreamOptions<E>,
     tool_choice: Option<FunctionCallingConfigMode>,
     thinking_config: Option<ThinkingConfig>,
 ) -> Result<GenerateContentParameters, DiagnosticErrorInfo> {

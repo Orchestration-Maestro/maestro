@@ -1,13 +1,13 @@
 #![doc = include_str!("../../../../../../docs/models/reasoning-conversations.md")]
 
-use crate::StreamOptions;
+use crate::{ProviderExecution, StreamOptions, Threaded};
 use serde::{Deserialize, Serialize};
 
 /// Raw settings for reasoning conversation requests.
 #[derive(Clone, Default)]
-pub struct MistralOptions {
+pub struct MistralOptions<E: ProviderExecution = Threaded> {
     /// Shared request settings.
-    pub common: StreamOptions,
+    pub common: StreamOptions<E>,
     /// Requested tool selection.
     pub tool_choice: Option<MistralToolChoice>,
     /// Requested prompt mode.
@@ -80,7 +80,10 @@ mod wire;
 mod request;
 
 mod stream;
-pub use stream::{stream_mistral, stream_simple_mistral};
+pub(crate) use stream::{dispatch, dispatch_simple};
+pub use stream::{
+    stream_mistral, stream_mistral_for, stream_simple_mistral, stream_simple_mistral_for,
+};
 
 mod chunk;
 mod events;

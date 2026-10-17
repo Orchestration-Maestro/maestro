@@ -6,7 +6,7 @@ pub(super) mod tool_ids;
 pub(super) mod transport;
 
 use super::MistralOptions;
-use crate::{Context, DiagnosticErrorInfo, Model};
+use crate::{Context, DiagnosticErrorInfo, Model, ProviderExecution};
 use serde::Serialize;
 use serde_json::Value;
 
@@ -73,10 +73,10 @@ struct ToolFunction<'a> {
 }
 
 /// Project history and serialize selected raw settings for the hook.
-pub(super) fn build_chat_payload(
+pub(super) fn build_chat_payload<E: ProviderExecution>(
     model: &Model,
     context: &Context,
-    options: &MistralOptions,
+    options: &MistralOptions<E>,
     mapped_effort: Option<&str>,
 ) -> Result<Value, DiagnosticErrorInfo> {
     for value in [options.common.temperature, options.common.max_tokens]
@@ -125,12 +125,12 @@ pub(super) fn build_chat_payload(
 }
 
 /// Select the effective simple controls without closing model mapping strings.
-pub(super) fn simple_options(
+pub(super) fn simple_options<E: ProviderExecution>(
     model: &Model,
-    options: &crate::SimpleStreamOptions,
-) -> (MistralOptions, Option<String>) {
+    options: &crate::SimpleStreamOptions<E>,
+) -> (MistralOptions<E>, Option<String>) {
     let mut raw = MistralOptions {
-        common: crate::build_base_options(model, Some(options), None),
+        common: crate::build_base_options_for(model, Some(options), None),
         ..Default::default()
     };
     let Some(level) = options.reasoning.map(crate::ModelThinkingLevel::from) else {
@@ -159,9 +159,9 @@ pub(super) fn simple_options(
 }
 
 /// Merge exact-case authored layers before the HTTP normalization phase.
-pub(super) fn authored_headers(
+pub(super) fn authored_headers<E: ProviderExecution>(
     model: &Model,
-    options: &crate::StreamOptions,
+    options: &crate::StreamOptions<E>,
 ) -> indexmap::IndexMap<String, String> {
     let mut headers = model.headers.clone().unwrap_or_default();
     if let Some(layer) = &options.headers {
@@ -188,10 +188,10 @@ pub(super) struct Prepared {
 }
 
 /// Resolve credentials and URL before the hook, then encode its replacement.
-pub(super) async fn prepare(
+pub(super) async fn prepare<E: ProviderExecution>(
     model: std::sync::Arc<Model>,
     context: &Context,
-    options: &MistralOptions,
+    options: &MistralOptions<E>,
     mapped_effort: Option<&str>,
 ) -> Result<Prepared, crate::providers::http::RequestFailure> {
     use crate::providers::http::RequestFailure;

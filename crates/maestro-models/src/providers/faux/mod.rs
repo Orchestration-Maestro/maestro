@@ -1,11 +1,13 @@
 #![doc = include_str!("../../../../../docs/models/faux.md")]
 /// Owned content, message and model constructors.
 mod builders;
+/// Family-correct producer admission and scripted execution.
+mod producer;
 use crate::{
-    ApiProvider, AssistantContent, AssistantMessage, AssistantMessageEventStream, BoxFuture,
-    Context, DiagnosticErrorInfo, Model, ModelCost, ModelInput, ProviderResponse,
-    ProviderStreamOptions, SimpleStreamOptions, StopReason, StreamOptions, TextContent,
-    ThinkingContent, ToolCall, register_api_provider, unregister_api_providers,
+    ApiProvider, AssistantContent, AssistantMessage, Context, DiagnosticErrorInfo, Execution,
+    Invoke, Local, Model, ModelCost, ModelInput, ProviderExecution, RegistryCapture, StopReason,
+    StreamOptionsInput, TextContent, ThinkingContent, Threaded, ToolCall, register_api_provider,
+    unregister_api_providers,
 };
 pub use builders::{faux_assistant_message, faux_text, faux_thinking, faux_tool_call};
 
@@ -132,22 +134,18 @@ pub struct RegisterFauxProviderOptions {
     /// Chunk range overrides.
     pub token_size: Option<FauxTokenSize>,
 }
-/// Complete invocation options received by a response factory.
-#[derive(Clone)]
-pub enum FauxResponseOptions {
-    /// Raw invocation options, including extra fields.
-    Raw(ProviderStreamOptions),
-    /// Simple invocation options, including reasoning budgets.
-    Simple(SimpleStreamOptions),
-}
-impl FauxResponseOptions {
-    /// Borrow common settings without discarding variant-specific options.
-    fn common(&self) -> &StreamOptions {
-        match self {
-            Self::Raw(value) => &value.common,
-            Self::Simple(value) => &value.common,
-        }
-    }
+/// Complete original invocation options received by a response factory.
+pub type FauxResponseOptions<E = Threaded> = StreamOptionsInput<E>;
+/// Original invocation values retained by an asynchronous response factory.
+pub struct FauxResponseInput<E: ProviderExecution> {
+    /// Conversation supplied to this request.
+    pub context: Context,
+    /// Absent or supplied original raw/simple options.
+    pub options: Option<FauxResponseOptions<E>>,
+    /// Live registration state.
+    pub state: FauxProviderState,
+    /// Selected model descriptor.
+    pub model: Model,
 }
 /// Live registration call count shared with factories.
 #[derive(Clone)]
@@ -159,28 +157,45 @@ impl FauxProviderState {
         self.0.load(Ordering::Acquire)
     }
 }
-/// Native asynchronous response factory.
-#[cfg(not(target_arch = "wasm32"))]
-pub type FauxResponseFactory = Arc<
-    dyn Fn(
-            Context,
-            Option<FauxResponseOptions>,
-            FauxProviderState,
-            Model,
-        ) -> BoxFuture<Result<AssistantMessage, DiagnosticErrorInfo>>
-        + Send
-        + Sync,
->;
-/// Browser-local asynchronous response factory.
-#[cfg(target_arch = "wasm32")]
-pub type FauxResponseFactory = Arc<
-    dyn Fn(
-        Context,
-        Option<FauxResponseOptions>,
-        FauxProviderState,
-        Model,
-    ) -> BoxFuture<Result<AssistantMessage, DiagnosticErrorInfo>>,
->;
+/// Retained asynchronous factory callable with either request family.
+pub trait FauxResponseCallback:
+    Invoke<
+        Local,
+        FauxResponseInput<Local>,
+        Return = <Local as Execution>::Future<
+            'static,
+            Result<AssistantMessage, DiagnosticErrorInfo>,
+        >,
+    > + Invoke<
+        Threaded,
+        FauxResponseInput<Threaded>,
+        Return = <Threaded as Execution>::Future<
+            'static,
+            Result<AssistantMessage, DiagnosticErrorInfo>,
+        >,
+    > + RegistryCapture
+{
+}
+impl<T> FauxResponseCallback for T where
+    T: Invoke<
+            Local,
+            FauxResponseInput<Local>,
+            Return = <Local as Execution>::Future<
+                'static,
+                Result<AssistantMessage, DiagnosticErrorInfo>,
+            >,
+        > + Invoke<
+            Threaded,
+            FauxResponseInput<Threaded>,
+            Return = <Threaded as Execution>::Future<
+                'static,
+                Result<AssistantMessage, DiagnosticErrorInfo>,
+            >,
+        > + RegistryCapture
+{
+}
+/// One retained factory whose future follows the invocation family.
+pub type FauxResponseFactory = crate::SharedHandle<dyn FauxResponseCallback>;
 /// One queued response or asynchronous factory.
 #[derive(Clone)]
 pub enum FauxResponseStep {
@@ -259,152 +274,6 @@ impl FauxProviderRegistration {
         unregister_api_providers(&self.source_id);
     }
 }
-impl Registration {
-    /// Consume a queued response synchronously and prepare its independent producer.
-    fn invocation(
-        self: &crate::SharedHandle<Self>,
-        model: Model,
-        context: Context,
-        options: Option<FauxResponseOptions>,
-    ) -> (AssistantMessageEventStream, crate::BoxFuture<()>) {
-        let step = lock(&self.pending).responses.pop_front();
-        self.state.0.fetch_add(1, Ordering::AcqRel);
-        let outer = AssistantMessageEventStream::new();
-        let producer = outer.clone();
-        let registration = crate::SharedHandle::clone(self);
-        let model = Arc::new(model);
-        let future = Box::pin(async move {
-            if let Err(error) = registration
-                .produce(producer.clone(), &model, (context, options, step))
-                .await
-            {
-                streaming::terminal(&producer, registration.error(&model, error.message));
-            }
-        });
-        (outer, future)
-    }
-    /// Launch the native producer while preserving setup failure.
-    #[cfg(not(target_arch = "wasm32"))]
-    fn invoke(
-        self: &crate::SharedHandle<Self>,
-        model: Model,
-        context: Context,
-        options: Option<FauxResponseOptions>,
-    ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-        let (outer, future) = self.invocation(model, context, options);
-        streaming::spawn(future)?;
-        Ok(outer)
-    }
-    /// Launch the browser-local producer.
-    #[cfg(target_arch = "wasm32")]
-    fn invoke(
-        self: &crate::SharedHandle<Self>,
-        model: Model,
-        context: Context,
-        options: Option<FauxResponseOptions>,
-    ) -> AssistantMessageEventStream {
-        let (outer, future) = self.invocation(model, context, options);
-        streaming::spawn(future);
-        outer
-    }
-    /// Retain raw and simple callbacks over this registration.
-    fn provider(self: &crate::SharedHandle<Self>) -> ApiProvider {
-        let raw = crate::SharedHandle::clone(self);
-        let simple = crate::SharedHandle::clone(self);
-        ApiProvider {
-            api: self.api.clone(),
-            stream: crate::SharedHandle::new(move |model, context, options| {
-                #[cfg(not(target_arch = "wasm32"))]
-                {
-                    raw.invoke(model, context, options.map(FauxResponseOptions::Raw))
-                }
-                #[cfg(target_arch = "wasm32")]
-                {
-                    Ok(raw.invoke(model, context, options.map(FauxResponseOptions::Raw)))
-                }
-            }),
-            stream_simple: crate::SharedHandle::new(move |model, context, options| {
-                #[cfg(not(target_arch = "wasm32"))]
-                {
-                    simple.invoke(model, context, options.map(FauxResponseOptions::Simple))
-                }
-                #[cfg(target_arch = "wasm32")]
-                {
-                    Ok(simple.invoke(model, context, options.map(FauxResponseOptions::Simple)))
-                }
-            }),
-        }
-    }
-    /// Construct a zero-usage failure with invocation identity.
-    fn error(&self, model: &Model, text: String) -> AssistantMessage {
-        let mut message = faux_assistant_message(
-            Vec::new(),
-            FauxAssistantMessageOptions {
-                stop_reason: Some(StopReason::Error),
-                error_message: Some(text),
-                ..Default::default()
-            },
-        );
-        message.api.clone_from(&self.api);
-        message.provider.clone_from(&self.provider);
-        message.model.clone_from(&model.id);
-        message
-    }
-    /// Await response metadata, resolve the script and publish its events.
-    async fn produce(
-        &self,
-        outer: AssistantMessageEventStream,
-        model: &Arc<Model>,
-        invocation: (
-            Context,
-            Option<FauxResponseOptions>,
-            Option<FauxResponseStep>,
-        ),
-    ) -> Result<(), DiagnosticErrorInfo> {
-        let (context, options, step) = invocation;
-        let common = options.as_ref().map(FauxResponseOptions::common);
-        if let Some(hook) = common.and_then(|options| options.on_response.as_ref()) {
-            hook(
-                ProviderResponse {
-                    status: 200.0,
-                    headers: std::collections::BTreeMap::default(),
-                },
-                Arc::clone(model),
-            )
-            .await?;
-        }
-        let exhausted = step.is_none();
-        let mut message = match step {
-            Some(FauxResponseStep::Message(message)) => *message,
-            Some(FauxResponseStep::Factory(factory)) => {
-                factory(
-                    context.clone(),
-                    options.clone(),
-                    self.state.clone(),
-                    Model::clone(model),
-                )
-                .await?
-            }
-            None => self.error(model, "No more faux responses queued".into()),
-        };
-        message.api.clone_from(&self.api);
-        message.provider.clone_from(&self.provider);
-        message.model.clone_from(&model.id);
-        usage::estimate(&mut message, &context, common, &self.pending)?;
-        if exhausted {
-            streaming::terminal(&outer, message);
-        } else {
-            streaming::deliver(
-                &outer,
-                message,
-                &self.pacing,
-                common.and_then(|value| value.signal.as_ref()),
-            )
-            .await?;
-        }
-        Ok(())
-    }
-}
 /// Register an opt-in provider with an initially empty response queue.
 #[must_use]
 pub fn register_faux_provider(options: RegisterFauxProviderOptions) -> FauxProviderRegistration {
@@ -439,12 +308,39 @@ pub fn register_faux_provider(options: RegisterFauxProviderOptions) -> FauxProvi
             options.tokens_per_second,
         ),
     });
-    register_api_provider(registration.provider(), Some(source_id.clone()));
+    let callback =
+        crate::SharedHandle::new(FauxProvider(crate::SharedHandle::clone(&registration)));
+    register_api_provider(
+        ApiProvider {
+            api: api.clone(),
+            stream: callback.clone(),
+            stream_simple: callback,
+        },
+        Some(source_id.clone()),
+    );
     FauxProviderRegistration {
         api,
         models,
         state,
         registration,
         source_id,
+    }
+}
+
+/// Retained FIFO owner shared by raw and simple invocations in either family.
+struct FauxProvider(crate::SharedHandle<Registration>);
+impl<E, O> Invoke<E, crate::ProviderCall<E, O>> for FauxProvider
+where
+    E: producer::Producer,
+    O: Into<FauxResponseOptions<E>>,
+{
+    type Return = Result<crate::AssistantMessageEventStream, DiagnosticErrorInfo>;
+    fn invoke(&self, call: crate::ProviderCall<E, O>) -> Self::Return {
+        self.0.invoke::<E>(
+            call.model,
+            call.context,
+            call.options.map(Into::into),
+            call.submit,
+        )
     }
 }

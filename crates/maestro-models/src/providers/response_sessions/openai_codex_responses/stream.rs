@@ -7,11 +7,13 @@ use super::{
 };
 use crate::options::resolve_api_key;
 use crate::providers::assistant_output::conclude;
-use crate::providers::assistant_output::{fail, initial_message, start_producer};
+use crate::providers::assistant_output::{fail, initial_message, start_producer_for};
 use crate::providers::http::RequestFailure;
 use crate::{
-    AssistantMessageEventStream, Context, DiagnosticErrorInfo, Model, ModelThinkingLevel,
-    SharedAssistantMessage, SimpleStreamOptions, build_base_options, clamp_thinking_level,
+    AssistantMessageEventStream, Context, DiagnosticErrorInfo, Local, Model, ModelThinkingLevel,
+    ProviderExecution, ProviderInvocation, ProviderSpawner, SharedAssistantMessage,
+    SimpleStreamOptions, StreamOptionsFamily, Threaded, build_base_options_for,
+    clamp_thinking_level,
 };
 use std::{
     borrow::Cow,
@@ -25,6 +27,78 @@ pub fn stream_openai_codex_responses(
     context: Context,
     options: Option<OpenAICodexResponsesOptions>,
 ) -> AssistantMessageEventStream {
+    select(model, context, ProviderInvocation::Threaded(options, None))
+}
+
+/// Start response sessions with caller-owned admission and hook captures.
+#[must_use]
+pub fn stream_openai_codex_responses_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<OpenAICodexResponsesOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> AssistantMessageEventStream {
+    select(model, context, E::submission(options, E::provided(submit)))
+}
+
+impl StreamOptionsFamily for OpenAICodexResponsesOptions {
+    type Options<E: ProviderExecution> = OpenAICodexResponsesOptions<E>;
+}
+
+/// Select concrete future bounds before entering one shared session producer.
+pub(crate) fn select(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<OpenAICodexResponsesOptions>,
+) -> AssistantMessageEventStream {
+    match invocation {
+        ProviderInvocation::Local(options, submit) => {
+            start::<Local>(model, context, options, submit)
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            start::<Threaded>(model, context, options, submit)
+        }
+    }
+}
+
+/// Future erasure beside the concrete session worker.
+trait Producer: ProviderExecution {
+    /// Box one shared worker under this family's auto-trait bounds.
+    fn drive(
+        model: Arc<Model>,
+        context: Context,
+        options: OpenAICodexResponsesOptions<Self>,
+        events: AssistantMessageEventStream,
+        output: SharedAssistantMessage,
+    ) -> Self::Future<'static, ()>;
+}
+
+/// Only concrete future boxing differs between families.
+macro_rules! producer {
+    ($mode:ty) => {
+        impl Producer for $mode {
+            fn drive(
+                model: Arc<Model>,
+                context: Context,
+                options: OpenAICodexResponsesOptions<Self>,
+                events: AssistantMessageEventStream,
+                output: SharedAssistantMessage,
+            ) -> Self::Future<'static, ()> {
+                Box::pin(run::<Self>(model, context, options, events, output))
+            }
+        }
+    };
+}
+producer!(Local);
+producer!(Threaded);
+
+/// Retain request setup and cleanup registration at call time.
+fn start<E: Producer>(
+    model: Model,
+    context: Context,
+    options: Option<OpenAICodexResponsesOptions<E>>,
+    submit: E::Submission,
+) -> AssistantMessageEventStream {
     let stream = AssistantMessageEventStream::new();
     let mut message = initial_message(&model);
     "openai-codex-responses".clone_into(&mut message.api);
@@ -36,14 +110,14 @@ pub fn stream_openai_codex_responses(
         .get_or_insert(crate::Transport::Auto);
     register_cleanup();
     let signal = options.common.signal.clone();
-    let task = run(
+    let task = E::drive(
         Arc::new(model),
         context,
         options,
         stream.clone(),
         Arc::clone(&output),
     );
-    start_producer(&stream, &output, signal.as_ref(), Box::pin(task));
+    start_producer_for::<E>(&stream, &output, signal.as_ref(), task, submit);
     stream
 }
 
@@ -56,6 +130,45 @@ pub fn stream_simple_openai_codex_responses(
     context: Context,
     options: Option<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    simple::<Threaded>(model, context, options, None)
+}
+
+/// Resolve simple session options with caller-owned admission.
+///
+/// # Errors
+/// Returns the existing missing-key diagnostic before producing a stream.
+pub fn stream_simple_openai_codex_responses_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    dispatch_simple(model, context, E::submission(options, E::provided(submit)))
+}
+
+/// Select concrete simple preparation while preserving the original submission.
+pub(crate) fn dispatch_simple(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<SimpleStreamOptions>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    match invocation {
+        ProviderInvocation::Local(options, submit) => {
+            simple::<Local>(model, context, options, submit)
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            simple::<Threaded>(model, context, options, submit)
+        }
+    }
+}
+
+/// Resolve credentials before reusing the same raw producer.
+fn simple<E: Producer>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: E::Submission,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
     let key = resolve_api_key(
         &model.provider,
         options
@@ -64,14 +177,14 @@ pub fn stream_simple_openai_codex_responses(
             .map(Cow::Borrowed),
     )
     .ok_or_else(|| diagnostic(format!("No API key for provider: {}", model.provider)))?;
-    let common = build_base_options(&model, options.as_ref(), Some(&key));
+    let common = build_base_options_for(&model, options.as_ref(), Some(&key));
     let reasoning_effort = options
         .as_ref()
         .and_then(|o| o.reasoning)
         .map(|level| clamp_thinking_level(&model, level.into()))
         .filter(|level| *level != ModelThinkingLevel::Off);
     drop(options);
-    Ok(stream_openai_codex_responses(
+    Ok(start::<E>(
         model,
         context,
         Some(OpenAICodexResponsesOptions {
@@ -79,14 +192,15 @@ pub fn stream_simple_openai_codex_responses(
             reasoning_effort,
             ..Default::default()
         }),
+        submit,
     ))
 }
 
 /// Prepare once, process the selected transport, then publish the shared outcome.
-async fn run(
+async fn run<E: ProviderExecution>(
     model: Arc<Model>,
     context: Context,
-    options: OpenAICodexResponsesOptions,
+    options: OpenAICodexResponsesOptions<E>,
     events: AssistantMessageEventStream,
     output: SharedAssistantMessage,
 ) {
@@ -117,10 +231,10 @@ fn register_cleanup() {
 }
 
 /// Attempt sockets unless explicitly bypassed or disabled by the session's retained failure.
-async fn dispatch(
+async fn dispatch<E: ProviderExecution>(
     prepared: &super::request::PreparedRequest,
     model: &Arc<Model>,
-    options: &OpenAICodexResponsesOptions,
+    options: &OpenAICodexResponsesOptions<E>,
     output: &SharedAssistantMessage,
     events: &AssistantMessageEventStream,
 ) -> Result<(), super::CodexError> {
@@ -162,10 +276,10 @@ async fn dispatch(
 
 /// Native socket invocation forwards the existing reducer's start witness.
 #[cfg(not(target_arch = "wasm32"))]
-async fn invoke_socket(
+async fn invoke_socket<E: ProviderExecution>(
     prepared: &super::request::PreparedRequest,
     model: &Arc<Model>,
-    options: &OpenAICodexResponsesOptions,
+    options: &OpenAICodexResponsesOptions<E>,
     output: (&SharedAssistantMessage, &AssistantMessageEventStream),
     started: &mut bool,
 ) -> Result<(), super::CodexError> {
@@ -192,10 +306,10 @@ async fn invoke_socket(
 
 /// Browsers cannot emit authenticated socket headers.
 #[cfg(target_arch = "wasm32")]
-fn invoke_socket(
+fn invoke_socket<E: ProviderExecution>(
     _prepared: &super::request::PreparedRequest,
     _model: &Arc<Model>,
-    _options: &OpenAICodexResponsesOptions,
+    _options: &OpenAICodexResponsesOptions<E>,
     _output: (&SharedAssistantMessage, &AssistantMessageEventStream),
     _started: &mut bool,
 ) -> std::future::Ready<Result<(), super::CodexError>> {
@@ -205,8 +319,8 @@ fn invoke_socket(
 }
 
 /// Attribute a socket failure to the configured transport and the full edited request.
-pub(super) fn transport_diagnostic(
-    options: &OpenAICodexResponsesOptions,
+pub(super) fn transport_diagnostic<E: ProviderExecution>(
+    options: &OpenAICodexResponsesOptions<E>,
     body: &serde_json::Value,
     started: bool,
     error: &DiagnosticErrorInfo,

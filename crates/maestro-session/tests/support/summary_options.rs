@@ -51,3 +51,50 @@ pub fn compare_options(options: &SimpleStreamOptions, expected: &Value) {
             .map(|v| v["aborted"].as_bool().unwrap())
     );
 }
+
+/// Record the controls used by summary consumers, rejecting unexpected request hooks.
+pub fn observe<E: maestro_models::ProviderExecution>(
+    options: SimpleStreamOptions<E>,
+) -> SimpleStreamOptions {
+    let maestro_models::StreamOptions {
+        temperature,
+        max_tokens,
+        signal,
+        api_key,
+        transport,
+        cache_retention,
+        session_id,
+        on_payload,
+        on_response,
+        headers,
+        timeout_ms,
+        max_retries,
+        max_retry_delay_ms,
+        metadata,
+        fetch,
+    } = options.common;
+    assert!(on_payload.is_none());
+    assert!(on_response.is_none());
+    SimpleStreamOptions {
+        common: maestro_models::StreamOptions {
+            temperature,
+            max_tokens,
+            signal,
+            api_key,
+            transport,
+            cache_retention,
+            session_id,
+            on_payload: None,
+            on_response: None,
+            headers,
+            timeout_ms,
+            max_retries,
+            max_retry_delay_ms,
+            metadata,
+            fetch,
+        },
+        reasoning: options.reasoning,
+        thinking_budgets: options.thinking_budgets,
+        tool_choice: options.tool_choice,
+    }
+}

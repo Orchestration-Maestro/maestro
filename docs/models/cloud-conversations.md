@@ -49,7 +49,12 @@ Text, thinking and tool-call updates reduce into the shared assistant message. G
 `stream`, `stream_simple`, `complete` and `complete_simple` dispatch through the bundled
 registration; [module linkage](module-linkage.md) describes callback replacement and raw extras.
 
-On native targets the call must run inside a Tokio runtime with its time and I/O drivers, and
+`stream_bedrock_for` and `stream_simple_bedrock_for` in the same module take an
+explicit execution family and producer submitter. `BedrockOptions<E>` retains
+that family's payload and response hooks; the SDK client and first-event
+response admission stay unchanged. These functions are not root exports.
+
+On native targets the default call must run inside a Tokio runtime with its time and I/O drivers, and
 the request work is owned by the runtime, so dropping the returned stream does not cancel it.
 Called outside a runtime, the stream ends at once with `Streaming requires a running Tokio
 runtime.`
@@ -240,7 +245,7 @@ let context: Context = serde_json::from_value(serde_json::json!({
 let seen = Arc::new(Mutex::new(None));
 let recorder = Arc::clone(&seen);
 let options = BedrockOptions {
-    common: StreamOptions {
+    common: StreamOptions::<maestro_models::Threaded> {
         // Refuse the request after seeing it, so nothing is sent.
         on_payload: Some(Arc::new(move |payload, _| {
             *recorder.lock().expect("lock") = Some(payload.payload);

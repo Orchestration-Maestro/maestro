@@ -254,7 +254,7 @@ fn maestro_response_sessions_join_initial_cookie_headers() {
         ("x-other".to_owned(), "right".to_owned()),
     ]));
     for (additional, expected) in [(None, "a=1; b=2"), (Some("c=3"), "c=3")] {
-        let options = crate::StreamOptions {
+        let options: crate::StreamOptions = crate::StreamOptions {
             headers: additional
                 .map(|value| indexmap::IndexMap::from([("COOKIE".to_owned(), value.to_owned())])),
             ..Default::default()
@@ -285,15 +285,16 @@ fn maestro_response_sessions_apply_sse_headers() {
             let base: BodyCase = body_cases("defaults").unwrap().remove(0);
             let mut model = base.model;
             model.headers = Some(row.input.init);
-            let options = super::super::OpenAICodexResponsesOptions {
-                common: crate::StreamOptions {
-                    api_key: Some(row.input.token),
-                    headers: Some(row.input.additional),
-                    session_id: row.input.session,
+            let options: super::super::OpenAICodexResponsesOptions =
+                super::super::OpenAICodexResponsesOptions {
+                    common: crate::StreamOptions {
+                        api_key: Some(row.input.token),
+                        headers: Some(row.input.additional),
+                        session_id: row.input.session,
+                        ..Default::default()
+                    },
                     ..Default::default()
-                },
-                ..Default::default()
-            };
+                };
             let prepared = super::super::request::prepare_request(
                 &std::sync::Arc::new(model),
                 &base.context,

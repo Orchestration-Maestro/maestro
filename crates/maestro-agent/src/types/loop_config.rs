@@ -46,7 +46,7 @@ pub struct AgentLoopConfigRecord<
     /// Retained budgets snapshotted after credential resolution; absence keeps owned settings.
     pub thinking_budgets: Option<Arc<RwLock<maestro_models::ThinkingBudgets>>>,
     /// Simple invocation settings.
-    pub options: SimpleStreamOptions,
+    pub options: SimpleStreamOptions<E>,
     /// Open settings passed to a replacement stream.
     pub extra: JsonObject,
     /// Typed objects passed to a replacement stream.

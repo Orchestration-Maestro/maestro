@@ -97,7 +97,11 @@ pub(super) fn cache_point(
 
 /// Whether the request targets `GovCloud`, by region or by model identifier.
 #[cfg(not(target_arch = "wasm32"))]
-fn is_gov_cloud_target(model: &Model, options: &BedrockOptions, env: &Environment) -> bool {
+fn is_gov_cloud_target<E: crate::ProviderExecution>(
+    model: &Model,
+    options: &BedrockOptions<E>,
+    env: &Environment,
+) -> bool {
     let id = model.id.to_lowercase();
     configured_region(options, env)
         .is_some_and(|region| region.to_lowercase().starts_with("us-gov-"))
@@ -108,9 +112,9 @@ fn is_gov_cloud_target(model: &Model, options: &BedrockOptions, env: &Environmen
 /// The thinking members of a Claude request, or none without reasoning, for a model that does
 /// not reason and for any other model.
 #[cfg(not(target_arch = "wasm32"))]
-pub(super) fn additional_model_request_fields(
+pub(super) fn additional_model_request_fields<E: crate::ProviderExecution>(
     model: &Model,
-    options: &BedrockOptions,
+    options: &BedrockOptions<E>,
     env: &Environment,
 ) -> Option<Value> {
     let level = options.reasoning.filter(|_| model.reasoning)?;

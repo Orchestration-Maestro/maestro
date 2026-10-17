@@ -5,8 +5,8 @@ use super::{CatalogError, ModelRegistry, ProviderConfigInput, ProviderModelInput
 use maestro_credentials::AuthCredential;
 use maestro_models::SharedHandle;
 use maestro_models::{
-    ApiProvider, Model, OAuthProviderHandle, StreamOptionsInput, register_api_provider,
-    register_oauth_provider,
+    ApiProvider, Invoke, Model, OAuthProviderHandle, ProviderCall, ProviderExecution,
+    StreamFunction, StreamOptionsInput, register_api_provider, register_oauth_provider,
 };
 use std::sync::{Arc, PoisonError, RwLock};
 impl ModelRegistry {
@@ -190,16 +190,12 @@ fn install_operations(provider: &str, config: &Arc<RwLock<ProviderConfigInput>>)
         })
     };
     if let Some((api, callback)) = callback {
-        let raw = SharedHandle::clone(&callback);
+        let owner = SharedHandle::new(ForwardProvider(callback));
         register_api_provider(
             ApiProvider {
                 api,
-                stream: SharedHandle::new(move |model, context, options| {
-                    raw(model, context, options.map(StreamOptionsInput::Raw))
-                }),
-                stream_simple: SharedHandle::new(move |model, context, options| {
-                    callback(model, context, options.map(StreamOptionsInput::Simple))
-                }),
+                stream: owner.clone(),
+                stream_simple: owner,
             },
             Some(format!("provider:{provider}")),
         );
@@ -236,4 +232,20 @@ impl ProviderModelInput {
 /// Return replaced ownership to retire it after releasing configuration guards.
 fn replace_defined<T: Clone>(retained: &mut Option<T>, incoming: Option<&T>) -> Option<T> {
     incoming.and_then(|value| retained.replace(value.clone()))
+}
+
+/// Preserve the retained catalog callback and original option family across replay.
+struct ForwardProvider(StreamFunction<StreamOptionsInput>);
+impl<E: ProviderExecution, O: Into<StreamOptionsInput<E>>> Invoke<E, ProviderCall<E, O>>
+    for ForwardProvider
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, call: ProviderCall<E, O>) -> Self::Return {
+        self.0.call(
+            call.model,
+            call.context,
+            E::submission(call.options.map(Into::into), call.submit),
+        )
+    }
 }

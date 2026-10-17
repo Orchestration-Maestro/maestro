@@ -1,0 +1,1074 @@
+{
+  "registered": {
+    "rows": [
+      {
+        "name": "no_hooks",
+        "input": {
+          "payload": false,
+          "response": false
+        },
+        "expected": {
+          "payloadIdentity": true,
+          "responseIdentity": true
+        }
+      },
+      {
+        "name": "payload_only",
+        "input": {
+          "payload": true,
+          "response": false
+        },
+        "expected": {
+          "payloadIdentity": true,
+          "responseIdentity": true
+        }
+      },
+      {
+        "name": "response_only",
+        "input": {
+          "payload": false,
+          "response": true
+        },
+        "expected": {
+          "payloadIdentity": true,
+          "responseIdentity": true
+        }
+      },
+      {
+        "name": "both_hooks",
+        "input": {
+          "payload": true,
+          "response": true
+        },
+        "expected": {
+          "payloadIdentity": true,
+          "responseIdentity": true
+        }
+      },
+      {
+        "name": "registered_raw_success",
+        "input": {
+          "form": "raw",
+          "outcome": "success"
+        },
+        "expected": {
+          "trace": [
+            [
+              "construct"
+            ],
+            [
+              "payload",
+              1
+            ],
+            [
+              "payload",
+              2
+            ],
+            [
+              "send",
+              11,
+              22
+            ],
+            [
+              "response",
+              201,
+              "visible"
+            ],
+            [
+              "body"
+            ]
+          ],
+          "result": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "[{\"phase\":1,\"selected\":11},{\"phase\":2,\"selected\":22}]"
+              }
+            ],
+            "api": "controlled",
+            "provider": "controlled",
+            "model": "model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          },
+          "events": [
+            "done"
+          ]
+        }
+      },
+      {
+        "name": "registered_raw_payload_failure",
+        "input": {
+          "form": "raw",
+          "outcome": "payload_failure"
+        },
+        "expected": {
+          "trace": [
+            [
+              "construct"
+            ],
+            [
+              "payload",
+              1
+            ],
+            [
+              "failure",
+              "payload stopped"
+            ]
+          ],
+          "result": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": ""
+              }
+            ],
+            "api": "controlled",
+            "provider": "controlled",
+            "model": "model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "error",
+            "timestamp": 0,
+            "errorMessage": "payload stopped"
+          },
+          "events": [
+            "error"
+          ]
+        }
+      },
+      {
+        "name": "registered_raw_response_failure",
+        "input": {
+          "form": "raw",
+          "outcome": "response_failure"
+        },
+        "expected": {
+          "trace": [
+            [
+              "construct"
+            ],
+            [
+              "payload",
+              1
+            ],
+            [
+              "payload",
+              2
+            ],
+            [
+              "send",
+              11,
+              22
+            ],
+            [
+              "response",
+              201,
+              "visible"
+            ],
+            [
+              "failure",
+              "response stopped"
+            ]
+          ],
+          "result": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": ""
+              }
+            ],
+            "api": "controlled",
+            "provider": "controlled",
+            "model": "model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "error",
+            "timestamp": 0,
+            "errorMessage": "response stopped"
+          },
+          "events": [
+            "error"
+          ]
+        }
+      },
+      {
+        "name": "registered_simple_success",
+        "input": {
+          "form": "simple",
+          "outcome": "success"
+        },
+        "expected": {
+          "trace": [
+            [
+              "construct"
+            ],
+            [
+              "payload",
+              1
+            ],
+            [
+              "payload",
+              2
+            ],
+            [
+              "send",
+              11,
+              22
+            ],
+            [
+              "response",
+              201,
+              "visible"
+            ],
+            [
+              "body"
+            ]
+          ],
+          "result": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": "[{\"phase\":1,\"selected\":11},{\"phase\":2,\"selected\":22}]"
+              }
+            ],
+            "api": "controlled",
+            "provider": "controlled",
+            "model": "model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "stop",
+            "timestamp": 0
+          },
+          "events": [
+            "done"
+          ]
+        }
+      },
+      {
+        "name": "registered_simple_payload_failure",
+        "input": {
+          "form": "simple",
+          "outcome": "payload_failure"
+        },
+        "expected": {
+          "trace": [
+            [
+              "construct"
+            ],
+            [
+              "payload",
+              1
+            ],
+            [
+              "failure",
+              "payload stopped"
+            ]
+          ],
+          "result": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": ""
+              }
+            ],
+            "api": "controlled",
+            "provider": "controlled",
+            "model": "model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "error",
+            "timestamp": 0,
+            "errorMessage": "payload stopped"
+          },
+          "events": [
+            "error"
+          ]
+        }
+      },
+      {
+        "name": "registered_simple_response_failure",
+        "input": {
+          "form": "simple",
+          "outcome": "response_failure"
+        },
+        "expected": {
+          "trace": [
+            [
+              "construct"
+            ],
+            [
+              "payload",
+              1
+            ],
+            [
+              "payload",
+              2
+            ],
+            [
+              "send",
+              11,
+              22
+            ],
+            [
+              "response",
+              201,
+              "visible"
+            ],
+            [
+              "failure",
+              "response stopped"
+            ]
+          ],
+          "result": {
+            "role": "assistant",
+            "content": [
+              {
+                "type": "text",
+                "text": ""
+              }
+            ],
+            "api": "controlled",
+            "provider": "controlled",
+            "model": "model",
+            "usage": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0,
+              "totalTokens": 0,
+              "cost": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheWrite": 0,
+                "total": 0
+              }
+            },
+            "stopReason": "error",
+            "timestamp": 0,
+            "errorMessage": "response stopped"
+          },
+          "events": [
+            "error"
+          ]
+        }
+      },
+      {
+        "name": "replacement_keeps_order_and_retained_callback",
+        "input": {
+          "keys": [
+            "10",
+            "2",
+            "01"
+          ],
+          "replaced": "2"
+        },
+        "expected": {
+          "order": [
+            "10",
+            "2",
+            "01"
+          ],
+          "retained": "retained",
+          "current": "replacement"
+        }
+      },
+      {
+        "name": "cleanup_matches_current_source",
+        "input": {
+          "remove": "old"
+        },
+        "expected": {
+          "remaining": [
+            "2"
+          ]
+        }
+      },
+      {
+        "name": "clear_preserves_retained_callbacks",
+        "input": {
+          "clear": true
+        },
+        "expected": {
+          "registrySize": 0,
+          "retained": "retained"
+        }
+      },
+      {
+        "name": "identity_guard_stream",
+        "input": {
+          "form": "stream",
+          "supplied": "wrong",
+          "registered": "2"
+        },
+        "expected": {
+          "error": "Mismatched api: wrong expected 2"
+        }
+      },
+      {
+        "name": "identity_guard_streamSimple",
+        "input": {
+          "form": "streamSimple",
+          "supplied": "wrong",
+          "registered": "2"
+        },
+        "expected": {
+          "error": "Mismatched api: wrong expected 2"
+        }
+      }
+    ]
+  },
+  "scripted": {
+    "rows": [
+      {
+        "name": "factory_raw_success",
+        "input": {
+          "form": "raw",
+          "outcome": "success"
+        },
+        "expected": {
+          "trace": [
+            [
+              "response",
+              200
+            ],
+            [
+              "factory",
+              1
+            ],
+            [
+              "payload",
+              1
+            ],
+            [
+              "payload",
+              2
+            ],
+            [
+              "selected",
+              11,
+              22
+            ]
+          ],
+          "events": [
+            "start",
+            "text_start",
+            "text_delta",
+            "text_end",
+            "done"
+          ],
+          "callCount": 1,
+          "pending": 0,
+          "stopReason": "stop",
+          "text": "ok"
+        }
+      },
+      {
+        "name": "factory_raw_factory_failure",
+        "input": {
+          "form": "raw",
+          "outcome": "factory_failure"
+        },
+        "expected": {
+          "trace": [
+            [
+              "response",
+              200
+            ],
+            [
+              "factory",
+              1
+            ],
+            [
+              "payload",
+              1
+            ],
+            [
+              "payload",
+              2
+            ]
+          ],
+          "events": [
+            "error"
+          ],
+          "callCount": 1,
+          "pending": 0,
+          "stopReason": "error",
+          "errorMessage": "factory stopped"
+        }
+      },
+      {
+        "name": "factory_raw_response_failure",
+        "input": {
+          "form": "raw",
+          "outcome": "response_failure"
+        },
+        "expected": {
+          "trace": [
+            [
+              "response",
+              200
+            ]
+          ],
+          "events": [
+            "error"
+          ],
+          "callCount": 1,
+          "pending": 0,
+          "stopReason": "error",
+          "errorMessage": "response stopped"
+        }
+      },
+      {
+        "name": "factory_simple_success",
+        "input": {
+          "form": "simple",
+          "outcome": "success"
+        },
+        "expected": {
+          "trace": [
+            [
+              "response",
+              200
+            ],
+            [
+              "factory",
+              1
+            ],
+            [
+              "payload",
+              1
+            ],
+            [
+              "payload",
+              2
+            ],
+            [
+              "selected",
+              11,
+              22
+            ]
+          ],
+          "events": [
+            "start",
+            "text_start",
+            "text_delta",
+            "text_end",
+            "done"
+          ],
+          "callCount": 1,
+          "pending": 0,
+          "stopReason": "stop",
+          "text": "ok"
+        }
+      },
+      {
+        "name": "factory_simple_factory_failure",
+        "input": {
+          "form": "simple",
+          "outcome": "factory_failure"
+        },
+        "expected": {
+          "trace": [
+            [
+              "response",
+              200
+            ],
+            [
+              "factory",
+              1
+            ],
+            [
+              "payload",
+              1
+            ],
+            [
+              "payload",
+              2
+            ]
+          ],
+          "events": [
+            "error"
+          ],
+          "callCount": 1,
+          "pending": 0,
+          "stopReason": "error",
+          "errorMessage": "factory stopped"
+        }
+      },
+      {
+        "name": "factory_simple_response_failure",
+        "input": {
+          "form": "simple",
+          "outcome": "response_failure"
+        },
+        "expected": {
+          "trace": [
+            [
+              "response",
+              200
+            ]
+          ],
+          "events": [
+            "error"
+          ],
+          "callCount": 1,
+          "pending": 0,
+          "stopReason": "error",
+          "errorMessage": "response stopped"
+        }
+      }
+    ]
+  },
+  "retainedSequence": {
+    "observations": [
+      {
+        "trace": [
+          [
+            "response",
+            200
+          ],
+          [
+            "factory",
+            1
+          ],
+          [
+            "payload",
+            1
+          ],
+          [
+            "payload",
+            2
+          ],
+          [
+            "selected",
+            11,
+            22
+          ]
+        ],
+        "callCount": 1,
+        "pending": 1,
+        "stopReason": "stop",
+        "text": "ok"
+      },
+      {
+        "trace": [
+          [
+            "response",
+            200
+          ],
+          [
+            "factory",
+            2
+          ],
+          [
+            "payload",
+            1
+          ],
+          [
+            "payload",
+            2
+          ],
+          [
+            "selected",
+            11,
+            22
+          ]
+        ],
+        "callCount": 2,
+        "pending": 0,
+        "stopReason": "stop",
+        "text": "ok"
+      }
+    ]
+  },
+  "dispatch": {
+    "rows": [
+      {
+        "name": "stream_absent",
+        "input": {
+          "operation": "stream",
+          "presence": "absent"
+        },
+        "expected": {
+          "callsBeforeAwait": 1,
+          "originalOptions": true,
+          "text": "selected",
+          "events": [
+            "done"
+          ]
+        }
+      },
+      {
+        "name": "stream_empty",
+        "input": {
+          "operation": "stream",
+          "presence": "empty"
+        },
+        "expected": {
+          "callsBeforeAwait": 1,
+          "originalOptions": true,
+          "text": "selected",
+          "events": [
+            "done"
+          ]
+        }
+      },
+      {
+        "name": "stream_full",
+        "input": {
+          "operation": "stream",
+          "presence": "full"
+        },
+        "expected": {
+          "callsBeforeAwait": 1,
+          "originalOptions": true,
+          "text": "selected",
+          "events": [
+            "done"
+          ]
+        }
+      },
+      {
+        "name": "stream_setup_failure",
+        "input": {
+          "operation": "stream",
+          "failure": "setup"
+        },
+        "expected": {
+          "phase": "immediate",
+          "error": "setup stopped"
+        }
+      },
+      {
+        "name": "stream_missing",
+        "input": {
+          "operation": "stream",
+          "failure": "missing"
+        },
+        "expected": {
+          "phase": "immediate",
+          "error": "No API provider registered for api: controlled"
+        }
+      },
+      {
+        "name": "streamSimple_absent",
+        "input": {
+          "operation": "streamSimple",
+          "presence": "absent"
+        },
+        "expected": {
+          "callsBeforeAwait": 1,
+          "originalOptions": true,
+          "text": "selected",
+          "events": [
+            "done"
+          ]
+        }
+      },
+      {
+        "name": "streamSimple_empty",
+        "input": {
+          "operation": "streamSimple",
+          "presence": "empty"
+        },
+        "expected": {
+          "callsBeforeAwait": 1,
+          "originalOptions": true,
+          "text": "selected",
+          "events": [
+            "done"
+          ]
+        }
+      },
+      {
+        "name": "streamSimple_full",
+        "input": {
+          "operation": "streamSimple",
+          "presence": "full"
+        },
+        "expected": {
+          "callsBeforeAwait": 1,
+          "originalOptions": true,
+          "text": "selected",
+          "events": [
+            "done"
+          ]
+        }
+      },
+      {
+        "name": "streamSimple_setup_failure",
+        "input": {
+          "operation": "streamSimple",
+          "failure": "setup"
+        },
+        "expected": {
+          "phase": "immediate",
+          "error": "setup stopped"
+        }
+      },
+      {
+        "name": "streamSimple_missing",
+        "input": {
+          "operation": "streamSimple",
+          "failure": "missing"
+        },
+        "expected": {
+          "phase": "immediate",
+          "error": "No API provider registered for api: controlled"
+        }
+      },
+      {
+        "name": "complete_absent",
+        "input": {
+          "operation": "complete",
+          "presence": "absent"
+        },
+        "expected": {
+          "callsBeforeAwait": 1,
+          "originalOptions": true,
+          "text": "selected",
+          "events": [
+            "done"
+          ]
+        }
+      },
+      {
+        "name": "complete_empty",
+        "input": {
+          "operation": "complete",
+          "presence": "empty"
+        },
+        "expected": {
+          "callsBeforeAwait": 1,
+          "originalOptions": true,
+          "text": "selected",
+          "events": [
+            "done"
+          ]
+        }
+      },
+      {
+        "name": "complete_full",
+        "input": {
+          "operation": "complete",
+          "presence": "full"
+        },
+        "expected": {
+          "callsBeforeAwait": 1,
+          "originalOptions": true,
+          "text": "selected",
+          "events": [
+            "done"
+          ]
+        }
+      },
+      {
+        "name": "complete_setup_failure",
+        "input": {
+          "operation": "complete",
+          "failure": "setup"
+        },
+        "expected": {
+          "phase": "returned-future",
+          "error": "setup stopped"
+        }
+      },
+      {
+        "name": "complete_missing",
+        "input": {
+          "operation": "complete",
+          "failure": "missing"
+        },
+        "expected": {
+          "phase": "returned-future",
+          "error": "No API provider registered for api: controlled"
+        }
+      },
+      {
+        "name": "completeSimple_absent",
+        "input": {
+          "operation": "completeSimple",
+          "presence": "absent"
+        },
+        "expected": {
+          "callsBeforeAwait": 1,
+          "originalOptions": true,
+          "text": "selected",
+          "events": [
+            "done"
+          ]
+        }
+      },
+      {
+        "name": "completeSimple_empty",
+        "input": {
+          "operation": "completeSimple",
+          "presence": "empty"
+        },
+        "expected": {
+          "callsBeforeAwait": 1,
+          "originalOptions": true,
+          "text": "selected",
+          "events": [
+            "done"
+          ]
+        }
+      },
+      {
+        "name": "completeSimple_full",
+        "input": {
+          "operation": "completeSimple",
+          "presence": "full"
+        },
+        "expected": {
+          "callsBeforeAwait": 1,
+          "originalOptions": true,
+          "text": "selected",
+          "events": [
+            "done"
+          ]
+        }
+      },
+      {
+        "name": "completeSimple_setup_failure",
+        "input": {
+          "operation": "completeSimple",
+          "failure": "setup"
+        },
+        "expected": {
+          "phase": "returned-future",
+          "error": "setup stopped"
+        }
+      },
+      {
+        "name": "completeSimple_missing",
+        "input": {
+          "operation": "completeSimple",
+          "failure": "missing"
+        },
+        "expected": {
+          "phase": "returned-future",
+          "error": "No API provider registered for api: controlled"
+        }
+      },
+      {
+        "name": "async_context",
+        "input": {
+          "outcome": "async_context"
+        },
+        "expected": {
+          "callCount": 1,
+          "pending": 0,
+          "events": [
+            "start",
+            "text_start",
+            "text_delta",
+            "text_end",
+            "done"
+          ],
+          "stopReason": "stop",
+          "text": "1:1"
+        }
+      },
+      {
+        "name": "factory_throws",
+        "input": {
+          "outcome": "factory_throws"
+        },
+        "expected": {
+          "callCount": 1,
+          "pending": 0,
+          "events": [
+            "error"
+          ],
+          "stopReason": "error",
+          "error": "boom"
+        }
+      },
+      {
+        "name": "exhausted",
+        "input": {
+          "outcome": "exhausted"
+        },
+        "expected": {
+          "callCount": 1,
+          "pending": 0,
+          "events": [
+            "error"
+          ],
+          "stopReason": "error",
+          "error": "No more faux responses queued"
+        }
+      }
+    ]
+  }
+}

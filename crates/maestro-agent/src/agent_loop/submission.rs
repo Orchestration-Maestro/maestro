@@ -7,7 +7,7 @@ use super::{
 use std::io::Write;
 /// Concrete public entry signatures preserve the default generic arity.
 macro_rules! entries {
-    ($mode:ty) => {
+    ($mode:ty, $awaited:ty) => {
         /// Submit owned prompt work.
         pub fn agent_loop<C: CustomAgentMessages + 'static>(
             prompts: Vec<AgentMessage<C>>,
@@ -46,12 +46,12 @@ macro_rules! entries {
             context: AgentContextRecord<C, $mode>,
             config: &AgentLoopConfigRecord<C, $mode>,
             emit: AgentEventSink<C, $mode>,
-            options: AgentLoopOptionsRecord<$mode>,
+            options: $awaited,
         ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo>
         where
             $mode: crate::ExecutionFor<C>,
         {
-            crate::agent_loop::run_for(Some(prompts), context, config, emit, options).await
+            crate::agent_loop::run_for(Some(prompts), context, config, emit, options.into()).await
         }
         /// Await continuation through retained history.
         ///
@@ -61,16 +61,16 @@ macro_rules! entries {
             context: AgentContextRecord<C, $mode>,
             config: &AgentLoopConfigRecord<C, $mode>,
             emit: AgentEventSink<C, $mode>,
-            options: AgentLoopOptionsRecord<$mode>,
+            options: $awaited,
         ) -> Result<Vec<AgentMessage<C>>, DiagnosticErrorInfo>
         where
             $mode: crate::ExecutionFor<C>,
         {
-            crate::agent_loop::run_for(None, context, config, emit, options).await
+            crate::agent_loop::run_for(None, context, config, emit, options.into()).await
         }
     };
 }
-entries!(crate::Threaded);
+entries!(crate::Threaded, AgentLoopOptionsRecord);
 /// Raw conversation entry points with local callables.
 pub mod local {
     use super::{
@@ -78,7 +78,7 @@ pub mod local {
         AgentLoopOptionsRecord, AgentMessage, AgentSpawner, CustomAgentMessages,
         DiagnosticErrorInfo, EventStream, check_continuation, submit,
     };
-    entries!(crate::Local);
+    entries!(crate::Local, super::super::LocalAgentLoopOptions);
 }
 /// Construct the terminal-selected observation stream.
 fn create_agent_stream<C: CustomAgentMessages + 'static>()
@@ -100,7 +100,7 @@ pub struct Submitted<C: CustomAgentMessages, E: AgentExecution> {
     /// Captured callback and model configuration.
     pub config: E::Shared<AgentLoopConfigRecord<C, E>>,
     /// Captured invocation overrides.
-    pub options: AgentLoopOptionsRecord<E>,
+    options: super::CapturedOptions<E>,
     /// Independent event and result observations.
     pub stream: EventStream<AgentEvent<C>, Vec<AgentMessage<C>>>,
     /// Callback admitting observations.
@@ -141,7 +141,7 @@ fn submit<C: CustomAgentMessages + 'static, E: crate::ExecutionFor<C>>(
         prompts: prompts.unwrap_or_default(),
         context,
         config,
-        options,
+        options: super::CapturedOptions::new(options, E::provider_submission(spawn.clone())),
         stream: stream.clone(),
         emit: E::stream_sink(stream.clone()),
     };

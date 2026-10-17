@@ -12,15 +12,17 @@ use std::sync::{Arc, RwLock};
 
 use crate::options::{resolve_api_key, token_base};
 use crate::providers::assistant_output::{
-    callback_failure, conclude, fail, initial_message, start_producer,
+    callback_failure, conclude, fail, initial_message, start_producer_for,
 };
 use crate::providers::http::{
     HttpResponse, RequestFailure, envelope_failure, send_with_status_error,
 };
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, BoxFuture, Cancellation, Context,
-    DiagnosticErrorInfo, Model, ProviderResponse, SharedAssistantMessage, SimpleStreamOptions,
-    StreamOptions, ThinkingLevel, ToolChoice, adjust_max_tokens_for_thinking, build_base_options,
+    DiagnosticErrorInfo, Local, Model, ProviderExecution, ProviderInvocation, ProviderResponse,
+    ProviderSpawner, SharedAssistantMessage, SimpleStreamOptions, StreamOptions,
+    StreamOptionsFamily, ThinkingLevel, Threaded, ToolChoice, adjust_max_tokens_for_thinking,
+    build_base_options_for,
 };
 use events::Reducer;
 use request::Invocation;
@@ -88,18 +90,18 @@ enum ThinkingInput {
 }
 
 /// Raw fields accompanied by private simple-option provenance.
-struct CallOptions {
+struct CallOptions<E: ProviderExecution> {
     /// Shared protocol settings.
-    raw: AnthropicOptions,
+    raw: AnthropicOptions<E>,
     /// Resolved thinking input.
     thinking: ThinkingInput,
 }
 
 /// Options for a direct message-protocol invocation.
 #[derive(Clone, Default)]
-pub struct AnthropicOptions {
+pub struct AnthropicOptions<E: ProviderExecution = Threaded> {
     /// Settings common to every protocol.
-    pub common: StreamOptions,
+    pub common: StreamOptions<E>,
     /// Whether thinking is enabled; false explicitly disables it on reasoning models.
     pub thinking_enabled: Option<bool>,
     /// Raw budget; absent, zero and NaN use 1,024 tokens when budget thinking is enabled.
@@ -160,13 +162,55 @@ pub fn stream_anthropic(
     context: Context,
     options: Option<AnthropicOptions>,
 ) -> AssistantMessageEventStream {
-    start(
+    raw_start::<Threaded>(model, context, options, None)
+}
+
+/// Start a message request with the caller's producer admission and hook family.
+#[must_use]
+pub fn stream_anthropic_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<AnthropicOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> AssistantMessageEventStream {
+    dispatch(model, context, E::submission(options, E::provided(submit)))
+}
+
+/// Select concrete raw preparation without changing thinking provenance.
+pub(crate) fn dispatch(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<AnthropicOptions>,
+) -> AssistantMessageEventStream {
+    match invocation {
+        ProviderInvocation::Local(options, submit) => {
+            raw_start::<Local>(model, context, options, submit)
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            raw_start::<Threaded>(model, context, options, submit)
+        }
+    }
+}
+
+impl StreamOptionsFamily for AnthropicOptions {
+    type Options<E: ProviderExecution> = AnthropicOptions<E>;
+}
+
+/// Retain raw thinking provenance before starting the single producer.
+fn raw_start<E: Producer>(
+    model: Model,
+    context: Context,
+    options: Option<AnthropicOptions<E>>,
+    submit: E::Submission,
+) -> AssistantMessageEventStream {
+    start::<E>(
         model,
         context,
         CallOptions {
             raw: options.unwrap_or_default(),
             thinking: ThinkingInput::Raw,
         },
+        submit,
     )
 }
 
@@ -179,6 +223,45 @@ pub fn stream_simple_anthropic(
     context: Context,
     options: Option<SimpleStreamOptions>,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    simple::<Threaded>(model, context, options, None)
+}
+
+/// Resolve simple message settings with caller-owned admission.
+///
+/// # Errors
+/// Returns a missing provider key before creating a stream.
+pub fn stream_simple_anthropic_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    dispatch_simple(model, context, E::submission(options, E::provided(submit)))
+}
+
+/// Select concrete simple preparation while preserving the original submission.
+pub(crate) fn dispatch_simple(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<SimpleStreamOptions>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    match invocation {
+        ProviderInvocation::Local(options, submit) => {
+            simple::<Local>(model, context, options, submit)
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            simple::<Threaded>(model, context, options, submit)
+        }
+    }
+}
+
+/// Resolve thinking and key policy once for either family.
+fn simple<E: Producer>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: E::Submission,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
     let mut options = options.unwrap_or_default();
     let key = resolve_api_key(
         &model.provider,
@@ -189,7 +272,7 @@ pub fn stream_simple_anthropic(
         DiagnosticErrorInfo::error(format!("No API key for provider: {}", model.provider))
     })?;
     let mut raw = AnthropicOptions {
-        common: build_base_options(&model, Some(&options), Some(&key)),
+        common: build_base_options_for(&model, Some(&options), Some(&key)),
         thinking_enabled: Some(options.reasoning.is_some()),
         ..AnthropicOptions::default()
     };
@@ -209,7 +292,12 @@ pub fn stream_simple_anthropic(
             ThinkingInput::Budget(adjusted.thinking_budget)
         }
     };
-    Ok(start(model, context, CallOptions { raw, thinking }))
+    Ok(start::<E>(
+        model,
+        context,
+        CallOptions { raw, thinking },
+        submit,
+    ))
 }
 
 /// The effort the model's level map names for `level`, otherwise the level's own effort.
@@ -232,27 +320,63 @@ pub(crate) fn map_thinking_level_to_effort(model: &Model, level: ThinkingLevel) 
     )
 }
 
+/// Box the same producer with this concrete family's future bounds.
+trait Producer: ProviderExecution {
+    /// Erase a producer future without changing its work or admission.
+    fn drive(
+        model: Arc<Model>,
+        context: Context,
+        options: CallOptions<Self>,
+        stream: AssistantMessageEventStream,
+        output: SharedAssistantMessage,
+    ) -> Self::Future<'static, ()>;
+}
+
+/// Only concrete future auto-trait bounds differ.
+macro_rules! producer {
+    ($mode:ty) => {
+        impl Producer for $mode {
+            fn drive(
+                model: Arc<Model>,
+                context: Context,
+                options: CallOptions<Self>,
+                stream: AssistantMessageEventStream,
+                output: SharedAssistantMessage,
+            ) -> Self::Future<'static, ()> {
+                Box::pin(run::<Self>(model, context, options, stream, output))
+            }
+        }
+    };
+}
+producer!(Local);
+producer!(Threaded);
+
 /// Start the producer shared by raw and simple options.
-fn start(model: Model, context: Context, options: CallOptions) -> AssistantMessageEventStream {
+fn start<E: Producer>(
+    model: Model,
+    context: Context,
+    options: CallOptions<E>,
+    submit: E::Submission,
+) -> AssistantMessageEventStream {
     let stream = AssistantMessageEventStream::new();
     let output: SharedAssistantMessage = Arc::new(RwLock::new(initial_message(&model)));
     let signal = options.raw.common.signal.clone();
-    let task = run(
+    let task = E::drive(
         Arc::new(model),
         context,
         options,
         stream.clone(),
         Arc::clone(&output),
     );
-    start_producer(&stream, &output, signal.as_ref(), Box::pin(task));
+    start_producer_for::<E>(&stream, &output, signal.as_ref(), task, submit);
     stream
 }
 
 /// Drive one invocation to its terminal update.
-async fn run(
+async fn run<E: ProviderExecution>(
     model: Arc<Model>,
     context: Context,
-    options: CallOptions,
+    options: CallOptions<E>,
     stream: AssistantMessageEventStream,
     output: SharedAssistantMessage,
 ) {
@@ -269,10 +393,10 @@ async fn run(
 
 /// Send the request and reduce the response into the shared message; a normal end concludes
 /// with a done update.
-async fn invoke(
+async fn invoke<E: ProviderExecution>(
     model: &Arc<Model>,
     context: &Context,
-    call: &CallOptions,
+    call: &CallOptions<E>,
     stream: &AssistantMessageEventStream,
     output: &SharedAssistantMessage,
 ) -> Result<(), RequestFailure> {

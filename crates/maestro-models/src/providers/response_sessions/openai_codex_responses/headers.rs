@@ -6,9 +6,9 @@ use crate::{DiagnosticErrorInfo, Model, StreamOptions};
 use indexmap::IndexMap;
 
 /// Initial model headers combine; additional headers replace; provider headers win.
-pub(super) fn build_sse_headers(
+pub(super) fn build_sse_headers<E: crate::ProviderExecution>(
     model: &Model,
-    options: &StreamOptions,
+    options: &StreamOptions<E>,
     account: &str,
     token: &str,
     user_agent: &str,

@@ -1129,7 +1129,7 @@ async fn response_headers_after(head_lines: &[u8]) -> TestResult<BTreeMap<String
     model.base_url = format!("{}/v1", server.url);
     let reported: Arc<Mutex<Vec<maestro_models::ProviderResponse>>> = Arc::default();
     let sink = Arc::clone(&reported);
-    let common = StreamOptions {
+    let common = StreamOptions::<maestro_models::Threaded> {
         api_key: Some("fixture-key".into()),
         max_retries: Some(0.0),
         on_response: Some(Arc::new(move |response, _| {
@@ -1194,7 +1194,7 @@ fn maestro_chat_transport_is_replaceable() -> TestResult {
         model.base_url = format!("{}/v1", server.url);
         let reported: Arc<std::sync::Mutex<Vec<maestro_models::ProviderResponse>>> = Arc::default();
         let sink = Arc::clone(&reported);
-        let production = StreamOptions {
+        let production = StreamOptions::<maestro_models::Threaded> {
             api_key: Some("fixture-key".into()),
             max_retries: Some(0.0),
             on_response: Some(Arc::new(move |response, _| {

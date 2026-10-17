@@ -133,11 +133,7 @@ async fn guide_custom_messages_transform_before_conversion_case() {
     let seen = Arc::new(Mutex::new(vec![]));
     let sink = Arc::clone(&seen);
     faux.set_responses(vec![FauxResponseStep::Factory(Arc::new(
-        move |context, _, _, _| {
-            sink.lock().unwrap().push(request_texts(&context.messages));
-            let message = faux_assistant_message("ok", FauxAssistantMessageOptions::default());
-            ready(Ok(message))
-        },
+        RequestTextFactory(sink),
     ))]);
     let notice = AgentMessage::Custom(Arc::new(RwLock::new(Notice {
         text: "Info".into(),
@@ -195,17 +191,15 @@ fn assert_documented_defaults() {
     assert!(agent.max_retry_delay_ms.read().unwrap().is_none());
     assert!(agent.thinking_budgets.read().unwrap().is_none());
 }
-/// Run one prompt with constructor values only and return the options the model request carried.
-async fn request_options(budgets: &ThinkingBudgets) -> FauxResponseOptions {
+/// Run one prompt with constructor values only and check the original request options.
+async fn request_options(budgets: &ThinkingBudgets) {
     let mut registered = Registered::default();
     let faux = registered.add(RegisterFauxProviderOptions::default());
-    let seen = Arc::new(Mutex::new(None));
-    let sink = Arc::clone(&seen);
+    let seen = Arc::new(std::sync::atomic::AtomicBool::new(false));
     faux.set_responses(vec![FauxResponseStep::Factory(Arc::new(
-        move |_, options, _, _| {
-            *sink.lock().unwrap() = options;
-            let message = faux_assistant_message("ok", FauxAssistantMessageOptions::default());
-            ready(Ok(message))
+        RequestOptionsFactory {
+            seen: Arc::clone(&seen),
+            budgets: budgets.clone(),
         },
     ))]);
     let configured: Arc<Agent> = Arc::new(Agent::new(AgentOptions {
@@ -226,8 +220,7 @@ async fn request_options(budgets: &ThinkingBudgets) -> FauxResponseOptions {
         .prompt(support::owned::input("Hi"))
         .await
         .unwrap();
-    let options = seen.lock().unwrap().clone();
-    options.expect("the request carries options")
+    assert!(seen.load(std::sync::atomic::Ordering::SeqCst));
 }
 
 /// Defaults are exactly the documented ones, and constructor values reach the model request.
@@ -243,15 +236,7 @@ async fn guide_options_and_state_show_current_defaults_case() {
         high: Some(2048.0),
         ..Default::default()
     };
-    let FauxResponseOptions::Simple(options) = request_options(&budgets).await else {
-        panic!("the Agent requests through the simple adapter");
-    };
-    assert_eq!(options.common.session_id.as_deref(), Some("session-123"));
-    assert_eq!(options.common.transport, Some(Transport::Websocket));
-    assert_eq!(options.common.max_retry_delay_ms, Some(1234.0));
-    assert_eq!(options.common.api_key.as_deref(), Some("resolved"));
-    assert_eq!(options.reasoning, Some(maestro_models::ThinkingLevel::Low));
-    assert_eq!(options.thinking_budgets, Some(budgets));
+    request_options(&budgets).await;
 }
 
 /// Arguments of the guide's echo tool.
@@ -784,3 +769,63 @@ async fn guide_proxy_and_raw_loops_run_offline_case() {
     awaited_loops().await;
     observable_loops().await;
 }
+
+/// Observe the converted and pruned conversation at the scripted provider.
+struct RequestTextFactory(Arc<Mutex<Vec<Vec<String>>>>);
+impl RequestTextFactory {
+    /// Record the exact request text before selecting the response.
+    fn respond<E: maestro_models::ProviderExecution>(
+        &self,
+        input: &maestro_models::FauxResponseInput<E>,
+    ) -> impl std::future::Future<
+        Output = Result<maestro_models::AssistantMessage, maestro_models::DiagnosticErrorInfo>,
+    >
+    + 'static
+    + use<E> {
+        let texts = request_texts(&input.context.messages);
+        self.0.lock().unwrap().push(texts);
+        std::future::ready(Ok(faux_assistant_message(
+            "ok",
+            FauxAssistantMessageOptions::default(),
+        )))
+    }
+}
+support::scripted::factory!(RequestTextFactory, |owner: &RequestTextFactory, input| {
+    owner.respond(&input)
+});
+
+/// Observe constructor configuration at the consuming factory, before any projection.
+struct RequestOptionsFactory {
+    seen: Arc<std::sync::atomic::AtomicBool>,
+    budgets: ThinkingBudgets,
+}
+impl RequestOptionsFactory {
+    /// Check each documented option in the original simple record.
+    fn respond<E: maestro_models::ProviderExecution>(
+        &self,
+        input: maestro_models::FauxResponseInput<E>,
+    ) -> impl std::future::Future<
+        Output = Result<maestro_models::AssistantMessage, maestro_models::DiagnosticErrorInfo>,
+    >
+    + 'static
+    + use<E> {
+        let Some(FauxResponseOptions::Simple(options)) = input.options else {
+            panic!("the Agent requests through the simple adapter");
+        };
+        assert_eq!(options.common.session_id.as_deref(), Some("session-123"));
+        assert_eq!(options.common.transport, Some(Transport::Websocket));
+        assert_eq!(options.common.max_retry_delay_ms, Some(1234.0));
+        assert_eq!(options.common.api_key.as_deref(), Some("resolved"));
+        assert_eq!(options.reasoning, Some(maestro_models::ThinkingLevel::Low));
+        assert_eq!(options.thinking_budgets, Some(self.budgets.clone()));
+        self.seen.store(true, std::sync::atomic::Ordering::SeqCst);
+        std::future::ready(Ok(faux_assistant_message(
+            "ok",
+            FauxAssistantMessageOptions::default(),
+        )))
+    }
+}
+support::scripted::factory!(
+    RequestOptionsFactory,
+    |owner: &RequestOptionsFactory, input| owner.respond(input)
+);

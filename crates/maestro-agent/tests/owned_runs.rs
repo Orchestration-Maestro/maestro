@@ -405,24 +405,12 @@ impl maestro_agent::CustomAgentMessages for Notice {
 /// Registered default model dispatch produces the same public transcript as custom dispatch.
 #[test]
 fn default_stream_uses_model_dispatch() {
-    use maestro_models::{
-        ApiProvider, AssistantMessageEventStream, register_api_provider, unregister_api_providers,
-    };
+    use maestro_models::{ApiProvider, register_api_provider, unregister_api_providers};
     register_api_provider(
         ApiProvider {
             api: "owned-controlled".into(),
-            stream: Arc::new(|_, _, _| panic!("raw dispatch selected")),
-            stream_simple: Arc::new(|model, context, options| {
-                assert_eq!(model.id, "fixture");
-                assert_eq!(context.messages.len(), 1);
-                assert_eq!(
-                    options.unwrap().common.transport,
-                    Some(maestro_models::Transport::Auto)
-                );
-                let stream = AssistantMessageEventStream::new();
-                stream.end(Some(support::assistant("registered")));
-                Ok(stream)
-            }),
+            stream: Arc::new(UnexpectedRaw),
+            stream_simple: Arc::new(OwnedDispatch),
         },
         Some("owned-controlled-test".into()),
     );
@@ -952,5 +940,50 @@ async fn synthetic_failure_case() {
         let later_model = Arc::clone(&later.state().read().unwrap().model);
         assert!(Arc::ptr_eq(&default_model, &later_model));
         assert_eq!(*later_model.read().unwrap(), default_snapshot);
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct OwnedDispatch;
+impl<E: maestro_models::ProviderExecution>
+    maestro_models::Invoke<
+        E,
+        maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+    > for OwnedDispatch
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(
+        &self,
+        call: maestro_models::ProviderCall<E, maestro_models::SimpleStreamOptions<E>>,
+    ) -> Self::Return {
+        let maestro_models::ProviderCall {
+            model,
+            context,
+            options,
+            ..
+        } = call;
+
+        assert_eq!(model.id, "fixture");
+        assert_eq!(context.messages.len(), 1);
+        assert_eq!(
+            options.unwrap().common.transport,
+            Some(maestro_models::Transport::Auto)
+        );
+        let stream = maestro_models::AssistantMessageEventStream::new();
+        stream.end(Some(support::assistant("registered")));
+        Ok(stream)
+    }
+}
+
+/// Retained invocation owner for the controlled provider.
+struct UnexpectedRaw;
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for UnexpectedRaw
+{
+    type Return =
+        Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _call: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        panic!("raw dispatch selected")
     }
 }

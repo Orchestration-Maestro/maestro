@@ -79,6 +79,9 @@ supply ID normalization; projection owns content conversion and missing results.
 
 ## Controlled registered invocation
 
+A retained owner implements `Invoke` generically for both execution families.
+The same handle can populate raw and simple fields; direct hook closures stay unchanged.
+
 ```rust
 use maestro_models::{
     SharedHandle, ApiProvider, AssistantMessage, AssistantMessageEvent, Context, DoneReason,
@@ -107,12 +110,20 @@ let producer = create_assistant_message_event_stream();
 producer.push(AssistantMessageEvent::Done {
     reason: DoneReason::Stop, message: Arc::clone(&message),
 });
-let raw = producer.clone();
-let simple = producer.clone();
+struct ControlledProvider(maestro_models::AssistantMessageEventStream);
+impl<E: maestro_models::ProviderExecution, O>
+    maestro_models::Invoke<E, maestro_models::ProviderCall<E, O>> for ControlledProvider
+{
+    type Return = Result<maestro_models::AssistantMessageEventStream, maestro_models::DiagnosticErrorInfo>;
+    fn invoke(&self, _: maestro_models::ProviderCall<E, O>) -> Self::Return {
+        Ok(self.0.clone())
+    }
+}
+let owner = SharedHandle::new(ControlledProvider(producer.clone()));
 register_api_provider(ApiProvider {
     api: "fixture".into(),
-    stream: SharedHandle::new(move |_, _, _| Ok(raw.clone())),
-    stream_simple: SharedHandle::new(move |_, _, _| Ok(simple.clone())),
+    stream: owner.clone(),
+    stream_simple: owner,
 }, Some("controlled-example".into()));
 let completion = complete(model, Context {
     system_prompt: None, messages: vec![], tools: None,
@@ -125,6 +136,110 @@ let mut event = std::pin::pin!(producer.next());
 assert!(matches!(event.as_mut().poll(&mut context),
     Poll::Ready(Some(AssistantMessageEvent::Done { .. }))));
 # Ok::<(), serde_json::Error>(())
+```
+
+### Asynchronous registered producers
+
+Keep the worker generic; only its future boxes name concrete execution families.
+The caller's supplied admission retains the selected future without moving local hooks.
+
+```rust
+use maestro_models::*;
+use std::{cell::{Cell, RefCell}, rc::Rc, sync::{Arc, RwLock}};
+
+trait Producer: ProviderExecution {
+    fn task(call: ProviderCall<Self, StreamOptionsInput<Self>>,
+        stream: AssistantMessageEventStream) -> Self::Future<'static, ()>;
+}
+impl Producer for Local {
+    fn task(call: ProviderCall<Self, StreamOptionsInput<Self>>,
+        stream: AssistantMessageEventStream) -> Self::Future<'static, ()> {
+        Box::pin(produce(call, stream))
+    }
+}
+impl Producer for Threaded {
+    fn task(call: ProviderCall<Self, StreamOptionsInput<Self>>,
+        stream: AssistantMessageEventStream) -> Self::Future<'static, ()> {
+        Box::pin(produce(call, stream))
+    }
+}
+async fn answer<E: ProviderExecution>(call: ProviderCall<E, StreamOptionsInput<E>>)
+    -> Result<AssistantMessage, DiagnosticErrorInfo> {
+    let common = match call.options {
+        Some(StreamOptionsInput::Raw(options)) => options.common,
+        Some(StreamOptionsInput::Simple(options)) => options.common,
+        None => StreamOptions::default(),
+    };
+    let mut input = PayloadHookInput { payload: serde_json::json!({"answer":"ready"}), signal: None };
+    if let Some(hook) = common.on_payload { input = hook(input, Arc::new(call.model)).await?; }
+    Ok(faux_assistant_message(input.payload["answer"].as_str().unwrap_or("ready"),
+        FauxAssistantMessageOptions::default()))
+}
+async fn produce<E: ProviderExecution>(call: ProviderCall<E, StreamOptionsInput<E>>,
+    stream: AssistantMessageEventStream) {
+    let event = match answer(call).await {
+        Ok(message) => AssistantMessageEvent::Done { reason: DoneReason::Stop,
+            message: Arc::new(RwLock::new(message)) },
+        Err(error) => AssistantMessageEvent::Error { reason: ErrorReason::Error,
+            error: Arc::new(RwLock::new(faux_assistant_message("", FauxAssistantMessageOptions {
+                stop_reason: Some(StopReason::Error), error_message: Some(error.message),
+                ..Default::default()
+            }))) },
+    };
+    stream.push(event);
+}
+struct Custom;
+impl<E: Producer, O: Into<StreamOptionsInput<E>>> Invoke<E, ProviderCall<E, O>> for Custom {
+    type Return = Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
+    fn invoke(&self, call: ProviderCall<E, O>) -> Self::Return {
+        let submit = call.submit.clone();
+        let stream = AssistantMessageEventStream::new();
+        let input = ProviderCall { model: call.model, context: call.context,
+            options: call.options.map(Into::into), submit: call.submit };
+        E::submit(E::task(input, stream.clone()), submit, |task| { tokio::spawn(task); Ok(()) })?;
+        Ok(stream)
+    }
+}
+fn one_generic_owner_registers_both_fields() -> Result<(), Box<dyn std::error::Error>> {
+    let owner = Arc::new(Custom);
+    register_api_provider(ApiProvider { api: "custom-async".into(),
+        stream: owner.clone(), stream_simple: owner }, Some("custom-async-example".into()));
+    let model: Model = serde_json::from_value(serde_json::json!({
+        "id":"controlled", "name":"Controlled", "api":"custom-async", "provider":"custom",
+        "baseUrl":"https://fixture.invalid", "reasoning":false, "input":["text"],
+        "contextWindow":100, "maxTokens":10,
+        "cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0}
+    }))?;
+    let tasks = Rc::new(RefCell::new(Vec::new()));
+    let submitted = tasks.clone();
+    let spawn: ProviderSpawner<Local> = Rc::new(move |task| { submitted.borrow_mut().push(task); true });
+    let calls = Rc::new(Cell::new(0));
+    let observed = calls.clone();
+    let options = ProviderStreamOptions::<Local> { common: StreamOptions {
+        on_payload: Some(Rc::new(move |mut input, _| {
+            let observed = observed.clone();
+            Box::pin(async move {
+                tokio::task::yield_now().await;
+                observed.set(observed.get() + 1);
+                input.payload["answer"] = serde_json::json!("selected");
+                Ok(input)
+            })
+        })), ..Default::default()
+    }, ..Default::default() };
+    let stream = stream_for::<Local>(model, Context { system_prompt: None, messages: vec![], tools: None },
+        Some(options), spawn)?;
+    assert_eq!(calls.get(), 0);
+    let runtime = tokio::runtime::Builder::new_current_thread().build()?;
+    let task = tasks.borrow_mut().pop().unwrap();
+    runtime.block_on(task);
+    assert_eq!(calls.get(), 1);
+    let message = runtime.block_on(stream.result());
+    assert_eq!(message.read().unwrap().content, [AssistantContent::Text(faux_text("selected"))]);
+    unregister_api_providers("custom-async-example");
+    Ok(())
+}
+one_generic_owner_registers_both_fields()?;
+# Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
 ## Stream ownership

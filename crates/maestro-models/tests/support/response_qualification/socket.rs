@@ -9,7 +9,7 @@ use tokio_tungstenite::tungstenite::Message;
 type PeerResult = Result<HttpRequest, Box<dyn std::error::Error + Send + Sync>>;
 
 /// Bind before dispatch; the returned task owns one finite peer exchange.
-pub(super) async fn serve(
+pub(crate) async fn serve(
     events: Vec<Value>,
 ) -> TestResult<(String, tokio::task::JoinHandle<PeerResult>)> {
     let (listener, base) = super::socket_server::listen().await?;

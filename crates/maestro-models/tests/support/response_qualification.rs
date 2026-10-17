@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, HashSet};
 #[path = "response_qualification/histories.rs"]
 mod histories;
 #[path = "response_qualification/invocation.rs"]
-mod invocation;
+pub(crate) mod invocation;
 
 /// One independently recorded query and its observations.
 #[derive(Deserialize)]

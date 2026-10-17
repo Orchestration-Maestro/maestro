@@ -284,7 +284,7 @@ fn fallback_then_failure() -> (Stats, Stats) {
     };
     count_request(
         &request,
-        &crate::StreamOptions {
+        &crate::StreamOptions::<crate::Threaded> {
             session_id: Some("snapshot".to_owned()),
             ..crate::StreamOptions::default()
         },

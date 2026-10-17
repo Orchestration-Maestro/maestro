@@ -30,3 +30,5 @@ mod execution_affinity;
 mod message_storage;
 
 mod execution_replay;
+
+mod provider_affinity;

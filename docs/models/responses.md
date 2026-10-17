@@ -4,6 +4,13 @@ The standard endpoint is available under
 `providers::responses::openai_responses`; `OpenAIResponsesOptions` is also exported
 at the package root. Conversion and event reduction remain crate-internal.
 
+The raw and simple `_for` counterparts take a fourth `ProviderSpawner<E>`
+argument. `OpenAIResponsesOptions<E>`, `AzureOpenAIResponsesOptions<E>` and
+`SimpleStreamOptions<E>` retain hooks in that family; `Local` admits caller-local
+hooks and futures. These calls submit through the supplied facility, while the
+default three-argument calls retain their existing native runtime policy. Root
+simple `_for` exports keep settling setup errors as streams.
+
 ## Standard invocation
 
 `stream_openai_responses` reports setup failures through its stream.

@@ -1,6 +1,6 @@
 # Model option helpers
 
-`maestro-models` exports five pure helpers without catalog lookup, environment
+`maestro-models` exports pure helpers without catalog lookup, environment
 credential resolution, provider invocation or hook execution.
 
 - `build_base_options` copies the 14 common invocation fields, retaining callback
@@ -9,6 +9,9 @@ credential resolution, provider invocation or hook execution.
   including zero or negative values, remain unchanged. A separately supplied
   nonempty key overrides the option key; empty or absent keys fall back without
   trimming. Reasoning settings and thinking budgets are not common output fields.
+  `build_base_options_for` performs the same preparation for an explicit execution
+  family, sharing its original payload and response hooks without invoking them.
+  `build_base_options` keeps the default thread-safe SDK signature.
 - `reasoning_from_thinking_level` borrows an already-selected model thinking level:
   Off becomes absent; minimal through extra-high retain their level. Model support
   clamping remains with the caller.

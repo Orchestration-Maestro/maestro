@@ -13,7 +13,7 @@ use crate::records::types::{FunctionName, FunctionTag, Literal};
 use crate::{
     AnthropicOptions, AzureOpenAIResponsesOptions, MistralOptions, MistralToolChoice,
     ModelThinkingLevel, OpenAICodexResponsesOptions, OpenAICompletionsOptions,
-    OpenAIResponsesOptions, ProviderStreamOptions, ThinkingLevel, ToolChoice,
+    OpenAIResponsesOptions, ProviderExecution, ProviderStreamOptions, ThinkingLevel, ToolChoice,
 };
 use maestro_request::types::present;
 use serde::{Deserialize, Deserializer};
@@ -119,9 +119,9 @@ struct MessageExtras {
 }
 
 /// Decode the message protocol's options, taking the injected client from the object slot.
-pub(super) fn anthropic(
-    options: ProviderStreamOptions,
-) -> Result<AnthropicOptions, serde_json::Error> {
+pub(super) fn anthropic<E: ProviderExecution>(
+    options: ProviderStreamOptions<E>,
+) -> Result<AnthropicOptions<E>, serde_json::Error> {
     let extra: MessageExtras = extras(options.extra)?;
     Ok(AnthropicOptions {
         common: options.common,
@@ -148,9 +148,9 @@ struct ChatExtras {
 }
 
 /// Decode the chat protocol's options.
-pub(super) fn chat(
-    options: ProviderStreamOptions,
-) -> Result<OpenAICompletionsOptions, serde_json::Error> {
+pub(super) fn chat<E: ProviderExecution>(
+    options: ProviderStreamOptions<E>,
+) -> Result<OpenAICompletionsOptions<E>, serde_json::Error> {
     let extra: ChatExtras = extras(options.extra)?;
     Ok(OpenAICompletionsOptions {
         common: options.common,
@@ -219,9 +219,9 @@ struct ConversationExtras {
 }
 
 /// Decode the conversation protocol's options.
-pub(super) fn conversation(
-    options: ProviderStreamOptions,
-) -> Result<MistralOptions, serde_json::Error> {
+pub(super) fn conversation<E: ProviderExecution>(
+    options: ProviderStreamOptions<E>,
+) -> Result<MistralOptions<E>, serde_json::Error> {
     let extra: ConversationExtras = extras(options.extra)?;
     Ok(MistralOptions {
         common: options.common,
@@ -247,9 +247,9 @@ struct ResponseExtras {
 }
 
 /// Decode the standard response protocol's options.
-pub(super) fn responses(
-    options: ProviderStreamOptions,
-) -> Result<OpenAIResponsesOptions, serde_json::Error> {
+pub(super) fn responses<E: ProviderExecution>(
+    options: ProviderStreamOptions<E>,
+) -> Result<OpenAIResponsesOptions<E>, serde_json::Error> {
     let extra: ResponseExtras = extras(options.extra)?;
     Ok(OpenAIResponsesOptions {
         common: options.common,
@@ -287,9 +287,9 @@ struct CloudExtras {
 }
 
 /// Decode the cloud response protocol's options.
-pub(super) fn cloud_responses(
-    options: ProviderStreamOptions,
-) -> Result<AzureOpenAIResponsesOptions, serde_json::Error> {
+pub(super) fn cloud_responses<E: ProviderExecution>(
+    options: ProviderStreamOptions<E>,
+) -> Result<AzureOpenAIResponsesOptions<E>, serde_json::Error> {
     let extra: CloudExtras = extras(options.extra)?;
     Ok(AzureOpenAIResponsesOptions {
         common: options.common,
@@ -334,9 +334,9 @@ struct SessionExtras {
 }
 
 /// Decode response-session fields while moving the common invocation options unchanged.
-pub(super) fn response_sessions(
-    options: ProviderStreamOptions,
-) -> Result<OpenAICodexResponsesOptions, serde_json::Error> {
+pub(super) fn response_sessions<E: ProviderExecution>(
+    options: ProviderStreamOptions<E>,
+) -> Result<OpenAICodexResponsesOptions<E>, serde_json::Error> {
     let extra: SessionExtras = extras(options.extra)?;
     Ok(OpenAICodexResponsesOptions {
         common: options.common,
@@ -384,9 +384,9 @@ struct BedrockExtras {
 }
 
 /// Decode the default cloud-conversation adapter's options.
-pub(crate) fn bedrock(
-    options: ProviderStreamOptions,
-) -> Result<crate::BedrockOptions, serde_json::Error> {
+pub(crate) fn bedrock<E: ProviderExecution>(
+    options: ProviderStreamOptions<E>,
+) -> Result<crate::BedrockOptions<E>, serde_json::Error> {
     let extra: BedrockExtras = extras(options.extra)?;
     Ok(crate::BedrockOptions {
         common: options.common,
@@ -427,9 +427,9 @@ struct GoogleThinkingExtras {
 }
 
 /// Decode raw content-generation options without validating unused policy fields.
-pub(crate) fn google(
-    options: ProviderStreamOptions,
-) -> Result<crate::GoogleOptions, serde_json::Error> {
+pub(crate) fn google<E: ProviderExecution>(
+    options: ProviderStreamOptions<E>,
+) -> Result<crate::GoogleOptions<E>, serde_json::Error> {
     let extra: GoogleExtras = extras(options.extra)?;
     let thinking = extra
         .thinking

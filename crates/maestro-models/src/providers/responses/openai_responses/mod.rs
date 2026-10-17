@@ -1,7 +1,11 @@
 //! Standard response endpoint invocation.
 
+/// Simple key resolution and typed request preparation.
+mod simple;
 pub(super) mod source;
 use maestro_json::is_truthy as enabled;
+pub(crate) use simple::dispatch_simple;
+pub use simple::{stream_simple_openai_responses, stream_simple_openai_responses_for};
 use source::{Prepared, Source};
 
 use super::openai_responses_shared::{
@@ -9,8 +13,8 @@ use super::openai_responses_shared::{
     messages::{convert_responses_messages, convert_responses_tools},
     process_responses_stream,
 };
-use crate::options::{resolve_api_key, resolve_cache_retention};
-use crate::providers::assistant_output::{conclude, fail, initial_message, start_producer};
+use crate::options::resolve_cache_retention;
+use crate::providers::assistant_output::{conclude, fail, initial_message, start_producer_for};
 use crate::providers::chat::cloudflare::{is_cloudflare_provider, resolve_cloudflare_base_url};
 use crate::providers::chat::github_copilot_headers::{
     build_copilot_dynamic_headers, has_copilot_vision_input,
@@ -23,8 +27,9 @@ use crate::providers::http::{
 use crate::providers::json_text::compact_json;
 use crate::{
     AssistantMessageEvent, AssistantMessageEventStream, CacheRetention, Context,
-    DiagnosticErrorInfo, Model, ModelThinkingLevel, SharedAssistantMessage, SimpleStreamOptions,
-    StreamOptions, ThinkingLevel, build_base_options, clamp_thinking_level, get_env_api_key,
+    DiagnosticErrorInfo, Local, Model, ModelThinkingLevel, ProviderExecution, ProviderInvocation,
+    ProviderSpawner, SharedAssistantMessage, StreamOptions, StreamOptionsFamily, ThinkingLevel,
+    Threaded, get_env_api_key,
 };
 use futures_util::stream;
 use indexmap::IndexMap;
@@ -36,9 +41,9 @@ use std::sync::{Arc, RwLock};
 
 /// Options for the standard response endpoint.
 #[derive(Clone, Default)]
-pub struct OpenAIResponsesOptions {
+pub struct OpenAIResponsesOptions<E: ProviderExecution = Threaded> {
     /// Common request settings.
-    pub common: StreamOptions,
+    pub common: StreamOptions<E>,
     /// Requested reasoning effort.
     pub reasoning_effort: Option<ThinkingLevel>,
     /// Requested summary style for reasoning models.
@@ -94,55 +99,91 @@ pub fn stream_openai_responses(
     context: Context,
     options: Option<OpenAIResponsesOptions>,
 ) -> AssistantMessageEventStream {
+    dispatch(model, context, ProviderInvocation::Threaded(options, None))
+}
+
+/// Start a response request with the caller's producer admission and hook family.
+#[must_use]
+pub fn stream_openai_responses_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<OpenAIResponsesOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> AssistantMessageEventStream {
+    dispatch(model, context, E::submission(options, E::provided(submit)))
+}
+
+impl StreamOptionsFamily for OpenAIResponsesOptions {
+    type Options<E: ProviderExecution> = OpenAIResponsesOptions<E>;
+}
+
+/// Select concrete future erasure before starting the shared producer.
+pub(crate) fn dispatch(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<OpenAIResponsesOptions>,
+) -> AssistantMessageEventStream {
+    match invocation {
+        ProviderInvocation::Local(options, submit) => {
+            produce::<Local>(model, context, options, submit)
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            produce::<Threaded>(model, context, options, submit)
+        }
+    }
+}
+
+/// Box the same producer with this concrete family's future bounds.
+trait Producer: ProviderExecution {
+    /// Erase the retained producer without changing its work.
+    fn drive(
+        model: Arc<Model>,
+        context: Context,
+        options: OpenAIResponsesOptions<Self>,
+        stream: AssistantMessageEventStream,
+        output: SharedAssistantMessage,
+    ) -> Self::Future<'static, ()>;
+}
+
+/// Only the concrete future auto-trait bounds differ.
+macro_rules! producer {
+    ($mode:ty) => {
+        impl Producer for $mode {
+            fn drive(
+                model: Arc<Model>,
+                context: Context,
+                options: OpenAIResponsesOptions<Self>,
+                stream: AssistantMessageEventStream,
+                output: SharedAssistantMessage,
+            ) -> Self::Future<'static, ()> {
+                Box::pin(run::<Self>(model, context, options, stream, output))
+            }
+        }
+    };
+}
+producer!(Local);
+producer!(Threaded);
+
+/// Prepare one retained invocation and submit its producer once.
+fn produce<E: Producer>(
+    model: Model,
+    context: Context,
+    options: Option<OpenAIResponsesOptions<E>>,
+    submit: E::Submission,
+) -> AssistantMessageEventStream {
     let stream = AssistantMessageEventStream::new();
     let output = Arc::new(RwLock::new(initial_message(&model)));
     let options = options.unwrap_or_default();
     let signal = options.common.signal.clone();
-    let task = run(
+    let task = E::drive(
         Arc::new(model),
         context,
         options,
         stream.clone(),
         Arc::clone(&output),
     );
-    start_producer(&stream, &output, signal.as_ref(), Box::pin(task));
+    start_producer_for::<E>(&stream, &output, signal.as_ref(), task, submit);
     stream
-}
-
-/// Start a response using shared simple budgets and reasoning support.
-///
-/// # Errors
-/// Returns a missing provider key before creating a stream.
-pub fn stream_simple_openai_responses(
-    model: Model,
-    context: Context,
-    options: Option<SimpleStreamOptions>,
-) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
-    let key = resolve_api_key(
-        &model.provider,
-        options
-            .as_ref()
-            .and_then(|o| o.common.api_key.as_deref())
-            .map(Cow::Borrowed),
-    )
-    .ok_or_else(|| diagnostic(format!("No API key for provider: {}", model.provider)))?;
-    let common = build_base_options(&model, options.as_ref(), Some(&key));
-    let reasoning_effort = options
-        .as_ref()
-        .and_then(|o| o.reasoning)
-        .and_then(|level| {
-            crate::reasoning_from_thinking_level(&clamp_thinking_level(&model, level.into()))
-        });
-    drop(options);
-    Ok(stream_openai_responses(
-        model,
-        context,
-        Some(OpenAIResponsesOptions {
-            common,
-            reasoning_effort,
-            ..OpenAIResponsesOptions::default()
-        }),
-    ))
 }
 
 /// Failure text carried by the stream source or simple key boundary.
@@ -198,17 +239,17 @@ pub(super) struct Reasoning<'a> {
 }
 
 /// Request inputs with their resolved cache policy.
-struct Request<'a> {
+struct Request<'a, E: ProviderExecution> {
     /// Target descriptor.
     model: &'a Arc<Model>,
     /// Conversation to convert.
     context: &'a Context,
     /// Endpoint options.
-    options: &'a OpenAIResponsesOptions,
+    options: &'a OpenAIResponsesOptions<E>,
     /// Effective retention choice.
     retention: CacheRetention,
 }
-impl Request<'_> {
+impl<E: ProviderExecution> Request<'_, E> {
     /// Session key when caching is enabled, including an empty supplied key.
     fn session(&self) -> Option<&str> {
         self.options
@@ -364,7 +405,10 @@ impl Request<'_> {
 }
 
 /// Select the raw key, including its last-resort standard environment key.
-fn raw_key<'a>(model: &Model, options: &'a StreamOptions) -> Result<Cow<'a, str>, RequestFailure> {
+fn raw_key<'a, E: ProviderExecution>(
+    model: &Model,
+    options: &'a StreamOptions<E>,
+) -> Result<Cow<'a, str>, RequestFailure> {
     options.api_key.as_deref().filter(|key|!key.is_empty()).map(Cow::Borrowed)
         .or_else(||get_env_api_key(&model.provider).map(Cow::Owned))
         .or_else(||std::env::var("OPENAI_API_KEY").ok().filter(|key|!key.is_empty()).map(Cow::Owned))
@@ -372,10 +416,10 @@ fn raw_key<'a>(model: &Model, options: &'a StreamOptions) -> Result<Cow<'a, str>
 }
 
 /// Run one invocation and publish its terminal update.
-async fn run(
+async fn run<E: ProviderExecution>(
     model: Arc<Model>,
     context: Context,
-    options: OpenAIResponsesOptions,
+    options: OpenAIResponsesOptions<E>,
     stream: AssistantMessageEventStream,
     output: SharedAssistantMessage,
 ) {

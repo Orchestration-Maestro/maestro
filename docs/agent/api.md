@@ -157,10 +157,29 @@ fn entry(text: &str) -> AgentMessage<Notification> {
 let faux = register_faux_provider(RegisterFauxProviderOptions::default());
 let requests = Arc::new(Mutex::new(Vec::new()));
 let seen = Arc::clone(&requests);
-faux.set_responses(vec![FauxResponseStep::Factory(Arc::new(move |context, _, _, _| {
-    seen.lock().unwrap().push(context.messages.iter().map(shown).collect::<Vec<_>>());
-    ready(Ok(faux_assistant_message("ok", FauxAssistantMessageOptions::default())))
-}))]);
+struct RequestTexts(Arc<Mutex<Vec<Vec<String>>>>);
+impl RequestTexts {
+    fn respond<E: maestro_models::ProviderExecution>(&self, input: maestro_models::FauxResponseInput<E>)
+        -> impl std::future::Future<Output = Result<maestro_models::AssistantMessage, maestro_models::DiagnosticErrorInfo>> + 'static
+    {
+        let texts = input.context.messages.iter().map(shown).collect::<Vec<_>>();
+        self.0.lock().unwrap().push(texts);
+        std::future::ready(Ok(faux_assistant_message("ok", FauxAssistantMessageOptions::default())))
+    }
+}
+impl maestro_models::Invoke<maestro_models::Local, maestro_models::FauxResponseInput<maestro_models::Local>> for RequestTexts {
+    type Return = <maestro_models::Local as maestro_models::Execution>::Future<'static, Result<maestro_models::AssistantMessage, maestro_models::DiagnosticErrorInfo>>;
+    fn invoke(&self, input: maestro_models::FauxResponseInput<maestro_models::Local>) -> Self::Return {
+        Box::pin(self.respond(input))
+    }
+}
+impl maestro_models::Invoke<maestro_models::Threaded, maestro_models::FauxResponseInput<maestro_models::Threaded>> for RequestTexts {
+    type Return = <maestro_models::Threaded as maestro_models::Execution>::Future<'static, Result<maestro_models::AssistantMessage, maestro_models::DiagnosticErrorInfo>>;
+    fn invoke(&self, input: maestro_models::FauxResponseInput<maestro_models::Threaded>) -> Self::Return {
+        Box::pin(self.respond(input))
+    }
+}
+faux.set_responses(vec![FauxResponseStep::Factory(Arc::new(RequestTexts(seen)))]);
 
 let earlier_reply = AgentMessage::Assistant(Arc::new(RwLock::new(faux_assistant_message("earlier", FauxAssistantMessageOptions::default()))));
 let notice = AgentMessage::Custom(Arc::new(RwLock::new(Notification { text: "Info".into() })));
@@ -263,14 +282,45 @@ from the options the model receives:
 # fn ready<T: Send + 'static>(value: T) -> BoxFuture<T> { Box::pin(std::future::ready(value)) }
 # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
 let faux = register_faux_provider(RegisterFauxProviderOptions::default());
-let received = Arc::new(Mutex::new(None));
-let sink = Arc::clone(&received);
-faux.set_responses(vec![FauxResponseStep::Factory(Arc::new(move |_, options, _, _| {
-    *sink.lock().unwrap() = options;
-    ready(Ok(faux_assistant_message("ok", FauxAssistantMessageOptions::default())))
+let received = Arc::new(std::sync::atomic::AtomicBool::new(false));
+let budgets = ThinkingBudgets { minimal: Some(128.0), high: Some(2048.0), ..Default::default() };
+struct CheckOptions {
+    received: Arc<std::sync::atomic::AtomicBool>,
+    budgets: ThinkingBudgets,
+}
+impl CheckOptions {
+    fn respond<E: maestro_models::ProviderExecution>(&self, input: maestro_models::FauxResponseInput<E>)
+        -> impl std::future::Future<Output = Result<maestro_models::AssistantMessage, maestro_models::DiagnosticErrorInfo>> + 'static
+    {
+        let Some(FauxResponseOptions::Simple(options)) = input.options else {
+            panic!("the Agent requests through the simple adapter");
+        };
+        assert_eq!(options.common.session_id.as_deref(), Some("session-123"));
+        assert_eq!(options.common.transport, Some(Transport::Websocket));
+        assert_eq!(options.common.max_retry_delay_ms, Some(1234.0));
+        assert_eq!(options.common.api_key.as_deref(), Some("resolved"));
+        assert_eq!(options.reasoning, Some(maestro_models::ThinkingLevel::Low));
+        assert_eq!(options.thinking_budgets, Some(self.budgets.clone()));
+        self.received.store(true, std::sync::atomic::Ordering::SeqCst);
+        std::future::ready(Ok(faux_assistant_message("ok", FauxAssistantMessageOptions::default())))
+    }
+}
+impl maestro_models::Invoke<maestro_models::Local, maestro_models::FauxResponseInput<maestro_models::Local>> for CheckOptions {
+    type Return = <maestro_models::Local as maestro_models::Execution>::Future<'static, Result<maestro_models::AssistantMessage, maestro_models::DiagnosticErrorInfo>>;
+    fn invoke(&self, input: maestro_models::FauxResponseInput<maestro_models::Local>) -> Self::Return {
+        Box::pin(self.respond(input))
+    }
+}
+impl maestro_models::Invoke<maestro_models::Threaded, maestro_models::FauxResponseInput<maestro_models::Threaded>> for CheckOptions {
+    type Return = <maestro_models::Threaded as maestro_models::Execution>::Future<'static, Result<maestro_models::AssistantMessage, maestro_models::DiagnosticErrorInfo>>;
+    fn invoke(&self, input: maestro_models::FauxResponseInput<maestro_models::Threaded>) -> Self::Return {
+        Box::pin(self.respond(input))
+    }
+}
+faux.set_responses(vec![FauxResponseStep::Factory(Arc::new(CheckOptions {
+    received: Arc::clone(&received), budgets: budgets.clone(),
 }))]);
 
-let budgets = ThinkingBudgets { minimal: Some(128.0), high: Some(2048.0), ..Default::default() };
 let agent: Arc<Agent> = Arc::new(Agent::new(AgentOptions {
     spawn: Some(Arc::new(|task| {
         tokio::spawn(task);
@@ -289,15 +339,7 @@ let agent: Arc<Agent> = Arc::new(Agent::new(AgentOptions {
 }));
 agent.prompt(PromptInput::Text { text: "Hi".into(), images: vec![] }).await.unwrap();
 
-let Some(FauxResponseOptions::Simple(options)) = received.lock().unwrap().take() else {
-    panic!("the Agent requests through the simple adapter");
-};
-assert_eq!(options.common.session_id.as_deref(), Some("session-123"));
-assert_eq!(options.common.transport, Some(Transport::Websocket));
-assert_eq!(options.common.max_retry_delay_ms, Some(1234.0));
-assert_eq!(options.common.api_key.as_deref(), Some("resolved"));
-assert_eq!(options.reasoning, Some(maestro_models::ThinkingLevel::Low));
-assert_eq!(options.thinking_budgets, Some(budgets));
+assert!(received.load(std::sync::atomic::Ordering::SeqCst));
 # faux.unregister();
 # });
 ```

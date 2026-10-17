@@ -14,7 +14,7 @@ use std::{future::Future, rc::Rc, sync::Arc};
 type CallbackFuture<'a, E, T> =
     <E as maestro_models::Execution>::Future<'a, Result<T, DiagnosticErrorInfo>>;
 /// Agent callback signatures for the lower-owned execution representation.
-pub trait AgentExecution: maestro_models::Execution {
+pub trait AgentExecution: maestro_models::ProviderExecution {
     /// A retained observation future with no borrowed operation data.
     type ObservationFuture: Future<Output = Result<(), DiagnosticErrorInfo>> + Unpin + 'static;
     /// A live model-facing tool description.
@@ -67,8 +67,8 @@ pub trait AgentExecution: maestro_models::Execution {
     type Stream: Fn(
             Model,
             Context,
-            SimpleStreamOptions,
-            ProviderStreamOptions,
+            SimpleStreamOptions<Self>,
+            ProviderStreamOptions<Self>,
         ) -> CallbackFuture<'static, Self, AssistantMessageEventStream>
         + ?Sized;
     /// The owned event observation callable.
@@ -78,6 +78,18 @@ pub trait AgentExecution: maestro_models::Execution {
         + ?Sized;
     /// The caller-owned execution admission callable.
     type Spawner: Fn(Self::Future<'static, ()>) + ?Sized;
+    /// Adapt the existing task facility for provider admission.
+    fn provider_submission(spawn: crate::AgentSpawner<Self>) -> Self::Submission;
+    /// Dispatch with the selected family's existing default or supplied admission.
+    ///
+    /// # Errors
+    /// Returns the model adapter's lookup or setup error.
+    fn provider_stream(
+        model: Model,
+        context: Context,
+        options: SimpleStreamOptions<Self>,
+        submission: Self::Submission,
+    ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo>;
     /// Construct the default message projection.
     fn default_converter<C: CustomAgentMessages>() -> ConvertToLlm<C, Self>;
     /// Erase typed arguments and details at the existing tool boundary.
@@ -87,7 +99,7 @@ pub trait AgentExecution: maestro_models::Execution {
 }
 /// One declaration template; only pointer and auto-trait bounds differ.
 macro_rules! family {
- ($mode:ty,$ptr:ident, [$($bound:tt)*]) => {
+ ($mode:ty,$ptr:ident, [$($bound:tt)*], $submission:expr, $dispatch:expr) => {
 
 impl AgentExecution for $mode {
     type ObservationFuture = <Self as maestro_models::Execution>::Future<'static,Result<(),DiagnosticErrorInfo>>;
@@ -129,8 +141,8 @@ impl AgentExecution for $mode {
     type Stream = dyn Fn(
             Model,
             Context,
-            SimpleStreamOptions,
-            ProviderStreamOptions,
+            SimpleStreamOptions<Self>,
+            ProviderStreamOptions<Self>,
         ) -> CallbackFuture<'static, Self, AssistantMessageEventStream>
         $($bound)*;
     type Sink<C: CustomAgentMessages> =
@@ -138,6 +150,12 @@ impl AgentExecution for $mode {
     type Listener<C: CustomAgentMessages> = dyn Fn(Arc<std::sync::RwLock<AgentEvent<C>>>, Cancellation) -> Self::ObservationFuture
         $($bound)*;
     type Spawner = dyn Fn(Self::Future<'static, ()>) $($bound)*;
+    fn provider_submission(spawn: crate::AgentSpawner<Self>) -> Self::Submission {
+        ($submission)(spawn)
+    }
+    fn provider_stream(model: Model, context: Context, options: SimpleStreamOptions<Self>, submission: Self::Submission) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+        ($dispatch)(model, context, options, submission)
+    }
     fn default_converter<C: CustomAgentMessages>() -> ConvertToLlm<C, Self> {
         $ptr::new(|history| {
             let messages = crate::agent::read(&history)
@@ -176,11 +194,39 @@ impl AgentExecution for $mode {
 }
  };
 }
-family!(Local, Rc, []);
+family!(
+    Local,
+    Rc,
+    [],
+    |spawn: crate::AgentSpawner<Local>| Rc::new(move |task| {
+        spawn(task);
+        true
+    }),
+    |model, context, options, submit| maestro_models::stream_simple_for::<Local>(
+        model,
+        context,
+        Some(options),
+        submit
+    )
+);
 #[cfg(not(target_arch = "wasm32"))]
-family!(Threaded,Arc,[+ Send + Sync]);
+family!(Threaded,Arc,[+ Send + Sync], |_spawn| None, threaded_provider_stream);
 #[cfg(target_arch = "wasm32")]
-family!(Threaded, Rc, []);
+family!(Threaded, Rc, [], |_spawn| None, threaded_provider_stream);
+/// Preserve the ordinary provider default unless an override was supplied.
+fn threaded_provider_stream(
+    model: Model,
+    context: Context,
+    options: SimpleStreamOptions,
+    submission: <Threaded as maestro_models::ProviderExecution>::Submission,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    match submission {
+        Some(spawn) => {
+            maestro_models::stream_simple_for::<Threaded>(model, context, Some(options), spawn)
+        }
+        None => maestro_models::stream_simple(model, context, Some(options)),
+    }
+}
 /// Concrete callable-erasure and task-submission glue.
 pub trait ExecutionFor<C: CustomAgentMessages + 'static>: AgentExecution {
     /// Concurrently polled admitted observations.

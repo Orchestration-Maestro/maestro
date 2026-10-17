@@ -23,19 +23,21 @@ use std::sync::{Arc, RwLock};
 
 use indexmap::IndexMap;
 
+#[cfg(not(target_arch = "wasm32"))]
+use crate::SharedAssistantMessage;
 use crate::options::token_base;
 #[cfg(target_arch = "wasm32")]
 use crate::providers::assistant_output::fail;
 use crate::providers::assistant_output::initial_message;
 #[cfg(not(target_arch = "wasm32"))]
-use crate::providers::assistant_output::start_producer;
+use crate::providers::assistant_output::start_producer_for;
 #[cfg(target_arch = "wasm32")]
 use crate::providers::http::RequestFailure;
 use crate::providers::messages::anthropic::AnthropicThinkingDisplay;
 use crate::{
-    AssistantMessageEventStream, Context, Model, SharedAssistantMessage, SimpleStreamOptions,
-    StreamOptions, ThinkingBudgets, ThinkingLevel, ToolChoice, adjust_max_tokens_for_thinking,
-    build_base_options,
+    AssistantMessageEventStream, Context, Local, Model, ProviderExecution, ProviderInvocation,
+    ProviderSpawner, SimpleStreamOptions, StreamOptions, StreamOptionsFamily, ThinkingBudgets,
+    ThinkingLevel, Threaded, ToolChoice, adjust_max_tokens_for_thinking, build_base_options_for,
 };
 use thinking::{is_anthropic_claude_model, supports_adaptive_thinking};
 
@@ -44,9 +46,9 @@ pub type BedrockThinkingDisplay = AnthropicThinkingDisplay;
 
 /// Options for a direct Bedrock conversation.
 #[derive(Clone, Default)]
-pub struct BedrockOptions {
+pub struct BedrockOptions<E: ProviderExecution = Threaded> {
     /// Settings common to every protocol.
-    pub common: StreamOptions,
+    pub common: StreamOptions<E>,
     /// Region to use; an empty value counts as absent.
     pub region: Option<String>,
     /// Shared-config profile to read; an empty value counts as absent.
@@ -81,14 +83,38 @@ pub fn stream_bedrock(
     context: Context,
     options: Option<BedrockOptions>,
 ) -> AssistantMessageEventStream {
-    let stream = AssistantMessageEventStream::new();
-    let output: SharedAssistantMessage = Arc::new(RwLock::new(initial_message(&model)));
-    let options = options.unwrap_or_default();
-    #[cfg(not(target_arch = "wasm32"))]
-    start(model, context, options, &stream, &output);
-    #[cfg(target_arch = "wasm32")]
-    start(model, context, &options, &stream, &output);
-    stream
+    dispatch(model, context, ProviderInvocation::Threaded(options, None))
+}
+
+/// Start cloud conversation using caller-owned admission and hook captures.
+#[must_use]
+pub fn stream_bedrock_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<BedrockOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> AssistantMessageEventStream {
+    dispatch(model, context, E::submission(options, E::provided(submit)))
+}
+
+impl StreamOptionsFamily for BedrockOptions {
+    type Options<E: ProviderExecution> = BedrockOptions<E>;
+}
+
+/// Select concrete future bounds without changing the SDK request worker.
+pub(crate) fn dispatch(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<BedrockOptions>,
+) -> AssistantMessageEventStream {
+    match invocation {
+        ProviderInvocation::Local(options, submit) => {
+            start::<Local>(model, context, options.unwrap_or_default(), submit)
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            start::<Threaded>(model, context, options.unwrap_or_default(), submit)
+        }
+    }
 }
 
 /// Resolve simple options, give a fixed-budget Claude model a budget that fits its token limit,
@@ -99,8 +125,27 @@ pub fn stream_simple_bedrock(
     context: Context,
     options: Option<SimpleStreamOptions>,
 ) -> AssistantMessageEventStream {
+    dispatch_simple(model, context, ProviderInvocation::Threaded(options, None))
+}
+
+/// Start simple cloud conversation using caller-owned admission.
+#[must_use]
+pub fn stream_simple_bedrock_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> AssistantMessageEventStream {
+    dispatch_simple(model, context, E::submission(options, E::provided(submit)))
+}
+
+/// Select raw cloud controls while retaining the hook family.
+fn simple_options<E: ProviderExecution>(
+    model: &Model,
+    options: Option<SimpleStreamOptions<E>>,
+) -> BedrockOptions<E> {
     let mut raw = BedrockOptions {
-        common: build_base_options(&model, options.as_ref(), None),
+        common: build_base_options_for(model, options.as_ref(), None),
         ..BedrockOptions::default()
     };
     if let Some(SimpleStreamOptions {
@@ -111,16 +156,20 @@ pub fn stream_simple_bedrock(
     {
         raw.reasoning = Some(level);
         raw.thinking_budgets = thinking_budgets;
-        if is_anthropic_claude_model(&model) && !supports_adaptive_thinking(&model) {
-            fit_budget(&model, &mut raw, level);
+        if is_anthropic_claude_model(model) && !supports_adaptive_thinking(model) {
+            fit_budget(model, &mut raw, level);
         }
     }
-    stream_bedrock(model, context, Some(raw))
+    raw
 }
 
 /// Store [`adjust_max_tokens_for_thinking`]'s returned token limit and budget in the selected
 /// level's slot, leaving the other budget slots as given.
-fn fit_budget(model: &Model, raw: &mut BedrockOptions, level: ThinkingLevel) {
+fn fit_budget<E: ProviderExecution>(
+    model: &Model,
+    raw: &mut BedrockOptions<E>,
+    level: ThinkingLevel,
+) {
     let adjusted = adjust_max_tokens_for_thinking(
         token_base(raw.common.max_tokens),
         model.max_tokens,
@@ -140,28 +189,61 @@ fn fit_budget(model: &Model, raw: &mut BedrockOptions, level: ThinkingLevel) {
     *slot = Some(adjusted.thinking_budget);
 }
 
-/// End the stream with the browser failure.
-#[cfg(target_arch = "wasm32")]
-fn start(
-    _model: Model,
-    _context: Context,
-    options: &BedrockOptions,
-    stream: &AssistantMessageEventStream,
-    output: &SharedAssistantMessage,
-) {
-    let failure = RequestFailure::new("Bedrock is not supported in browsers.");
-    fail(stream, output, options.common.signal.as_ref(), failure);
+/// Concrete erasure stays beside the cloud worker.
+trait Producer: ProviderExecution {
+    /// Box the shared SDK operation under this family's future bounds.
+    #[cfg(not(target_arch = "wasm32"))]
+    fn drive(
+        call: native::Call<Self>,
+        stream: AssistantMessageEventStream,
+        output: SharedAssistantMessage,
+    ) -> Self::Future<'static, ()>;
 }
 
-/// Run the request on the runtime, or end the stream when there is none.
+/// Only concrete future bounds differ between the families.
+macro_rules! producer {
+    ($mode:ty) => {
+        impl Producer for $mode {
+            #[cfg(not(target_arch = "wasm32"))]
+            fn drive(
+                call: native::Call<Self>,
+                stream: AssistantMessageEventStream,
+                output: SharedAssistantMessage,
+            ) -> Self::Future<'static, ()> {
+                Box::pin(native::run::<Self>(call, stream, output))
+            }
+        }
+    };
+}
+producer!(Local);
+producer!(Threaded);
+
+/// End the stream with the existing browser failure without starting SDK work.
+#[cfg(target_arch = "wasm32")]
+fn start<E: Producer>(
+    model: Model,
+    _context: Context,
+    options: BedrockOptions<E>,
+    _submit: E::Submission,
+) -> AssistantMessageEventStream {
+    let stream = AssistantMessageEventStream::new();
+    let output = Arc::new(RwLock::new(initial_message(&model)));
+    let failure = RequestFailure::new("Bedrock is not supported in browsers.");
+    let signal = options.common.signal;
+    fail(&stream, &output, signal.as_ref(), failure);
+    stream
+}
+
+/// Capture SDK setup and submit the same independently owned request once.
 #[cfg(not(target_arch = "wasm32"))]
-fn start(
+fn start<E: Producer>(
     model: Model,
     context: Context,
-    options: BedrockOptions,
-    stream: &AssistantMessageEventStream,
-    output: &SharedAssistantMessage,
-) {
+    options: BedrockOptions<E>,
+    submit: E::Submission,
+) -> AssistantMessageEventStream {
+    let stream = AssistantMessageEventStream::new();
+    let output = Arc::new(RwLock::new(initial_message(&model)));
     let signal = options.common.signal.clone();
     let call = native::Call {
         model: Arc::new(model),
@@ -169,8 +251,9 @@ fn start(
         options,
         env: proxy::Environment::capture(),
     };
-    let task = native::run(call, stream.clone(), Arc::clone(output));
-    start_producer(stream, output, signal.as_ref(), Box::pin(task));
+    let task = E::drive(call, stream.clone(), Arc::clone(&output));
+    start_producer_for::<E>(&stream, &output, signal.as_ref(), task, submit);
+    stream
 }
 
 /// The native request: payload, SDK send and event reduction.
@@ -198,20 +281,20 @@ mod native {
     const ABORTED_TEXT: &str = "Request was aborted";
 
     /// Everything one request needs, taken when the call was made.
-    pub(super) struct Call {
+    pub(super) struct Call<E: crate::ProviderExecution> {
         /// Model that was asked.
         pub(super) model: Arc<Model>,
         /// Conversation to send.
         pub(super) context: Context,
         /// Options of the call.
-        pub(super) options: BedrockOptions,
+        pub(super) options: BedrockOptions<E>,
         /// Environment as the call saw it.
         pub(super) env: Environment,
     }
 
     /// Drive one request to its terminal update.
-    pub(super) async fn run(
-        call: Call,
+    pub(super) async fn run<E: crate::ProviderExecution>(
+        call: Call<E>,
         stream: AssistantMessageEventStream,
         output: SharedAssistantMessage,
     ) {
@@ -243,8 +326,8 @@ mod native {
 
     /// Send the request and reduce the stream into the shared message; a normal end concludes
     /// with a done update.
-    async fn invoke(
-        call: Call,
+    async fn invoke<E: crate::ProviderExecution>(
+        call: Call<E>,
         stream: &AssistantMessageEventStream,
         output: &SharedAssistantMessage,
     ) -> Result<(), RequestFailure> {
@@ -293,5 +376,23 @@ mod native {
             next = next_event(&mut events, signal).await?;
         }
         conclude(stream, output, signal)
+    }
+}
+
+/// Project simple options under the selected submission without changing SDK ownership.
+pub(crate) fn dispatch_simple(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<SimpleStreamOptions>,
+) -> AssistantMessageEventStream {
+    match invocation {
+        ProviderInvocation::Local(options, submit) => {
+            let raw = simple_options(&model, options);
+            dispatch(model, context, Local::submission(Some(raw), submit))
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            let raw = simple_options(&model, options);
+            dispatch(model, context, Threaded::submission(Some(raw), submit))
+        }
     }
 }

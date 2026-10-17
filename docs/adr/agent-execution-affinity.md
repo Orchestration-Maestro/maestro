@@ -10,7 +10,11 @@ its existing execution behavior.
 
 The sealed `Local` and `Threaded` representations belong to `maestro-models`, the
 lowest existing callback owner. They select future, shared and weak pointer types.
-`maestro-agent` owns the agent callback signatures and concrete submission glue.
+Models owns the provider callable, payload/response hooks, options family and
+provider submission representation. One retained callable supports either family;
+its return is associated with the invocation family. The same mechanism serves
+provider callbacks and scripted factories. `maestro-agent` owns agent callback
+signatures, conversion from its existing task admission and typed local entry.
 Both representations use one loop, admission path, listener traversal, progress
 FIFO and lifecycle. No crate or dependency edge is added.
 
@@ -22,5 +26,10 @@ on the real UI objects without a dispatcher, thread-local registry or unsafe
 thread-safety assertion. Typed aliases retain existing SDK struct-literal and
 explicit message-type call syntax.
 
-Model payload and response callbacks retain their existing thread-safe contract;
-local agent execution alone does not make those provider callbacks local.
+Payload and response hooks follow the invocation family: local hooks and futures
+may retain single-thread objects, while default SDK hooks remain thread-safe on
+native targets. The registered native callable itself remains thread-safe and
+accepts either family without caller-side mode matching. Local registered dispatch
+requires its caller's submission facility in the entry type; a replacement-stream
+entry requires none. Providers retain their existing default submission policy
+when a threaded caller supplies no facility.

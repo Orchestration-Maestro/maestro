@@ -67,21 +67,22 @@ pub fn publish_failure(
     });
 }
 
-/// Launch an owned producer, or publish the existing native runtime failure synchronously.
-pub(crate) fn start_producer(
+/// Admit the family's producer without changing the provider's native fallback.
+pub(crate) fn start_producer_for<E: crate::ProviderExecution>(
     stream: &AssistantMessageEventStream,
     output: &SharedAssistantMessage,
     signal: Option<&Cancellation>,
-    task: BoxFuture<()>,
+    task: E::Future<'static, ()>,
+    submit: E::Submission,
 ) {
-    if !crate::providers::http::spawn_detached(task) {
-        fail(
-            stream,
-            output,
-            signal,
-            RequestFailure::new("Streaming requires a running Tokio runtime."),
-        );
+    if let Err(error) = E::submit(task, submit, submit_http) {
+        fail(stream, output, signal, error.into());
     }
+}
+
+/// Preserve the existing HTTP runtime's admission policy and failure.
+fn submit_http(task: BoxFuture<()>) -> Result<(), DiagnosticErrorInfo> {
+    crate::records::types::admitted(crate::providers::http::spawn_detached(task))
 }
 
 /// Publish completion only after reduction and cancellation checks succeed.

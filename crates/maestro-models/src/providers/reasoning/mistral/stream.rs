@@ -2,12 +2,13 @@
 use super::{MistralOptions, request};
 use crate::options::resolve_api_key;
 use crate::providers::{
-    assistant_output::{conclude, fail, initial_message, start_producer},
+    assistant_output::{conclude, fail, initial_message, start_producer_for},
     http::RequestFailure,
 };
 use crate::{
-    AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Model,
-    SimpleStreamOptions,
+    AssistantMessageEvent, AssistantMessageEventStream, Context, DiagnosticErrorInfo, Local, Model,
+    ProviderExecution, ProviderInvocation, ProviderSpawner, SharedAssistantMessage,
+    SimpleStreamOptions, StreamOptionsFamily, Threaded,
 };
 use std::borrow::Cow;
 use std::sync::{Arc, RwLock};
@@ -21,7 +22,38 @@ pub fn stream_mistral(
     context: Context,
     options: Option<MistralOptions>,
 ) -> AssistantMessageEventStream {
-    start(model, context, options.unwrap_or_default(), None)
+    dispatch(model, context, ProviderInvocation::Threaded(options, None))
+}
+
+/// Start a conversation using caller-owned admission and hook captures.
+#[must_use]
+pub fn stream_mistral_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<MistralOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> AssistantMessageEventStream {
+    dispatch(model, context, E::submission(options, E::provided(submit)))
+}
+
+impl StreamOptionsFamily for MistralOptions {
+    type Options<E: ProviderExecution> = MistralOptions<E>;
+}
+
+/// Select concrete future bounds before entering the shared producer.
+pub(crate) fn dispatch(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<MistralOptions>,
+) -> AssistantMessageEventStream {
+    match invocation {
+        ProviderInvocation::Local(options, submit) => {
+            start::<Local>(model, context, options.unwrap_or_default(), None, submit)
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            start::<Threaded>(model, context, options.unwrap_or_default(), None, submit)
+        }
+    }
 }
 
 /// Resolve credentials before starting a simple conversation stream.
@@ -33,6 +65,45 @@ pub fn stream_simple_mistral(
     model: Model,
     context: Context,
     options: Option<SimpleStreamOptions>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    simple::<Threaded>(model, context, options, None)
+}
+
+/// Resolve simple options with caller-owned producer admission.
+///
+/// # Errors
+/// Returns the existing missing-key diagnostic before producing a stream.
+pub fn stream_simple_mistral_for<E: ProviderExecution>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: ProviderSpawner<E>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    dispatch_simple(model, context, E::submission(options, E::provided(submit)))
+}
+
+/// Select concrete simple preparation while preserving the original submission.
+pub(crate) fn dispatch_simple(
+    model: Model,
+    context: Context,
+    invocation: ProviderInvocation<SimpleStreamOptions>,
+) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
+    match invocation {
+        ProviderInvocation::Local(options, submit) => {
+            simple::<Local>(model, context, options, submit)
+        }
+        ProviderInvocation::Threaded(options, submit) => {
+            simple::<Threaded>(model, context, options, submit)
+        }
+    }
+}
+
+/// Resolve credentials before reusing the raw producer.
+fn simple<E: Producer>(
+    model: Model,
+    context: Context,
+    options: Option<SimpleStreamOptions<E>>,
+    submit: E::Submission,
 ) -> Result<AssistantMessageEventStream, DiagnosticErrorInfo> {
     let mut options = options.unwrap_or_default();
     options.common.api_key = resolve_api_key(
@@ -47,40 +118,92 @@ pub fn stream_simple_mistral(
         ));
     }
     let (raw, effort) = request::simple_options(&model, &options);
-    Ok(start(model, context, raw, effort))
+    Ok(start::<E>(model, context, raw, effort, submit))
 }
 
+/// Owned request settings retained by one producer.
+struct Invocation<E: ProviderExecution> {
+    /// Model shared with hooks.
+    model: Arc<Model>,
+    /// Request history.
+    context: Context,
+    /// Family-correct raw controls.
+    options: MistralOptions<E>,
+    /// Model-mapped reasoning effort.
+    effort: Option<String>,
+}
+
+/// Concrete future erasure for the shared conversation worker.
+trait Producer: ProviderExecution {
+    /// Box one worker under this family's future bounds.
+    fn drive(
+        call: Invocation<Self>,
+        stream: AssistantMessageEventStream,
+        output: SharedAssistantMessage,
+    ) -> Self::Future<'static, ()>;
+}
+
+/// Erase only the concrete family's future, not its invocation logic.
+macro_rules! producer {
+    ($mode:ty) => {
+        impl Producer for $mode {
+            fn drive(
+                call: Invocation<Self>,
+                stream: AssistantMessageEventStream,
+                output: SharedAssistantMessage,
+            ) -> Self::Future<'static, ()> {
+                Box::pin(run::<Self>(call, stream, output))
+            }
+        }
+    };
+}
+producer!(Local);
+producer!(Threaded);
+
 /// Own the producer separately from its returned reader.
-fn start(
+fn start<E: Producer>(
     model: Model,
     context: Context,
-    options: MistralOptions,
+    options: MistralOptions<E>,
     effort: Option<String>,
+    submit: E::Submission,
 ) -> AssistantMessageEventStream {
     let stream = AssistantMessageEventStream::new();
     let output = Arc::new(RwLock::new(initial_message(&model)));
-    let producer = stream.clone();
-    let message = Arc::clone(&output);
-    start_producer(
-        &stream,
-        &output,
-        None,
-        Box::pin(async move {
-            let model = Arc::new(model);
-            let result = async {
-                let prepared =
-                    request::prepare(Arc::clone(&model), &context, &options, effort.as_deref())
-                        .await?;
-                let body = request::send(prepared).await?;
-                produce(&producer, &message, &model, body, &options).await
-            }
-            .await;
-            if let Err(error) = result {
-                fail(&producer, &message, options.common.signal.as_ref(), error);
-            }
-        }),
-    );
+    let call = Invocation {
+        model: Arc::new(model),
+        context,
+        options,
+        effort,
+    };
+    let task = E::drive(call, stream.clone(), Arc::clone(&output));
+    start_producer_for::<E>(&stream, &output, None, task, submit);
     stream
+}
+
+/// Prepare, send and consume one conversation under either hook family.
+async fn run<E: ProviderExecution>(
+    call: Invocation<E>,
+    producer: AssistantMessageEventStream,
+    message: SharedAssistantMessage,
+) {
+    let model = call.model;
+    let options = call.options;
+    let result = async {
+        let prepared = request::prepare(
+            Arc::clone(&model),
+            &call.context,
+            &options,
+            call.effort.as_deref(),
+        )
+        .await?;
+        let body = request::send(prepared).await?;
+        produce(&producer, &message, &model, body, &options).await
+    }
+    .await;
+    if let Err(error) = result {
+        fail(&producer, &message, options.common.signal.as_ref(), error);
+    }
 }
 
 /// The failure a cancelled invocation reports.
@@ -89,12 +212,12 @@ pub(super) fn aborted() -> RequestFailure {
 }
 
 /// Admit the response before publishing its first update.
-async fn produce(
+async fn produce<E: ProviderExecution>(
     stream: &AssistantMessageEventStream,
     output: &crate::SharedAssistantMessage,
     model: &Model,
     body: crate::HttpBody,
-    options: &MistralOptions,
+    options: &MistralOptions<E>,
 ) -> Result<(), RequestFailure> {
     stream.push(AssistantMessageEvent::Start {
         partial: Arc::clone(output),

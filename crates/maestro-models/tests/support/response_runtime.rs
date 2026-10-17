@@ -335,7 +335,7 @@ async fn gated_call(call: Invocation) -> TestResult {
     let fetch = gated_fetch(body, payload_done);
     let signal = maestro_models::Cancellation::new();
     let (target, history) = inputs(call.endpoint)?;
-    let common = StreamOptions {
+    let common = StreamOptions::<maestro_models::Threaded> {
         api_key: Some("fixture-key".into()),
         fetch: Some(fetch),
         signal: Some(signal.clone()),
@@ -446,7 +446,7 @@ pub async fn transport_options(endpoint: Endpoint) -> TestResult {
             crate::transport::Attempt::body(200, &[], endpoint.complete().as_bytes().to_vec()),
         ]);
         let (target, history) = inputs(call.endpoint)?;
-        let common = StreamOptions {
+        let common = StreamOptions::<maestro_models::Threaded> {
             api_key: Some("fixture-key".into()),
             fetch: Some(Arc::clone(&setup.fetch)),
             max_retries: Some(1.0),
@@ -563,7 +563,7 @@ async fn retry_statuses(call: Invocation) -> TestResult {
         let count = Arc::new(std::sync::atomic::AtomicUsize::new(0));
         let observed = Arc::clone(&count);
         let (target, history) = inputs(call.endpoint)?;
-        let common = StreamOptions {
+        let common = StreamOptions::<maestro_models::Threaded> {
             api_key: Some("fixture-key".into()),
             fetch: Some(Arc::clone(&setup.fetch)),
             max_retries: retries.map(f64::from),
