@@ -315,12 +315,20 @@ instruction inputs and command provenance. Resources, application presentation d
 the guest re-export the command records; command discovery stays with its owner.
 Shared application messages include `BashExecutionMessage`,
 `CustomMessage`, `BranchSummaryMessage` and `CompactionSummaryMessage`, with the
-existing `Presence<T>` optional-field wrapper. It owns the declarations and their
+existing `Presence<T>` optional-field wrapper, and the custom-message renderer
+option record `MessageRenderOptions`, re-exported by session and the guest. It owns the declarations and their
 serialization, plus the resolved request-auth record, default zero usage and the shared
 optional-field helper; `Presence<T>` stays single-source here. Existing models and resources public paths re-export their moved records. Provider
 invocation, scheduling, clock-dependent diagnostics, resource discovery and
 provenance construction stay with their existing owners; this is not a general
 shared-types container.
+
+The read-only footer contract `ReadonlyFooterDataProvider`, its live
+`ExtensionStatuses` view and the one generic insertion-ordered live map behind it
+belong to the extension consumer layer (`maestro-extensions::footer_data_provider`),
+because extension footer factories receive it. The application keeps the footer
+metadata owner, its Git, watch, count and status policy and its existing public
+paths, which re-export the moved declarations.
 
 The crate is core, sits below layer 0 and depends on no workspace crate, including
 `maestro-path`. Only the table entries that list it

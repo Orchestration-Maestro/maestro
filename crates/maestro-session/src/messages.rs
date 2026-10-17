@@ -4,6 +4,7 @@ use maestro_agent::AgentMessage;
 use maestro_models::{Message, TextContent, UserBlock, UserContent, UserMessage};
 pub use maestro_request::messages::{
     BashExecutionMessage, BranchSummaryMessage, CompactionSummaryMessage, CustomMessage,
+    MessageRenderOptions,
 };
 use maestro_request::presence::Presence;
 use std::convert::Infallible;
