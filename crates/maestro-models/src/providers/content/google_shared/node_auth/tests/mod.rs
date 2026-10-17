@@ -17,6 +17,17 @@ fn response(value: &serde_json::Value) -> crate::HttpResponse {
     }
 }
 
+/// The controlled client key as PEM text.
+fn client_key_pem() -> String {
+    use base64::Engine as _;
+    let der =
+        include_bytes!("../../../../../../tests/fixtures/cloud-authentication/client-key.der");
+    format!(
+        "-----BEGIN PRIVATE KEY-----\n{}\n-----END PRIVATE KEY-----\n",
+        base64::engine::general_purpose::STANDARD.encode(der)
+    )
+}
+
 /// Disposable exclusively created files owned by one test transaction.
 struct Files(std::path::PathBuf);
 

@@ -10,8 +10,6 @@ use super::super::certificate_subject_token_supplier::CertificateSubjectTokenSup
 const CLIENT: &[u8] =
     include_bytes!("../../../../../../tests/fixtures/cloud-authentication/client.pem");
 const CA: &[u8] = include_bytes!("../../../../../../tests/fixtures/cloud-authentication/ca.pem");
-const KEY: &[u8] =
-    include_bytes!("../../../../../../tests/fixtures/cloud-authentication/client-key.der");
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -35,14 +33,7 @@ fn certificate_chain_prepends_or_retains_the_leaf() {
     for row in rows {
         let files = super::Files::new();
         let cert = files.write("client.pem", CLIENT);
-        let key = files.write(
-            "key.pem",
-            format!(
-                "-----BEGIN PRIVATE KEY-----\n{}\n-----END PRIVATE KEY-----\n",
-                STANDARD.encode(KEY)
-            )
-            .as_bytes(),
-        );
+        let key = files.write("key.pem", super::client_key_pem().as_bytes());
         let config = files.write(
             "certificate.json",
             &serde_json::to_vec(
@@ -125,14 +116,7 @@ fn mutual_server_config() -> Result<std::sync::Arc<rustls::ServerConfig>, Box<dy
 /// Write a selected certificate configuration backed by the controlled client identity.
 fn configuration(files: &super::Files) -> serde_json::Value {
     let cert = files.write("client.pem", CLIENT);
-    let key = files.write(
-        "client-key.pem",
-        format!(
-            "-----BEGIN PRIVATE KEY-----\n{}\n-----END PRIVATE KEY-----\n",
-            STANDARD.encode(KEY)
-        )
-        .as_bytes(),
-    );
+    let key = files.write("client-key.pem", super::client_key_pem().as_bytes());
     let config = files.write(
         "certificate.json",
         &serde_json::to_vec(
@@ -390,10 +374,7 @@ fn certificate_configuration_rejects_missing_or_conflicting_sources() {
 
 #[test]
 fn certificate_chain_rejects_a_late_leaf_or_invalid_material() {
-    let key_pem = format!(
-        "-----BEGIN PRIVATE KEY-----\n{}\n-----END PRIVATE KEY-----\n",
-        STANDARD.encode(KEY)
-    );
+    let key_pem = super::client_key_pem();
     let garbage = b"-----BEGIN CERTIFICATE-----\nAAAA\n-----END CERTIFICATE-----\n";
     for (index, (cert, key, chain)) in [
         (

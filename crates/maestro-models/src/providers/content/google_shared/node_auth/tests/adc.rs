@@ -330,12 +330,7 @@ fn credential_forms(files: &super::Files, base: &str) -> Vec<(&'static str, serd
     let audience =
         "//iam.googleapis.com/projects/1/locations/global/workloadIdentityPools/p/providers/q";
     let subject = files.write("subject.json", br#"{"tok":"subject-file"}"#);
-    let key = format!(
-        "-----BEGIN PRIVATE KEY-----\n{}\n-----END PRIVATE KEY-----\n",
-        base64::engine::general_purpose::STANDARD.encode(include_bytes!(
-            "../../../../../../tests/fixtures/cloud-authentication/client-key.der"
-        ))
-    );
+    let key = super::client_key_pem();
     let external = |source: serde_json::Value| serde_json::json!({"type":"external_account","audience":audience,"subject_token_type":"urn:ietf:params:oauth:token-type:jwt","token_url":token,"credential_source":source});
     let mut cases = vec![
         (
