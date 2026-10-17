@@ -7,10 +7,6 @@ use crate::{
     },
     components::copy_button::CopyButton,
 };
-use base64::{
-    Engine as _,
-    engine::{DecodePaddingMode, GeneralPurpose, GeneralPurposeConfig},
-};
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},
@@ -77,21 +73,9 @@ impl Prepared {
     }
 }
 
-/// Browser `atob` padding rules, with trailing bits admitted.
-const BROWSER_BASE64: GeneralPurpose = GeneralPurpose::new(
-    &base64::alphabet::STANDARD,
-    GeneralPurposeConfig::new()
-        .with_decode_padding_mode(DecodePaddingMode::Indifferent)
-        .with_decode_allow_trailing_bits(true),
-);
 /// Decode base64 UTF-8 text, keeping the whole input when it is not.
 fn decode(input: &str) -> String {
-    let compact: String = input
-        .chars()
-        .filter(|c| !matches!(c, ' ' | '\t' | '\n' | '\x0c' | '\r'))
-        .collect();
-    BROWSER_BASE64
-        .decode(compact)
+    crate::utils::base64::decode(input)
         .ok()
         .and_then(|bytes| String::from_utf8(bytes).ok())
         .unwrap_or_else(|| input.to_owned())

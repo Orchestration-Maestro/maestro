@@ -1,264 +1,271 @@
 //! Real-browser Markdown rendering through the public native component.
 #![cfg(all(test, target_arch = "wasm32"))]
-mod markdown_support;
+pub mod markdown_support;
 pub mod support;
-use maestro_web::components::markdown_block::MarkdownBlock;
-use markdown_support::{
-    BlockRow, Surface, block_rows, check, context_rows, first_slot_center, js, publish, settle,
-};
-use wasm_bindgen::prelude::*;
 
-/// The markup a row must produce, given the recorded library observations.
-fn target(row: &BlockRow) -> &str {
-    match (&row.current_html, &row.original_html) {
-        (Some(current), _) => {
-            assert_ne!(
-                current, &row.html,
-                "{}: the tracked gap must still differ",
-                row.id
-            );
-            current
+#[cfg(test)]
+mod tests {
+    use crate::markdown_support::{
+        BlockRow, Surface, block_rows, check, context_rows, first_slot_center, js, publish, settle,
+    };
+    use maestro_web::components::markdown_block::MarkdownBlock;
+    use wasm_bindgen::prelude::*;
+
+    /// The markup a row must produce, given the recorded library observations.
+    fn target(row: &BlockRow) -> &str {
+        match (&row.current_html, &row.original_html) {
+            (Some(current), _) => {
+                assert_ne!(
+                    current, &row.html,
+                    "{}: the tracked gap must still differ",
+                    row.id
+                );
+                current
+            }
+            (None, Some(original)) => {
+                assert_ne!(
+                    original, &row.html,
+                    "{}: the corrected row must differ",
+                    row.id
+                );
+                &row.html
+            }
+            (None, None) => &row.html,
         }
-        (None, Some(original)) => {
-            assert_ne!(
-                original, &row.html,
-                "{}: the corrected row must differ",
-                row.id
-            );
-            &row.html
+    }
+    /// Mount every row owned by `test` and require its recorded markup.
+    fn rows_match(test: &str) {
+        let mut surface = Surface::new();
+        for row in block_rows(test) {
+            let block = surface.row(&row);
+            let difference = Surface::difference(target(&row));
+            assert_eq!(difference, "", "row {}", row.id);
+            drop(block);
+            check("document.querySelector('.maestro-markdown') === null");
         }
-        (None, None) => &row.html,
     }
-}
-/// Mount every row owned by `test` and require its recorded markup.
-fn rows_match(test: &str) {
-    let mut surface = Surface::new();
-    for row in block_rows(test) {
-        let block = surface.row(&row);
-        let difference = surface.difference(target(&row));
-        assert_eq!(difference, "", "row {}", row.id);
+    /// Mount every contextual row owned by `test` and require its recorded structure.
+    fn contexts_match(test: &str) {
+        let mut surface = Surface::new();
+        for row in context_rows(test) {
+            let block = surface.markdown(&row.source);
+            assert_eq!(Surface::tree_difference(&row.tree), "", "row {}", row.id);
+            drop(block);
+        }
+    }
+
+    /// Empty, whitespace, headings, lists, tasks, breaks and nested positions keep their content.
+    #[wasm_bindgen]
+    pub fn markdown_empty_and_structural_blocks_preserve_content() {
+        let surface = Surface::new();
+        let block = MarkdownBlock::new(surface.host());
+        assert!(block.content.is_empty() && !block.is_thinking && block.escape_html);
         drop(block);
-        check("document.querySelector('.maestro-markdown') === null");
+        rows_match("markdown_empty_and_structural_blocks_preserve_content");
     }
-}
-/// Mount every contextual row owned by `test` and require its recorded structure.
-fn contexts_match(test: &str) {
-    let mut surface = Surface::new();
-    for row in context_rows(test) {
-        let block = surface.markdown(&row.source);
-        assert_eq!(surface.tree_difference(&row.tree), "", "row {}", row.id);
-        drop(block);
+
+    /// Line endings, tabs, NUL and Unicode reach the native text unchanged; tabs stay tabs.
+    #[wasm_bindgen]
+    pub fn markdown_preserves_browser_whitespace_and_replacement() {
+        rows_match("markdown_preserves_browser_whitespace_and_replacement");
+        let mut surface = Surface::new();
+        let _block = surface.markdown("```\n\tkept\tinside\n```");
+        check("document.querySelector('.maestro-code code').textContent === '\\tkept\\tinside\\n'");
     }
-}
 
-/// Empty, whitespace, headings, lists, tasks, breaks and nested positions keep their content.
-#[wasm_bindgen]
-pub fn markdown_empty_and_structural_blocks_preserve_content() {
-    let surface = Surface::new();
-    let block = MarkdownBlock::new(surface.host());
-    assert!(block.content.is_empty() && !block.is_thinking && block.escape_html);
-    drop(block);
-    rows_match("markdown_empty_and_structural_blocks_preserve_content");
-}
+    /// Tag-like text is shown literally and Unicode survives.
+    #[wasm_bindgen]
+    pub fn markdown_escapes_html_without_losing_unicode() {
+        rows_match("markdown_escapes_html_without_losing_unicode");
+    }
 
-/// Line endings, tabs, NUL and Unicode reach the native text unchanged; tabs stay tabs.
-#[wasm_bindgen]
-pub fn markdown_preserves_browser_whitespace_and_replacement() {
-    rows_match("markdown_preserves_browser_whitespace_and_replacement");
-    let mut surface = Surface::new();
-    let _block = surface.markdown("```\n\tkept\tinside\n```");
-    check("document.querySelector('.maestro-code code').textContent === '\\tkept\\tinside\\n'");
-}
+    /// Raw markup is kept when escaping is off, independently of the thinking style.
+    #[wasm_bindgen]
+    pub fn markdown_raw_html_option_preserves_native_markup() {
+        rows_match("markdown_raw_html_option_preserves_native_markup");
+        let mut surface = Surface::new();
+        let mut block = surface.markdown("<b id=\"kept\">x</b>");
+        check("document.querySelector('.maestro-markdown b') === null");
+        for (escape, thinking) in [(false, false), (false, true), (true, true), (true, false)] {
+            block.escape_html = escape;
+            block.is_thinking = thinking;
+            surface.settle(&mut block);
+            let raw = js("document.querySelector('.maestro-markdown b#kept') !== null")
+                .as_bool()
+                .unwrap();
+            assert_eq!(raw, !escape, "escape {escape}, thinking {thinking}");
+            let italic = js("getComputedStyle(maestro.root()).fontStyle === 'italic'")
+                .as_bool()
+                .unwrap();
+            assert_eq!(italic, thinking, "escape {escape}, thinking {thinking}");
+        }
+    }
 
-/// Tag-like text is shown literally and Unicode survives.
-#[wasm_bindgen]
-pub fn markdown_escapes_html_without_losing_unicode() {
-    rows_match("markdown_escapes_html_without_losing_unicode");
-}
+    /// Code text reaches the listing and the clipboard as the original, decoded once.
+    #[wasm_bindgen]
+    pub async fn markdown_code_entities_decode_exactly_once() {
+        rows_match("markdown_code_entities_decode_exactly_once");
+        let mut surface = Surface::new();
+        let mut block = surface.markdown("```html\n<script>&amp;\"'</script> 雪\n```");
+        check(
+            "document.querySelector('.maestro-code code').textContent === '<script>&amp;\"\\'</script> 雪\\n'",
+        );
+        surface.click(first_slot_center(), |ui, view| {
+            block.render(ui, view).unwrap()
+        });
+        settle().await;
+        assert_eq!(
+            *surface.effects.copies.borrow(),
+            ["<script>&amp;\"'</script> 雪\n"]
+        );
+    }
 
-/// Raw markup is kept when escaping is off, independently of the thinking style.
-#[wasm_bindgen]
-pub fn markdown_raw_html_option_preserves_native_markup() {
-    rows_match("markdown_raw_html_option_preserves_native_markup");
-    let mut surface = Surface::new();
-    let mut block = surface.markdown("<b id=\"kept\">x</b>");
-    check("document.querySelector('.maestro-markdown b') === null");
-    for (escape, thinking) in [(false, false), (false, true), (true, true), (true, false)] {
-        block.escape_html = escape;
-        block.is_thinking = thinking;
+    /// Marker-looking text, dollars and backticks stay literal around code.
+    #[wasm_bindgen]
+    pub fn markdown_code_preservation_keeps_literal_placeholder_text() {
+        rows_match("markdown_code_preservation_keeps_literal_placeholder_text");
+        let mut surface = Surface::new();
+        let _block =
+            surface.markdown("__CODE_BLOCK_0__ `$&` `$1` ``a`b``\n\n    __CODE_BLOCK_0__ $'");
+        check(
+            "[...document.querySelectorAll('.maestro-markdown code:not(.hljs)')].map(c => c.textContent).join('|') === '$&|$1|a`b'",
+        );
+        check(
+            "document.querySelector('.maestro-code code').textContent === '__CODE_BLOCK_0__ $\\'\\n'",
+        );
+    }
+
+    /// Every anchor opens separately with the safe relation, formatted labels and images included.
+    #[wasm_bindgen]
+    pub fn markdown_links_open_separately_with_safe_relation() {
+        rows_match("markdown_links_open_separately_with_safe_relation");
+        let mut surface = Surface::new();
+        let _block = surface.markdown(
+            "[a **b**](https://x.test \"t\") https://y.test ![i](https://z.test/i.png \"c\")",
+        );
+        check(
+            "[...document.querySelectorAll('.maestro-markdown a')].length === 2 && [...document.querySelectorAll('.maestro-markdown a')].every(a => a.target === '_blank' && a.rel === 'noopener noreferrer')",
+        );
+        check(
+            "document.querySelector('.maestro-markdown a strong').textContent === 'b' && document.querySelector('.maestro-markdown a').title === 't'",
+        );
+        check(
+            "document.querySelector('.maestro-markdown img').getAttribute('src') === 'https://z.test/i.png' && document.querySelector('.maestro-markdown img').title === 'c'",
+        );
+    }
+
+    /// Relative, fragment, mail and script destinations keep their authored meaning.
+    #[wasm_bindgen]
+    pub fn markdown_link_targets_keep_authored_behavior() {
+        rows_match("markdown_link_targets_keep_authored_behavior");
+    }
+
+    /// Tables keep order, alignment, cell content and their own horizontal scroller.
+    #[wasm_bindgen]
+    pub fn markdown_tables_keep_native_overflow_and_cell_content() {
+        rows_match("markdown_tables_keep_native_overflow_and_cell_content");
+        let mut surface = Surface::new();
+        let _block = surface.markdown("| a | b |\n| :- | -: |\n| `c` | $d$ |\n");
+        check(
+            "getComputedStyle(document.querySelector('.maestro-table-scroll')).overflowX === 'auto'",
+        );
+        check(
+            "[...document.querySelectorAll('.maestro-markdown td')].map(c => c.align).join() === 'left,right'",
+        );
+        check(
+            "document.querySelector('.maestro-markdown td:last-child .katex') !== null && document.querySelector('.maestro-markdown td code').textContent === 'c'",
+        );
+    }
+
+    /// Nested links, ordered-list interruption and label folding follow the standard grammar.
+    #[wasm_bindgen]
+    pub fn markdown_commonmark_corrections_keep_valid_structure() {
+        rows_match("markdown_commonmark_corrections_keep_valid_structure");
+    }
+
+    /// Reasoning only changes muted, italic and small presentation.
+    #[wasm_bindgen]
+    pub fn markdown_thinking_changes_only_text_presentation() {
+        rows_match("markdown_thinking_changes_only_text_presentation");
+        let mut surface = Surface::new();
+        let mut block = surface.markdown("**t** $x$ [l](https://x.test)\n\n```js\nlet a;\n```");
+        publish("beforeHtml", &js("maestro.root().innerHTML"));
+        check("getComputedStyle(maestro.root()).fontStyle === 'normal'");
+        publish(
+            "before",
+            &js(
+                "(() => { const s = getComputedStyle(maestro.root()); return [s.color, s.fontSize].join('|'); })()",
+            ),
+        );
+        block.is_thinking = true;
         surface.settle(&mut block);
-        let raw = js("document.querySelector('.maestro-markdown b#kept') !== null")
-            .as_bool()
-            .unwrap();
-        assert_eq!(raw, !escape, "escape {escape}, thinking {thinking}");
-        let italic = js("getComputedStyle(maestro.root()).fontStyle === 'italic'")
-            .as_bool()
-            .unwrap();
-        assert_eq!(italic, thinking, "escape {escape}, thinking {thinking}");
+        check("maestro.root().innerHTML === globalThis.beforeHtml");
+        check("getComputedStyle(maestro.root()).fontStyle === 'italic'");
+        check(
+            "(() => { const s = getComputedStyle(maestro.root()); return [s.color, s.fontSize].join('|') !== globalThis.before; })()",
+        );
     }
-}
 
-/// Code text reaches the listing and the clipboard as the original, decoded once.
-#[wasm_bindgen]
-pub async fn markdown_code_entities_decode_exactly_once() {
-    rows_match("markdown_code_entities_decode_exactly_once");
-    let mut surface = Surface::new();
-    let mut block = surface.markdown("```html\n<script>&amp;\"'</script> 雪\n```");
-    check(
-        "document.querySelector('.maestro-code code').textContent === '<script>&amp;\"\\'</script> 雪\\n'",
-    );
-    surface.click(first_slot_center(), |ui, view| {
-        block.render(ui, view).unwrap()
-    });
-    settle().await;
-    assert_eq!(
-        *surface.effects.copies.borrow(),
-        ["<script>&amp;\"'</script> 雪\n"]
-    );
-}
+    /// Labels, unknown and non-word names, empty, tilde, indented and unclosed fences keep their copy slots.
+    #[wasm_bindgen]
+    pub fn markdown_code_fences_keep_labels_text_and_copy_slots() {
+        rows_match("markdown_code_fences_keep_labels_text_and_copy_slots");
+        let mut surface = Surface::new();
+        let _block = surface.markdown(
+            "```c++\nint x;\n```\n\n```objective-c\nvoid f();\n```\n\nplain\n\n    indented\n",
+        );
+        check(
+            "[...document.querySelectorAll('.maestro-code-label')].map(l => l.textContent).join() === 'c++,objective-c,text'",
+        );
+        check("document.querySelectorAll('.maestro-code .control-slot').length === 3");
+        check("document.querySelectorAll('.maestro-code').length === 3");
+    }
 
-/// Marker-looking text, dollars and backticks stay literal around code.
-#[wasm_bindgen]
-pub fn markdown_code_preservation_keeps_literal_placeholder_text() {
-    rows_match("markdown_code_preservation_keeps_literal_placeholder_text");
-    let mut surface = Surface::new();
-    let _block = surface.markdown("__CODE_BLOCK_0__ `$&` `$1` ``a`b``\n\n    __CODE_BLOCK_0__ $'");
-    check(
-        "[...document.querySelectorAll('.maestro-markdown code:not(.hljs)')].map(c => c.textContent).join('|') === '$&|$1|a`b'",
-    );
-    check(
-        "document.querySelector('.maestro-code code').textContent === '__CODE_BLOCK_0__ $\\'\\n'",
-    );
-}
+    /// Every delimiter keeps its mode, trimming and reached error output.
+    #[wasm_bindgen]
+    pub fn markdown_math_delimiters_keep_modes_trimming_and_errors() {
+        rows_match("markdown_math_delimiters_keep_modes_trimming_and_errors");
+    }
 
-/// Every anchor opens separately with the safe relation, formatted labels and images included.
-#[wasm_bindgen]
-pub fn markdown_links_open_separately_with_safe_relation() {
-    rows_match("markdown_links_open_separately_with_safe_relation");
-    let mut surface = Surface::new();
-    let _block = surface.markdown(
-        "[a **b**](https://x.test \"t\") https://y.test ![i](https://z.test/i.png \"c\")",
-    );
-    check(
-        "[...document.querySelectorAll('.maestro-markdown a')].length === 2 && [...document.querySelectorAll('.maestro-markdown a')].every(a => a.target === '_blank' && a.rel === 'noopener noreferrer')",
-    );
-    check(
-        "document.querySelector('.maestro-markdown a strong').textContent === 'b' && document.querySelector('.maestro-markdown a').title === 't'",
-    );
-    check(
-        "document.querySelector('.maestro-markdown img').getAttribute('src') === 'https://z.test/i.png' && document.querySelector('.maestro-markdown img').title === 'c'",
-    );
-}
+    /// Empty, unclosed, embedded, escaped and adjacent delimiters stay ordinary text.
+    #[wasm_bindgen]
+    pub fn markdown_math_recognition_keeps_nonmath_neighbors() {
+        rows_match("markdown_math_recognition_keeps_nonmath_neighbors");
+    }
 
-/// Relative, fragment, mail and script destinations keep their authored meaning.
-#[wasm_bindgen]
-pub fn markdown_link_targets_keep_authored_behavior() {
-    rows_match("markdown_link_targets_keep_authored_behavior");
-}
+    /// The approved renderer's output is used unchanged, with its tracked gaps kept visible.
+    #[wasm_bindgen]
+    pub fn markdown_math_tracks_qualified_library_gaps() {
+        rows_match("markdown_math_tracks_qualified_library_gaps");
+    }
 
-/// Tables keep order, alignment, cell content and their own horizontal scroller.
-#[wasm_bindgen]
-pub fn markdown_tables_keep_native_overflow_and_cell_content() {
-    rows_match("markdown_tables_keep_native_overflow_and_cell_content");
-    let mut surface = Surface::new();
-    let _block = surface.markdown("| a | b |\n| :- | -: |\n| `c` | $d$ |\n");
-    check("getComputedStyle(document.querySelector('.maestro-table-scroll')).overflowX === 'auto'");
-    check(
-        "[...document.querySelectorAll('.maestro-markdown td')].map(c => c.align).join() === 'left,right'",
-    );
-    check(
-        "document.querySelector('.maestro-markdown td:last-child .katex') !== null && document.querySelector('.maestro-markdown td code').textContent === 'c'",
-    );
-}
+    /// Tight, loose and multiline list items keep their formula modes.
+    #[wasm_bindgen]
+    pub fn markdown_math_keeps_display_context_in_lists() {
+        contexts_match("markdown_math_keeps_display_context_in_lists");
+    }
 
-/// Nested links, ordered-list interruption and label folding follow the standard grammar.
-#[wasm_bindgen]
-pub fn markdown_commonmark_corrections_keep_valid_structure() {
-    rows_match("markdown_commonmark_corrections_keep_valid_structure");
-}
+    /// Quoted paragraphs split around display formulas and keep nested continuation.
+    #[wasm_bindgen]
+    pub fn markdown_math_keeps_display_context_in_quotes() {
+        contexts_match("markdown_math_keeps_display_context_in_quotes");
+    }
 
-/// Reasoning only changes muted, italic and small presentation.
-#[wasm_bindgen]
-pub fn markdown_thinking_changes_only_text_presentation() {
-    rows_match("markdown_thinking_changes_only_text_presentation");
-    let mut surface = Surface::new();
-    let mut block = surface.markdown("**t** $x$ [l](https://x.test)\n\n```js\nlet a;\n```");
-    publish("beforeHtml", &js("maestro.root().innerHTML"));
-    check("getComputedStyle(maestro.root()).fontStyle === 'normal'");
-    publish(
-        "before",
-        &js(
-            "(() => { const s = getComputedStyle(maestro.root()); return [s.color, s.fontSize].join('|'); })()",
-        ),
-    );
-    block.is_thinking = true;
-    surface.settle(&mut block);
-    check("maestro.root().innerHTML === globalThis.beforeHtml");
-    check("getComputedStyle(maestro.root()).fontStyle === 'italic'");
-    check(
-        "(() => { const s = getComputedStyle(maestro.root()); return [s.color, s.fontSize].join('|') !== globalThis.before; })()",
-    );
-}
+    /// Table cells admit inline formulas only and keep their neighbors and alignment.
+    #[wasm_bindgen]
+    pub fn markdown_math_keeps_display_context_in_tables() {
+        contexts_match("markdown_math_keeps_display_context_in_tables");
+    }
 
-/// Labels, unknown and non-word names, empty, tilde, indented and unclosed fences keep their copy slots.
-#[wasm_bindgen]
-pub fn markdown_code_fences_keep_labels_text_and_copy_slots() {
-    rows_match("markdown_code_fences_keep_labels_text_and_copy_slots");
-    let mut surface = Surface::new();
-    let _block = surface.markdown(
-        "```c++\nint x;\n```\n\n```objective-c\nvoid f();\n```\n\nplain\n\n    indented\n",
-    );
-    check(
-        "[...document.querySelectorAll('.maestro-code-label')].map(l => l.textContent).join() === 'c++,objective-c,text'",
-    );
-    check("document.querySelectorAll('.maestro-code .control-slot').length === 3");
-    check("document.querySelectorAll('.maestro-code').length === 3");
-}
+    /// A display formula inside a paragraph separates its neighbors without trimming their spaces.
+    #[wasm_bindgen]
+    pub fn markdown_display_math_preserves_neighbor_whitespace() {
+        contexts_match("markdown_display_math_preserves_neighbor_whitespace");
+    }
 
-/// Every delimiter keeps its mode, trimming and reached error output.
-#[wasm_bindgen]
-pub fn markdown_math_delimiters_keep_modes_trimming_and_errors() {
-    rows_match("markdown_math_delimiters_keep_modes_trimming_and_errors");
-}
-
-/// Empty, unclosed, embedded, escaped and adjacent delimiters stay ordinary text.
-#[wasm_bindgen]
-pub fn markdown_math_recognition_keeps_nonmath_neighbors() {
-    rows_match("markdown_math_recognition_keeps_nonmath_neighbors");
-}
-
-/// The approved renderer's output is used unchanged, with its tracked gaps kept visible.
-#[wasm_bindgen]
-pub fn markdown_math_tracks_qualified_library_gaps() {
-    rows_match("markdown_math_tracks_qualified_library_gaps");
-}
-
-/// Tight, loose and multiline list items keep their formula modes.
-#[wasm_bindgen]
-pub fn markdown_math_keeps_display_context_in_lists() {
-    contexts_match("markdown_math_keeps_display_context_in_lists");
-}
-
-/// Quoted paragraphs split around display formulas and keep nested continuation.
-#[wasm_bindgen]
-pub fn markdown_math_keeps_display_context_in_quotes() {
-    contexts_match("markdown_math_keeps_display_context_in_quotes");
-}
-
-/// Table cells admit inline formulas only and keep their neighbors and alignment.
-#[wasm_bindgen]
-pub fn markdown_math_keeps_display_context_in_tables() {
-    contexts_match("markdown_math_keeps_display_context_in_tables");
-}
-
-/// A display formula inside a paragraph separates its neighbors without trimming their spaces.
-#[wasm_bindgen]
-pub fn markdown_display_math_preserves_neighbor_whitespace() {
-    contexts_match("markdown_display_math_preserves_neighbor_whitespace");
-}
-
-/// Link labels keep math while destinations, plain URLs and angle autolinks stay literal.
-#[wasm_bindgen]
-pub fn markdown_link_labels_keep_math_but_destinations_stay_literal() {
-    contexts_match("markdown_link_labels_keep_math_but_destinations_stay_literal");
+    /// Link labels keep math while destinations, plain URLs and angle autolinks stay literal.
+    #[wasm_bindgen]
+    pub fn markdown_link_labels_keep_math_but_destinations_stay_literal() {
+        contexts_match("markdown_link_labels_keep_math_but_destinations_stay_literal");
+    }
 }
