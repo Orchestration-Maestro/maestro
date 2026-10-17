@@ -728,6 +728,6 @@ fn latest_session_uses_host_locale_instead_of_lexical_order() {
             "locale child failed: {}",
             String::from_utf8_lossy(&output.stderr)
         );
-        crate::child_process::assert_executed(&output, &test);
+        crate::child_process::assert_executed(&output, &test).unwrap();
     }
 }

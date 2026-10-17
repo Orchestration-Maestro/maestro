@@ -598,7 +598,10 @@ fn editor_error_is_reported_before_later_completion() {
         });
         return;
     }
-    let output = rerun("editor_error_is_reported_before_later_completion", |_| {});
+    let output = rerun(
+        "editor_error_is_reported_before_later_completion",
+        |process| process,
+    );
     assert_eq!(
         String::from_utf8_lossy(&output.stderr),
         "provider offline\n"

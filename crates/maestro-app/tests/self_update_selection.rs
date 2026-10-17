@@ -2,6 +2,8 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+use maestro_test_process::{TestProcess, test_name};
+
 #[path = "support/self_update/mod.rs"]
 mod support;
 
@@ -178,19 +180,15 @@ fn literal_query() {
         commands.extend([directory.join("custom.cmd"), directory.join("custom")]);
         commands
     };
-    let args = [
-        "--exact",
-        "self_update_selection::native_query_child",
-        "--nocapture",
-        "--skip",
-        "argument with spaces",
-        "--skip",
-        "literal & | ; $HOME %PATH% ^ < >",
-    ]
-    .map(String::from);
     for command in commands {
-        let output = NativeSelfUpdateOperations
-            .run_command_sync(command.to_str().unwrap(), &args)
+        let output = TestProcess::named(test_name(native_query_child).unwrap())
+            .unwrap()
+            .nocapture()
+            .skip("argument with spaces")
+            .skip("literal & | ; $HOME %PATH% ^ < >")
+            .output_with(|args| {
+                NativeSelfUpdateOperations.run_command_sync(command.to_str().unwrap(), args)
+            })
             .unwrap();
         assert!(output.status.success(), "{command:?}: {output:?}");
         assert!(
