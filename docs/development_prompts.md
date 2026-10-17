@@ -34,8 +34,8 @@ Git against 19 paths: ten ignored cache paths and nine visible paths. Instructio
 paragraphs require manual review; they are not executable workflow tests.
 
 ```sh
-cargo test -p maestro-resources --test development_guidance --locked
-cargo test -p maestro-test-conventions --test development_guidance --locked
+cargo test -p maestro-resources --test integration --locked -- development_guidance::
+cargo test -p maestro-test-conventions --test integration --locked -- development_guidance::
 mise exec -- just check
 ```
 

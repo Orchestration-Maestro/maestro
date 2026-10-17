@@ -54,10 +54,6 @@ impl Workspace {
         .unwrap();
     }
 
-    #[allow(
-        dead_code,
-        reason = "External fixtures are unused by the comment-test executable."
-    )]
     pub fn external(&self, name: &str) {
         let root = self.root.join("external");
         fs::create_dir_all(root.join("src")).unwrap();
@@ -72,10 +68,6 @@ impl Workspace {
         fs::write(self.root.join("Cargo.toml"), format!("[workspace]\nmembers = [\"crates/*\"]\nexclude = [\"external\"]\nresolver = \"3\"\n[workspace.dependencies]\nserde_json = {{ version = \"=1.0.151\", features = [\"float_roundtrip\"] }}\n[workspace.lints.rust]\nunsafe_code = \"forbid\"\nforbidden_lint_groups = \"forbid\"\n[workspace.lints.clippy]\npedantic = {{ level = \"forbid\", priority = -1 }}\nmissing_docs_in_private_items = \"forbid\"\nredundant_clone = \"forbid\"\ntoo_many_arguments = \"forbid\"\nfn_params_excessive_bools = \"forbid\"\ntoo_many_lines = \"forbid\"\ncognitive_complexity = \"forbid\"\nexcessive_nesting = \"forbid\"\nunwrap_used = \"forbid\"\nexpect_used = \"forbid\"\npanic = \"forbid\"\n[patch.crates-io]\n{name} = {{ path = \"external\" }}\n")).unwrap();
     }
 
-    #[allow(
-        dead_code,
-        reason = "Only packaging fixtures need explicit test targets."
-    )]
     /// Package a fixture's top-level test files in the canonical executable.
     pub fn integration(&self, directory: &str) {
         let root = self.root.join("crates").join(directory);
@@ -114,27 +106,23 @@ impl Workspace {
 
 #[allow(
     dead_code,
-    reason = "Policy fixtures are shared across test executables."
+    reason = "The policy file is included whole; some of its items are unused here."
 )]
 #[path = "../../src/graph/policy.rs"]
 pub mod policy;
 
-#[allow(dead_code, reason = "Graph fixtures are unused by comment tests.")]
 pub fn exact(name: &str) -> bool {
     policy::exact(name)
 }
 
-#[allow(dead_code, reason = "Graph fixtures are unused by comment tests.")]
 pub fn required(name: &str) -> &'static [&'static str] {
     policy::required(name)
 }
 
-#[allow(dead_code, reason = "Graph fixtures are unused by comment tests.")]
 pub fn class(name: &str) -> &'static str {
     policy::rule(name).unwrap().class
 }
 
-#[allow(dead_code, reason = "Graph fixtures are unused by comment tests.")]
 impl Workspace {
     pub fn foundation(&self, names: &[&str]) {
         let mut pending = names.to_vec();
@@ -166,10 +154,6 @@ impl Workspace {
 }
 
 #[cfg(unix)]
-#[allow(
-    dead_code,
-    reason = "Controlled commands are used only by process tests."
-)]
 impl Workspace {
     pub fn command(&self, name: &str, body: &str) -> PathBuf {
         let path = self.root.join(name);
@@ -238,6 +222,10 @@ impl Workspace {
             "{}{}",
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
+        );
+        crate::child_process::assert_executed(
+            &output,
+            "architecture::metadata_graph_failures_cross_the_public_interface",
         );
     }
 }

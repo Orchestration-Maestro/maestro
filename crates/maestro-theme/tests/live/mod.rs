@@ -72,10 +72,6 @@ impl Ops {
     }
 
     /// Set or replace one variable.
-    #[allow(
-        dead_code,
-        reason = "The native notification test never changes the environment."
-    )]
     pub fn set(&self, name: &str, value: &str) {
         self.env
             .borrow_mut()
@@ -83,10 +79,6 @@ impl Ops {
     }
 
     /// Whether a variable was ever looked up.
-    #[allow(
-        dead_code,
-        reason = "The native notification test never inspects lookups."
-    )]
     pub fn read(&self, name: &str) -> bool {
         self.env_reads.borrow().iter().any(|read| read == name)
     }
