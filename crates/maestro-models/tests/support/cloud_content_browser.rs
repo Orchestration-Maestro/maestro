@@ -91,6 +91,62 @@ mod browser {
         keyless_calls().await
     }
 
+    /// Public raw calls retain empty constructor keys until effective headers are selected.
+    #[wasm_bindgen]
+    pub async fn public_browser_header_authentication() -> Result<(), JsValue> {
+        for source in ["model", "hook", "missing"] {
+            let (mut model, context) = input()?;
+            model.api = "google-generative-ai".into();
+            model.provider = "google".into();
+            if source == "model" {
+                model.headers = Some(indexmap::IndexMap::from([(
+                    "x-goog-api-key".into(),
+                    "header-key".into(),
+                )]));
+            }
+            let stream = maestro_models::stream_google(
+                model,
+                context,
+                Some(maestro_models::GoogleOptions {
+                    common: StreamOptions {
+                        api_key: Some(String::new()),
+                        on_payload: Some(header_hook(source)),
+                        ..StreamOptions::default()
+                    },
+                    ..maestro_models::GoogleOptions::default()
+                }),
+            );
+            let result = stream.result().await;
+            let result = result
+                .read()
+                .map_err(|_| JsValue::from_str("result lock"))?;
+            if source == "missing" {
+                require(
+                    result.error_message.as_deref()
+                        == Some("API key is missing. Please provide a valid API key."),
+                    "empty effective key must fail after the hook",
+                )?;
+            } else {
+                require(
+                    result.stop_reason == StopReason::Stop,
+                    "header authentication must succeed",
+                )?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Select authentication at the actual payload callback boundary.
+    fn header_hook(source: &'static str) -> maestro_models::OnPayload {
+        SharedHandle::new(move |mut input, _| {
+            if source == "hook" {
+                input.payload["config"]["httpOptions"] =
+                    json!({"headers":{"x-goog-api-key":"header-key"}});
+            }
+            Box::pin(std::future::ready(Ok(input)))
+        })
+    }
+
     /// Scope diagnostics precede the unavailable native browser authentication route.
     async fn keyless_calls() -> Result<(), JsValue> {
         for scope in [true, false] {

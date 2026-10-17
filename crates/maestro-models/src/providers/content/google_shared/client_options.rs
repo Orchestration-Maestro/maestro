@@ -100,15 +100,9 @@ pub(in crate::providers::content) fn construct(
         Authentication::ApiKey,
     );
     #[cfg(target_arch = "wasm32")]
-    let authentication = Authentication::ApiKey(
-        settings
-            .key
-            .take()
-            .filter(|key| !key.is_empty())
-            .ok_or_else(|| {
-                DiagnosticErrorInfo::error("An API Key must be set when running in a browser")
-            })?,
-    );
+    let authentication = Authentication::ApiKey(settings.key.take().ok_or_else(|| {
+        DiagnosticErrorInfo::error("An API Key must be set when running in a browser")
+    })?);
     let endpoint = settings.endpoint.take().or_else(|| {
         environment(if settings.cloud {
             "GOOGLE_VERTEX_BASE_URL"

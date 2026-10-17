@@ -34,12 +34,15 @@ for a protocol whose adapter this crate does not contain.
 `stream_openai_responses`, `stream_azure_openai_responses` and
 `stream_openai_codex_responses` and `stream_google` and `stream_google_vertex` take their typed
 options and never consult the registry. Each `stream_simple_*` function of the
-same families takes `SimpleStreamOptions` and always returns a stream. A missing key,
-which the functions of the same names in the provider modules report as `Err`, ends
-it with an error update carrying the adapter's text, an empty message with the
+same families takes `SimpleStreamOptions` and always returns a stream. For families
+whose provider-module simple function reports a missing key as `Err`, that error
+ends the root function's stream with an error update carrying the adapter's text,
+an empty message with the
 descriptor's identity and zero usage, and the error stop reason even when the
 signal was already aborted. Every other failure follows the adapter's own stream
-path; see the provider pages: [messages](messages.md), [chat completions](chat-completions.md),
+path. Cloud content-generation simple functions return streams directly and also
+support native credentials; see the provider pages: [messages](messages.md),
+[chat completions](chat-completions.md),
 [reasoning conversations](reasoning-conversations.md), [responses](responses.md)
 [response sessions](response-sessions.md) and [content generation](content-generation.md#public-invocation).
 

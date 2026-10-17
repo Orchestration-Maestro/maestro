@@ -54,20 +54,12 @@ fn bundled_registered_requests_keep_local_payload_hooks() -> crate::TestResult {
     crate::chat::block_on(
         false,
         tokio::task::LocalSet::new().run_until(async {
-            for protocol in PROTOCOLS {
-                for simple in [false, true] {
-                    let local_body =
-                        local(protocol, simple, Observation::Drain, Entry::Registered).await?;
-                    let direct_body =
-                        local(protocol, simple, Observation::Drain, Entry::Direct).await?;
-                    let threaded_body =
-                        threaded(protocol, simple, Observation::Drain, Entry::Registered).await?;
-                    let threaded_direct =
-                        threaded(protocol, simple, Observation::Drain, Entry::Direct).await?;
-                    assert_eq!(local_body, direct_body, "{protocol}");
-                    assert_eq!(threaded_body, threaded_direct, "{protocol}");
-                    super::controls::cancel(protocol, simple).await?;
-                }
+            for protocol in PROTOCOLS
+                .iter()
+                .copied()
+                .filter(|api| *api != "google-vertex")
+            {
+                affinity(protocol).await?;
             }
             super::controls::injected_client().await?;
             Ok(())
@@ -366,11 +358,20 @@ async fn check_default_scripted(stream: &AssistantMessageEventStream) -> crate::
 
 /// Reuse both registered and direct execution-family witnesses for cloud content.
 pub(super) async fn cloud_affinity() -> crate::TestResult {
+    affinity("google-vertex").await
+}
+
+/// Compare all execution routes once for one protocol.
+async fn affinity(protocol: &str) -> crate::TestResult {
     for simple in [false, true] {
-        for entry in [Entry::Registered, Entry::Direct] {
-            local("google-vertex", simple, Observation::Drain, entry).await?;
-            threaded("google-vertex", simple, Observation::Drain, entry).await?;
-        }
+        let local_body = local(protocol, simple, Observation::Drain, Entry::Registered).await?;
+        let direct_body = local(protocol, simple, Observation::Drain, Entry::Direct).await?;
+        let threaded_body =
+            threaded(protocol, simple, Observation::Drain, Entry::Registered).await?;
+        let threaded_direct = threaded(protocol, simple, Observation::Drain, Entry::Direct).await?;
+        assert_eq!(local_body, direct_body, "{protocol}");
+        assert_eq!(threaded_body, threaded_direct, "{protocol}");
+        super::controls::cancel(protocol, simple).await?;
     }
     Ok(())
 }

@@ -1,8 +1,6 @@
 //! Cloud content-generation entry behavior.
 use crate::chat::TestResult;
 
-#[path = "support/cloud_content_capture.rs"]
-mod capture;
 #[path = "support/cloud_content_rows.rs"]
 mod rows;
 
@@ -286,4 +284,27 @@ fn cloud_raw_options_preserve_declared_fields() -> TestResult {
         );
     }
     crate::chat::block_on(false, routes::raw_options())
+}
+
+#[path = "support/cloud_content_deadline.rs"]
+mod deadline;
+
+#[test]
+fn cloud_authentication_consumes_the_selected_deadline() -> TestResult {
+    if let Some(case) = crate::child_process::child_case() {
+        return crate::chat::block_on(false, deadline::delayed_refresh(case == "expired"));
+    }
+    for case in ["expired", "active"] {
+        let files = crate::content_credentials::Files::new();
+        let path = files.path("adc.json");
+        crate::child_process::rerun(
+            "cloud_authentication_consumes_the_selected_deadline",
+            case,
+            &[
+                ("GOOGLE_APPLICATION_CREDENTIALS", &path),
+                ("NO_PROXY", "127.0.0.1,localhost"),
+            ],
+        )?;
+    }
+    Ok(())
 }

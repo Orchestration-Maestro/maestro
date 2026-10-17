@@ -149,11 +149,10 @@ async fn invoke<E: ProviderExecution>(
         .and_then(serde_json::Value::as_object_mut)
         .and_then(|config| config.shift_remove("httpOptions"));
     let projected = client.project(payload)?;
-    let mut prepared = client.prepare_request(projected, controls.as_ref()).await?;
+    let (mut prepared, timeout) = prepare(&client, projected, controls.as_ref()).await?;
     if signal.is_some_and(crate::Cancellation::is_aborted) {
         return Err(RequestFailure::new("Request aborted"));
     }
-    let timeout = request_timeout(prepared.timeout);
     let has_timeout_control = controls
         .as_ref()
         .and_then(|controls| controls.get("timeout"))
@@ -199,9 +198,37 @@ pub(in crate::providers::content) struct Invocation {
     counter: &'static std::sync::atomic::AtomicU64,
 }
 
-/// Convert the selected positive millisecond timeout without rounding it.
-fn request_timeout(milliseconds: Option<f64>) -> Option<std::time::Duration> {
-    milliseconds.and_then(|ms| std::time::Duration::try_from_secs_f64(ms / 1000.0).ok())
+/// Authenticate without cancellation, retaining only the unspent request deadline.
+async fn prepare(
+    client: &ApiClient,
+    projected: super::ProjectedContentRequest,
+    controls: Option<&serde_json::Value>,
+) -> Result<
+    (
+        super::api_client::PreparedContentRequest,
+        Option<std::time::Duration>,
+    ),
+    crate::providers::http::RequestFailure,
+> {
+    #[cfg(not(target_arch = "wasm32"))]
+    let started = tokio::time::Instant::now();
+    let prepared = client.prepare_request(projected, controls).await?;
+    let timeout = prepared
+        .timeout
+        .and_then(|ms| std::time::Duration::try_from_secs_f64(ms / 1000.0).ok());
+    #[cfg(not(target_arch = "wasm32"))]
+    let timeout = match timeout {
+        Some(timeout) => Some(
+            timeout
+                .checked_sub(started.elapsed())
+                .filter(|left| !left.is_zero())
+                .ok_or_else(|| {
+                    crate::providers::http::RequestFailure::new("Request was aborted")
+                })?,
+        ),
+        None => None,
+    };
+    Ok((prepared, timeout))
 }
 
 /// Prepare parameters and await the caller hook once before projection.

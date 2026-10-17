@@ -775,7 +775,13 @@ pub(crate) mod native {
             .is_pending()
         );
         tokio::time::advance(std::time::Duration::from_millis(1)).await;
-        let output = result.await;
+        tokio::task::yield_now().await;
+        let std::task::Poll::Ready(output) = std::future::Future::poll(
+            result.as_mut(),
+            &mut std::task::Context::from_waker(std::task::Waker::noop()),
+        ) else {
+            panic!("request must settle at the selected deadline");
+        };
         assert_eq!(output.read().unwrap().stop_reason, StopReason::Error);
         assert!(!caller.is_aborted());
         assert!(request_signal.is_aborted());

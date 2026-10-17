@@ -795,7 +795,14 @@ pub(crate) fn cloud_entry_rows() -> TestResult {
         selected.extend(rows(name)?);
     }
     if let Some(case) = crate::child_process::child_case() {
-        return block_on(false, cloud_entry_row(&selected[case.parse::<usize>()?]));
+        return block_on(false, async {
+            let index = case.parse::<usize>()?;
+            cloud_entry_row(&selected[index]).await?;
+            if index == 0 {
+                crate::content_generation_invocation::native::live_alias("google-vertex").await?;
+            }
+            Ok(())
+        });
     }
     for index in 0..selected.len() {
         crate::child_process::rerun(
@@ -851,5 +858,5 @@ async fn cloud_entry_row(row: &Row) -> TestResult {
             error: None,
         },
     )?;
-    native::live_alias("google-vertex").await
+    Ok(())
 }

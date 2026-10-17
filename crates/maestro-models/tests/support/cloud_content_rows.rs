@@ -33,8 +33,6 @@ struct Row {
 struct Input {
     /// Already-aborted caller.
     abort_before: Option<bool>,
-    /// Exercise the owned constructor boundary before invocation.
-    capture_constructor: Option<bool>,
     /// Credential file created in the payload hook.
     adc_appears_inside_hook: Option<bool>,
     /// Supplied provider key.
@@ -235,9 +233,6 @@ fn fetch(input: &Input, seen: Arc<Observed>, selected: Cancellation) -> maestro_
 
 /// Run a single child invocation through registered or direct simple dispatch.
 async fn observe(input: &Input, credentials: Value, refreshes: &AtomicUsize) -> TestResult<Value> {
-    if input.capture_constructor == Some(true) {
-        super::capture::assert_owned_constructor().await?;
-    }
     let original = Cancellation::new();
     let selected = Cancellation::new();
     if input.abort_before == Some(true) {

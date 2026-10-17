@@ -368,14 +368,18 @@ Ambient cloud mode keeps authentication separate from resource routing. Public r
 resolution retains a present empty key; it does not automatically select native credentials.
 Ambient project/location together with an implicit SDK environment key can select native
 authentication instead. The public simple entry keeps its missing-provider-key error.
+Public raw browser calls accept API-key authentication from model or hook-selected
+`x-goog-api-key` headers even with an empty constructor key. An empty key without
+that effective header fails after the payload hook.
 
 After [parameter preparation](#request-preparation), the optional payload hook is awaited
 once and its selected payload passes through [projection](#request-projection) and
 [transport preparation](#request-transport). Dispatch makes one attempt through
 `StreamOptions::fetch` or the default transport. Common timeout/retry settings, transport
 selection and the response hook are not consumed. Only a positive selected
-`config.httpOptions.timeout` sets a deadline, spanning dispatch, error-body admission and
-reduction. The hook's `PayloadHookInput::signal` starts as the caller's signal and may be
+`config.httpOptions.timeout` sets a deadline, spanning native authentication, dispatch, error-body admission and
+reduction. Native credential acquisition is allowed to finish, but does not reset an
+expired deadline. The hook's `PayloadHookInput::signal` starts as the caller's signal and may be
 replaced or set to `None`. The returned handle controls request cancellation and is checked
 before dispatch; the caller's original signal still determines final abort classification.
 Timeout cancellation belongs to the request and does not abort the caller's signal.

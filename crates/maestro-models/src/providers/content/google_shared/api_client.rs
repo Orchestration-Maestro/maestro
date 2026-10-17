@@ -146,9 +146,15 @@ impl ApiClient {
         headers: &mut IndexMap<String, String>,
     ) -> std::future::Ready<Result<(), DiagnosticErrorInfo>> {
         let Authentication::ApiKey(key) = &self.authentication;
-        std::future::ready(
-            key_headers(key).and_then(|generated| layer_generated(headers, generated)),
-        )
+        std::future::ready(if headers.contains_key("x-goog-api-key") {
+            Ok(())
+        } else if key.is_empty() {
+            Err(DiagnosticErrorInfo::error(
+                "API key is missing. Please provide a valid API key.",
+            ))
+        } else {
+            key_headers(key).and_then(|generated| layer_generated(headers, generated))
+        })
     }
 
     /// Concatenate the selected endpoint, version and resource before URL parsing.
