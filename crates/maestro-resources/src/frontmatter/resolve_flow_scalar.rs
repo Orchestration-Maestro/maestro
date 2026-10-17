@@ -5,6 +5,14 @@ use super::{
     parser::{Mode, Parser},
 };
 
+/// Cause reported for an escape that names no Unicode scalar.
+const INVALID_ESCAPE: &str = "found invalid Unicode character escape code";
+
+/// Drop literal trailing blanks, never reaching into decoded escapes before `floor`.
+fn trim_blanks(text: &mut String, floor: usize) {
+    text.truncate(text.trim_end_matches([' ', '\t']).len().max(floor));
+}
+
 /// Whether ordinary schema resolution applies to untagged text.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Style {
@@ -60,7 +68,7 @@ impl Parser<'_> {
             text.push(ch);
             self.cursor.next();
         }
-        text.truncate(text.trim_end_matches([' ', '\t']).len());
+        trim_blanks(&mut text, 0);
         Ok(text)
     }
 
@@ -72,8 +80,8 @@ impl Parser<'_> {
         text: &mut String,
     ) -> Result<bool, FrontmatterError> {
         let saved = self.cursor.offset;
-        self.cursor.trivia();
-        if self.cursor.peek().is_none()
+        self.cursor.blank_lines();
+        if self.cursor.peek().is_none_or(|ch| ch == '#')
             || self.cursor.document_end()
             || mode != Mode::Flow && self.cursor.column() <= indent
         {
@@ -88,7 +96,7 @@ impl Parser<'_> {
             .bytes()
             .filter(|b| *b == b'\n')
             .count();
-        text.truncate(text.trim_end_matches([' ', '\t']).len());
+        trim_blanks(text, 0);
         if breaks == 1 {
             text.push(' ');
         } else {
@@ -105,6 +113,7 @@ impl Parser<'_> {
             .next()
             .ok_or_else(|| self.cursor.error("Missing quote"))?;
         let mut text = String::new();
+        let mut escaped = 0;
         loop {
             let Some(ch) = self.cursor.next() else {
                 return Err(self.cursor.error_at(start, "Unclosed quoted scalar"));
@@ -118,8 +127,9 @@ impl Parser<'_> {
             }
             if ch == '\\' && quote == '"' {
                 text.extend(self.escape(start)?);
+                escaped = text.len();
             } else if ch == '\n' {
-                text.truncate(text.trim_end_matches([' ', '\t']).len());
+                trim_blanks(&mut text, escaped);
                 self.fold_newline(&mut text);
             } else {
                 text.push(ch);
@@ -212,7 +222,7 @@ impl Parser<'_> {
         let value = self
             .hex(width)
             .ok_or_else(|| self.escape_error(start, "did not find expected hexadecimal number"))?;
-        let invalid = || self.escape_error(start, "found invalid Unicode character escape code");
+        let invalid = || self.escape_error(start, INVALID_ESCAPE);
         if kind == 'u' && (0xd800..=0xdbff).contains(&value) {
             if !self.cursor.rest().starts_with("\\u") {
                 return Err(invalid());
@@ -221,12 +231,9 @@ impl Parser<'_> {
             let low = self
                 .hex(4)
                 .filter(|v| (0xdc00..=0xdfff).contains(v))
-                .ok_or_else(|| {
-                    self.escape_error(start, "found invalid Unicode character escape code")
-                })?;
-            return char::from_u32(0x10000 + ((value - 0xd800) << 10) + low - 0xdc00).ok_or_else(
-                || self.escape_error(start, "found invalid Unicode character escape code"),
-            );
+                .ok_or_else(|| self.escape_error(start, INVALID_ESCAPE))?;
+            return char::from_u32(0x10000 + ((value - 0xd800) << 10) + low - 0xdc00)
+                .ok_or_else(|| self.escape_error(start, INVALID_ESCAPE));
         }
         char::from_u32(value).ok_or_else(invalid)
     }

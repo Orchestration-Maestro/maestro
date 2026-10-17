@@ -2,13 +2,35 @@
 
 use super::{FrontmatterError, parser::Parser};
 
-/// Scalar tag selection; collections retain their ordinary data shape.
-#[derive(Debug)]
+/// Scalar resolution selected by a tag; collections keep their data shape.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Tag {
-    /// A standard schema tag name.
-    Core(String),
-    /// A local, unknown or non-specific scalar tag.
-    Other,
+    /// Integer resolution.
+    Int,
+    /// Floating-point resolution.
+    Float,
+    /// Boolean resolution.
+    Bool,
+    /// Null resolution.
+    Null,
+    /// Core data tag whose scalar keeps its untagged resolution.
+    Data,
+    /// A text, local, unknown or non-specific tag.
+    Text,
+}
+
+impl Tag {
+    /// Select the resolution named by a standard schema suffix.
+    fn core(suffix: &str) -> Self {
+        match suffix {
+            "int" => Self::Int,
+            "float" => Self::Float,
+            "bool" => Self::Bool,
+            "null" => Self::Null,
+            "binary" | "set" | "timestamp" | "omap" | "pairs" => Self::Data,
+            _ => Self::Text,
+        }
+    }
 }
 
 /// Properties attached to the following complete node.
@@ -85,12 +107,12 @@ impl<'a> Parser<'a> {
             let decoded = percent_encoding::percent_decode_str(suffix)
                 .decode_utf8()
                 .map_err(|_| self.cursor.error("Invalid UTF-8 in tag URI"))?;
-            return Ok(Tag::Core(decoded.into_owned()));
+            return Ok(Tag::core(&decoded));
         }
         if self.property_name().contains('!') {
             return Err(self.cursor.error("Unbound tag handle"));
         }
-        Ok(Tag::Other)
+        Ok(Tag::Text)
     }
 
     /// Read a verbatim URI without applying shorthand percent decoding.
@@ -109,7 +131,7 @@ impl<'a> Parser<'a> {
         }
         Ok(uri
             .strip_prefix("tag:yaml.org,2002:")
-            .map_or(Tag::Other, |name| Tag::Core(name.into())))
+            .map_or(Tag::Text, Tag::core))
     }
 }
 

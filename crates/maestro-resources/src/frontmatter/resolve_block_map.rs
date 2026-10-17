@@ -15,7 +15,7 @@ impl Parser<'_> {
             let key = self.block_key(indent)?;
             self.cursor.spaces();
             let value = if self.cursor.eat(':') {
-                self.block_value(indent, Mode::Inline)?
+                self.entry_value(indent, explicit)?
             } else if explicit {
                 FrontmatterValue::Null
             } else {
@@ -34,6 +34,21 @@ impl Parser<'_> {
             }
         }
         Ok(mapping.finish())
+    }
+
+    /// Parse the value after a mapping colon, rejecting an inline sequence.
+    fn entry_value(
+        &mut self,
+        indent: usize,
+        explicit: bool,
+    ) -> Result<FrontmatterValue, FrontmatterError> {
+        self.cursor.spaces();
+        if !explicit && self.cursor.indicator('-') {
+            return Err(self
+                .cursor
+                .error("Block sequence indicator on the same line as a mapping key"));
+        }
+        self.block_value(indent, Mode::Inline)
     }
 
     /// Read an implicit single-line key or an explicit possibly multiline key.

@@ -54,6 +54,16 @@ impl Cursor<'_> {
         }
     }
 
+    /// Skip blank lines and indentation, stopping before a comment.
+    pub fn blank_lines(&mut self) {
+        loop {
+            self.spaces();
+            if !self.eat('\n') {
+                break;
+            }
+        }
+    }
+
     /// Skip separated comments, blank lines and indentation.
     pub fn trivia(&mut self) {
         loop {
@@ -65,20 +75,33 @@ impl Cursor<'_> {
         }
     }
 
+    /// Source text on the current line before the cursor.
+    fn line_prefix(&self) -> &str {
+        self.line_prefix_at(self.offset)
+    }
+
+    /// Source text on the line containing a byte boundary, before it.
+    fn line_prefix_at(&self, offset: usize) -> &str {
+        let prefix = &self.source[..offset];
+        prefix.rsplit('\n').next().unwrap_or(prefix)
+    }
+
     /// Current character column, starting at zero.
     pub fn column(&self) -> usize {
-        self.source[..self.offset]
-            .rsplit('\n')
-            .next()
-            .map_or(0, |s| s.chars().count())
+        self.line_prefix().chars().count()
     }
 
     /// Whether the cursor follows only indentation on its line.
     pub fn at_indent(&self) -> bool {
-        self.source[..self.offset]
-            .rsplit('\n')
-            .next()
-            .is_none_or(|s| s.bytes().all(|b| b == b' '))
+        self.line_prefix().bytes().all(|b| b == b' ')
+    }
+
+    /// Whether a tab appears in the whitespace that opens the current line.
+    pub fn tab_indented(&self) -> bool {
+        self.line_prefix()
+            .bytes()
+            .take_while(|b| matches!(b, b' ' | b'\t'))
+            .any(|b| b == b'\t')
     }
 
     /// Recognize an indicator requiring lexical separation.
@@ -105,7 +128,7 @@ impl Cursor<'_> {
         let column = if eof_line {
             1
         } else {
-            prefix.rsplit('\n').next().map_or(0, |s| s.chars().count()) + 1
+            self.line_prefix_at(offset).chars().count() + 1
         };
         FrontmatterError {
             message: format!("{message} at byte {offset} line {line} column {column}"),
@@ -124,35 +147,48 @@ impl Cursor<'_> {
         if self.indicator('?') || self.indicator(':') {
             return true;
         }
-        let mut quote = None;
         let mut depth = 0usize;
+        let mut start = true;
+        let mut after_space = true;
         let mut chars = self.rest().chars().peekable();
         while let Some(ch) = chars.next() {
-            match (quote, ch) {
-                (Some('"'), '\\') => {
-                    chars.next();
-                    continue;
-                }
-                (Some(q), c) if q == c => {
-                    quote = None;
-                    continue;
-                }
-                (Some(_), _) => continue,
-                _ => (),
-            }
+            let space = matches!(ch, ' ' | '\t');
+            let separated = chars.peek().is_none_or(|c| matches!(c, ' ' | '\t' | '\n'));
+            let was_start = start;
+            start = was_start && space;
             match ch {
-                '\n' | '#' if depth == 0 => return false,
-                '\'' | '"' => quote = Some(ch),
-                '[' | '{' => depth += 1,
-                ']' | '}' => depth = depth.saturating_sub(1),
-                ':' if depth == 0
-                    && chars.peek().is_none_or(|c| matches!(c, ' ' | '\t' | '\n')) =>
-                {
-                    return true;
+                '"' | '\'' if was_start => skip_quoted(&mut chars, ch),
+                '&' | '!' if was_start => {
+                    skip_property(&mut chars);
+                    start = true;
                 }
+                '\n' if depth == 0 => return false,
+                '#' if depth == 0 && after_space => return false,
+                '[' | '{' => (depth, start) = (depth + 1, true),
+                ']' | '}' => depth = depth.saturating_sub(1),
+                ',' => start = true,
+                ':' if depth == 0 && separated => return true,
+                '-' | '?' | ':' if was_start && separated => start = true,
                 _ => (),
             }
+            after_space = space;
         }
         false
     }
+}
+
+/// Consume the rest of a quoted scalar whose opening quote was read.
+fn skip_quoted(chars: &mut std::iter::Peekable<std::str::Chars<'_>>, quote: char) {
+    while let Some(ch) = chars.next() {
+        if ch == '\\' && quote == '"' {
+            chars.next();
+        } else if ch == quote {
+            break;
+        }
+    }
+}
+
+/// Consume an anchor or tag token up to its separation.
+fn skip_property(chars: &mut std::iter::Peekable<std::str::Chars<'_>>) {
+    while chars.next_if(|c| !matches!(c, ' ' | '\t' | '\n')).is_some() {}
 }
