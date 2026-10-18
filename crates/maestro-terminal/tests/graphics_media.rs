@@ -238,6 +238,22 @@ fn zlib_failure_and_tail_rules_match_loading() {
 }
 
 #[test]
+fn zlib_integrity_failures_do_not_produce_images() {
+    let input = [
+        0x78, 0x9c, 0x73, 0x74, 0x72, 0x06, 0x00, 0x01, 0x8d, 0x00, 0xc7,
+    ];
+    let mut cmd = command(&input);
+    transmission_mut(&mut cmd).compression = Compression::ZlibDeflate;
+    assert_eq!(complete(&cmd).unwrap().data, b"ABC");
+    for (index, byte) in [(10, 0xc6), (1, 0x9d)] {
+        let mut corrupt = input;
+        corrupt[index] = byte;
+        cmd.data = corrupt.to_vec();
+        assert_error(&cmd, ImageError::DecompressionFailed);
+    }
+}
+
+#[test]
 fn loading_retains_owned_first_chunk_state() {
     let cmd = Parser::parse_string(b"a=T,i=12,I=13,p=14,q=2,s=1,v=1,f=24,x=3,r=7;QQ==").unwrap();
     let mut loading = LoadingImage::init(&cmd, Limits::DIRECT).unwrap();
@@ -468,15 +484,6 @@ fn temporary_aliases_and_failure_cleanup_are_safe() {
         );
         assert!(!real.exists());
         assert!(alias.symlink_metadata().is_ok());
-        let outside = Scratch::in_dir(&std::env::current_dir().unwrap());
-        let real = outside.file("tty-graphics-protocol-outside.rgb", b"ABC");
-        let alias = scratch.0.join("outside-alias");
-        symlink(&real, &alias).unwrap();
-        assert_error(
-            &local(&alias, Medium::TemporaryFile),
-            ImageError::TemporaryFileNotInTempDir,
-        );
-        assert_eq!(fs::read(real).unwrap(), b"ABC");
         let target = scratch.0.join("parent");
         fs::create_dir(&target).unwrap();
         let parent_alias = scratch.0.join("parent-alias");

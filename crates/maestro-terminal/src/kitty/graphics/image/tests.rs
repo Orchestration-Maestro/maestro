@@ -52,6 +52,16 @@ fn temporary_paths_require_canonical_containment() {
             Err(ImageError::TemporaryFileNotInTempDir)
         );
         assert!(outside.exists());
+        let outside_alias = root.join("outside-alias");
+        std::os::unix::fs::symlink(&outside, &outside_alias).unwrap();
+        let canonical = fs::canonicalize(&outside_alias).unwrap();
+        assert!(!is_path_in_temp_dir(&canonical, &roots));
+        assert_eq!(
+            read_path(&canonical, &t, &roots),
+            Err(ImageError::TemporaryFileNotInTempDir)
+        );
+        assert_eq!(fs::read(&outside).unwrap(), b"ABC");
+        assert!(outside_alias.symlink_metadata().is_ok());
     }
     #[cfg(unix)]
     assert_temp_directory_selection();
