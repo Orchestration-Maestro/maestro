@@ -25,7 +25,7 @@ fn setup_entry() {
 }
 
 /// Observes exec completion through process facts, then reaps the controlled terminal.
-fn capture_job(script: &str, input: &[u8], release: &[u8]) -> ForegroundJob {
+fn capture_job(script: &str, input: &[u8], release: &[u8], argv0: &str) -> ForegroundJob {
     let mut observed = None;
     TestProcess::named("setup_entry")
         .unwrap()
@@ -53,7 +53,7 @@ fn capture_job(script: &str, input: &[u8], release: &[u8]) -> ForegroundJob {
             )?;
             let mut master = std::fs::File::from(pty.master_fd);
             master.write_all(input)?;
-            observed = Some(observe_sleep(&mut child)?);
+            observed = Some(observe_sleep(&mut child, argv0)?);
             finish_terminal(&mut child, &mut master, release)
         })
         .unwrap();
@@ -61,12 +61,12 @@ fn capture_job(script: &str, input: &[u8], release: &[u8]) -> ForegroundJob {
 }
 
 /// Waits for the native exec observation rather than estimating readiness with a delay.
-fn observe_sleep(child: &mut std::process::Child) -> io::Result<ForegroundJob> {
+fn observe_sleep(child: &mut std::process::Child, argv0: &str) -> io::Result<ForegroundJob> {
     loop {
         if let Some(job) = pty::foreground::foreground_job(
             child.id(),
             pty::foreground::ProcessDetectionMode::Native,
-        ) && job.processes.iter().any(|process| process.name == "sleep")
+        ) && sleep_exec_observed(&job, argv0)
         {
             return Ok(job);
         }
@@ -75,6 +75,37 @@ fn observe_sleep(child: &mut std::process::Child) -> io::Result<ForegroundJob> {
         }
         std::thread::yield_now();
     }
+}
+
+/// Reports whether the launched executable is present in the sampled job.
+fn sleep_exec_observed(job: &ForegroundJob, argv0: &str) -> bool {
+    job.processes.iter().any(|process| {
+        process.name == "sleep"
+            && process
+                .argv
+                .as_ref()
+                .and_then(|words| words.first())
+                .is_some_and(|word| word == argv0)
+    })
+}
+
+#[test]
+fn exec_observation_rejects_absent_and_stale_arguments() {
+    let mut job = ForegroundJob {
+        process_group_id: 1,
+        processes: vec![pty::foreground::ForegroundProcess {
+            pid: 1,
+            name: "sleep".into(),
+            argv0: None,
+            argv: None,
+            cmdline: None,
+        }],
+    };
+    assert!(!sleep_exec_observed(&job, "codex"));
+    job.processes[0].argv = Some(vec!["/bin/bash".into()]);
+    assert!(!sleep_exec_observed(&job, "codex"));
+    job.processes[0].argv = Some(vec!["codex".into(), "infinity".into()]);
+    assert!(sleep_exec_observed(&job, "codex"));
 }
 
 /// Reaps the child and retains terminal bytes for the checked harness proof.
@@ -109,7 +140,7 @@ fn live_foreground_ordinary_program_has_no_agent() {
     if run_alone("live_foreground_ordinary_program_has_no_agent").unwrap() {
         return;
     }
-    let job = capture_job("exec /bin/sleep infinity", b"", b"");
+    let job = capture_job("exec /bin/sleep infinity", b"", b"", "/bin/sleep");
     assert!(job.processes.iter().any(|process| process.name == "sleep"));
     assert_eq!(identify_agent_in_job(&job), None);
 }
@@ -123,6 +154,7 @@ fn live_shell_exec_replacement_has_no_agent() {
         "read -r command; eval \"$command\"",
         b"exec /bin/sleep infinity\n",
         b"",
+        "/bin/sleep",
     );
     assert!(job.processes.iter().any(|process| process.name == "sleep"));
     assert_eq!(identify_agent_in_job(&job), None);
@@ -137,6 +169,7 @@ fn live_wrapper_member_argv_identifies_an_agent() {
         "/bin/bash -c 'exec -a codex /bin/sleep infinity' & member=$!; read -r stop; kill \"$member\"; wait \"$member\"; exit 0",
         b"",
         b"stop\n",
+        "codex",
     );
     assert!(job.processes.iter().any(|process| process.name == "bash"));
     assert!(job.processes.iter().any(|process| {
