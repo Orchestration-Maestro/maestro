@@ -722,6 +722,8 @@ pane state, terminal identity, workspace, tab and git label/status modules.
 Snapshot records and supplied-path storage derive from the persistence modules;
 the byte-replacement helper in `crates/maestro-lock/` derives from persistence
 and detection-manifest publication.
+The agent catalogue and foreground-job recognition in `crates/maestro-detection/`
+derive from the agent detection module under the same license.
 
 
 The pane terminal, shell and foreground process code in `crates/maestro-process/`
