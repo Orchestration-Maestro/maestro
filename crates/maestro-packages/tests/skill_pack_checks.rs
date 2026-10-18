@@ -11,6 +11,47 @@ use std::{
     rc::Rc,
 };
 
+/// Complete skill inventory with human-only invocation flags.
+const EXPECTED_SKILLS: [(&str, bool); 37] = [
+    ("maestro-ask", true),
+    ("maestro-code-review", false),
+    ("maestro-codebase-design", false),
+    ("maestro-diagnose", false),
+    ("maestro-documentation", false),
+    ("maestro-domain-modeling", false),
+    ("maestro-frontend-ui", false),
+    ("maestro-git-workflow", false),
+    ("maestro-grilling", false),
+    ("maestro-handoff", true),
+    ("maestro-humanizer", false),
+    ("maestro-idea-refine", true),
+    ("maestro-implement", true),
+    ("maestro-implement-spec", true),
+    ("maestro-improve-codebase-architecture", true),
+    ("maestro-observability", false),
+    ("maestro-performance", false),
+    ("maestro-pr", false),
+    ("maestro-prototype", false),
+    ("maestro-quality-gates", false),
+    ("maestro-receive-review", false),
+    ("maestro-research", false),
+    ("maestro-retro", true),
+    ("maestro-security", false),
+    ("maestro-ship", false),
+    ("maestro-show-options", false),
+    ("maestro-tdd", false),
+    ("maestro-teach", true),
+    ("maestro-to-questionnaire", true),
+    ("maestro-to-spec", true),
+    ("maestro-to-tickets", true),
+    ("maestro-triage", true),
+    ("maestro-verify", false),
+    ("maestro-wait-what", true),
+    ("maestro-wayfinder", true),
+    ("maestro-wizard", false),
+    ("maestro-writing-for-agents", false),
+];
+
 /// Resolve the checkout package before loading its enabled resources.
 #[test]
 fn skill_pack_loads_with_closed_links_and_router() {
@@ -32,23 +73,18 @@ fn skill_pack_loads_with_closed_links_and_router() {
     .unwrap();
     assert!(loaded.diagnostics.is_empty(), "{:?}", loaded.diagnostics);
     let names: BTreeSet<_> = loaded.skills.iter().map(|s| s.name.as_str()).collect();
-    assert_eq!(loaded.skills.len(), 27);
-    assert!(names.contains("maestro-ask"));
-    for (name, type_only) in [
-        ("maestro-implement-spec", true),
-        ("maestro-git-workflow", false),
-        ("maestro-handoff", true),
-        ("maestro-wait-what", true),
-        ("maestro-research", false),
-        ("maestro-writing-for-agents", false),
-        ("maestro-documentation", false),
-        ("maestro-humanizer", false),
-        ("maestro-wayfinder", true),
-        ("maestro-triage", true),
-        ("maestro-prototype", false),
-        ("maestro-show-options", false),
-        ("maestro-improve-codebase-architecture", true),
-    ] {
+    assert_eq!(loaded.skills.len(), EXPECTED_SKILLS.len());
+    assert_eq!(names.len(), loaded.skills.len(), "duplicate skill name");
+    assert_eq!(
+        loaded
+            .skills
+            .iter()
+            .filter(|s| s.disable_model_invocation)
+            .count(),
+        14
+    );
+    assert_eq!(loaded.skills.len() - 14, 23);
+    for (name, type_only) in EXPECTED_SKILLS {
         let skill = loaded.skills.iter().find(|s| s.name == name).unwrap();
         assert_eq!(skill.disable_model_invocation, type_only, "{name}");
         assert!(skill.description.starts_with("Use when"), "{name}");

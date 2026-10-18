@@ -51,3 +51,8 @@ not an expanding full audit. End with findings per axis and the worst severity w
 
 Use `/skill:maestro-documentation` as the documentation review lens. It owns the downstream
 prose pass; retain both review axes and the scope rules above.
+
+Use `/skill:maestro-security`, `/skill:maestro-performance` and `/skill:maestro-frontend-ui` as applicable
+review lenses. Keep Standards and Spec independent; these lenses neither replace either pass nor turn an
+ordinary review into a full security audit. The controller owns dispatch; a child reviewer reads the relevant
+lens and returns findings without starting children.

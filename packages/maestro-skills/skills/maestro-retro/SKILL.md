@@ -29,3 +29,6 @@ inspect a fixed diff; place judgement guidance with the reviewer rather than bur
 
 For a candidate that changes skills or agent rules files, use `/skill:maestro-writing-for-agents`
 to keep triggers, references and completion criteria useful.
+
+Use `/skill:maestro-quality-gates` for a repeatable quality bar or deterministic-check change, after citing
+the incident and checking existing mechanisms. This is a lens, not permission to replace an existing bar.

@@ -38,6 +38,15 @@ A full security audit belongs to `security-audit`, not to a general code review.
 
 At a phase boundary, read [phase boundaries](../../references/phase-boundaries.md) before discarding context.
 
+## Domain work
+
+- `/skill:maestro-security` guides writing secure code; full audits remain with `security-audit`.
+- `/skill:maestro-performance` measures bottlenecks and keeps only demonstrated improvements.
+- `/skill:maestro-frontend-ui` covers components, state, accessibility and browser verification.
+- `/skill:maestro-observability` builds signals operators can use to diagnose production behaviour.
+- `/skill:maestro-ship` prepares rollout, monitoring, rollback and retirement.
+- `/skill:maestro-quality-gates` records the project's bar and executable checks.
+
 ## Other entry points
 
 These are suggestions for the human, not automatic invocations of type-only skills.
@@ -55,3 +64,8 @@ These are suggestions for the human, not automatic invocations of type-only skil
 - `/skill:maestro-documentation` reviews technical guides, comments and API documentation.
 - `/skill:maestro-humanizer` revises prose with stock patterns while preserving its claims.
 - `/skill:maestro-writing-for-agents` authors or prunes skills and agent rules files.
+
+- `/skill:maestro-idea-refine` helps the human widen and select an early idea.
+- `/skill:maestro-wizard` authors a guided Bash procedure for person-only steps.
+- `/skill:maestro-to-questionnaire` helps the human request decisions or facts from someone else.
+- `/skill:maestro-teach` starts a human-requested learning workspace.
