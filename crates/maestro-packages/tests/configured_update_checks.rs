@@ -11,7 +11,7 @@ use maestro_packages::{
 use maestro_settings::{PackageSource, Settings, SettingsListEntry, SettingsManager};
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
-use worker_support::{Gates, driver};
+use worker_support::{Gates, driver, gated_npm_checks};
 
 #[test]
 fn updates_selected_unpinned_source_beside_pin() {
@@ -623,17 +623,7 @@ fn independent_calls() {
         configured(json!([]), json!(["npm:p0", "npm:p1", "npm:p2", "npm:p3"]));
     effects.exists.set(true);
     let (runtime, local) = driver(&effects);
-    let (send, mut started) = tokio::sync::mpsc::unbounded_channel();
-    let (release, wait) = tokio::sync::watch::channel(false);
-    *effects.capture_hook.borrow_mut() = Some(Rc::new(move |_, _, _| {
-        let send = send.clone();
-        let mut wait = wait.clone();
-        Box::pin(async move {
-            send.send(()).unwrap();
-            wait.wait_for(|ready| *ready).await.unwrap();
-            Ok("\"2\"".into())
-        })
-    }));
+    let (release, mut started) = gated_npm_checks(&effects);
     let availability = local.spawn_local(manager.check_for_available_updates());
     let update = local.spawn_local(manager.update(None));
     runtime.block_on(local.run_until(async {
@@ -826,32 +816,6 @@ fn runtime_admission_errors_keep_accepted_work() {
         "stopped runtime"
     );
     assert_eq!(effects.spawns.get(), 0);
-}
-
-/// Gates each npm check while Git probes remain immediately available.
-fn gated_npm_checks(
-    effects: &support::Effects,
-) -> (
-    tokio::sync::watch::Sender<bool>,
-    tokio::sync::mpsc::UnboundedReceiver<()>,
-) {
-    let (checks, checking) = tokio::sync::mpsc::unbounded_channel();
-    let (release_checks, wait_checks) = tokio::sync::watch::channel(false);
-    *effects.capture_hook.borrow_mut() = Some(Rc::new(move |command, _, _| {
-        let checks = checks.clone();
-        let mut wait = wait_checks.clone();
-        let npm = command != "git";
-        Box::pin(async move {
-            if npm {
-                checks.send(()).unwrap();
-                wait.wait_for(|ready| *ready).await.unwrap();
-                Ok("\"2\"".into())
-            } else {
-                Ok("origin/main".into())
-            }
-        })
-    }));
-    (release_checks, checking)
 }
 
 #[test]
