@@ -63,7 +63,8 @@ behavior.
 `render_header` draws the shared status icon and literal or rich caption.
 `render_collapsible_header` shares the caller's `Rc<Cell<bool>>` expansion state.
 Pending headers use the frame clock for their spinner; no timer is allocated.
-Collapsible headers use a pointer cursor, foreground hover text and an accent
+Plain captions stay muted, including when a retained collapsible header becomes
+plain. Collapsible headers use a pointer cursor, foreground hover text and an accent
 keyboard-focus outline. Rich captions retain their own colors and executable
 content with independent widget state.
 

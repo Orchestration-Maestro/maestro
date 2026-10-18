@@ -139,14 +139,15 @@ impl Header {
                 )
             });
         }
+        self.decorate(ui, view, retained, &response)?;
         if collapsible {
-            Self::decorate(ui, view, retained, &response)?;
             return Ok(response.on_hover_cursor(egui::CursorIcon::PointingHand));
         }
         Ok(response)
     }
     /// Keep literal hover color and keyboard focus paint inside the caller's clip.
     fn decorate(
+        &self,
         ui: &egui::Ui,
         view: ToolRenderView<'_>,
         retained: &Retained,
@@ -156,9 +157,9 @@ impl Header {
         let _ = retained;
         #[cfg(target_arch = "wasm32")]
         if let Some(caption) = &retained.caption {
-            caption.set_hovered(response.hovered())?;
+            caption.set_hovered(self.expanded.is_some() && response.hovered())?;
         }
-        if response.has_focus() {
+        if self.expanded.is_some() && response.has_focus() {
             ui.painter().rect_stroke(
                 response.rect,
                 0.,

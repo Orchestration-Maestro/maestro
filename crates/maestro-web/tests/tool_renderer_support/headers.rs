@@ -311,13 +311,24 @@ pub async fn collapsible_headers_paint_interaction_states() {
         check("(expectedHover.remove(),true)");
         crate::support::reading_paint::observe("tool-header-hover").await;
         assert_eq!(surface.cursor, egui::CursorIcon::PointingHand);
+        surface.events = vec![egui::Event::PointerGone];
+        surface
+            .context
+            .memory_mut(|memory| memory.surrender_focus(response.id));
+        browser::draw(&mut surface, &header, &mut row);
+        let icons = browser::glyphs(&surface);
+        let border = egui::Rect::from_min_max(
+            egui::pos2(icons[0].right() + 2., response.rect.top()),
+            egui::pos2(icons.last().unwrap().left() - 2., response.rect.top() + 2.),
+        );
+        let unfocused = browser::pixels(&surface, border);
         surface
             .context
             .memory_mut(|memory| memory.request_focus(response.id));
-        surface.events = vec![egui::Event::PointerGone];
         let focused = browser::draw(&mut surface, &header, &mut row);
         assert!(focused.has_focus());
-        browser::has_role(&surface, focused.rect, "accent", &presentation);
+        assert_ne!(browser::pixels(&surface, border), unfocused);
+        browser::has_role(&surface, border, "accent", &presentation);
         drop(row);
         rich_hover_keeps_child_color(&mut surface, state);
     }
@@ -340,4 +351,73 @@ fn rich_hover_keeps_child_color(
     browser::draw(surface, &header, &mut row);
     browser::draw(surface, &header, &mut row);
     check("getComputedStyle(document.querySelector('.maestro-code code')).color === richIdleColor");
+}
+
+/// A retained literal caption loses hover color when its header becomes plain.
+#[wasm_bindgen]
+pub async fn retained_header_same_caption_restores_plain_color() {
+    retained_header_transition("caption").await;
+}
+
+/// Editing the caption reconciles text without retaining obsolete interaction color.
+#[wasm_bindgen]
+pub async fn retained_header_changed_caption_restores_plain_color() {
+    retained_header_transition("replacement caption").await;
+}
+
+async fn retained_header_transition(plain_text: &str) {
+    use crate::markdown_support::{js, publish};
+    let mut surface = surface();
+    let pack = surface.pack.clone();
+    let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
+    let collapsible = recipe(
+        ToolHeaderState::Complete,
+        false,
+        Some(Rc::new(Cell::new(false))),
+        "caption",
+    );
+    let plain = recipe(ToolHeaderState::Complete, false, None, plain_text);
+    let mut row = ToolRenderState::default();
+    browser::draw(&mut surface, &plain, &mut row);
+    let response = browser::draw(&mut surface, &collapsible, &mut row);
+    surface.events = vec![egui::Event::PointerMoved(response.rect.center())];
+    browser::draw(&mut surface, &collapsible, &mut row);
+    browser::draw(&mut surface, &collapsible, &mut row);
+    let _ = js("globalThis.retainedCaption=document.querySelector('.maestro-tool-caption')");
+    publish("hoverText", &presentation.colors["text"].into());
+    crate::support::reading_paint::observe("tool-header-hover").await;
+    surface
+        .context
+        .memory_mut(|memory| memory.request_focus(response.id));
+    browser::draw(&mut surface, &collapsible, &mut row);
+    surface.events = vec![egui::Event::PointerGone];
+    let response = browser::draw(&mut surface, &plain, &mut row);
+    publish("plainText", &plain_text.into());
+    check(
+        "document.querySelector('.maestro-tool-caption') === retainedCaption && retainedCaption.textContent === plainText",
+    );
+    publish("expectedColor", &presentation.colors["muted"].into());
+    check(
+        "(()=>{const control=document.createElement('span');control.style.color=expectedColor;document.body.appendChild(control);const matches=getComputedStyle(retainedCaption).color===getComputedStyle(control).color;control.remove();return matches})()",
+    );
+    publish("hoverText", &presentation.colors["muted"].into());
+    crate::support::reading_paint::observe("tool-header-hover").await;
+    assert_eq!(surface.cursor, egui::CursorIcon::Default);
+    assert!(!response.has_focus());
+    let icons = browser::glyphs(&surface);
+    let border = egui::Rect::from_min_max(
+        egui::pos2(icons[0].right() + 2., response.rect.top()),
+        egui::pos2(response.rect.right() - 2., response.rect.top() + 2.),
+    );
+    assert!(
+        browser::pixels(&surface, border)
+            .iter()
+            .all(|pixel| pixel[3] == 0)
+    );
+    surface.events = vec![egui::Event::PointerMoved(response.rect.center())];
+    browser::draw(&mut surface, &collapsible, &mut row);
+    browser::draw(&mut surface, &collapsible, &mut row);
+    publish("hoverText", &presentation.colors["text"].into());
+    crate::support::reading_paint::observe("tool-header-hover").await;
+    assert_eq!(surface.cursor, egui::CursorIcon::PointingHand);
 }
