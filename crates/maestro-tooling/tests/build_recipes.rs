@@ -101,7 +101,7 @@ fn maestro_workspace_recipes_keep_phase_order() {
     );
     assert_eq!(
         workspace.log(),
-        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo hakari|verify\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked\n"
+        "cargo clean\ncargo run|--quiet|--locked|-p|maestro-models|--example|generate_catalog_data\ncargo build|--workspace|--locked\ncargo fmt|--all\ncargo hakari|verify\ncargo clippy|--workspace|--all-targets|--locked|--|-D|warnings\ncargo doc|--workspace|--no-deps|--locked\ncargo test|-p|maestro-test-conventions|--locked|--test|integration|--|--exact|architecture::real_workspace_obeys_crate_rules|dependency_locks::maestro_locked_resolution_keeps_checkout_clean\n"
     );
     fs::remove_file(workspace.0.join("log")).unwrap();
     let result = workspace

@@ -5,13 +5,13 @@ setup:
     mise install
     mise exec -- prek install
 
-# Formatting, lint, public documentation and workspace conventions.
+# Formatting, lint, public documentation and the checkout's workspace conventions.
 check:
     cargo fmt --all
     cargo hakari verify
     cargo clippy --workspace --all-targets --locked -- -D warnings
     RUSTDOCFLAGS="-D warnings -D missing_docs" cargo doc --workspace --no-deps --locked
-    cargo test -p maestro-test-conventions --locked
+    cargo test -p maestro-test-conventions --locked --test integration -- --exact architecture::real_workspace_obeys_crate_rules dependency_locks::maestro_locked_resolution_keeps_checkout_clean
     if [ -f crates/maestro-models/examples/browser_import_check.rs ]; then just check-browser-smoke; fi
 
 # Run all workspace tests.
