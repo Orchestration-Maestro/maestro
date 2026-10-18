@@ -1,24 +1,33 @@
 //! Reduced fixture schemas: all expected values are compared, without ignored metadata.
+//! The cloud response fixture reuses these records with its own option names.
 use crate::chat::TestResult;
 use indexmap::IndexMap;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::Value;
+use std::hash::Hash;
 
-/// One recorded query and its complete observation.
+/// One recorded query and its complete observation; `F` names the accepted options.
 #[derive(Deserialize, Serialize)]
-#[serde(deny_unknown_fields)]
-struct Row {
+#[serde(
+    deny_unknown_fields,
+    bound(deserialize = "F: Deserialize<'de> + Eq + Hash")
+)]
+struct Row<F> {
     /// Exactly one behavior owner.
     test: String,
     /// Query selected by that owner.
-    case: Query,
+    case: Query<F>,
     /// All retained observations are compared.
     expected: Expected,
 }
 /// Selected model and history overrides are passed to their existing builders.
 #[derive(Deserialize, Serialize)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-struct Query {
+#[serde(
+    deny_unknown_fields,
+    rename_all = "camelCase",
+    bound(deserialize = "F: Deserialize<'de> + Eq + Hash")
+)]
+struct Query<F> {
     /// Descriptor overrides.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     model: Option<Value>,
@@ -27,7 +36,7 @@ struct Query {
     context: Option<Value>,
     /// Common and endpoint options read by the case runner.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    options: Option<IndexMap<OptionField, Value>>,
+    options: Option<IndexMap<F, Value>>,
     /// Simple entry selection; absence selects raw.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     entry: Option<String>,
@@ -52,6 +61,9 @@ struct Query {
     /// Byte fragmentation selection.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     chunked: Option<bool>,
+    /// Nonstream media type.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    content_type: Option<String>,
     /// Controlled HTTP status.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     status: Option<u16>,
@@ -118,10 +130,16 @@ struct Observed {
     /// Final message without wall-clock timestamp.
     result: Value,
 }
-/// Decode without accepting unused wrapper or option fields.
-pub fn rows(text: &str) -> TestResult<Vec<Value>> {
-    serde_json::from_str::<Vec<Row>>(text)?
+/// Decode without accepting unused wrapper fields or option names outside `F`.
+pub fn rows_with<F: DeserializeOwned + Serialize + Eq + Hash>(
+    text: &str,
+) -> TestResult<Vec<Value>> {
+    serde_json::from_str::<Vec<Row<F>>>(text)?
         .into_iter()
         .map(|row| Ok(serde_json::to_value(row)?))
         .collect()
+}
+/// Decode the standard response fixture.
+pub fn rows(text: &str) -> TestResult<Vec<Value>> {
+    rows_with::<OptionField>(text)
 }
