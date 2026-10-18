@@ -257,7 +257,7 @@ from the optional foundation utility described below.
 | `maestro-tool` | define tool interchange records | `maestro-request` | below 0 |
 | `maestro-brand` | project a brand pack | `maestro-text`, `maestro-json` | below 0 |
 | `maestro-watch` | supply filesystem notification effects | — | below 0 |
-| `maestro-lock` | acquire file-write locks | — | below 0 |
+| `maestro-lock` | guard file writes | — | below 0 |
 | `maestro-process` | own native child-process lifecycles | — | below 0 |
 | `maestro-pattern` | match file patterns | `maestro-text` | below 0 |
 | `maestro-protocol` | define the shared RPC protocol | — | below 0 |
@@ -272,7 +272,7 @@ from the optional foundation utility described below.
 | `maestro-tooling` | automate repository development | — | 0 |
 | `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown` | 0 |
 | `maestro-terminal` | emulate terminals | `maestro-text` | 0 |
-| `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text` | 0 |
+| `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text`, `maestro-lock` | 0 |
 | `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text` | 0 |
 | `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool` | 1 |
 | `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-lock`, `maestro-text`, `maestro-process` | 1 |
@@ -357,7 +357,7 @@ Move the existing matchers only after this contract lands, through
 
 `maestro-watch` and `maestro-lock` are core leaves below layer 0, with no
 workspace dependencies, including the path utility. Only theme and application
-may depend on watch; only settings and credentials may depend on lock.
+may depend on watch; only settings, credentials and workspace may depend on lock.
 
 `maestro-watch::fs_watch` owns watch creation/close helpers, the injected
 watch/timer interface and the native notification adapter. Reload, refresh,
@@ -365,7 +365,11 @@ retry and polling policy remain in their feature owners. Existing theme watch
 paths may re-export the same moved types, not retain a second implementation.
 
 `maestro-lock` acquires a caller-opened file-write lock with the existing bounded
-synchronous contention retry. File creation, permissions, persistence, unlocking
+synchronous contention retry. It also owns byte-oriented atomic replacement: an
+exclusive temporary sibling is written, synced, closed and renamed before the
+parent directory is synced. Workspace snapshot storage uses this operation;
+feature owners retain serialization and symbolic-link policy. File creation for
+lock acquisition, permissions, in-place settings/credentials persistence, unlocking
 policy and asynchronous credential acquisition remain with settings and
 credentials. Neither leaf introduces a common background runtime, scheduler,
 retry policy or listener framework. Feature-specific timing, process,
