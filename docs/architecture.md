@@ -39,7 +39,9 @@ owners, all now present: `maestro-text` and `maestro-json` are leaves, `maestro-
 only on `maestro-request`, and `maestro-brand` depends on text and JSON. Pattern depends
 only on text, so it is no longer a leaf. The [Markdown parser](markdown.md)
 also depends only on text; the toolkit consumes its owned source records and
-application re-exports them as `markdown`. Tools may also depend directly on text for shared newline
+application re-exports them as `markdown`. The dedicated conventions checker may
+consume the same parser's code-block source ranges for documentation checks.
+Tools may also depend directly on text for shared newline
 normalization. The guest authoring crate may depend on request,
 entry, tool and JSON, never on native session, tool or catalog runtimes. The table is not
 repeated here.
