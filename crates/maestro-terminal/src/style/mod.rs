@@ -243,3 +243,6 @@ impl Flags {
 
 #[cfg(test)]
 mod tests;
+
+/// Deduplicated style ownership within one page.
+pub(crate) type Set = crate::ref_counted_set::RefCountedSet<Style>;

@@ -64,3 +64,24 @@ Indexed colours resolve against the supplied palette. Background-only cells take
 precedence over a style's background. The optional bold policy brightens low
 palette indices or replaces default-coloured text; it leaves other direct colours
 unchanged. Text attributes and the six underline kinds retain their identity.
+
+## Page storage
+
+`Page` owns its rows, cells, deduplicated styles, cluster suffixes and hyperlink
+bytes. Copying rows between pages preserves those values after the source is
+cleared or dropped. Partial row copies leave unselected cells alone. Moves and
+swaps transfer managed content without duplicating its ownership; clearing cells
+releases their references. Reinitialising a page resets its storage and dirty
+state at the same capacity.
+
+Cluster suffixes use first-fit 16-byte chunks; hyperlink strings use 32-byte
+chunks. Fragmentation can exhaust contiguous space before the total free-byte
+count reaches zero. Capacity errors identify the affected table or allocator so
+the consuming terminal owner can grow storage and retry.
+
+`Page::layout` computes logical byte regions for rows, cells and each managed
+table, including their alignment and target page-size rounding. These are
+storage accounting bytes, not the native allocator's process memory usage.
+Selected rows can report the capacity needed for their unique styles and links,
+every linked cell and chunk-rounded suffix and string bytes. This accounting is
+the input to retained-history limits; the history owner applies those limits.

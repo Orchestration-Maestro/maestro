@@ -363,3 +363,458 @@ fn check_style_colors(
         }
     }
 }
+
+#[test]
+fn page_initializes_storage() {
+    let page = maestro_terminal::Page::init(maestro_terminal::page::layout::Capacity {
+        cols: 120,
+        rows: 80,
+        styles: 32,
+        ..Default::default()
+    });
+    assert_eq!(page.size.cols, 120);
+    assert_eq!(page.size.rows, 80);
+    for y in 0..80 {
+        assert_eq!(page.get_cells(y), &[Cell::default(); 120]);
+        assert!(!page.get_row(y).dirty());
+    }
+    assert!(!page.is_dirty());
+}
+
+#[test]
+fn page_read_write_cells() {
+    use maestro_terminal::{
+        Page,
+        page::{CellPosition, layout::Capacity},
+    };
+    let mut page = Page::init(Capacity {
+        cols: 10,
+        rows: 10,
+        ..Capacity::default()
+    });
+    for y in 0..10 {
+        let (row, cell) = page.get_row_and_cell(CellPosition { x: 1, y });
+        row.set_wrap(y % 2 == 1);
+        *cell = Cell::init(char::from_u32(u32::from(y)).unwrap());
+    }
+    for y in 0..10 {
+        assert_eq!(page.get_cells(y)[1].codepoint() as u32, u32::from(y));
+        assert_eq!(page.get_row(y).wrap(), y % 2 == 1);
+        page.get_cells_mut(y)[0] = Cell::init('A');
+        page.get_row_mut(y).set_dirty(true);
+        assert_eq!(page.get_cells(y)[0].codepoint(), 'A');
+    }
+    assert!(page.is_dirty());
+}
+
+#[test]
+fn page_append_small_cluster() {
+    use maestro_terminal::{
+        Page,
+        page::{CellPosition, layout::Capacity},
+    };
+    let mut page = Page::init(Capacity {
+        cols: 10,
+        rows: 10,
+        ..Capacity::default()
+    });
+    let position = CellPosition { x: 0, y: 0 };
+    page.get_cells_mut(0)[0] = Cell::init('\t');
+    page.append_grapheme(position, '\n').unwrap();
+    assert_eq!(page.lookup_grapheme(position), Some(&['\n'][..]));
+    assert!(page.get_cells(0)[0].has_grapheme());
+    assert!(page.get_row(0).grapheme());
+    page.append_grapheme(position, '\u{b}').unwrap();
+    assert_eq!(page.lookup_grapheme(position), Some(&['\n', '\u{b}'][..]));
+    page.clear_grapheme(position);
+    page.update_row_grapheme_flag(0);
+    assert_eq!(page.lookup_grapheme(position), None);
+    assert!(!page.get_cells(0)[0].has_grapheme());
+    assert!(!page.get_row(0).grapheme());
+}
+
+#[test]
+fn page_append_crosses_chunk() {
+    use maestro_terminal::{
+        Page,
+        page::{CellPosition, layout::Capacity},
+    };
+    let mut page = Page::init(Capacity {
+        cols: 10,
+        rows: 10,
+        ..Capacity::default()
+    });
+    let position = CellPosition { x: 0, y: 0 };
+    page.get_cells_mut(0)[0] = Cell::init('\t');
+    let suffix: Vec<_> = (10..50).map(|cp| char::from_u32(cp).unwrap()).collect();
+    for &cp in &suffix {
+        page.append_grapheme(position, cp).unwrap();
+    }
+    assert_eq!(page.lookup_grapheme(position), Some(suffix.as_slice()));
+}
+
+#[test]
+fn page_clear_partial_graphemes() {
+    use maestro_terminal::{
+        Page,
+        page::{CellPosition, layout::Capacity},
+    };
+    let mut page = Page::init(Capacity {
+        cols: 10,
+        rows: 10,
+        ..Capacity::default()
+    });
+    for x in 0..2 {
+        page.get_cells_mut(0)[usize::from(x)] = Cell::init('A');
+        page.append_grapheme(CellPosition { x, y: 0 }, 'B').unwrap();
+    }
+    page.clear_grapheme(CellPosition { x: 0, y: 0 });
+    page.update_row_grapheme_flag(0);
+    assert_eq!(page.lookup_grapheme(CellPosition { x: 0, y: 0 }), None);
+    assert_eq!(
+        page.lookup_grapheme(CellPosition { x: 1, y: 0 }),
+        Some(&['B'][..])
+    );
+    assert!(page.get_row(0).grapheme());
+    assert_eq!(page.grapheme_count(), 1);
+}
+
+#[test]
+fn page_clone_preserves_records() {
+    use maestro_terminal::{Page, page::layout::Capacity};
+    let capacity = Capacity {
+        cols: 10,
+        rows: 10,
+        ..Capacity::default()
+    };
+    let mut source = Page::init(capacity);
+    for y in 0..10 {
+        source.get_cells_mut(y)[1] = Cell::init(char::from_u32(u32::from(y)).unwrap());
+    }
+    let cloned = source.clone();
+    for y in 0..10 {
+        source.get_cells_mut(y).fill(Cell::default());
+    }
+    assert_eq!(cloned.capacity, capacity);
+    for y in 0..10 {
+        assert_eq!(cloned.get_cells(y)[1].codepoint() as u32, u32::from(y));
+        assert_eq!(source.get_cells(y), &[Cell::default(); 10]);
+    }
+}
+
+#[test]
+fn page_copy_range() {
+    use maestro_terminal::{Page, page::layout::Capacity};
+    let mut source = Page::init(Capacity {
+        cols: 10,
+        rows: 10,
+        ..Capacity::default()
+    });
+    for y in 0..10 {
+        source.get_cells_mut(y)[1] = Cell::init(char::from_u32(u32::from(y)).unwrap());
+    }
+    let mut destination = Page::init(source.capacity);
+    destination.clone_from(&source, 0..10).unwrap();
+    for y in 0..10 {
+        source.get_cells_mut(y).fill(Cell::default());
+    }
+    for y in 0..10 {
+        assert_eq!(destination.get_cells(y)[1].codepoint() as u32, u32::from(y));
+        assert_eq!(source.get_cells(y), &[Cell::default(); 10]);
+    }
+}
+
+#[test]
+fn page_copy_truncates_columns() {
+    use maestro_terminal::{Page, page::layout::Capacity};
+    let mut source = Page::init(Capacity {
+        cols: 10,
+        rows: 10,
+        ..Capacity::default()
+    });
+    for y in 0..10 {
+        source.get_cells_mut(y)[1] = Cell::init(char::from_u32(u32::from(y)).unwrap());
+    }
+    let mut destination = Page::init(Capacity {
+        cols: 5,
+        ..source.capacity
+    });
+    destination.clone_from(&source, 0..10).unwrap();
+    assert_eq!(destination.size.cols, 5);
+    for y in 0..10 {
+        assert_eq!(destination.get_cells(y)[1].codepoint() as u32, u32::from(y));
+    }
+}
+
+#[test]
+fn page_copy_selected_rows() {
+    use maestro_terminal::{Page, page::layout::Capacity};
+    let mut source = Page::init(Capacity {
+        cols: 10,
+        rows: 10,
+        ..Capacity::default()
+    });
+    for y in 0..10 {
+        source.get_cells_mut(y)[1] = Cell::init(char::from_u32(u32::from(y)).unwrap());
+    }
+    let mut destination = Page::init(source.capacity);
+    destination.clone_from(&source, 0..5).unwrap();
+    for y in 0..5 {
+        assert_eq!(destination.get_cells(y)[1].codepoint() as u32, u32::from(y));
+    }
+    for y in 5..10 {
+        assert_eq!(destination.get_cells(y), &[Cell::default(); 10]);
+    }
+}
+
+#[test]
+fn row_copy_partial() {
+    use maestro_terminal::{Page, page::layout::Capacity};
+    let mut source = Page::init(Capacity {
+        cols: 10,
+        rows: 10,
+        ..Capacity::default()
+    });
+    for x in 0..10 {
+        source.get_cells_mut(0)[x] =
+            Cell::init(char::from_u32(u32::try_from(x + 1).unwrap()).unwrap());
+    }
+    let mut destination = Page::init(source.capacity);
+    destination
+        .clone_partial_row_from(&source, 0, 0, 2..8)
+        .unwrap();
+    for x in 0..10 {
+        assert_eq!(
+            destination.get_cells(0)[x].codepoint() as u32,
+            if (2..8).contains(&x) {
+                u32::try_from(x + 1).unwrap()
+            } else {
+                0
+            }
+        );
+    }
+}
+
+#[test]
+fn row_copy_retains_unselected_source_graphemes() {
+    use maestro_terminal::{
+        Page,
+        page::{CellPosition, layout::Capacity},
+    };
+    let mut source = Page::init(Capacity {
+        cols: 10,
+        rows: 10,
+        ..Capacity::default()
+    });
+    for x in [0, 9] {
+        source.get_cells_mut(0)[usize::from(x)] = Cell::init('A');
+        source
+            .append_grapheme(CellPosition { x, y: 0 }, 'B')
+            .unwrap();
+    }
+    let mut destination = Page::init(source.capacity);
+    destination
+        .clone_partial_row_from(&source, 0, 0, 2..8)
+        .unwrap();
+    assert_eq!(destination.grapheme_count(), 0);
+    assert!(!destination.get_row(0).grapheme());
+    assert!(
+        destination
+            .get_cells(0)
+            .iter()
+            .all(|cell| !cell.has_grapheme())
+    );
+    assert_eq!(source.grapheme_count(), 2);
+}
+
+#[test]
+fn row_copy_retains_unselected_destination_graphemes() {
+    use maestro_terminal::{
+        Page,
+        page::{CellPosition, layout::Capacity},
+    };
+    let mut source = Page::init(Capacity {
+        cols: 10,
+        rows: 10,
+        ..Capacity::default()
+    });
+    for x in 0..10 {
+        source.get_cells_mut(0)[x] =
+            Cell::init(char::from_u32(u32::try_from(x + 1).unwrap()).unwrap());
+    }
+    let mut destination = Page::init(source.capacity);
+    for x in [0, 9] {
+        destination.get_cells_mut(0)[usize::from(x)] = Cell::init('»');
+        destination
+            .append_grapheme(CellPosition { x, y: 0 }, 'B')
+            .unwrap();
+    }
+    destination
+        .clone_partial_row_from(&source, 0, 0, 2..8)
+        .unwrap();
+    for x in 2..8 {
+        assert_eq!(
+            destination.get_cells(0)[x].codepoint() as u32,
+            u32::try_from(x + 1).unwrap()
+        );
+    }
+    for x in [0, 9] {
+        assert_eq!(destination.get_cells(0)[usize::from(x)].codepoint(), '»');
+        assert_eq!(
+            destination.lookup_grapheme(CellPosition { x, y: 0 }),
+            Some(&['B'][..])
+        );
+    }
+    assert!(destination.get_row(0).grapheme());
+    assert_eq!(destination.grapheme_count(), 2);
+}
+
+#[test]
+fn page_move_plain_cells() {
+    use maestro_terminal::{
+        Page,
+        page::{CellPosition, layout::Capacity},
+    };
+    let mut page = Page::init(Capacity {
+        cols: 10,
+        rows: 10,
+        ..Capacity::default()
+    });
+    for x in 0..10 {
+        page.get_cells_mut(0)[x] =
+            Cell::init(char::from_u32(u32::try_from(x + 1).unwrap()).unwrap());
+    }
+    page.move_cells(CellPosition { x: 0, y: 0 }, CellPosition { x: 0, y: 1 }, 10);
+    assert_eq!(page.get_cells(0), &[Cell::default(); 10]);
+    for x in 0..10 {
+        assert_eq!(
+            page.get_cells(1)[x].codepoint() as u32,
+            u32::try_from(x + 1).unwrap()
+        );
+    }
+}
+
+#[test]
+fn page_reinit_clears_owned_tables() {
+    use maestro_terminal::{
+        Page,
+        hyperlink::{Hyperlink, HyperlinkId},
+        page::{CellPosition, layout::Capacity},
+    };
+    let mut page = Page::init(Capacity {
+        cols: 10,
+        rows: 10,
+        ..Capacity::default()
+    });
+    let position = CellPosition { x: 0, y: 0 };
+    page.get_cells_mut(0)[0] = Cell::init('A');
+    page.append_grapheme(position, 'B').unwrap();
+    let id = page
+        .insert_hyperlink(Hyperlink {
+            id: HyperlinkId::Implicit(1),
+            uri: b"a".to_vec(),
+        })
+        .unwrap();
+    page.set_hyperlink(position, id).unwrap();
+    page.dirty = true;
+    page.get_row_mut(0).set_dirty(true);
+    page.reinit();
+    assert_eq!(page.grapheme_count(), 0);
+    assert_eq!(page.hyperlink_count(), 0);
+    assert!(!page.is_dirty());
+    for y in 0..10 {
+        assert_eq!(page.get_cells(y), &[Cell::default(); 10]);
+    }
+}
+
+#[test]
+fn page_swap_preserves_owned_content() {
+    use maestro_terminal::{
+        Page,
+        hyperlink::{Hyperlink, HyperlinkId},
+        page::{CellPosition, layout::Capacity},
+    };
+    let first = CellPosition { x: 0, y: 0 };
+    let second = CellPosition { x: 1, y: 0 };
+    for (graphemes, links) in (0..4).flat_map(|g| (0..4).map(move |l| (g, l))) {
+        let mut page = Page::init(Capacity {
+            cols: 10,
+            rows: 1,
+            ..Capacity::default()
+        });
+        for (index, position) in [first, second].into_iter().enumerate() {
+            page.get_cells_mut(0)[index] = Cell::init(['A', 'B'][index]);
+            if graphemes & (1 << index) != 0 {
+                page.append_grapheme(position, ['C', 'D'][index]).unwrap();
+            }
+            if links & (1 << index) != 0 {
+                let id = page
+                    .insert_hyperlink(Hyperlink {
+                        id: HyperlinkId::Implicit(u32::try_from(index).unwrap()),
+                        uri: vec![b'a' + u8::try_from(index).unwrap()],
+                    })
+                    .unwrap();
+                page.set_hyperlink(position, id).unwrap();
+            }
+        }
+        let records = [page.get_cells(0)[0], page.get_cells(0)[1]];
+        page.swap_cells(first, second);
+        assert_eq!(&page.get_cells(0)[..2], &[records[1], records[0]]);
+        for (old, position) in [(1, first), (0, second)] {
+            let expected = [['C', 'D'][old]];
+            assert_eq!(
+                page.lookup_grapheme(position),
+                if graphemes & (1 << old) != 0 {
+                    Some(&expected[..])
+                } else {
+                    None
+                }
+            );
+            assert_eq!(
+                page.lookup_hyperlink(position).is_some(),
+                links & (1 << old) != 0
+            );
+        }
+        page.clear_cells(0, 0..2);
+        assert_eq!(page.grapheme_count(), 0);
+        assert_eq!(page.hyperlink_count(), 0);
+    }
+}
+
+#[test]
+fn row_flags_and_dirty_sources_match() {
+    use maestro_terminal::{
+        Page,
+        page::{CellPosition, layout::Capacity},
+    };
+    let mut source = Page::init(Capacity {
+        cols: 2,
+        rows: 1,
+        ..Capacity::default()
+    });
+    source.dirty = true;
+    assert!(source.is_dirty());
+    source.get_row_mut(0).set_dirty(true);
+    source.dirty = false;
+    assert!(source.is_dirty());
+    source.get_row_mut(0).set_dirty(false);
+    assert!(!source.is_dirty());
+    source.get_cells_mut(0)[0] = Cell::init('\u{10eeee}');
+    source.get_cells_mut(0)[1] = Cell::init('A');
+    source
+        .append_grapheme(CellPosition { x: 1, y: 0 }, 'B')
+        .unwrap();
+    assert!(!source.is_dirty());
+    let mut destination = Page::init(source.capacity);
+    destination
+        .clone_partial_row_from(&source, 0, 0, 0..1)
+        .unwrap();
+    assert!(destination.get_row(0).kitty_virtual_placeholder());
+    assert!(!destination.get_row(0).grapheme());
+    assert!(!destination.is_dirty());
+    destination.clear_cells(0, 0..2);
+    assert!(destination.get_row(0).kitty_virtual_placeholder());
+    destination.clear_cells(0, 0..2);
+    assert!(!destination.get_row(0).kitty_virtual_placeholder());
+    assert!(!destination.is_dirty());
+}
