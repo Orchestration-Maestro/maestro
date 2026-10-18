@@ -202,7 +202,7 @@ Production and test graphs are separately acyclic. The internal development
 edges are `maestro-tui-crossterm` to `maestro-brand`, for terminal examples,
 the native-only `maestro-extensions` to `maestro-credentials`, for extension tests
 that build a real model catalog, and the native, non-optional dev-dependencies
-of the seventeen declared callers on `maestro-test-process`, the dependency-free
+of the eighteen declared callers on `maestro-test-process`, the dependency-free
 owner of checked child tests (see
 [the spec](docs/specs/maestro-port.md#test-process-owner)); a caller declares it
 only when it uses it. Brand and theme remain forbidden as adapter normal/build

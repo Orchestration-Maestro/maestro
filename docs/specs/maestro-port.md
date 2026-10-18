@@ -457,7 +457,7 @@ test. It has no workspace dependencies except the native feature unifier, and it
 excluded from the foundation utility permission. Its only incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
-`maestro-credentials`, `maestro-extensions`, `maestro-models`, `maestro-packages`, `maestro-process`,
+`maestro-credentials`, `maestro-extensions`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
 `maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-test-conventions`,
 `maestro-tooling`, `maestro-tools`, `maestro-tui` and `maestro-tui-crossterm`; a
 caller declares it only when it uses it. No normal, build, optional, unqualified or
