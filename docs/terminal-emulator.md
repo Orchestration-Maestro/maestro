@@ -89,3 +89,46 @@ storage accounting bytes, not the native allocator's process memory usage.
 Selected rows can report the capacity needed for their unique styles and links,
 every linked cell and chunk-rounded suffix and string bytes. This accounting is
 the input to retained-history limits; the history owner applies those limits.
+
+## Character sets and byte transitions
+
+`charset_table` returns the 256-entry ASCII, British or DEC special graphics
+mapping. Unicode input has no byte table and returns `None`. `CharsetSlot` names
+the four stored sets; `CharsetActiveSlot` distinguishes the left and right sets.
+
+`parse_table::TABLE` is indexed by input byte and `parser::State`. Each entry
+contains the destination state and `parser::TransitionAction`. It describes byte
+transitions only; it does not execute commands or maintain a terminal screen.
+
+## Parsing
+
+`color::Rgb::parse` accepts named X11 colours, hexadecimal channels and decimal
+intensities. Palette assignments retain separate grammar and overflow errors.
+The default indexed palette and dynamic colours support independent overrides
+and default replacement. X11 lookup folds ASCII case only and keeps internal
+spaces unchanged.
+
+`sgr::Parser` iterates borrowed numeric parameters with positional colon bits.
+It returns typed attributes, including direct and indexed foreground, background
+and underline colours. Unknown attributes retain the complete input plus the
+unrecognised group or remaining suffix. This decoder does not apply attributes
+to screen cells.
+
+`parser::Parser` consumes one byte at a time and returns three ordered action
+slots: exit, transition and entry. CSI parameters and CSI/ESC intermediates are
+writable borrowed views; DCS hook fields are read-only. Parameters saturate at
+65535 without losing digit presence on long input. The parser retains up to 24
+parameters and four intermediate bytes, with positional bits for colon separators.
+DCS and APC payload bytes remain separate from their start/end actions.
+
+`osc::Parser` decodes titles, directory reports, clipboard payloads, hyperlinks,
+semantic prompt markers and colour requests. Returned commands own their raw
+bytes and ordered request lists; resetting or dropping the decoder does not
+invalidate them. Text fields are bytes, not validated UTF-8, URLs or base64.
+The decoder preserves BEL versus ST for colour replies. Allocation availability
+is selected by `osc::Parser::init`; the composed VT parser starts with fixed
+capture and exposes `osc_parser.alloc` for callers that need request lists or
+larger clipboard captures. Title capture remains fixed in either mode.
+
+OSC parsing does not change a screen, access a clipboard, open a link or write a
+reply. Those effects belong to the command consumer.

@@ -1,0 +1,54 @@
+[
+  {
+    "kind": "dynamic_rgb_unset",
+    "get": null,
+    "value": {
+      "override": null,
+      "default": null
+    }
+  },
+  {
+    "kind": "dynamic_rgb_set",
+    "get": {
+      "r": 1,
+      "g": 35,
+      "b": 255
+    },
+    "value": {
+      "override": {
+        "r": 1,
+        "g": 35,
+        "b": 255
+      },
+      "default": null
+    }
+  },
+  {
+    "kind": "dynamic_rgb_reset",
+    "get": null,
+    "value": {
+      "override": null,
+      "default": null
+    }
+  },
+  {
+    "kind": "dynamic_rgb_reset_then_default_edit",
+    "get": {
+      "r": 1,
+      "g": 35,
+      "b": 255
+    },
+    "value": {
+      "override": {
+        "r": 1,
+        "g": 35,
+        "b": 255
+      },
+      "default": {
+        "r": 7,
+        "g": 8,
+        "b": 9
+      }
+    }
+  }
+]

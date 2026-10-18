@@ -21,3 +21,18 @@ mod hash_map;
 pub mod size;
 
 pub mod hyperlink;
+
+mod charsets;
+
+pub use charsets::{
+    ActiveSlot as CharsetActiveSlot, Charset, Slots as CharsetSlot, table as charset_table,
+};
+
+pub mod parse_table;
+pub mod parser;
+
+pub mod x11_color;
+
+pub mod osc;
+
+pub use parser::{Csi, Dcs, Parser};

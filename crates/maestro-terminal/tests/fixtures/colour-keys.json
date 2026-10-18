@@ -1,0 +1,442 @@
+[
+  {
+    "kind": "kitty_kind",
+    "input": [
+      48
+    ],
+    "value": {
+      "palette": 0
+    },
+    "queryable": true,
+    "formatted": [
+      48
+    ]
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [
+      50,
+      53,
+      53
+    ],
+    "value": {
+      "palette": 255
+    },
+    "queryable": true,
+    "formatted": [
+      50,
+      53,
+      53
+    ]
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [
+      50,
+      53,
+      54
+    ],
+    "value": null,
+    "queryable": false,
+    "formatted": []
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [
+      45,
+      49
+    ],
+    "value": null,
+    "queryable": false,
+    "formatted": []
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [
+      43,
+      49
+    ],
+    "value": null,
+    "queryable": false,
+    "formatted": []
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [
+      48,
+      95,
+      49
+    ],
+    "value": null,
+    "queryable": false,
+    "formatted": []
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [
+      48,
+      120,
+      49
+    ],
+    "value": null,
+    "queryable": false,
+    "formatted": []
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [
+      102,
+      111,
+      114,
+      101,
+      103,
+      114,
+      111,
+      117,
+      110,
+      100
+    ],
+    "value": {
+      "special": "foreground"
+    },
+    "queryable": true,
+    "formatted": [
+      102,
+      111,
+      114,
+      101,
+      103,
+      114,
+      111,
+      117,
+      110,
+      100
+    ]
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [
+      98,
+      97,
+      99,
+      107,
+      103,
+      114,
+      111,
+      117,
+      110,
+      100
+    ],
+    "value": {
+      "special": "background"
+    },
+    "queryable": true,
+    "formatted": [
+      98,
+      97,
+      99,
+      107,
+      103,
+      114,
+      111,
+      117,
+      110,
+      100
+    ]
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [
+      115,
+      101,
+      108,
+      101,
+      99,
+      116,
+      105,
+      111,
+      110,
+      95,
+      102,
+      111,
+      114,
+      101,
+      103,
+      114,
+      111,
+      117,
+      110,
+      100
+    ],
+    "value": {
+      "special": "selection_foreground"
+    },
+    "queryable": false,
+    "formatted": [
+      115,
+      101,
+      108,
+      101,
+      99,
+      116,
+      105,
+      111,
+      110,
+      95,
+      102,
+      111,
+      114,
+      101,
+      103,
+      114,
+      111,
+      117,
+      110,
+      100
+    ]
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [
+      115,
+      101,
+      108,
+      101,
+      99,
+      116,
+      105,
+      111,
+      110,
+      95,
+      98,
+      97,
+      99,
+      107,
+      103,
+      114,
+      111,
+      117,
+      110,
+      100
+    ],
+    "value": {
+      "special": "selection_background"
+    },
+    "queryable": false,
+    "formatted": [
+      115,
+      101,
+      108,
+      101,
+      99,
+      116,
+      105,
+      111,
+      110,
+      95,
+      98,
+      97,
+      99,
+      107,
+      103,
+      114,
+      111,
+      117,
+      110,
+      100
+    ]
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [
+      99,
+      117,
+      114,
+      115,
+      111,
+      114
+    ],
+    "value": {
+      "special": "cursor"
+    },
+    "queryable": true,
+    "formatted": [
+      99,
+      117,
+      114,
+      115,
+      111,
+      114
+    ]
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [
+      99,
+      117,
+      114,
+      115,
+      111,
+      114,
+      95,
+      116,
+      101,
+      120,
+      116
+    ],
+    "value": {
+      "special": "cursor_text"
+    },
+    "queryable": false,
+    "formatted": [
+      99,
+      117,
+      114,
+      115,
+      111,
+      114,
+      95,
+      116,
+      101,
+      120,
+      116
+    ]
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [
+      118,
+      105,
+      115,
+      117,
+      97,
+      108,
+      95,
+      98,
+      101,
+      108,
+      108
+    ],
+    "value": {
+      "special": "visual_bell"
+    },
+    "queryable": false,
+    "formatted": [
+      118,
+      105,
+      115,
+      117,
+      97,
+      108,
+      95,
+      98,
+      101,
+      108,
+      108
+    ]
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [
+      115,
+      101,
+      99,
+      111,
+      110,
+      100,
+      95,
+      116,
+      114,
+      97,
+      110,
+      115,
+      112,
+      97,
+      114,
+      101,
+      110,
+      116,
+      95,
+      98,
+      97,
+      99,
+      107,
+      103,
+      114,
+      111,
+      117,
+      110,
+      100
+    ],
+    "value": {
+      "special": "second_transparent_background"
+    },
+    "queryable": false,
+    "formatted": [
+      115,
+      101,
+      99,
+      111,
+      110,
+      100,
+      95,
+      116,
+      114,
+      97,
+      110,
+      115,
+      112,
+      97,
+      114,
+      101,
+      110,
+      116,
+      95,
+      98,
+      97,
+      99,
+      107,
+      103,
+      114,
+      111,
+      117,
+      110,
+      100
+    ]
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [
+      70,
+      111,
+      114,
+      101,
+      103,
+      114,
+      111,
+      117,
+      110,
+      100
+    ],
+    "value": null,
+    "queryable": false,
+    "formatted": []
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [],
+    "value": null,
+    "queryable": false,
+    "formatted": []
+  },
+  {
+    "kind": "kitty_kind",
+    "input": [
+      32,
+      49
+    ],
+    "value": null,
+    "queryable": false,
+    "formatted": []
+  }
+]

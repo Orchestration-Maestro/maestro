@@ -89,3 +89,14 @@ mod graphics_commands;
 mod graphics_media;
 
 mod page_storage;
+
+mod character_sets;
+mod vt_sequences;
+
+mod terminal_colors;
+
+mod sgr_attributes;
+
+mod osc_commands;
+
+mod support;
