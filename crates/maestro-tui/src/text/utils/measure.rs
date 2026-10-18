@@ -62,9 +62,10 @@ fn trailing_cells(scalar: char) -> usize {
     }
 }
 
-/// Whether a cluster can be an emoji at all: its first scalar lies in an emoji or symbol block,
-/// or it carries an emoji presentation selector, or it spans more than two UTF-16 units.
-/// This cheap check spares the emoji expression, by far the costliest test, for other text.
+/// Whether a cluster goes on to the emoji expression, by far the costliest test: its first
+/// scalar lies in a common emoji or symbol block, it carries an emoji presentation selector, or
+/// it spans more than two UTF-16 units. This is a cheap heuristic, not an emoji test: U+25FD,
+/// U+25FE, U+2B1B and U+2B1C fail it and keep their two cells through the scalar widths.
 fn could_be_emoji(segment: &str) -> bool {
     matches!(
         segment.chars().next(),
