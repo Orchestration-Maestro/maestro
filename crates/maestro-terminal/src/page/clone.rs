@@ -228,6 +228,7 @@ impl Page {
             source.set_grapheme(previous.grapheme());
             source.set_hyperlink(previous.hyperlink());
             source.set_styled(previous.styled());
+            source.set_kitty_virtual_placeholder(previous.kitty_virtual_placeholder());
             source.set_dirty(source.dirty() || previous.dirty());
         }
         self.rows[usize::from(dst_row)] = source;

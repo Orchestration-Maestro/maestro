@@ -220,6 +220,7 @@ fn row_copy_omits_unselected_same_page_links() {
         rows: 10,
         ..Capacity::default()
     });
+    page.get_cells_mut(0)[3] = crate::Cell::init('C');
     page.get_cells_mut(0)[7] = crate::Cell::init('B');
     let id = page
         .insert_hyperlink(Hyperlink {
@@ -229,6 +230,7 @@ fn row_copy_omits_unselected_same_page_links() {
         .unwrap();
     page.set_hyperlink(CellPosition { x: 7, y: 0 }, id).unwrap();
     page.clone_partial_row_within(1, 0, 2..6).unwrap();
+    assert_eq!(page.get_cells(1)[3].codepoint(), 'C');
     assert_eq!(page.hyperlink_count(), 1);
     assert!(!page.get_row(1).hyperlink());
     assert!(page.get_cells(1).iter().all(|cell| !cell.hyperlink()));
@@ -543,7 +545,7 @@ fn hyperlink_identity_pairs() {
     }
 }
 
-/// Keep byte identities through cross-page copy and last-owner release.
+/// Keep byte identities through cross-page copy after releasing source cells.
 fn hyperlink_last_owner() {
     use crate::hyperlink::{Hyperlink, HyperlinkId};
     let mut source = Page::init(Capacity {
@@ -559,12 +561,9 @@ fn hyperlink_last_owner() {
     source
         .set_hyperlink(CellPosition { x: 0, y: 0 }, id)
         .unwrap();
-    let retained = source.insert_hyperlink(link.clone()).unwrap();
     let mut copied = Page::init(source.capacity);
     copied.clone_from(&source, 0..1).unwrap();
     source.clear_hyperlink(CellPosition { x: 0, y: 0 });
-    assert_eq!(source.string_alloc.used_bytes(), 64);
-    source.release_hyperlink(retained);
     assert_eq!(source.string_alloc.used_bytes(), 0);
     let copied_id = copied
         .lookup_hyperlink(CellPosition { x: 0, y: 0 })
@@ -575,7 +574,7 @@ fn hyperlink_last_owner() {
     assert_eq!(copied.string_alloc.used_bytes(), 0);
 }
 
-/// Roll back partial string insertion and preserve a retained ID on map refusal.
+/// Roll back partial string insertion without retaining strings or an identity.
 fn hyperlink_rollback() {
     use crate::hyperlink::{Hyperlink, HyperlinkId};
     let mut failing = Page::init(Capacity {
@@ -593,31 +592,6 @@ fn hyperlink_rollback() {
     );
     assert_eq!(failing.string_alloc.used_bytes(), 0);
     assert_eq!(failing.hyperlink_set.count(), 0);
-    for x in 0..u16::try_from(failing.hyperlink_capacity()).unwrap() {
-        write_link(
-            &mut failing,
-            CellPosition { x, y: 0 },
-            Hyperlink {
-                id: HyperlinkId::Implicit(1),
-                uri: vec![b'u'],
-            },
-        );
-    }
-    let incoming = failing
-        .insert_hyperlink(Hyperlink {
-            id: HyperlinkId::Implicit(2),
-            uri: vec![b'v'],
-        })
-        .unwrap();
-    let x = u16::try_from(failing.hyperlink_capacity()).unwrap();
-    assert_eq!(
-        failing.set_hyperlink(CellPosition { x, y: 0 }, incoming),
-        Err(super::StorageError::HyperlinkMapOutOfMemory)
-    );
-    assert!(!failing.get_cells(0)[usize::from(x)].hyperlink());
-    assert_eq!(failing.hyperlink_set.ref_count(incoming), 1);
-    failing.release_hyperlink(incoming);
-    assert_eq!(failing.string_alloc.used_bytes(), 32);
 }
 
 #[test]

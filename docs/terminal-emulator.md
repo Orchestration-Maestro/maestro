@@ -71,7 +71,9 @@ unchanged. Text attributes and the six underline kinds retain their identity.
 bytes. Copying rows between pages preserves those values after the source is
 cleared or dropped. Partial row copies leave unselected cells alone. Moves and
 swaps transfer managed content without duplicating its ownership; clearing cells
-releases their references. Reinitialising a page resets its storage and dirty
+releases their references. `insert_hyperlink` retains an identity until a successful
+`set_hyperlink` consumes it. Call `release_hyperlink` for an abandoned identity or
+a refused assignment to return its string storage. Reinitialising a page resets its storage and dirty
 state at the same capacity.
 
 Cluster suffixes use first-fit 16-byte chunks; hyperlink strings use 32-byte

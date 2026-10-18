@@ -96,8 +96,9 @@ impl Page {
             .unwrap_or(usize::MAX)
     }
 
-    /// Reclaim strings only after the last retained or cell owner is released.
-    pub(super) fn release_hyperlink(&mut self, id: Id) {
+    /// Release a caller-retained identity, reclaiming strings after its last owner.
+    /// Do not release a reference already consumed by a successful cell assignment.
+    pub fn release_hyperlink(&mut self, id: Id) {
         if self.hyperlink_set.release_multiple(id, 1).is_some()
             && let Some(entry) = self.hyperlink_entries.remove(&id)
         {

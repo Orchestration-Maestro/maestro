@@ -612,10 +612,12 @@ fn row_copy_retains_unselected_source_graphemes() {
             .append_grapheme(CellPosition { x, y: 0 }, 'B')
             .unwrap();
     }
+    source.get_cells_mut(0)[3] = Cell::init('C');
     let mut destination = Page::init(source.capacity);
     destination
         .clone_partial_row_from(&source, 0, 0, 2..8)
         .unwrap();
+    assert_eq!(destination.get_cells(0)[3].codepoint(), 'C');
     assert_eq!(destination.grapheme_count(), 0);
     assert!(!destination.get_row(0).grapheme());
     assert!(
@@ -817,4 +819,117 @@ fn row_flags_and_dirty_sources_match() {
     destination.clear_cells(0, 0..2);
     assert!(!destination.get_row(0).kitty_virtual_placeholder());
     assert!(!destination.is_dirty());
+}
+
+#[test]
+fn abandoned_hyperlink_releases_string_budget() {
+    use maestro_terminal::{
+        Page,
+        hyperlink::{Hyperlink, HyperlinkId},
+        page::{StorageError, layout::Capacity},
+    };
+    let mut page = Page::init(Capacity {
+        cols: 120,
+        rows: 1,
+        string_bytes: 1,
+        ..Capacity::default()
+    });
+    let link = Hyperlink {
+        id: HyperlinkId::Implicit(1),
+        uri: vec![b'u'; 2048],
+    };
+    let retained = page.insert_hyperlink(link.clone()).unwrap();
+    assert_eq!(
+        page.insert_hyperlink(link.clone()),
+        Err(StorageError::StringsOutOfMemory)
+    );
+    page.release_hyperlink(retained);
+    assert!(page.insert_hyperlink(link).is_ok());
+}
+
+#[test]
+fn refused_hyperlink_releases_string_budget() {
+    use maestro_terminal::{
+        Page,
+        hyperlink::{Hyperlink, HyperlinkId},
+        page::{CellPosition, StorageError, layout::Capacity},
+    };
+    let mut page = Page::init(Capacity {
+        cols: 120,
+        rows: 1,
+        string_bytes: 1,
+        ..Capacity::default()
+    });
+    let count = u16::try_from(page.hyperlink_capacity()).unwrap();
+    for x in 0..count {
+        let id = page
+            .insert_hyperlink(Hyperlink {
+                id: HyperlinkId::Implicit(1),
+                uri: vec![b'u'],
+            })
+            .unwrap();
+        page.set_hyperlink(CellPosition { x, y: 0 }, id).unwrap();
+    }
+    let incoming = Hyperlink {
+        id: HyperlinkId::Implicit(2),
+        uri: vec![b'v'; 2016],
+    };
+    let id = page.insert_hyperlink(incoming.clone()).unwrap();
+    assert_eq!(
+        page.set_hyperlink(CellPosition { x: count, y: 0 }, id),
+        Err(StorageError::HyperlinkMapOutOfMemory)
+    );
+    assert!(!page.get_cells(0)[usize::from(count)].hyperlink());
+    assert_eq!(page.hyperlink_count(), usize::from(count));
+    assert_eq!(
+        page.insert_hyperlink(incoming.clone()),
+        Err(StorageError::StringsOutOfMemory)
+    );
+    page.release_hyperlink(id);
+    assert!(page.insert_hyperlink(incoming).is_ok());
+}
+
+#[test]
+fn partial_cross_page_copy_retains_placeholder_summary() {
+    use maestro_terminal::{Page, page::layout::Capacity};
+    let mut source = Page::init(Capacity {
+        cols: 2,
+        rows: 2,
+        ..Capacity::default()
+    });
+    source.get_cells_mut(0)[1] = Cell::init('A');
+    let mut destination = Page::init(source.capacity);
+    destination.get_cells_mut(0)[0] = Cell::init('\u{10eeee}');
+    destination
+        .get_row_mut(0)
+        .set_kitty_virtual_placeholder(true);
+    destination
+        .clone_partial_row_from(&source, 0, 0, 1..2)
+        .unwrap();
+    assert_eq!(destination.get_cells(0)[0].codepoint(), '\u{10eeee}');
+    assert_eq!(destination.get_cells(0)[1].codepoint(), 'A');
+    assert!(destination.get_row(0).kitty_virtual_placeholder());
+    destination.clone_row_from(&source, 0, 0).unwrap();
+    assert_eq!(destination.get_cells(0)[0].codepoint(), '\0');
+    assert!(!destination.get_row(0).kitty_virtual_placeholder());
+}
+
+#[test]
+fn partial_same_page_copy_retains_placeholder_summary() {
+    use maestro_terminal::{Page, page::layout::Capacity};
+    let mut page = Page::init(Capacity {
+        cols: 2,
+        rows: 2,
+        ..Capacity::default()
+    });
+    page.get_cells_mut(0)[1] = Cell::init('A');
+    page.get_cells_mut(1)[0] = Cell::init('\u{10eeee}');
+    page.get_row_mut(1).set_kitty_virtual_placeholder(true);
+    page.clone_partial_row_within(1, 0, 1..2).unwrap();
+    assert_eq!(page.get_cells(1)[0].codepoint(), '\u{10eeee}');
+    assert_eq!(page.get_cells(1)[1].codepoint(), 'A');
+    assert!(page.get_row(1).kitty_virtual_placeholder());
+    page.clone_partial_row_within(1, 0, 0..2).unwrap();
+    assert_eq!(page.get_cells(1)[0].codepoint(), '\0');
+    assert!(!page.get_row(1).kitty_virtual_placeholder());
 }
