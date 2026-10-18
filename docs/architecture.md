@@ -81,8 +81,9 @@ and targets plus host-resolved dependencies. Transitive and dev dependencies do
 not satisfy a direct requirement. The permitted internal development edges are
 `maestro-tui-crossterm` to `maestro-brand` for the terminal examples, the
 native-only `maestro-extensions` to `maestro-credentials` edge for extension
-tests that build a real model catalog, and the
-native development edges from the eighteen declared callers to the dependency-free
+tests that build a real model catalog, the native-only `maestro-detection` to
+`maestro-text` edge for terminal newline normalization in checked-child tests, and the
+native development edges from the nineteen declared callers to the dependency-free
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
 permits neither a normal/build brand dependency nor a theme dependency, and does

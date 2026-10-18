@@ -306,7 +306,7 @@ from the optional foundation utility described below.
 | `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown` | 0 |
 | `maestro-terminal` | emulate terminals | `maestro-text` | 0 |
 | `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text`, `maestro-lock` | 0 |
-| `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text` | 0 |
+| `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text`, `maestro-process` | 0 |
 | `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool` | 1 |
 | `maestro-credentials` | own accepted credentials | `maestro-models`, `maestro-lock`, `maestro-text`, `maestro-process` | 1 |
 | `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-process` | 1 |
@@ -487,6 +487,8 @@ toolkit/text dependency, or make the scenario harness a development target.
 `maestro-extensions` to `maestro-credentials`, declared for native targets only,
 lets extension tests and doctests build a real model catalog over in-memory
 credential storage; it permits no normal or build dependency on credentials.
+`maestro-detection` to `maestro-text`, declared as a non-optional native development
+dependency, supplies terminal newline normalization for checked-child tests.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
@@ -499,7 +501,7 @@ test. It has no workspace dependencies except the native feature unifier, and it
 excluded from the foundation utility permission. Its only incoming edges are
 non-optional development dependencies under `cfg(not(target_arch = "wasm32"))`
 from `maestro-agent`, `maestro-app`, `maestro-catalog`, `maestro-chat`,
-`maestro-credentials`, `maestro-extensions`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
+`maestro-credentials`, `maestro-detection`, `maestro-extensions`, `maestro-ipc`, `maestro-models`, `maestro-packages`, `maestro-process`,
 `maestro-resources`, `maestro-session`, `maestro-settings`, `maestro-test-conventions`,
 `maestro-tooling`, `maestro-tools`, `maestro-tui` and `maestro-tui-crossterm`; a
 caller declares it only when it uses it. No normal, build, optional, unqualified or

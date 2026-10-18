@@ -667,7 +667,7 @@ fn permitted_downward_edges_pass_without_absent_crates() {
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        143
+        144
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
@@ -2040,12 +2040,13 @@ const OWNER: &str = "maestro-test-process";
 const NATIVE_DEV: &str = "target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies";
 
 /// Callers allowed to declare the test-process owner as a native development dependency.
-const OWNER_CALLERS: [&str; 18] = [
+const OWNER_CALLERS: [&str; 19] = [
     "maestro-agent",
     "maestro-app",
     "maestro-catalog",
     "maestro-chat",
     "maestro-credentials",
+    "maestro-detection",
     "maestro-extensions",
     "maestro-ipc",
     "maestro-models",
@@ -2393,4 +2394,31 @@ fn workspace_root_requires_core_wiring() {
     }
     workspace.foundation(&["maestro"]);
     assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn detection_consumes_foreground_process_facts() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-process"]);
+    workspace.member(
+        "maestro-detection",
+        "maestro-detection",
+        "[dependencies]\nmaestro-process = { path = \"../maestro-process\" }",
+    );
+    workspace.list(&[("maestro-process", "core"), ("maestro-detection", "core")]);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
+fn detection_text_test_edge_is_native() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-detection", "maestro-text"]);
+    workspace.member("maestro-detection", "maestro-detection", "[target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies]\nmaestro-text = { path = \"../maestro-text\" }");
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    workspace.member(
+        "maestro-detection",
+        "maestro-detection",
+        "[dev-dependencies]\nmaestro-text = { path = \"../maestro-text\" }",
+    );
+    assert_eq!(check_workspace(&workspace.root), Err("maestro-detection: maestro-text test support must be a native, non-optional development dependency".into()));
 }
