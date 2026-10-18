@@ -49,9 +49,7 @@ function, cognitive complexity 15, nesting depth 4 and
 500 code lines per file; doc comments are not counted. Test directories,
 `tests.rs` and trailing test modules do not count against file length. Pedantic
 Clippy lints are errors; production code may not use `unwrap`, `expect` or
-`panic!`. Unsafe code is forbidden except in `maestro-terminal-ghostty` engine bindings.
-That adapter declares its own workspace-equivalent lint table with only
-`unsafe_code = "allow"`; the workspace retains `unsafe_code = "forbid"`. Thresholds live in
+`panic!`. Unsafe code is forbidden. Thresholds live in
 `clippy.toml`; levels live in `[workspace.lints]` and crates inherit them with
 `[lints] workspace = true`. Clippy also rejects the ambiguous JSON map `remove`; see
 [quality checks](docs/architecture.md#quality-checks). Quality-lint allowances are forbidden apart from the engine exception above and the generated-binding exception below.
@@ -230,8 +228,8 @@ JSON Schema, with no domain dependencies. Native input,
 rendering and notification conversions stay with their runtime adapters. See
 [daemon protocol](docs/daemon-protocol.md).
 
-The workspace daemon is core design: the root always wires the daemon, the
-multiplexer and the terminal engine adapter through the application interface.
+The workspace daemon is core design: the root always wires the daemon and the
+multiplexer through the application interface.
 These declared owners need no placeholder crates before their first delivery.
 
 ## Libraries and formats

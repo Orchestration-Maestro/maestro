@@ -280,13 +280,12 @@ fn core_to_dedicated_dependency_is_rejected() {
             ("maestro-app", "core"),
             ("maestro", "dedicated"),
         ]);
-        workspace.foundation(&["maestro-multiplexer", "maestro-terminal-ghostty"]);
+        workspace.foundation(&["maestro-multiplexer"]);
         workspace.list(&[
             ("maestro-agent", "core"),
             ("maestro-app", "core"),
             ("maestro", "dedicated"),
             ("maestro-multiplexer", "core"),
-            ("maestro-terminal-ghostty", "core"),
         ]);
         let wiring_kind = if kind == "build-dependencies" {
             "dependencies"
@@ -294,7 +293,7 @@ fn core_to_dedicated_dependency_is_rejected() {
             kind
         };
         workspace.member("root", "maestro", &format!(
-            "[{wiring_kind}]\nmaestro-app = {{ path = \"../maestro-app\" }}\nmaestro-multiplexer = {{ path = \"../maestro-multiplexer\" }}\nmaestro-terminal-ghostty = {{ path = \"../maestro-terminal-ghostty\" }}"
+            "[{wiring_kind}]\nmaestro-app = {{ path = \"../maestro-app\" }}\nmaestro-multiplexer = {{ path = \"../maestro-multiplexer\" }}"
         ));
         let expected = if kind == "dev-dependencies" {
             Err("internal dev dependency requires declared dependency-free test support: maestro -> maestro-app".into())
@@ -661,13 +660,13 @@ fn theme_shared_records_edge_is_scoped() {
 #[test]
 fn permitted_downward_edges_pass_without_absent_crates() {
     documented_foundation_graph_matches_policy();
-    assert_eq!(support::policy::POLICY.len(), 47);
+    assert_eq!(support::policy::POLICY.len(), 46);
     assert_eq!(
         support::policy::POLICY
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        143
+        141
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
@@ -743,8 +742,8 @@ fn path_utility_edges_preserve_native_layer_rules() {
         .map(|row| row.0)
         .filter(|name| *name != "maestro-path" && !UTILITY_EXCLUDED.contains(name))
         .collect();
-    assert_eq!(rows.len(), 47);
-    assert_eq!(consumers.len(), 30);
+    assert_eq!(rows.len(), 46);
+    assert_eq!(consumers.len(), 29);
     assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 12);
     for from in consumers {
         native_consumer_may_declare_the_utility(from);
@@ -2221,7 +2220,7 @@ fn test_process_policy_keeps_existing_domain_edges() {
 
 #[test]
 fn test_process_inventory_matches_foundation_contract() {
-    assert_eq!(support::policy::POLICY.len(), 47);
+    assert_eq!(support::policy::POLICY.len(), 46);
     assert_eq!(support::class(OWNER), "dedicated");
     assert!(UTILITY_EXCLUDED.contains(&OWNER));
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
@@ -2269,7 +2268,6 @@ fn workspace_daemon_owners_are_core() {
         "maestro-workspace",
         "maestro-detection",
         "maestro-daemon",
-        "maestro-terminal-ghostty",
         "maestro-multiplexer",
     ] {
         let workspace = Workspace::new();
@@ -2352,11 +2350,7 @@ fn workspace_root_accepts_native_target_wiring() {
 fn workspace_root_requires_core_wiring() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro"]);
-    let targets = [
-        "maestro-app",
-        "maestro-multiplexer",
-        "maestro-terminal-ghostty",
-    ];
+    let targets = ["maestro-app", "maestro-multiplexer"];
     for omitted in targets {
         let mut declarations = String::from("[dependencies]\n");
         for target in targets.iter().filter(|target| **target != omitted) {

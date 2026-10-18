@@ -16,7 +16,7 @@ Approved adaptations are Rust implementation and idioms; the specified UI toolki
 4. **Keep current data plus the existing conversions only.** Support the established session, settings, startup and keybinding conversions and accepted edit inputs. Add no general migration/refusal/archive/rollback layer. Model/provider names, resource kinds, extension registrations and vocabularies remain extensible data, not closed code enums used as policy.
 5. **Verify before completion.** Each ticket maintains a per-file manifest mapping application behaviors, exports, source test declarations, parameterized cases and fixtures to Rust behaviors/tests, not a one-to-one inventory of private statements or helpers. Many-to-one internal implementation mappings are valid when they cover all required behaviors. Preserve live-only and skipped-test reasons without using them to avoid deterministic tests. Require red-first public-interface tests, strict rustdoc, formatting, Clippy, convention checks, two-axis review and shared CI. Runtime module-resolution probes have an explicit non-applicability row under static Rust linkage; they are inventoried, not claimed as passing runtime tests. Numerical inventory coverage is not evidence that runtime parity passes. Require at least 80% line coverage from tests that each prove real behavior, with names stating that behavior; no fake, tautological, prose-snapshot, duplicate or implementation-detail tests.
 6. **No debt.** Every review finding, Minor included, blocks landing and is resolved in the same pull request. Delete slop rather than defer it to follow-up, polish or later-release issues. Existing polish items are resolved in their owning fix or closed as obsolete. Explicitly owner-scheduled platform checks are not debt.
-7. **Mechanically enforced quality.** Each function has at most five parameters, including at most one boolean parameter, at most 60 lines, cognitive complexity at most 15 and nesting at most four levels. Each Rust file has at most 500 production lines; a longer reference file becomes a folder module while retaining its file mapping. Keep pedantic lints clean. Production code uses no `unwrap`, `expect` or `panic`; forbid unsafe code except the terminal engine bindings described under [Workspace daemon](#workspace-daemon). Enforce this bar mechanically through the repository lint configuration and conventions checks.
+7. **Mechanically enforced quality.** Each function has at most five parameters, including at most one boolean parameter, at most 60 lines, cognitive complexity at most 15 and nesting at most four levels. Each Rust file has at most 500 production lines; a longer reference file becomes a folder module while retaining its file mapping. Keep pedantic lints clean. Production code uses no `unwrap`, `expect` or `panic`; forbid unsafe code. Enforce this bar mechanically through the repository lint configuration and conventions checks.
 8. **Source-sized production code.** State the reference lines ported and planned production size before implementation; aim at no more than 1.5 times those lines. Above 1.5 times, map every extra block to a reference line or named Rust necessity and delete unmapped blocks. Larger deliveries are acceptable when every extra block is fully justified in the delivery report.
 
 9. **Port with judgement.** Port everything that contributes to the reference's good behavior. Do not port pieces that do not work or add no value: dead or unreachable code, unused exports, stale or wrong comments and documentation, broken example flags and valueless quirks. List each omission once with its reason.
@@ -271,7 +271,7 @@ from the optional foundation utility described below.
 | `maestro-test-process` | run one named test in a checked child process | — | 0 |
 | `maestro-tooling` | automate repository development | — | 0 |
 | `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown` | 0 |
-| `maestro-terminal` | emulate terminal screens | `maestro-text` | 0 |
+| `maestro-terminal` | emulate terminals | `maestro-text` | 0 |
 | `maestro-workspace` | own workspace topology | `maestro-protocol`, `maestro-json`, `maestro-text` | 0 |
 | `maestro-detection` | recognize agents in terminals | `maestro-protocol`, `maestro-text` | 0 |
 | `maestro-agent` | run an agent | `maestro-models`, `maestro-text`, `maestro-tool` | 1 |
@@ -280,7 +280,6 @@ from the optional foundation utility described below.
 | `maestro-test-terminal` | exercise terminal scenarios | `maestro-tui` | 1 |
 | `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-brand` | 1 |
 | `maestro-tui-crossterm` | connect a real terminal | `maestro-tui`, `maestro-text` | 1 |
-| `maestro-terminal-ghostty` | run the Ghostty terminal engine | `maestro-terminal` | 1 |
 | `maestro-daemon` | run the workspace daemon | `maestro-protocol`, `maestro-ipc`, `maestro-process`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`, `maestro-settings`, `maestro-tui`, `maestro-json`, `maestro-text` | 1 |
 | `maestro-catalog` | resolve the usable model catalog | `maestro-models`, `maestro-credentials`, `maestro-pattern`, `maestro-request`, `maestro-text`, `maestro-json` | 2 |
 | `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-request`, `maestro-entry`, `maestro-text`, `maestro-json` | 2 |
@@ -294,7 +293,7 @@ from the optional foundation utility described below.
 | `maestro-rpc` | present JSONL RPC contracts | `maestro-app`, `maestro-theme` | 5 |
 | `maestro-web` | present browser interactions | `maestro-app`, `maestro-theme` | 5 |
 | `maestro-multiplexer` | present the workspace multiplexer | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
-| `maestro` | compose executable entry points | `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer`, `maestro-terminal-ghostty` | 6 |
+| `maestro` | compose executable entry points | `maestro-app`, `maestro-cli`, `maestro-rpc`, `maestro-chat`, `maestro-web`, `maestro-extensions-wasmtime`, `maestro-multiplexer` | 6 |
 
 The sealed local/thread-safe callable representation (future, shared and weak pointer types) belongs to `maestro-models`, the lowest existing callback owner. Models also owns the provider callable, payload/response hook and options family, and provider submission representation. One retained provider or scripted factory is callable in both families with a family-associated return. Agent-specific callback signatures, conversion from existing task admission and typed local entry belong to `maestro-agent`; both representations reuse its single driver and lifecycle. Local registered dispatch requires caller-supplied submission; replacement-stream dispatch requires none. Native registered objects remain thread-safe even when accepting local request hooks. No crate edge changes. See [agent execution affinity](../adr/agent-execution-affinity.md).
 
@@ -481,18 +480,16 @@ consumers; the utility is delivered before its first consumer.
 ### Workspace daemon
 
 The workspace daemon is core design. The executable always wires the daemon,
-the multiplexer and the terminal engine adapter: it requires direct application,
-multiplexer and engine-adapter dependencies, with daemon operations reached through
+and the multiplexer: it requires direct application and multiplexer dependencies,
+with daemon operations reached through
 `maestro-app`. There is no Cargo feature, optional dependency or separate install.
 Defaults belong to the daemon. The daemon and multiplexer are native-only; browser
 builds already exclude native process crates. Every frontend calls `maestro-app`.
 
-`maestro-terminal-ghostty` alone may use unsafe code, confined to its engine
-bindings. The workspace retains `unsafe_code = "forbid"`; the adapter declares
-its own lint table equal to the workspace table except `unsafe_code = "allow"`.
-The existing guest-authoring generated-binding lint exception is unchanged.
-Conventions enforce the adapter's manifest exception even before the crate exists;
-source confinement remains a binding-implementation review requirement.
+`maestro-terminal` is a pure-Rust terminal emulator, specified in
+[terminal emulator](terminal-emulator.md): no foreign code, no build script and no
+unsafe code. The existing guest-authoring generated-binding lint exception is
+unchanged.
 
 ### Crate order
 
@@ -501,7 +498,7 @@ A crate is reached when every crate it depends on has its first tickets landed. 
 **Below layer 0:** `maestro-protocol`, `maestro-ipc` join the existing foundation leaves.
 
 1. **Layer 0:** `maestro-extensions-wasm`, `maestro-models`, `maestro-resources`, `maestro-settings`, `maestro-test-conventions`, `maestro-test-process`, `maestro-tooling`, `maestro-tui`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`
-2. **Layer 1:** `maestro-agent`, `maestro-credentials`, `maestro-packages`, `maestro-test-terminal`, `maestro-theme`, `maestro-tui-crossterm`, `maestro-daemon`, `maestro-terminal-ghostty`
+2. **Layer 1:** `maestro-agent`, `maestro-credentials`, `maestro-packages`, `maestro-test-terminal`, `maestro-theme`, `maestro-tui-crossterm`, `maestro-daemon`
 3. **Layer 2:** `maestro-catalog`, `maestro-session`, `maestro-tools`
 4. **Layer 3:** `maestro-export`, `maestro-extensions`
 5. **Layer 4:** `maestro-app`, `maestro-extensions-wasmtime`

@@ -229,6 +229,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Workspace:** A named project space in the daemon holding ordered tabs; not the Cargo workspace.
 - **Tab:** An ordered split layout of panes within a workspace.
 - **Pane:** One leaf of a tab's layout, showing one pane terminal.
+- **Terminal emulator:** The pure-Rust engine in `maestro-terminal` that parses a pane terminal's output, keeps its screens and byte-bounded scrollback, and encodes its keyboard, mouse and focus input; see the [terminal emulator specification](docs/specs/terminal-emulator.md).
 - **Pane terminal:** A PTY child with its terminal emulator, scrollback and metadata.
 - **Pane agent:** A coding agent recognized in, or reporting from, a pane, with status idle, working, blocked, done or unknown; distinct from **Agent**, the conversation runner.
 - **Detection manifest:** Bundled or downloaded data rules recognizing an agent and its status from a pane's screen, title or progress reports.

@@ -29,7 +29,6 @@
   "maestro-session": "core",
   "maestro-settings": "core",
   "maestro-terminal": "core",
-  "maestro-terminal-ghostty": "core",
   "maestro-test-conventions": "dedicated",
   "maestro-test-process": "dedicated",
   "maestro-test-terminal": "dedicated",

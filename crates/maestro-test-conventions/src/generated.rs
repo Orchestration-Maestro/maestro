@@ -9,9 +9,6 @@ use crate::source::{Member, Source, read_manifest as read};
 /// Crate that generates the extension bindings and holds their only lint exception.
 pub(crate) const GUEST: &str = "maestro-extensions-wasm";
 
-/// Terminal engine adapter with a manifest-scoped unsafe exception.
-pub(crate) const ENGINE: &str = "maestro-terminal-ghostty";
-
 /// Lints the manifest lowers from `forbid` to `deny` so the generated bindings can compile.
 const LOWERED: &[&str] = &["pedantic", "too_many_arguments", "excessive_nesting"];
 
@@ -47,7 +44,6 @@ pub(crate) fn check_manifest(name: &str, manifest: &Path, root: &Path) -> Result
         );
         let (changed, level): (&[&str], &str) = match (name, group) {
             (GUEST, "clippy") => (LOWERED, "deny"),
-            (ENGINE, "rust") => (&["unsafe_code"], "allow"),
             _ => (&[], ""),
         };
         for lint in changed {
