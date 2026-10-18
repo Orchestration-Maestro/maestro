@@ -5,70 +5,10 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use super::common::AgentStatus;
-use super::events::EventKind;
 use super::panes::{PaneInfo, PaneReadResult, PaneScrollInfo};
 use super::tabs::TabInfo;
 use super::workspaces::WorkspaceInfo;
 use super::worktrees::WorktreeInfo;
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Event envelope record.
-#[schemars(description = "")]
-pub struct EventEnvelope {
-    /// Event.
-    #[schemars(description = "")]
-    pub event: EventKind,
-    /// Data.
-    #[schemars(description = "")]
-    pub data: EventData,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Subscription event kind record.
-#[schemars(description = "")]
-#[schemars(transform = crate::schema::string_enum)]
-pub enum SubscriptionEventKind {
-    #[serde(rename = "pane.output_matched")]
-    /// Pane output matched.
-    #[schemars(description = "")]
-    PaneOutputMatched,
-    #[serde(rename = "pane.agent_status_changed")]
-    /// Pane agent status changed.
-    #[schemars(description = "")]
-    PaneAgentStatusChanged,
-    #[serde(rename = "pane.scroll_changed")]
-    /// Scroll changed.
-    #[schemars(description = "")]
-    ScrollChanged,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Subscription event envelope record.
-#[schemars(description = "")]
-pub struct SubscriptionEventEnvelope {
-    /// Event.
-    #[schemars(description = "")]
-    pub event: SubscriptionEventKind,
-    /// Data.
-    #[schemars(description = "")]
-    pub data: SubscriptionEventData,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-#[serde(untagged)]
-/// Subscription event data record.
-#[schemars(description = "")]
-pub enum SubscriptionEventData {
-    /// Pane output matched.
-    #[schemars(description = "")]
-    PaneOutputMatched(PaneOutputMatchedEvent),
-    /// Pane agent status changed.
-    #[schemars(description = "")]
-    PaneAgentStatusChanged(PaneAgentStatusChangedEvent),
-    /// Scroll changed.
-    #[schemars(description = "")]
-    ScrollChanged(PaneScrollChangedEvent),
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 /// Pane output matched event record.
@@ -83,37 +23,6 @@ pub struct PaneOutputMatchedEvent {
     /// Read.
     #[schemars(description = "")]
     pub read: PaneReadResult,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Pane agent status changed event record.
-#[schemars(description = "")]
-pub struct PaneAgentStatusChangedEvent {
-    /// Pane id.
-    #[schemars(description = "")]
-    pub pane_id: String,
-    /// Workspace id.
-    #[schemars(description = "")]
-    pub workspace_id: String,
-    /// Agent status.
-    #[schemars(description = "")]
-    pub agent_status: AgentStatus,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    /// Agent.
-    #[schemars(description = "")]
-    pub agent: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    /// Title.
-    #[schemars(description = "")]
-    pub title: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    /// Display agent.
-    #[schemars(description = "")]
-    pub display_agent: Option<String>,
-    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
-    /// State labels.
-    #[schemars(description = "")]
-    pub state_labels: HashMap<String, String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
@@ -136,6 +45,10 @@ pub struct PaneScrollChangedEvent {
 /// Event data record.
 #[schemars(description = "")]
 pub enum EventData {
+    /// Output satisfying a parameterized subscription.
+    PaneOutputMatched(PaneOutputMatchedEvent),
+    /// Scroll position delivered to a parameterized subscription.
+    PaneScrollChanged(PaneScrollChangedEvent),
     /// Workspace created.
     #[schemars(description = "")]
     WorkspaceCreated {

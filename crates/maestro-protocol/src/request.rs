@@ -1,3 +1,3 @@
 //! Daemon request records.
 //! Adapted for Maestro: names, module layout and Rust documentation changed.
-pub use crate::schema::{Method, Request};
+pub use crate::schema::{Request, RpcCommand};

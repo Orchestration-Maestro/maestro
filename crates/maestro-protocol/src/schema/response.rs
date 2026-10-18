@@ -2,9 +2,12 @@
 //! Adapted for Maestro: names, module layout and Rust documentation changed.
 use serde::{Deserialize, Serialize};
 
+use super::actions::{
+    ActionCommandLogInfo, ActionInfo, ActionInvocationContext, ActionManifestInfo, ActionPaneInfo,
+};
 use super::agents::AgentInfo;
 use super::common::{ClientWindowTitleReason, NotificationShowReason};
-use super::events::EventEnvelope;
+use super::events::EventData;
 use super::integrations::{
     IntegrationInstallResult, IntegrationTarget, IntegrationUninstallResult,
 };
@@ -13,39 +16,11 @@ use super::panes::{
     PaneMoveResult, PaneNeighborResult, PaneProcessInfo, PaneReadResult, PaneResizeResult,
     PaneSwapResult, PaneZoomResult,
 };
-use super::plugins::{
-    InstalledPluginInfo, PluginActionInfo, PluginCommandLogInfo, PluginInvocationContext,
-    PluginPaneInfo,
-};
 use super::server::ServerCapabilities;
 use super::session::SessionSnapshot;
 use super::tabs::TabInfo;
 use super::workspaces::WorkspaceInfo;
 use super::worktrees::{WorktreeInfo, WorktreeSourceInfo};
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Success response record.
-#[schemars(description = "")]
-pub struct SuccessResponse {
-    /// Id.
-    #[schemars(description = "")]
-    pub id: String,
-    /// Result.
-    #[schemars(description = "")]
-    pub result: ResponseResult,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Error response record.
-#[schemars(description = "")]
-pub struct ErrorResponse {
-    /// Id.
-    #[schemars(description = "")]
-    pub id: String,
-    /// Error.
-    #[schemars(description = "")]
-    pub error: ErrorBody,
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 /// Error body record.
@@ -420,7 +395,7 @@ pub enum ResponseResult {
     WaitMatched {
         /// Event.
         #[schemars(description = "")]
-        event: EventEnvelope,
+        event: EventData,
     },
     /// Output matched.
     #[schemars(description = "")]
@@ -500,88 +475,88 @@ pub enum ResponseResult {
         #[schemars(description = "")]
         manifests: Vec<AgentManifestInfo>,
     },
-    /// Plugin linked.
+    /// Action linked.
     #[schemars(description = "")]
-    PluginLinked {
-        /// Plugin.
+    ActionManifestLinked {
+        /// Action.
         #[schemars(description = "")]
-        plugin: InstalledPluginInfo,
+        manifest: ActionManifestInfo,
     },
-    /// Plugin list.
+    /// Action list.
     #[schemars(description = "")]
-    PluginList {
-        /// Plugins.
+    ActionManifestList {
+        /// Action manifests.
         #[schemars(description = "")]
-        plugins: Vec<InstalledPluginInfo>,
+        manifests: Vec<ActionManifestInfo>,
     },
-    /// Plugin unlinked.
+    /// Action unlinked.
     #[schemars(description = "")]
-    PluginUnlinked {
-        /// Plugin id.
+    ActionManifestUnlinked {
+        /// Manifest identifier.
         #[schemars(description = "")]
-        plugin_id: String,
+        manifest_id: String,
         /// Removed.
         #[schemars(description = "")]
         removed: bool,
     },
-    /// Plugin enabled.
+    /// Action enabled.
     #[schemars(description = "")]
-    PluginEnabled {
-        /// Plugin.
-        #[schemars(description = "")]
-        plugin: InstalledPluginInfo,
-    },
-    /// Plugin disabled.
-    #[schemars(description = "")]
-    PluginDisabled {
-        /// Plugin.
-        #[schemars(description = "")]
-        plugin: InstalledPluginInfo,
-    },
-    /// Plugin action list.
-    #[schemars(description = "")]
-    PluginActionList {
-        /// Actions.
-        #[schemars(description = "")]
-        actions: Vec<PluginActionInfo>,
-    },
-    /// Plugin action invoked.
-    #[schemars(description = "")]
-    PluginActionInvoked {
+    ActionManifestEnabled {
         /// Action.
         #[schemars(description = "")]
-        action: PluginActionInfo,
+        manifest: ActionManifestInfo,
+    },
+    /// Action disabled.
+    #[schemars(description = "")]
+    ActionManifestDisabled {
+        /// Action.
+        #[schemars(description = "")]
+        manifest: ActionManifestInfo,
+    },
+    /// Action list.
+    #[schemars(description = "")]
+    ActionList {
+        /// Actions.
+        #[schemars(description = "")]
+        actions: Vec<ActionInfo>,
+    },
+    /// Action invoked.
+    #[schemars(description = "")]
+    ActionInvoked {
+        /// Action.
+        #[schemars(description = "")]
+        action: ActionInfo,
         /// Context.
         #[schemars(description = "")]
-        context: PluginInvocationContext,
+        context: ActionInvocationContext,
         /// Log.
         #[schemars(description = "")]
-        log: PluginCommandLogInfo,
+        log: ActionCommandLogInfo,
     },
-    /// Plugin log list.
+    /// Action log list.
     #[schemars(description = "")]
-    PluginLogList {
+    ActionLogList {
         /// Logs.
         #[schemars(description = "")]
-        logs: Vec<PluginCommandLogInfo>,
+        logs: Vec<ActionCommandLogInfo>,
     },
-    /// Plugin pane opened.
+    /// Action pane opened.
     #[schemars(description = "")]
-    PluginPaneOpened {
-        /// Plugin pane.
+    ActionPaneOpened {
+        /// Action pane.
         #[schemars(description = "")]
-        plugin_pane: PluginPaneInfo,
+        action_pane: ActionPaneInfo,
     },
-    /// Plugin pane focused.
+    /// Action pane focused.
     #[schemars(description = "")]
-    PluginPaneFocused {
-        /// Plugin pane.
+    ActionPaneFocused {
+        /// Action pane.
         #[schemars(description = "")]
-        plugin_pane: PluginPaneInfo,
+        action_pane: ActionPaneInfo,
     },
-    /// Plugin pane closed.
+    /// Action pane closed.
     #[schemars(description = "")]
-    PluginPaneClosed {
+    ActionPaneClosed {
         /// Pane id.
         #[schemars(description = "")]
         pane_id: String,

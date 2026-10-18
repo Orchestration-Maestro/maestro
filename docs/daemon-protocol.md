@@ -1,33 +1,101 @@
 # Daemon protocol
 
-`maestro-protocol` defines the records shared by daemon clients. It performs no
-socket connection, terminal conversion, process launch or workspace mutation.
+`maestro-protocol` owns Maestro's shared RPC records and binary screen channel.
+It performs no socket connection, terminal conversion, process launch or workspace
+mutation. The [foundation contract](specs/maestro-port.md#workspace-daemon) defines
+the single command set served on stdio, daemon sockets and SDK connections.
 
-- `frames` defines client/server messages, rendered frame records, protocol
-  version 20 and synchronous length-prefixed binary encoding.
-- `request`, `response` and `events` expose the JSON request, result and event
-  records. `schema` groups the domain records and their generated JSON Schema.
-- `shared` owns agent status references, notification positions, config reload
-  status, popup sizes and Windows key records. `Flag` is a transparent boolean
-  representation for records with several independent flags.
-- `build_info` reads compile-time `MAESTRO_BUILD_CHANNEL` and `MAESTRO_BUILD_ID`;
-  absent or blank channel defaults to `stable`.
+## Commands and responses
 
-Binary frames contain a four-byte little-endian payload length followed by the
-standard bincode encoding. Readers enforce a caller-supplied maximum before
-allocating the payload, reject trailing bytes and distinguish truncated streams
-from other I/O errors. The normal frame maximum is 2 MiB; explicit graphics
-traffic has a separate 32 MiB constant. Version negotiation accepts version 20
-and rejects both older and newer clients, including version zero.
+`rpc_types::Request` has an optional string `id`, a `type` command discriminator
+and typed parameter fields at the top level, for example:
 
-JSON method names, discriminants, field defaults and omission rules belong to
-the record definitions. Unknown methods fail deserialization. The committed
-[JSON Schema bundle](daemon-protocol.schema.json) is checked against those types.
-Pane right-click targets serialize as `maestro` or `pane`; installed plugins
-serialize their minimum supported version as `min_maestro_version`. Both records
-also accept the original input spelling, documented in their Rust API and the
-schema bundle. Compact string enums are preserved; schema descriptions document
-these input aliases.
+```json
+{
+  "id": "w1",
+  "type": "workspace.create",
+  "cwd": "/workspace",
+  "focus": true
+}
+```
 
-Run the focused tests with `cargo nextest run -p maestro-protocol` and build the
-public API documentation with `cargo doc -p maestro-protocol --no-deps`.
+`RpcCommand` currently contains the 92 workspace commands. The established 29
+session commands, their responses, session events and extension UI records join
+this same family with the [shared RPC frontend delivery](https://github.com/Orchestration-Maestro/maestro/issues/256),
+when their application payload owners are available. There is no placeholder
+session record set or second command registry here. Frontends consume contracts
+through application re-exports when their consumers are delivered.
+
+`RpcResponse` carries the original `command` and optional correlation `id`,
+`type: "response"`, and a boolean `success`. A successful workspace operation
+has typed `data`. A workspace failure has a string `error` and an open string
+`code`, preserving machine-readable failure kinds without parsing prose. Session
+failures will retain their established shape without a workspace `code` field.
+Old `method`/`params` requests and result/error-object envelopes are not supported.
+Unknown command types and malformed known parameters fail deserialization;
+unknown members on domain records are ignored.
+
+Action commands are `action.manifest.link`, `action.manifest.list`,
+`action.manifest.unlink`, `action.manifest.enable`, `action.manifest.disable`,
+`action.list`, `action.invoke`, `action.log.list`, `action.pane.open`,
+`action.pane.focus` and `action.pane.close`. There are no old command aliases.
+`ActionManifestInfo` uses `manifest_id` and `manifest_root`. The minimum-version
+field emits `min_maestro_version` and accepts `min_herdr_version` on input.
+Pane right-click targets emit `maestro` or `pane` and accept the original target
+spelling as an input alias; their Rust API documents these aliases.
+
+`PackageSourceInfo` projects local, Git and npm package sources with their settings
+`source` string and optional `subdir`, `requested_ref`, `resolved_commit`,
+`managed_path` and `installed_unix_ms`. The timestamp describes installation of
+the current checkout; producers leave it absent for local sources. Link accepts
+only `path` and `enabled` (default true); obsolete source input is ignored.
+
+## Events and version
+
+`EventData` is the top-level `type`-tagged workspace event family. The 26 ordinary
+event payloads retain their snake-case tags. Parameterized output-match and
+scroll notifications use `pane_output_matched` and `pane_scroll_changed`; status
+notifications use the existing `pane_agent_status_changed` payload. There is no
+outer `event`/`data` wrapper. The 27 subscription selectors retain dotted names,
+filters, replay inputs, match options and wait results containing that same event
+family. Runtime delivery belongs to the daemon execution layer; a plain session
+client is not automatically subscribed to workspace events.
+
+`maestro_protocol::PROTOCOL_VERSION` is 21. Metadata, snapshots, handshakes and
+handoff use this one protocol version; `frames` re-exports the same constant.
+The generated schema's `schema_version: 1` is its document format, not another
+negotiated protocol. Product versions remain separate strings. Existing JSONL
+clients need no header, handshake, version field or unsolicited startup record.
+JSONL framing belongs to `maestro-json::jsonl`, not a second codec here.
+
+## Binary screen channel
+
+Binary is explicitly selected at connection creation, using `Hello`/`Welcome` on
+that connection. There is no in-band switch between JSONL and binary. Detach or
+error closes the binary connection; it never returns to JSONL. This rule applies
+to local attach and SSH stdio, graphics streams and live handoff. Ordinary JSONL
+streams never receive raw frames or image bytes. Execution integration is owned
+by the screen and remote-client deliveries.
+
+`frames` retains semantic cells, ANSI output, graphics, clipboard, input, resize,
+attach, observe, control, takeover, detach and handoff records. Frames contain a
+four-byte little-endian payload length followed by standard bincode encoding.
+Readers enforce the caller-supplied maximum before allocation, reject trailing
+bytes and distinguish truncated streams from other I/O errors. The normal maximum
+is 2 MiB; explicitly selected graphics traffic has a separate 32 MiB constant.
+Version negotiation accepts 21 and rejects older/newer clients, including zero.
+
+`ClientKeybindings::Server` keeps server configuration. `Local` carries a typed
+`bindings` map from action identifiers to string lists, including `prefix`;
+an empty list disables an action. This map decodes through the same binary codec,
+without TOML text or self-describing JSON values.
+
+## Schema and checks
+
+The committed [JSON Schema bundle](daemon-protocol.schema.json) is checked against
+the delivered records. The RPC frontend delivery extends this same bundle for
+session and UI traffic. Compact string enums and documented input aliases remain
+part of the schema.
+
+Run `cargo nextest run -p maestro-protocol` for wire/codec tests and
+`cargo doc -p maestro-protocol --no-deps` for public API documentation.
