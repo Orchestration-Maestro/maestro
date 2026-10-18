@@ -256,5 +256,6 @@ fn activation(index: usize) -> Vec<Vec<egui::Event>> {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[path = "../../../tests/highlighter_support/mod.rs"]
 pub(crate) mod highlighter;
