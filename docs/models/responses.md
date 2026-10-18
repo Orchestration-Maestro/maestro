@@ -75,7 +75,9 @@ async fn controlled() {
 
 `providers::responses::azure_openai_responses` provides
 `stream_azure_openai_responses` and `stream_simple_azure_openai_responses`;
-`AzureOpenAIResponsesOptions` is also exported at the package root. Raw setup
+`AzureOpenAIResponsesOptions` is also exported at the package root. Output uses
+`azure-openai-responses` even when the supplied descriptor names another API;
+request processing receives that descriptor unchanged. Raw setup
 failures are stream errors. Simple invocation in this module rejects a missing provider key
 before creating a stream (the root export settles it as an error stream) and uses the shared simple budgets and reasoning support.
 

@@ -237,6 +237,14 @@ fn cloud_content_stream_keeps_its_protocol_identity() -> chat::TestResult {
 }
 
 #[test]
+fn cloud_response_stream_keeps_its_protocol_identity() -> chat::TestResult {
+    chat::block_on(
+        false,
+        protocol_identity("content", "azure-openai-responses"),
+    )
+}
+
+#[test]
 fn cloud_conversation_keeps_its_protocol_identity() -> chat::TestResult {
     chat::block_on(
         false,
@@ -346,7 +354,11 @@ fn identity_options(
         crate::transport::transport(vec![crate::transport::Attempt::body(
             200,
             &[("content-type", "text/event-stream")],
-            vec![],
+            if api == "azure-openai-responses" {
+                b"data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\"}}\n\n".to_vec()
+            } else {
+                vec![]
+            },
         )])
     };
     let supplied = (model.api.clone(), model.provider.clone(), model.id.clone());
@@ -384,6 +396,7 @@ fn identity_stream(
     use maestro_models::providers::{
         cloud::amazon_bedrock::*,
         content::{google::*, google_vertex::*},
+        responses::azure_openai_responses::*,
     };
     let context = chat::context(
         &serde_json::json!({"messages": [{"role":"user", "content":"question", "timestamp":1}]}),
@@ -412,6 +425,16 @@ fn identity_stream(
                 common,
                 bearer_token: Some("fixture-token".into()),
                 region: Some("us-east-1".into()),
+                ..Default::default()
+            }),
+        ),
+        "azure-openai-responses" => stream_azure_openai_responses(
+            model,
+            context,
+            Some(AzureOpenAIResponsesOptions {
+                common,
+                azure_base_url: Some("https://fixture.invalid/v1".into()),
+                azure_deployment_name: Some("fixture-deployment".into()),
                 ..Default::default()
             }),
         ),

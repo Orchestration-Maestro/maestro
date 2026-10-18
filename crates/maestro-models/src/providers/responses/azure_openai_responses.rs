@@ -8,7 +8,7 @@ use super::openai_responses_shared::{
 use crate::arguments::json_parse::whitespace;
 use crate::options::resolve_api_key;
 use crate::providers::assistant_output::conclude;
-use crate::providers::assistant_output::{fail, initial_message, start_producer_for};
+use crate::providers::assistant_output::{fail, initial_message_for_api, start_producer_for};
 use crate::providers::chat::openai_completions::scope_headers;
 use crate::providers::http::{
     HttpRequest, RequestFailure, SseMessages, copied, layer, sdk_status_failure,
@@ -150,6 +150,8 @@ fn resolve_deployment_name<'a, E: ProviderExecution>(
         .unwrap_or(Cow::Borrowed(&model.id))
 }
 /// Start a cloud invocation, returning setup errors through the stream.
+///
+/// Output uses `azure-openai-responses`; request processing retains the supplied descriptor.
 #[must_use]
 pub fn stream_azure_openai_responses(
     model: Model,
@@ -229,7 +231,10 @@ fn produce<E: Producer>(
     submit: E::Submission,
 ) -> AssistantMessageEventStream {
     let stream = AssistantMessageEventStream::new();
-    let output = Arc::new(RwLock::new(initial_message(&model)));
+    let output = Arc::new(RwLock::new(initial_message_for_api(
+        &model,
+        "azure-openai-responses",
+    )));
     let options = options.unwrap_or_default();
     let signal = options.common.signal.clone();
     let task = E::drive(
