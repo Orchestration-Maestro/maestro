@@ -74,7 +74,7 @@ impl PreviewCodeToggle {
             let selected = self.mode == mode;
             if selected {
                 ui.painter().rect_filled(
-                    egui::Rect::from_min_size(ui.next_widget_position(), egui::vec2(32., 28.)),
+                    egui::Rect::from_min_size(ui.next_widget_position(), egui::vec2(32., 26.)),
                     egui::CornerRadius::from(attachment_content::points(
                         presentation.radii["control"],
                     )),
@@ -86,7 +86,7 @@ impl PreviewCodeToggle {
                 ui,
                 presentation,
                 (glyph, None),
-                egui::vec2(32., 28.),
+                egui::vec2(32., 26.),
                 attachment_content::color(presentation, if selected { "text" } else { "muted" })?,
             )?
             .on_hover_text(&title);

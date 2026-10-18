@@ -26,7 +26,7 @@ impl MarkdownArtifact {
     pub fn new(host: Rc<dyn AttachmentHost>) -> Self {
         Self {
             source: TextArtifact::with_profile(Rc::clone(&host), SourceProfile::Markdown),
-            preview: MarkdownBlock::new(host),
+            preview: MarkdownBlock::for_artifact(host),
             toggle: PreviewCodeToggle::new(),
             visible: true,
             modal: None,
@@ -72,9 +72,14 @@ impl ArtifactElement for MarkdownArtifact {
         ui: &mut egui::Ui,
         view: ArtifactView<'_>,
     ) -> Result<(), AttachmentUiError> {
-        self.toggle.render(ui, view.i18n, view.presentation)?;
-        self.reconcile()?;
-        self.source.get_header_buttons(ui, view)
+        ui.scope(|ui| {
+            ui.spacing_mut().item_spacing.x =
+                crate::browser::attachment_content::points(view.presentation.spacing["sm"]);
+            self.toggle.render(ui, view.i18n, view.presentation)?;
+            self.reconcile()?;
+            self.source.get_header_buttons(ui, view)
+        })
+        .inner
     }
     fn render(
         &mut self,
@@ -85,22 +90,15 @@ impl ArtifactElement for MarkdownArtifact {
         if self.toggle.mode == ViewMode::Code {
             self.source.render(ui, view)?;
         } else {
-            egui::Frame::new()
-                .inner_margin(crate::browser::attachment_content::points(
-                    view.presentation.spacing["md"],
-                ))
-                .show(ui, |ui| {
-                    self.preview.render(
-                        ui,
-                        crate::components::code_block::CodeBlockView {
-                            i18n: view.i18n,
-                            presentation: view.presentation,
-                            highlighter: view.highlighter,
-                            modal: self.modal,
-                        },
-                    )
-                })
-                .inner?;
+            self.preview.render(
+                ui,
+                crate::components::code_block::CodeBlockView {
+                    i18n: view.i18n,
+                    presentation: view.presentation,
+                    highlighter: view.highlighter,
+                    modal: self.modal,
+                },
+            )?;
         }
         Ok(())
     }

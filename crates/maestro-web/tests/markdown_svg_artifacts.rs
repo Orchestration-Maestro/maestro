@@ -85,15 +85,6 @@ fn slots(context: &egui::Context) -> Vec<egui::Rect> {
     slots.sort_by(|a, b| a.left().total_cmp(&b.left()));
     slots
 }
-/// Activate one of the installed view's four actual header controls.
-fn activate(frame: &Frame, view: &mut dyn ArtifactElement, index: usize) -> egui::FullOutput {
-    frame.draw(view, true, vec![]).unwrap();
-    let controls = slots(&frame.context);
-    assert_eq!(controls.len(), 4);
-    frame
-        .draw(view, true, click(controls[index].center()))
-        .unwrap()
-}
 /// Project the typed transition to the recorded event value.
 fn mode_name(mode: ViewMode) -> &'static str {
     match mode {
@@ -161,8 +152,8 @@ fn specialized_headers_keep_literal_bytes_and_titles() {
         )
         .unwrap();
         for index in [2, 3] {
-            let output = activate(&frame, view.as_mut(), index);
-            assert!(output.platform_output.events.iter().any(|event| matches!(event, egui::output::OutputEvent::Clicked(info) if info.label.as_ref() == Some(&case.titles[index]))));
+            let output = frame.activate_header(view.as_mut(), index, 4);
+            assert!(output.platform_output.events.iter().any(|event| matches!(event, egui::output::OutputEvent::Clicked(info) if info.label.as_ref() == Some(&case.titles[index - 2]))));
         }
         assert_eq!(host.copies.borrow().as_slice(), &[case.content]);
         for result in host.results.borrow().iter() {
@@ -198,7 +189,7 @@ fn artifact_modes_survive_edits_and_stay_independent() {
         } else {
             Box::new(MarkdownArtifact::new(host))
         };
-        activate(&frame, view.as_mut(), 1);
+        frame.activate_header(view.as_mut(), 1, 4);
         for (filename, text) in [
             ("original", "one"),
             ("renamed.txt", "one"),
@@ -317,5 +308,66 @@ fn hover_focus(
             paint.region(&frame.context, &focused.shapes, *control),
             paint.region(&frame.context, &output.shapes, *control)
         );
+    }
+}
+
+/// Specialized geometry is retained by the real panel without changing text controls.
+#[test]
+fn specialized_panel_headers_own_gaps_and_border_box_height() {
+    for name in ["a.md", "a.svg", "a.txt"] {
+        let harness = Harness::new(&Input::default());
+        harness.command("create", name, Some("word"));
+        harness.caller.show_artifact(name);
+        let mut paint = canvas_paint::Paint::default();
+        let output = harness
+            .frame
+            .draw_panel_observing(&harness.panel, &harness.caller, vec![], |output| {
+                paint.update(output);
+            })
+            .unwrap();
+        let controls = slots(&harness.frame.context);
+        let actions =
+            &controls[controls.len() - if name == "a.txt" { 3 } else { 5 }..controls.len() - 1];
+        if name == "a.txt" {
+            assert!((actions[1].left() - actions[0].right() - 4.).abs() < f32::EPSILON);
+        } else {
+            let height = actions[0].height();
+            let gap = actions[2].left() - actions[1].right() - 1.;
+            let action_gap = actions[3].left() - actions[2].right();
+            let border = egui::Color32::from_hex(
+                harness
+                    .frame
+                    .pack
+                    .presentation(harness.frame.mode)
+                    .unwrap()
+                    .colors["border"],
+            )
+            .unwrap()
+            .to_array();
+            let top = paint.pixel(
+                &harness.frame.context,
+                &output.shapes,
+                egui::pos2(actions[1].center().x, actions[1].top() - 0.5),
+            );
+            let bottom = paint.pixel(
+                &harness.frame.context,
+                &output.shapes,
+                egui::pos2(actions[1].center().x, actions[1].bottom() + 0.5),
+            );
+            assert!(
+                (height - 26.).abs() < f32::EPSILON
+                    && (gap - 8.).abs() < f32::EPSILON
+                    && (action_gap - 8.).abs() < f32::EPSILON
+                    && top
+                        .into_iter()
+                        .zip(border)
+                        .all(|(a, b)| (a - f32::from(b)).abs() < f32::EPSILON)
+                    && bottom
+                        .into_iter()
+                        .zip(border)
+                        .all(|(a, b)| (a - f32::from(b)).abs() < f32::EPSILON),
+                "{name}: control={height}, group gap={gap}, action gap={action_gap}, top={top:?}, bottom={bottom:?}"
+            );
+        }
     }
 }

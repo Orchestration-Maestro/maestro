@@ -54,7 +54,7 @@ impl SvgArtifact {
             self.modal,
         )
     }
-    /// Rebuild the native resource only after an actual original-content edit.
+    /// Rebuild the native resource after an original-content edit or reconnection.
     #[cfg(target_arch = "wasm32")]
     fn update_preview_url(&mut self) -> Result<(), AttachmentUiError> {
         self.preview_url = None;
@@ -109,9 +109,14 @@ impl ArtifactElement for SvgArtifact {
         ui: &mut egui::Ui,
         view: ArtifactView<'_>,
     ) -> Result<(), AttachmentUiError> {
-        self.toggle.render(ui, view.i18n, view.presentation)?;
-        self.reconcile()?;
-        self.source.get_header_buttons(ui, view)
+        ui.scope(|ui| {
+            ui.spacing_mut().item_spacing.x =
+                crate::browser::attachment_content::points(view.presentation.spacing["sm"]);
+            self.toggle.render(ui, view.i18n, view.presentation)?;
+            self.reconcile()?;
+            self.source.get_header_buttons(ui, view)
+        })
+        .inner
     }
     fn render(
         &mut self,

@@ -43,8 +43,8 @@ pub struct Case {
     pub renamed_filename: String,
     /// Replacement literal source.
     pub edited_content: String,
-    /// Ordered toggle, copy and download titles.
-    pub titles: [String; 4],
+    /// Ordered copy and download titles.
+    pub titles: [String; 2],
     /// Download MIME.
     pub mime: String,
     /// Original download bytes.

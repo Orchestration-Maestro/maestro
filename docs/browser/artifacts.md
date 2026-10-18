@@ -187,9 +187,13 @@ and SVG for `svg`, using the application's case-insensitive suffix policy.
 Each retained view has its own preview/source selection; content and filename
 edits preserve that selection. The localized header order is preview, code,
 copy, download, with ordinary keyboard and clipped-pointer admission.
+The specialized headers use 8-point gaps and a 28-point toggle group; ordinary
+text headers retain their existing spacing.
 
 Markdown preview delegates to the [shared Markdown block](transcript.md#native-markdown-and-code) with
-padded, selectable content, code-copy controls and math. SVG preview uses an
+selectable content, code-copy controls and math. Preview padding belongs to the
+scrollable document inside the full-body viewport, so it scrolls away with the
+content. SVG preview uses an
 inert native image, not live authored markup: scripts in SVG do not execute.
 The image fills the padded body with contained document pixels and native pointer
 interaction. Empty SVG has no visible image; malformed SVG keeps the native image

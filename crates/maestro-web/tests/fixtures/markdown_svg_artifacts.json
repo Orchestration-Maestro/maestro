@@ -84,15 +84,12 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "\nupdated",
       "titles": [
-        "Preview",
-        "Code",
         "Copy Markdown",
         "Download Markdown"
       ],
       "mime": "text/markdown",
       "bytes": [],
-      "language_class": "hljs language-markdown",
-      "outcome": null
+      "language_class": "hljs language-markdown"
     },
     {
       "kind": "markdown",
@@ -102,8 +99,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "# Heading\n\n**bold** and `code` & 雪😀\n\n- item\nupdated",
       "titles": [
-        "Preview",
-        "Code",
         "Copy Markdown",
         "Download Markdown"
       ],
@@ -158,8 +153,7 @@
         101,
         109
       ],
-      "language_class": "hljs language-markdown",
-      "outcome": null
+      "language_class": "hljs language-markdown"
     },
     {
       "kind": "markdown",
@@ -169,8 +163,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "<script>globalThis.injected=true</script>\nupdated",
       "titles": [
-        "Preview",
-        "Code",
         "Copy Markdown",
         "Download Markdown"
       ],
@@ -218,8 +210,7 @@
         116,
         62
       ],
-      "language_class": "hljs language-markdown",
-      "outcome": null
+      "language_class": "hljs language-markdown"
     },
     {
       "kind": "markdown",
@@ -229,8 +220,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "﻿# BOM\n\ntail\n\nupdated",
       "titles": [
-        "Preview",
-        "Code",
         "Copy Markdown",
         "Download Markdown"
       ],
@@ -254,8 +243,7 @@
         108,
         10
       ],
-      "language_class": "hljs language-markdown",
-      "outcome": null
+      "language_class": "hljs language-markdown"
     },
     {
       "kind": "markdown",
@@ -265,8 +253,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "test\nupdated",
       "titles": [
-        "Preview",
-        "Code",
         "Copy Markdown",
         "Download Markdown"
       ],
@@ -277,8 +263,7 @@
         115,
         116
       ],
-      "language_class": "hljs language-markdown",
-      "outcome": null
+      "language_class": "hljs language-markdown"
     },
     {
       "kind": "markdown",
@@ -288,8 +273,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "longwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongword\nnext\nupdated",
       "titles": [
-        "Preview",
-        "Code",
         "Copy Markdown",
         "Download Markdown"
       ],
@@ -701,8 +684,7 @@
         120,
         116
       ],
-      "language_class": "hljs language-markdown",
-      "outcome": null
+      "language_class": "hljs language-markdown"
     },
     {
       "kind": "svg",
@@ -712,8 +694,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "\nupdated",
       "titles": [
-        "Preview",
-        "Code",
         "Copy SVG",
         "Download SVG"
       ],
@@ -730,8 +710,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"20\"><rect width=\"40\" height=\"20\" fill=\"red\"/></svg>\nupdated",
       "titles": [
-        "Preview",
-        "Code",
         "Copy SVG",
         "Download SVG"
       ],
@@ -859,8 +837,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "<svg xmlns=\"http://www.w3.org/2000/svg\" onload=\"globalThis.injected=true\"><script>globalThis.injected=true</script><rect width=\"4\" height=\"4\"/></svg>\nupdated",
       "titles": [
-        "Preview",
-        "Code",
         "Copy SVG",
         "Download SVG"
       ],
@@ -1027,8 +1003,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "not SVG <&>\nupdated",
       "titles": [
-        "Preview",
-        "Code",
         "Copy SVG",
         "Download SVG"
       ],
@@ -1057,8 +1031,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "<svg xmlns=\"http://www.w3.org/2000/svg\"><text>雪😀 &amp; é</text></svg>\nupdated",
       "titles": [
-        "Preview",
-        "Code",
         "Copy SVG",
         "Download SVG"
       ],
@@ -1152,8 +1124,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "test\nupdated",
       "titles": [
-        "Preview",
-        "Code",
         "Copy SVG",
         "Download SVG"
       ],
@@ -1175,15 +1145,12 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "\nupdated",
       "titles": [
-        "Vorschau",
-        "Code",
         "Markdown kopieren",
         "Markdown herunterladen"
       ],
       "mime": "text/markdown",
       "bytes": [],
-      "language_class": "hljs language-markdown",
-      "outcome": null
+      "language_class": "hljs language-markdown"
     },
     {
       "kind": "markdown",
@@ -1193,8 +1160,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "# Heading\n\n**bold** and `code` & 雪😀\n\n- item\nupdated",
       "titles": [
-        "Vorschau",
-        "Code",
         "Markdown kopieren",
         "Markdown herunterladen"
       ],
@@ -1249,8 +1214,7 @@
         101,
         109
       ],
-      "language_class": "hljs language-markdown",
-      "outcome": null
+      "language_class": "hljs language-markdown"
     },
     {
       "kind": "markdown",
@@ -1260,8 +1224,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "<script>globalThis.injected=true</script>\nupdated",
       "titles": [
-        "Vorschau",
-        "Code",
         "Markdown kopieren",
         "Markdown herunterladen"
       ],
@@ -1309,8 +1271,7 @@
         116,
         62
       ],
-      "language_class": "hljs language-markdown",
-      "outcome": null
+      "language_class": "hljs language-markdown"
     },
     {
       "kind": "markdown",
@@ -1320,8 +1281,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "﻿# BOM\n\ntail\n\nupdated",
       "titles": [
-        "Vorschau",
-        "Code",
         "Markdown kopieren",
         "Markdown herunterladen"
       ],
@@ -1345,8 +1304,7 @@
         108,
         10
       ],
-      "language_class": "hljs language-markdown",
-      "outcome": null
+      "language_class": "hljs language-markdown"
     },
     {
       "kind": "markdown",
@@ -1356,8 +1314,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "test\nupdated",
       "titles": [
-        "Vorschau",
-        "Code",
         "Markdown kopieren",
         "Markdown herunterladen"
       ],
@@ -1368,8 +1324,7 @@
         115,
         116
       ],
-      "language_class": "hljs language-markdown",
-      "outcome": null
+      "language_class": "hljs language-markdown"
     },
     {
       "kind": "markdown",
@@ -1379,8 +1334,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "longwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongwordlongword\nnext\nupdated",
       "titles": [
-        "Vorschau",
-        "Code",
         "Markdown kopieren",
         "Markdown herunterladen"
       ],
@@ -1792,8 +1745,7 @@
         120,
         116
       ],
-      "language_class": "hljs language-markdown",
-      "outcome": null
+      "language_class": "hljs language-markdown"
     },
     {
       "kind": "svg",
@@ -1803,8 +1755,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "\nupdated",
       "titles": [
-        "Vorschau",
-        "Code",
         "SVG kopieren",
         "SVG herunterladen"
       ],
@@ -1821,8 +1771,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"20\"><rect width=\"40\" height=\"20\" fill=\"red\"/></svg>\nupdated",
       "titles": [
-        "Vorschau",
-        "Code",
         "SVG kopieren",
         "SVG herunterladen"
       ],
@@ -1950,8 +1898,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "<svg xmlns=\"http://www.w3.org/2000/svg\" onload=\"globalThis.injected=true\"><script>globalThis.injected=true</script><rect width=\"4\" height=\"4\"/></svg>\nupdated",
       "titles": [
-        "Vorschau",
-        "Code",
         "SVG kopieren",
         "SVG herunterladen"
       ],
@@ -2118,8 +2064,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "not SVG <&>\nupdated",
       "titles": [
-        "Vorschau",
-        "Code",
         "SVG kopieren",
         "SVG herunterladen"
       ],
@@ -2148,8 +2092,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "<svg xmlns=\"http://www.w3.org/2000/svg\"><text>雪😀 &amp; é</text></svg>\nupdated",
       "titles": [
-        "Vorschau",
-        "Code",
         "SVG kopieren",
         "SVG herunterladen"
       ],
@@ -2243,8 +2185,6 @@
       "renamed_filename": "renamed.txt",
       "edited_content": "test\nupdated",
       "titles": [
-        "Vorschau",
-        "Code",
         "SVG kopieren",
         "SVG herunterladen"
       ],

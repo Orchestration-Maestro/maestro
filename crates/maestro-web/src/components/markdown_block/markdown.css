@@ -1,3 +1,4 @@
+.maestro-artifact-padding { padding: var(--maestro-spacing-md); }
 .maestro-markdown {
   display: block;
   max-width: none;

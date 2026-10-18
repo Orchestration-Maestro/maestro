@@ -34,11 +34,11 @@ mod tests {
     /// Source wraps long words but never trims or reclassifies authored Markdown.
     #[wasm_bindgen]
     pub fn markdown_source_wraps_without_changing_text() {
-        for case in corpus()
-            .content
-            .into_iter()
-            .filter(|c| c.kind == "markdown")
-        {
+        source_cases("markdown", true);
+    }
+    /// Exercise fixed highlighting and wrapping once per distinct source input.
+    fn source_cases(kind: &str, wraps: bool) {
+        for case in cases(kind) {
             let mut view = View::new(&case.filename, &case.content);
             select(&mut view, 1);
             for (filename, text) in [
@@ -55,13 +55,23 @@ mod tests {
                     quoted(&case.language_class)
                 ));
             }
-            view.element.set_content("x".repeat(400));
-            view.size.x = 160.;
-            view.draw(false, vec![]);
-            check(
-                "(()=>{const r=document.querySelector('.maestro-text-artifact'),p=r.parentElement;return r.getBoundingClientRect().height>100 && p.scrollWidth<=p.clientWidth+1 && getComputedStyle(r).whiteSpace==='pre-wrap'})()",
-            );
         }
+        let mut view = View::new(if wraps { "long.md" } else { "long.svg" }, &"x".repeat(400));
+        select(&mut view, 1);
+        view.size.x = 160.;
+        view.draw(false, vec![]);
+        check(if wraps {
+            "(()=>{const r=document.querySelector('.maestro-text-artifact'),p=r.parentElement;return r.getBoundingClientRect().height>100 && p.scrollWidth<=p.clientWidth+1 && getComputedStyle(r).whiteSpace==='pre-wrap'})()"
+        } else {
+            "(()=>{const r=document.querySelector('.maestro-text-artifact'),p=r.parentElement;return p.scrollWidth>p.clientWidth && getComputedStyle(r).whiteSpace==='pre'})()"
+        });
+    }
+    /// Locales share source/image inputs; localized controls are covered natively.
+    fn cases(kind: &str) -> impl Iterator<Item = crate::markdown_svg_support::Case> {
+        corpus()
+            .content
+            .into_iter()
+            .filter(move |c| c.kind == kind && c.language == "en")
     }
     /// Await the actual native image outcome rather than guessing readiness.
     async fn image_outcome(expected: &str) {
@@ -76,15 +86,11 @@ mod tests {
     /// Preview is the shared selectable document owner, including its code controls.
     #[wasm_bindgen]
     pub fn markdown_preview_uses_the_shared_block() {
-        for case in corpus()
-            .content
-            .into_iter()
-            .filter(|c| c.kind == "markdown")
-        {
+        for case in cases("markdown") {
             let mut view = View::new(&case.filename, &case.content);
             view.draw(false, vec![]);
             check(&format!(
-                "document.querySelector('.maestro-markdown-root').getBoundingClientRect().left === {}",
+                "document.querySelector('.maestro-markdown').getBoundingClientRect().left === {}",
                 view.pack.presentation(view.mode).unwrap().spacing["md"]
             ));
             check(
@@ -114,43 +120,31 @@ mod tests {
         );
         assert!(!view.context.interactive_rects_last_pass().is_empty());
     }
+    /// The full artifact body clips content while its padding scrolls away.
+    #[wasm_bindgen]
+    pub fn markdown_padding_scrolls_inside_the_full_body() {
+        let panel = crate::panel_browser_support::Panel::new();
+        panel.create("tall.md", &"word ".repeat(2000));
+        let root = js("(()=>{const v=document.querySelector('.maestro-reading-viewport').getBoundingClientRect();return v.left===1 && v.top===41 && v.width===399 && v.height===259})()").as_bool().unwrap();
+        check("document.querySelector('.maestro-markdown p').getBoundingClientRect().top===57");
+        js("document.querySelector('.maestro-reading-viewport').scrollTop=64");
+        panel.draw(vec![]);
+        let symptom = js("(()=>{const v=document.querySelector('.maestro-reading-viewport'),r=v.getBoundingClientRect(),p=document.querySelector('.maestro-markdown p');return v.scrollTop===64 && p.getBoundingClientRect().top===-7 && document.elementFromPoint(r.left+17,42)===p && document.elementFromPoint(r.left+17,40)!==p})()").as_bool().unwrap();
+        assert!(
+            root && symptom,
+            "full-body viewport={root}; padding scrolls under body clip={symptom}"
+        );
+    }
     /// SVG code stays literal XML after edits and retains horizontal scrolling.
     #[wasm_bindgen]
     pub fn svg_source_keeps_xml_and_horizontal_overflow() {
-        for case in corpus().content.into_iter().filter(|c| c.kind == "svg") {
-            let mut view = View::new(&case.filename, &case.content);
-            select(&mut view, 1);
-            for (filename, text) in [
-                (&case.filename, &case.content),
-                (&case.renamed_filename, &case.content),
-                (&case.renamed_filename, &case.edited_content),
-            ] {
-                view.element.set_filename(filename.clone());
-                view.element.set_content(text.clone());
-                view.draw(false, vec![]);
-                check(&format!(
-                    "(()=>{{const c=document.querySelector('.maestro-text-artifact code');return c.textContent==={} && c.className==={}}})()",
-                    quoted(text),
-                    quoted(&case.language_class)
-                ));
-            }
-            view.element.set_content("x".repeat(400));
-            view.size.x = 160.;
-            view.draw(false, vec![]);
-            check(
-                "(()=>{const r=document.querySelector('.maestro-text-artifact'),p=r.parentElement;return p.scrollWidth>p.clientWidth && getComputedStyle(r).whiteSpace==='pre'})()",
-            );
-        }
+        source_cases("svg", false);
     }
     /// SVG documents load as inert, contained, pointer-interactive native images.
     #[wasm_bindgen]
     pub async fn svg_preview_is_an_inert_contained_image() {
         js(include_str!("markdown_svg_support/url_audit.js"));
-        for case in corpus()
-            .content
-            .into_iter()
-            .filter(|c| c.kind == "svg" && c.outcome.as_deref() == Some("load"))
-        {
+        for case in cases("svg").filter(|c| c.outcome.as_deref() == Some("load")) {
             let mut view = View::new(&case.filename, &case.content);
             view.draw(false, vec![]);
             image_outcome("load").await;
@@ -169,11 +163,7 @@ mod tests {
     #[wasm_bindgen]
     pub async fn svg_empty_and_invalid_content_keep_native_states() {
         js(include_str!("markdown_svg_support/url_audit.js"));
-        for case in corpus()
-            .content
-            .into_iter()
-            .filter(|c| c.kind == "svg" && c.outcome.as_deref() != Some("load"))
-        {
+        for case in cases("svg").filter(|c| c.outcome.as_deref() != Some("load")) {
             let mut view = View::new(&case.filename, &case.content);
             view.draw(false, vec![]);
             if let Some(expected) = case.outcome {
