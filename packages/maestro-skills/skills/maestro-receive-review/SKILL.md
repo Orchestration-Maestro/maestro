@@ -41,3 +41,6 @@ for line count. Restrict work to changed scope unless the user explicitly broade
 Run the suite after each simplification; revert and reconsider on red. Above about 500 changed lines, use
 appropriate automation rather than repetitive manual edits. Read the final result as a maintainer: if it is
 harder to understand, revert it even when tests pass. Keep structural refactors separate from feature changes.
+
+Use `/skill:maestro-git-workflow` to keep justified structural refactoring in its own commit
+without introducing another feedback loop.

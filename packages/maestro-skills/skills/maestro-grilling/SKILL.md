@@ -43,3 +43,6 @@ The interview ends when the frontier is empty, with no branch silently assumed. 
 
 Ask for an explicit yes to this restatement. Delegation, silence or a polite exit is not confirmation.
 Fold corrections into the restatement. Once confirmed, deliver it and stop; let the user choose the next phase.
+
+For factual investigation use `/skill:maestro-research`; for alternatives that differ visibly,
+use `/skill:maestro-show-options` before asking for the choice.

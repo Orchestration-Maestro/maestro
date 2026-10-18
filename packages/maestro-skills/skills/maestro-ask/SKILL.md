@@ -37,3 +37,21 @@ For simplification findings use `/lean-review` or `/lean-audit`, then use receiv
 A full security audit belongs to `security-audit`, not to a general code review.
 
 At a phase boundary, read [phase boundaries](../../references/phase-boundaries.md) before discarding context.
+
+## Other entry points
+
+These are suggestions for the human, not automatic invocations of type-only skills.
+
+- `/skill:maestro-triage` classifies incoming issues and explicitly enabled requests.
+- `/skill:maestro-wayfinder` maps a large, foggy effort into decision tickets before specs.
+- `/skill:maestro-implement-spec` is the whole-spec alternative to single-ticket implementation.
+- `/skill:maestro-prototype` answers an unsettled runnable design question after grilling.
+- `/skill:maestro-handoff` carries that exploration or another phase to a new context.
+- `/skill:maestro-improve-codebase-architecture` investigates architectural health and shallow modules.
+- `/skill:maestro-wait-what` re-explains the last message when context or terminology is missing.
+- `/skill:maestro-research` delegates primary-source facts and versioned documentation questions.
+- `/skill:maestro-git-workflow` handles isolation, commits, history and branch completion.
+- `/skill:maestro-show-options` makes visible alternatives concrete before a decision.
+- `/skill:maestro-documentation` reviews technical guides, comments and API documentation.
+- `/skill:maestro-humanizer` revises prose with stock patterns while preserving its claims.
+- `/skill:maestro-writing-for-agents` authors or prunes skills and agent rules files.

@@ -40,3 +40,6 @@ edges are right, and whether tickets should merge or split. Stop for approval be
 Publish approved tickets in dependency order, linking children to their parent and using native blocking edges
 where available. Local tracking uses one numbered file per ticket, never one combined list.
 Work the unblocked frontier. Do not close or rewrite the parent merely because its tickets were created.
+
+If slicing exposes an unsettled runnable design question, return to `/skill:maestro-prototype`
+before locking that decision. Keep the vertical-ticket and blocking contract; settled work needs no prototype.

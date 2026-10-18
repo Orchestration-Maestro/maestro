@@ -44,3 +44,6 @@ contract, not your conclusions. Sort questions into answered by the spec, minor 
 and decisions belonging to the user. Resolve the first two; put the remaining decisions to the user in one round.
 
 Summarize the spec and open questions, ask for approval and stop. Do not start tickets or code until approval.
+
+If an unsettled design question needs runnable evidence, suggest `/skill:maestro-prototype`.
+An already-settled design does not require a prototype.

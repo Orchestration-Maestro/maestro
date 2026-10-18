@@ -38,3 +38,6 @@ If the plan is wrong, reconcile it against its spec and record the ruling before
 Use `/skill:maestro-code-review` before committing. Resolve justified findings, then use `/skill:maestro-verify`
 for completion evidence. Commit with the repository's normal conventions and update the ledger with the
 commit range, actual verification and status. Carry completed work forward into the next slice.
+
+Use `/skill:maestro-git-workflow` for commit handling and isolation, retaining the TDD, review
+and completion checks above.
