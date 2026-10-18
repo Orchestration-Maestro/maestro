@@ -16,6 +16,8 @@ struct Body {
     fallback: String,
     /// Whether the current source failed to load.
     failed: bool,
+    /// Literal SVG URL with native failure presentation.
+    svg: bool,
     /// Mounted image node.
     #[cfg(target_arch = "wasm32")]
     image: Option<web_sys::Element>,
@@ -57,6 +59,12 @@ impl ImageArtifact {
             context: None,
         }
     }
+    /// Reuse the native image owner for a literal SVG resource.
+    pub(super) fn for_svg(host: Rc<dyn AttachmentHost>) -> Self {
+        let artifact = Self::new(host);
+        artifact.body.borrow_mut().svg = true;
+        artifact
+    }
     /// Wake the last frame after edits.
     fn repaint(&self) {
         if let Some(context) = &self.context {
@@ -95,7 +103,7 @@ impl ImageArtifact {
         if !self.changed && muted == self.muted {
             return;
         }
-        let source = if self.content.starts_with("data:") {
+        let source = if self.body.borrow().svg || self.content.starts_with("data:") {
             self.content.clone()
         } else {
             format!("data:{};base64,{}", self.mime(), self.content)

@@ -27,7 +27,7 @@ fn excel_factory_and_fields_follow_current_artifact() {
         assert_eq!(view.filename(), name);
         assert_eq!(view.content(), "");
     }
-    for name in ["a.html", "a.svg", "a.md", "a.docx"] {
+    for name in ["a.html", "a.docx"] {
         assert!(create_artifact_element(name, "", host.clone()).is_err());
     }
     let mut view = ExcelArtifact::new(host);

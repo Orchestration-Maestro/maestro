@@ -17,3 +17,6 @@ pub mod copy_button;
 pub mod code_block;
 /// Native Markdown with highlighted code and math.
 pub mod markdown_block;
+
+/// Retained preview/source selection.
+pub mod preview_code_toggle;

@@ -30,6 +30,9 @@ pub(super) fn mount(
     body: &Rc<RefCell<Body>>,
 ) -> Result<ReadingRoot, AttachmentUiError> {
     let root = element(document, "pre", "maestro-text-artifact")?;
+    if body.borrow().wrap {
+        root.set_class_name("maestro-text-artifact maestro-markdown-source");
+    }
     let style = element(document, "style", "")?;
     let syntax = maestro_theme::highlight_css()
         .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?;

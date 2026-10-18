@@ -170,6 +170,36 @@ impl Frame {
         output.textures_delta.clear();
         result.map(|()| output)
     }
+    /// Activate one measured header endpoint with the expected control count.
+    /// # Panics
+    /// Panics if the controlled frame fails or the header has unexpected controls.
+    pub fn activate_header(
+        &self,
+        view: &mut dyn ArtifactElement,
+        index: usize,
+        count: usize,
+    ) -> egui::FullOutput {
+        self.draw(view, true, vec![]).unwrap();
+        let mut controls = self.context.interactive_rects_last_pass();
+        controls.sort_by(|a, b| a.left().total_cmp(&b.left()));
+        assert_eq!(controls.len(), count);
+        if count == 2 {
+            assert!(controls[0].right() < controls[1].left());
+        }
+        let pos = controls[index].center();
+        self.draw(
+            view,
+            true,
+            super::session_header_support::pointer(pos, true),
+        )
+        .unwrap();
+        self.draw(
+            view,
+            true,
+            super::session_header_support::pointer(pos, false),
+        )
+        .unwrap()
+    }
     /// Activate the actual header using pointer press and release.
     /// # Errors
     /// Returns decoding, drawing or platform failures.
@@ -216,6 +246,20 @@ impl Frame {
         caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
         events: Vec<egui::Event>,
     ) -> Result<egui::FullOutput, maestro_web::browser::attachment_content::AttachmentUiError> {
+        self.draw_panel_observing(panel, caller, events, |_| {})
+    }
+    /// Observe renderer uploads before the drawing harness releases them.
+    /// # Errors
+    /// Propagates the reached panel failure.
+    /// # Panics
+    /// Panics for an invalid controlled pack.
+    pub fn draw_panel_observing(
+        &self,
+        panel: &maestro_web::ArtifactsPanel,
+        caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
+        events: Vec<egui::Event>,
+        observe: impl FnOnce(&egui::FullOutput),
+    ) -> Result<egui::FullOutput, maestro_web::browser::attachment_content::AttachmentUiError> {
         let presentation = self.pack.presentation(self.mode).unwrap();
         let mut result = Ok(());
         let mut output = self.context.run_ui(
@@ -236,6 +280,7 @@ impl Frame {
                 );
             },
         );
+        observe(&output);
         output.textures_delta.clear();
         result.map(|()| output)
     }

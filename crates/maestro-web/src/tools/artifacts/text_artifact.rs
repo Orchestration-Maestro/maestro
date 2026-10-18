@@ -6,6 +6,17 @@ use crate::{
 };
 use std::{cell::RefCell, rc::Rc};
 
+/// Fixed source policy of an artifact family.
+#[derive(Clone, Copy, Default)]
+pub(super) enum SourceProfile {
+    /// Filename-classified text.
+    #[default]
+    Text,
+    /// Markdown source.
+    Markdown,
+    /// XML source.
+    Svg,
+}
 /// Prepared native body, recomputed only after a field edit.
 #[derive(Default)]
 struct Body {
@@ -15,6 +26,9 @@ struct Body {
     text: String,
     /// Escaped highlighted fragment when classification succeeded.
     html: Option<String>,
+    /// Markdown source wraps without changing its literal text.
+    #[cfg(target_arch = "wasm32")]
+    wrap: bool,
     /// Stable code node retained across edits.
     #[cfg(target_arch = "wasm32")]
     code: Option<web_sys::Element>,
@@ -23,6 +37,8 @@ struct Body {
 pub struct TextArtifact {
     /// Authored filename.
     filename: String,
+    /// Fixed source family.
+    profile: SourceProfile,
     /// Original content.
     content: String,
     /// Native effects owner.
@@ -43,11 +59,23 @@ pub struct TextArtifact {
     context: Option<egui::Context>,
 }
 impl TextArtifact {
+    /// Retain one source owner under its fixed family policy.
+    pub(super) fn with_profile(host: Rc<dyn AttachmentHost>, profile: SourceProfile) -> Self {
+        let mut artifact = Self::new(host);
+        artifact.profile = profile;
+        #[cfg(target_arch = "wasm32")]
+        {
+            artifact.body.borrow_mut().wrap = matches!(profile, SourceProfile::Markdown);
+        }
+        artifact
+    }
+
     /// Start with empty filename and content using the supplied native host.
     #[must_use]
     pub fn new(host: Rc<dyn AttachmentHost>) -> Self {
         Self {
             filename: String::new(),
+            profile: SourceProfile::Text,
             content: String::new(),
             host,
             id: attachment_content::identity(),
@@ -67,6 +95,11 @@ impl TextArtifact {
     }
     /// Classify the last literal filename segment.
     fn language(&self) -> Option<&'static str> {
+        match self.profile {
+            SourceProfile::Markdown => return Some("markdown"),
+            SourceProfile::Svg => return Some("xml"),
+            SourceProfile::Text => {}
+        }
         Some(match super::extension(&self.filename).as_str() {
             "js" | "javascript" => "javascript",
             "ts" | "typescript" => "typescript",
@@ -111,6 +144,11 @@ impl TextArtifact {
     }
     /// Select text download media type without inferring it from content.
     fn mime(&self) -> &'static str {
+        match self.profile {
+            SourceProfile::Markdown => return "text/markdown",
+            SourceProfile::Svg => return "image/svg+xml",
+            SourceProfile::Text => {}
+        }
         match super::extension(&self.filename).as_str() {
             "svg" => "image/svg+xml",
             "md" | "markdown" => "text/markdown",
@@ -190,15 +228,27 @@ impl ArtifactElement for TextArtifact {
                 copy.text.clone_from(&self.content);
                 self.copy_changed = false;
             }
-            copy.title = view.i18n.text("Copy")?;
+            copy.title = view.i18n.text(match self.profile {
+                SourceProfile::Text => "Copy",
+                SourceProfile::Markdown => "Copy Markdown",
+                SourceProfile::Svg => "Copy SVG",
+            })?;
             copy.render(ui, view.i18n, view.presentation)?;
         }
-        download_button::draw(
+        download_button::draw_titled(
             ui,
             view,
             self.host.as_ref(),
             &self.filename,
-            (self.mime(), self.content.as_bytes()),
+            (
+                self.mime(),
+                self.content.as_bytes(),
+                match self.profile {
+                    SourceProfile::Text => "Download",
+                    SourceProfile::Markdown => "Download Markdown",
+                    SourceProfile::Svg => "Download SVG",
+                },
+            ),
         )
     }
     fn render(

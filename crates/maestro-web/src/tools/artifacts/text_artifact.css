@@ -10,3 +10,8 @@
 .maestro-text-artifact code {
   font-family: inherit;
 }
+
+.maestro-markdown-source {
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}

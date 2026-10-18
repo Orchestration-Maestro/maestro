@@ -1,12 +1,15 @@
 //! Actual-document source and image artifacts through the retained panel boundary.
 #![cfg(all(test, target_arch = "wasm32"))]
+#[cfg(test)]
 pub mod reading_browser_support;
+#[cfg(test)]
 pub mod support;
 #[path = "artifact_support/text_image.rs"]
+#[cfg(test)]
 pub mod text_image_support;
 #[cfg(test)]
 mod tests {
-    use crate::reading_browser_support::{View, js};
+    use crate::reading_browser_support::{View, check, event, js, quoted};
     use crate::text_image_support::corpus;
     use wasm_bindgen::prelude::*;
 
@@ -21,20 +24,6 @@ mod tests {
         let mut view = View::new("a.png", content);
         view.element.set_filename(filename.into());
         view
-    }
-    /// Evaluate one retained native observation.
-    fn check(code: &str) {
-        assert!(js(code).as_bool().unwrap(), "{code}");
-    }
-    /// Supply literal source text safely to native observation code.
-    fn quoted(text: &str) -> String {
-        serde_json::to_string(text).unwrap()
-    }
-    /// Wait for a native event registered before the operation that can emit it.
-    async fn event(promise: JsValue) {
-        wasm_bindgen_futures::JsFuture::from(js_sys::Promise::from(promise))
-            .await
-            .unwrap();
     }
     /// Native syntax spans share the selected pack's actual stylesheet and typeface.
     #[wasm_bindgen]

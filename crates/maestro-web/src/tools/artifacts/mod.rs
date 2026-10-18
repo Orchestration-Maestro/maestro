@@ -3,7 +3,9 @@ pub mod artifact_element;
 pub mod excel_artifact;
 pub mod generic_artifact;
 pub mod image_artifact;
+pub mod markdown_artifact;
 pub mod pdf_artifact;
+pub mod svg_artifact;
 pub mod text_artifact;
 use crate::browser::attachment_content::{AttachmentHost, AttachmentUiError};
 use artifact_element::ArtifactElement;
@@ -149,6 +151,9 @@ impl ArtifactsPanel {
         } else {
             let mut element = create_artifact_element(filename, content, Rc::clone(&self.host))?;
             element.set_visibility(false, None)?;
+            if self.connected.get() {
+                element.connected_callback()?;
+            }
             self.elements
                 .borrow_mut()
                 .insert(filename.into(), Rc::new(RefCell::new(Some(element))));
@@ -182,7 +187,11 @@ impl ArtifactsPanel {
         P: Clone + std::ops::Deref,
         P::Target: ArtifactPresentation,
     {
-        self.connected.set(true);
+        if !self.connected.replace(true) {
+            for (_, element) in self.elements() {
+                with_element(&element, |element| element.connected_callback())?;
+            }
+        }
         if caller.active_filename().is_none_or(|name| name.is_empty()) {
             let first = caller
                 .artifacts()
@@ -205,7 +214,11 @@ impl ArtifactsPanel {
     /// # Errors
     /// Returns retained-visibility or incompatible view-borrow failures.
     pub fn disconnected_callback(&self) -> Result<(), AttachmentUiError> {
-        self.connected.set(false);
+        if self.connected.replace(false) {
+            for (_, element) in self.elements() {
+                with_element(&element, |element| element.disconnected_callback())?;
+            }
+        }
         self.visibility(None, false)?;
         self.repaint();
         Ok(())
@@ -236,6 +249,8 @@ pub fn create_artifact_element(
     host: Rc<dyn AttachmentHost>,
 ) -> Result<Box<dyn ArtifactElement>, AttachmentUiError> {
     let mut element: Box<dyn ArtifactElement> = match get_file_type(filename) {
+        FileType::Markdown => Box::new(markdown_artifact::MarkdownArtifact::new(host)),
+        FileType::Svg => Box::new(svg_artifact::SvgArtifact::new(host)),
         FileType::Text => Box::new(text_artifact::TextArtifact::new(host)),
         FileType::Image => Box::new(image_artifact::ImageArtifact::new(host)),
         FileType::Excel => Box::new(excel_artifact::ExcelArtifact::new(host)),

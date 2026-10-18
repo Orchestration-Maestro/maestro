@@ -69,19 +69,21 @@ pub(super) enum Update {
 pub(super) fn content(
     document: &Rc<Document>,
     ids: Vec<egui::Id>,
-    (thinking, slot): (bool, &Rc<RefCell<Weak<Mounted>>>),
+    (thinking, padded, slot): (bool, bool, &Rc<RefCell<Weak<Mounted>>>),
     update: Update,
 ) -> Rc<ReadingContent> {
     #[cfg(target_arch = "wasm32")]
     {
         let (document, slot) = (Rc::clone(document), Rc::clone(slot));
         Rc::new(ReadingContent {
-            mount: Rc::new(move |dom| mount(dom, &document, &ids, (thinking, &slot), update)),
+            mount: Rc::new(move |dom| {
+                mount(dom, &document, &ids, (thinking, padded, &slot), update)
+            }),
         })
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        let _ = (document, ids, thinking, slot, update);
+        let _ = (document, ids, thinking, padded, slot, update);
         Rc::new(ReadingContent {})
     }
 }
@@ -91,11 +93,19 @@ fn mount(
     dom: &web_sys::Document,
     document: &Document,
     ids: &[egui::Id],
-    (thinking, owner): (bool, &Rc<RefCell<Weak<Mounted>>>),
+    (thinking, padded, owner): (bool, bool, &Rc<RefCell<Weak<Mounted>>>),
     update: Update,
 ) -> Result<ReadingRoot, AttachmentUiError> {
     crate::browser::math_assets::install(dom)?;
-    let flow = element(dom, "div", "maestro-markdown-root")?;
+    let flow = element(
+        dom,
+        "div",
+        if padded {
+            "maestro-markdown-root maestro-artifact-padding"
+        } else {
+            "maestro-markdown-root"
+        },
+    )?;
     flow.set_attribute("style", "display:flow-root")
         .map_err(|e| host_error(&e))?;
     let style = code::styles(dom)?;

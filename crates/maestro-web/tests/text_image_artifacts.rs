@@ -7,7 +7,7 @@ pub mod support;
 pub mod text_image_support;
 use artifact_support::Frame;
 use maestro_web::{ArtifactElement, tools::artifacts::create_artifact_element};
-use session_header_support::{Host, pointer};
+use session_header_support::Host;
 use std::rc::Rc;
 
 /// Recognized text and images install usable retained bodies.
@@ -26,7 +26,7 @@ fn artifact_factory_installs_text_and_image_views() {
     ] {
         frame.draw(view.as_mut(), false, vec![]).unwrap();
     }
-    for name in ["a.html", "a.svg", "a.md", "a.docx"] {
+    for name in ["a.html", "a.docx"] {
         assert!(create_artifact_element(name, "", host.clone()).is_err());
     }
 }
@@ -131,17 +131,6 @@ fn text_body_never_reports_highlighter_failures() {
         assert_eq!(engine.requests.borrow().len(), usize::from(!unsupported));
     }
 }
-/// Activate the two independent horizontal header slots using actual frame input.
-fn activate(frame: &Frame, view: &mut dyn ArtifactElement, index: usize) -> egui::FullOutput {
-    frame.draw(view, true, vec![]).unwrap();
-    let mut rects = frame.context.interactive_rects_last_pass();
-    rects.sort_by(|a, b| a.left().total_cmp(&b.left()));
-    assert_eq!(rects.len(), 2);
-    assert!(rects[0].right() < rects[1].left());
-    let pos = rects[index].center();
-    frame.draw(view, true, pointer(pos, true)).unwrap();
-    frame.draw(view, true, pointer(pos, false)).unwrap()
-}
 /// Copy and download consume literal values through distinct controls.
 #[test]
 fn text_header_copies_and_downloads_original_text() {
@@ -151,7 +140,7 @@ fn text_header_copies_and_downloads_original_text() {
         let mut view = TextArtifact::new(host.clone());
         view.set_filename(case.input.filename);
         view.set_content(case.input.content);
-        let output = activate(&frame, &mut view, 0);
+        let output = frame.activate_header(&mut view, 0, 2);
         let names: Vec<_> = output
             .platform_output
             .events
@@ -167,7 +156,7 @@ fn text_header_copies_and_downloads_original_text() {
         if [1, 2, 6].contains(&index) {
             continue;
         }
-        let output = activate(&frame, &mut view, 1);
+        let output = frame.activate_header(&mut view, 1, 2);
         assert!(output.platform_output.events.iter().any(|event| matches!(event, egui::output::OutputEvent::Clicked(info) if info.label.as_deref() == Some(&case.output.download.title))));
         assert_eq!(
             host.downloads.borrow().as_slice(),
@@ -191,7 +180,7 @@ fn text_download_saves_literal_text_bytes() {
         let mut view = TextArtifact::new(host.clone());
         view.set_filename(case.input.filename);
         view.set_content(case.input.content);
-        let output = activate(&frame, &mut view, 1);
+        let output = frame.activate_header(&mut view, 1, 2);
         assert!(output.platform_output.events.iter().any(|event| matches!(event, egui::output::OutputEvent::Clicked(info) if info.label.as_deref() == Some(&case.output.download.title))));
         assert_eq!(
             host.downloads.borrow().as_slice(),
@@ -211,7 +200,7 @@ fn text_download_mime_tracks_the_last_extension() {
         let host = Rc::new(Host::default());
         let mut view = TextArtifact::new(host.clone());
         view.set_filename(case.input.filename.clone());
-        activate(&frame, &mut view, 1);
+        frame.activate_header(&mut view, 1, 2);
         assert_eq!(
             host.downloads.borrow().as_slice(),
             &[(case.input.filename, case.output, vec![])]
@@ -225,7 +214,7 @@ fn text_copy_feedback_survives_redraws() {
     let mut view = TextArtifact::new(host.clone());
     let frame = Frame::default();
     view.set_content("before".into());
-    activate(&frame, &mut view, 0);
+    frame.activate_header(&mut view, 0, 2);
     host.results.borrow()[0].set(Some(true));
     host.run_work();
     for _ in 0..2 {
@@ -238,7 +227,7 @@ fn text_copy_feedback_survives_redraws() {
     host.advance(2000);
     assert_eq!(host.live(), 0);
     view.set_content("after".into());
-    activate(&frame, &mut view, 0);
+    frame.activate_header(&mut view, 0, 2);
     assert_eq!(host.copies.borrow().as_slice(), &["before", "after"]);
 }
 /// Every successful payload reaches the original-byte download boundary.

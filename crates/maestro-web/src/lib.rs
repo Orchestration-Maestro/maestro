@@ -71,3 +71,6 @@ pub use maestro_app::{
 pub use tools::javascript_repl::JAVASCRIPT_REPL_TOOL;
 
 pub use tools::artifacts::{image_artifact::ImageArtifact, text_artifact::TextArtifact};
+
+/// Editable document artifact views.
+pub use tools::artifacts::{markdown_artifact::MarkdownArtifact, svg_artifact::SvgArtifact};

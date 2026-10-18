@@ -54,6 +54,8 @@ pub struct MarkdownBlock {
     pub is_thinking: bool,
     /// Show tag-like text literally instead of as markup.
     pub escape_html: bool,
+    /// Include document padding inside the native scroll viewport.
+    padded: bool,
     /// Replaceable platform effects.
     host: Rc<dyn AttachmentHost>,
     /// Stable native surface identity.
@@ -69,10 +71,25 @@ impl MarkdownBlock {
             content: String::new(),
             is_thinking: false,
             escape_html: true,
+            padded: false,
             host,
             id: crate::browser::attachment_content::identity(),
             published: None,
         }
+    }
+    /// Retain artifact padding inside the shared scrollable document.
+    pub(crate) fn for_artifact(host: Rc<dyn AttachmentHost>) -> Self {
+        let mut block = Self::new(host);
+        block.padded = true;
+        block
+    }
+    /// Forward retained containing-owner admission to the native root.
+    pub(crate) fn set_visibility(
+        &self,
+        visible: bool,
+        modal: Option<egui::Id>,
+    ) -> Result<(), AttachmentUiError> {
+        self.host.set_retained_visibility(self.id, visible, modal)
     }
     /// Prepare the current source, replacing the published document only on success.
     fn prepare<F: ?Sized>(
@@ -102,7 +119,7 @@ impl MarkdownBlock {
             content: browser::content(
                 &document,
                 ids,
-                (self.is_thinking, &mounted),
+                (self.is_thinking, self.padded, &mounted),
                 browser::Update::Replace,
             ),
             mounted,
@@ -138,7 +155,7 @@ impl MarkdownBlock {
             browser::content(
                 &target.document,
                 target.buttons.iter().map(|button| button.id).collect(),
-                (self.is_thinking, &mounted),
+                (self.is_thinking, self.padded, &mounted),
                 browser::Update::Presentation,
             )
         });

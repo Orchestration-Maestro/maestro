@@ -12,8 +12,18 @@ pub(crate) fn draw(
     filename: &str,
     data: (&str, &[u8]),
 ) -> Result<(), AttachmentUiError> {
+    draw_titled(ui, view, host, filename, (data.0, data.1, "Download"))
+}
+/// Draw the same byte control under the supplied localized title key.
+pub(crate) fn draw_titled(
+    ui: &mut egui::Ui,
+    view: ArtifactView<'_>,
+    host: &dyn AttachmentHost,
+    filename: &str,
+    data: (&str, &[u8], &str),
+) -> Result<(), AttachmentUiError> {
     attachment_content::style(ui, view.presentation)?;
-    let title = view.i18n.text("Download")?;
+    let title = view.i18n.text(data.2)?;
     let response = attachment_content::ghost_sized(ui, view.presentation, "Download", SIZE)?
         .on_hover_text(&title);
     response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Button, true, &title));
