@@ -294,7 +294,7 @@ fn check_materialized_arrays(sheet: &super::WorkSheet, size: usize, work: usize)
 }
 
 thread_local! {
-    /// Bytes written while assembling owned expression fragments and final text.
+    /// Bytes visited by assembly scans, case folding and fragment comparisons.
     pub(super) static ASSEMBLY_SCAN: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
     /// Bytes written by expression assembly, including normalization temporaries.
     pub(super) static ASSEMBLY_WORK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
