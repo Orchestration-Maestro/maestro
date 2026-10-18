@@ -224,6 +224,7 @@ invalid):
 | `models` | B (allowed set) | Model patterns in the `enabledModels` syntax. Every model selection must match. |
 | `required` | A | Paths relative to the release root. A resource at or under a required path is required. Standards-area instructions are always required. |
 | `roles` | L/B per role | `locked` (`model`, `thinking`, `tools`), `bounds.thinking`, `models` for one role (M12). |
+| `credentialHeaders` | Credential classification | Header names added to the default credential list (M7); additions from every selected area combine. |
 
 Governed keys and what the manifest may do with them:
 
@@ -326,9 +327,14 @@ its own effect.
    dynamic provider removal restore the correct underlying layers. Under a
    `providers` lock the user file is ignored with a diagnostic and extension
    provider registration is refused.
-2. A manifest `apiKey` or header value must be a command (`!…`) or an environment
-   variable name (upper-case letters, digits, underscores); any other value makes
-   the manifest invalid. Local credentials and key flags are unchanged.
+2. A manifest `apiKey` or credential-header value must be a command (`!…`) or an
+   environment variable name (upper-case letters, digits, underscores); any other
+   value in those positions makes the manifest invalid. Credential header names
+   match case-insensitively; the default list is `Authorization` and
+   `Proxy-Authorization`, extended by `credentialHeaders` in the manifest's policy.
+   Other headers accept literal values, including `Content-Type: application/json`,
+   and keep ordinary environment and command resolution. Local credentials and key
+   flags are unchanged.
 3. **Selection.** Every path that selects a model passes `models`: the initial
    default, `--provider`/`--model`, `--models`, SDK options, `/model`, model
    cycling (scoped and unscoped candidates are filtered), RPC model commands,
@@ -414,8 +420,12 @@ accepted values on reload.
    bound, removes a lock or a required entry, or adds an extension or an MCP server.
    It is computed by composing the current and the candidate release and comparing
    them.
-5. The candidate is installed for inspection in the temporary package scope; the
-   active release, its files and the pin do not change before approval.
+5. Inspection only fetches and reads the candidate's files, manifest and requested
+   permissions in the temporary package scope. It reuses the package owner's fetch
+   and checkout steps without their install step; it runs no lifecycle script,
+   build step or component. Normal installation, including lifecycle steps, runs
+   through ordinary acquisition only after approval. Rejection or cancellation
+   leaves the active files, pin and settings byte-identical.
 6. By default the newer release is applied only after the user confirms. With
    `manifestAutoUpdate: true` it applies without asking unless it grows permissions,
    which always asks. Without an interactive terminal a release is proposed, never
@@ -492,6 +502,12 @@ manifest server.
   organization configuration is a fixture.
 - Every refused request asserts that memory, pending edits, files, session
   history and emitted events are unchanged, not only the error text.
+- Inspect a candidate whose lifecycle script writes a sentinel file, then reject
+  or cancel it: the sentinel never appears and the active files, pin and settings
+  stay byte-identical. An approved candidate installs through the ordinary flow.
+- Manifest model-file tests accept a literal non-credential header, reject literal
+  API keys and credential headers (including mixed-case names and policy-added
+  names), and accept environment or command references in credential positions.
 - Internal-mode equality is tested: with no selection, resources, prompt, model,
   tools, settings writes and JSON/RPC output equal the foundation behaviour, and no
   manifest path is read.
