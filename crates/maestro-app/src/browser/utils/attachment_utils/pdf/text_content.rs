@@ -1,7 +1,7 @@
 //! Logical text shows decoded through the native font interpreter.
 use hayro::hayro_syntax::{
     content::{TypedIter, ops::TypedInstruction},
-    object::{Array, Dict, Name, Object},
+    object::{Array, Dict, Name, Object, ObjectIdentifier},
     page::{Page, Resources},
 };
 use hayro::kurbo::{Affine, BezPath, Rect};
@@ -10,7 +10,10 @@ use hayro_interpret::{
     InterpreterCache, InterpreterSettings, SoftMask, font::GlyphRun, hayro_cmap::BfString,
     interpret,
 };
-use std::{collections::HashMap, fmt::Write};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Write,
+};
 
 /// Resource namespace that selects a font.
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
@@ -48,6 +51,8 @@ struct Shows<'a> {
     batches: Vec<Batch<'a>>,
     /// Resource dictionary identity, raw name and resource namespace.
     by_font: HashMap<(usize, Vec<u8>, FontSource), usize>,
+    /// Form streams executing on the current traversal path.
+    active_forms: HashSet<ObjectIdentifier>,
     /// Number of original logical shows.
     count: usize,
 }
@@ -161,7 +166,7 @@ impl<'a> Shows<'a> {
         }
     }
 
-    /// Enter a Form's resource scope; the syntax reader owns indirect cycles.
+    /// Enter a Form's resource scope unless its stream is already executing.
     fn form(&mut self, resources: &Resources<'a>, name: &Name<'_>, font: Option<usize>) {
         let Some(stream) = resources.get_x_object(name) else {
             return;
@@ -178,9 +183,14 @@ impl<'a> Shows<'a> {
             .dict()
             .get::<Dict<'_>>(b"Resources")
             .map_or_else(|| resources.clone(), Resources::new);
+        let identity = stream.obj_id();
+        if !self.active_forms.insert(identity) {
+            return;
+        }
         self.state(font, "q\n");
         self.walk(TypedIter::new(decoded.as_ref()), &child, font);
         self.state(font, "Q\n");
+        self.active_forms.remove(&identity);
     }
 }
 

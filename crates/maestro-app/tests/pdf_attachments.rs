@@ -219,6 +219,8 @@ fn pdf_font_and_text_corpus_keeps_approved_engine_results() {
             "runs.json".into(),
             "text-shows.json".into(),
             "LICENSE".into(),
+            "owned-inherited-form-cycle.pdf".into(),
+            "owned-shared-form-cycle.pdf".into(),
         ])
         .collect();
     for entry in std::fs::read_dir(support::pdf::path("")).unwrap() {
@@ -403,6 +405,28 @@ fn pdf_form_cycles_stop_without_dropping_repeated_finite_forms() {
         repeated.extracted_text.as_deref(),
         Some(
             "<pdf filename=\"show-form-repeat.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+        )
+    );
+}
+
+#[test]
+fn pdf_inherited_resource_form_cycles_stop_and_allow_later_invocations() {
+    let attachment = support::pdf::load("owned-inherited-form-cycle.pdf").unwrap();
+    assert_eq!(
+        attachment.extracted_text.as_deref(),
+        Some(
+            "<pdf filename=\"owned-inherited-form-cycle.pdf\">\n<page number=\"1\">\nP P\n</page>\n</pdf>"
+        )
+    );
+}
+
+#[test]
+fn pdf_shared_resource_form_cycles_stop_and_allow_later_invocations() {
+    let attachment = support::pdf::load("owned-shared-form-cycle.pdf").unwrap();
+    assert_eq!(
+        attachment.extracted_text.as_deref(),
+        Some(
+            "<pdf filename=\"owned-shared-form-cycle.pdf\">\n<page number=\"1\">\nP P P P P P\n</page>\n</pdf>"
         )
     );
 }

@@ -38,6 +38,8 @@ Each page contributes `\n<page number="N">\nTEXT\n</page>` inside the literal
 filtered by the shared whitespace policy without trimming retained text, then
 joined with one space. Owned traversal follows logical text shows and their font
 resource scopes; the registry interpreter decodes the original string bytes.
+An active Form stream cannot invoke itself again until it returns; separate
+invocations and finite nesting remain admissible.
 Outlined text contributes once per show, while independent repeated shows remain
 separate, including at identical positions. Invisible OCR, clip-only text and
 text in hidden optional layers are retained independently of painting. Page order
