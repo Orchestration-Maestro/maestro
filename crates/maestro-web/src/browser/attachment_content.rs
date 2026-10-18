@@ -353,6 +353,16 @@ pub(crate) fn ghost_labeled(
     (name, label): (&str, Option<&str>),
     size: egui::Vec2,
 ) -> Result<egui::Response, AttachmentUiError> {
+    ghost_labeled_tinted(ui, p, (name, label), size, color(p, "text")?)
+}
+/// Draw a shared ghost control with a caller-selected idle glyph tint.
+pub(crate) fn ghost_labeled_tinted(
+    ui: &mut egui::Ui,
+    p: &BrandPresentation<'_>,
+    (name, label): (&str, Option<&str>),
+    size: egui::Vec2,
+    tint: egui::Color32,
+) -> Result<egui::Response, AttachmentUiError> {
     let response = ui
         .allocate_response(size, egui::Sense::click())
         .on_hover_cursor(egui::CursorIcon::PointingHand);
@@ -385,7 +395,11 @@ pub(crate) fn ghost_labeled(
         ui,
         egui::Rect::from_center_size(center, egui::vec2(16., 16.)),
         name,
-        color(p, "text")?,
+        if response.hovered() || response.has_focus() {
+            color(p, "text")?
+        } else {
+            tint
+        },
     )?;
     if let Some(label) = label {
         ui.painter().text(

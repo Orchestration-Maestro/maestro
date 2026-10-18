@@ -1,7 +1,7 @@
 # Artifact panels and views
 
 `maestro_web::tools::artifacts::create_artifact_element` constructs an owned
-`Box<dyn maestro_web::ArtifactElement>` for text, images, PDF, spreadsheets or an unrecognized filename suffix.
+`Box<dyn maestro_web::ArtifactElement>` for text, images, Markdown, SVG, PDF, spreadsheets or an unrecognized filename suffix.
 Other recognized specialized formats return a presentation error until their
 viewers are installed; they never silently become generic downloads.
 
@@ -89,8 +89,7 @@ or partial content-only dimming is included.
 ## Remaining viewers
 
 Specialized viewers remain in
-[#797](https://github.com/Orchestration-Maestro/maestro/issues/797),
-[#818](https://github.com/Orchestration-Maestro/maestro/issues/818) and
+[#797](https://github.com/Orchestration-Maestro/maestro/issues/797) and
 [#819](https://github.com/Orchestration-Maestro/maestro/issues/819).
 HTML runtime-provider composition remains in
 [#753](https://github.com/Orchestration-Maestro/maestro/issues/753).
@@ -179,3 +178,36 @@ no nonempty `base64,` payload save zero bytes. Folded payloads keep every line;
 invalid base64 fails before saving and never prevents the independent body from
 rendering. Image MIME follows the final extension: JPEG, GIF, WebP, SVG, BMP and
 ICO have their standard types, with PNG as the default.
+
+## Markdown and SVG artifacts
+
+`maestro_web::MarkdownArtifact` and `maestro_web::SvgArtifact` start with empty
+fields and preview selected. The factory installs Markdown for `md`/`markdown`
+and SVG for `svg`, using the application's case-insensitive suffix policy.
+Each retained view has its own preview/source selection; content and filename
+edits preserve that selection. The localized header order is preview, code,
+copy, download, with ordinary keyboard and clipped-pointer admission.
+
+Markdown preview delegates to the [shared Markdown block](transcript.md#native-markdown-and-code) with
+padded, selectable content, code-copy controls and math. SVG preview uses an
+inert native image, not live authored markup: scripts in SVG do not execute.
+The image fills the padded body with contained document pixels and native pointer
+interaction. Empty SVG has no visible image; malformed SVG keeps the native image
+failure rather than introducing an error panel or raster-image fallback.
+
+Both headers copy original text and download its UTF-8 bytes, including whitespace,
+Unicode and base64-looking strings. MIME is fixed to `text/markdown` or
+`image/svg+xml`; filenames remain literal. Source delegates to the existing
+highlighted listing: Markdown always requests Markdown and wraps long words,
+while SVG always requests XML and scrolls long lines. Renaming never changes
+these language or wrapping policies. The existing [copy control](transcript.md) owns
+success feedback; no second timer or clipboard implementation is installed.
+
+SVG owns one Blob URL per changed nonempty content value. Equal assignments and
+idle frames keep it; replacement revokes the old URL before creating its successor,
+and empty content clears it. Tab changes, collapse, modal placement and code mode
+retain the URL. Real `ArtifactElement`/panel disconnection revokes it; reconnection
+rebuilds it from retained text, even when code remains selected. Final owner release
+removes its native surfaces and URL without affecting another view. These attachment
+callbacks are distinct from retained visibility; the other views inherit no-op
+callbacks.

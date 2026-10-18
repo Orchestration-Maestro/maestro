@@ -74,6 +74,14 @@ impl MarkdownBlock {
             published: None,
         }
     }
+    /// Forward retained containing-owner admission to the native root.
+    pub(crate) fn set_visibility(
+        &self,
+        visible: bool,
+        modal: Option<egui::Id>,
+    ) -> Result<(), AttachmentUiError> {
+        self.host.set_retained_visibility(self.id, visible, modal)
+    }
     /// Prepare the current source, replacing the published document only on success.
     fn prepare<F: ?Sized>(
         &self,

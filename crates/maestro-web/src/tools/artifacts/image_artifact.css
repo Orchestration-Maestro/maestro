@@ -13,3 +13,8 @@
   object-fit: contain;
   border-radius: 0;
 }
+
+.maestro-svg-artifact img:not([hidden]) {
+  width: 100%;
+  height: 100%;
+}

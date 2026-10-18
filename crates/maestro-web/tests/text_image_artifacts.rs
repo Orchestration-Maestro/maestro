@@ -26,7 +26,7 @@ fn artifact_factory_installs_text_and_image_views() {
     ] {
         frame.draw(view.as_mut(), false, vec![]).unwrap();
     }
-    for name in ["a.html", "a.svg", "a.md", "a.docx"] {
+    for name in ["a.html", "a.docx"] {
         assert!(create_artifact_element(name, "", host.clone()).is_err());
     }
 }

@@ -51,9 +51,9 @@ impl Host {
 impl AttachmentHost for Host {
     fn copy_to_clipboard(
         &self,
-        _: &str,
+        text: &str,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
-        unreachable!("unexpected clipboard operation")
+        self.native.copy_to_clipboard(text)
     }
     fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentUiError> {
         self.native.capture_focus()
@@ -193,7 +193,9 @@ impl View {
                 presentation: &p,
             };
             if header {
-                self.element.get_header_buttons(ui, v).unwrap();
+                ui.horizontal(|ui| self.element.get_header_buttons(ui, v))
+                    .inner
+                    .unwrap();
             } else {
                 self.element.render(ui, v).unwrap();
             }
@@ -291,4 +293,26 @@ pub fn click(pos: egui::Pos2) -> Vec<egui::Event> {
             modifiers: egui::Modifiers::NONE,
         },
     ]
+}
+
+/// Require one actual document observation.
+/// # Panics
+/// Panics when the observation is not true.
+pub fn check(code: &str) {
+    assert!(js(code).as_bool().unwrap(), "{code}");
+}
+/// Quote literal text at the document boundary.
+/// # Panics
+/// Panics if string serialization fails.
+#[must_use]
+pub fn quoted(text: &str) -> String {
+    serde_json::to_string(text).unwrap()
+}
+/// Await an already-created native promise.
+/// # Panics
+/// Panics if the native promise rejects.
+pub async fn event(promise: JsValue) {
+    wasm_bindgen_futures::JsFuture::from(js_sys::Promise::from(promise))
+        .await
+        .unwrap();
 }

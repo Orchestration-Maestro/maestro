@@ -1,0 +1,321 @@
+//! Markdown and SVG through the application, retained panel and artifact interface.
+#![cfg(test)]
+#![cfg(not(target_arch = "wasm32"))]
+pub mod artifact_support;
+pub mod highlighter_support;
+pub mod session_header_support;
+pub mod support;
+use artifact_support::panel::{Harness, Input};
+
+/// Filename policy installs specialized views through the actual application caller.
+#[test]
+fn artifact_factory_installs_markdown_and_svg_views() {
+    let harness = Harness::new(&Input::default());
+    for filename in ["a.md", "a.markdown", "A.MD", "a.svg", "a.txt", "a.png"] {
+        harness.command("create", filename, Some("YQ=="));
+        harness.caller.show_artifact(filename);
+        harness.draw().unwrap();
+        assert!(
+            harness
+                .caller
+                .artifacts()
+                .read()
+                .unwrap()
+                .contains_key(filename)
+        );
+        assert!(!harness.host.published.borrow().is_empty());
+    }
+    for mut view in [
+        Box::new(MarkdownArtifact::new(harness.host.clone())) as Box<dyn ArtifactElement>,
+        Box::new(SvgArtifact::new(harness.host.clone())),
+    ] {
+        assert_eq!((view.filename(), view.content()), ("", ""));
+        harness.frame.draw(view.as_mut(), false, vec![]).unwrap();
+    }
+    assert!(
+        maestro_web::tools::artifacts::create_artifact_element("a.html", "", harness.host).is_err()
+    );
+}
+
+#[path = "attachment_support/canvas_paint.rs"]
+pub mod canvas_paint;
+mod effects_support;
+pub mod markdown_svg_support;
+#[path = "artifact_support/text_image.rs"]
+pub mod text_image_support;
+use artifact_support::Frame;
+use maestro_web::{
+    ArtifactElement, MarkdownArtifact, SvgArtifact,
+    components::preview_code_toggle::{PreviewCodeToggle, ViewMode},
+};
+use markdown_svg_support::{click, corpus, locale};
+use std::rc::Rc;
+
+/// Draw the public toggle with real toolkit input and supplied branding.
+fn toggle_frame(
+    frame: &Frame,
+    toggle: &mut PreviewCodeToggle,
+    events: Vec<egui::Event>,
+    paint: &mut canvas_paint::Paint,
+) -> (Option<ViewMode>, egui::FullOutput) {
+    let mut transition = None;
+    let mut output = frame.context.run_ui(
+        egui::RawInput {
+            screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, frame.size)),
+            events,
+            ..Default::default()
+        },
+        |ui| {
+            transition = toggle
+                .render(
+                    ui,
+                    &frame.i18n,
+                    &frame.pack.presentation(frame.mode).unwrap(),
+                )
+                .unwrap();
+        },
+    );
+    paint.update(&output);
+    output.textures_delta.clear();
+    (transition, output)
+}
+/// Ordered actual interactive slots, never guessed coordinates.
+fn slots(context: &egui::Context) -> Vec<egui::Rect> {
+    let mut slots = context.interactive_rects_last_pass();
+    slots.sort_by(|a, b| a.left().total_cmp(&b.left()));
+    slots
+}
+/// Activate one of the installed view's four actual header controls.
+fn activate(frame: &Frame, view: &mut dyn ArtifactElement, index: usize) -> egui::FullOutput {
+    frame.draw(view, true, vec![]).unwrap();
+    let controls = slots(&frame.context);
+    assert_eq!(controls.len(), 4);
+    frame
+        .draw(view, true, click(controls[index].center()))
+        .unwrap()
+}
+/// Project the typed transition to the recorded event value.
+fn mode_name(mode: ViewMode) -> &'static str {
+    match mode {
+        ViewMode::Preview => "preview",
+        ViewMode::Code => "code",
+    }
+}
+/// User transitions exclude idle, repeated and programmatic selections.
+#[test]
+fn preview_toggle_reports_only_real_changes() {
+    for case in corpus().toggles {
+        let frame = Frame::default();
+        locale(&frame.i18n, &case.language);
+        let mut toggle = PreviewCodeToggle::new();
+        let mut paint = canvas_paint::Paint::default();
+        let mut transitions = Vec::new();
+        let mut states = Vec::new();
+        assert_eq!(
+            toggle_frame(&frame, &mut toggle, vec![], &mut paint).0,
+            None
+        );
+        states.push([
+            toggle.mode == ViewMode::Preview,
+            toggle.mode == ViewMode::Code,
+        ]);
+        for index in [0, 1, 1, 0] {
+            let position = slots(&frame.context)[index].center();
+            let (transition, output) =
+                toggle_frame(&frame, &mut toggle, click(position), &mut paint);
+            assert!(output.platform_output.events.iter().any(|event| matches!(event, egui::output::OutputEvent::Clicked(info) if info.label.as_ref() == Some(&case.titles[index]))));
+            transitions.extend(transition.map(mode_name));
+            states.push([
+                toggle.mode == ViewMode::Preview,
+                toggle.mode == ViewMode::Code,
+            ]);
+        }
+        assert_eq!(states, case.states);
+        assert_eq!(transitions, case.events);
+        let mut configured = PreviewCodeToggle::default();
+        configured.mode = ViewMode::Code;
+        assert_eq!(
+            toggle_frame(&frame, &mut configured, vec![], &mut paint).0,
+            None
+        );
+        assert_eq!(
+            [
+                configured.mode == ViewMode::Preview,
+                configured.mode == ViewMode::Code
+            ],
+            case.configured
+        );
+    }
+}
+/// Both independent actions receive every original byte and localized title.
+#[test]
+fn specialized_headers_keep_literal_bytes_and_titles() {
+    for case in corpus().content {
+        let host = Rc::new(effects_support::Host::default());
+        let frame = Frame::default();
+        locale(&frame.i18n, &case.language);
+        let mut view = maestro_web::tools::artifacts::create_artifact_element(
+            &case.filename,
+            &case.content,
+            host.clone(),
+        )
+        .unwrap();
+        for index in [2, 3] {
+            let output = activate(&frame, view.as_mut(), index);
+            assert!(output.platform_output.events.iter().any(|event| matches!(event, egui::output::OutputEvent::Clicked(info) if info.label.as_ref() == Some(&case.titles[index]))));
+        }
+        assert_eq!(host.copies.borrow().as_slice(), &[case.content]);
+        for result in host.results.borrow().iter() {
+            result.set(Some(true));
+        }
+        host.run_work();
+        host.advance(2000);
+        assert_eq!(host.live(), 0);
+        assert_eq!(
+            host.downloads.borrow().as_slice(),
+            &[(case.filename, case.mime, case.bytes)]
+        );
+    }
+}
+/// Source selection belongs to its view and persists across every kind of edit.
+#[test]
+fn artifact_modes_survive_edits_and_stay_independent() {
+    for svg in [false, true] {
+        let host = Rc::new(session_header_support::Host::default());
+        let engine = Rc::new(text_image_support::Highlighter::default());
+        let frame = Frame {
+            highlighter: engine.clone(),
+            ..Frame::default()
+        };
+        let mut view: Box<dyn ArtifactElement> = if svg {
+            Box::new(SvgArtifact::new(host.clone()))
+        } else {
+            Box::new(MarkdownArtifact::new(host.clone()))
+        };
+        assert_eq!((view.filename(), view.content()), ("", ""));
+        let mut sibling: Box<dyn ArtifactElement> = if svg {
+            Box::new(SvgArtifact::new(host))
+        } else {
+            Box::new(MarkdownArtifact::new(host))
+        };
+        activate(&frame, view.as_mut(), 1);
+        for (filename, text) in [
+            ("original", "one"),
+            ("renamed.txt", "one"),
+            ("renamed.txt", "two"),
+        ] {
+            view.set_filename(filename.into());
+            view.set_content(text.into());
+            frame.draw(view.as_mut(), false, vec![]).unwrap();
+            assert_eq!(
+                engine.requests.borrow().last().unwrap(),
+                &(text.into(), if svg { "xml" } else { "markdown" }.into())
+            );
+        }
+        let before = engine.requests.borrow().len();
+        sibling.set_content("ordinary".into());
+        frame.draw(sibling.as_mut(), false, vec![]).unwrap();
+        assert_eq!(engine.requests.borrow().len(), before);
+    }
+}
+/// Selected, hover and focus treatment survive tessellation and the final clip.
+#[test]
+fn preview_toggle_paints_selected_hover_and_focus() {
+    for frame in branded_frames() {
+        let mode = frame.mode;
+        let mut toggle = PreviewCodeToggle::new();
+        let mut paint = canvas_paint::Paint::default();
+        let output = toggle_frame(&frame, &mut toggle, vec![], &mut paint).1;
+
+        let controls = slots(&frame.context);
+        assert_eq!(controls.len(), 2);
+        let presentation = frame.pack.presentation(mode).unwrap();
+        let muted = egui::Color32::from_hex(presentation.colors["muted"])
+            .unwrap()
+            .to_array();
+        let text = egui::Color32::from_hex(presentation.colors["text"])
+            .unwrap()
+            .to_array();
+        let glyph = |r: egui::Rect| egui::Rect::from_center_size(r.center(), egui::vec2(16., 16.));
+        assert!(
+            paint
+                .region(&frame.context, &output.shapes, glyph(controls[0]))
+                .contains(&text)
+        );
+        assert!(
+            paint
+                .region(&frame.context, &output.shapes, glyph(controls[1]))
+                .contains(&muted)
+        );
+        let sample = |rect: egui::Rect| rect.shrink2(egui::vec2(12., 4.));
+        let preview = paint.region(&frame.context, &output.shapes, sample(controls[0]));
+        let code = paint.region(&frame.context, &output.shapes, sample(controls[1]));
+        assert_ne!(preview, code);
+        toggle.mode = ViewMode::Code;
+        let output = toggle_frame(&frame, &mut toggle, vec![], &mut paint).1;
+
+        assert_ne!(
+            preview,
+            paint.region(&frame.context, &output.shapes, sample(controls[0]))
+        );
+        hover_focus(&frame, &mut toggle, &mut paint, &output, &controls);
+    }
+}
+
+/// Both supplied packs in both supported modes, without invented brand values.
+fn branded_frames() -> Vec<Frame> {
+    ["brand.json", "packs/signal.json"]
+        .into_iter()
+        .flat_map(|path| {
+            [
+                maestro_theme::BrandMode::Dark,
+                maestro_theme::BrandMode::Light,
+            ]
+            .map(|mode| Frame {
+                mode,
+                pack: maestro_theme::load_brand_pack(
+                    &format!("{}/../../assets/brand/{path}", env!("CARGO_MANIFEST_DIR")),
+                    &maestro_theme::theme::NativeThemeOperations,
+                )
+                .unwrap(),
+                ..Frame::default()
+            })
+        })
+        .collect()
+}
+/// Compare hover and focus paint through the same final-clipped raster owner.
+fn hover_focus(
+    frame: &Frame,
+    toggle: &mut PreviewCodeToggle,
+    paint: &mut canvas_paint::Paint,
+    output: &egui::FullOutput,
+    controls: &[egui::Rect],
+) {
+    for control in controls {
+        let idle = paint.region(&frame.context, &output.shapes, *control);
+        let hovered = toggle_frame(
+            frame,
+            toggle,
+            vec![egui::Event::PointerMoved(control.center())],
+            paint,
+        )
+        .1;
+
+        assert_ne!(
+            idle,
+            paint.region(&frame.context, &hovered.shapes, *control)
+        );
+    }
+    for control in controls {
+        let events = markdown_svg_support::key(egui::Key::Tab)
+            .into_iter()
+            .chain([egui::Event::PointerGone])
+            .collect();
+        let focused = toggle_frame(frame, toggle, events, paint).1;
+        assert!(frame.context.memory(egui::Memory::focused).is_some());
+        assert_ne!(
+            paint.region(&frame.context, &focused.shapes, *control),
+            paint.region(&frame.context, &output.shapes, *control)
+        );
+    }
+}

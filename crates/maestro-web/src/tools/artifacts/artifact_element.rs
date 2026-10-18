@@ -45,4 +45,16 @@ pub trait ArtifactElement {
         ui: &mut egui::Ui,
         view: ArtifactView<'_>,
     ) -> Result<(), AttachmentUiError>;
+    /// Attach native resources without changing visibility.
+    /// # Errors
+    /// Returns native resource creation failures.
+    fn connected_callback(&mut self) -> Result<(), AttachmentUiError> {
+        Ok(())
+    }
+    /// Release attachment-scoped resources, retaining authored fields.
+    /// # Errors
+    /// Returns native resource release failures.
+    fn disconnected_callback(&mut self) -> Result<(), AttachmentUiError> {
+        Ok(())
+    }
 }

@@ -12,12 +12,19 @@ use wasm_bindgen::{JsCast as _, closure::Closure};
 /// Assign only differing attributes, keeping the failure source across frames.
 pub(super) fn sync(body: &Body) -> Result<(), wasm_bindgen::JsValue> {
     if let Some(image) = &body.image {
+        if body.svg && body.source.is_empty() {
+            image.remove_attribute("src")?;
+            image.set_attribute("hidden", "")?;
+        } else {
+            image.remove_attribute("hidden")?;
+        }
         let source = if body.failed {
             &body.fallback
         } else {
             &body.source
         };
-        if image.get_attribute("src").as_deref() != Some(source) {
+        if !(body.svg && source.is_empty()) && image.get_attribute("src").as_deref() != Some(source)
+        {
             image.set_attribute("src", source)?;
         }
         if image.get_attribute("alt").as_deref() != Some(&body.alt) {
@@ -32,6 +39,9 @@ pub(super) fn mount(
     body: &Rc<RefCell<Body>>,
 ) -> Result<ReadingRoot, AttachmentUiError> {
     let root = element(document, "div", "maestro-image-artifact")?;
+    if body.borrow().svg {
+        root.set_class_name("maestro-image-artifact maestro-svg-artifact");
+    }
     let style = element(document, "style", "")?;
     style.set_text_content(Some(include_str!("../image_artifact.css")));
     append(&root, &style)?;
@@ -52,13 +62,19 @@ pub(super) fn mount(
             wasm_bindgen::throw_val(error);
         }
     });
-    let listener = EventSubscription::new(image.unchecked_into(), "error", callback)
-        .map_err(|error| host_error(&error))?;
+    let listener = if body.borrow().svg {
+        None
+    } else {
+        Some(
+            EventSubscription::new(image.unchecked_into(), "error", callback)
+                .map_err(|error| host_error(&error))?,
+        )
+    };
     sync(&body.borrow()).map_err(|error| host_error(&error))?;
     Ok(ReadingRoot {
         element: root,
         slots: vec![],
-        owner: Some(Box::new(listener)),
+        owner: listener.map(|listener| Box::new(listener) as Box<dyn std::any::Any>),
         commit: None,
     })
 }

@@ -9,7 +9,7 @@ use web_sys::{Document, HtmlAnchorElement, Url};
 /// Resources released on either successful click or a later platform failure.
 struct Download {
     /// Temporary object URL.
-    url: String,
+    url: ObjectUrl,
     /// Temporary DOM anchor, if created.
     anchor: Option<HtmlAnchorElement>,
 }
@@ -18,7 +18,6 @@ impl Drop for Download {
         if let Some(anchor) = &self.anchor {
             anchor.remove();
         }
-        let _ = Url::revoke_object_url(&self.url);
     }
 }
 /// Use the owning window's native decoder and Blob implementation.
@@ -50,13 +49,8 @@ pub(crate) fn download_bytes(
     name: &str,
     mime: &str,
 ) -> Result<(), AttachmentUiError> {
-    let options = web_sys::BlobPropertyBag::new();
-    options.set_type(mime);
-    let data = js_sys::Array::of1(&js_sys::Uint8Array::from(bytes));
-    let blob = web_sys::Blob::new_with_u8_array_sequence_and_options(&data, &options)
-        .map_err(|error| host_error(&error))?;
     let mut owner = Download {
-        url: Url::create_object_url_with_blob(&blob).map_err(|error| host_error(&error))?,
+        url: ObjectUrl::new(bytes, mime)?,
         anchor: None,
     };
     let anchor = document
@@ -64,7 +58,7 @@ pub(crate) fn download_bytes(
         .map_err(|error| host_error(&error))?
         .dyn_into::<HtmlAnchorElement>()
         .map_err(|e| host_error(&e.into()))?;
-    anchor.set_href(&owner.url);
+    anchor.set_href(owner.url.as_str());
     anchor.set_download(name);
     owner.anchor = Some(anchor.clone());
     document
@@ -74,4 +68,29 @@ pub(crate) fn download_bytes(
         .map_err(|error| host_error(&error))?;
     anchor.click();
     Ok(())
+}
+
+/// One Blob URL revoked when its final resource owner is dropped.
+pub(crate) struct ObjectUrl(String);
+impl ObjectUrl {
+    /// Allocate a URL containing the supplied original bytes.
+    pub(crate) fn new(bytes: &[u8], mime: &str) -> Result<Self, AttachmentUiError> {
+        let options = web_sys::BlobPropertyBag::new();
+        options.set_type(mime);
+        let data = js_sys::Array::of1(&js_sys::Uint8Array::from(bytes));
+        let blob = web_sys::Blob::new_with_u8_array_sequence_and_options(&data, &options)
+            .map_err(|error| host_error(&error))?;
+        Url::create_object_url_with_blob(&blob)
+            .map(Self)
+            .map_err(|error| host_error(&error))
+    }
+    /// Borrow the native resource address.
+    pub(crate) fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+impl Drop for ObjectUrl {
+    fn drop(&mut self) {
+        let _ = Url::revoke_object_url(&self.0);
+    }
 }
