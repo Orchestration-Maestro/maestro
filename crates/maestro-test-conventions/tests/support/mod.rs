@@ -125,10 +125,6 @@ impl Workspace {
 #[path = "../../src/graph/policy.rs"]
 pub mod policy;
 
-pub fn exact(name: &str) -> bool {
-    policy::exact(name)
-}
-
 pub fn required(name: &str) -> &'static [&'static str] {
     policy::required(name)
 }
