@@ -1,13 +1,15 @@
 //! Strict source observations shared by native and actual-browser witnesses.
 #![cfg(test)]
 use serde::Deserialize;
-/// Consumed oracle inputs and expectations.
+/// Recorded inputs and expectations; every field has a test consumer.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Corpus {
     /// Localized toggle sequences.
     pub toggles: Vec<Toggle>,
-    /// Original text and header/source/image observations.
+    /// Localized copy and download titles per artifact family.
+    pub headers: Vec<Header>,
+    /// Locale-independent text and header/source/image observations.
     pub content: Vec<Case>,
     /// Same-object resource operations.
     pub lifecycle: Lifecycle,
@@ -27,14 +29,23 @@ pub struct Toggle {
     /// Programmatically configured first frame.
     pub configured: [bool; 2],
 }
+/// Localized header titles shared by every case of one artifact family.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Header {
+    /// Caller locale.
+    pub language: String,
+    /// Artifact family.
+    pub kind: String,
+    /// Ordered copy and download titles.
+    pub titles: [String; 2],
+}
 /// One literal artifact observation.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Case {
     /// Artifact family.
     pub kind: String,
-    /// Caller locale.
-    pub language: String,
     /// Authored filename.
     pub filename: String,
     /// Original literal content.
@@ -43,8 +54,6 @@ pub struct Case {
     pub renamed_filename: String,
     /// Replacement literal source.
     pub edited_content: String,
-    /// Ordered copy and download titles.
-    pub titles: [String; 2],
     /// Download MIME.
     pub mime: String,
     /// Original download bytes.

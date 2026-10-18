@@ -12,8 +12,17 @@ use std::{
 };
 use wasm_bindgen::{JsCast as _, prelude::*};
 /// Evaluate a document observation.
+/// # Panics
+/// Panics when the evaluation throws.
+#[must_use]
 pub fn js(code: &str) -> JsValue {
     js_sys::eval(code).unwrap()
+}
+/// Evaluate a document statement for its effect.
+/// # Panics
+/// Panics when the evaluation throws.
+pub fn run(code: &str) {
+    let _ = js(code);
 }
 /// Real host with a one-shot error at the public presentation boundary.
 pub struct Host {
@@ -28,9 +37,12 @@ pub struct Host {
 }
 impl Host {
     /// Bind the actual canvas document and retain per-test state.
+    /// # Panics
+    /// Panics when the document has no canvas or the native host cannot bind it.
+    #[must_use]
     pub fn new() -> Self {
         std::panic::set_hook(Box::new(|info| {
-            web_sys::console::error_1(&info.to_string().into())
+            web_sys::console::error_1(&info.to_string().into());
         }));
         let canvas = web_sys::window()
             .unwrap()
@@ -46,6 +58,11 @@ impl Host {
             fail_download: Cell::new(false),
             downloads: RefCell::default(),
         }
+    }
+}
+impl Default for Host {
+    fn default() -> Self {
+        Self::new()
     }
 }
 impl AttachmentHost for Host {
@@ -166,6 +183,9 @@ pub struct View {
 }
 impl View {
     /// Bind an installed artifact to the actual canvas document.
+    /// # Panics
+    /// Panics when the canvas, artifact factory, brand pack or dictionary cannot be set up.
+    #[must_use]
     pub fn new(filename: &str, content: &str) -> Self {
         let host = Rc::new(Host::new());
         Self {
@@ -185,6 +205,8 @@ impl View {
         }
     }
     /// Drive one public body or header input frame.
+    /// # Panics
+    /// Panics when the presentation or the drawn view fails.
     pub fn draw(&mut self, header: bool, events: Vec<egui::Event>) -> egui::FullOutput {
         let p = self.pack.presentation(self.mode).unwrap();
         let mut input = egui::RawInput {
@@ -215,10 +237,16 @@ impl View {
         output
     }
     /// Draw the public overlay and retain its actual control positions.
+    /// # Panics
+    /// Panics when the overlay fails.
     pub fn overlay(&self, overlay: &mut AttachmentOverlay, events: Vec<egui::Event>) {
         self.try_overlay(overlay, events).unwrap();
     }
     /// Preserve a reached failure without skipping end-of-frame cleanup.
+    /// # Errors
+    /// Returns the overlay's own failure after the frame ends.
+    /// # Panics
+    /// Panics when the presentation or the label projection fails.
     pub fn try_overlay(
         &self,
         overlay: &mut AttachmentOverlay,
@@ -272,6 +300,8 @@ impl View {
         result
     }
     /// Click the canvas-owned mode at its painted label.
+    /// # Panics
+    /// Panics when no painted label matches or the overlay fails.
     pub fn toggle(&self, overlay: &mut AttachmentOverlay, label: &str) {
         let position = js(&format!(
             "(()=>{{const l=labels.find(l=>l[0]==={});return [l[1]+l[3]/2,l[2]+l[4]/2]}})()",
@@ -288,6 +318,7 @@ impl View {
     }
 }
 /// A complete pointer activation.
+#[must_use]
 pub fn click(pos: egui::Pos2) -> Vec<egui::Event> {
     vec![
         egui::Event::PointerMoved(pos),

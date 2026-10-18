@@ -7,10 +7,6 @@ use maestro_web::{
 use num_traits::ToPrimitive as _;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::{JsCast as _, prelude::*};
-/// Evaluate document observations without shipping test bindings.
-fn js(code: &str) -> JsValue {
-    js_sys::eval(code).unwrap()
-}
 /// Original complete fixture bytes.
 fn bytes(multi: bool) -> &'static [u8] {
     if multi {
@@ -25,7 +21,7 @@ fn encoded(multi: bool) -> String {
     base64::engine::general_purpose::STANDARD.encode(bytes(multi))
 }
 mod reading_browser_support;
-use reading_browser_support::{View, click};
+use reading_browser_support::{View, check, click, js, run};
 /// Original aliased PDF attachment.
 fn record() -> Rc<RefCell<maestro_web::Attachment>> {
     Rc::new(RefCell::new(maestro_web::Attachment {
@@ -39,14 +35,6 @@ fn record() -> Rc<RefCell<maestro_web::Attachment>> {
         preview: None,
     }))
 }
-/// Assert a native document observation.
-fn check(code: &str) {
-    assert!(
-        js(code).as_bool().unwrap(),
-        "native document assertion failed: {code}"
-    );
-}
-
 /// All native pages retain original order, raster dimensions and bounded geometry.
 #[wasm_bindgen]
 pub fn pdf_native_pages_keep_order_geometry_and_separators() {
@@ -63,14 +51,14 @@ pub fn pdf_native_pages_keep_order_geometry_and_separators() {
     check(
         "(()=>{const r=document.querySelector('.maestro-pdf');const p=[...r.querySelectorAll('img')];return r.querySelectorAll('hr').length===2&&p.every(p=>p.width>0&&p.getAttribute('width')==='300'&&p.getAttribute('height')==='150')&&p[0].src!==p[1].src&&p[0].src===p[2].src&&getComputedStyle(r).padding==='16px'&&r.lastElementChild.lastElementChild.tagName==='IMG'&&getComputedStyle(p[0]).backgroundColor==='rgb(255, 255, 255)'&&getComputedStyle(p[0]).boxShadow!=='none'&&getComputedStyle(p[0]).borderRadius!=='0px'&&r.parentElement.scrollHeight>r.parentElement.clientHeight})()",
     );
-    js(
+    run(
         "globalThis.pages=[...document.querySelectorAll('.maestro-pdf img')].map(p=>p.src);globalThis.root=document.querySelector('.maestro-pdf');",
     );
     view.draw(false, vec![]);
     check(
         "root===document.querySelector('.maestro-pdf')&&pages.every((p,i)=>p===root.querySelectorAll('img')[i].src)",
     );
-    js(
+    run(
         "globalThis.savedWrapper=root.parentElement;savedWrapper.scrollTop=41.5;globalThis.savedScroll=savedWrapper.scrollTop;document.querySelector('#canvas').style.width='600px';document.querySelector('#canvas').style.height='300px';",
     );
     view.density = 1.25;
@@ -78,7 +66,7 @@ pub fn pdf_native_pages_keep_order_geometry_and_separators() {
     check(
         "root===document.querySelector('.maestro-pdf')&&savedWrapper.scrollTop===savedScroll&&Math.abs(savedWrapper.getBoundingClientRect().width-375)<1&&Math.abs(savedWrapper.getBoundingClientRect().height-187.5)<1",
     );
-    js(
+    run(
         "document.querySelector('#canvas').style.width='800px';document.querySelector('#canvas').style.height='600px';",
     );
     view.density = 1.;
@@ -185,13 +173,13 @@ pub fn pdf_overlay_native_viewport_keeps_panel_and_border() {
 pub fn pdf_same_content_rewrite_retains_pages_and_scroll() {
     let mut view = View::new("current.pdf", &encoded(true));
     view.draw(false, vec![]);
-    js("globalThis.firstPage=document.querySelector('.maestro-pdf img')");
+    run("globalThis.firstPage=document.querySelector('.maestro-pdf img')");
     view.element.set_content(encoded(true));
     for _ in 0..2 {
         view.draw(false, vec![]);
     }
     check("firstPage===document.querySelector('.maestro-pdf img')");
-    js(
+    run(
         "globalThis.retainedRoot=document.querySelector('.maestro-pdf');globalThis.retainedPages=[...retainedRoot.querySelectorAll('img')];globalThis.retainedWrapper=retainedRoot.parentElement;retainedWrapper.scrollTop=41.5;globalThis.retainedScroll=retainedWrapper.scrollTop;",
     );
     check("retainedPages.length===3&&retainedScroll>0");
@@ -268,13 +256,13 @@ pub fn pdf_native_modes_and_error_text_follow_brand_and_localization() {
 pub fn pdf_native_replacement_and_download_use_current_document() {
     let mut view = View::new("current.pdf", &encoded(true));
     view.draw(false, vec![]);
-    js("globalThis.oldPage=document.querySelector('.maestro-pdf img')");
+    run("globalThis.oldPage=document.querySelector('.maestro-pdf img')");
     view.element.set_content(encoded(false));
     view.draw(false, vec![]);
     check(
         "!oldPage.isConnected&&document.querySelectorAll('.maestro-pdf img').length===1&&document.querySelector('.maestro-pdf img').getAttribute('height')==='300'",
     );
-    js(
+    run(
         "globalThis.currentPage=document.querySelector('.maestro-pdf img');globalThis.currentRoot=currentPage.closest('.maestro-pdf');globalThis.wrapper=currentRoot.parentElement;wrapper.scrollTop=10;",
     );
     for _ in 0..4 {
@@ -302,7 +290,7 @@ pub fn pdf_native_replacement_and_download_use_current_document() {
     view.draw(true, vec![]);
     view.draw(true, click(egui::pos2(18., 16.)));
     check("document.querySelector('a[download]')===null");
-    js("globalThis.lastRoot=document.querySelector('.maestro-pdf')");
+    run("globalThis.lastRoot=document.querySelector('.maestro-pdf')");
     drop(view);
     check("!lastRoot.isConnected");
 }
@@ -312,7 +300,7 @@ pub fn pdf_native_replacement_and_download_use_current_document() {
 pub fn pdf_native_clear_while_rendering_keeps_completed_pages() {
     let mut view = View::new("current.pdf", &encoded(true));
     view.draw(false, vec![]);
-    js("globalThis.firstPage=document.querySelector('.maestro-pdf img')");
+    run("globalThis.firstPage=document.querySelector('.maestro-pdf img')");
     view.element.set_content(String::new());
     for _ in 0..3 {
         view.draw(false, vec![]);
@@ -343,7 +331,7 @@ pub fn overlay_native_errors_preserve_existing_behaviour() {
             .unwrap(),
         "preview failure"
     );
-    js(
+    run(
         "globalThis.errorRoot=document.querySelector('.maestro-file-error');const range=document.createRange();range.selectNodeContents(errorRoot.querySelector('p'));getSelection().removeAllRanges();getSelection().addRange(range)",
     );
     for mime in [
@@ -382,7 +370,7 @@ pub fn reading_content_switches_release_old_native_roots() {
     record.borrow_mut().mime_type = "application/pdf".into();
     view.overlay(&mut overlay, vec![]);
     check("document.querySelectorAll('.maestro-pdf img').length===1");
-    js(
+    run(
         "globalThis.oldRoot=document.querySelector('.maestro-pdf');globalThis.firstPage=oldRoot.querySelector('img').src;",
     );
     view.toggle(&mut overlay, "Text");
@@ -394,7 +382,7 @@ pub fn reading_content_switches_release_old_native_roots() {
         "document.querySelectorAll('.maestro-pdf img').length===1&&document.querySelector('.maestro-pdf img').src===firstPage",
     );
     for mime in ["text/plain", "image/png", "wordprocessingml"] {
-        js("globalThis.oldRoot=document.querySelector('.maestro-pdf')");
+        run("globalThis.oldRoot=document.querySelector('.maestro-pdf')");
         record.borrow_mut().mime_type = mime.into();
         record.borrow_mut().r#type = if mime == "image/png" {
             maestro_app::browser::utils::attachment_utils::AttachmentType::Image
@@ -417,12 +405,12 @@ pub fn reading_content_switches_release_old_native_roots() {
     check(
         "document.querySelector('.maestro-file-error h3').textContent==='Error loading file'&&document.querySelector('.maestro-file-error p').textContent==='failure'",
     );
-    js("globalThis.oldError=document.querySelector('.maestro-file-error')");
+    run("globalThis.oldError=document.querySelector('.maestro-file-error')");
     view.toggle(&mut overlay, "Text");
     check("!oldError.isConnected&&!document.querySelector('.maestro-file-error')");
     view.toggle(&mut overlay, "PDF");
     check("document.querySelectorAll('.maestro-pdf img').length===1");
-    js("globalThis.lastRoot=document.querySelector('.maestro-pdf')");
+    run("globalThis.lastRoot=document.querySelector('.maestro-pdf')");
     drop(overlay);
     check(
         "!lastRoot.isConnected&&!document.querySelector('.maestro-pdf')&&!document.querySelector('.maestro-file-error')",
@@ -453,7 +441,7 @@ fn assert_artifact_error_chrome(view: &mut View) {
     check(
         "(()=>{const r=document.querySelector('.maestro-file-error'),p=r.querySelector('div'),s=getComputedStyle(r),c=getComputedStyle(p);return c.maxWidth==='672px'&&getComputedStyle(r).padding==='16px'&&c.backgroundColor!==s.color&&c.borderTopColor===s.color&&c.overflowWrap==='anywhere'&&s.fontFamily.replaceAll(String.fromCharCode(34),'')===s.getPropertyValue('--maestro-type-body-font').trim().replaceAll(String.fromCharCode(34),'')})()",
     );
-    js(
+    run(
         "globalThis.errorRoot=document.querySelector('.maestro-file-error');const range=document.createRange();range.selectNodeContents(errorRoot.querySelector('p'));getSelection().removeAllRanges();getSelection().addRange(range);globalThis.selected=getSelection().toString();",
     );
     view.draw(false, vec![]);
