@@ -4822,6 +4822,842 @@
         "messageHover": true,
         "copied": false
       }
+    },
+    {
+      "kind": "reversal",
+      "visible": true,
+      "fraction": 0.25,
+      "before": {
+        "opacity": 1,
+        "background": [
+          113,
+          84,
+          57
+        ],
+        "color": [
+          134,
+          99,
+          64
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "after": {
+        "opacity": 1,
+        "background": [
+          113,
+          84,
+          57
+        ],
+        "color": [
+          134,
+          99,
+          64
+        ],
+        "border": [
+          94,
+          115,
+          131
+        ],
+        "hover": false,
+        "messageHover": true,
+        "copied": false
+      },
+      "duration": 61.27658870333056,
+      "reverse": [
+        {
+          "opacity": 1,
+          "background": [
+            113,
+            84,
+            57
+          ],
+          "color": [
+            134,
+            99,
+            64
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            81,
+            60,
+            43
+          ],
+          "color": [
+            172,
+            127,
+            81
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            56,
+            41,
+            32
+          ],
+          "color": [
+            201,
+            148,
+            94
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            217,
+            160,
+            102
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            217,
+            160,
+            102
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "reversal",
+      "visible": true,
+      "fraction": 0.5,
+      "before": {
+        "opacity": 1,
+        "background": [
+          182,
+          135,
+          87
+        ],
+        "color": [
+          54,
+          40,
+          27
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "after": {
+        "opacity": 1,
+        "background": [
+          182,
+          135,
+          87
+        ],
+        "color": [
+          54,
+          40,
+          27
+        ],
+        "border": [
+          94,
+          115,
+          131
+        ],
+        "hover": false,
+        "messageHover": true,
+        "copied": false
+      },
+      "duration": 120.36050865897654,
+      "reverse": [
+        {
+          "opacity": 1,
+          "background": [
+            182,
+            135,
+            87
+          ],
+          "color": [
+            54,
+            40,
+            27
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            160,
+            118,
+            77
+          ],
+          "color": [
+            81,
+            60,
+            39
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            70,
+            51,
+            38
+          ],
+          "color": [
+            185,
+            136,
+            87
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            217,
+            160,
+            102
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            217,
+            160,
+            102
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "reversal",
+      "visible": true,
+      "fraction": 0.75,
+      "before": {
+        "opacity": 1,
+        "background": [
+          210,
+          155,
+          99
+        ],
+        "color": [
+          22,
+          17,
+          13
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "after": {
+        "opacity": 1,
+        "background": [
+          210,
+          155,
+          99
+        ],
+        "color": [
+          22,
+          17,
+          13
+        ],
+        "border": [
+          94,
+          115,
+          131
+        ],
+        "hover": false,
+        "messageHover": true,
+        "copied": false
+      },
+      "duration": 144.06884675474652,
+      "reverse": [
+        {
+          "opacity": 1,
+          "background": [
+            210,
+            155,
+            99
+          ],
+          "color": [
+            22,
+            17,
+            13
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            190,
+            140,
+            90
+          ],
+          "color": [
+            45,
+            34,
+            23
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            75,
+            55,
+            40
+          ],
+          "color": [
+            178,
+            132,
+            84
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            217,
+            160,
+            102
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            217,
+            160,
+            102
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "repeated-reversal",
+      "visible": true,
+      "a": {
+        "opacity": 1,
+        "background": [
+          182,
+          135,
+          87
+        ],
+        "color": [
+          54,
+          40,
+          27
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "b": {
+        "opacity": 1,
+        "background": [
+          70,
+          51,
+          38
+        ],
+        "color": [
+          185,
+          136,
+          87
+        ],
+        "border": [
+          94,
+          115,
+          131
+        ],
+        "hover": false,
+        "messageHover": true,
+        "copied": false
+      },
+      "c": {
+        "opacity": 1,
+        "background": [
+          70,
+          51,
+          38
+        ],
+        "color": [
+          185,
+          136,
+          87
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "d1": 120.36050865897654,
+      "d2": 126.2171716386739,
+      "next": [
+        {
+          "opacity": 1,
+          "background": [
+            70,
+            51,
+            38
+          ],
+          "color": [
+            185,
+            136,
+            87
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            92,
+            68,
+            48
+          ],
+          "color": [
+            159,
+            118,
+            76
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            188,
+            139,
+            89
+          ],
+          "color": [
+            48,
+            36,
+            24
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            217,
+            160,
+            102
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "palette-retarget",
+      "visible": true,
+      "old": {
+        "opacity": 1,
+        "background": [
+          182,
+          135,
+          87
+        ],
+        "color": [
+          54,
+          40,
+          27
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "zero": {
+        "opacity": 1,
+        "background": [
+          182,
+          135,
+          87
+        ],
+        "color": [
+          54,
+          40,
+          27
+        ],
+        "border": [
+          42,
+          31,
+          26
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "samples": [
+        {
+          "opacity": 1,
+          "background": [
+            182,
+            135,
+            87
+          ],
+          "color": [
+            54,
+            40,
+            27
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            160,
+            118,
+            77
+          ],
+          "color": [
+            75,
+            62,
+            49
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            107,
+            79,
+            54
+          ],
+          "color": [
+            131,
+            119,
+            106
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            56,
+            41,
+            32
+          ],
+          "color": [
+            205,
+            194,
+            182
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            235,
+            224,
+            212
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            242,
+            232,
+            220
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            242,
+            232,
+            220
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            242,
+            232,
+            220
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        }
+      ]
     }
   ]
 }
