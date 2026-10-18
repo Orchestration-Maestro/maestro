@@ -17,27 +17,28 @@ const DECLARATIONS: &[(&str, &str)] = &[
 
 #[test]
 fn runtime_dependencies_stay_in_the_runtime_adapter() {
-    for library in [
-        "wasmtime",
-        "wasmtime-component-macro",
-        "wasmtime-wasi",
-        "wasmtime-wasi-http",
-    ] {
-        for &(owner, _) in support::policy::POLICY {
+    for &(owner, _) in support::policy::POLICY {
+        let workspace = Workspace::new();
+        workspace.foundation(&[owner]);
+        let manifest = workspace.root.join(format!("crates/{owner}/Cargo.toml"));
+        let baseline = std::fs::read_to_string(&manifest).unwrap();
+        for library in [
+            "wasmtime",
+            "wasmtime-component-macro",
+            "wasmtime-wasi",
+            "wasmtime-wasi-http",
+        ] {
             // The guest's test-only host dependencies have their own test.
             if owner == "maestro-extensions-wasm" && matches!(library, "wasmtime" | "wasmtime-wasi")
             {
                 continue;
             }
-            let workspace = Workspace::new();
-            workspace.foundation(&[owner]);
             workspace.external(library);
-            let manifest = workspace.root.join(format!("crates/{owner}/Cargo.toml"));
-            let baseline = std::fs::read_to_string(&manifest).unwrap();
             check_runtime_declarations(&workspace, owner, library, &manifest, &baseline);
-            std::fs::write(&manifest, &baseline).unwrap();
-            assert_eq!(check_workspace(&workspace.root), Ok(()));
         }
+        // The restored manifest declares no external library, so one clean check covers all four.
+        std::fs::write(&manifest, &baseline).unwrap();
+        assert_eq!(check_workspace(&workspace.root), Ok(()));
     }
     let workspace = Workspace::new();
     workspace.foundation(&["maestro", "maestro-extensions-wasmtime"]);
