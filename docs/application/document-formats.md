@@ -234,6 +234,9 @@ stored parts. Missing part relationships fall back to root relationships while
 retaining the supplied part folder; an empty list does not fall back. External
 relationship paths retain their resolved absolute URLs. Resource lookup reads
 bytes on demand without network requests or filesystem writes. XML entry decoding uses lossy UTF-8. DOCTYPE is rejected.
+The reader refuses an entry that declares more than 512 MiB expanded with the
+archive error before inflating it. The archive library fails an entry whose data
+runs past its declared size, so no entry takes more memory than that.
 
 `parse_xml_string` provides borrowed element/attribute queries and descendant
 text. Element selection uses immediate children and local names; attribute

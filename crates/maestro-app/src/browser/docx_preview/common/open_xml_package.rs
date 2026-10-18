@@ -5,6 +5,9 @@ use std::{
     sync::Mutex,
 };
 
+/// Largest expanded entry read into memory, in bytes.
+const ENTRY_LIMIT: u64 = 512 << 20;
+
 /// Indexed archive with a privately serialized seek cursor.
 pub(crate) struct OpenXmlPackage {
     /// Supplied archive bytes and native metadata.
@@ -58,7 +61,7 @@ impl OpenXmlPackage {
     pub(crate) fn text_exact(&self, name: &str) -> Result<Option<String>, DocxError> {
         Ok(self
             .read_index(self.entries.get(name).copied())?
-            .map(|data| String::from_utf8_lossy(&data).into_owned()))
+            .map(maestro_text::lossy_string))
     }
     /// Read resource bytes only when requested.
     pub(crate) fn read(&self, path: &str) -> Result<Option<Vec<u8>>, DocxError> {
@@ -74,15 +77,17 @@ impl OpenXmlPackage {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut entry = archive.by_index(index).map_err(archive_error)?;
+        // The archive reader fails an entry once it passes its declared size.
+        if entry.size() > ENTRY_LIMIT {
+            return Err(archive_error("entry is larger than 512 MiB"));
+        }
         let mut bytes = Vec::new();
         entry.read_to_end(&mut bytes).map_err(archive_error)?;
         Ok(Some(bytes))
     }
     /// Read decoded source XML, retaining replacement characters.
     pub(crate) fn text(&self, path: &str) -> Result<Option<String>, DocxError> {
-        Ok(self
-            .read(path)?
-            .map(|data| String::from_utf8_lossy(&data).into_owned()))
+        Ok(self.read(path)?.map(maestro_text::lossy_string))
     }
     /// Parse after archive access has released its cursor lock.
     pub(crate) fn parse<'a>(&self, text: &'a str, path: &str) -> Result<XmlParser<'a>, DocxError> {

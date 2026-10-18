@@ -11,6 +11,14 @@ pub fn decode_utf8(bytes: &[u8]) -> Cow<'_, str> {
     String::from_utf8_lossy(bytes.strip_prefix(&BYTE_ORDER_MARK).unwrap_or(bytes))
 }
 
+/// Decode owned bytes with Rust's lossy UTF-8 decoder, keeping the buffer when they are
+/// valid. A byte-order mark is kept.
+#[must_use]
+pub fn lossy_string(bytes: Vec<u8>) -> String {
+    String::from_utf8(bytes)
+        .unwrap_or_else(|error| String::from_utf8_lossy(error.as_bytes()).into_owned())
+}
+
 /// Decodes complete scalars while retaining an incomplete trailing scalar.
 #[derive(Debug, Default)]
 pub struct Utf8Stream {

@@ -2,6 +2,56 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support;
+use maestro_app::browser::utils::attachment_utils::{AttachmentSource, load_attachment};
+use maestro_models::Fetch;
+use std::io::{Cursor, Write};
+use std::sync::Arc;
+
+/// One deflated slide whose headers declare `declared` expanded bytes.
+fn slide_package(declared: u32) -> Vec<u8> {
+    let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+    writer.start_file("ppt/slides/slide1.xml", options).unwrap();
+    writer.write_all(b"<a:t>hi</a:t>").unwrap();
+    let mut bytes = writer.finish().unwrap().into_inner();
+    for (signature, offset) in [(b"PK\x03\x04", 22), (b"PK\x01\x02", 24)] {
+        let at = bytes.windows(4).position(|w| w == signature).unwrap() + offset;
+        bytes[at..at + 4].copy_from_slice(&declared.to_le_bytes());
+    }
+    bytes
+}
+
+#[test]
+fn pptx_entries_past_the_size_bound_fail_without_inflating() {
+    const BOUND: u32 = 512 << 20;
+    for (declared, expected) in [
+        (BOUND, Ok("hi")),
+        (1, Err("File is larger than its declared uncompressed size")),
+        (BOUND + 1, Err("entry is larger than 512 MiB")),
+    ] {
+        let fetch: Fetch = Arc::new(|_| panic!("local source fetched"));
+        let result = tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(load_attachment(
+                AttachmentSource::Buffer(&slide_package(declared)),
+                Some("a.pptx"),
+                &fetch,
+            ));
+        match expected {
+            Ok(text) => assert!(
+                result.unwrap().extracted_text.unwrap().contains(text),
+                "{declared}"
+            ),
+            Err(message) => assert_eq!(
+                result.unwrap_err().to_string(),
+                format!("Failed to process PPTX: {message}"),
+                "{declared}"
+            ),
+        }
+    }
+}
 
 #[test]
 fn pptx_detection_selects_mime_or_suffix() {

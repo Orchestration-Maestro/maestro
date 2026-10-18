@@ -109,17 +109,11 @@ fn project(waited: io::Result<Output>, partial: (Vec<u8>, Vec<u8>), killed: bool
         Err(_) => (1, partial),
     };
     ExecResult {
-        stdout: decode(stdout),
-        stderr: decode(stderr),
+        stdout: maestro_text::lossy_string(stdout),
+        stderr: maestro_text::lossy_string(stderr),
         code,
         killed,
     }
-}
-
-/// Decodes a complete byte stream, replacing malformed sequences.
-fn decode(bytes: Vec<u8>) -> String {
-    String::from_utf8(bytes)
-        .unwrap_or_else(|error| String::from_utf8_lossy(error.as_bytes()).into_owned())
 }
 
 #[cfg(test)]
