@@ -13,7 +13,7 @@ use maestro_packages::{
 use maestro_settings::{Settings, SettingsManager};
 use serde_json::json;
 use std::{cell::RefCell, rc::Rc};
-use worker_support::{Gates, driver};
+use worker_support::{Gates, driver, gated_npm_checks};
 
 #[test]
 fn native_and_controlled_checks_match_for_pinned_and_unpinned_sources() {
@@ -783,17 +783,7 @@ fn four_workers_claim_slots_without_global_serialization() {
     let (manager, _, effects) =
         configured(&json!({}), &json!(["npm:p0", "npm:p1", "npm:p2", "npm:p3"]));
     let (runtime, local) = driver(&effects);
-    let (send, mut started) = tokio::sync::mpsc::unbounded_channel();
-    let (release, wait) = tokio::sync::watch::channel(false);
-    *effects.capture_hook.borrow_mut() = Some(Rc::new(move |_, _, _| {
-        let send = send.clone();
-        let mut wait = wait.clone();
-        Box::pin(async move {
-            send.send(()).unwrap();
-            wait.wait_for(|ready| *ready).await.unwrap();
-            Ok("\"2\"".into())
-        })
-    }));
+    let (release, mut started) = gated_npm_checks(&effects);
     let first = local.spawn_local(manager.check_for_available_updates());
     let second = local.spawn_local(manager.check_for_available_updates());
     runtime.block_on(local.run_until(async {
