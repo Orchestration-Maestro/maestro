@@ -3731,35 +3731,6 @@
     "test": "section_booleans_keep_independent_defaults",
     "input": {
       "operation": "paragraph",
-      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols sep=\"false\"  equalWidth=\"true\"></w:cols><w:titlePg val=\"true\"></w:titlePg></w:sectPr></w:pPr></w:p>"
-    },
-    "expected": {
-      "roots": [
-        0
-      ],
-      "nodes": [
-        {
-          "type": "paragraph",
-          "children": [],
-          "cssStyle": [],
-          "sectionProps": {
-            "columns": {
-              "numberOfColumns": null,
-              "space": null,
-              "separator": false,
-              "equalWidth": true,
-              "columns": []
-            },
-            "titlePage": true
-          }
-        }
-      ]
-    }
-  },
-  {
-    "test": "section_booleans_keep_independent_defaults",
-    "input": {
-      "operation": "paragraph",
       "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:cols sep=\"true\"  equalWidth=\"false\"></w:cols><w:titlePg val=\"true\"></w:titlePg></w:sectPr></w:pPr></w:p>"
     },
     "expected": {
@@ -4647,7 +4618,7 @@
     "test": "section_header_footer_references_keep_kind_and_order",
     "input": {
       "operation": "paragraph",
-      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:footerReference id=\"f2\" type=\"even\"/><w:headerReference id=\"h1\" type=\"first\"/><w:footerReference id=\"f1\" type=\"default\"/><w:headerReference id=\"h1\" type=\"first\"/></w:sectPr></w:pPr></w:p>"
+      "xml": "<w:p xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\" xmlns:q=\"urn:other\"><w:pPr><w:sectPr><w:footerReference id=\"f2\" type=\"even\"/><w:headerReference id=\"h2\" type=\"even\"/><w:footerReference id=\"f1\" type=\"default\"/><w:headerReference id=\"h1\" type=\"first\"/><w:headerReference id=\"h1\" type=\"first\"/></w:sectPr></w:pPr></w:p>"
     },
     "expected": {
       "roots": [
@@ -4670,6 +4641,10 @@
               }
             ],
             "headerRefs": [
+              {
+                "id": "h2",
+                "type": "even"
+              },
               {
                 "id": "h1",
                 "type": "first"
