@@ -22,7 +22,7 @@ pub fn js(code: &str) -> JsValue {
 /// # Panics
 /// Panics when the evaluation throws.
 pub fn run(code: &str) {
-    js_sys::eval(code).unwrap();
+    let _ = js(code);
 }
 /// Real host with a one-shot error at the public presentation boundary.
 pub struct Host {
