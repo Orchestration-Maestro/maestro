@@ -16,7 +16,9 @@ Hosted shortcuts select their identity from the URL path, excluding the query;
 a fragment can select the ref. A host or path segment equal to `.` or `..`,
 including one that percent-decodes to it, is rejected, so the source resolves as
 a local path and no checkout directory lies outside its git directory; empty
-segments, such as a trailing slash, stay accepted.
+segments, such as a trailing slash, stay accepted. Components follow the checkout
+platform: both slash and backslash separate on Windows; on POSIX, a backslash
+is an ordinary name character.
 
 Ordinary local paths use the supplied working directory as their input base;
 stored locals use their scope's base. Local storage uses `maestro-path` relative-path calculation from the

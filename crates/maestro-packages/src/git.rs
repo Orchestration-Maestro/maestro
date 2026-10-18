@@ -22,12 +22,19 @@ pub struct GitSource {
 ///
 /// A host or path segment equal to `.` or `..`, including one that percent-decodes
 /// to it, is rejected, so no checkout directory resolves outside its git directory.
-/// Empty segments, such as a trailing slash, stay accepted.
+/// Components use the checkout platform's separators. Empty segments, such as
+/// a trailing slash, stay accepted.
 #[must_use]
 pub fn parse_git_url(source: &str) -> Option<GitSource> {
+    parse_with_separator(source, maestro_path::is_separator)
+}
+
+/// Parses an identity using the separator rule of its checkout path.
+fn parse_with_separator(source: &str, separator: fn(char) -> bool) -> Option<GitSource> {
     select(source).filter(|git| {
         !std::iter::once(git.host.as_str())
-            .chain(git.path.split('/'))
+            .chain(std::iter::once(git.path.as_str()))
+            .flat_map(|part| part.split(separator))
             .any(|segment| matches!(segment, "." | ".."))
     })
 }
@@ -384,3 +391,6 @@ fn clone_address(repo: &str, selected: &GitSource) -> Option<String> {
     }
     Some(format!("https://{}/{target}", selected.host))
 }
+
+#[cfg(test)]
+mod tests;

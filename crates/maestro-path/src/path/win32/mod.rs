@@ -23,7 +23,8 @@ const RESERVED: [&str; 28] = [
 ];
 
 /// Report whether `c` separates path components.
-pub(crate) fn is_separator(c: char) -> bool {
+#[must_use]
+pub fn is_separator(c: char) -> bool {
     c == '/' || c == SEP
 }
 
