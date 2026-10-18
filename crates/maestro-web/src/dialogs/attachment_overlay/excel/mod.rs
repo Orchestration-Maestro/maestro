@@ -1,12 +1,15 @@
 //! One retained workbook projection for attachment and artifact consumers.
+use super::error::Text;
 use crate::browser::attachment_content::{AttachmentHost, AttachmentUiError, ReadingContent};
 use maestro_app::browser::ssf::{Ssf, read, sheet_to_html};
-use std::rc::Rc;
-/// Prepared sheet names and literal table fragments in workbook order.
+use std::{cell::RefCell, rc::Rc};
+/// Prepared content for one successfully decoded or failed worksheet.
+type SheetContent = Result<String, Rc<RefCell<Text>>>;
+/// Prepared sheet names and native content in workbook order.
 #[derive(Default)]
 struct Sheets {
     /// The reader's original order, never lexical order.
-    values: Vec<(String, String)>,
+    values: Vec<(String, SheetContent)>,
     /// Mounted sheet bodies, retained independently of selection.
     #[cfg(target_arch = "wasm32")]
     nodes: std::cell::RefCell<Vec<web_sys::Element>>,
@@ -20,7 +23,7 @@ struct Sheets {
 /// Selected table and its stable native factory.
 #[derive(Default)]
 pub(crate) struct Excel {
-    /// Prepared owned markup shared with the native mount.
+    /// Prepared owned content shared with the native mount.
     sheets: Rc<Sheets>,
     /// Current workbook-order index.
     selected: usize,
@@ -49,9 +52,17 @@ impl Excel {
             values: workbook
                 .sheets
                 .into_iter()
-                .map(|(name, mut sheet)| {
-                    let html = sheet_to_html(&mut sheet, &format!("sheet-{name}"), &ssf);
-                    (name, html)
+                .map(|(name, sheet)| {
+                    let content = sheet
+                        .map(|mut sheet| sheet_to_html(&mut sheet, &format!("sheet-{name}"), &ssf))
+                        .map_err(|error| {
+                            Rc::new(RefCell::new(Text {
+                                values: [String::new(), error.to_string()],
+                                #[cfg(target_arch = "wasm32")]
+                                nodes: None,
+                            }))
+                        });
+                    (name, content)
                 })
                 .collect(),
             #[cfg(target_arch = "wasm32")]
@@ -69,8 +80,15 @@ impl Excel {
         host: &dyn AttachmentHost,
         ui: &mut egui::Ui,
         surface: (egui::Id, egui::Rect, Option<egui::Id>, bool),
-        presentation: &maestro_theme::BrandPresentation<'_>,
+        operands: (&maestro_theme::BrandPresentation<'_>, &str),
     ) -> Result<(), AttachmentUiError> {
+        for (_, content) in &self.sheets.values {
+            if let Err(text) = content {
+                operands.1.clone_into(&mut text.borrow_mut().values[0]);
+                #[cfg(target_arch = "wasm32")]
+                super::error::sync(&text.borrow());
+            }
+        }
         #[cfg(target_arch = "wasm32")]
         browser::bound(&self.sheets, surface.1.height())?;
         if self.reading.is_none() {
@@ -81,7 +99,7 @@ impl Excel {
                 mount: Rc::new(move |document| browser::mount(document, &sheets, surface)),
             }));
         }
-        controls::present(self, host, ui, surface, presentation)?;
+        controls::present(self, host, ui, surface, operands.0)?;
         #[cfg(target_arch = "wasm32")]
         browser::select(&self.sheets, self.selected)?;
         Ok(())

@@ -155,7 +155,10 @@ impl ArtifactElement for ExcelArtifact {
                 self.host.as_ref(),
                 ui,
                 (self.id, rect, None, true),
-                view.presentation,
+                (
+                    view.presentation,
+                    &view.i18n.text("Error loading spreadsheet")?,
+                ),
             )?;
         }
         Ok(())

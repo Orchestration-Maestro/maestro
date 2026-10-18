@@ -443,7 +443,10 @@ mod tests {
             .unwrap();
             let book = ssf::read(&bytes, file, &mut Ssf::default()).unwrap();
             assert_eq!(
-                book.sheets[row["sheet"].as_str().unwrap()].cells["A1"]
+                book.sheets[row["sheet"].as_str().unwrap()]
+                    .as_ref()
+                    .unwrap()
+                    .cells["A1"]
                     .f
                     .as_deref(),
                 Some(row["formula"].as_str().unwrap()),

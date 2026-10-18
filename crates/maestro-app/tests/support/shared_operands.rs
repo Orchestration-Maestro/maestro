@@ -133,7 +133,12 @@ fn failures(select: impl Fn(usize, &Case) -> bool) -> Vec<String> {
     let mut selected = 0;
     for (i, case) in cases().iter().enumerate().filter(|(i, c)| select(*i, c)) {
         selected += 1;
-        let sheet = book.sheets.get_mut(&format!("Case{i}")).unwrap();
+        let sheet = book
+            .sheets
+            .get_mut(&format!("Case{i}"))
+            .unwrap()
+            .as_mut()
+            .unwrap();
         let actual = sheet.cells[&case.end].f.as_deref();
         if actual != Some(case.expected.as_str()) {
             failures.push(format!(
@@ -262,7 +267,10 @@ fn workbook_shared_opaque_spans_and_absolute_bindings() {
     let book = ssf::read(BYTES, "operands.xlsx", &mut Ssf::default()).unwrap();
     for (i, pieces) in data.fragments.iter().enumerate() {
         for j in 0..4 {
-            let text = book.sheets[&format!("Case{}", 30 + i * 4 + j)].cells["C3"]
+            let text = book.sheets[&format!("Case{}", 30 + i * 4 + j)]
+                .as_ref()
+                .unwrap()
+                .cells["C3"]
                 .f
                 .as_deref()
                 .unwrap();

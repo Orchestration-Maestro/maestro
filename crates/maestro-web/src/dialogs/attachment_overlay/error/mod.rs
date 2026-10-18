@@ -5,12 +5,12 @@ use crate::browser::attachment_content::{
 use std::{cell::RefCell, rc::Rc};
 /// Current literal text and its stable native nodes.
 #[derive(Default)]
-struct Text {
+pub(super) struct Text {
     /// Localized heading followed by the already-selected diagnostic.
-    values: [String; 2],
+    pub(super) values: [String; 2],
     /// Retained text nodes in the actual document.
     #[cfg(target_arch = "wasm32")]
-    nodes: Option<[web_sys::Element; 2]>,
+    pub(super) nodes: Option<[web_sys::Element; 2]>,
 }
 /// Stable native failure content, independent of caller error policy.
 #[derive(Default)]
@@ -51,6 +51,8 @@ impl Error {
 }
 #[cfg(target_arch = "wasm32")]
 mod browser;
+#[cfg(target_arch = "wasm32")]
+pub(super) use browser::{mount, sync};
 
 /// Preserve literal diagnostics, using the fallback only for absence.
 pub(super) fn failure_detail(message: Option<&str>, fallback: String) -> String {

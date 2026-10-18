@@ -75,7 +75,7 @@ fn workbook_formula_metadata_keeps_cached_and_missing_values() {
                 .collect::<Vec<_>>()
         );
         for expected in recording.expected {
-            let sheet = &book.sheets[&expected.name];
+            let sheet = book.sheets[&expected.name].as_ref().unwrap();
             assert_eq!(sheet.range.map(ssf::encode_range), expected.range);
             assert!(sheet.merges.is_empty());
             assert_eq!(
@@ -124,7 +124,7 @@ fn formula_view(sheet_name: &str, select: impl Fn(&str) -> bool) {
         .into_iter()
         .filter(|(address, _)| select(address))
     {
-        let actual = &book.sheets[sheet_name].cells[&address];
+        let actual = &book.sheets[sheet_name].as_ref().unwrap().cells[&address];
         assert_eq!(actual.f, cell.f);
         if sheet_name == "Array" {
             assert_eq!(actual.array_formula, cell.array_formula);
@@ -288,7 +288,7 @@ fn workbook_written_formula_escapes_decode_once() {
     let bytes = include_bytes!("fixtures/spreadsheet/formula-escapes.xlsx");
     let mut format = Ssf::default();
     let mut book = ssf::read(bytes, "escapes.xlsx", &mut format).unwrap();
-    let sheet = book.sheets.get_mut("Escapes").unwrap();
+    let sheet = book.sheets.get_mut("Escapes").unwrap().as_mut().unwrap();
     for (address, expected) in [("A1", "\"a\rb\""), ("B1", "\"a\rb\""), ("C1", "\"a\nb\"")] {
         assert_eq!(sheet.cells[address].f.as_deref(), Some(expected));
     }
@@ -319,7 +319,7 @@ fn workbook_shared_formulas_preserve_sheet_identifiers() {
         &mut Ssf::default(),
     )
     .unwrap();
-    let sheet = &book.sheets["Escapes"];
+    let sheet = book.sheets["Escapes"].as_ref().unwrap();
     for (address, formula) in [
         ("A1", "'Q1'!A1+Q1!$B1+\"A1\"+SUM(C1)"),
         ("A2", "'Q1'!A2+Q1!$B2+\"A1\"+SUM(C2)"),
@@ -337,7 +337,7 @@ fn workbook_shared_formulas_preserve_structured_columns() {
         &mut Ssf::default(),
     )
     .unwrap();
-    let sheet = &book.sheets["Escapes"];
+    let sheet = book.sheets["Escapes"].as_ref().unwrap();
     for (address, formula) in [
         ("B1", "Table1[A1]+Table1[[#This Row],[B2]]+A1"),
         ("B2", "Table1[A1]+Table1[[#This Row],[B2]]+A2"),
@@ -356,7 +356,7 @@ fn unicode_shared_formula(sheet_name: &str, anchor: &str, follower: &str) {
         &mut format,
     )
     .unwrap();
-    let sheet = book.sheets.get_mut(sheet_name).unwrap();
+    let sheet = book.sheets.get_mut(sheet_name).unwrap().as_mut().unwrap();
     assert_eq!(sheet.cells["B1"].f.as_deref(), Some(anchor));
     assert_eq!(sheet.cells["B2"].f.as_deref(), Some(follower));
     assert_eq!(
@@ -427,10 +427,82 @@ fn legacy_spreadsheet_metadata_uses_existing_extraction_writer() {
         let mut ssf = Ssf::default();
         let mut book = ssf::read(&bytes, &case.file, &mut ssf).unwrap();
         for sheet in book.sheets.values_mut() {
+            let sheet = sheet.as_mut().unwrap();
             let before = sheet.cells.clone();
             let csv = ssf::sheet_to_csv(sheet, &ssf);
             assert!(case.expected.contains(&csv));
             assert_eq!(sheet.cells, before);
         }
     }
+}
+
+/// Load an in-memory spreadsheet without network access or another executor.
+fn extract_workbook(
+    bytes: &[u8],
+    name: &str,
+) -> Result<
+    maestro_app::browser::utils::attachment_utils::Attachment,
+    maestro_app::browser::utils::attachment_utils::AttachmentError,
+> {
+    use maestro_app::browser::utils::attachment_utils::{AttachmentSource, load_attachment};
+    let fetch: maestro_models::Fetch =
+        std::sync::Arc::new(|_| Box::pin(async { panic!("File source must not fetch") }));
+    let mut future = Box::pin(load_attachment(
+        AttachmentSource::File {
+            bytes,
+            name,
+            mime_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        },
+        None,
+        &fetch,
+    ));
+    let std::task::Poll::Ready(result) = std::future::Future::poll(
+        future.as_mut(),
+        &mut std::task::Context::from_waker(std::task::Waker::noop()),
+    ) else {
+        panic!("in-memory file must settle synchronously")
+    };
+    result
+}
+#[test]
+fn spreadsheet_extraction_keeps_empty_failed_sheet_wrapper() {
+    use base64::Engine as _;
+    for (file, expected) in [
+        (
+            "mixed-bad-first.xlsx",
+            "<excel filename=\"mixed-bad-first.xlsx\">\n<sheet name=\"Data\" index=\"1\">\n\n</sheet>\n<sheet name=\"Good\" index=\"2\">\n42\n</sheet>\n</excel>",
+        ),
+        (
+            "mixed-bad-last.xlsx",
+            "<excel filename=\"mixed-bad-last.xlsx\">\n<sheet name=\"Good\" index=\"1\">\n42\n</sheet>\n<sheet name=\"Data\" index=\"2\">\n\n</sheet>\n</excel>",
+        ),
+        (
+            "mixed-partial-bad.xlsx",
+            "<excel filename=\"mixed-partial-bad.xlsx\">\n<sheet name=\"Data\" index=\"1\">\n\n</sheet>\n<sheet name=\"Good\" index=\"2\">\n42\n</sheet>\n</excel>",
+        ),
+        (
+            "mixed-literal-error.xlsx",
+            "<excel filename=\"mixed-literal-error.xlsx\">\n<sheet name=\"Data\" index=\"1\">\n\n</sheet>\n<sheet name=\"Good\" index=\"2\">\n42\n</sheet>\n</excel>",
+        ),
+        (
+            "mixed-empty-valid.xlsx",
+            "<excel filename=\"mixed-empty-valid.xlsx\">\n<sheet name=\"Data\" index=\"1\">\n\n</sheet>\n<sheet name=\"Good\" index=\"2\">\n\n</sheet>\n</excel>",
+        ),
+    ] {
+        let bytes = crate::workbook_fixture::bytes(file);
+        let result = extract_workbook(&bytes, file).unwrap();
+        assert_eq!(result.extracted_text.as_deref(), Some(expected));
+        assert_eq!(
+            base64::engine::general_purpose::STANDARD
+                .decode(&result.content)
+                .unwrap(),
+            bytes
+        );
+    }
+    let bytes = crate::workbook_fixture::bytes("all-corrupt-two.xlsx");
+    let error = extract_workbook(&bytes, "all-corrupt-two.xlsx").unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "Failed to process Excel: all-corrupt-two.xlsx: xl/worksheets/sheet1.xml: shared string 3"
+    );
 }

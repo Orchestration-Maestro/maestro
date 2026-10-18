@@ -195,6 +195,7 @@ fn check_book(book: ssf::WorkBook, expected: &Book, ssf: &Ssf) {
     assert_eq!(*ssf.get_table().read().unwrap(), book.ssf);
     assert_eq!(book.sheets.len(), expected.sheets.len());
     for ((name, sheet), expected) in book.sheets.into_iter().zip(&expected.sheets) {
+        let sheet = sheet.unwrap();
         assert_eq!(name, expected.name);
         assert_eq!(sheet.range.map(ssf::encode_range), expected.range);
         assert_eq!(
@@ -254,7 +255,9 @@ fn check_sequence(
     let book = ssf::read(&bytes(&files[0]), &files[0], &mut ssf).unwrap();
     assert_eq!(Arc::ptr_eq(&alias, &ssf.get_table()), expected.same_table);
     assert_eq!(
-        book.sheets["Data"].cells["A1"].w.as_deref(),
+        book.sheets["Data"].as_ref().unwrap().cells["A1"]
+            .w
+            .as_deref(),
         Some(expected.custom_text.as_str())
     );
     alias.write().unwrap().extend(
@@ -271,7 +274,9 @@ fn check_sequence(
     let book = ssf::read(&bytes(&files[1]), &files[1], &mut ssf).unwrap();
     assert!(Arc::ptr_eq(&alias, &ssf.get_table()));
     assert_eq!(
-        book.sheets["Old"].cells["A1"].w.as_deref(),
+        book.sheets["Old"].as_ref().unwrap().cells["A1"]
+            .w
+            .as_deref(),
         Some(expected.general_text.as_str())
     );
 }

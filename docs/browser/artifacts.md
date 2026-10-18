@@ -120,7 +120,10 @@ styles page chrome and error text, not document pixels.
 
 `tools::artifacts::excel_artifact::ExcelArtifact` shares modern workbook/table
 preparation with attachment previews. Sheets keep workbook order; multiple sheets
-have canvas tabs above selectable native tables. Keyboard traversal includes offscreen
+have canvas tabs above selectable native tables. A failed sheet in a mixed XLSX
+workbook retains its tab and shows the shared selectable error panel instead of a
+table; readable siblings remain available. The localized error heading updates in
+place. All-corrupt workbooks retain the whole-view error. Keyboard traversal includes offscreen
 tabs and reveals the focused tab; clipped pointer hits do not select a sheet.
 Workbook links use the live accent role, including visited links. Table bodies retain their nodes
 and independent scrolling across tab switches. The native registry owns placement;

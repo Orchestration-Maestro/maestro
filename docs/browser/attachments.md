@@ -33,8 +33,11 @@ Modern spreadsheet previews share the artifact table owner: workbook-order sheet
 controls select retained native tables with formatted text, merged cells, rich
 emphasis and non-executable links styled with the live accent role. Keyboard
 traversal reaches and reveals offscreen sheet tabs; clipped pointer hits do not
-select sheets. One sheet omits the tab strip. Each multi-sheet
-body retains its own scroll offsets; ordinary repaints retain the table nodes.
+select sheets. Failed sheets in a mixed XLSX workbook keep their tabs and show the
+existing selectable error panel with a live localized heading and literal detail;
+readable siblings still show their tables. All-corrupt workbooks remain whole-view
+errors. One sheet omits the tab strip. Each multi-sheet body retains its own scroll
+offsets; ordinary repaints retain the table and error nodes.
 The registry owns position and scaling, while the spreadsheet root keeps its
 bounded height during measurement. Selecting text, replacing content or closing
 releases that workbook view. Word rendering remains in

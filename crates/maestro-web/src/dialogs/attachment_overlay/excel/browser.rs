@@ -35,7 +35,7 @@ pub(super) fn mount(
         root.append_child(&strip).map_err(|e| host_error(&e))?;
     }
     let mut nodes = Vec::new();
-    for (_, html) in &sheets.values {
+    for (_, content) in &sheets.values {
         let body = create(
             document,
             "div",
@@ -45,7 +45,14 @@ pub(super) fn mount(
                 "maestro-excel-single"
             },
         )?;
-        body.set_inner_html(html);
+        match content {
+            Ok(html) => body.set_inner_html(html),
+            Err(text) => {
+                let error = super::super::error::mount(document, text, surface.3)?;
+                body.append_child(&error.element)
+                    .map_err(|e| host_error(&e))?;
+            }
+        }
         root.append_child(&body).map_err(|e| host_error(&e))?;
         nodes.push(body);
     }

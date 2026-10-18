@@ -8,7 +8,7 @@ fn legacy_producer_date_format_repairs_display_and_tables() {
     let file = "legacy-producer-date.xls";
     let mut ssf = Ssf::default();
     let book = ssf::read(&legacy_workbook_support::bytes(file), file, &mut ssf).unwrap();
-    let cell = &book.sheets["Data"].cells["A1"];
+    let cell = &book.sheets["Data"].as_ref().unwrap().cells["A1"];
     assert_eq!(cell.v, CellValue::Number(44927.0));
     assert_eq!(cell.w.as_deref(), Some("1.1"));
     assert_eq!(book.ssf[&60], "d\\.m");
@@ -25,7 +25,7 @@ fn legacy_biff5_empty_strings_keep_empty_cells_and_nonempty_controls() {
         &mut Ssf::default(),
     )
     .unwrap();
-    let sheet = &book.sheets["Data"];
+    let sheet = book.sheets["Data"].as_ref().unwrap();
     assert_eq!(sheet.cells["A1"].v, CellValue::Text(String::new()));
     assert_eq!(sheet.cells["A2"].v, CellValue::Text("control".to_owned()));
     assert_eq!(sheet.cells.len(), 2);
@@ -557,7 +557,7 @@ fn legacy_biff5_negative_relative_rows_keep_version_grid() {
         &mut Ssf::default(),
     )
     .unwrap();
-    let cell = &book.sheets.values().next().unwrap().cells["A1"];
+    let cell = &book.sheets.values().next().unwrap().as_ref().unwrap().cells["A1"];
     assert_eq!(cell.f.as_deref(), Some("$A16384"));
     assert_eq!(cell.v, CellValue::Number(7.0));
 }
@@ -573,7 +573,7 @@ fn legacy_shifted_areas_keep_whole_rows_in_each_operand_class() {
             &mut Ssf::default(),
         )
         .unwrap();
-        let cell = &book.sheets["Data"].cells["C3"];
+        let cell = &book.sheets["Data"].as_ref().unwrap().cells["C3"];
         assert_eq!(cell.f.as_deref(), Some("3:4"));
         assert_eq!(cell.v, CellValue::Number(7.0));
     }
@@ -591,7 +591,7 @@ fn legacy_shared_areas_keep_whole_rows_in_each_operand_class() {
         )
         .unwrap();
         for address in ["A1", "A2"] {
-            let cell = &book.sheets["Data"].cells[address];
+            let cell = &book.sheets["Data"].as_ref().unwrap().cells[address];
             assert_eq!(cell.f.as_deref(), Some("SUM($1:$2)"));
             assert_eq!(cell.v, CellValue::Number(7.0));
         }
@@ -609,8 +609,8 @@ fn legacy_unused_external_sheet_layouts_keep_ordinary_cells_readable() {
             &mut Ssf::default(),
         )
         .unwrap();
-        assert_eq!(book.sheets["Data"].cells.len(), 1);
-        let cell = &book.sheets["Data"].cells["A1"];
+        assert_eq!(book.sheets["Data"].as_ref().unwrap().cells.len(), 1);
+        let cell = &book.sheets["Data"].as_ref().unwrap().cells["A1"];
         assert_eq!(cell.v, CellValue::Number(23.0));
         assert!(cell.f.is_none());
     }
@@ -630,11 +630,40 @@ fn legacy_range_prefixes_keep_complete_expression_identity() {
         )
         .unwrap();
         assert_eq!(
-            book.sheets[row["sheet"].as_str().unwrap()].cells["A1"]
+            book.sheets[row["sheet"].as_str().unwrap()]
+                .as_ref()
+                .unwrap()
+                .cells["A1"]
                 .f
                 .as_deref(),
             Some(row["formula"].as_str().unwrap()),
             "{file}"
         );
     }
+}
+
+#[test]
+fn legacy_corrupt_sheet_stream_still_fails_workbook() {
+    use maestro_app::browser::ssf::{self, CellValue, Ssf, WorkbookError};
+    let book = ssf::read(
+        &crate::workbook_fixture::bytes("binary-mixed-valid.xls"),
+        "valid.xls",
+        &mut Ssf::default(),
+    )
+    .unwrap();
+    assert_eq!(
+        book.sheets.keys().map(String::as_str).collect::<Vec<_>>(),
+        ["Data", "Good"]
+    );
+    assert_eq!(
+        book.sheets["Good"].as_ref().unwrap().cells["A1"].v,
+        CellValue::Number(42.)
+    );
+    let error = ssf::read(
+        &crate::workbook_fixture::bytes("binary-mixed-corrupt.xls"),
+        "corrupt.xls",
+        &mut Ssf::default(),
+    )
+    .unwrap_err();
+    assert!(matches!(error, WorkbookError::Reader(_)));
 }
