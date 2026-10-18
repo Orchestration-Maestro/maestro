@@ -16,12 +16,16 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 
 /// Child behaviours selected by the first argument; later arguments are the port and,
-/// for the `live` and `exit` modes, the stream descriptors closed before the hold.
+/// for the `live` and `exit` modes, the stream descriptors closed before the hold. The
+/// `term` and `flood` modes take the blocked termination signal with `sigwait`, which
+/// cannot miss a signal sent right after `READY`.
 const CHILD: &str = r"
 import os, signal, socket, sys
 mode, port = sys.argv[1], int(sys.argv[2])
+def ready():
+    s = socket.create_connection(('127.0.0.1', port)); s.sendall(b'READY'); return s
 def hold():
-    s = socket.create_connection(('127.0.0.1', port)); s.sendall(b'READY'); s.recv(1)
+    ready().recv(1)
 def finish(closed):
     for fd in (1, 2):
         if str(fd) not in closed: os.write(fd, b'tail')
@@ -38,12 +42,10 @@ if mode in ('live', 'exit'):
         for fd in closed: os.close(int(fd))
         hold(); finish(closed)
     os._exit(0)
-elif mode == 'term':
-    def stop(*_): os.write(1, b'terminated'); os._exit(0)
-    signal.signal(signal.SIGTERM, stop); hold()
-elif mode == 'flood':
-    def stop(*_): os.write(1, b'x' * 200000 + b'end'); os._exit(0)
-    signal.signal(signal.SIGTERM, stop); hold()
+elif mode in ('term', 'flood'):
+    signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
+    s = ready(); signal.sigwait({signal.SIGTERM})
+    os.write(1, b'terminated' if mode == 'term' else b'x' * 200000 + b'end'); os._exit(0)
 elif mode == 'kill':
     if os.fork() == 0: hold(); os._exit(0)
     hold()

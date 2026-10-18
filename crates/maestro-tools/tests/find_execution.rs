@@ -488,7 +488,7 @@ fn find_native_abort_terminates_child_without_waiting_for_exit() {
     let root = read_support::TempDir::new();
     let socket_path = root.0.join("native.sock");
     let script = format!(
-        "#!/usr/bin/python3\nimport socket,signal\ns=socket.socket(socket.AF_UNIX)\ns.connect({})\nsignal.signal(signal.SIGTERM,lambda a,b:s.sendall(b'term'))\ns.sendall(b'ready')\ns.recv(1)\n",
+        "#!/usr/bin/python3\nimport socket,signal\ns=socket.socket(socket.AF_UNIX)\ns.connect({})\nsignal.pthread_sigmask(signal.SIG_BLOCK,{{signal.SIGTERM}})\ns.sendall(b'ready')\nsignal.sigwait({{signal.SIGTERM}})\ns.sendall(b'term')\ns.recv(1)\n",
         serde_json::json!(socket_path.to_str().unwrap())
     );
     find_support::executable(&root, "fd", &script);

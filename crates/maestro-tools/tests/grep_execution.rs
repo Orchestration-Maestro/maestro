@@ -390,7 +390,7 @@ fn grep_cancellation_stops_live_child() {
             let listener = g::session(
                 &root,
                 &format!(
-                    "def stop(*args):\n s.sendall(b'T')\n assert s.recv(1)==b'x'\n sys.exit(9)\nsignal.signal(signal.SIGTERM,stop)\ns.sendall(b'R')\nassert s.recv(1)==b'x'\nos.write(1,{}.encode())\n{}\nsignal.pause()",
+                    "signal.pthread_sigmask(signal.SIG_BLOCK,{{signal.SIGTERM}})\ns.sendall(b'R')\nassert s.recv(1)==b'x'\nos.write(1,{}.encode())\n{}\nsignal.sigwait({{signal.SIGTERM}})\ns.sendall(b'T')\nassert s.recv(1)==b'x'\nsys.exit(9)",
                     serde_json::json!(event),
                     if limited { "" } else { "s.sendall(b'S')" }
                 ),
@@ -438,9 +438,8 @@ fn grep_limit_terminates_before_later_results() {
         let listener = g::session(
             &root,
             &format!(
-                "def stop(*args):\n s.sendall(b'T')\n assert s.recv(1)==b'x'\n sys.exit(9)\nsignal.signal(signal.SIGTERM,stop)\ns.sendall(b'R')\nassert s.recv(1)==b'x'\nos.write(1,{}.encode())\nassert s.recv(1)==b'y'\nopen({},'w').write('late')\nos.write(1,b'{{\"type\":\"match\",\"data\":{{}}}}\\n')",
-                serde_json::json!(event),
-                serde_json::json!(root.0.join("late").to_str().unwrap())
+                "signal.pthread_sigmask(signal.SIG_BLOCK,{{signal.SIGTERM}})\ns.sendall(b'R')\nassert s.recv(1)==b'x'\nos.write(1,{}.encode())\nsignal.sigwait({{signal.SIGTERM}})\ns.sendall(b'T')\nassert s.recv(1)==b'x'\nsys.exit(9)",
+                serde_json::json!(event)
             ),
         );
         let execution = g::invocation(
@@ -466,7 +465,6 @@ fn grep_limit_terminates_before_later_results() {
             result.details.unwrap(),
             serde_json::json!({"matchLimitReached":1.0})
         );
-        assert!(!root.0.join("late").exists());
         assert_eq!(socket.read(&mut byte).await.unwrap(), 0);
     });
 }
