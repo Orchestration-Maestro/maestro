@@ -11,6 +11,9 @@ request signing, retries and binary event framing; this module owns configuratio
 input, hook ordering and event reduction. The consumed common options are `max_tokens`,
 `temperature`, `cache_retention`, `signal`, `fetch` and the two hooks.
 
+Assistant output uses `bedrock-converse-stream` even when the supplied model names another
+API; request processing and payload hooks still receive the original descriptor.
+
 ## Conversation input
 
 History first passes through the [shared projection](../conversation-projection.md). User content keeps

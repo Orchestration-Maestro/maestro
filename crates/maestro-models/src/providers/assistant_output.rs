@@ -13,9 +13,14 @@ use crate::{
 /// The assistant message an invocation fills in, before any response arrives.
 #[must_use]
 pub fn initial_message(model: &Model) -> AssistantMessage {
+    initial_message_for_api(model, &model.api)
+}
+
+/// Initialize the provider-selected API while preserving the request descriptor.
+pub(crate) fn initial_message_for_api(model: &Model, api: &str) -> AssistantMessage {
     AssistantMessage {
         content: Vec::new(),
-        api: model.api.clone(),
+        api: api.to_owned(),
         provider: model.provider.clone(),
         model: model.id.clone(),
         response_model: None,

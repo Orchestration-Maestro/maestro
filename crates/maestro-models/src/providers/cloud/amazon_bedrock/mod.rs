@@ -28,7 +28,7 @@ use crate::SharedAssistantMessage;
 use crate::options::token_base;
 #[cfg(target_arch = "wasm32")]
 use crate::providers::assistant_output::fail;
-use crate::providers::assistant_output::initial_message;
+use crate::providers::assistant_output::initial_message_for_api;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::providers::assistant_output::start_producer_for;
 #[cfg(target_arch = "wasm32")]
@@ -78,6 +78,9 @@ pub struct BedrockOptions<E: ProviderExecution = Threaded> {
 /// Every failure the call detects ends the stream with an error update. On native targets the
 /// call must run inside a Tokio runtime with its time and I/O drivers. On browser targets the
 /// stream ends at once with `Bedrock is not supported in browsers.`
+///
+/// Output uses `bedrock-converse-stream` even if the model names another API;
+/// request processing and payload hooks receive the original descriptor.
 #[must_use]
 pub fn stream_bedrock(
     model: Model,
@@ -229,7 +232,10 @@ producer!(Threaded);
 #[cfg(target_arch = "wasm32")]
 fn start<E: Producer>(call: ProviderCall<E, BedrockOptions<E>>) -> AssistantMessageEventStream {
     let stream = AssistantMessageEventStream::new();
-    let output = Arc::new(RwLock::new(initial_message(&call.model)));
+    let output = Arc::new(RwLock::new(initial_message_for_api(
+        &call.model,
+        "bedrock-converse-stream",
+    )));
     let failure = RequestFailure::new("Bedrock is not supported in browsers.");
     let signal = call.options.unwrap_or_default().common.signal;
     fail(&stream, &output, signal.as_ref(), failure);
@@ -247,7 +253,10 @@ fn start<E: Producer>(call: ProviderCall<E, BedrockOptions<E>>) -> AssistantMess
     } = call;
     let options = options.unwrap_or_default();
     let stream = AssistantMessageEventStream::new();
-    let output = Arc::new(RwLock::new(initial_message(&model)));
+    let output = Arc::new(RwLock::new(initial_message_for_api(
+        &model,
+        "bedrock-converse-stream",
+    )));
     let signal = options.common.signal.clone();
     let call = native::Call {
         model: Arc::new(model),

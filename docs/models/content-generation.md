@@ -342,6 +342,9 @@ assert!(prepared.request.signal.is_none());
 
 ## Public invocation
 
+Assistant output uses `google-generative-ai` even when the supplied model names another
+API; request processing and payload hooks still receive the original descriptor.
+
 [`stream_google`](../../crates/maestro-models/src/providers/content/google.rs) takes
 `GoogleOptions` and returns an independently produced event stream. Default native callers need a
 running Tokio runtime. Dropping the event reader does not cancel the producer; its retained
@@ -402,6 +405,9 @@ prior content without closing its active block; [reducer failures](#response-red
 retain the effects preceding their failing conversion. Clean EOF uses the shared conclusion policy.
 
 ## Cloud invocation
+
+Assistant output uses `google-vertex` even when the supplied model names another API;
+request processing and payload hooks still receive the original descriptor.
 
 [`google_vertex`](../../crates/maestro-models/src/providers/content/google_vertex/mod.rs)
 exports `GoogleVertexOptions`, `stream_google_vertex`, `stream_simple_google_vertex`
