@@ -12,10 +12,12 @@ mod tests {
     use super::oauth_support::{
         ControlledProvider, FUTURE, RefreshBehavior, Unregister, credentials,
     };
-    use super::support::{TempDir, block_on, block_on_paused, is_child, run_child};
+    use super::support::{
+        TempDir, api_key, block_on, block_on_paused, is_child, memory_text, run_child,
+    };
     use maestro_credentials::{
-        ApiKeyCredential, AsyncLockUpdate, AuthCredential, AuthStorage, AuthStorageBackend,
-        ConfigValueOperations, FileAuthStorageBackend, InMemoryAuthStorageBackend, LockUpdate,
+        AsyncLockUpdate, AuthStorage, AuthStorageBackend, ConfigValueOperations,
+        FileAuthStorageBackend, InMemoryAuthStorageBackend, LockUpdate,
     };
     use maestro_models::{BoxFuture, OAuthCredentials, OAuthError};
     use std::fs::{File, TryLockError};
@@ -34,13 +36,6 @@ mod tests {
         fn execute(&self, _command: &str) -> Option<Vec<u8>> {
             None
         }
-    }
-
-    /// Stored API key credential.
-    fn api_key(key: &str) -> AuthCredential {
-        AuthCredential::ApiKey(ApiKeyCredential {
-            key: key.to_owned(),
-        })
     }
 
     /// Pretty text of one API key record per entry.
@@ -330,18 +325,6 @@ mod tests {
         let text = std::fs::read_to_string(&path).unwrap();
         assert!(text.contains("\"key\": \"k\u{fffd}\u{fffd}z\""));
         assert!(text.contains("\"expires\": 1730000000000,\n    \"zeta\": 1,\n    \"alpha\": {\n      \"y\": 1,\n      \"x\": 2\n    }"));
-    }
-
-    /// Text held by a memory backend.
-    fn memory_text(backend: &InMemoryAuthStorageBackend) -> Option<String> {
-        let mut text = None;
-        backend
-            .with_lock(&mut |current| {
-                text = current.map(str::to_owned);
-                Ok(None)
-            })
-            .unwrap();
-        text
     }
 
     /// Callback that keeps the text it saw and returns `next`.

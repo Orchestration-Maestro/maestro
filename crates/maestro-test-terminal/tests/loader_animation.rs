@@ -1,5 +1,5 @@
 //! Loader lifecycle and callback ordering through its public component interface.
-use maestro_tui::{Component, Loader, LoaderIndicatorOptions, TUI, TerminalImage};
+use maestro_tui::{Component, Loader, LoaderIndicatorOptions, TUI};
 use std::rc::Rc;
 #[allow(
     dead_code,
@@ -9,6 +9,7 @@ mod support {
     pub mod checks;
     pub mod manual_runtime;
     pub mod recording_terminal;
+    pub mod writer;
 }
 use support::checks::succeeds;
 
@@ -18,21 +19,9 @@ fn all_succeed(results: Vec<std::io::Result<()>>) {
         succeeds(result);
     }
 }
-use support::manual_runtime::{ManualRuntime, ms};
-use support::recording_terminal::RecordingTerminal;
+use support::manual_runtime::ms;
+use support::writer::writer;
 
-/// A writer with controlled time and recorded output.
-fn writer() -> (TUI, RecordingTerminal, ManualRuntime) {
-    let runtime = ManualRuntime::new();
-    let terminal = RecordingTerminal::new(16, 24);
-    let tui = TUI::new(
-        terminal.handle(),
-        runtime.handle(),
-        TerminalImage::default(),
-        None,
-    );
-    (tui, terminal, runtime)
-}
 /// Identity-colored message M with optional custom frames.
 fn loader(tui: TUI, indicator: Option<LoaderIndicatorOptions>) -> Loader {
     Loader::new(

@@ -3,9 +3,7 @@
 use maestro_tui::keybindings::{KeybindingKeys, KeybindingsManager, TUI_KEYBINDINGS};
 use maestro_tui::keys::{is_kitty_protocol_active, set_kitty_protocol_active};
 use maestro_tui::tui::InputHandler;
-use maestro_tui::{
-    CancellableLoader, Component, Loader, LoaderIndicatorOptions, TUI, TerminalImage,
-};
+use maestro_tui::{CancellableLoader, Component, Loader, LoaderIndicatorOptions};
 use maestro_tui::{get_keybindings, set_keybindings};
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -19,10 +17,11 @@ mod support {
     pub mod checks;
     pub mod manual_runtime;
     pub mod recording_terminal;
+    pub mod writer;
 }
 use support::checks::{parse, succeeds};
 use support::manual_runtime::{ManualRuntime, ms};
-use support::recording_terminal::RecordingTerminal;
+use support::writer::writer;
 
 /// Serializes mutations of the toolkit's global input configuration.
 static INPUT_STATE: Mutex<()> = Mutex::new(());
@@ -66,18 +65,6 @@ fn manager(keys: Option<Vec<String>>) -> KeybindingsManager {
         )]
     });
     KeybindingsManager::new(TUI_KEYBINDINGS.clone(), bindings)
-}
-/// Creates the real writer with controlled time.
-fn writer() -> (TUI, RecordingTerminal, ManualRuntime) {
-    let runtime = ManualRuntime::new();
-    let terminal = RecordingTerminal::new(16, 24);
-    let tui = TUI::new(
-        terminal.handle(),
-        runtime.handle(),
-        TerminalImage::default(),
-        None,
-    );
-    (tui, terminal, runtime)
 }
 /// Creates an identity-styled two-frame loader.
 fn widget() -> (Rc<CancellableLoader>, ManualRuntime) {

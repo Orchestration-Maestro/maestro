@@ -17,7 +17,7 @@ mod tests {
     use super::oauth_support::{
         ControlledProvider, FUTURE, RefreshBehavior, Unregister, credentials, error,
     };
-    use super::support::{TempDir, block_on, is_child, run_child};
+    use super::support::{TempDir, api_key, block_on, is_child, run_child};
     use maestro_credentials::{
         AsyncLockUpdate, AuthCredential, AuthStorage, AuthStorageBackend, AuthStorageError,
         AuthStorageFuture, ConfigValueOperations, FileAuthStorageBackend,
@@ -256,12 +256,7 @@ mod tests {
                 let accepted: Vec<String> = document.as_object().unwrap().keys().cloned().collect();
                 assert_eq!(storage.list(), accepted);
                 assert!(probe.writes.lock().unwrap().is_empty());
-                storage.set(
-                    "later",
-                    AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
-                        key: "l".into(),
-                    }),
-                );
+                storage.set("later", api_key("l"));
                 assert_eq!(probe.writes.lock().unwrap().len(), 1);
                 probe.in_lock.lock().unwrap().take();
             }
@@ -590,12 +585,7 @@ mod tests {
             let document = json!({"gone": key_record("g"), "r9": record("old", 1000.0), "keep": key_record("k")});
             let (probe, storage) = setup(&document);
             edited_during_refresh(&storage, "r9", (&gates.0, &gates.1), || {
-                storage.set(
-                    "added",
-                    AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
-                        key: "a".into(),
-                    }),
-                );
+                storage.set("added", api_key("a"));
                 storage.remove("gone");
             })
             .await;
@@ -619,12 +609,7 @@ mod tests {
             .unwrap();
             let storage = AuthStorage::create(&path);
             edited_during_refresh(&storage, "r9-file", (&gates.0, &gates.1), || {
-                storage.set(
-                    "added",
-                    AuthCredential::ApiKey(maestro_credentials::ApiKeyCredential {
-                        key: "a".into(),
-                    }),
-                );
+                storage.set("added", api_key("a"));
             })
             .await;
             assert_eq!(storage.drain_errors().len(), 1);
