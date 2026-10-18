@@ -17,7 +17,9 @@ OSC 133 A and the last row with OSC 133 B/C, without adding a row.
 The assistant constructor accepts an optional shared assistant message and
 `AssistantMessageOptions`. Defaults show thinking, use the hidden label
 `Thinking...` and enable hidden-label italic decoration. Text and thinking are
-trimmed with the [shared whitespace predicate](../text.md). Visible blocks retain
+cleaned like tool output, so escape sequences and C0 controls other than TAB, LF
+and CR never reach the terminal ([display helpers](../tools-read.md#display-helpers)),
+then trimmed with the [shared whitespace predicate](../text.md). Visible blocks retain
 their order, with a leading spacer and a gap after thinking only when another
 visible block follows. Hidden thinking uses the literal label instead of Markdown.
 

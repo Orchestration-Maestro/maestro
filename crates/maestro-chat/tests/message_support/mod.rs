@@ -137,3 +137,56 @@ pub fn releases_handles() {
     drop(component);
     assert!(last.upgrade().is_none());
 }
+
+/// Text and thinking that carry terminal control sequences in prose and fenced code
+/// render without them, keeping the words around them.
+pub fn drops_terminal_controls() {
+    let (_, live) = published::published(&palette::palette("a"));
+    let markdown = Rc::new(maestro_theme::get_markdown_theme(
+        live.clone(),
+        Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
+        true,
+    ));
+    let controls = [
+        ("clipboard", "\x1b]52;c;b3duZWQ=\x07"),
+        ("title", "\x1b]0;owned\x07"),
+        ("clear", "\x1b[2J"),
+        (
+            "link",
+            "\x1b]8;;https://attacker.example/\x07docs.example\x1b]8;;\x07",
+        ),
+    ];
+    let mut leaks = Vec::new();
+    for (name, control) in controls {
+        let text = format!("before {control} after\n\n```\ncode {control} end\n```");
+        let message = widget::message(None);
+        message.write().unwrap().content = serde_json::from_value(serde_json::json!([
+            {"type": "thinking", "thinking": text},
+            {"type": "text", "text": text},
+        ]))
+        .unwrap();
+        let component = maestro_chat::AssistantMessageComponent::new(
+            Some(message),
+            maestro_chat::AssistantMessageOptions::default(),
+            live.clone(),
+            markdown.clone(),
+            maestro_tui::TerminalImage::new(|_| None, || 1),
+        );
+        let rendered = component.render(80).join("\n");
+        let markers = ["\x1b]52;", "\x1b]0;", "\x1b[2J", "attacker.example"];
+        leaks.extend(
+            markers
+                .iter()
+                .filter(|marker| rendered.contains(**marker))
+                .map(|marker| (name, *marker)),
+        );
+        for word in ["before", "after", "code", "end"] {
+            assert_eq!(
+                rendered.matches(word).count(),
+                2,
+                "{name} {word}: {rendered:?}"
+            );
+        }
+    }
+    assert!(leaks.is_empty(), "rendered controls: {leaks:?}");
+}

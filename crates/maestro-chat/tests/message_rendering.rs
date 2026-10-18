@@ -64,6 +64,11 @@ fn assistant_releases_replaced_message_handles() {
 }
 
 #[test]
+fn assistant_text_and_thinking_drop_terminal_controls() {
+    message_support::drops_terminal_controls();
+}
+
+#[test]
 fn branch_summary_expands_and_collapses() {
     message_support::group("branch_summary_expands_and_collapses");
 }
