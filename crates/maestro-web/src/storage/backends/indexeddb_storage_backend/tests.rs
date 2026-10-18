@@ -198,10 +198,6 @@ struct Bounds {
     lower: String,
     /// Inclusive upper key.
     upper: String,
-    /// Lower openness.
-    lower_open: bool,
-    /// Upper openness.
-    upper_open: bool,
 }
 #[test]
 fn prefix_bounds_keep_empty_and_inclusive_fence() {
@@ -216,9 +212,6 @@ fn prefix_bounds_keep_empty_and_inclusive_fence() {
                 .map(|b| (b.lower.as_str(), b.upper.clone())),
             "{id}"
         );
-        if let Some(bounds) = expected {
-            assert!(!bounds.lower_open && !bounds.upper_open, "{id}");
-        }
     }
 }
 
