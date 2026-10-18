@@ -1304,31 +1304,45 @@ fn documented_foundation_graph_matches_policy() {
     assert_eq!(documented, expected);
 }
 
-/// Declares the targets together in each form; the checker judges and names every edge on its own.
+/// Declares the targets together in every form; the checker judges and names every edge on its own.
+///
+/// One manifest declares every form under the same names, which Cargo accepts across tables; the
+/// optional form needs a second manifest, because Cargo rejects one package under two names in a
+/// table.
 fn check_permitted_declarations(workspace: &Workspace, from: &str, targets: &[&str]) {
-    for (kind, extra) in DECLARATIONS {
-        let selected: std::collections::BTreeSet<_> = targets
+    let selected: std::collections::BTreeSet<_> = targets
+        .iter()
+        .chain(support::required(from))
+        .copied()
+        .collect();
+    let renamed: Vec<_> = selected
+        .iter()
+        .enumerate()
+        .filter(|(_, target)| from != "maestro" || !required_targets(from).contains(target))
+        .collect();
+    for optional in [false, true] {
+        let mut declarations = String::new();
+        for (kind, extra) in DECLARATIONS
             .iter()
-            .chain(support::required(from))
-            .copied()
-            .collect();
-        let mut declarations = format!("[{kind}]\n");
-        for (index, target) in selected.iter().enumerate() {
-            if from == "maestro" && required_targets(from).contains(target) {
-                continue;
+            .filter(|(_, extra)| extra.is_empty() != optional)
+        {
+            writeln!(declarations, "[{kind}]").unwrap();
+            for (index, target) in &renamed {
+                writeln!(
+                    declarations,
+                    "renamed{index} = {{ package = {target:?}, path = \"../{target}\"{extra} }}"
+                )
+                .unwrap();
             }
-            writeln!(
-                declarations,
-                "renamed{index} = {{ package = {target:?}, path = \"../{target}\"{extra} }}"
-            )
-            .unwrap();
+            if *kind == "dependencies" {
+                append_required_root_wiring(&mut declarations, from, kind);
+            }
         }
-        append_required_root_wiring(&mut declarations, from, kind);
         workspace.member(from, from, &declarations);
         assert_eq!(
             check_workspace(&workspace.root),
             Ok(()),
-            "{from} -> {targets:?} ({kind}{extra})"
+            "{from} -> {targets:?} (optional: {optional})"
         );
     }
 }
