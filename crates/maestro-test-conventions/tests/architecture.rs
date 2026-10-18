@@ -236,9 +236,9 @@ fn leaf_internal_dependencies_are_rejected() {
                     format!("forbidden production dependency: {leaf} -> maestro-app")
                 })
             );
-            workspace.member("leaf", leaf, "");
-            assert_eq!(check_workspace(&workspace.root), Ok(()));
         }
+        workspace.member("leaf", leaf, "");
+        assert_eq!(check_workspace(&workspace.root), Ok(()));
     }
 }
 
@@ -745,8 +745,9 @@ fn path_utility_edges_preserve_native_layer_rules() {
     assert_eq!(rows.len(), 46);
     assert_eq!(consumers.len(), 29);
     assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 12);
+    native_consumers_may_declare_the_utility(&consumers);
     for from in consumers {
-        native_consumer_may_declare_the_utility(from);
+        native_consumer_may_not_dev_declare_the_utility(from);
     }
     for from in UTILITY_EXCLUDED {
         excluded_crate_may_not_declare_the_utility(from);
@@ -765,22 +766,30 @@ fn is_leaf(name: &str) -> bool {
         .is_empty()
 }
 
-/// Accept every production declaration form of the utility and reject a dev one.
-fn native_consumer_may_declare_the_utility(from: &str) {
+/// Accept every production declaration form of the utility from all consumers at once.
+fn native_consumers_may_declare_the_utility(consumers: &[&str]) {
     let workspace = Workspace::new();
-    workspace.foundation(&[from, "maestro-path"]);
+    workspace.foundation(&[consumers, &["maestro-path"]].concat());
     for (kind, extra) in DECLARATIONS {
-        workspace.member(
-            from,
-            from,
-            &dependencies_with_utility(required_targets(from), kind, extra),
-        );
+        for from in consumers {
+            workspace.member(
+                from,
+                from,
+                &dependencies_with_utility(required_targets(from), kind, extra),
+            );
+        }
         assert_eq!(
             check_workspace(&workspace.root),
             Ok(()),
-            "{from} -> maestro-path ({kind}{extra})"
+            "consumers -> maestro-path ({kind}{extra})"
         );
     }
+}
+
+/// Reject a dev declaration of the utility from a native consumer.
+fn native_consumer_may_not_dev_declare_the_utility(from: &str) {
+    let workspace = Workspace::new();
+    workspace.foundation(&[from, "maestro-path"]);
     workspace.member(
         from,
         from,
