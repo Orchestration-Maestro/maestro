@@ -212,15 +212,12 @@ fn pdf_font_and_text_corpus_keeps_approved_engine_results() {
             } => Some(preview.file.clone()),
             _ => None,
         }))
+        .chain(support::pdf::text_show_files())
         .chain([
             "documents.json".into(),
             "routes.json".into(),
             "runs.json".into(),
             "text-shows.json".into(),
-            "show-form-clip.pdf".into(),
-            "show-form-repeat.pdf".into(),
-            "show-compressed.pdf".into(),
-            "show-unicode.pdf".into(),
             "LICENSE".into(),
         ])
         .collect();
@@ -358,4 +355,59 @@ fn pdf_outlined_shows_at_identical_positions_remain_distinct() {
         "pdf_outlined_shows_at_identical_positions_remain_distinct",
         2,
     );
+}
+
+#[test]
+fn pdf_text_extraction_includes_hidden_optional_content() {
+    support::pdf::check_text_shows("pdf_text_extraction_includes_hidden_optional_content", 1);
+}
+
+#[test]
+fn pdf_text_bytes_survive_native_decoding_serialization() {
+    support::pdf::check_text_shows("pdf_text_bytes_survive_native_decoding_serialization", 3);
+}
+
+#[test]
+fn pdf_font_state_survives_save_restore_and_text_objects() {
+    support::pdf::check_text_shows("pdf_font_state_survives_save_restore_and_text_objects", 1);
+}
+
+#[test]
+fn pdf_graphics_state_selects_font_without_resetting_it() {
+    support::pdf::check_text_shows("pdf_graphics_state_selects_font_without_resetting_it", 1);
+}
+
+#[test]
+fn pdf_form_fonts_keep_resource_scope_and_restore_parent() {
+    support::pdf::check_text_shows("pdf_form_fonts_keep_resource_scope_and_restore_parent", 2);
+}
+
+#[test]
+fn pdf_font_names_retain_escaped_bytes() {
+    support::pdf::check_text_shows("pdf_font_names_retain_escaped_bytes", 1);
+}
+
+#[test]
+fn pdf_font_selection_controls_default_show_fallbacks() {
+    support::pdf::check_text_shows("pdf_font_selection_controls_default_show_fallbacks", 4);
+}
+
+#[test]
+fn pdf_form_cycles_stop_without_dropping_repeated_finite_forms() {
+    support::pdf::check_text_shows(
+        "pdf_form_cycles_stop_without_dropping_repeated_finite_forms",
+        1,
+    );
+    let repeated = support::pdf::load("show-form-repeat.pdf").unwrap();
+    assert_eq!(
+        repeated.extracted_text.as_deref(),
+        Some(
+            "<pdf filename=\"show-form-repeat.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+        )
+    );
+}
+
+#[test]
+fn pdf_deep_finite_forms_do_not_inherit_raster_depth_limit() {
+    support::pdf::check_text_shows("pdf_deep_finite_forms_do_not_inherit_raster_depth_limit", 1);
 }

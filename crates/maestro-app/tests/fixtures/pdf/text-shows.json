@@ -286,5 +286,140 @@
       "content": "BT /F1 12 Tf 6 Tr 5 30 Td (Page A) Tj 1 0 0 1 5 30 Tm (Page A) Tj ET"
     },
     "expected_text": "<pdf filename=\"outlined-6.pdf\">\n<page number=\"1\">\nPage A Page A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_extraction_includes_hidden_optional_content",
+    "name": "hidden-optional-content.pdf",
+    "input": {
+      "kind": "file",
+      "file": "owned-hidden-optional-content.pdf"
+    },
+    "expected_text": "<pdf filename=\"hidden-optional-content.pdf\">\n<page number=\"1\">\nP P P\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_bytes_survive_native_decoding_serialization",
+    "name": "octal-text-bytes.pdf",
+    "input": {
+      "kind": "file",
+      "file": "owned-octal-text-bytes.pdf"
+    },
+    "expected_text": "<pdf filename=\"octal-text-bytes.pdf\">\n<page number=\"1\">\nP\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_bytes_survive_native_decoding_serialization",
+    "name": "escaped-text-bytes.pdf",
+    "input": {
+      "kind": "file",
+      "file": "owned-escaped-text-bytes.pdf"
+    },
+    "expected_text": "<pdf filename=\"escaped-text-bytes.pdf\">\n<page number=\"1\">\nP(P)P\\P\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_text_bytes_survive_native_decoding_serialization",
+    "name": "high-text-byte.pdf",
+    "input": {
+      "kind": "file",
+      "file": "owned-high-text-byte.pdf"
+    },
+    "expected_text": "<pdf filename=\"high-text-byte.pdf\">\n<page number=\"1\">\nZ\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_font_state_survives_save_restore_and_text_objects",
+    "name": "font-state-stack.pdf",
+    "input": {
+      "kind": "file",
+      "file": "owned-font-state-stack.pdf"
+    },
+    "expected_text": "<pdf filename=\"font-state-stack.pdf\">\n<page number=\"1\">\nP C P P\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_graphics_state_selects_font_without_resetting_it",
+    "name": "graphics-font.pdf",
+    "input": {
+      "kind": "file",
+      "file": "owned-graphics-font.pdf"
+    },
+    "expected_text": "<pdf filename=\"graphics-font.pdf\">\n<page number=\"1\">\nP C C\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_form_fonts_keep_resource_scope_and_restore_parent",
+    "name": "form-inherited-shadowed-font.pdf",
+    "input": {
+      "kind": "file",
+      "file": "owned-form-inherited-shadowed-font.pdf"
+    },
+    "expected_text": "<pdf filename=\"form-inherited-shadowed-font.pdf\">\n<page number=\"1\">\nP P C P P C\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_form_fonts_keep_resource_scope_and_restore_parent",
+    "name": "form-inherited-resources.pdf",
+    "input": {
+      "kind": "file",
+      "file": "owned-form-inherited-resources.pdf"
+    },
+    "expected_text": "<pdf filename=\"form-inherited-resources.pdf\">\n<page number=\"1\">\nP P P\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_font_names_retain_escaped_bytes",
+    "name": "escaped-font-name.pdf",
+    "input": {
+      "kind": "file",
+      "file": "owned-escaped-font-name.pdf"
+    },
+    "expected_text": "<pdf filename=\"escaped-font-name.pdf\">\n<page number=\"1\">\nP\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_font_selection_controls_default_show_fallbacks",
+    "name": "no-explicit-font.pdf",
+    "input": {
+      "kind": "file",
+      "file": "owned-no-explicit-font.pdf"
+    },
+    "expected_text": "<pdf filename=\"no-explicit-font.pdf\">\n<page number=\"1\">\n\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_font_selection_controls_default_show_fallbacks",
+    "name": "quote-no-explicit-font.pdf",
+    "input": {
+      "kind": "file",
+      "file": "owned-quote-no-explicit-font.pdf"
+    },
+    "expected_text": "<pdf filename=\"quote-no-explicit-font.pdf\">\n<page number=\"1\">\n\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_font_selection_controls_default_show_fallbacks",
+    "name": "quote-after-fallback.pdf",
+    "input": {
+      "kind": "file",
+      "file": "owned-quote-after-fallback.pdf"
+    },
+    "expected_text": "<pdf filename=\"quote-after-fallback.pdf\">\n<page number=\"1\">\n\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_font_selection_controls_default_show_fallbacks",
+    "name": "bad-font-quotes.pdf",
+    "input": {
+      "kind": "file",
+      "file": "owned-bad-font-quotes.pdf"
+    },
+    "expected_text": "<pdf filename=\"bad-font-quotes.pdf\">\n<page number=\"1\">\nA A A\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_form_cycles_stop_without_dropping_repeated_finite_forms",
+    "name": "cyclic-form.pdf",
+    "input": {
+      "kind": "file",
+      "file": "owned-cyclic-form.pdf"
+    },
+    "expected_text": "<pdf filename=\"cyclic-form.pdf\">\n<page number=\"1\">\nP\n</page>\n</pdf>"
+  },
+  {
+    "test": "pdf_deep_finite_forms_do_not_inherit_raster_depth_limit",
+    "name": "finite-deep-forms.pdf",
+    "input": {
+      "kind": "file",
+      "file": "owned-finite-deep-forms.pdf"
+    },
+    "expected_text": "<pdf filename=\"finite-deep-forms.pdf\">\n<page number=\"1\">\nP\n</page>\n</pdf>"
   }
 ]

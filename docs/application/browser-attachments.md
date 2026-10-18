@@ -36,10 +36,12 @@ selecting canonical `application/pdf`. PDF documents retain original bytes/name/
 Each page contributes `\n<page number="N">\nTEXT\n</page>` inside the literal
 `<pdf filename="NAME">` and final `\n</pdf>` wrapper. Native Unicode runs are
 filtered by the shared whitespace policy without trimming retained text, then
-joined with one space. Extraction observes decoded nonempty text shows before
-painting: outlined text contributes once per show, while independent repeated
-shows remain separate, including at identical positions. Invisible OCR and
-clip-only text are retained. Page order and empty page wrappers remain.
+joined with one space. Owned traversal follows logical text shows and their font
+resource scopes; the registry interpreter decodes the original string bytes.
+Outlined text contributes once per show, while independent repeated shows remain
+separate, including at identical positions. Invisible OCR, clip-only text and
+text in hidden optional layers are retained independently of painting. Page order
+and empty page wrappers remain.
 
 The optional preview is standard padded base64 PNG from page one, fit to 160
 pixels with truncating target dimensions, opaque white background and upscaling
