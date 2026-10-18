@@ -13,7 +13,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-watch", &[]),
     ("maestro-lock", &[]),
     ("maestro-process", &[]),
-    ("maestro-protocol", &["maestro-json"]),
+    ("maestro-protocol", &[]),
     ("maestro-ipc", &[]),
     ("maestro-terminal", &["maestro-text"]),
     (

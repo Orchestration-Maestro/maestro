@@ -260,7 +260,7 @@ from the optional foundation utility described below.
 | `maestro-lock` | acquire file-write locks | — | below 0 |
 | `maestro-process` | own native child-process lifecycles | — | below 0 |
 | `maestro-pattern` | match file patterns | `maestro-text` | below 0 |
-| `maestro-protocol` | define the daemon protocol | `maestro-json` | below 0 |
+| `maestro-protocol` | define the daemon protocol | — | below 0 |
 | `maestro-ipc` | connect local sockets | — | below 0 |
 | `maestro-markdown` | parse Markdown source | `maestro-text` | below 0 |
 | `maestro-extensions-wasm` | provide guest authoring | `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json` | 0 |

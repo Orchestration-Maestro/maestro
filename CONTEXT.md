@@ -203,7 +203,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 
 - **Workspace daemon:** The long-lived Maestro process owning workspaces, tabs, panes, pane terminals and pane agents for one user; closing a client never stops its work.
 - **Named daemon:** An independent workspace daemon with its own sockets and snapshot, chosen by name.
-- **Daemon protocol:** The versioned records and JSONL framing shared by the daemon socket, its clients and the RPC frontend.
+- **Daemon protocol:** The versioned records shared by the daemon socket, its clients and the RPC frontend. `maestro-protocol` owns the JSON records, JSON Schema and binary frames; JSONL transport framing belongs to the IPC owner. See [daemon protocol](docs/daemon-protocol.md).
 - **Workspace:** A named project space in the daemon holding ordered tabs; not the Cargo workspace.
 - **Tab:** An ordered split layout of panes within a workspace.
 - **Pane:** One leaf of a tab's layout, showing one pane terminal.
