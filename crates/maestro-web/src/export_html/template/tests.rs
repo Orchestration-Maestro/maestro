@@ -103,7 +103,7 @@ fn export_tool_results_keep_first_match_and_reached_errors() {
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub fn export_timestamps_use_browser_locale_and_raw_values() {
-    use wasm_bindgen::JsValue;
+    use wasm_bindgen::{JsCast as _, JsValue};
     for row in fixtures::rows(
         "export_timestamp_uses_owning_native_time_options",
         "timestamp",
@@ -129,7 +129,6 @@ pub fn export_timestamps_use_browser_locale_and_raw_values() {
     }
     let restore = js_sys::eval("(()=>{const old=Date.prototype.toLocaleTimeString;Date.prototype.toLocaleTimeString=function(locale,options){if(locale!==undefined||JSON.stringify(options)!==JSON.stringify({hour:'2-digit',minute:'2-digit',second:'2-digit'}))throw Error('wrong native time operands');return old.call(this,locale,options)};return ()=>Date.prototype.toLocaleTimeString=old})()").unwrap();
     let result = super::values::localize_timestamp(&serde_json::json!(1));
-    use wasm_bindgen::JsCast as _;
     restore
         .unchecked_into::<js_sys::Function>()
         .call0(&JsValue::UNDEFINED)
