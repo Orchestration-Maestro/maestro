@@ -50,3 +50,42 @@ PNG decoding expands palette entries and transparency, strips 16-bit channels
 to their high bytes and converts gray, gray-alpha, RGB and RGBA to RGBA. PNG
 geometry replaces the declared geometry. Parser and loader errors remain typed;
 protocol error-message translation belongs to screen execution.
+
+## Cell and row records
+
+`Cell` and `page::row::Row` are eight-byte `Copy` records with typed accessors.
+Cells distinguish scalar text, text with a cluster suffix and background-only
+colours. Width, protection, link presence, style identifiers and shell semantics
+are separate fields. Rows track wrapping, managed content, prompts and redraws.
+These flags describe table references; the records do not own those tables.
+
+`Style` keeps foreground, background and underline colour sources separate.
+Indexed colours resolve against the supplied palette. Background-only cells take
+precedence over a style's background. The optional bold policy brightens low
+palette indices or replaces default-coloured text; it leaves other direct colours
+unchanged. Text attributes and the six underline kinds retain their identity.
+
+## Page storage
+
+`Page` owns its rows, cells, deduplicated styles, cluster suffixes and hyperlink
+bytes. Copying rows between pages preserves those values after the source is
+cleared or dropped. Partial row copies leave unselected cells alone and combine
+both rows' image-placeholder summaries. Full row copies take the source summary.
+These summaries do not depend on managed cell ownership. Moves and
+swaps transfer managed content without duplicating its ownership; clearing cells
+releases their references. `insert_hyperlink` retains an identity until a successful
+`set_hyperlink` consumes it. Call `release_hyperlink` for an abandoned identity or
+a refused assignment to return its string storage. Reinitialising a page resets its storage and dirty
+state at the same capacity.
+
+Cluster suffixes use first-fit 16-byte chunks; hyperlink strings use 32-byte
+chunks. Fragmentation can exhaust contiguous space before the total free-byte
+count reaches zero. Capacity errors identify the affected table or allocator so
+the consuming terminal owner can grow storage and retry.
+
+`Page::layout` computes logical byte regions for rows, cells and each managed
+table, including their alignment and target page-size rounding. These are
+storage accounting bytes, not the native allocator's process memory usage.
+Selected rows can report the capacity needed for their unique styles and links,
+every linked cell and chunk-rounded suffix and string bytes. This accounting is
+the input to retained-history limits; the history owner applies those limits.
