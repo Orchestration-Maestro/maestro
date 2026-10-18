@@ -60,8 +60,8 @@ impl<E: ExtensionExecution> BoundProviders<E> {
     }
 }
 
-/// Creates a runtime whose actions fail until a runner binds it and whose
-/// provider registrations queue until then.
+/// Creates a runtime whose actions fail until a runner binds it, except for inert
+/// tool refresh, and whose provider registrations queue until then.
 #[must_use]
 pub fn create_extension_runtime<E: ExtensionExecution>() -> E::Shared<ExtensionRuntime<E>> {
     E::share(ExtensionRuntime {

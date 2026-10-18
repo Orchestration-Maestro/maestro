@@ -41,10 +41,16 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
 
 /// Copies authored diagnostic fields without synthesizing engine stack text.
 pub(super) fn queued_error(extension_path: String, error: &crate::EventError) -> ExtensionError {
+    // This projection is the single list of error types with retained diagnostic stacks.
     let diagnostic = error
         .downcast_ref::<maestro_catalog::CatalogError>()
         .map(maestro_catalog::CatalogError::diagnostic)
-        .or_else(|| error.downcast_ref::<maestro_models::DiagnosticErrorInfo>());
+        .or_else(|| error.downcast_ref::<maestro_models::DiagnosticErrorInfo>())
+        .or_else(|| {
+            error
+                .downcast_ref::<maestro_models::OAuthError>()
+                .map(|error| error.diagnostic.as_ref())
+        });
     ExtensionError {
         extension_path,
         event: "register_provider".to_owned(),

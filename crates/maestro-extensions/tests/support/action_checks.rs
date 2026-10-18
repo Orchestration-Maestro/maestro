@@ -301,12 +301,13 @@ pub fn forwarding() {
         users.borrow_mut().push(json!(["user", m, o]));
         Ok(())
     });
-    let entries = log.clone();
+    let entries = Rc::new(RefCell::new(Vec::new()));
+    let recorded_entries = entries.clone();
     actions.append_entry = Rc::new(move |name, data| {
         if let Some(data) = &data {
             check_json(data);
         }
-        entries.borrow_mut().push(json!(["entry", name, data]));
+        recorded_entries.borrow_mut().push((name, data));
         Ok(())
     });
     install_scalar_actions(&mut actions, &log);
@@ -331,14 +332,15 @@ pub fn forwarding() {
         api.append_entry(" entry ".into(), Some(value.clone()))
             .unwrap();
         api.send_message(message(value.clone()), None).unwrap();
+        let expected_entry = (" entry ".into(), Some(value.clone()));
+        assert_eq!(entries.borrow().last(), Some(&expected_entry));
         let got = log.borrow();
-        assert_eq!(got[got.len() - 2], json!(["entry", " entry ", value]));
         assert_eq!(
             got[got.len() - 1],
             json!(["custom", {"customType":" raw\u{feff}\u{85} ","content":"hello","display":false,"details":value}, null])
         );
     }
-    message_absence_and_images(&api, &log);
+    message_absence_and_images(&api, &log, &entries);
     exercise_options(&api, &log);
     exercise_scalars(&api, &log);
 }
@@ -979,12 +981,13 @@ fn facade_calls(api: &ExtensionAPI<Local>) -> [Result<(), EventError>; 12] {
     ]
 }
 
-fn message_absence_and_images(api: &ExtensionAPI<Local>, log: &Rc<RefCell<Vec<Value>>>) {
+fn message_absence_and_images(
+    api: &ExtensionAPI<Local>,
+    log: &Rc<RefCell<Vec<Value>>>,
+    entries: &RefCell<Vec<(String, Option<Value>)>>,
+) {
     api.append_entry("missing".into(), None).unwrap();
-    assert_eq!(
-        log.borrow().last().unwrap(),
-        &json!(["entry", "missing", null])
-    );
+    assert_eq!(entries.borrow().last(), Some(&("missing".into(), None)));
     let mut missing = message(Value::Null);
     missing.details = Presence::Missing;
     api.send_message(missing, None).unwrap();

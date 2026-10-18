@@ -223,6 +223,45 @@ fn action_families_keep_local_captures_and_native_thread_safety() {
 }
 
 #[test]
+fn queued_provider_override_preserves_oauth_message_and_stack() {
+    let runtime = create_extension_runtime::<Local>();
+    let runner = runner_local(runtime.clone(), catalog());
+    let errors = Rc::new(RefCell::new(Vec::new()));
+    let observed = errors.clone();
+    let _off = runner.on_error(Rc::new(move |error| {
+        observed.borrow_mut().push(error.clone());
+        Ok(())
+    }));
+    runtime
+        .register_provider("oauth".into(), good("oauth"), Some("/ext/oauth.ts".into()))
+        .unwrap();
+    runner
+        .bind_core(
+            Local::unbound_actions(),
+            ExtensionContextActions::default(),
+            ProviderActions {
+                register_provider: Some(Rc::new(|_, _| {
+                    let mut diagnostic =
+                        maestro_models::DiagnosticErrorInfo::error("login refused");
+                    diagnostic.stack = Some("authored OAuth stack".into());
+                    Err(Box::new(maestro_models::OAuthError::from(diagnostic)))
+                })),
+                unregister_provider: None,
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        *errors.borrow(),
+        [ExtensionError {
+            extension_path: "/ext/oauth.ts".into(),
+            event: "register_provider".into(),
+            error: "login refused".into(),
+            stack: Some("authored OAuth stack".into()),
+        }]
+    );
+}
+
+#[test]
 fn provider_queue_keeps_order_attribution_and_partial_success() {
     if maestro_test_process::run_alone("provider_queue_keeps_order_attribution_and_partial_success")
         .unwrap()
