@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="304" height="32" viewBox="0 0 304 32">
+  <title>platforms: Linux tests · cross-checks</title>
+  <rect width="304" height="32" rx="4" fill="#2A1F1A"/>
+  <path d="M88 0H300Q304 0 304 4V28Q304 32 300 32H88Z" fill="#D9A066"/>
+  <g font-family="'Barlow', system-ui, sans-serif" font-size="14" text-anchor="middle">
+    <text x="44" y="21" fill="#F2E8DC">platforms</text>
+    <text x="196" y="21" fill="#0E0B09">Linux tests · cross-checks</text>
+  </g>
+</svg>

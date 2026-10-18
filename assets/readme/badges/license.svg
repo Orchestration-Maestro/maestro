@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="32" viewBox="0 0 128 32">
+  <title>licence: MIT</title>
+  <rect width="128" height="32" rx="4" fill="#2A1F1A"/>
+  <path d="M64 0H124Q128 0 128 4V28Q128 32 124 32H64Z" fill="#D9A066"/>
+  <g font-family="'Barlow', system-ui, sans-serif" font-size="14" text-anchor="middle">
+    <text x="32" y="21" fill="#F2E8DC">licence</text>
+    <text x="96" y="21" fill="#0E0B09">MIT</text>
+  </g>
+</svg>

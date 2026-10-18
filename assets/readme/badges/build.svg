@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="176" height="32" viewBox="0 0 176 32">
+  <title>build: view checks</title>
+  <rect width="176" height="32" rx="4" fill="#2A1F1A"/>
+  <path d="M64 0H172Q176 0 176 4V28Q176 32 172 32H64Z" fill="#D9A066"/>
+  <g font-family="'Barlow', system-ui, sans-serif" font-size="14" text-anchor="middle">
+    <text x="32" y="21" fill="#F2E8DC">build</text>
+    <text x="120" y="21" fill="#0E0B09">view checks</text>
+  </g>
+</svg>

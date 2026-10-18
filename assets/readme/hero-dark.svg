@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 320" width="960" height="320">
+  <title>Maestro — Conduct every model.</title>
+  <desc>A Rust engine for model conversations, tools and retained sessions.</desc>
+  <rect width="960" height="320" fill="#0E0B09"/>
+  <g transform="translate(48 48) scale(0.4375)">
+  <rect width="512" height="512" fill="#0E0B09"/>
+  <circle cx="256" cy="256" r="232" fill="none" stroke="#B7410E" stroke-width="12"/>
+  <g stroke="#B7410E" stroke-width="12" stroke-linecap="round">
+    <path d="M256 30 L256 58"/>
+    <path d="M482 256 L454 256"/>
+    <path d="M256 482 L256 454"/>
+    <path d="M30 256 L58 256"/>
+  </g>
+  <g stroke="#B7410E" stroke-width="20" stroke-linecap="round">
+    <line x1="150" y1="386" x2="150" y2="196"/>
+    <line x1="150" y1="196" x2="256" y2="326"/>
+    <line x1="256" y1="326" x2="362" y2="196"/>
+    <line x1="362" y1="196" x2="362" y2="386"/>
+  </g>
+  <g fill="#B7410E">
+    <circle cx="150" cy="386" r="26"/>
+    <circle cx="150" cy="196" r="26"/>
+    <circle cx="362" cy="196" r="26"/>
+    <circle cx="362" cy="386" r="26"/>
+  </g>
+  <circle cx="256" cy="326" r="26" fill="#FF6A1A"/>
+  <path d="M256 92 L264.49 151.51 L302 160 L264.49 168.49 L256 228 L247.51 168.49 L210 160 L247.51 151.51Z" fill="#FF6A1A"/>
+  </g>
+  <g font-family="'Barlow Condensed', system-ui, sans-serif" fill="#F2E8DC">
+    <text x="304" y="112" font-size="56" font-weight="700">Maestro</text>
+    <text x="304" y="168" font-size="36" font-weight="700" fill="#D9A066">Conduct every model.</text>
+  </g>
+  <text x="304" y="216" font-family="'Barlow', system-ui, sans-serif" font-size="16" fill="#D9A066">
+    <tspan x="304">A Rust engine for model conversations,</tspan>
+    <tspan x="304" dy="24">tools and retained sessions.</tspan>
+  </text>
+</svg>

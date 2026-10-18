@@ -54,3 +54,21 @@ Geometry, asset selection and reading belong to the consumer.
 `BrandError` identifies decode, measurement, missing mode, missing palette color,
 invalid color, missing font, missing color role and unterminated template color
 failures. Its decoder variant exposes the stored native error as its cause.
+
+## README assets
+
+The [front-page artwork](../assets/readme/) is a static projection of the
+[brand pack](../assets/brand/brand.json), following the
+[identity rules](identity.md). Hero variants resolve their own canvas, text,
+mark roles and font fallbacks; they load no external fonts. Badges are
+self-hosted informational labels, not cached build results: the build badge
+links to live checks. Icons reuse the browser icon catalog's geometry.
+
+Refresh screenshots from real examples and retained browser components on
+`main`, with no reconstructed UI or edited content. Record the source commit,
+capture command, scene, terminal/brand profile, viewport and raw/optimized sizes
+in the pull request. Keep each screenshot at most 400,000 bytes and total README
+assets at most 3,000,000 bytes. Label local simulated replies and component
+harnesses explicitly. Inspect the rendered README in both GitHub themes after
+refreshing assets; changing terminal defaults does not recolor explicit demo
+styles.

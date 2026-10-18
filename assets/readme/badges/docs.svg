@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="208" height="32" viewBox="0 0 208 32">
+  <title>docs: read the guides</title>
+  <rect width="208" height="32" rx="4" fill="#2A1F1A"/>
+  <path d="M64 0H204Q208 0 208 4V28Q208 32 204 32H64Z" fill="#D9A066"/>
+  <g font-family="'Barlow', system-ui, sans-serif" font-size="14" text-anchor="middle">
+    <text x="32" y="21" fill="#F2E8DC">docs</text>
+    <text x="136" y="21" fill="#0E0B09">read the guides</text>
+  </g>
+</svg>
