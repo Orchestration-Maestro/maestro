@@ -286,15 +286,12 @@ top-level module, integration test and example restores the groups with
 `forbid`, nested files inherit it from their parent module, and the crate root
 stays wiring-only.
 
-`maestro-terminal-ghostty` declares its own lint table equal to the workspace
-one except `unsafe_code = "allow"`. Unsafe code is confined to its terminal engine
-bindings; the workspace keeps `unsafe_code = "forbid"`. The checker enforces the
-manifest exception; binding source confinement requires implementation review.
-No other member may declare its own lint table.
+All other members inherit the workspace lint table, including
+`unsafe_code = "forbid"`. The [terminal emulator](terminal-emulator.md) is pure Rust.
 
 The workspace daemon is core design: the root always wires the daemon,
-multiplexer and engine adapter. Required direct edges are root → application,
-multiplexer and engine adapter, and multiplexer → application. The required root
+multiplexer. Required direct edges are root → application and multiplexer,
+and multiplexer → application. The required root
 edges must be non-optional normal dependencies active on native builds. Like the
 CLI and chat, the multiplexer may use only application, toolkit, terminal adapter and
 theme, plus the foundation utility and native feature-unifier exceptions.
