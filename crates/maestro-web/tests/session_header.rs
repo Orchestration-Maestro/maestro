@@ -280,21 +280,7 @@ fn header_document_route_draws_all_metadata_and_controls() {
         egui::vec2(800., 600.),
     );
     assert!(result.unwrap().is_empty());
-    let labels: Vec<_> = output
-        .shapes
-        .iter()
-        .filter_map(|s| match &s.shape {
-            egui::Shape::Text(t) => Some(t.galley.text().to_owned()),
-            _ => None,
-        })
-        .collect();
-    let buttons: Vec<_> = row["output"]["buttons"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|button| button["text"].as_str().unwrap())
-        .collect();
-    assert_eq!(labels, buttons);
+    session_header_support::assert_button_labels(&output.shapes, &row["output"]);
     let sizes = host.sizes.borrow();
     assert_eq!(sizes.len(), 3);
     assert!(sizes[0].1.x > sizes[1].1.x && sizes[1].1.x > sizes[2].1.x);

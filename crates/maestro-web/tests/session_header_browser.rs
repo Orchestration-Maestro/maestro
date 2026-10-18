@@ -249,21 +249,7 @@ fn populated_replays_every_expectation(header: &mut Header, rows: &serde_json::V
             text.as_str().unwrap()
         );
     }
-    let labels: Vec<_> = header
-        .shapes
-        .iter()
-        .filter_map(|s| match &s.shape {
-            egui::Shape::Text(t) => Some(t.galley.text().to_owned()),
-            _ => None,
-        })
-        .collect();
-    let buttons: Vec<_> = expected["buttons"]
-        .as_array()
-        .unwrap()
-        .iter()
-        .map(|button| button["text"].as_str().unwrap())
-        .collect();
-    assert_eq!(labels, buttons);
+    session_header_support::assert_button_labels(&header.shapes, expected);
     let actual = js(&panel(), "return JSON.stringify([...value.querySelectorAll('.info-item')].map(e=>[e.querySelector('.info-label').textContent,e.querySelector('.info-value').textContent]))").as_string().unwrap();
     let actual: serde_json::Value = serde_json::from_str(&actual).unwrap();
     let mut info = expected["info"].clone();

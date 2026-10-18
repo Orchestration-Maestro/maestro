@@ -326,6 +326,26 @@ pub fn draw_view(
     (result, output)
 }
 
+/// Compare the painted text, in drawing order, with the recorded button labels.
+/// # Panics
+/// Panics when the painted labels differ from the recorded ones.
+pub fn assert_button_labels(shapes: &[egui::epaint::ClippedShape], expected: &serde_json::Value) {
+    let labels: Vec<_> = shapes
+        .iter()
+        .filter_map(|s| match &s.shape {
+            egui::Shape::Text(t) => Some(t.galley.text().to_owned()),
+            _ => None,
+        })
+        .collect();
+    let buttons: Vec<_> = expected["buttons"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|button| button["text"].as_str().unwrap())
+        .collect();
+    assert_eq!(labels, buttons);
+}
+
 /// Reusable canvas frames for actual control state and pointer observations.
 pub struct Canvas<'a> {
     /// Controlled native slots and published holes.
