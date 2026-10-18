@@ -307,6 +307,21 @@ pub fn pdf_native_replacement_and_download_use_current_document() {
     check("!lastRoot.isConnected");
 }
 
+/// Clearing a partly rendered document keeps only its completed first page.
+#[wasm_bindgen]
+pub fn pdf_native_clear_while_rendering_keeps_completed_pages() {
+    let mut view = View::new("current.pdf", &encoded(true));
+    view.draw(false, vec![]);
+    js("globalThis.firstPage=document.querySelector('.maestro-pdf img')");
+    view.element.set_content(String::new());
+    for _ in 0..3 {
+        view.draw(false, vec![]);
+    }
+    check(
+        "(()=>{const p=document.querySelectorAll('.maestro-pdf img');return p.length===1&&p[0]===firstPage})()",
+    );
+}
+
 /// Existing overlay failure triggers and details survive the native-text move.
 #[wasm_bindgen]
 pub fn overlay_native_errors_preserve_existing_behaviour() {
