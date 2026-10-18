@@ -3351,6 +3351,7 @@ dependencies = [
  "chrono",
  "crc32fast",
  "digest 0.11.3",
+ "errno",
  "fastrand",
  "flate2",
  "form_urlencoded",
@@ -3715,8 +3716,12 @@ dependencies = [
 name = "maestro-terminal"
 version = "0.1.0"
 dependencies = [
+ "base64 0.23.1",
+ "flate2",
  "icu_properties",
  "maestro-dependencies",
+ "png 0.17.16",
+ "rustix",
 ]
 
 [[package]]

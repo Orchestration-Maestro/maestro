@@ -21,3 +21,6 @@
 *.gz binary
 *.woff binary
 *.woff2 binary
+
+# Image protocol byte fixtures
+crates/maestro-terminal/tests/fixtures/images/* binary

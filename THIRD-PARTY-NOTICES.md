@@ -932,10 +932,11 @@ The original licence follows.
 
 ## Terminal emulator engine
 
-The terminal codepoint-width interface, derivation and test-table fixture in
-`crates/maestro-terminal` derive from the Ghostty terminal engine. Changes:
-ported to safe Rust under Maestro names, using compiled Unicode properties and
-a scalar-only interface; the fixture projects widths into runs.
+The terminal codepoint-width interface, image command parser, image-media loader
+and their fixtures in `crates/maestro-terminal` derive from the Ghostty terminal
+engine. Changes: ported to safe Rust under Maestro names, using compiled Unicode
+properties, owned I/O and Rust codecs; the width fixture projects widths into
+runs. Temporary-file containment and shared-memory range validation are corrected.
 
 ```text
 MIT License

@@ -84,3 +84,6 @@ fn character_widths_match_screen_cells() {
     assert_eq!(codepoint_width('\u{0301}'), 0);
     assert_eq!(codepoint_width('界'), 2);
 }
+
+mod graphics_commands;
+mod graphics_media;
