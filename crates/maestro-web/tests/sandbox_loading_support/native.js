@@ -40,12 +40,15 @@ export async function observe_document(name, html, output) {
             const supplied = {}; new Function('window','document',scripts[0])(supplied, {addEventListener(){}});
             equal([supplied['1'], supplied['2'], supplied.a], ['one','two',3], name + ' generated values');
             equal(Object.keys(supplied).filter(k => ['1','2','a'].includes(k)), ['1','2','a'], name + ' canonical order');
-            equal([win['1'],win['2'],win.a], [undefined,undefined,3], name + ' native Window indexed setters');
+            assert(win['1'] === undefined && win['2'] === undefined && win.a === 3, name + ' native Window indexed setters');
             equal([...win.calls], ['fixture-id'], name + ' native provider');
         }
         if (name === 'merge_order') { equal([win.a,win.b,win.c], [1,'new',3], name); assert(scripts[0].indexOf('window["a"]') < scripts[0].indexOf('window["b"]') && scripts[0].indexOf('window["b"]') < scripts[0].indexOf('window["c"]'), name + ' insertion order'); }
         if (name === 'provider_id_override') { equal(win.sandboxId, 'provider override', name); equal([...win.calls], ['fixture-id'], name + ' invocation id'); }
-        const values = {value_null:null, value_string:'</ScRiPt>雪', value_number:0, value_nonfinite:null, value_boolean:true, value_object:{'1':'one','2':'two',b:1,a:2}, value_array:[null,'x',2], value_date:'2020-01-02T03:04:05.000Z', value_typed_array:{'0':1,'1':255}};
+        if (name === 'value_null' || name === 'value_nonfinite') assert(win.value === null, name + ' native null');
+        if (name === 'value_number') assert(Object.is(win.value, 0), name + ' native positive zero');
+        if (name === 'value_array') assert(win.value[0] === null, name + ' native null element');
+        const values = {value_string:'</ScRiPt>雪', value_boolean:true, value_object:{'1':'one','2':'two',b:1,a:2}, value_array:[null,'x',2], value_date:'2020-01-02T03:04:05.000Z', value_typed_array:{'0':1,'1':255}};
         if (name in values) equal(win.value, values[name], name + ' native value');
         if (output.completions) {
             const completions = [], logs = [];
