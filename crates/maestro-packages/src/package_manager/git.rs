@@ -259,8 +259,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         )
         .await
     }
-    /// Resolves native revision syntax, then an origin tracking branch.
-    async fn resolve_git_ref(&self, path: &str, reference: &str) -> io::Result<Option<String>> {
+    /// Checks local presence before fetching, without predicting checkout selection.
+    async fn has_git_ref(&self, path: &str, reference: &str) -> io::Result<bool> {
         for candidate in [
             format!("{reference}^{{commit}}"),
             format!("refs/remotes/origin/{reference}^{{commit}}"),
@@ -270,25 +270,19 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
                 .await?;
             let oid = crate::trim(&oid);
             if !oid.is_empty() {
-                return Ok(Some(oid.to_owned()));
+                return Ok(true);
             }
         }
-        Ok(None)
+        Ok(false)
     }
     /// Applies an explicit changed ref in the original checkout and configuration.
     async fn repin_git(&self, git: &GitSource, path: &str) -> io::Result<SourceAcquisition> {
         let Some(reference) = &git.r#ref else {
             return Ok(SourceAcquisition::CurrentGit);
         };
-        let current = self.git_capture(path, &["rev-parse", "HEAD"], &[]).await?;
-        let mut desired = self.resolve_git_ref(path, reference).await?;
-        if desired.is_none() {
+        if !self.has_git_ref(path, reference).await? {
             self.run_command("git", &["fetch", "origin"].map(str::to_owned), Some(path))
                 .await?;
-            desired = self.resolve_git_ref(path, reference).await?;
-        }
-        if desired.as_deref() == Some(crate::trim(&current)) {
-            return Ok(SourceAcquisition::CurrentGit);
         }
         self.change_git_revision(path, &["checkout", reference].map(str::to_owned), true)
             .await

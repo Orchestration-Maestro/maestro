@@ -57,26 +57,63 @@ fn missing_command_boundary(phase: usize) {
 
 #[test]
 fn git_missing_install_cleans_failed_stage_and_retries() {
+    for phase in 0..3 {
+        missing_stage_failure_retries(phase);
+    }
+    #[cfg(unix)]
+    missing_invalid_ref_retries_until_available();
+}
+
+/// Retries each preparation failure only after its owned stage has been removed.
+fn missing_stage_failure_retries(phase: usize) {
     let fixture = Fixture::new(&json!({}));
-    fixture
-        .script
-        .hooks
-        .borrow_mut()
-        .push_back(Box::new(|call| {
-            std::fs::create_dir_all(call.args.last().unwrap()).unwrap();
-        }));
+    for _ in 0..=phase {
+        fixture
+            .script
+            .hooks
+            .borrow_mut()
+            .push_back(Box::new(write_stage_manifest));
+    }
     fixture
         .script
         .results
         .borrow_mut()
-        .push_back(Err(io::Error::other("clone failed")));
-    let source = "https://example.test/team/repo";
+        .extend((0..phase).map(|_| Ok(Some(0))));
+    fixture
+        .script
+        .results
+        .borrow_mut()
+        .push_back(Err(io::Error::other("preparation failed")));
+    let source = "https://example.test/team/repo@v1";
     assert!(block_on(fixture.manager.install_and_persist(source, None)).is_err());
+    let calls = fixture.calls();
+    let stage = calls[0].args.last().unwrap();
     assert!(
-        !Path::new(&fixture.agent("git/example.test/team/repo")).exists(),
-        "failed contents must not look installed"
+        !Path::new(stage).exists(),
+        "owned stage remains after phase {phase}"
     );
+    assert!(!Path::new(&fixture.agent("git/example.test/team/repo")).exists());
+    assert!(
+        !fixture
+            .settings
+            .borrow()
+            .get_global_settings()
+            .0
+            .contains_key("packages")
+    );
+    fixture
+        .script
+        .hooks
+        .borrow_mut()
+        .push_back(Box::new(write_stage_manifest));
     block_on(fixture.manager.install_and_persist(source, None)).unwrap();
+    assert_eq!(
+        fixture.calls()[phase + 1..]
+            .iter()
+            .map(|call| call.args[0].as_str())
+            .collect::<Vec<_>>(),
+        ["clone", "checkout", "install"]
+    );
     assert_eq!(
         fixture
             .calls()
@@ -89,8 +126,15 @@ fn git_missing_install_cleans_failed_stage_and_retries() {
         fixture.settings.borrow().get_global_settings().0["packages"],
         json!([source])
     );
-    #[cfg(unix)]
-    missing_invalid_ref_retries_until_available();
+}
+
+/// Gives the scripted clone and preparation commands a real manifest to consume.
+fn write_stage_manifest(call: &crate::sandbox::Call) {
+    let stage = call
+        .cwd
+        .as_ref()
+        .unwrap_or_else(|| call.args.last().unwrap());
+    std::fs::write(Path::new(stage).join("package.json"), "{}").unwrap();
 }
 
 #[test]
@@ -1271,12 +1315,7 @@ fn check_repin_probe_failure(probe: &'static str) {
 #[cfg(unix)]
 /// A checkout merge-base expression resolving to HEAD must preserve the complete no-op.
 fn check_checkout_expression_noop() {
-    for layout in [
-        "ordinary",
-        "linked-worktree",
-        "separate-git-dir",
-        "include-uploadpack",
-    ] {
+    for layout in ["ordinary", "linked", "separate", "include"] {
         for kind in [
             "unique-current",
             "unique-changed",
@@ -1322,14 +1361,7 @@ fn check_checkout_expression_case(layout: &str, kind: &str) {
             selection
         );
         if !fails {
-            assert_eq!(
-                std::fs::read_to_string(fixture.repo.target.join("content")).unwrap(),
-                "dirty"
-            );
-            assert_eq!(
-                std::fs::read_to_string(fixture.repo.target.join("untracked")).unwrap(),
-                "retain"
-            );
+            assert_dirty_contents(&fixture);
         }
     }
     assert_eq!(
@@ -1393,4 +1425,235 @@ fn create_multiple_merge_bases(seed: &std::path::Path, tree: &str, original: &st
     );
     git(seed, &["update-ref", "refs/heads/left", &left]);
     git(seed, &["update-ref", "refs/heads/right", &right]);
+}
+
+#[cfg(unix)]
+#[test]
+fn git_repin_checkout_owns_colliding_branch_and_tag_selection() {
+    for layout in ["ordinary", "linked", "separate", "include"] {
+        for changes in [true, false] {
+            check_colliding_selection(layout, changes);
+        }
+    }
+}
+
+#[cfg(unix)]
+/// Exercises checkout, recovery and persistence for one collision direction.
+fn check_colliding_selection(layout: &str, changes: bool) {
+    use crate::native_git::{git, retry::RetryFixture};
+    let fixture = RetryFixture::new(layout);
+    fixture.advance();
+    git(&fixture.repo.target, &["fetch", "origin"]);
+    let old = git(&fixture.repo.target, &["rev-parse", "HEAD"]);
+    let new = git(&fixture.repo.target, &["rev-parse", "origin/main"]);
+    let selection = git(&fixture.repo.target, &["symbolic-ref", "HEAD"]);
+    let (branch, tag) = if changes { (&new, &old) } else { (&old, &new) };
+    git(&fixture.repo.target, &["branch", "release", branch]);
+    git(&fixture.repo.target, &["tag", "release", tag]);
+    let source = "git:github.com/acme/tool@release";
+    if changes {
+        *fixture.fail.borrow_mut() = "dependencies".into();
+        assert!(
+            fixture
+                .run(fixture.manager.install_and_persist(source, None))
+                .is_err(),
+            "checkout must select the changed branch before dependency preparation"
+        );
+        assert_eq!(*fixture.dependencies.borrow(), vec![new.clone()]);
+        assert_eq!(git(&fixture.repo.target, &["rev-parse", "HEAD"]), old);
+        assert_eq!(
+            git(&fixture.repo.target, &["symbolic-ref", "HEAD"]),
+            selection
+        );
+        fixture.fail.borrow_mut().clear();
+    } else {
+        std::fs::write(fixture.repo.target.join("content"), "dirty").unwrap();
+        std::fs::write(fixture.repo.target.join("untracked"), "retain").unwrap();
+    }
+    fixture
+        .run(fixture.manager.install_and_persist(source, None))
+        .unwrap();
+    assert_eq!(git(&fixture.repo.target, &["rev-parse", "HEAD"]), *branch);
+    assert_eq!(
+        git(&fixture.repo.target, &["rev-parse", "refs/heads/release"]),
+        *branch
+    );
+    assert_eq!(
+        fixture.settings.borrow().get_global_settings().0["packages"],
+        if changes {
+            json!([source])
+        } else {
+            json!(["git:github.com/acme/tool"])
+        }
+    );
+    if !changes {
+        assert!(fixture.dependencies.borrow().is_empty());
+        assert_eq!(
+            git(&fixture.repo.target, &["symbolic-ref", "HEAD"]),
+            selection
+        );
+        assert_dirty_contents(&fixture);
+    }
+}
+
+#[cfg(unix)]
+#[test]
+fn git_current_commit_preserves_selection_and_observes_completion_settings() {
+    use maestro_packages::InstalledSourceScope::{Project, User};
+    for scope in [User, Project] {
+        for form in ["branch", "tag", "detached"] {
+            for callback_edit in ["absent", "replace", "remove"] {
+                check_current_selection(scope, form, callback_edit);
+            }
+        }
+    }
+}
+
+#[cfg(unix)]
+/// Preserves same-commit files while appending or observing a late registration.
+fn check_current_selection(
+    scope: maestro_packages::InstalledSourceScope,
+    form: &str,
+    callback_edit: &str,
+) {
+    use crate::native_git::{git, retry::RetryFixture};
+    use maestro_packages::InstalledSourceScope::{Project, User};
+    let mut fixture = RetryFixture::new("ordinary");
+    if scope == Project {
+        let path = fixture
+            .repo
+            .scratch
+            .0
+            .join("cwd/.maestro/git/github.com/acme/tool");
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::rename(&fixture.repo.target, &path).unwrap();
+        fixture.repo.target = path;
+    }
+    let reference = match form {
+        "branch" => "main".to_owned(),
+        "tag" => {
+            git(&fixture.repo.target, &["tag", "current"]);
+            "current".to_owned()
+        }
+        _ => {
+            git(&fixture.repo.target, &["checkout", "--detach"]);
+            fixture.repo.original.clone()
+        }
+    };
+    let selection = git(
+        &fixture.repo.target,
+        &["rev-parse", "--symbolic-full-name", "HEAD"],
+    );
+    std::fs::write(fixture.repo.target.join("content"), "dirty").unwrap();
+    std::fs::write(fixture.repo.target.join("untracked"), "retain").unwrap();
+    fixture.settings.borrow_mut().set_packages(vec![]);
+    if callback_edit != "absent" {
+        edit_settings_on_completion(&fixture, scope, callback_edit == "remove");
+    }
+
+    let source = format!("git:github.com/acme/tool@{reference}");
+    fixture
+        .run(fixture.manager.install_and_persist(&source, Some(scope)))
+        .unwrap();
+    let settings = match scope {
+        User => fixture.settings.borrow().get_global_settings(),
+        Project => fixture.settings.borrow().get_project_settings(),
+    };
+    assert_eq!(
+        settings.0["packages"],
+        json!([if callback_edit == "replace" {
+            "git:github.com/acme/tool@callback"
+        } else {
+            &source
+        }])
+    );
+    assert!(fixture.dependencies.borrow().is_empty());
+    assert_eq!(
+        git(
+            &fixture.repo.target,
+            &["rev-parse", "--symbolic-full-name", "HEAD"]
+        ),
+        selection
+    );
+    assert_dirty_contents(&fixture);
+}
+
+#[cfg(unix)]
+/// Edits the selected settings scope only after acquisition completes.
+fn edit_settings_on_completion(
+    fixture: &crate::native_git::retry::RetryFixture,
+    scope: maestro_packages::InstalledSourceScope,
+    remove: bool,
+) {
+    use maestro_packages::InstalledSourceScope::{Project, User};
+
+    if remove {
+        let entries = vec![maestro_settings::PackageSource::Source(
+            "git:github.com/acme/tool@before".into(),
+        )];
+        match scope {
+            User => fixture.settings.borrow_mut().set_packages(entries),
+            Project => fixture.settings.borrow_mut().set_project_packages(entries),
+        }
+    }
+    let settings = fixture.settings.clone();
+    fixture
+        .manager
+        .set_progress_callback(Some(std::rc::Rc::new(move |event| {
+            if event.r#type == maestro_packages::ProgressEventType::Complete {
+                let entries = if remove {
+                    vec![]
+                } else {
+                    vec![maestro_settings::PackageSource::Source(
+                        "git:github.com/acme/tool@callback".into(),
+                    )]
+                };
+                match scope {
+                    User => settings.borrow_mut().set_packages(entries),
+                    Project => settings.borrow_mut().set_project_packages(entries),
+                }
+            }
+            Ok(())
+        })));
+}
+
+#[cfg(unix)]
+#[test]
+fn git_public_install_selects_branch_over_colliding_tag_without_persisting() {
+    use crate::native_git::{git, retry::RetryFixture};
+    let fixture = RetryFixture::new("ordinary");
+    fixture.advance();
+    git(&fixture.repo.target, &["fetch", "origin"]);
+    let desired = git(&fixture.repo.target, &["rev-parse", "origin/main"]);
+    git(&fixture.repo.target, &["branch", "release", &desired]);
+    git(
+        &fixture.repo.target,
+        &["tag", "release", &fixture.repo.original],
+    );
+    fixture
+        .run(
+            fixture
+                .manager
+                .install("git:github.com/acme/tool@release", None),
+        )
+        .unwrap();
+    assert_eq!(git(&fixture.repo.target, &["rev-parse", "HEAD"]), desired);
+    assert_eq!(*fixture.dependencies.borrow(), vec![desired]);
+    assert_eq!(
+        fixture.settings.borrow().get_global_settings().0["packages"],
+        json!(["git:github.com/acme/tool"])
+    );
+}
+
+#[cfg(unix)]
+/// Observes dirty and untracked files after a same-commit checkout.
+fn assert_dirty_contents(fixture: &crate::native_git::retry::RetryFixture) {
+    assert_eq!(
+        std::fs::read_to_string(fixture.repo.target.join("content")).unwrap(),
+        "dirty"
+    );
+    assert_eq!(
+        std::fs::read_to_string(fixture.repo.target.join("untracked")).unwrap(),
+        "retain"
+    );
 }

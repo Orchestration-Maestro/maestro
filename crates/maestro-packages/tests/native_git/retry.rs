@@ -182,6 +182,11 @@ fn configure_layout(repo: &Repository, layout: &str) {
             ],
         );
         git(&repo.target, &["branch", "--set-upstream-to=origin/main"]);
+        assert!(repo.target.join(".git").is_file());
+        assert_eq!(
+            std::fs::canonicalize(git(&repo.target, &["rev-parse", "--git-common-dir"])).unwrap(),
+            std::fs::canonicalize(owner.join(".git")).unwrap()
+        );
     } else if layout == "separate" {
         std::fs::remove_dir_all(&repo.target).unwrap();
         git(
@@ -194,11 +199,27 @@ fn configure_layout(repo: &Repository, layout: &str) {
                 repo.target.to_str().unwrap(),
             ],
         );
+        assert!(repo.target.join(".git").is_file());
+        assert_eq!(
+            std::fs::canonicalize(git(&repo.target, &["rev-parse", "--absolute-git-dir"])).unwrap(),
+            std::fs::canonicalize(root.join("metadata")).unwrap()
+        );
     } else if layout == "include" {
         let config = repo.target.join(".git/config");
         let text = std::fs::read_to_string(&config).unwrap();
         std::fs::write(repo.target.join(".git/included"), text).unwrap();
         std::fs::write(config, "[include]\npath = included\n").unwrap();
+        assert_eq!(
+            git(&repo.target, &["config", "--get", "include.path"]),
+            "included"
+        );
+        assert_eq!(
+            git(&repo.target, &["remote", "get-url", "origin"]),
+            repo.remote.to_str().unwrap()
+        );
+    } else {
+        assert_eq!(layout, "ordinary", "unsupported native repository layout");
+        assert!(repo.target.join(".git").is_dir());
     }
 }
 
@@ -243,4 +264,10 @@ fn configure_run(
             observations,
         ))
     }));
+}
+
+#[test]
+#[should_panic(expected = "unsupported native repository layout")]
+fn unknown_layout_does_not_silently_create_an_ordinary_clone() {
+    RetryFixture::new("unknown");
 }

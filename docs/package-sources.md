@@ -78,7 +78,8 @@ Existing checkouts with a changed explicit ref, and changed upstream updates,
 are prepared in place using their effective Git configuration. Before mutation,
 the manager records HEAD and its attached/detached selection. Probe failures
 propagate instead of being mistaken for an absent ref or detached HEAD. Native
-checkout resolves revision expressions, including unique merge bases. A checkout
+checkout alone selects supplied refs, including colliding branch/tag names and
+unique merge-base expressions. A checkout
 that selects the current commit restores the original selection without resetting
 files, installing dependencies or replacing settings. Failed checkout, reset,
 clean or dependency preparation restores the original selection before
