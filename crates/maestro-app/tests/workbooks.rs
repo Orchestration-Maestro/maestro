@@ -1,5 +1,6 @@
 //! File-backed public workbook projections.
 #![cfg(test)]
+use crate::workbook_fixture::Bounds;
 use maestro_app::browser::ssf::{
     self, CellFormatOptions, CellValue, ExcelDataType, Ssf, WorkbookError,
 };
@@ -44,32 +45,6 @@ struct Sheet {
     range: Option<String>,
     merges: Vec<Bounds>,
     cells: Vec<Cell>,
-}
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Position {
-    r: u32,
-    c: u32,
-}
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Bounds {
-    s: Position,
-    e: Position,
-}
-impl Bounds {
-    fn range(&self) -> ssf::Range {
-        ssf::Range {
-            s: ssf::CellAddress {
-                r: self.s.r,
-                c: self.s.c,
-            },
-            e: ssf::CellAddress {
-                r: self.e.r,
-                c: self.e.c,
-            },
-        }
-    }
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]

@@ -1,6 +1,7 @@
 //! JavaScript execution through an owned sandbox host.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+use crate::support::run;
 use maestro_app::browser::{components::sandboxed_iframe::*, tools::javascript_repl::*};
 use maestro_app::{SandboxResult, SandboxUrlProvider};
 use maestro_models::DiagnosticErrorInfo;
@@ -670,14 +671,6 @@ impl maestro_app::SandboxRuntimeProvider for FailingDescription {
     fn get_description(&self) -> Result<String, DiagnosticErrorInfo> {
         Err(DiagnosticErrorInfo::error(self.0.clone()))
     }
-}
-
-/// Drive owned test work without background runtime tasks.
-fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(future)
 }
 
 /// Expected identity-bearing configuration.

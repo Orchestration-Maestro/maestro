@@ -97,7 +97,7 @@ struct Failure {
     kind: String,
 }
 /// Exclusively creates one setup file.
-fn write(path: &Path, text: &str) {
+pub(crate) fn write(path: &Path, text: &str) {
     fs::create_dir_all(path.parent().unwrap()).unwrap();
     fs::OpenOptions::new()
         .write(true)

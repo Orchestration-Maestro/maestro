@@ -1,5 +1,6 @@
 //! Strict PDF oracle records and public loading helpers.
 #![cfg(test)]
+use super::run;
 use base64::{Engine, engine::general_purpose::STANDARD};
 use hayro::vello_cpu::Pixmap;
 use maestro_app::browser::utils::attachment_utils::{
@@ -132,13 +133,6 @@ pub fn documents() -> Vec<Document> {
 /// Read complete source routes.
 pub fn routes() -> Vec<Route> {
     serde_json::from_str(include_str!("../fixtures/pdf/routes.json")).unwrap()
-}
-/// Drive one operation without network access.
-pub fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(future)
 }
 /// Load one document through the public owner.
 pub fn load(name: &str) -> Result<Attachment, AttachmentError> {

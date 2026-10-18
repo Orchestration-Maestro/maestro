@@ -1,11 +1,12 @@
 //! Manifest expansion through the existing public package manager.
 #![cfg(test)]
 #![cfg(target_os = "linux")]
+use crate::manifest_resource_checks::write;
 use crate::resolution_support;
 use crate::scratch;
 use maestro_packages::PackageManager;
 use serde_json::json;
-use std::{fs, io::Write};
+use std::fs;
 /// Wildcards produce native matches rather than a literal missing operand.
 #[test]
 fn manifest_expansion_keeps_native_match_order() {
@@ -43,17 +44,6 @@ struct Recipe {
     denied: bool,
     /// Ordered resources with complete metadata.
     expected: serde_json::Value,
-}
-/// Exclusively writes one authored fixture file.
-fn write(path: &std::path::Path, text: &str) {
-    fs::create_dir_all(path.parent().unwrap()).unwrap();
-    fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)
-        .unwrap()
-        .write_all(text.as_bytes())
-        .unwrap();
 }
 /// Creates only files, directories and links read by the recorded corpus.
 fn setup(scene: &std::path::Path, setup: &Setup) {

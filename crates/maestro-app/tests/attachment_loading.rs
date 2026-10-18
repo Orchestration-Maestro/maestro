@@ -12,6 +12,7 @@ use std::sync::{Arc, Mutex};
 use support::{
     attachment_observation::observed,
     attachments::{corpus, equal},
+    run,
 };
 
 /// Already-read platform source metadata.
@@ -30,13 +31,6 @@ struct Input {
     r#override: Option<String>,
     /// Original byte data.
     bytes: Option<Vec<u8>>,
-}
-/// Execute without live network access.
-fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(future)
 }
 /// Replay one local source suite.
 fn local_suite(suite: &str) {

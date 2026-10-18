@@ -11,16 +11,7 @@ use serde_json::{Value, json};
 use std::io;
 use support::native::broken_history;
 use support::scratch::Scratch;
-
-/// Member names of an object in order.
-fn keys(value: &Value) -> Vec<&str> {
-    value
-        .as_object()
-        .unwrap()
-        .keys()
-        .map(String::as_str)
-        .collect()
-}
+use support::session_history::keys;
 
 /// An append under test, given the manager and an existing entry identity.
 type Append = fn(&mut SessionManager, &str) -> io::Result<String>;
