@@ -1,0 +1,6827 @@
+[
+  {
+    "id": "compound-stream-1821.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-stream-1821.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1:C2",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1.25"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1.25",
+                "text": "1.25",
+                "w_after_format": "1.25"
+              },
+              {
+                "address": "B1",
+                "type": "s",
+                "value": "raw",
+                "z": null,
+                "xf": null,
+                "w_after_read": "raw",
+                "text": "raw",
+                "w_after_format": "raw"
+              },
+              {
+                "address": "C1",
+                "type": "b",
+                "value": true,
+                "z": null,
+                "xf": null,
+                "w_after_read": "TRUE",
+                "text": "TRUE",
+                "w_after_format": "TRUE"
+              },
+              {
+                "address": "A2",
+                "type": "n",
+                "value": {
+                  "number": "44927"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "44927",
+                "text": "44927",
+                "w_after_format": "44927"
+              },
+              {
+                "address": "B2",
+                "type": "n",
+                "value": {
+                  "number": "0.125"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "0.125",
+                "text": "0.125",
+                "w_after_format": "0.125"
+              },
+              {
+                "address": "C2",
+                "type": "b",
+                "value": false,
+                "z": null,
+                "xf": null,
+                "w_after_read": "FALSE",
+                "text": "FALSE",
+                "w_after_format": "FALSE"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "compound-stream-4095.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-stream-4095.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1:C2",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1.25"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1.25",
+                "text": "1.25",
+                "w_after_format": "1.25"
+              },
+              {
+                "address": "B1",
+                "type": "s",
+                "value": "raw",
+                "z": null,
+                "xf": null,
+                "w_after_read": "raw",
+                "text": "raw",
+                "w_after_format": "raw"
+              },
+              {
+                "address": "C1",
+                "type": "b",
+                "value": true,
+                "z": null,
+                "xf": null,
+                "w_after_read": "TRUE",
+                "text": "TRUE",
+                "w_after_format": "TRUE"
+              },
+              {
+                "address": "A2",
+                "type": "n",
+                "value": {
+                  "number": "44927"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "44927",
+                "text": "44927",
+                "w_after_format": "44927"
+              },
+              {
+                "address": "B2",
+                "type": "n",
+                "value": {
+                  "number": "0.125"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "0.125",
+                "text": "0.125",
+                "w_after_format": "0.125"
+              },
+              {
+                "address": "C2",
+                "type": "b",
+                "value": false,
+                "z": null,
+                "xf": null,
+                "w_after_read": "FALSE",
+                "text": "FALSE",
+                "w_after_format": "FALSE"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "compound-stream-4096.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-stream-4096.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1:C2",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1.25"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1.25",
+                "text": "1.25",
+                "w_after_format": "1.25"
+              },
+              {
+                "address": "B1",
+                "type": "s",
+                "value": "raw",
+                "z": null,
+                "xf": null,
+                "w_after_read": "raw",
+                "text": "raw",
+                "w_after_format": "raw"
+              },
+              {
+                "address": "C1",
+                "type": "b",
+                "value": true,
+                "z": null,
+                "xf": null,
+                "w_after_read": "TRUE",
+                "text": "TRUE",
+                "w_after_format": "TRUE"
+              },
+              {
+                "address": "A2",
+                "type": "n",
+                "value": {
+                  "number": "44927"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "44927",
+                "text": "44927",
+                "w_after_format": "44927"
+              },
+              {
+                "address": "B2",
+                "type": "n",
+                "value": {
+                  "number": "0.125"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "0.125",
+                "text": "0.125",
+                "w_after_format": "0.125"
+              },
+              {
+                "address": "C2",
+                "type": "b",
+                "value": false,
+                "z": null,
+                "xf": null,
+                "w_after_read": "FALSE",
+                "text": "FALSE",
+                "w_after_format": "FALSE"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "compound-stream-4097.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-stream-4097.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1:C2",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1.25"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1.25",
+                "text": "1.25",
+                "w_after_format": "1.25"
+              },
+              {
+                "address": "B1",
+                "type": "s",
+                "value": "raw",
+                "z": null,
+                "xf": null,
+                "w_after_read": "raw",
+                "text": "raw",
+                "w_after_format": "raw"
+              },
+              {
+                "address": "C1",
+                "type": "b",
+                "value": true,
+                "z": null,
+                "xf": null,
+                "w_after_read": "TRUE",
+                "text": "TRUE",
+                "w_after_format": "TRUE"
+              },
+              {
+                "address": "A2",
+                "type": "n",
+                "value": {
+                  "number": "44927"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "44927",
+                "text": "44927",
+                "w_after_format": "44927"
+              },
+              {
+                "address": "B2",
+                "type": "n",
+                "value": {
+                  "number": "0.125"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "0.125",
+                "text": "0.125",
+                "w_after_format": "0.125"
+              },
+              {
+                "address": "C2",
+                "type": "b",
+                "value": false,
+                "z": null,
+                "xf": null,
+                "w_after_read": "FALSE",
+                "text": "FALSE",
+                "w_after_format": "FALSE"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "compound-stream-8192.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-stream-8192.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1:C2",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1.25"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1.25",
+                "text": "1.25",
+                "w_after_format": "1.25"
+              },
+              {
+                "address": "B1",
+                "type": "s",
+                "value": "raw",
+                "z": null,
+                "xf": null,
+                "w_after_read": "raw",
+                "text": "raw",
+                "w_after_format": "raw"
+              },
+              {
+                "address": "C1",
+                "type": "b",
+                "value": true,
+                "z": null,
+                "xf": null,
+                "w_after_read": "TRUE",
+                "text": "TRUE",
+                "w_after_format": "TRUE"
+              },
+              {
+                "address": "A2",
+                "type": "n",
+                "value": {
+                  "number": "44927"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "44927",
+                "text": "44927",
+                "w_after_format": "44927"
+              },
+              {
+                "address": "B2",
+                "type": "n",
+                "value": {
+                  "number": "0.125"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "0.125",
+                "text": "0.125",
+                "w_after_format": "0.125"
+              },
+              {
+                "address": "C2",
+                "type": "b",
+                "value": false,
+                "z": null,
+                "xf": null,
+                "w_after_read": "FALSE",
+                "text": "FALSE",
+                "w_after_format": "FALSE"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "compound-name-Book.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-name-Book.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1:C2",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1.25"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1.25",
+                "text": "1.25",
+                "w_after_format": "1.25"
+              },
+              {
+                "address": "B1",
+                "type": "s",
+                "value": "raw",
+                "z": null,
+                "xf": null,
+                "w_after_read": "raw",
+                "text": "raw",
+                "w_after_format": "raw"
+              },
+              {
+                "address": "C1",
+                "type": "b",
+                "value": true,
+                "z": null,
+                "xf": null,
+                "w_after_read": "TRUE",
+                "text": "TRUE",
+                "w_after_format": "TRUE"
+              },
+              {
+                "address": "A2",
+                "type": "n",
+                "value": {
+                  "number": "44927"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "44927",
+                "text": "44927",
+                "w_after_format": "44927"
+              },
+              {
+                "address": "B2",
+                "type": "n",
+                "value": {
+                  "number": "0.125"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "0.125",
+                "text": "0.125",
+                "w_after_format": "0.125"
+              },
+              {
+                "address": "C2",
+                "type": "b",
+                "value": false,
+                "z": null,
+                "xf": null,
+                "w_after_read": "FALSE",
+                "text": "FALSE",
+                "w_after_format": "FALSE"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "compound-name-WORKBOOK.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-name-WORKBOOK.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1:C2",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1.25"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1.25",
+                "text": "1.25",
+                "w_after_format": "1.25"
+              },
+              {
+                "address": "B1",
+                "type": "s",
+                "value": "raw",
+                "z": null,
+                "xf": null,
+                "w_after_read": "raw",
+                "text": "raw",
+                "w_after_format": "raw"
+              },
+              {
+                "address": "C1",
+                "type": "b",
+                "value": true,
+                "z": null,
+                "xf": null,
+                "w_after_read": "TRUE",
+                "text": "TRUE",
+                "w_after_format": "TRUE"
+              },
+              {
+                "address": "A2",
+                "type": "n",
+                "value": {
+                  "number": "44927"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "44927",
+                "text": "44927",
+                "w_after_format": "44927"
+              },
+              {
+                "address": "B2",
+                "type": "n",
+                "value": {
+                  "number": "0.125"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "0.125",
+                "text": "0.125",
+                "w_after_format": "0.125"
+              },
+              {
+                "address": "C2",
+                "type": "b",
+                "value": false,
+                "z": null,
+                "xf": null,
+                "w_after_read": "FALSE",
+                "text": "FALSE",
+                "w_after_format": "FALSE"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "compound-name-BOOK.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-name-BOOK.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1:C2",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1.25"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1.25",
+                "text": "1.25",
+                "w_after_format": "1.25"
+              },
+              {
+                "address": "B1",
+                "type": "s",
+                "value": "raw",
+                "z": null,
+                "xf": null,
+                "w_after_read": "raw",
+                "text": "raw",
+                "w_after_format": "raw"
+              },
+              {
+                "address": "C1",
+                "type": "b",
+                "value": true,
+                "z": null,
+                "xf": null,
+                "w_after_read": "TRUE",
+                "text": "TRUE",
+                "w_after_format": "TRUE"
+              },
+              {
+                "address": "A2",
+                "type": "n",
+                "value": {
+                  "number": "44927"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "44927",
+                "text": "44927",
+                "w_after_format": "44927"
+              },
+              {
+                "address": "B2",
+                "type": "n",
+                "value": {
+                  "number": "0.125"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "0.125",
+                "text": "0.125",
+                "w_after_format": "0.125"
+              },
+              {
+                "address": "C2",
+                "type": "b",
+                "value": false,
+                "z": null,
+                "xf": null,
+                "w_after_read": "FALSE",
+                "text": "FALSE",
+                "w_after_format": "FALSE"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "compound-name-wOrKbOoK.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-name-wOrKbOoK.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1:C2",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1.25"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1.25",
+                "text": "1.25",
+                "w_after_format": "1.25"
+              },
+              {
+                "address": "B1",
+                "type": "s",
+                "value": "raw",
+                "z": null,
+                "xf": null,
+                "w_after_read": "raw",
+                "text": "raw",
+                "w_after_format": "raw"
+              },
+              {
+                "address": "C1",
+                "type": "b",
+                "value": true,
+                "z": null,
+                "xf": null,
+                "w_after_read": "TRUE",
+                "text": "TRUE",
+                "w_after_format": "TRUE"
+              },
+              {
+                "address": "A2",
+                "type": "n",
+                "value": {
+                  "number": "44927"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "44927",
+                "text": "44927",
+                "w_after_format": "44927"
+              },
+              {
+                "address": "B2",
+                "type": "n",
+                "value": {
+                  "number": "0.125"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "0.125",
+                "text": "0.125",
+                "w_after_format": "0.125"
+              },
+              {
+                "address": "C2",
+                "type": "b",
+                "value": false,
+                "z": null,
+                "xf": null,
+                "w_after_read": "FALSE",
+                "text": "FALSE",
+                "w_after_format": "FALSE"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "compound-allocation-extension.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-allocation-extension.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1:C2",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1.25"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1.25",
+                "text": "1.25",
+                "w_after_format": "1.25"
+              },
+              {
+                "address": "B1",
+                "type": "s",
+                "value": "raw",
+                "z": null,
+                "xf": null,
+                "w_after_read": "raw",
+                "text": "raw",
+                "w_after_format": "raw"
+              },
+              {
+                "address": "C1",
+                "type": "b",
+                "value": true,
+                "z": null,
+                "xf": null,
+                "w_after_read": "TRUE",
+                "text": "TRUE",
+                "w_after_format": "TRUE"
+              },
+              {
+                "address": "A2",
+                "type": "n",
+                "value": {
+                  "number": "44927"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "44927",
+                "text": "44927",
+                "w_after_format": "44927"
+              },
+              {
+                "address": "B2",
+                "type": "n",
+                "value": {
+                  "number": "0.125"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "0.125",
+                "text": "0.125",
+                "w_after_format": "0.125"
+              },
+              {
+                "address": "C2",
+                "type": "b",
+                "value": false,
+                "z": null,
+                "xf": null,
+                "w_after_read": "FALSE",
+                "text": "FALSE",
+                "w_after_format": "FALSE"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "compound-fragmented-fat.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-fragmented-fat.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1:C2",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1.25"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1.25",
+                "text": "1.25",
+                "w_after_format": "1.25"
+              },
+              {
+                "address": "B1",
+                "type": "s",
+                "value": "raw",
+                "z": null,
+                "xf": null,
+                "w_after_read": "raw",
+                "text": "raw",
+                "w_after_format": "raw"
+              },
+              {
+                "address": "C1",
+                "type": "b",
+                "value": true,
+                "z": null,
+                "xf": null,
+                "w_after_read": "TRUE",
+                "text": "TRUE",
+                "w_after_format": "TRUE"
+              },
+              {
+                "address": "A2",
+                "type": "n",
+                "value": {
+                  "number": "44927"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "44927",
+                "text": "44927",
+                "w_after_format": "44927"
+              },
+              {
+                "address": "B2",
+                "type": "n",
+                "value": {
+                  "number": "0.125"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "0.125",
+                "text": "0.125",
+                "w_after_format": "0.125"
+              },
+              {
+                "address": "C2",
+                "type": "b",
+                "value": false,
+                "z": null,
+                "xf": null,
+                "w_after_read": "FALSE",
+                "text": "FALSE",
+                "w_after_format": "FALSE"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "compound-fragmented-minifat.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-fragmented-minifat.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1:C2",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1.25"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1.25",
+                "text": "1.25",
+                "w_after_format": "1.25"
+              },
+              {
+                "address": "B1",
+                "type": "s",
+                "value": "raw",
+                "z": null,
+                "xf": null,
+                "w_after_read": "raw",
+                "text": "raw",
+                "w_after_format": "raw"
+              },
+              {
+                "address": "C1",
+                "type": "b",
+                "value": true,
+                "z": null,
+                "xf": null,
+                "w_after_read": "TRUE",
+                "text": "TRUE",
+                "w_after_format": "TRUE"
+              },
+              {
+                "address": "A2",
+                "type": "n",
+                "value": {
+                  "number": "44927"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "44927",
+                "text": "44927",
+                "w_after_format": "44927"
+              },
+              {
+                "address": "B2",
+                "type": "n",
+                "value": {
+                  "number": "0.125"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "0.125",
+                "text": "0.125",
+                "w_after_format": "0.125"
+              },
+              {
+                "address": "C2",
+                "type": "b",
+                "value": false,
+                "z": null,
+                "xf": null,
+                "w_after_read": "FALSE",
+                "text": "FALSE",
+                "w_after_format": "FALSE"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "compound-sector-4096.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-sector-4096.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1:C2",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1.25"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1.25",
+                "text": "1.25",
+                "w_after_format": "1.25"
+              },
+              {
+                "address": "B1",
+                "type": "s",
+                "value": "raw",
+                "z": null,
+                "xf": null,
+                "w_after_read": "raw",
+                "text": "raw",
+                "w_after_format": "raw"
+              },
+              {
+                "address": "C1",
+                "type": "b",
+                "value": true,
+                "z": null,
+                "xf": null,
+                "w_after_read": "TRUE",
+                "text": "TRUE",
+                "w_after_format": "TRUE"
+              },
+              {
+                "address": "A2",
+                "type": "n",
+                "value": {
+                  "number": "44927"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "44927",
+                "text": "44927",
+                "w_after_format": "44927"
+              },
+              {
+                "address": "B2",
+                "type": "n",
+                "value": {
+                  "number": "0.125"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "0.125",
+                "text": "0.125",
+                "w_after_format": "0.125"
+              },
+              {
+                "address": "C2",
+                "type": "b",
+                "value": false,
+                "z": null,
+                "xf": null,
+                "w_after_read": "FALSE",
+                "text": "FALSE",
+                "w_after_format": "FALSE"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "compound-bad-major.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-bad-major.xls"
+    },
+    "expected": {
+      "error": {
+        "kind": "reader",
+        "workbook": "compound-bad-major.xls"
+      }
+    }
+  },
+  {
+    "id": "compound-bad-sector-shift.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-bad-sector-shift.xls"
+    },
+    "expected": {
+      "error": {
+        "kind": "reader",
+        "workbook": "compound-bad-sector-shift.xls"
+      }
+    }
+  },
+  {
+    "id": "compound-bad-mini-shift.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-bad-mini-shift.xls"
+    },
+    "expected": {
+      "error": {
+        "kind": "reader",
+        "workbook": "compound-bad-mini-shift.xls"
+      }
+    }
+  },
+  {
+    "id": "compound-no-workbook.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-no-workbook.xls"
+    },
+    "expected": {
+      "error": {
+        "kind": "reader",
+        "workbook": "compound-no-workbook.xls"
+      }
+    }
+  },
+  {
+    "id": "compound-short-compound.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-short-compound.xls"
+    },
+    "expected": {
+      "error": {
+        "kind": "reader",
+        "workbook": "compound-short-compound.xls"
+      }
+    }
+  },
+  {
+    "id": "legacy-sst-switch-width.xls",
+    "op": "read",
+    "args": {
+      "file": "legacy-sst-switch-width.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "s",
+                "value": "Aé雪B",
+                "z": null,
+                "xf": null,
+                "w_after_read": "Aé雪B",
+                "text": "Aé雪B",
+                "w_after_format": "Aé雪B"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "legacy-sst-surrogate-boundary.xls",
+    "op": "read",
+    "args": {
+      "file": "legacy-sst-surrogate-boundary.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "s",
+                "value": "😀",
+                "z": null,
+                "xf": null,
+                "w_after_read": "😀",
+                "text": "😀",
+                "w_after_format": "😀"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "legacy-sst-rich-extension.xls",
+    "op": "read",
+    "args": {
+      "file": "legacy-sst-rich-extension.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "s",
+                "value": "雪",
+                "z": null,
+                "xf": null,
+                "w_after_read": "雪",
+                "text": "雪",
+                "w_after_format": "雪"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "legacy-sst-compressed.xls",
+    "op": "read",
+    "args": {
+      "file": "legacy-sst-compressed.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "s",
+                "value": "ÿ",
+                "z": null,
+                "xf": null,
+                "w_after_read": "ÿ",
+                "text": "ÿ",
+                "w_after_format": "ÿ"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "legacy-rk-floating.xls",
+    "op": "read",
+    "args": {
+      "file": "legacy-rk-floating.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1:B1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "2.5"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "2.5",
+                "text": "2.5",
+                "w_after_format": "2.5"
+              },
+              {
+                "address": "B1",
+                "type": "n",
+                "value": {
+                  "number": "0.025"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "0.025",
+                "text": "0.025",
+                "w_after_format": "0.025"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "legacy-protected.xls",
+    "op": "read",
+    "args": {
+      "file": "legacy-protected.xls"
+    },
+    "expected": {
+      "error": {
+        "kind": "reader",
+        "workbook": "legacy-protected.xls"
+      }
+    }
+  },
+  {
+    "id": "legacy-biff5-windows-1252.xls",
+    "op": "read",
+    "args": {
+      "file": "legacy-biff5-windows-1252.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"__/__ \"hh\"_\"mm\"_\"ss\"_ \""
+          ],
+          [
+            164,
+            "\"unit\"0.00"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Data",
+            "range": "A1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "s",
+                "value": "€",
+                "z": null,
+                "xf": null,
+                "w_after_read": "€",
+                "text": "€",
+                "w_after_format": "€"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "legacy-biff5-shift-jis.xls",
+    "op": "read",
+    "args": {
+      "file": "legacy-biff5-shift-jis.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"__/__ \"hh\"_\"mm\"_\"ss\"_ \""
+          ],
+          [
+            164,
+            "\"unit\"0.00"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Data",
+            "range": "A1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "s",
+                "value": "あ",
+                "z": null,
+                "xf": null,
+                "w_after_read": "あ",
+                "text": "あ",
+                "w_after_format": "あ"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "compound-nested-decoy.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-nested-decoy.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Real",
+            "range": "A1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1",
+                "text": "1",
+                "w_after_format": "1"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "legacy-nested-chart.xls",
+    "op": "read",
+    "args": {
+      "file": "legacy-nested-chart.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Data",
+            "range": "A1:A2",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1",
+                "text": "1",
+                "w_after_format": "1"
+              },
+              {
+                "address": "A2",
+                "type": "n",
+                "value": {
+                  "number": "2"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "2",
+                "text": "2",
+                "w_after_format": "2"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "legacy-chart-sheet.xls",
+    "op": "read",
+    "args": {
+      "file": "legacy-chart-sheet.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Data",
+            "range": "A1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1",
+                "text": "1",
+                "w_after_format": "1"
+              }
+            ]
+          },
+          {
+            "name": "Chart",
+            "range": "A1:B1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1",
+                "text": "1",
+                "w_after_format": "1"
+              },
+              {
+                "address": "B1",
+                "type": "n",
+                "value": {
+                  "number": "2"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "2",
+                "text": "2",
+                "w_after_format": "2"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "legacy-sheet-order.xls",
+    "op": "read",
+    "args": {
+      "file": "legacy-sheet-order.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "First",
+            "range": "A1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1",
+                "text": "1",
+                "w_after_format": "1"
+              }
+            ]
+          },
+          {
+            "name": "Second",
+            "range": "A1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "2"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "2",
+                "text": "2",
+                "w_after_format": "2"
+              }
+            ]
+          },
+          {
+            "name": "Sheet1",
+            "range": "A1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "3"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "3",
+                "text": "3",
+                "w_after_format": "3"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "legacy-formula-caches.xls",
+    "op": "read",
+    "args": {
+      "file": "legacy-formula-caches.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Data",
+            "range": "A1:F1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "7.5"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "7.5",
+                "text": "7.5",
+                "w_after_format": "7.5"
+              },
+              {
+                "address": "B1",
+                "type": "b",
+                "value": true,
+                "z": null,
+                "xf": null,
+                "w_after_read": "TRUE",
+                "text": "TRUE",
+                "w_after_format": "TRUE"
+              },
+              {
+                "address": "C1",
+                "type": "b",
+                "value": false,
+                "z": null,
+                "xf": null,
+                "w_after_read": "FALSE",
+                "text": "FALSE",
+                "w_after_format": "FALSE"
+              },
+              {
+                "address": "D1",
+                "type": "e",
+                "value": {
+                  "number": "7"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "#DIV/0!",
+                "text": "#DIV/0!",
+                "w_after_format": "#DIV/0!"
+              },
+              {
+                "address": "E1",
+                "type": "s",
+                "value": "",
+                "z": null,
+                "xf": null,
+                "w_after_read": "",
+                "text": "",
+                "w_after_format": ""
+              },
+              {
+                "address": "F1",
+                "type": "s",
+                "value": "txt",
+                "z": null,
+                "xf": null,
+                "w_after_read": "txt",
+                "text": "txt",
+                "w_after_format": "txt"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "legacy-boolerr-flags.xls",
+    "op": "read",
+    "args": {
+      "file": "legacy-boolerr-flags.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Data",
+            "range": "A1:D1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "b",
+                "value": true,
+                "z": null,
+                "xf": null,
+                "w_after_read": "TRUE",
+                "text": "TRUE",
+                "w_after_format": "TRUE"
+              },
+              {
+                "address": "B1",
+                "type": "b",
+                "value": false,
+                "z": null,
+                "xf": null,
+                "w_after_read": "FALSE",
+                "text": "FALSE",
+                "w_after_format": "FALSE"
+              },
+              {
+                "address": "C1",
+                "type": "e",
+                "value": {
+                  "number": "42"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "#N/A",
+                "text": "#N/A",
+                "w_after_format": "#N/A"
+              },
+              {
+                "address": "D1",
+                "type": "e",
+                "value": {
+                  "number": "7"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "#DIV/0!",
+                "text": "#DIV/0!",
+                "w_after_format": "#DIV/0!"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "legacy-range-per-sheet.xls",
+    "op": "read",
+    "args": {
+      "file": "legacy-range-per-sheet.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Sized",
+            "range": "A1:B3",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1",
+                "text": "1",
+                "w_after_format": "1"
+              }
+            ]
+          },
+          {
+            "name": "Unsized",
+            "range": null,
+            "merges": [],
+            "cells": []
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "compound-short-final-sector.xls",
+    "op": "read",
+    "args": {
+      "file": "compound-short-final-sector.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"上午/下午 \"hh\"時\"mm\"分\"ss\"秒 \""
+          ],
+          [
+            60,
+            "yyyy-mm-dd hh:mm:ss"
+          ],
+          [
+            61,
+            "$#,##0.00"
+          ],
+          [
+            62,
+            "0.0%"
+          ],
+          [
+            63,
+            "\"positive\"0.000;\"negative\"0.000;\"zero\";\"text:\"@"
+          ],
+          [
+            64,
+            "Q0"
+          ],
+          [
+            65,
+            "0.00;[Red](0.00);\"-\";\"text:\"@"
+          ],
+          [
+            66,
+            "[>100]\"big\"0;[<0]\"negative\"0;\"other\"0"
+          ],
+          [
+            67,
+            "[>100]0;\"fallback\"0"
+          ],
+          [
+            68,
+            "0;\"text:\"@"
+          ],
+          [
+            69,
+            "0.00;[Red](0.00)"
+          ],
+          [
+            70,
+            "d\\.m"
+          ],
+          [
+            71,
+            "d\\.m"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Old",
+            "range": "A1:C2",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "n",
+                "value": {
+                  "number": "1.25"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "1.25",
+                "text": "1.25",
+                "w_after_format": "1.25"
+              },
+              {
+                "address": "B1",
+                "type": "s",
+                "value": "raw",
+                "z": null,
+                "xf": null,
+                "w_after_read": "raw",
+                "text": "raw",
+                "w_after_format": "raw"
+              },
+              {
+                "address": "C1",
+                "type": "b",
+                "value": true,
+                "z": null,
+                "xf": null,
+                "w_after_read": "TRUE",
+                "text": "TRUE",
+                "w_after_format": "TRUE"
+              },
+              {
+                "address": "A2",
+                "type": "n",
+                "value": {
+                  "number": "44927"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "44927",
+                "text": "44927",
+                "w_after_format": "44927"
+              },
+              {
+                "address": "B2",
+                "type": "n",
+                "value": {
+                  "number": "0.125"
+                },
+                "z": null,
+                "xf": null,
+                "w_after_read": "0.125",
+                "text": "0.125",
+                "w_after_format": "0.125"
+              },
+              {
+                "address": "C2",
+                "type": "b",
+                "value": false,
+                "z": null,
+                "xf": null,
+                "w_after_read": "FALSE",
+                "text": "FALSE",
+                "w_after_format": "FALSE"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "legacy-biff5-alias.xls",
+    "op": "read",
+    "args": {
+      "file": "legacy-biff5-alias.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"__/__ \"hh\"_\"mm\"_\"ss\"_ \""
+          ],
+          [
+            164,
+            "\"unit\"0.00"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Data",
+            "range": "A1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "s",
+                "value": "€",
+                "z": null,
+                "xf": null,
+                "w_after_read": "€",
+                "text": "€",
+                "w_after_format": "€"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  {
+    "id": "legacy-biff5-unmapped.xls",
+    "op": "read",
+    "args": {
+      "file": "legacy-biff5-unmapped.xls"
+    },
+    "expected": {
+      "ok": {
+        "date1904": false,
+        "ssf": [
+          [
+            0,
+            "General"
+          ],
+          [
+            1,
+            "0"
+          ],
+          [
+            2,
+            "0.00"
+          ],
+          [
+            3,
+            "#,##0"
+          ],
+          [
+            4,
+            "#,##0.00"
+          ],
+          [
+            9,
+            "0%"
+          ],
+          [
+            10,
+            "0.00%"
+          ],
+          [
+            11,
+            "0.00E+00"
+          ],
+          [
+            12,
+            "# ?/?"
+          ],
+          [
+            13,
+            "# ??/??"
+          ],
+          [
+            14,
+            "m/d/yy"
+          ],
+          [
+            15,
+            "d-mmm-yy"
+          ],
+          [
+            16,
+            "d-mmm"
+          ],
+          [
+            17,
+            "mmm-yy"
+          ],
+          [
+            18,
+            "h:mm AM/PM"
+          ],
+          [
+            19,
+            "h:mm:ss AM/PM"
+          ],
+          [
+            20,
+            "h:mm"
+          ],
+          [
+            21,
+            "h:mm:ss"
+          ],
+          [
+            22,
+            "m/d/yy h:mm"
+          ],
+          [
+            37,
+            "#,##0 ;(#,##0)"
+          ],
+          [
+            38,
+            "#,##0 ;[Red](#,##0)"
+          ],
+          [
+            39,
+            "#,##0.00;(#,##0.00)"
+          ],
+          [
+            40,
+            "#,##0.00;[Red](#,##0.00)"
+          ],
+          [
+            45,
+            "mm:ss"
+          ],
+          [
+            46,
+            "[h]:mm:ss"
+          ],
+          [
+            47,
+            "mmss.0"
+          ],
+          [
+            48,
+            "##0.0E+0"
+          ],
+          [
+            49,
+            "@"
+          ],
+          [
+            56,
+            "\"__/__ \"hh\"_\"mm\"_\"ss\"_ \""
+          ],
+          [
+            164,
+            "\"unit\"0.00"
+          ]
+        ],
+        "same_table": true,
+        "sheets": [
+          {
+            "name": "Data",
+            "range": "A1",
+            "merges": [],
+            "cells": [
+              {
+                "address": "A1",
+                "type": "s",
+                "value": "é",
+                "z": null,
+                "xf": null,
+                "w_after_read": "é",
+                "text": "é",
+                "w_after_format": "é"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+]

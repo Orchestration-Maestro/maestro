@@ -77,8 +77,8 @@ fail, fallback uses unrounded scalar text without caching: booleans use `true` o
 `false`, null uses `null`, and a missing value uses `undefined`. UTC Dates use
 readable RFC3339 text with milliseconds, not host-dependent date spelling; HTML
 raw-value attributes reuse this spelling. Standard error
-codes use their labels; an unknown numeric error stays numeric. Unknown XLSX error labels survive
-native conversion, and formulas are not evaluated.
+codes use their labels; an unknown numeric error stays numeric. Unknown XLSX error labels
+are kept, and formulas are not evaluated.
 Cells retain owned `f` formula text and optional `array_formula` range metadata.
 Formula text decodes spreadsheet escapes once, normalizes CRLF to LF and removes
 function prefixes. Shared formulas expand within their own sheet using the
@@ -102,6 +102,29 @@ Declared exclusive dimensions include blank rows and columns without materializi
 blank cells, and populated cells expand those bounds. Without a declaration,
 populated bounds start at A1; empty sheets have no range. For empty sheets, singleton declarations
 retain their range, while zero-sized declarations have no range.
+The owned container reader accepts version-3 512-byte and version-4 4096-byte
+sectors, allocation extension sectors and fragmented regular/mini streams. It
+selects only root-level streams, preferring `Workbook` to `Book`, with
+ASCII case-insensitive names. Invalid headers, missing streams, encrypted files
+and truncated records return a contextual `WorkbookError::Reader`.
+The record reader joins continuation pieces, retaining string-width transitions
+and surrogate pairs while skipping rich-run payloads. Shared-string termination
+checks do not rescan the remaining continuation pieces. Declared code pages,
+including producer aliases, decode older strings; empty byte strings need no
+Unicode width flag. Embedded chart substreams do
+not replace worksheet cells; chart sheets shift repeated NUMBER addresses one
+column right. Sheets follow ascending stream positions. Boolean records and
+formula caches are true only for byte 1. A pending formula string consumes its
+following STRING record; a STRING without a pending formula fails.
+
+XLSX values come from the same ZIP/XML pass as metadata. Numeric cells use decimal
+prefix parsing, including incomplete exponents, signed infinity and signed zero;
+no numeric prefix produces NaN. Missing or empty numeric/shared values stay absent.
+Boolean tokens `1` and `true` alone are true; absent values are false. Inline
+strings without text retain an empty string. Plain shared and inline strings
+select direct text before direct rich runs, skip phonetic runs and decode workbook
+escapes once. Invalid shared-string indices fail with workbook and sheet context.
+
 Binary formula expressions, arrays, rich text and hyperlinks remain tracked in
 [legacy workbook metadata](https://github.com/Orchestration-Maestro/maestro/issues/1175).
 
@@ -141,8 +164,8 @@ A colon qualifier `run:run!` is opaque unless immediately preceded by `!`:
 `Q1:Q3!A1` protects the sheet range while `Sheet1!A1:Sheet1!B2` advances both cells.
 The ambiguous `A1:Sheet2!B2` is read as a 3-D qualifier and protects `A1:Sheet2!`.
 Input coordinate bounds do not constrain displaced output: `A1048576` moved down
-becomes `A1048577`, and `XFD1` moved right becomes `XFE1`. Isolated in-grid arithmetic
-reuses the native workbook library; out-of-grid text uses the address owner. Formula
+becomes `A1048577`, and `XFD1` moved right becomes `XFE1`. Every advanced coordinate
+uses the shared address owner. Formula
 decoding, missing-cache retention and CSV quoting stay separate. R1C1 conversion
 belongs to SpreadsheetML/SYLK readers, not this XLSX path; identifier boundaries
 and brackets protect XLSX `RC`, `R1C1` and bracketed spellings.

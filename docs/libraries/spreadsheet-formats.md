@@ -5,7 +5,8 @@
 
 | Library | Pin | Requested features | License used |
 | --- | --- | --- | --- |
-| calamine | `=0.36.1` | Defaults off; no optional features | MIT |
+| codepage | `=0.1.3` | No features | Apache-2.0 |
+| encoding_rs | `=0.8.42` | Defaults | Apache-2.0 AND BSD-3-Clause |
 | ryu-js | `=1.0.3` | Existing defaults; no optional features | Apache-2.0 |
 | chrono | `=0.4.45` | Defaults off; `std` (includes `alloc`) | Apache-2.0 |
 | num-traits | `=0.2.19` | Existing defaults and `std` | Apache-2.0 |
@@ -29,35 +30,15 @@ requested features above describe this edge, not the whole workspace.
 
 Derived format data and policy retain the
 [formatting source attribution](../../THIRD-PARTY-NOTICES.md#spreadsheet-formatting-source).
-[calamine](https://docs.rs/calamine/0.36.1/calamine/) supplies native XLSX cell
-values through its streaming reader and legacy XLS values through its owned
-range reader. The application reads style indices, raw
-error labels, dimensions and merges through the existing indexed ZIP/XML owners;
-it uses its own number-format evaluator, not the parser's display text. The local
-[calamine patch](../../vendor/calamine/src/xls.rs) retains ordered raw FORMAT
-records, resolved per-cell format selections and exclusive declared dimensions.
-It reuses the existing binary, codepage and scalar decoders with no new dependency
-or optional feature. Legacy cells use the same shared formatter, live format table
-and detached snapshots as application callers. Declared blank bounds do not
-allocate blank cells. Binary formula expressions, arrays, rich text and hyperlinks
-remain tracked in
+The application owns its XLS compound-file and record reader. XLSX scalars,
+styles, dimensions and merges use the existing indexed ZIP/XML owners in one
+pass; neither path delegates display text to another parser.
+[codepage](https://docs.rs/codepage/0.1.3/codepage/) maps declared legacy code pages
+to [encoding_rs](https://docs.rs/encoding_rs/0.8.42/encoding_rs/) decoders.
+Unmapped pages preserve each byte as the same Unicode scalar. Compressed BIFF8
+strings decode as UTF-16 units independently of the declared code page.
+
+Legacy cells use the shared formatter, live format table and detached snapshots.
+Declared blank bounds do not allocate blank cells. Binary formula expressions,
+arrays, rich text and hyperlinks remain tracked in
 [legacy workbook metadata](https://github.com/Orchestration-Maestro/maestro/issues/1175).
-
-The parser's dependency closure uses MIT or Apache-2.0 where offered, with
-BSD-3-Clause for encoding_rs, Unicode-3.0 for unicode-ident and Zlib for zlib-rs.
-Its ZIP and XML dependencies are implementation details; no additional direct
-ZIP/XML dependency or optional date feature is requested.
-
-## Local parser patch
-
-The published calamine 0.36.1 source is retained in
-[vendor/calamine](../../vendor/calamine), outside workspace membership, under
-its [MIT licence](../../vendor/calamine/LICENSE-MIT.md). The published archive's
-SHA-256 is `5fa68281b1a76b54a62156474adb06bb380a67e07dd60656e3217152b42183f3`.
-The root crates-io patch pins the ZIP requirement to `=9.0.3`
-(defaults off, `deflate`) and propagates fallible archive names through the
-existing path cache and XLSX/XLSB constructors, including its unit-test setup.
-No name is skipped or decoded with a fallback. The same copy also retains raw
-legacy FORMAT strings, resolved cell-format selections and exclusive-end declared
-dimensions in the existing XLS parser. Older FORMAT strings reuse its codepage
-decoder. The original manifest and source revision metadata remain alongside it.

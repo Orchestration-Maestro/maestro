@@ -1,6 +1,6 @@
 [workspace]
 members = ["crates/*"]
-exclude = ["vendor/calamine", "vendor/yaml-rust2", "vendor/hayro-interpret"]
+exclude = ["vendor/yaml-rust2", "vendor/hayro-interpret"]
 resolver = "3"
 
 [workspace.dependencies]
@@ -37,7 +37,6 @@ expect_used = "forbid"
 panic = "forbid"
 
 [patch.crates-io]
-calamine = { path = "vendor/calamine" }
 hayro-interpret = { path = "vendor/hayro-interpret" }
 yaml-rust2 = { path = "vendor/yaml-rust2" }
 

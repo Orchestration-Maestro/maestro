@@ -150,9 +150,9 @@ A qualifier may contain `run:run!` unless its first run immediately follows `!`;
 this resolves the ambiguous colon as a 3-D sheet qualifier, so `A1:Sheet2!B2` protects
 `A1:Sheet2!` too. Coordinates match case-insensitively and retain their column case
 when advanced. Whole-axis pairs remain unchanged. Preserve absolute axes and
-byte-identical zero/fixed displacement. Reuse Calamine for isolated in-grid
-arithmetic, but render advanced output beyond input grid bounds with the existing
-address owner rather than silently retaining the original reference.
+byte-identical zero/fixed displacement. Render every advanced coordinate, including
+output beyond the input grid, with the existing address owner rather than silently
+retaining the original reference.
 Add no grammar recognizer, evaluator, parser API, dependency, budget or diagnostics.
 Unterminated quotes/brackets protect the remainder. SpreadsheetML/SYLK own R1C1
 conversion; XLSX templates do not. The single operand-blind displacement correction

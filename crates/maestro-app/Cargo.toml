@@ -15,7 +15,8 @@ maestro-catalog = { path = "../maestro-catalog" }
 maestro-settings = { path = "../maestro-settings" }
 maestro-credentials = { path = "../maestro-credentials" }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
-calamine = { version = "=0.36.1", default-features = false }
+codepage = "=0.1.3"
+encoding_rs = "=0.8.42"
 num-traits.workspace = true
 maestro-agent = { path = "../maestro-agent" }
 maestro-extensions = { path = "../maestro-extensions" }

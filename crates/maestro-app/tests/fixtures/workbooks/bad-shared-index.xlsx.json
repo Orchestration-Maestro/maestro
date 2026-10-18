@@ -1,0 +1,10 @@
+{
+  "file": "bad-shared-index.xlsx",
+  "expected": {
+    "error": {
+      "kind": "reader",
+      "part": null
+    }
+  },
+  "record": null
+}

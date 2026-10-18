@@ -1,21 +1,26 @@
 //! Modern and legacy workbook values projected through metadata and the shared formatter.
-use super::super::docx_preview::{OpenXmlPackage, Options, Relationship, resolve_path};
+use super::super::docx_preview::{
+    OpenXmlPackage, Options, Relationship, XmlElement, XmlParser, float_prefix, resolve_path,
+};
+use super::rich_text::{SharedString, shared_string};
 use super::{
     CellAddress, CellObject, CellValue, ExcelDataType, Range, Ssf, WorkBook, WorkSheet,
     WorkbookError, decode_cell, decode_range, encode_cell, format_cell::ERRORS, styles::Package,
 };
+mod blob;
+mod cfb;
 mod formulas;
-use calamine::{DataType, Reader, Xls, Xlsx, XlsxError};
+mod xls;
 use indexmap::IndexMap;
-use std::{collections::BTreeMap, io::Cursor};
+use std::collections::BTreeMap;
 /// Read supplied XLSX or compound-file XLS bytes into owned sheets with formatted cell text.
 /// Legacy sheets include declared blank bounds and load repaired formats into the live table.
 ///
 /// # Errors
-/// Returns contextual archive, missing-part, XML, native-reader or address failures.
+/// Returns contextual archive, missing-part, XML, container, record or address failures.
 pub fn read(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook, WorkbookError> {
     if data.starts_with(&[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) {
-        return read_legacy(data, workbook_name, ssf);
+        return xls::read(data, workbook_name, ssf);
     }
     read_xlsx(data, workbook_name, ssf)
 }
@@ -52,8 +57,6 @@ fn read_xlsx(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook
         .archive
         .relationships(Some(workbook))
         .map_err(|e| WorkbookError::Xml(format!("{workbook_name}: {workbook}: {e}")))?;
-    let mut native = Xlsx::new(Cursor::new(data))
-        .map_err(|e| WorkbookError::Reader(format!("{workbook_name}: {e}")))?;
     let mut sheets = IndexMap::new();
     if let Some(parent) = xml.element(xml.root(), "sheets") {
         for node in xml.elements(parent, Some("sheet")) {
@@ -65,10 +68,9 @@ fn read_xlsx(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook
                     WorkbookError::MissingPart(format!("{workbook_name}: sheet {name}"))
                 })?;
             let path = resolve_path(target, workbook);
-            let values = values(&mut native, name, &package)?;
             sheets.insert(
                 name.to_owned(),
-                sheet(&package, &path, values, (&xfs, ssf, date1904), &shared)?,
+                sheet(&package, &path, (&xfs, ssf, date1904), &shared)?,
             );
         }
     }
@@ -81,43 +83,12 @@ fn read_xlsx(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook
             .map_or_else(|error| error.into_inner().clone(), |table| table.clone()),
     })
 }
-/// Stream native cells, continuing after unsupported raw error labels only.
-fn values(
-    native: &mut Xlsx<Cursor<&[u8]>>,
-    name: &str,
-    package: &Package<'_>,
-) -> Result<BTreeMap<(u32, u32), CellValue>, WorkbookError> {
-    let mut reader = native
-        .worksheet_cells_reader(name)
-        .map_err(|e| WorkbookError::Reader(format!("{}: {name}: {e}", package.name)))?;
-    let mut cells = BTreeMap::new();
-    loop {
-        match reader.next_cell() {
-            Ok(Some(cell)) => {
-                let Some(value) = native_scalar(cell.get_value()) else {
-                    continue;
-                };
-                cells.insert(cell.get_position(), value);
-            }
-            Ok(None) => break,
-            Err(XlsxError::CellError(_)) => {}
-            Err(e) => {
-                return Err(WorkbookError::Reader(format!(
-                    "{}: {name}: {e}",
-                    package.name
-                )));
-            }
-        }
-    }
-    Ok(cells)
-}
-/// Overlay authored metadata without decoding native scalar values twice.
+/// Decode stored scalars and authored metadata in the same XML pass.
 fn sheet(
     package: &Package<'_>,
     path: &str,
-    mut values: BTreeMap<(u32, u32), CellValue>,
     format: (&[u32], &Ssf, bool),
-    shared: &[String],
+    shared: &[SharedString],
 ) -> Result<WorkSheet, WorkbookError> {
     let text = package.text(path)?;
     let xml = package.xml(&text, path)?;
@@ -149,7 +120,8 @@ fn sheet(
             let raw = xml.element(node, "v").map(|n| n.text_content());
             let formula = formulas::formula(&xml, node, position, &mut shared_formulas)?;
             let array = formulas::array_range(&xml, node, position, &mut arrays)?;
-            let value = values.remove(&(position.r, position.c));
+            let value = scalar(&xml, node, raw.as_deref(), shared)
+                .map_err(|e| WorkbookError::Reader(format!("{}: {path}: {e}", package.name)))?;
             let formulas = (formula, array);
             let value = raw_value(
                 xml.attr(node, "t"),
@@ -176,7 +148,32 @@ fn sheet(
     super::hyperlinks::adopt(package, path, &xml, &mut result)?;
     Ok(result)
 }
-/// Overlay authored strings and missing formula caches on native scalar values.
+/// Decode stored scalar values before applying formula and date metadata.
+fn scalar(
+    xml: &XmlParser<'_>,
+    node: XmlElement<'_, '_>,
+    raw: Option<&str>,
+    shared: &[SharedString],
+) -> Result<Option<CellValue>, String> {
+    let raw = raw.filter(|raw| !raw.is_empty());
+    Ok(match xml.attr(node, "t") {
+        None | Some("n") => raw.map(|raw| CellValue::Number(float_prefix(raw))),
+        Some("s") => raw
+            .map(|raw| {
+                shared_string(raw, shared)
+                    .map(|string| CellValue::Text(string.text.clone()))
+                    .ok_or_else(|| format!("shared string {raw}"))
+            })
+            .transpose()?,
+        Some("b") => Some(CellValue::Boolean(matches!(raw, Some("1" | "true")))),
+        Some("inlineStr") => Some(CellValue::Text(
+            xml.element(node, "is")
+                .map_or_else(String::new, |is| super::rich_text::text(xml, is)),
+        )),
+        _ => None,
+    })
+}
+/// Apply authored strings, dates and missing formula caches to stored scalars.
 fn raw_value(
     kind: Option<&str>,
     raw: Option<&str>,
@@ -292,7 +289,7 @@ fn cell(
     Some(cell)
 }
 
-/// Classify owned native scalars and recover raw error labels through the shared table.
+/// Classify stored scalars and recover raw error labels through the shared table.
 fn basic_cell(
     value: Option<CellValue>,
     error: Option<String>,
@@ -328,136 +325,6 @@ fn basic_cell(
         ..Default::default()
     })
 }
-/// Project both borrowed modern and owned legacy native scalars without display coercion.
-fn native_scalar(value: &impl DataType) -> Option<CellValue> {
-    use num_traits::ToPrimitive;
-    if let Some(number) = value
-        .get_float()
-        .or_else(|| value.get_int()?.to_f64())
-        .or_else(|| value.get_datetime().map(|date| date.as_f64()))
-    {
-        Some(CellValue::Number(number))
-    } else if let Some(text) = value
-        .get_string()
-        .or_else(|| value.get_datetime_iso())
-        .or_else(|| value.get_duration_iso())
-    {
-        Some(CellValue::Text(text.to_owned()))
-    } else {
-        value.get_bool().map(CellValue::Boolean)
-    }
-}
-/// Read legacy native values while retaining the existing live format owner.
-fn read_legacy(data: &[u8], name: &str, ssf: &Ssf) -> Result<WorkBook, WorkbookError> {
-    let mut native = Xls::new(Cursor::new(data))
-        .map_err(|error| WorkbookError::Reader(format!("{name}: {error}")))?;
-    for (id, code) in native.number_formats() {
-        let _ = ssf.load(super::styles::repair_format(code), Some(u32::from(*id)));
-    }
-    let date1904 = native.has_1904_epoch();
-    let mut sheets = IndexMap::new();
-    for sheet_name in native.sheet_names() {
-        let values = native
-            .worksheet_range(&sheet_name)
-            .map_err(|error| WorkbookError::Reader(format!("{name}: {sheet_name}: {error}")))?;
-        let merges = native
-            .merge_cells_by_sheet_name(&sheet_name)
-            .map_err(|error| WorkbookError::Reader(format!("{name}: {sheet_name}: {error}")))?;
-        let formats = native
-            .worksheet_cell_formats(&sheet_name)
-            .map_err(|error| WorkbookError::Reader(format!("{name}: {sheet_name}: {error}")))?;
-        let dimensions = native
-            .worksheet_dimensions(&sheet_name)
-            .map_err(|error| WorkbookError::Reader(format!("{name}: {sheet_name}: {error}")))?;
-        sheets.insert(
-            sheet_name,
-            legacy_sheet(&values, &merges, dimensions, (formats, ssf, date1904)),
-        );
-    }
-    Ok(WorkBook {
-        sheets,
-        date1904,
-        ssf: ssf
-            .table
-            .read()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .clone(),
-    })
-}
-/// Project native values in record order through the selected number formats.
-fn legacy_sheet(
-    values: &calamine::Range<calamine::Data>,
-    merges: &[calamine::Dimensions],
-    dimensions: Option<calamine::XlsDimensions>,
-    format: (&[calamine::XlsCellFormat], &Ssf, bool),
-) -> WorkSheet {
-    let mut cells = IndexMap::new();
-    let (s, e) = dimensions.map_or(((0, 0), (0, 0)), |d| (d.start, d.end));
-    let mut range = Range {
-        s: CellAddress { r: s.0, c: s.1 },
-        e: CellAddress {
-            r: e.0.saturating_sub(1),
-            c: e.1.saturating_sub(1),
-        },
-    };
-    for metadata in format.0 {
-        let Some(value) = values.get_value(metadata.position) else {
-            continue;
-        };
-        let error = value.get_error().map(ToString::to_string);
-        if let Some(mut cell) = basic_cell(native_scalar(value), error, (None, None)) {
-            safe_format_xf(&mut cell, metadata.num_fmt_id, format.1, format.2);
-            let position = CellAddress {
-                r: metadata.position.0,
-                c: metadata.position.1,
-            };
-            grow_range(&mut range, position);
-            cells.insert(encode_cell(position), cell);
-        }
-    }
-    let range = ((e.0 > 0 && e.1 > 0) || !cells.is_empty()).then_some(range);
-    let merges = merges
-        .iter()
-        .map(|bounds| Range {
-            s: CellAddress {
-                r: bounds.start.0,
-                c: bounds.start.1,
-            },
-            e: CellAddress {
-                r: bounds.end.0,
-                c: bounds.end.1,
-            },
-        })
-        .collect();
-    WorkSheet {
-        cells,
-        range,
-        merges,
-    }
-}
-/// Leave unresolved formats uncached and keep legacy General independent of slot zero.
-fn safe_format_xf(cell: &mut CellObject, id: Option<u16>, ssf: &Ssf, date1904: bool) {
-    let Some(id) = id else {
-        cell.w = None;
-        return;
-    };
-    cell.w = cell.w.take().or_else(|| {
-        if id == 0 {
-            Some(super::general(cell.v.scalar()))
-        } else {
-            ssf.format(
-                &super::NumberFormat::Id(u32::from(id)),
-                &cell.v,
-                &super::FormatOptions {
-                    date1904,
-                    ..Default::default()
-                },
-            )
-            .ok()
-        }
-    });
-}
-
 /// Decode raw spreadsheet string escapes in one pass over UTF-16 code units.
 pub(super) fn string_cell(value: &str) -> String {
     let mut rest = value;
