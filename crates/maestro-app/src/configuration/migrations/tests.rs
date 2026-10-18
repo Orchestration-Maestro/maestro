@@ -41,7 +41,8 @@ fn publish_link(
 fn scratch(name: &str) -> PathBuf {
     let root = std::env::temp_dir().join(format!("maestro-links-{}-{name}", std::process::id()));
     fs::create_dir(&root).unwrap();
-    root
+    // Settlement compares canonical identities, so inputs use the canonical spelling.
+    fs::canonicalize(root).unwrap()
 }
 
 #[cfg(windows)]
@@ -143,6 +144,7 @@ fn check_absolute_batch(alias: &str, referent: &str, obstruction: &str) {
         std::process::id()
     ));
     fs::create_dir(&root).unwrap();
+    let root = fs::canonicalize(root).unwrap();
     let source = root.join("source");
     let target = root.join("target");
     fs::create_dir(&source).unwrap();
