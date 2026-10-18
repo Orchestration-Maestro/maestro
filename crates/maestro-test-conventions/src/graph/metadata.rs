@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::OnceLock;
 
 use cargo_metadata::{DependencyKind, Metadata, MetadataCommand, Package, PackageId};
 
@@ -41,8 +42,18 @@ pub(super) fn load(root: &Path, host: Option<&str>) -> Result<Metadata, String> 
     MetadataCommand::parse(text).map_err(|error| format!("invalid cargo metadata: {error}"))
 }
 
-/// Read the compiler's native target triple from its version output.
+/// Read the compiler's native target triple from its version output, once per process.
 pub(super) fn compiler_host() -> Result<String, String> {
+    static HOST: OnceLock<String> = OnceLock::new();
+    if let Some(host) = HOST.get() {
+        return Ok(host.clone());
+    }
+    let host = query_host()?;
+    Ok(HOST.get_or_init(|| host).clone())
+}
+
+/// Ask the compiler for its native target triple.
+fn query_host() -> Result<String, String> {
     let output = Command::new(std::env::var_os("RUSTC").unwrap_or_else(|| "rustc".into()))
         .arg("-vV")
         .output()
