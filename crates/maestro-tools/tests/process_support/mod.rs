@@ -1,6 +1,5 @@
 //! Polling and pipe ownership helpers shared by the process tests.
 #![cfg(test)]
-#![allow(dead_code)] // Each test binary uses a different part of these helpers.
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex};

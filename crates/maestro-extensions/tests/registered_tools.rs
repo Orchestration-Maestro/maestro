@@ -171,6 +171,10 @@ fn registered_tools_forward_preparation_context_progress_and_errors() {
     });
 }
 
+#[allow(
+    dead_code,
+    reason = "This program uses part of the tools display support."
+)]
 #[path = "../../maestro-tools/tests/display_support/mod.rs"]
 mod display_support;
 use maestro_tools::{

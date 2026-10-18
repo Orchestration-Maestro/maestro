@@ -1,7 +1,6 @@
 //! Recorded ls cases, controlled directory operations and the execution and rendering drivers.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#![allow(dead_code)] // each test binary uses a different part of these helpers
 
 use crate::display_support::{Env, NoLanguages, Setup, bind, context, padded_to, palette_of};
 use crate::read_support::run;

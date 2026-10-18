@@ -1,7 +1,6 @@
 //! Controlled read operations, temporary files and result projections for the read tests.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#![allow(dead_code)] // each test binary uses a different part of these helpers
 
 use maestro_agent::AgentToolResult;
 use maestro_models::{

@@ -1,6 +1,5 @@
 //! Strict recorded file-search inputs and public execution/render drivers.
 #![cfg(test)]
-#![allow(dead_code)]
 use crate::{
     display_support::{Case, search_cases, search_keys},
     ls_support::{

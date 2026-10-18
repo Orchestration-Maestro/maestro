@@ -1,6 +1,5 @@
 //! Strict edit-render oracle fixtures and palette construction.
 #![cfg(test)]
-#![allow(dead_code)] // consumers exercise different corpus groups
 
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeOptions};
 use serde::Deserialize;
@@ -102,6 +101,10 @@ pub fn palette(shift: u64) -> Theme {
     palette_except(shift, None)
 }
 /// The corpus palette without one selected role.
+#[allow(
+    dead_code,
+    reason = "Only the integration program uses it; the library render tests include this corpus too."
+)]
 pub fn without(role: &str) -> Theme {
     palette_except(0, Some(role))
 }
@@ -131,6 +134,10 @@ pub struct Details {
 /// Caught preview failure.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
+#[allow(
+    dead_code,
+    reason = "Only the library render tests use it; the integration program includes this corpus too."
+)]
 pub struct Failure {
     /// Original error text.
     pub error: String,
