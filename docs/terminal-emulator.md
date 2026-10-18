@@ -50,3 +50,17 @@ PNG decoding expands palette entries and transparency, strips 16-bit channels
 to their high bytes and converts gray, gray-alpha, RGB and RGBA to RGBA. PNG
 geometry replaces the declared geometry. Parser and loader errors remain typed;
 protocol error-message translation belongs to screen execution.
+
+## Cell and row records
+
+`Cell` and `page::row::Row` are eight-byte `Copy` records with typed accessors.
+Cells distinguish scalar text, text with a cluster suffix and background-only
+colours. Width, protection, link presence, style identifiers and shell semantics
+are separate fields. Rows track wrapping, managed content, prompts and redraws.
+These flags describe table references; the records do not own those tables.
+
+`Style` keeps foreground, background and underline colour sources separate.
+Indexed colours resolve against the supplied palette. Background-only cells take
+precedence over a style's background. The optional bold policy brightens low
+palette indices or replaces default-coloured text; it leaves other direct colours
+unchanged. Text attributes and the six underline kinds retain their identity.
