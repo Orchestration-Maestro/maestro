@@ -73,6 +73,101 @@ fn user_input_reaches_the_owned_descriptor() {
 }
 
 #[test]
+fn continuous_output_keeps_input_and_interrupt_writable() {
+    crate::child_process::runtime().unwrap().block_on(async {
+        if maestro_test_process::run_alone("continuous_output_keeps_input_and_interrupt_writable")
+            .unwrap()
+        {
+            return;
+        }
+        let (socket, peer) = std::os::unix::net::UnixStream::pair().unwrap();
+        peer.set_nonblocking(true).unwrap();
+        rustix::io::write(&peer, &[42; 8192]).unwrap();
+        let (done, completed) = tokio::sync::oneshot::channel();
+        let mut done = Some(done);
+        let mut observed = Vec::new();
+        let mut rounds = 0;
+        let handle = PtyIoActor::spawn(PtyIoActorConfig {
+            pane_id: 1,
+            master_fd: socket.into(),
+            initially_quiesced: false,
+            on_read: Box::new(move |bytes| {
+                if rounds < 31 {
+                    assert_eq!(rustix::io::write(&peer, bytes).unwrap(), bytes.len());
+                }
+                let mut input = [0; 32];
+                match rustix::io::read(&peer, &mut input) {
+                    Ok(length) => observed.extend_from_slice(&input[..length]),
+                    Err(rustix::io::Errno::AGAIN) => {}
+                    Err(error) => panic!("peer read: {error}"),
+                }
+                rounds += 1;
+                if rounds == 32 {
+                    assert_eq!(observed, b"input\x03reply");
+                    done.take().unwrap().send(()).unwrap();
+                }
+                PtyReadResult {
+                    terminal_responses: if rounds == 1 {
+                        vec![b"reply".to_vec()]
+                    } else {
+                        vec![]
+                    },
+                }
+            }),
+            on_reader_exit: None,
+        })
+        .unwrap();
+        handle.try_write_user_input(b"input\x03".to_vec()).unwrap();
+        completed.await.unwrap();
+        finish(handle).await;
+    });
+}
+
+#[test]
+fn continuous_output_keeps_async_input_producers_running() {
+    crate::child_process::runtime().unwrap().block_on(async {
+        if maestro_test_process::run_alone("continuous_output_keeps_async_input_producers_running")
+            .unwrap()
+        {
+            return;
+        }
+        let (socket, peer) = std::os::unix::net::UnixStream::pair().unwrap();
+        peer.set_nonblocking(true).unwrap();
+        let reader = peer.try_clone().unwrap();
+        rustix::io::write(&peer, &[42; 8192]).unwrap();
+        let (started, reading) = tokio::sync::oneshot::channel();
+        let mut started = Some(started);
+        let handle = PtyIoActor::spawn(PtyIoActorConfig {
+            pane_id: 2,
+            master_fd: socket.into(),
+            initially_quiesced: false,
+            on_read: Box::new(move |bytes| {
+                assert_eq!(rustix::io::write(&peer, bytes).unwrap(), bytes.len());
+                if let Some(started) = started.take() {
+                    started.send(()).unwrap();
+                }
+                PtyReadResult::default()
+            }),
+            on_reader_exit: None,
+        })
+        .unwrap();
+        let producer = tokio::spawn(async move {
+            reading.await.unwrap();
+            handle
+                .write_user_input(b"interrupt\x03".to_vec())
+                .await
+                .unwrap();
+            let mut reader = tokio::net::UnixStream::from_std(reader).unwrap();
+            let mut bytes = [0; 10];
+            reader.read_exact(&mut bytes).await.unwrap();
+            assert_eq!(&bytes, b"interrupt\x03");
+            handle.release_after_commit().await.unwrap();
+        });
+        producer.await.unwrap();
+    });
+}
+
+#[test]
 fn appearance_reports_precede_queries_of_the_new_appearance() {
     crate::child_process::runtime().unwrap().block_on(async {
         if maestro_test_process::run_alone(
@@ -83,39 +178,80 @@ fn appearance_reports_precede_queries_of_the_new_appearance() {
             return;
         }
         let (socket, peer) = std::os::unix::net::UnixStream::pair().unwrap();
-        peer.set_nonblocking(true).unwrap();
+        crate::pty::fd::set_nonblocking(&socket).unwrap();
         let light = Arc::new(AtomicBool::new(false));
         let query_light = Arc::clone(&light);
-        let handle = PtyIoActor::spawn(PtyIoActorConfig {
-            pane_id: 7,
-            master_fd: socket.into(),
-            initially_quiesced: false,
-            on_read: Box::new(move |_| PtyReadResult {
-                terminal_responses: vec![if query_light.load(Ordering::Acquire) {
-                    b"query-light".to_vec()
-                } else {
-                    b"query-dark".to_vec()
-                }],
-            }),
-            on_reader_exit: None,
-        })
+        let (handle, data, commands) = parked_handle();
+        let runner = runner::Runner::new(
+            PtyIoActorConfig {
+                pane_id: 7,
+                master_fd: socket.into(),
+                initially_quiesced: false,
+                on_read: Box::new(move |_| PtyReadResult {
+                    terminal_responses: vec![if query_light.load(Ordering::Acquire) {
+                        b"query-light".to_vec()
+                    } else {
+                        b"query-dark".to_vec()
+                    }],
+                }),
+                on_reader_exit: None,
+            },
+            data,
+            commands,
+            Arc::clone(&handle.owner.admission),
+            Arc::clone(&handle.owner.controls),
+        )
         .unwrap();
-        let mut peer = tokio::net::UnixStream::from_std(peer).unwrap();
+        let (changed, published) = std::sync::mpsc::channel();
+        let (release, resume) = std::sync::mpsc::channel();
         let reentrant = handle.clone();
-        handle.write_terminal_response(|| {
-            light.store(true, Ordering::Release);
-            reentrant.try_write_user_input(b"input".to_vec()).unwrap();
-            Some(b"live-light".to_vec())
+        let appearance = std::thread::spawn(move || {
+            handle.write_terminal_response(|| {
+                light.store(true, Ordering::Release);
+                reentrant.try_write_user_input(b"input".to_vec()).unwrap();
+                changed.send(()).unwrap();
+                resume.recv().unwrap();
+                Some(b"live-light".to_vec())
+            });
         });
-        peer.write_all(b"query").await.unwrap();
-        let mut bytes = [0; 26];
-        peer.read_exact(&mut bytes).await.unwrap();
-        // User input and the appearance report are independent; the report precedes the query.
-        let text = String::from_utf8(bytes.to_vec()).unwrap();
-        assert!(text.find("live-light").unwrap() < text.find("query-light").unwrap());
-        assert!(text.contains("input"));
-        finish(handle).await;
+        published.recv().unwrap();
+        assert_appearance_read(runner, peer, release).await;
+        appearance.join().unwrap();
     });
+}
+
+/// Drives a query concurrently with the held appearance publication, then checks both replies.
+async fn assert_appearance_read(
+    mut runner: runner::Runner,
+    mut peer: std::os::unix::net::UnixStream,
+    release: std::sync::mpsc::Sender<()>,
+) {
+    std::io::Write::write_all(&mut peer, b"query").unwrap();
+    let (started, reading) = std::sync::mpsc::channel();
+    let reader = std::thread::spawn(move || {
+        let mut bytes = [0; 5];
+        let length = rustix::io::read(runner.fd.get_ref(), &mut bytes).unwrap();
+        assert_eq!(&bytes[..length], b"query");
+        started.send(()).unwrap();
+        assert!(runner.read_result(&bytes, Ok(length)));
+        runner
+    });
+    reading.recv().unwrap();
+    release.send(()).unwrap();
+    let mut runner = reader.join().unwrap();
+    let mut bytes = Vec::new();
+    assert!(matches!(
+        runner.writes.flush(|chunk| {
+            bytes.extend_from_slice(chunk);
+            Ok(chunk.len())
+        }),
+        WriteStatus::Complete
+    ));
+    assert_eq!(bytes, b"live-lightquery-light");
+    runner.begin_handoff().await.unwrap();
+    let mut input = [0; 5];
+    std::io::Read::read_exact(&mut peer, &mut input).unwrap();
+    assert_eq!(&input, b"input");
 }
 
 #[test]
@@ -154,6 +290,11 @@ fn handoff_pauses_reads_and_input_until_rollback() {
     );
     assert_eq!(handle.foreground_process_group_id().await, None);
     peer.write_all(b"held").await.unwrap();
+    handle.write_terminal_response(|| Some(b"quiesced".to_vec()));
+    let mut barrier = [0; 8];
+    peer.read_exact(&mut barrier).await.unwrap();
+    assert_eq!(&barrier, b"quiesced");
+    tokio::task::yield_now().await;
     assert!(reads.try_recv().is_err());
     handle.rollback_handoff().await.unwrap();
     assert_eq!(reads.recv().await.unwrap(), b"held");

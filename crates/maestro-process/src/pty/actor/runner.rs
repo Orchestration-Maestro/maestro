@@ -77,6 +77,8 @@ impl Runner {
                 return reply;
             }
             self.apply_controls().await;
+            self.flush();
+            let interest = self.interest();
             tokio::select! {
                 biased;
                 command = self.control.recv() => {
@@ -88,15 +90,33 @@ impl Runner {
                     let bytes=bytes?;
                     if self.running {self.enqueue(bytes);}
                 },
-                ready = self.fd.readable(), if self.running => {
-                    if ready.is_err() || !self.read_once() {return None;}
-                },
-                ready = self.fd.writable(), if !self.writes.is_empty() => {
-                    if ready.is_err() {return None;}
-                    self.flush();
+                ready = self.fd.ready(interest), if self.running || !self.writes.is_empty() => {
+                    let readiness = ready.ok()?.ready();
+                    if !self.service_ready(readiness) {return None;}
                 },
             }
+            tokio::task::consume_budget().await;
         }
+    }
+
+    /// Requests every active I/O direction in a single readiness wait.
+    fn interest(&self) -> Interest {
+        match (self.running, self.writes.is_empty()) {
+            (true, false) => Interest::READABLE | Interest::WRITABLE,
+            (true, true) => Interest::READABLE,
+            (false, _) => Interest::WRITABLE,
+        }
+    }
+
+    /// Services both ready directions before returning to control admission.
+    fn service_ready(&mut self, readiness: tokio::io::Ready) -> bool {
+        if readiness.is_readable() && self.running && !self.read_once() {
+            return false;
+        }
+        if readiness.is_writable() && !self.writes.is_empty() {
+            self.flush();
+        }
+        true
     }
 
     /// Drains independent controls before applying coalesced geometry or data.
@@ -270,6 +290,7 @@ impl Runner {
                 },
                 ready=self.fd.writable()=>{drop(ready?);self.flush();},
             }
+            tokio::task::consume_budget().await;
         }
         Ok(())
     }

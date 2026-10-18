@@ -25,7 +25,7 @@ fn explicit_detection_modes_keep_the_native_default() {
 fn foreground_members_include_nested_and_thread_children_only() {
     use std::collections::HashMap;
     let children = HashMap::from([
-        ((100, 100), vec![200, 201, 300]),
+        ((100, 100), vec![300, 221, 201, 200]),
         ((100, 101), vec![210]),
         ((200, 200), vec![220]),
         ((220, 220), vec![221]),
@@ -233,7 +233,6 @@ fn child_group_selection_filters_the_shell_group() {
 fn child_group_scan_fails_closed_after_sixty_four_children() {
     let children: Vec<u32> = (1..=(u32::try_from(CHILD_GROUPS_SCAN_LIMIT).unwrap() + 10)).collect();
     let mut inspected = 0usize;
-
     let group = child_groups_foreground_process_group_with(
         100,
         100,
@@ -244,9 +243,33 @@ fn child_group_scan_fails_closed_after_sixty_four_children() {
             Some(i32::try_from(pid).unwrap())
         },
     );
-
     assert_eq!(inspected, CHILD_GROUPS_SCAN_LIMIT);
     assert_eq!(group, None);
+    for record in [200, 9999, 100] {
+        let select = |count| {
+            let mut inspected = 0;
+            let group = child_groups_foreground_process_group_with(
+                100,
+                100,
+                |_| vec![100],
+                |_, _| vec![record; count],
+                |pid| {
+                    inspected += 1;
+                    match pid {
+                        200 => Some(200),
+                        100 => Some(100),
+                        _ => None,
+                    }
+                },
+            );
+            (group, inspected)
+        };
+        assert_eq!(
+            select(64),
+            (Some(if record == 200 { 200 } else { 100 }), 64)
+        );
+        assert_eq!(select(65), (None, CHILD_GROUPS_SCAN_LIMIT));
+    }
 }
 
 #[test]
