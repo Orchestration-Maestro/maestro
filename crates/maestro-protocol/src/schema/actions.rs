@@ -344,7 +344,7 @@ pub struct ActionLogListParams {
 /// Action invoke params record.
 #[schemars(description = "")]
 pub struct ActionInvokeParams {
-    /// Manifest identifier.
+    /// Action identifier.
     #[schemars(description = "")]
     pub action_id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -368,7 +368,7 @@ pub struct ActionCommandLogInfo {
     #[schemars(description = "")]
     pub manifest_id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    /// Manifest identifier.
+    /// Action identifier.
     #[schemars(description = "")]
     pub action_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -536,7 +536,7 @@ pub struct ActionInfo {
     /// Manifest identifier.
     #[schemars(description = "")]
     pub manifest_id: String,
-    /// Manifest identifier.
+    /// Action identifier.
     #[schemars(description = "")]
     pub action_id: String,
     /// Title.
