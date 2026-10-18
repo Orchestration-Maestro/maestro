@@ -539,7 +539,7 @@ fn link_label_brackets_unescape_before_inline_parsing_with_original_ranges() {
 }
 
 #[test]
-fn deletion_keeps_code_closers_opaque_without_protecting_incomplete_links() {
+fn deletion_closes_on_raw_tildes_without_protecting_incomplete_links() {
     let document = parse_with_options("~~a `b~~` c~~".into(), MarkedOptions::Export);
     let Kind::Paragraph(children) = &document.nodes[0].kind else {
         panic!("paragraph")
@@ -547,11 +547,7 @@ fn deletion_keeps_code_closers_opaque_without_protecting_incomplete_links() {
     let Kind::Strike(children) = &children[0].kind else {
         panic!("strike")
     };
-    assert!(
-        children
-            .iter()
-            .any(|node| matches!(&node.kind, Kind::Code(code) if code == "b~~"))
-    );
+    assert_eq!(text(children), "a `b");
     let document = parse_with_options("~~[label](u~~)".into(), MarkedOptions::Export);
     let Kind::Paragraph(children) = &document.nodes[0].kind else {
         panic!("paragraph")
@@ -566,7 +562,7 @@ fn deletion_keeps_code_closers_opaque_without_protecting_incomplete_links() {
 }
 
 #[test]
-fn deletion_barriers_do_not_reuse_ticks_from_prior_opaque_tags() {
+fn deletion_after_opaque_tags_ignores_their_ticks() {
     let document = parse("a <b title=\"`\"> ~~a~~ `".into());
     let Kind::Paragraph(children) = &document.nodes[0].kind else {
         panic!("paragraph")
@@ -579,7 +575,7 @@ fn deletion_barriers_do_not_reuse_ticks_from_prior_opaque_tags() {
 }
 
 #[test]
-fn deletion_barriers_ignore_ticks_in_caller_atoms() {
+fn deletion_after_caller_atoms_ignores_their_ticks() {
     let document = parse("$`$ ~~a~~ `".into());
     let context = InlineContext::new(&document);
     let scope = context.scope(&document.nodes[0].range, false).unwrap();
@@ -596,7 +592,7 @@ fn deletion_barriers_ignore_ticks_in_caller_atoms() {
 }
 
 #[test]
-fn deletion_barriers_keep_code_inside_recursive_link_labels() {
+fn deletion_in_link_labels_closes_on_raw_tildes() {
     let document = parse("[~~a `b~~` c~~](/u)".into());
     let Kind::Paragraph(children) = &document.nodes[0].kind else {
         panic!("paragraph")
@@ -607,11 +603,7 @@ fn deletion_barriers_keep_code_inside_recursive_link_labels() {
     let Kind::Strike(children) = &children[0].kind else {
         panic!("strike")
     };
-    assert!(
-        children
-            .iter()
-            .any(|node| matches!(&node.kind, Kind::Code(code) if code == "b~~"))
-    );
+    assert_eq!(text(children), "a `b");
 }
 
 /// Observe actual deletion and code leaves, including native link labels.
@@ -642,7 +634,7 @@ fn deletion_leaves(nodes: &[Node]) -> (Vec<&str>, Vec<&str>) {
 }
 
 #[test]
-fn deletion_index_uses_native_operand_admission() {
+fn deletion_follows_native_operand_boundaries() {
     for options in [
         MarkedOptions::Terminal,
         MarkedOptions::Browser { escape_html: false },
@@ -676,7 +668,7 @@ fn deletion_index_uses_native_operand_admission() {
 }
 
 #[test]
-fn enclosing_deletion_keeps_native_label_code_and_raw_closers() {
+fn enclosing_deletion_uses_raw_closers_in_labels_and_tags() {
     for options in [
         MarkedOptions::Terminal,
         MarkedOptions::Browser { escape_html: false },
@@ -691,7 +683,8 @@ fn enclosing_deletion_keeps_native_label_code_and_raw_closers() {
             let document = parse_with_options(source.into(), options);
             let (strikes, codes) = deletion_leaves(&document.nodes);
             assert_eq!(strikes.len(), 1, "{source:?}");
-            assert_eq!(codes, ["b~~"], "{options:?} {source:?}");
+            assert!(codes.is_empty(), "{options:?} {source:?}");
+            assert!(strikes[0].ends_with("`b~~"));
         }
         for (source, strike) in [
             ("~~[label](u~~)", "~~[label](u~~"),
@@ -718,7 +711,37 @@ fn enclosing_deletion_keeps_native_label_code_and_raw_closers() {
         let document = parse_with_options(source.into(), options);
         assert_eq!(
             deletion_leaves(&document.nodes),
-            (vec![source], vec!["x~~"])
+            (vec!["~~<span title=\"`x~~"], vec![])
         );
+    }
+}
+
+#[test]
+fn deletion_reads_raw_source_after_unmatched_ticks() {
+    for options in [
+        MarkedOptions::Terminal,
+        MarkedOptions::Browser { escape_html: false },
+        MarkedOptions::Browser { escape_html: true },
+        MarkedOptions::Export,
+    ] {
+        for (source, strikes) in [
+            ("~~a `b~~` c~~", vec!["~~a `b~~"]),
+            ("``a ~~x~~ `", vec!["~~x~~"]),
+            (
+                "~~[x](u~~ \"~~a `b~~` c~~\")",
+                vec!["~~[x](u~~", "~~a `b~~"],
+            ),
+            (
+                "~~<b title=\"u~~ ~~a `b~~` c~~\">",
+                vec!["~~<b title=\"u~~", "~~a `b~~"],
+            ),
+        ] {
+            let document = parse_with_options(source.into(), options);
+            assert_eq!(
+                deletion_leaves(&document.nodes).0,
+                strikes,
+                "{options:?} {source:?}"
+            );
+        }
     }
 }

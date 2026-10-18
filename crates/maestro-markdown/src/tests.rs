@@ -19,8 +19,8 @@ pub(crate) struct Work {
     pub(crate) source_bytes: usize,
     /// Calls to the native operand recognizers, including failed admission.
     pub(crate) operand_admissions: usize,
-    /// Authored bytes traversed by invocation-local operand indexing.
-    pub(crate) operand_index_bytes: usize,
+    /// Raw suffix bytes supplied to the deletion recognizer.
+    pub(crate) deletion_bytes: usize,
     /// Authored bytes supplied to actual inline mask construction.
     pub(crate) mask_bytes: usize,
     /// Unit comparisons in actual authored-to-source range searches.
@@ -31,8 +31,6 @@ pub(crate) struct Work {
 thread_local! {
     /// Instrument all complete-parse/index and local-parse entry points.
     pub(crate) static WORK: RefCell<Work> = RefCell::default();
-    /// Active invocation positions, independent of recursive source extents.
-    static ADMISSIONS: RefCell<Vec<std::collections::HashSet<usize>>> = RefCell::default();
 }
 
 /// Exercise original scopes and labels without walking the document per fragment.
@@ -247,20 +245,16 @@ fn suffix_work(extension: bool, paragraph: &str) {
     });
     eprintln!("extension={extension} {paragraph:?} N/2N work={counts:?}");
     assert!(counts[0].operand_admissions > 0);
-    assert!(counts[0].operand_index_bytes > 0);
     assert_eq!(
         counts[1].operand_admissions,
         2 * counts[0].operand_admissions
     );
-    assert_eq!(
-        counts[1].operand_index_bytes,
-        2 * counts[0].operand_index_bytes
-    );
+    assert!(counts[1].deletion_bytes <= 4 * counts[0].deletion_bytes);
     assert_eq!(counts[1].mask_bytes, 2 * counts[0].mask_bytes);
 }
 
 #[test]
-fn deletion_candidates_reuse_code_barriers() {
+fn deletion_raw_suffix_work_matches_reference_growth() {
     for paragraph in [
         "~ ",
         "~~[a `b~~` c](/u)~~\n\n",
@@ -272,33 +266,6 @@ fn deletion_candidates_reuse_code_barriers() {
 }
 
 #[test]
-fn absent_extension_hints_skip_barrier_scans() {
+fn absent_extension_hints_skip_extension_scans() {
     suffix_work(true, "ordinary paragraph\n\n");
-}
-
-/// End the uniqueness observation with its inline invocation.
-pub(crate) struct InlineInvocation;
-impl Drop for InlineInvocation {
-    fn drop(&mut self) {
-        ADMISSIONS.with_borrow_mut(|invocations| {
-            invocations.pop().unwrap();
-        });
-    }
-}
-
-/// Observe each recursive invocation with independent admission positions.
-pub(crate) fn inline_invocation() -> InlineInvocation {
-    ADMISSIONS.with_borrow_mut(|invocations| invocations.push(std::collections::HashSet::new()));
-    InlineInvocation
-}
-
-/// Count actual recognizer calls and reject repeated positions in one invocation.
-pub(crate) fn admit_operand(position: usize) {
-    ADMISSIONS.with_borrow_mut(|invocations| {
-        assert!(
-            invocations.last_mut().unwrap().insert(position),
-            "operand admitted twice in one invocation"
-        );
-    });
-    WORK.with_borrow_mut(|work| work.operand_admissions += 1);
 }

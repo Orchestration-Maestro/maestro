@@ -303,7 +303,7 @@ fn ordinary_browser_paragraphs_preserve_content_at_doubled_input() {
     }
 }
 
-/// Exact returned HTML for native operands and complete code under deletion.
+/// Exact returned HTML for native operands and raw deletion closers.
 const DELETION_OPERANDS: [(&str, &str, &str); 14] = [
     (
         "a <b title=\"> `\"> ~~a~~ `",
@@ -322,13 +322,13 @@ const DELETION_OPERANDS: [(&str, &str, &str); 14] = [
     ),
     (
         "~~[a `b~~` c](/u)~~",
-        "<p><del><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/u\">a <code>b~~</code> c</a></del></p>\n",
-        "<p><del><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/u\">a <code>b~~</code> c</a></del></p>\n",
+        "<p><del>[a `b</del>` c](/u)~~</p>\n",
+        "<p><del>[a `b</del>` c](/u)~~</p>\n",
     ),
     (
         "~~a `b~~` c~~",
-        "<p><del>a <code>b~~</code> c</del></p>\n",
-        "<p><del>a <code>b~~</code> c</del></p>\n",
+        "<p><del>a `b</del>` c~~</p>\n",
+        "<p><del>a `b</del>` c~~</p>\n",
     ),
     (
         "~~[label](u~~)",
@@ -358,12 +358,12 @@ const DELETION_OPERANDS: [(&str, &str, &str); 14] = [
     (
         "~~<span title=\"`x~~`\">tail~~",
         "<p><del>&lt;span title=&quot;`x</del>`&quot;&gt;tail~~</p>\n",
-        "<p><del>&lt;span title=&quot;<code>x~~</code>&quot;&gt;tail</del></p>\n",
+        "<p><del>&lt;span title=&quot;`x</del>`&quot;&gt;tail~~</p>\n",
     ),
     (
         "[~~a `b~~` c~~](/u)",
-        "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/u\"><del>a <code>b~~</code> c</del></a></p>\n",
-        "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/u\"><del>a <code>b~~</code> c</del></a></p>\n",
+        "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/u\"><del>a `b</del>` c~~</a></p>\n",
+        "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/u\"><del>a `b</del>` c~~</a></p>\n",
     ),
     (
         "~~[x](u~~ \"`\") ~~a~~ `",
@@ -378,7 +378,7 @@ const DELETION_OPERANDS: [(&str, &str, &str); 14] = [
 ];
 
 #[test]
-fn native_operand_admission_preserves_browser_deletion_and_code() {
+fn native_operand_boundaries_preserve_browser_deletion() {
     for (source, raw, escaped) in DELETION_OPERANDS {
         assert_eq!(prepare(source, false).html, raw, "raw {source:?}");
         assert_eq!(prepare(source, true).html, escaped, "escaped {source:?}");
@@ -403,6 +403,38 @@ fn list_code_tabs_use_raw_lazy_and_aligned_spelling() {
     ] {
         for escaping in [false, true] {
             assert_eq!(prepare(source, escaping).html, expected, "{source:?}");
+        }
+    }
+}
+
+#[test]
+fn browser_deletion_reads_raw_source_after_unmatched_ticks() {
+    for escaping in [false, true] {
+        for (source, expected) in [
+            ("``a ~~x~~ `", "<p>``a <del>x</del> `</p>\n"),
+            (
+                "~~[x](u~~ \"~~a `b~~` c~~\")",
+                "<p><del>[x](u</del> &quot;<del>a `b</del>` c~~&quot;)</p>\n",
+            ),
+            (
+                "~~<b title=\"u~~ ~~a `b~~` c~~\">",
+                "<p><del>&lt;b title=&quot;u</del> <del>a `b</del>` c~~&quot;&gt;</p>\n",
+            ),
+        ] {
+            assert_eq!(prepare(source, escaping).html, expected);
+        }
+    }
+}
+
+#[test]
+fn browser_deletion_repeated_inputs_keep_reference_output() {
+    for count in [32, 64] {
+        for (source, expected) in [
+            ("~ ", format!("<p>{}</p>\n", "~ ".repeat(count))),
+            ("~~[a `b~~` c](/u)~~\n\n", "<p><del>[a `b</del>` c](/u)~~</p>\n".repeat(count)),
+            ("a [[b]](/u \"`\") ~~a~~ `\n\n", "<p>a <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/u\" title=\"`\">[b]</a> <del>a</del> `</p>\n".repeat(count)),
+        ] {
+            assert_eq!(prepare(&source.repeat(count), true).html, expected);
         }
     }
 }

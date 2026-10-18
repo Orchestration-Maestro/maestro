@@ -4996,11 +4996,11 @@
     "content": "~~a `b~~` c~~",
     "escape_html": true,
     "thinking": false,
-    "html": "<p><del>a <code>b~~</code> c</del></p>\n",
+    "html": "<p><del>a `b</del>` c~~</p>\n",
     "tree": null,
     "original_reference": "<p><del>a `b</del>` c~~</p>\n",
-    "ruling": "S3358/S3910",
-    "target_source": "code-integrity correction; independently retained held export fixture strike-code-contains-closer"
+    "ruling": null,
+    "target_source": "unmodified reference"
   },
   {
     "id": "export-strike-code-only",
