@@ -209,7 +209,9 @@ Development and test profiles use `debug = "line-tables-only"`: backtraces retai
 file:line, without debugger variable views.
 They also build `cranelift-codegen` and `regalloc2` optimised, because tests
 compile extension components and an unoptimised code generator makes each
-compile about five times slower; release builds are unchanged.
+compile about five times slower, and `syn`, `proc-macro2` and `pulldown-cmark`
+optimised, because the conventions tests parse every workspace source; release
+builds are unchanged.
 
 Nextest prepares the author component before guest-authoring tests and exports
 its path to their processes. The test host caches Wasmtime compilation beside
