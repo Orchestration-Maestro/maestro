@@ -6,6 +6,8 @@ use crate::{Context, DiagnosticErrorInfo, Local, Model, ProviderExecution, Threa
 
 /// Owned constructor configuration supplied to the common producer.
 pub(in crate::providers::content) struct Setup<E: ProviderExecution> {
+    /// Initial assistant record selected by the provider.
+    pub output: crate::AssistantMessage,
     /// Invocation model.
     pub model: Model,
     /// Invocation conversation.
@@ -82,9 +84,10 @@ pub(in crate::providers::content) fn start<E: Producer>(
     setup: Setup<E>,
     submit: E::Submission,
 ) -> crate::AssistantMessageEventStream {
-    use crate::providers::assistant_output::{initial_message, start_producer_for};
+    use crate::providers::assistant_output::start_producer_for;
     use std::sync::{Arc, RwLock};
     let Setup {
+        output,
         model,
         context,
         options,
@@ -100,7 +103,7 @@ pub(in crate::providers::content) fn start<E: Producer>(
         cloud_thinking,
     };
     let events = crate::AssistantMessageEventStream::new();
-    let output = Arc::new(RwLock::new(initial_message(&invocation.model)));
+    let output = Arc::new(RwLock::new(output));
     let task = E::drive(invocation, options, events.clone(), Arc::clone(&output));
     start_producer_for::<E>(&events, &output, None, task, submit);
     events

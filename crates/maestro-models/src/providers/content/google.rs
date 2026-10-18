@@ -8,6 +8,7 @@ use super::google_shared::{
     ApiClient, FunctionCallingConfigMode, GenerateContentParameters, GoogleThinkingLevel,
 };
 use crate::options::resolve_api_key;
+use crate::providers::assistant_output::initial_message_for_api;
 use crate::{
     Context, DiagnosticErrorInfo, Local, Model, ProviderExecution, ProviderInvocation,
     ProviderSpawner, SimpleStreamOptions, StreamOptions, StreamOptionsFamily, Threaded,
@@ -140,6 +141,9 @@ pub fn create_client(
 /// Start a raw content-generation invocation on the caller's runtime.
 ///
 /// Setup and transport failures settle into the returned event stream.
+///
+/// Output uses `google-generative-ai` even if the model names another API;
+/// request processing and payload hooks receive the original descriptor.
 #[must_use]
 pub fn stream_google(
     model: Model,
@@ -256,6 +260,7 @@ fn setup<E: ProviderExecution>(
         options.common.headers.as_ref(),
     );
     Setup {
+        output: initial_message_for_api(&model, "google-generative-ai"),
         model,
         context,
         options,

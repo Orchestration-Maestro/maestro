@@ -6,6 +6,7 @@ use super::google_shared::{
     invocation::{Setup, start},
     thinking::{effort, enabled_for_effort},
 };
+use crate::providers::assistant_output::initial_message_for_api;
 use crate::{
     AssistantMessageEventStream, Context, Local, Model, ProviderExecution, ProviderInvocation,
     ProviderSpawner, SimpleStreamOptions, StreamOptions, StreamOptionsFamily, Threaded,
@@ -36,6 +37,9 @@ impl StreamOptionsFamily for GoogleVertexOptions {
 }
 
 /// Start raw cloud content generation, settling setup failures into the stream.
+///
+/// Output uses `google-vertex` even if the model names another API;
+/// request processing and payload hooks receive the original descriptor.
 #[must_use]
 pub fn stream_google_vertex(
     model: Model,
@@ -105,6 +109,7 @@ fn setup<E: ProviderExecution>(
     let options = options.unwrap_or_default();
     let client = policy::client(&model, &options);
     Setup {
+        output: initial_message_for_api(&model, "google-vertex"),
         model,
         context,
         client,
