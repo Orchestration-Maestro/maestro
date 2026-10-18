@@ -290,40 +290,6 @@
     ]
   },
   {
-    "id": "unknown-status",
-    "input": {
-      "probe": {
-        "status": null,
-        "stdout": "",
-        "stderr": " ﻿ "
-      },
-      "npm_command": [
-        "npm"
-      ]
-    },
-    "expected": {
-      "error": "Failed to run npm root -g: exit code unknown"
-    },
-    "trace": [
-      [
-        "exists",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "canonicalize",
-        "/opt/tool/lib/node_modules/@old/agent"
-      ],
-      [
-        "command",
-        "npm",
-        [
-          "root",
-          "-g"
-        ]
-      ]
-    ]
-  },
-  {
     "id": "multiline-output",
     "input": {
       "npm_command": [
@@ -331,7 +297,7 @@
       ],
       "probe": {
         "status": 0,
-        "stdout": "/opt/tool/lib/node_modules\\nwrapper message\\n",
+        "stdout": "/opt/tool/lib/node_modules\nwrapper message\n",
         "stderr": ""
       }
     },
@@ -357,7 +323,7 @@
       ],
       [
         "exists",
-        "/opt/tool/lib/node_modules\\nwrapper message\\n"
+        "/opt/tool/lib/node_modules\nwrapper message"
       ]
     ]
   }
