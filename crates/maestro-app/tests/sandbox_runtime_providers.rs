@@ -225,6 +225,16 @@ fn download_messages_collect_raw_content_and_acknowledge() {
     assert_eq!(files.last().unwrap().content, Value::Null);
     assert_eq!(files.last().unwrap().file_name, Value::Null);
     assert_eq!(files.last().unwrap().mime_type, Value::Null);
+    drop(files);
+    send(
+        &provider,
+        json!({"type":"file-returned", "fileName":"report.csv", "mimeType":"text/csv", "content":"a,b"}),
+    );
+    let files = provider.get_files();
+    let files = files.read().unwrap();
+    let report = files.last().unwrap();
+    assert_eq!(report.file_name, json!("report.csv"));
+    assert_eq!(report.mime_type, json!("text/csv"));
 }
 
 #[test]
