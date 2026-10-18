@@ -12,3 +12,6 @@ pub use maestro_text::decode_utf8;
 pub use maestro_text::truncate_utf16;
 
 pub use maestro_text::normalize_to_lf;
+
+/// Shared CSS string serialization.
+pub use maestro_text::css;

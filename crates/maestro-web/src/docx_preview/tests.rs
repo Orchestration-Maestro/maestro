@@ -35,11 +35,16 @@ fn observe(input: Input) -> Value {
             selectors,
             values,
             suffix,
-        } => json!(HtmlRenderer::style_to_string(
-            &selectors,
-            &values.into_iter().collect(),
-            suffix.as_deref()
-        )),
+        } => {
+            let values: indexmap::IndexMap<_, _> = values.into_iter().collect();
+            json!(HtmlRenderer::style_to_string(
+                &selectors,
+                values
+                    .iter()
+                    .map(|(key, value)| (key.as_str(), value.as_deref())),
+                suffix.as_deref()
+            ))
+        }
         Input::Copy {
             input,
             output,
@@ -330,3 +335,10 @@ fn renderer_namespace_reaches_styles_defaults_and_wrapper() {
 fn parsed_document_stylesheet_matches_recorded_artifact() {
     check("parsed_document_stylesheet_matches_recorded_artifact");
 }
+
+mod numbering;
+
+mod elements_fixture;
+
+#[cfg(target_arch = "wasm32")]
+mod browser;
