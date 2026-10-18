@@ -28,6 +28,9 @@ fn socket_transport_connects_and_preserves_file_ownership() {
 #[test]
 fn socket_prepare_preserves_non_socket_entries() {
     use std::os::unix::fs::{MetadataExt, symlink};
+    if maestro_test_process::run_alone("socket_prepare_preserves_non_socket_entries").unwrap() {
+        return;
+    }
     let directory = Directory::new();
     let file = directory.0.join("file.sock");
     fs::write(&file, b"user content").unwrap();
@@ -212,6 +215,9 @@ fn socket_prepare_rejects_live_listener_with_busy_text() {
 
 #[test]
 fn socket_prepare_removes_stale_file() {
+    if maestro_test_process::run_alone("socket_prepare_removes_stale_file").unwrap() {
+        return;
+    }
     let directory = Directory::new();
     let path = directory.0.join("stale.sock");
     drop(local::bind_local_listener(&path).unwrap());
