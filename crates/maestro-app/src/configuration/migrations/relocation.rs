@@ -5,10 +5,13 @@ use std::os::unix::fs::symlink;
 #[cfg(windows)]
 use std::os::windows::fs::{symlink_dir, symlink_file};
 use std::{
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, VecDeque},
     fs, io,
     path::{Path, PathBuf},
 };
+
+#[cfg(test)]
+mod tests;
 
 /// An admitted relocation with its final link identity captured before any move.
 pub(super) struct PreparedMove {
@@ -139,23 +142,90 @@ fn capture(entries: &[PreparedMove]) -> Vec<Option<Link>> {
         .collect()
 }
 
-/// Pin all entries needed by retained original sources.
-fn pin(held: &mut BTreeSet<usize>, links: &[Option<Link>]) {
-    loop {
-        let before = held.len();
-        for index in held.clone() {
-            if let Some(link) = &links[index] {
-                held.extend(&link.dependencies);
+/// Indexed dependency changes retained for one synchronous relocation.
+struct Batch {
+    /// Monotonically retained sources.
+    held: Vec<bool>,
+    /// Captured reverse edges, built before effects.
+    dependants: Vec<Vec<usize>>,
+    /// Entries whose selected publication may have changed.
+    pending: VecDeque<usize>,
+    /// Membership preventing duplicate pending work.
+    queued: Vec<bool>,
+    /// Last successfully selected binding for each publication.
+    selected: Vec<Option<PathBuf>>,
+    /// Non-link destinations still expected to move.
+    planned: BTreeMap<PathBuf, PathBuf>,
+}
+
+impl Batch {
+    /// Index the captured batch once and seed preparation.
+    fn new(entries: &[PreparedMove], links: &[Option<Link>]) -> Self {
+        let mut batch = Self {
+            held: vec![false; entries.len()],
+            dependants: vec![Vec::new(); entries.len()],
+            pending: (0..entries.len()).collect(),
+            queued: vec![true; entries.len()],
+            selected: vec![None; entries.len()],
+            planned: entries
+                .iter()
+                .filter(|entry| entry.referent.is_none())
+                .map(|entry| (entry.path.clone(), entry.target.clone()))
+                .collect(),
+        };
+        for (index, link) in links.iter().enumerate() {
+            let Some(link) = link else {
+                continue;
+            };
+            for dependency in &link.dependencies {
+                batch.dependants[*dependency].push(index);
             }
         }
-        if held.len() == before {
-            break;
+        for (index, entry) in entries.iter().enumerate() {
+            if entry.referent.is_some() && links[index].is_none() {
+                batch.hold(index, entries, links);
+            }
+        }
+        batch
+    }
+
+    /// Propagate only newly retained sources and invalidate affected bindings.
+    fn hold(&mut self, index: usize, entries: &[PreparedMove], links: &[Option<Link>]) {
+        let mut pending = vec![index];
+        while let Some(index) = pending.pop() {
+            if std::mem::replace(&mut self.held[index], true) {
+                continue;
+            }
+            #[cfg(test)]
+            tests::record("held", index);
+            if self.planned.remove(&entries[index].path).is_some() {
+                self.invalidate(index);
+            }
+            let Some(link) = &links[index] else {
+                continue;
+            };
+            for dependency in &link.dependencies {
+                #[cfg(test)]
+                tests::record("held-edge", index);
+                pending.push(*dependency);
+            }
+        }
+    }
+
+    /// Queue only captured dependants of a changed planned destination.
+    fn invalidate(&mut self, index: usize) {
+        for dependant in &self.dependants[index] {
+            if !std::mem::replace(&mut self.queued[*dependant], true) {
+                self.pending.push_back(*dependant);
+            }
         }
     }
 }
 
 /// Create an exclusive source-adjacent stage and publish without retiring the source.
 fn publish(entry: &PreparedMove, link: &mut Link, referent: &Path) -> io::Result<()> {
+    #[cfg(test)]
+    tests::record_publication(&entry.path);
     let mut stage = entry.path.as_os_str().to_os_string();
     stage.push(".migrating");
     let stage = PathBuf::from(stage);
@@ -201,42 +271,38 @@ fn discard(entries: &[PreparedMove], links: &mut [Option<Link>]) {
 }
 
 /// Publish every viable dependant before any non-link referent moves.
-fn prepare(entries: &[PreparedMove], links: &mut [Option<Link>], held: &mut BTreeSet<usize>) {
-    loop {
-        pin(held, links);
-        let planned = entries
-            .iter()
-            .enumerate()
-            .filter(|(i, e)| !held.contains(i) && e.referent.is_none())
-            .map(|(_, e)| (e.path.clone(), e.target.clone()))
-            .collect();
-        let mut failed = None;
-        for (i, (entry, link)) in entries.iter().zip(links.iter_mut()).enumerate() {
-            let Some(link) = link else {
-                continue;
-            };
-            if held.contains(&i) {
-                continue;
-            }
-            link.publication =
-                if link.stable && fs::read_link(&entry.path).is_ok_and(|p| p.is_absolute()) {
-                    Publication::Native
-                } else {
-                    Publication::Pending
-                };
-            if link.publication != Publication::Native
-                && let Some(referent) = &entry.referent
-                && publish(entry, link, &relocated_referent(referent, &planned)).is_err()
-            {
-                failed = Some(i);
-                break;
-            }
+fn prepare(entries: &[PreparedMove], links: &mut [Option<Link>], batch: &mut Batch) {
+    while let Some(index) = batch.pending.pop_front() {
+        batch.queued[index] = false;
+        if batch.held[index] {
+            continue;
         }
-        let Some(index) = failed else {
-            break;
+        let entry = &entries[index];
+        let Some(link) = &mut links[index] else {
+            continue;
         };
-        held.insert(index);
-        discard(entries, links);
+        let Some(referent) = &entry.referent else {
+            continue;
+        };
+        let selected = relocated_referent(referent, &batch.planned);
+        if batch.selected[index].as_ref() == Some(&selected) {
+            continue;
+        }
+        if link.publication == Publication::Published {
+            let _ = remove_link_entry(&entry.target);
+        }
+        link.publication = if link.stable
+            && fs::read_link(&entry.path).is_ok_and(|payload| payload.is_absolute())
+        {
+            Publication::Native
+        } else {
+            Publication::Pending
+        };
+        if link.publication == Publication::Native || publish(entry, link, &selected).is_ok() {
+            batch.selected[index] = Some(selected);
+        } else {
+            batch.hold(index, entries, links);
+        }
     }
 }
 
@@ -250,15 +316,10 @@ pub(super) fn relocate(entries: Vec<PreparedMove>) -> usize {
         })
         .collect::<Box<[_]>>();
     let mut links = capture(&entries);
-    let mut held: BTreeSet<_> = entries
-        .iter()
-        .enumerate()
-        .filter(|(i, e)| e.referent.is_some() && links[*i].is_none())
-        .map(|(i, _)| i)
-        .collect();
-    prepare(&entries, &mut links, &mut held);
-    let (actual, count) = move_referents(&entries, &mut held);
-    let settled = settle(&entries, &mut links, &mut held, &actual);
+    let mut batch = Batch::new(&entries, &links);
+    prepare(&entries, &mut links, &mut batch);
+    let (actual, count) = move_referents(&entries, &links, &mut batch);
+    let settled = settle(&entries, &mut links, &mut batch, &actual);
     discard(&entries, &mut links);
     count + settled
 }
@@ -266,19 +327,20 @@ pub(super) fn relocate(entries: Vec<PreparedMove>) -> usize {
 /// Move unpinned non-links and record only observed successful destinations.
 fn move_referents(
     entries: &[PreparedMove],
-    held: &mut BTreeSet<usize>,
+    links: &[Option<Link>],
+    batch: &mut Batch,
 ) -> (BTreeMap<PathBuf, PathBuf>, usize) {
     let mut actual = BTreeMap::new();
     let mut count = 0;
     for (i, entry) in entries.iter().enumerate() {
-        if entry.referent.is_none() && !held.contains(&i) {
+        if entry.referent.is_none() && !batch.held[i] {
             if fs::rename(&entry.path, &entry.target).is_ok()
                 && fs::canonicalize(&entry.target).is_ok_and(|p| p == entry.target)
             {
                 actual.insert(entry.path.clone(), entry.target.clone());
                 count += 1;
             } else {
-                held.insert(i);
+                batch.hold(i, entries, links);
             }
         }
     }
@@ -289,7 +351,7 @@ fn move_referents(
 fn verify(
     entries: &[PreparedMove],
     links: &[Option<Link>],
-    held: &mut BTreeSet<usize>,
+    batch: &mut Batch,
     actual: &BTreeMap<PathBuf, PathBuf>,
 ) {
     // Failed referent moves invalidate provisional destinations, never original sources.
@@ -304,42 +366,31 @@ fn verify(
             } else {
                 &entry.target
             };
-            if !held.contains(&i) && fs::canonicalize(observed).ok() != expected {
-                held.insert(i);
+            if !batch.held[i] && fs::canonicalize(observed).ok() != expected {
+                batch.hold(i, entries, links);
             }
         }
     }
-    pin(held, links);
 }
 
 /// Retire dependants before their dependencies and count each verified destination.
 fn settle(
     entries: &[PreparedMove],
     links: &mut [Option<Link>],
-    held: &mut BTreeSet<usize>,
+    batch: &mut Batch,
     actual: &BTreeMap<PathBuf, PathBuf>,
 ) -> usize {
-    verify(entries, links, held, actual);
+    verify(entries, links, batch, actual);
     let mut count = 0;
-    let mut remaining: BTreeSet<_> = links
-        .iter()
-        .enumerate()
-        .filter(|(i, link)| link.is_some() && !held.contains(i))
-        .map(|(i, _)| i)
-        .collect();
-    while let Some(index) = remaining.iter().copied().find(|i| {
-        !remaining.iter().any(|j| {
-            links[*j]
-                .as_ref()
-                .is_some_and(|l| l.dependencies.contains(i))
-        })
-    }) {
-        remaining.remove(&index);
+    let (mut dependants, mut ready) = readiness(links, &batch.held);
+    while let Some(index) = ready.pop_front() {
+        #[cfg(test)]
+        tests::record("ready", index);
         let entry = &entries[index];
         let Some(link) = &links[index] else {
             continue;
         };
-        if held.contains(&index) {
+        if batch.held[index] {
             continue;
         }
         let retired = if link.publication == Publication::Native {
@@ -355,13 +406,43 @@ fn settle(
                     .map(|p| relocated_referent(p, actual))
         {
             count += 1;
+            #[cfg(test)]
+            tests::record("retired", index);
             if let Some(link) = &mut links[index] {
                 link.publication = Publication::Pending;
             }
         } else {
-            held.insert(index);
-            pin(held, links);
+            batch.hold(index, entries, links);
+        }
+        for dependency in links[index].iter().flat_map(|link| &link.dependencies) {
+            #[cfg(test)]
+            tests::record("ready-edge", index);
+            dependants[*dependency] -= 1;
+            if dependants[*dependency] == 0 && links[*dependency].is_some() {
+                ready.push_back(*dependency);
+            }
         }
     }
     count
+}
+
+/// Count eligible incoming edges and seed dependant-free links once.
+fn readiness(links: &[Option<Link>], held: &[bool]) -> (Vec<usize>, VecDeque<usize>) {
+    let mut dependants = vec![0usize; links.len()];
+    for (i, link) in links.iter().enumerate() {
+        if let Some(link) = link
+            && !held[i]
+        {
+            for dependency in &link.dependencies {
+                dependants[*dependency] += 1;
+            }
+        }
+    }
+    let ready: VecDeque<_> = links
+        .iter()
+        .enumerate()
+        .filter(|(i, link)| link.is_some() && !held[*i] && dependants[*i] == 0)
+        .map(|(i, _)| i)
+        .collect();
+    (dependants, ready)
 }
