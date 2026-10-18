@@ -82,6 +82,10 @@ pub trait ExtensionExecution: maestro_tools::ToolExecution + Clone + Default {
     fn erase_handler<V: 'static, R: 'static>(
         handler: ExtensionHandler<V, R, Self>,
     ) -> Self::HandlerRegistration;
+    /// Recovers the callback only when both event and result types match.
+    fn recover_handler<V: 'static, R: 'static>(
+        registration: &Self::HandlerRegistration,
+    ) -> Option<ExtensionHandler<V, R, Self>>;
     /// Sends a custom message.
     type SendMessage: Fn(CustomMessageInput, Option<SendMessageOptions>) -> Result<(), EventError>
         + ?Sized;
@@ -178,6 +182,9 @@ macro_rules! family {
             }
             fn erase_handler<V:'static,R:'static>(handler:ExtensionHandler<V,R,Self>)->Self::HandlerRegistration { Box::new(handler) }
 
+            fn recover_handler<V:'static,R:'static>(registration:&Self::HandlerRegistration)->Option<ExtensionHandler<V,R,Self>> {
+                registration.downcast_ref::<ExtensionHandler<V,R,Self>>().cloned()
+            }
             type SendMessage = dyn Fn(CustomMessageInput, Option<SendMessageOptions>) -> Result<(), EventError> $($bound)*;
             type SendUserMessage = dyn Fn(UserContent, Option<SendUserMessageOptions>) -> Result<(), EventError> $($bound)*;
             type AppendEntry = dyn Fn(String, Option<Value>) -> Result<(), EventError> $($bound)*;

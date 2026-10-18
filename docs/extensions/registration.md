@@ -206,7 +206,7 @@ the working directory, session history and model catalog of the
 `ExtensionRunnerSession` given to `ExtensionRunner::new`, and the application
 operations last given to `bind_core`. The model reader is the exception: a
 context keeps the `get_model` operation that was bound when it was created, and
-calls it on every access. Before any binding, a context reports no model, idle,
+calls it on every access. Before-agent hook contexts additionally retain their invocation's effective prompt; see [native hooks](hooks.md). Before any binding, a context reports no model, idle,
 no cancellation, no pending messages, no usage and an empty system prompt, and
 its abort, shutdown and compaction requests do nothing.
 
@@ -445,7 +445,7 @@ assert!(owner.read().map_err(|error| error.to_string())?.tools.contains_key("ech
 
 `on<V, R>` stores typed callbacks under unchanged string event names, including
 unknown and empty names; repeated callback registrations remain separate entries.
-It does not dispatch hooks. Event/result schemas and assembled prompt records
+The [hook runner](hooks.md) dispatches them. Event/result schemas and assembled prompt records
 belong to the shared request owner, re-exported by models and specialized with
 native domain handles or the guest's existing carriers. `BuildSystemPromptOptions`
 is also exported at the extension root for constructing prompt operands. The guest adapter alone

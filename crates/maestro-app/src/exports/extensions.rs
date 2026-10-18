@@ -16,3 +16,5 @@ pub use maestro_extensions::{
     wrap_registered_tool, wrap_registered_tools,
 };
 pub use maestro_models::system_prompt::{BuildSystemPromptOptions, ContextFile};
+
+pub use maestro_extensions::{AgentToolResult, AgentToolUpdateCallback, ToolExecutionMode};

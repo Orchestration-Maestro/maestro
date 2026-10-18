@@ -27,6 +27,7 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
         ExtensionContext {
             get_model: Rc::clone(&self.binding.actions.borrow().get_model),
             binding: Rc::clone(&self.binding),
+            invocation_system_prompt: None,
         }
     }
 }
@@ -160,6 +161,10 @@ impl ExtensionContext {
     /// # Errors
     /// Returns the stale error or the bound operation's error.
     pub fn get_system_prompt(&self) -> Result<String, EventError> {
+        if let Some(prompt) = &self.invocation_system_prompt {
+            self.binding.runtime.assert_active()?;
+            return Ok(prompt.borrow().clone());
+        }
         (self
             .binding
             .action(&self.binding.actions, |actions| &actions.get_system_prompt)?)()

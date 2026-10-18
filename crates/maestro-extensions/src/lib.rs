@@ -84,3 +84,8 @@ pub use types::events::*;
 
 pub use maestro_tools::define_tool;
 pub use types::ToolDefinition;
+
+pub use maestro_agent::{AgentToolResult, AgentToolUpdateCallback, ToolExecutionMode};
+pub use maestro_resources::{SlashCommandInfo, SlashCommandSource};
+pub use maestro_tools::ToolRenderResultOptions;
+pub use maestro_tui::{Keybinding as AppKeybinding, KeybindingsManager};

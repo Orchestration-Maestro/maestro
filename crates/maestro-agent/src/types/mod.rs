@@ -18,6 +18,9 @@ pub enum QueueMode {
     OneAtATime,
 }
 /// A caller-defined message role with a typed payload.
+///
+/// Context dispatch clones the payload under a read lock. A payload's `Clone`
+/// implementation must not take a write lock on the same message.
 pub trait CustomAgentMessages {
     /// The custom message's role.
     ///
