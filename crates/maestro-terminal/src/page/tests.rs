@@ -558,11 +558,20 @@ fn hyperlink_last_owner() {
         uri: vec![0xfe, b'u'],
     };
     let id = source.insert_hyperlink(link.clone()).unwrap();
+    let retained = source.insert_hyperlink(link.clone()).unwrap();
+    assert_eq!(id, retained);
     source
         .set_hyperlink(CellPosition { x: 0, y: 0 }, id)
         .unwrap();
     let mut copied = Page::init(source.capacity);
     copied.clone_from(&source, 0..1).unwrap();
+    source.release_hyperlink(retained);
+    assert_eq!(source.hyperlink_set.ref_count(id), 1);
+    assert!(source.string_alloc.used_bytes() > 0);
+    assert_eq!(
+        source.lookup_hyperlink(CellPosition { x: 0, y: 0 }),
+        Some(id)
+    );
     source.clear_hyperlink(CellPosition { x: 0, y: 0 });
     assert_eq!(source.string_alloc.used_bytes(), 0);
     let copied_id = copied

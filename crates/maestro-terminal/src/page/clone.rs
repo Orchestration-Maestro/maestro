@@ -28,8 +28,6 @@ enum LinkCopy<'a> {
 }
 /// Selected cell data, borrowing foreign values or capturing a local suffix once.
 struct CellCopy<'a> {
-    /// Whether the source row takes the managed-copy branch.
-    managed: bool,
     /// Packed source record.
     cell: Cell,
     /// Suffix scalars, excluding the first scalar.
@@ -91,7 +89,6 @@ impl Page {
             let src = CellPosition { x, y: src_row };
             let cell = other.cells[other.cell_index(src)];
             let data = CellCopy {
-                managed: other.get_row(src_row).managed_memory(),
                 cell,
                 suffix: other
                     .lookup_grapheme(src)
@@ -138,7 +135,6 @@ impl Page {
                 let src = CellPosition { x, y: src_row };
                 let cell = self.cells[self.cell_index(src)];
                 CellCopy {
-                    managed: source_row.managed_memory(),
                     cell,
                     suffix: self
                         .lookup_grapheme(src)
@@ -189,9 +185,6 @@ impl Page {
             };
             self.cells[index].set_style_id(id);
         }
-        if data.managed && data.cell.codepoint() == '\u{10eeee}' {
-            self.get_row_mut(dst.y).set_kitty_virtual_placeholder(true);
-        }
         Ok(())
     }
 
@@ -228,7 +221,9 @@ impl Page {
             source.set_grapheme(previous.grapheme());
             source.set_hyperlink(previous.hyperlink());
             source.set_styled(previous.styled());
-            source.set_kitty_virtual_placeholder(previous.kitty_virtual_placeholder());
+            source.set_kitty_virtual_placeholder(
+                source.kitty_virtual_placeholder() || previous.kitty_virtual_placeholder(),
+            );
             source.set_dirty(source.dirty() || previous.dirty());
         }
         self.rows[usize::from(dst_row)] = source;

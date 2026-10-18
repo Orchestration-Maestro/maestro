@@ -69,7 +69,9 @@ unchanged. Text attributes and the six underline kinds retain their identity.
 
 `Page` owns its rows, cells, deduplicated styles, cluster suffixes and hyperlink
 bytes. Copying rows between pages preserves those values after the source is
-cleared or dropped. Partial row copies leave unselected cells alone. Moves and
+cleared or dropped. Partial row copies leave unselected cells alone and combine
+both rows' image-placeholder summaries. Full row copies take the source summary.
+These summaries do not depend on managed cell ownership. Moves and
 swaps transfer managed content without duplicating its ownership; clearing cells
 releases their references. `insert_hyperlink` retains an identity until a successful
 `set_hyperlink` consumes it. Call `release_hyperlink` for an abandoned identity or

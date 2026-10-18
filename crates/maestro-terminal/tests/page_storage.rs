@@ -802,6 +802,7 @@ fn row_flags_and_dirty_sources_match() {
     source.get_row_mut(0).set_dirty(false);
     assert!(!source.is_dirty());
     source.get_cells_mut(0)[0] = Cell::init('\u{10eeee}');
+    source.get_row_mut(0).set_kitty_virtual_placeholder(true);
     source.get_cells_mut(0)[1] = Cell::init('A');
     source
         .append_grapheme(CellPosition { x: 1, y: 0 }, 'B')
@@ -892,44 +893,66 @@ fn refused_hyperlink_releases_string_budget() {
 #[test]
 fn partial_cross_page_copy_retains_placeholder_summary() {
     use maestro_terminal::{Page, page::layout::Capacity};
-    let mut source = Page::init(Capacity {
-        cols: 2,
-        rows: 2,
-        ..Capacity::default()
-    });
-    source.get_cells_mut(0)[1] = Cell::init('A');
-    let mut destination = Page::init(source.capacity);
-    destination.get_cells_mut(0)[0] = Cell::init('\u{10eeee}');
-    destination
-        .get_row_mut(0)
-        .set_kitty_virtual_placeholder(true);
-    destination
-        .clone_partial_row_from(&source, 0, 0, 1..2)
-        .unwrap();
-    assert_eq!(destination.get_cells(0)[0].codepoint(), '\u{10eeee}');
-    assert_eq!(destination.get_cells(0)[1].codepoint(), 'A');
-    assert!(destination.get_row(0).kitty_virtual_placeholder());
-    destination.clone_row_from(&source, 0, 0).unwrap();
-    assert_eq!(destination.get_cells(0)[0].codepoint(), '\0');
-    assert!(!destination.get_row(0).kitty_virtual_placeholder());
+    for (incoming, surviving) in [(false, true), (true, false), (true, true), (false, false)] {
+        let mut source = Page::init(Capacity {
+            cols: 2,
+            rows: 2,
+            ..Capacity::default()
+        });
+        let copied = if incoming { '\u{10eeee}' } else { 'A' };
+        let retained = if surviving { '\u{10eeee}' } else { '\0' };
+        source.get_cells_mut(0)[1] = Cell::init(copied);
+        source
+            .get_row_mut(0)
+            .set_kitty_virtual_placeholder(incoming);
+        assert!(!source.get_row(0).managed_memory());
+        let mut destination = Page::init(source.capacity);
+        destination.get_cells_mut(0)[0] = Cell::init(retained);
+        destination
+            .get_row_mut(0)
+            .set_kitty_virtual_placeholder(surviving);
+        destination
+            .clone_partial_row_from(&source, 0, 0, 1..2)
+            .unwrap();
+        assert_eq!(destination.get_cells(0)[0].codepoint(), retained);
+        assert_eq!(destination.get_cells(0)[1].codepoint(), copied);
+        assert_eq!(
+            destination.get_row(0).kitty_virtual_placeholder(),
+            incoming || surviving
+        );
+        destination.clone_row_from(&source, 0, 0).unwrap();
+        assert_eq!(destination.get_cells(0)[0].codepoint(), '\0');
+        assert_eq!(destination.get_cells(0)[1].codepoint(), copied);
+        assert_eq!(destination.get_row(0).kitty_virtual_placeholder(), incoming);
+    }
 }
 
 #[test]
 fn partial_same_page_copy_retains_placeholder_summary() {
     use maestro_terminal::{Page, page::layout::Capacity};
-    let mut page = Page::init(Capacity {
-        cols: 2,
-        rows: 2,
-        ..Capacity::default()
-    });
-    page.get_cells_mut(0)[1] = Cell::init('A');
-    page.get_cells_mut(1)[0] = Cell::init('\u{10eeee}');
-    page.get_row_mut(1).set_kitty_virtual_placeholder(true);
-    page.clone_partial_row_within(1, 0, 1..2).unwrap();
-    assert_eq!(page.get_cells(1)[0].codepoint(), '\u{10eeee}');
-    assert_eq!(page.get_cells(1)[1].codepoint(), 'A');
-    assert!(page.get_row(1).kitty_virtual_placeholder());
-    page.clone_partial_row_within(1, 0, 0..2).unwrap();
-    assert_eq!(page.get_cells(1)[0].codepoint(), '\0');
-    assert!(!page.get_row(1).kitty_virtual_placeholder());
+    for (incoming, surviving) in [(false, true), (true, false), (true, true), (false, false)] {
+        let mut page = Page::init(Capacity {
+            cols: 2,
+            rows: 2,
+            ..Capacity::default()
+        });
+        let copied = if incoming { '\u{10eeee}' } else { 'A' };
+        let retained = if surviving { '\u{10eeee}' } else { '\0' };
+        page.get_cells_mut(0)[1] = Cell::init(copied);
+        page.get_row_mut(0).set_kitty_virtual_placeholder(incoming);
+        assert!(!page.get_row(0).managed_memory());
+        page.get_cells_mut(1)[0] = Cell::init(retained);
+        page.get_row_mut(1).set_kitty_virtual_placeholder(surviving);
+        page.clone_partial_row_within(1, 0, 1..2).unwrap();
+        assert_eq!(page.get_cells(1)[0].codepoint(), retained);
+        assert_eq!(page.get_cells(1)[1].codepoint(), copied);
+        assert_eq!(
+            page.get_row(1).kitty_virtual_placeholder(),
+            incoming || surviving
+        );
+        page.clone_partial_row_within(1, 0, 0..2).unwrap();
+        assert_eq!(page.get_cells(1)[0].codepoint(), '\0');
+        assert_eq!(page.get_cells(1)[1].codepoint(), copied);
+        assert_eq!(page.get_row(1).kitty_virtual_placeholder(), incoming);
+    }
 }
