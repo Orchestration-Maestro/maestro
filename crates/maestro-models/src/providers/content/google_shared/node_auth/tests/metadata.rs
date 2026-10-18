@@ -1,7 +1,14 @@
-//! Metadata admission and endpoint controls.
+//! Metadata admission, endpoint controls and token exchange.
 
+use super::super::base_external_client::{BaseExternalAccountClient, Effects};
+use super::super::compute_client::Compute;
 use super::super::metadata::{Detection, Metadata, gcp_residency};
 use crate::{FetchError, HttpResponse};
+use google_cloud_auth::credentials::Credentials;
+use std::sync::{
+    Arc,
+    atomic::{AtomicUsize, Ordering},
+};
 
 /// Metadata over `policy` (absent means the default control), which must not disable metadata.
 pub(super) fn metadata(
@@ -12,6 +19,98 @@ pub(super) fn metadata(
 ) -> Metadata {
     let detection = Detection::parse(policy).unwrap().unwrap();
     Metadata::new(detection, resident, endpoints, retries).unwrap()
+}
+
+/// Admitted metadata token credentials for `host`; residency removes the request deadline.
+pub(super) fn compute(host: &str, effects: Effects, resident: bool) -> Credentials {
+    let metadata = metadata(Some("assume-present"), resident, (None, Some(host)), 0);
+    Credentials::from(BaseExternalAccountClient::new(
+        Compute::new(metadata),
+        effects,
+        None,
+        None,
+    ))
+}
+
+/// A successful token reply carrying `body`, naming the metadata flavor only when `flavor` is set.
+fn token_reply(flavor: bool, body: &serde_json::Value) -> HttpResponse {
+    if flavor {
+        super::google_response_with(body)
+    } else {
+        super::response(body)
+    }
+}
+
+/// A flavored token grant answered `delay` milliseconds after each counted request.
+fn delayed_grant(delay: u64, calls: Arc<AtomicUsize>) -> crate::Fetch {
+    Arc::new(move |_| {
+        calls.fetch_add(1, Ordering::SeqCst);
+        Box::pin(async move {
+            tokio::time::sleep(std::time::Duration::from_millis(delay)).await;
+            Ok(super::google_response_with(
+                &serde_json::json!({"access_token":"controlled-access","expires_in":3600}),
+            ))
+        })
+    })
+}
+
+#[test]
+fn metadata_tokens_require_google_flavor_and_an_object_body() {
+    super::run(async {
+        for (flavor, body) in [
+            (
+                false,
+                serde_json::json!({"access_token":"controlled-access","expires_in":3600}),
+            ),
+            (true, serde_json::json!({"access_token":5})),
+        ] {
+            let (fetch, urls) = super::recording(move |_| Ok(token_reply(flavor, &body)));
+            let effects = Effects {
+                fetch,
+                ..Effects::default()
+            };
+            let error = super::refresh::failure_of(compute("m.invalid", effects, false)).await;
+            assert_eq!(error.name.as_deref(), Some("AuthenticationError"));
+            assert_eq!(error.code, None);
+            assert_eq!(error.message, super::super::ACQUISITION_FAILED);
+            assert_eq!(urls.lock().unwrap().len(), 1);
+        }
+    });
+}
+
+#[test]
+fn metadata_token_deadline_applies_only_off_google_hosts() {
+    super::run_paused(async {
+        for (resident, delay, attempts) in
+            [(false, 2999, 1), (false, 3001, 4), (true, 3_600_000, 1)]
+        {
+            let calls = Arc::new(AtomicUsize::new(0));
+            let effects = Effects {
+                fetch: delayed_grant(delay, calls.clone()),
+                ..Effects::default()
+            };
+            let client = super::client(
+                compute("m.invalid", effects, resident),
+                indexmap::IndexMap::new(),
+            );
+            let projected = super::super::super::project_content_request(
+                serde_json::json!({"model":"model","contents":"hello"}),
+            )
+            .unwrap();
+            let result = client.prepare_request(projected, None).await;
+            if attempts == 1 {
+                assert_eq!(
+                    result.unwrap().request.headers["authorization"],
+                    "Bearer controlled-access"
+                );
+            } else {
+                let error = result.err().unwrap();
+                assert_eq!(error.name.as_deref(), Some("TransientAuthenticationError"));
+                assert_eq!(error.code, None);
+            }
+            assert_eq!(calls.load(Ordering::SeqCst), attempts);
+        }
+    });
 }
 
 #[test]

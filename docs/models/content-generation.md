@@ -462,10 +462,14 @@ certificate sources) and external-account authorized user. A nonempty
 An impersonated file keeps its source credentials as a typed handle and takes its target from
 the last segment of `service_account_impersonation_url`.
 
-Tokens refresh on use, five minutes before their known expiry, and a token whose expiry is
-already reached is rejected rather than sent. Concurrent callers share one in-flight
-acquisition. Workforce refresh tokens rotate and the rotated value is kept even when the
-access token it came with is rejected.
+Maestro owns token acquisition for three sources: external-account authorized user files,
+certificate external accounts and the metadata server. Their tokens refresh on use, five
+minutes before their known expiry, and a token whose expiry is already reached is rejected
+rather than sent. Concurrent callers share one in-flight acquisition. Workforce refresh tokens
+rotate and the rotated value is kept even when the access token it came with is rejected.
+The credential library refreshes the other supported files (authorized user, service account,
+impersonated service account and the remaining external-account sources) under its own
+caching rules.
 
 Certificate sources read their configuration from `certificate_config_location`, then
 `GOOGLE_API_CERTIFICATE_CONFIG`, then `CLOUDSDK_CONFIG` or the platform gcloud directory. The
@@ -475,10 +479,12 @@ exchange runs over HTTPS with the client certificate and no environment proxy.
 Metadata detection honors `none` (always disabled) before residency. Otherwise, Google hosts
 are admitted without probing, even with an unknown detection value. Off Google hosts it honors
 `assume-present`, `bios-only` and `ping-only`, and rejects any other value. `GCE_METADATA_IP`
-takes precedence over `GCE_METADATA_HOST`, and a scheme in either is kept. The probe waits
-3000 ms off Google hosts and has no deadline on them;
-`DETECT_GCP_RETRIES` sets its no-response retries. Residency comes from serverless variables,
-Linux DMI data and `/sys/class/net/*/address`; other platforms' network data is tracked in
+takes precedence over `GCE_METADATA_HOST`, and a scheme in either is kept. Only `ping-only`
+(the default) probes, and only off Google hosts; `DETECT_GCP_RETRIES` sets the probe's
+no-response retries. Off Google hosts each metadata request, the probe and the token exchange
+alike, waits at most 3000 ms per attempt; on Google hosts token exchanges have no deadline.
+Residency comes from serverless variables, Linux DMI data and `/sys/class/net/*/address`; other
+platforms' network data is tracked in
 [#1188](https://github.com/Orchestration-Maestro/maestro/issues/1188).
 
 Failures expose only a fixed `Authentication: ...` message (acquisition, certificate or

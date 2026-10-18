@@ -30,6 +30,22 @@ fn client_key_pem() -> String {
 
 use crate::tests::content_credentials::{Files, workforce};
 
+impl Files {
+    /// Write one new fixture file, preserving any pre-existing file.
+    fn write(&self, name: &str, bytes: &[u8]) -> String {
+        use std::io::Write;
+        let path = self.path(name);
+        std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)
+            .unwrap()
+            .write_all(bytes)
+            .unwrap();
+        path
+    }
+}
+
 /// Retained native content client with a real credential provider.
 fn client(
     credentials: google_cloud_auth::credentials::Credentials,
@@ -79,7 +95,12 @@ fn recording(
 
 /// A successful metadata response naming the expected flavor.
 fn google_response() -> crate::HttpResponse {
-    let mut response = response(&serde_json::json!({}));
+    google_response_with(&serde_json::json!({}))
+}
+
+/// A successful metadata response carrying `value` and naming the expected flavor.
+fn google_response_with(value: &serde_json::Value) -> crate::HttpResponse {
+    let mut response = response(value);
     response
         .headers
         .insert("metadata-flavor".into(), "Google".into());
