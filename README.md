@@ -102,9 +102,9 @@ command to install.
 
 | State | Parts |
 | --- | --- |
-| On `main`, tested | Models and providers, the agent loop, tools, sessions, settings, credentials, packages, the terminal toolkit |
+| Built | Models and providers, the agent loop, tools, sessions, settings, credentials, packages and the terminal toolkit, with tests that run on Linux in CI |
 | In progress | The application layer, the terminal chat and browser front ends, the Markdown parser |
-| Not on `main` yet | The `maestro` command, the RPC and command-line front ends, the extension runtime, the workspace daemon |
+| Planned | The `maestro` command, the RPC and command-line front ends, the extension runtime, the workspace daemon |
 
 ## Documentation
 
