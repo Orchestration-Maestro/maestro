@@ -133,7 +133,7 @@ Command stdout is decoded lossily as UTF-8 and trimmed at its outer boundaries;
 literal and environment values are not trimmed.
 
 Guidance formatters take a documentation root without reading files. Authored
-path joining belongs to [maestro-path](../crates/maestro-path/README.md).
+path joining belongs to [maestro-path](../crates/maestro-path/src/lib.rs).
 See the [crate example](../crates/maestro-credentials/README.md) for a controlled
 adapter. Browser callers supply their own operations; the native adapter is absent
 from browser builds.
