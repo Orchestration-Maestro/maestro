@@ -10,35 +10,9 @@ use maestro_tools::ToolDefinitionRecord;
 use serde_json::{Value, json};
 use std::{rc::Rc, sync::RwLock};
 
-fn definition(
-    name: &str,
-    label: &str,
-) -> ToolDefinitionRecord<ExtensionContext, Value, Value, (), Local, Local> {
-    ToolDefinitionRecord {
-        definition: Tool {
-            name: name.into(),
-            description: "registered".into(),
-            parameters: json!({"type":"object"}),
-        },
-        label: label.into(),
-        prompt_snippet: None,
-        prompt_guidelines: None,
-        render_shell: None,
-        prepare_arguments: None,
-        execution_mode: None,
-        execute: Rc::new(|_, args, _, _, _| {
-            Box::pin(async move {
-                Ok(maestro_agent::AgentToolResult {
-                    content: vec![],
-                    details: Some(args),
-                    terminate: None,
-                })
-            })
-        }),
-        render_call: None,
-        render_result: None,
-    }
-}
+#[path = "support/tool.rs"]
+mod tool_support;
+use tool_support::definition;
 
 #[test]
 fn tool_replacement_refreshes_after_the_map_update() {

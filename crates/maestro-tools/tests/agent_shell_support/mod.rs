@@ -510,21 +510,8 @@ fn replace_paths(value: &mut Value, paths: &[String]) {
     }
 }
 
-/// Immediate supplied operation for non-scripted boundary witnesses.
-pub struct Immediate(pub Arc<ImmediateCallback>);
-/// Synchronous body of a supplied test operation.
-pub type ImmediateCallback =
-    dyn Fn(&str, &str, BashExecOptions<'_>) -> Result<BashExecResult, BashError> + Send + Sync;
-impl BashOperations for Immediate {
-    fn exec<'a>(
-        &'a self,
-        command: &'a str,
-        cwd: &'a str,
-        options: BashExecOptions<'a>,
-    ) -> Pin<Box<dyn Future<Output = Result<BashExecResult, BashError>> + Send + 'a>> {
-        Box::pin(async move { (self.0)(command, cwd, options) })
-    }
-}
+mod immediate;
+pub use immediate::Immediate;
 
 /// Execute the retained failure-then-success hook sequence on one definition.
 pub fn hook_sequence() {

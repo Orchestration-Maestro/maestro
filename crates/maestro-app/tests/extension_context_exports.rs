@@ -341,3 +341,11 @@ const _: fn(&maestro_app::ToolResultEvent) -> bool = maestro_app::is_write_tool_
 const _: fn(&maestro_app::ToolResultEvent) -> bool = maestro_app::is_grep_tool_result;
 const _: fn(&maestro_app::ToolResultEvent) -> bool = maestro_app::is_find_tool_result;
 const _: fn(&maestro_app::ToolResultEvent) -> bool = maestro_app::is_ls_tool_result;
+
+#[test]
+fn hook_tool_exports_retain_their_domain_types() {
+    let _: Option<maestro_app::AgentToolResult> = None::<maestro_agent::AgentToolResult>;
+    let _: Option<maestro_app::AgentToolUpdateCallback> =
+        None::<maestro_agent::AgentToolUpdateCallback>;
+    let _: maestro_app::ToolExecutionMode = maestro_agent::ToolExecutionMode::Sequential;
+}

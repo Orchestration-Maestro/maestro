@@ -1,9 +1,18 @@
 //! Queries over current shared extension registrations.
+mod agent_start;
+pub use agent_start::BeforeAgentStartCombinedResult;
 mod binding;
 mod contexts;
+mod dispatch;
+pub use dispatch::{RunnerEmitEvent, emit_session_shutdown_event};
 mod errors;
+mod input;
 mod registration;
+mod resources;
+pub use resources::{ResourcePath, ResourcesDiscoverCombinedResult};
 mod shortcuts;
+mod tool_hooks;
+mod transforms;
 mod ui;
 use crate::{
     ErrorReporter, ExtensionExecution,

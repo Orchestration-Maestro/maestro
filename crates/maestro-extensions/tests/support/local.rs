@@ -50,28 +50,36 @@ pub fn source(path: &str) -> Arc<RwLock<SourceInfo>> {
 }
 
 /// A loaded owner with its facade, current collection and runtime state.
-pub struct Loaded {
+pub struct Loaded<E: maestro_extensions::ExtensionExecution = Local> {
     /// The strong registration owner.
-    pub owner: ExtensionHandle<Local>,
+    pub owner: ExtensionHandle<E>,
     /// The weak registration facade.
-    pub api: ExtensionAPI<Local>,
+    pub api: ExtensionAPI<E>,
     /// Current load order containing the owner.
-    pub owners: ExtensionCollection<Local>,
+    pub owners: ExtensionCollection<E>,
     /// Shared flag values and activity.
-    pub runtime: Rc<maestro_extensions::ExtensionRuntime<maestro_models::Local>>,
+    pub runtime: E::Shared<maestro_extensions::ExtensionRuntime<E>>,
 }
 
 /// Creates a loaded owner using the supplied bus identity.
 pub fn loaded(path: &str, events: EventBus<Local>) -> Loaded {
-    let owner = Rc::new(RwLock::new(Extension::new(
+    loaded_for::<Local>(path, events)
+}
+
+/// Creates a loaded owner in either callback capture family.
+pub fn loaded_for<E: maestro_extensions::ExtensionExecution>(
+    path: &str,
+    events: EventBus<E>,
+) -> Loaded<E> {
+    let owner = E::share(RwLock::new(Extension::new(
         path.into(),
         format!("{path}/index"),
         source(path),
     )));
-    let runtime = maestro_extensions::create_extension_runtime::<maestro_models::Local>();
+    let runtime = maestro_extensions::create_extension_runtime::<E>();
     Loaded {
         api: ExtensionAPI::new(&owner, runtime.clone(), events, "/workspace".into()),
-        owners: Rc::new(RwLock::new(vec![owner.clone()])),
+        owners: E::share(RwLock::new(vec![owner.clone()])),
         owner,
         runtime,
     }
@@ -79,11 +87,19 @@ pub fn loaded(path: &str, events: EventBus<Local>) -> Loaded {
 
 /// Creates a local runner over the supplied collection, serving `/work`.
 pub fn runner(owners: &ExtensionCollection<Local>) -> ExtensionRunner<Local> {
-    ExtensionRunner::<Local>::new(
+    runner_for::<Local>(owners, Rc::new(|_| {}))
+}
+
+/// Creates a runner in the supplied capture family over real in-memory operands.
+pub fn runner_for<E: maestro_extensions::ExtensionExecution>(
+    owners: &ExtensionCollection<E>,
+    reporter: maestro_extensions::ErrorReporter<E>,
+) -> ExtensionRunner<E> {
+    ExtensionRunner::<E>::new(
         owners.clone(),
-        maestro_extensions::create_extension_runtime::<maestro_models::Local>(),
+        maestro_extensions::create_extension_runtime::<E>(),
         session::runner_session("/work").0,
-        Rc::new(|_| {}),
+        reporter,
         LiveTheme::default(),
     )
 }

@@ -107,6 +107,8 @@ pub struct ExtensionContext {
     pub(crate) binding: Rc<ContextBinding>,
     /// Model reader captured when the context was created.
     pub(crate) get_model: ModelReader,
+    /// Invocation-owned prompt, absent for ordinary live-bound contexts.
+    pub(crate) invocation_system_prompt: Option<Rc<RefCell<String>>>,
 }
 
 /// The local future returned by command and replacement operations.

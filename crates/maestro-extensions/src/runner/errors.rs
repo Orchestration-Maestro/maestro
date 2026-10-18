@@ -41,6 +41,15 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
 
 /// Copies authored diagnostic fields without synthesizing engine stack text.
 pub(super) fn queued_error(extension_path: String, error: &crate::EventError) -> ExtensionError {
+    event_error(extension_path, "register_provider", error)
+}
+
+/// Projects callback diagnostics while preserving authored stack fields.
+pub(super) fn event_error(
+    extension_path: String,
+    event: &str,
+    error: &crate::EventError,
+) -> ExtensionError {
     // This projection is the single list of error types with retained diagnostic stacks.
     let diagnostic = error
         .downcast_ref::<maestro_catalog::CatalogError>()
@@ -53,7 +62,7 @@ pub(super) fn queued_error(extension_path: String, error: &crate::EventError) ->
         });
     ExtensionError {
         extension_path,
-        event: "register_provider".to_owned(),
+        event: event.to_owned(),
         error: diagnostic.map_or_else(|| error.to_string(), |d| d.message.clone()),
         stack: diagnostic.and_then(|d| d.stack.clone()),
     }

@@ -147,6 +147,7 @@ pub fn create_custom_message<T>(
 }
 
 /// Application message roles plus caller-defined entries.
+#[derive(Clone)]
 pub enum CustomAgentMessages<T = serde_json::Value, C = Infallible> {
     /// Recorded shell execution.
     BashExecution(BashExecutionMessage),
