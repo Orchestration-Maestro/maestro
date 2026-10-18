@@ -939,10 +939,10 @@ The original licence follows.
 
 ## Terminal emulator engine
 
-The terminal codepoint-width interface, page storage, character mappings, byte
-transition table, colour and SGR decoders, embedded X11 colour-name data, image
-command parser, image-media loader and their fixtures in `crates/maestro-terminal` derive from the
-Ghostty terminal engine. Changes: ported to safe Rust under Maestro names, with
+The terminal codepoint-width interface, page storage, character mappings,
+VT/OSC and colour/SGR decoders, byte transition table, embedded X11 colour-name
+data, image command parser, image-media loader and their fixtures in
+`crates/maestro-terminal` derive from the Ghostty terminal engine. Changes: ported to safe Rust under Maestro names, with
 compiled Unicode properties, scalar-only text, packed records, owned style,
 cluster and link tables, owned I/O and Rust codecs; the width fixture projects
 widths into runs. Temporary-file containment and shared-memory range validation

@@ -79,3 +79,5 @@ pub use dynamic::{DynamicPalette, DynamicRgb, PaletteMask};
 
 mod targets;
 pub use targets::{Dynamic, Special};
+
+pub(crate) use parse::index;

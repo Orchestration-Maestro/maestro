@@ -113,3 +113,22 @@ It returns typed attributes, including direct and indexed foreground, background
 and underline colours. Unknown attributes retain the complete input plus the
 unrecognised group or remaining suffix. This decoder does not apply attributes
 to screen cells.
+
+`parser::Parser` consumes one byte at a time and returns three ordered action
+slots: exit, transition and entry. CSI parameters and CSI/ESC intermediates are
+writable borrowed views; DCS hook fields are read-only. Parameters saturate at
+65535 without losing digit presence on long input. The parser retains up to 24
+parameters and four intermediate bytes, with positional bits for colon separators.
+DCS and APC payload bytes remain separate from their start/end actions.
+
+`osc::Parser` decodes titles, directory reports, clipboard payloads, hyperlinks,
+semantic prompt markers and colour requests. Returned commands own their raw
+bytes and ordered request lists; resetting or dropping the decoder does not
+invalidate them. Text fields are bytes, not validated UTF-8, URLs or base64.
+The decoder preserves BEL versus ST for colour replies. Allocation availability
+is selected by `osc::Parser::init`; the composed VT parser starts with fixed
+capture and exposes `osc_parser.alloc` for callers that need request lists or
+larger clipboard captures. Title capture remains fixed in either mode.
+
+OSC parsing does not change a screen, access a clipboard, open a link or write a
+reply. Those effects belong to the command consumer.

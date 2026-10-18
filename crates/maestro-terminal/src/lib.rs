@@ -32,3 +32,7 @@ pub mod parse_table;
 pub mod parser;
 
 pub mod x11_color;
+
+pub mod osc;
+
+pub use parser::{Csi, Dcs, Parser};

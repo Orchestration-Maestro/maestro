@@ -34,23 +34,34 @@ pub fn parse_palette_entry(value: &[u8]) -> Result<PaletteEntry, ParseError> {
 
 /// Read a signed palette index while preserving negative zero.
 fn palette_index(value: &[u8]) -> Result<u8, ParseError> {
+    u8::try_from(index(value, 0, 255)?).map_err(|_| ParseError::Overflow)
+}
+
+/// Decode a signed nonnegative index with an explicit radix and upper bound.
+///
+/// A zero radix admits the palette assignment's radix prefixes.
+pub(crate) fn index(value: &[u8], radix: u32, max: u16) -> Result<u16, ParseError> {
     let (negative, value) = match value.first() {
         Some(b'-') => (true, &value[1..]),
         Some(b'+') => (false, &value[1..]),
         _ => (false, value),
     };
-    let (radix, digits) = match value.get(..2) {
-        Some(b"0x" | b"0X") => (16, &value[2..]),
-        Some(b"0o" | b"0O") => (8, &value[2..]),
-        Some(b"0b" | b"0B") => (2, &value[2..]),
-        _ => (10, value),
+    let (radix, digits) = if radix == 0 {
+        match value.get(..2) {
+            Some(b"0x" | b"0X") => (16, &value[2..]),
+            Some(b"0o" | b"0O") => (8, &value[2..]),
+            Some(b"0b" | b"0B") => (2, &value[2..]),
+            _ => (10, value),
+        }
+    } else {
+        (radix, value)
     };
     if digits.is_empty() || !digits.iter().all(|b| char::from(*b).is_digit(radix)) {
         return Err(ParseError::InvalidFormat);
     }
     let text = std::str::from_utf8(digits).map_err(|_| ParseError::InvalidFormat)?;
-    let n = u8::from_str_radix(text, radix).map_err(|_| ParseError::Overflow)?;
-    if negative && n != 0 {
+    let n = u16::from_str_radix(text, radix).map_err(|_| ParseError::Overflow)?;
+    if n > max || (negative && n != 0) {
         return Err(ParseError::Overflow);
     }
     Ok(n)
