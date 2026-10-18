@@ -50,8 +50,28 @@ From `docs/specs/maestro-port.md`.
 
 - **Hosted-service origin:** The single supplied origin for release checks, install reports and session-viewer links; an empty value disables those operations. It is separate from model-request attribution. See [hosted services](docs/application/services.md).
 
-From `docs/specs/maestro-port.md`. Manifest governance and settings value locks
-are later scope, not active foundation concepts.
+From `docs/specs/maestro-port.md`. Manifest mode is specified in
+[manifest mode](docs/specs/manifest-mode.md).
+
+### Manifest configuration
+
+- **Manifest:** An organization's pinned configuration release named by the
+  `manifest` setting; distinct from a package manifest and a detection manifest.
+- **Package manifest:** The `maestro` key of a package's `package.json` listing its
+  resources.
+- **Internal mode:** Running without a manifest; foundation behaviour.
+- **Manifest mode:** Running with a named manifest, which adds a layer and a policy.
+- **Manifest area:** One folder of a manifest (common, standard, core, language or
+  team package) whose content enters the manifest layer in a fixed order.
+- **Policy:** The combined locks, bounds, allowed models, required entries and role
+  constraints of a manifest; the settings owner decides every governed change.
+- **Lock:** A policy entry fixing a value that local layers cannot change.
+- **Bound:** A policy minimum or maximum for a numeric value or thinking level.
+- **Required resource:** A manifest resource that local layers cannot disable,
+  shadow or drop.
+- **Permission growth:** A manifest release change that adds role tools, widens
+  allowed models or a bound, removes a lock or required entry, or adds an extension
+  or MCP server.
 
 ### Execution
 
