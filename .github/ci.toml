@@ -1,7 +1,7 @@
 wasm_crates = ["maestro-agent", "maestro-app", "maestro-brand", "maestro-cancellation", "maestro-catalog", "maestro-chat", "maestro-credentials", "maestro-entry", "maestro-export", "maestro-extensions", "maestro-json", "maestro-lock", "maestro-markdown", "maestro-models", "maestro-packages", "maestro-path", "maestro-pattern", "maestro-request", "maestro-resources", "maestro-session", "maestro-settings", "maestro-text", "maestro-theme", "maestro-tool", "maestro-tools", "maestro-tui", "maestro-watch", "maestro-web"]
 test_tools = true
 reserved_ports = [53692, 1455]
-spelling_words = ["PERMUT", "TTEST", "AVERAGEIFS", "mminimal", "writeable", "ratatui", "relace", "Ba", "Thie", "hel", "worl", "abd", "SECON", "SINGL", "curren", "twoo", "hree", "mone", "meight", "caf", "flate", "mport", "mak", "routeros", "styl", "Nd", "extens", "UE", "Iz", "Packag", "Assistent", "Dokument", "Ein", "Konfiguration", "Konversation", "Modell", "Sie", "alle", "als", "ein", "ist", "lokal", "manuell", "oder", "vor", "BRE", "Fo", "PN", "PTD", "Pn", "SHW", "Skup", "conosle", "cusotm", "exectuion", "havea", "iif", "makrdown", "thet", "alha", "missin", "ment", "Preven", "provid", "Regist", "comman", "suppor", "paddin", "visibl", "conten", "matc", "guages", "Perfor", "witha", "Rto", "Iin", "EQUIRES", "guage", "MIS", "Studi", "buton", "unparseable", "fals", "alse", "EDE", "rturned", "alph", "DAA", "THN", "Iy", "Jod"]
+spelling_words = ["righ", "PERMUT", "TTEST", "AVERAGEIFS", "mminimal", "writeable", "ratatui", "relace", "Ba", "Thie", "hel", "worl", "abd", "SECON", "SINGL", "curren", "twoo", "hree", "mone", "meight", "caf", "flate", "mport", "mak", "routeros", "styl", "Nd", "extens", "UE", "Iz", "Packag", "Assistent", "Dokument", "Ein", "Konfiguration", "Konversation", "Modell", "Sie", "alle", "als", "ein", "ist", "lokal", "manuell", "oder", "vor", "BRE", "Fo", "PN", "PTD", "Pn", "SHW", "Skup", "conosle", "cusotm", "exectuion", "havea", "iif", "makrdown", "thet", "alha", "missin", "ment", "Preven", "provid", "Regist", "comman", "suppor", "paddin", "visibl", "conten", "matc", "guages", "Perfor", "witha", "Rto", "Iin", "EQUIRES", "guage", "MIS", "Studi", "buton", "unparseable", "fals", "alse", "EDE", "rturned", "alph", "DAA", "THN", "Iy", "Jod"]
 check_targets = [
     "aarch64-unknown-linux-gnu",
     "x86_64-apple-darwin",
@@ -15,6 +15,9 @@ advisory_exceptions = [
 
 # OD-182: only these exact packages in the clipboard Windows backend.
 license_exceptions = [
+  # Owner-approved local-socket dependency licences.
+  { package = "doctest-file", version = "1.1.1", licenses = ["0BSD"] },
+  { package = "recvmsg", version = "1.0.0", licenses = ["0BSD"] },
   # OD-185: test-only egui default fonts
   { package = "epaint_default_fonts", version = "0.36.2", licenses = ["MIT", "OFL-1.1", "Ubuntu-font-1.0"] },
   { package = "clipboard-win", version = "5.4.1", licenses = ["BSL-1.0"] },

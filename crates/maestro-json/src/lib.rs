@@ -1,5 +1,5 @@
-//! Stateless JSON boundary decisions shared by Maestro crates: truth, canonical key
-//! order, compact and pretty text, and object-only record admission.
+//! JSON boundary operations shared by Maestro crates: truth, canonical key
+//! order, compact and pretty text, object-only record admission and synchronous JSONL framing.
 //!
 //! ```
 //! use maestro_json::{array_index, compact_json, is_truthy};
@@ -10,6 +10,7 @@
 //! assert_eq!(compact_json(&json!({"b": 1, "10": -0.0, "2": 1e21})).unwrap(), r#"{"2":1e+21,"10":0,"b":1}"#);
 //! ```
 mod json_text;
+pub mod jsonl;
 mod keys;
 pub mod object;
 mod truth;
