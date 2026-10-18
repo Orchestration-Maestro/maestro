@@ -63,11 +63,16 @@ behavior.
 `render_header` draws the shared status icon and literal or rich caption.
 `render_collapsible_header` shares the caller's `Rc<Cell<bool>>` expansion state.
 Pending headers use the frame clock for their spinner; no timer is allocated.
-Rich captions remain executable content with independent retained widget state.
+Collapsible headers use a pointer cursor, foreground hover text and an accent
+keyboard-focus outline. Rich captions retain their own colors and executable
+content with independent widget state.
 
 [`ConsoleBlock`](../../crates/maestro-web/src/components/console_block.rs) owns
 literal preformatted output, an optional error variant, and a copy control.
 Successful copies show feedback for 1500 ms; ordinary copy buttons retain their
-2000 ms interval. Both use direct native clipboard writing. Message links retain
+2000 ms interval. The console control has a 20-point height, a 16-point icon,
+12-point success text and a 4-point icon-to-text gap, with 8-point horizontal
+and 2-point vertical padding. Ordinary copy controls keep their 32-point height.
+Both use direct native clipboard writing. Message links retain
 their separate fallback policy. Actual console updates scroll the local body to
 its bottom; unchanged frames and presentation-only changes do not reset scroll.

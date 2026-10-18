@@ -349,6 +349,55 @@ mod tests {
         drop(recipe);
     }
 
+    /// Failed re-entry must not reconnect the previous visible native placement.
+    #[wasm_bindgen]
+    pub fn detached_tool_reentry_failure_keeps_native_root_detached() {
+        use maestro_web::tools::types::ToolRenderResult;
+        let mut surface = surface();
+        let input = serde_json::json!({"nested":42});
+        let recipe = ToolRenderResult {
+            content: Box::new(Nested {
+                recipe: render_tool::<Value, Value>(
+                    "unknown",
+                    Some(ToolParams::json(&input)),
+                    None,
+                    false,
+                )
+                .unwrap(),
+                row: std::cell::RefCell::default(),
+            }),
+            is_custom: false,
+        };
+        let mut row = ToolRenderState::default();
+        tool_renderer_support::browser::draw(&mut surface, &recipe, &mut row);
+        let _ = js(
+            "globalThis.detachedRoot=document.querySelector('.maestro-tool-caption'); globalThis.detachedFrame=detachedRoot.closest('.maestro-reading-frame')",
+        );
+        let replacement = ToolRenderResult {
+            content: Box::new(Replacement),
+            is_custom: true,
+        };
+        tool_renderer_support::browser::draw(&mut surface, &replacement, &mut row);
+        check("!detachedFrame.isConnected");
+        let _ = js("document.getElementById('canvas').width=0");
+        let host = surface.host();
+        let result = surface.draw(|ui, frame| {
+            recipe.render(
+                ui,
+                tool_renderer_support::browser::view(&host, frame),
+                &mut row,
+            )
+        });
+        assert!(result.is_err(), "zero-width canvas rejects placement");
+        check("!detachedFrame.isConnected");
+        check("!detachedRoot.isConnected");
+        let _ = js("document.getElementById('canvas').width=800");
+        tool_renderer_support::browser::draw(&mut surface, &recipe, &mut row);
+        check(
+            "detachedRoot.isConnected && document.querySelector('.maestro-tool-caption') === detachedRoot",
+        );
+    }
+
     struct SharedNested(std::rc::Rc<Nested>);
     impl maestro_web::tools::types::ToolContent for SharedNested {
         fn render(

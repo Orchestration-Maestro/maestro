@@ -26,6 +26,9 @@ pub(crate) struct NativeText {
     shown: Option<(String, TextKind)>,
     /// Published factory identity.
     content: Option<Rc<ReadingContent>>,
+    /// Native caption target, captured weakly by factories.
+    #[cfg(target_arch = "wasm32")]
+    node: Rc<std::cell::RefCell<Option<web_sys::Element>>>,
 }
 impl NativeText {
     /// Bind a literal text owner to the supplied platform.
@@ -35,7 +38,28 @@ impl NativeText {
             id: attachment_content::identity(),
             shown: None,
             content: None,
+            #[cfg(target_arch = "wasm32")]
+            node: Rc::default(),
         }
+    }
+    /// Apply interaction color only to this literal caption, never rich descendants.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn set_hovered(&self, hovered: bool) -> Result<(), AttachmentUiError> {
+        if let Some(node) = self.node.borrow().as_ref() {
+            use wasm_bindgen::JsCast as _;
+            node.unchecked_ref::<web_sys::HtmlElement>()
+                .style()
+                .set_property(
+                    "color",
+                    if hovered {
+                        "var(--maestro-color-text)"
+                    } else {
+                        "var(--maestro-color-muted)"
+                    },
+                )
+                .map_err(|error| attachment_content::browser::host_error(&error))?;
+        }
+        Ok(())
     }
     /// Stable native identity for the containing layout scope.
     pub(crate) fn id(&self) -> egui::Id {
@@ -52,7 +76,7 @@ impl NativeText {
             .shown
             .as_ref()
             .is_none_or(|shown| shown.0 != text.0 || shown.1 != text.1);
-        let candidate = changed.then(|| content(text.0, text.1));
+        let candidate = changed.then(|| content(text.0, text.1, self));
         let content = candidate
             .as_ref()
             .or(self.content.as_ref())
@@ -80,17 +104,18 @@ impl Drop for NativeText {
     }
 }
 /// Build a literal factory without retaining mounted owners or frame operands.
-fn content(text: &str, kind: TextKind) -> Rc<ReadingContent> {
+fn content(text: &str, kind: TextKind, owner: &NativeText) -> Rc<ReadingContent> {
     #[cfg(target_arch = "wasm32")]
     {
         let text = text.to_owned();
+        let target = Rc::downgrade(&owner.node);
         Rc::new(ReadingContent {
-            mount: Rc::new(move |document| mount(document, &text, kind)),
+            mount: Rc::new(move |document| mount(document, &text, kind, &target)),
         })
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        let _ = (text, kind);
+        let _ = (text, kind, owner);
         Rc::new(ReadingContent {})
     }
 }
@@ -100,6 +125,7 @@ fn mount(
     document: &web_sys::Document,
     text: &str,
     kind: TextKind,
+    target: &std::rc::Weak<std::cell::RefCell<Option<web_sys::Element>>>,
 ) -> Result<attachment_content::ReadingRoot, AttachmentUiError> {
     use attachment_content::browser::{append, element, host_error, set_text_if_changed};
     let root = element(document, "div", "maestro-tool-text")?;
@@ -118,6 +144,10 @@ fn mount(
     node.set_text_content(Some(text));
     append(&root, &node)?;
     let text = text.to_owned();
+    if let Some(target) = target.upgrade() {
+        *target.borrow_mut() = Some(node.clone());
+    }
+    let target = target.clone();
     Ok(attachment_content::ReadingRoot {
         element: root,
         slots: vec![],
@@ -129,6 +159,9 @@ fn mount(
                 .and_then(|owner| owner.downcast_ref::<web_sys::Element>())
             {
                 set_text_if_changed(node, &text);
+                if let Some(target) = target.upgrade() {
+                    *target.borrow_mut() = Some(node.clone());
+                }
             }
         })),
     })

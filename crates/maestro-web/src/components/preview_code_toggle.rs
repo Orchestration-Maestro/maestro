@@ -82,11 +82,12 @@ impl PreviewCodeToggle {
                 );
             }
             let title = i18n.text(title)?;
+            let font = egui::TextStyle::Button.resolve(ui.style());
             let response = attachment_content::ghost_labeled_tinted(
                 ui,
                 presentation,
                 (glyph, None),
-                egui::vec2(32., 26.),
+                (egui::vec2(32., 26.), 0., font),
                 (
                     attachment_content::color(
                         presentation,

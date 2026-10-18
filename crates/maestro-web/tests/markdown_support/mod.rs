@@ -335,6 +335,8 @@ mod tests {
         pub events: Vec<egui::Event>,
         /// Optional controlled frame time for painted animation observations.
         pub time: Option<f64>,
+        /// Cursor selected by the completed frame.
+        pub cursor: egui::CursorIcon,
         /// Accessibility output of the last frame.
         pub output: Vec<egui::output::OutputEvent>,
         /// Available size of every frame drawn without an explicit one.
@@ -393,6 +395,7 @@ mod tests {
                 context: egui::Context::default(),
                 events: vec![],
                 time: None,
+                cursor: egui::CursorIcon::Default,
                 output: vec![],
                 size: (800., 600.),
                 painted: vec![],
@@ -459,6 +462,7 @@ mod tests {
             self.paint.update(&output);
             self.shapes.clone_from(&output.shapes);
             output.textures_delta.clear();
+            self.cursor = output.platform_output.cursor_icon;
             self.output = output.platform_output.events;
             self.painted = output
                 .shapes

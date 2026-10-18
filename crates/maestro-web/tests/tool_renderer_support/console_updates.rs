@@ -277,3 +277,60 @@ fn pointer_frame(
             .unwrap()
     });
 }
+
+/// Console slots use compact dimensions and paint the same twelve-point success text.
+#[wasm_bindgen]
+pub async fn console_copy_metrics_keep_compact_slot_and_painted_text() {
+    let mut surface = surface();
+    let mut ordinary =
+        maestro_web::components::copy_button::CopyButton::new(surface.host(), &surface.i18n)
+            .unwrap();
+    let response =
+        surface.draw(|ui, frame| ordinary.render(ui, frame.i18n, frame.presentation).unwrap());
+    assert_eq!(response.rect.size(), egui::vec2(32., 32.));
+    let mut console = ConsoleBlock::new(surface.host());
+    browser::console_frame(&mut surface, &mut console);
+    check(
+        "document.querySelector('.maestro-console .control-slot').getBoundingClientRect().height === 20",
+    );
+    check(
+        "Math.abs(document.querySelector('.maestro-console-header').getBoundingClientRect().height - 33) < 0.25",
+    );
+    surface.click(first_slot_center(), |ui, frame| {
+        console
+            .render(ui, frame.i18n, frame.presentation, None)
+            .unwrap()
+    });
+    settle().await;
+    browser::console_frame(&mut surface, &mut console);
+    let slot = *surface.effects.controls.borrow().last().unwrap();
+    let text: Vec<_> = surface.shapes.iter().filter(|shape| matches!(&shape.shape, egui::Shape::Text(text) if text.galley.text() == "Copied!")).cloned().collect();
+    let actual = surface.paint.region(&surface.context, &text, slot);
+    assert!(actual.iter().any(|pixel| pixel[3] > 0));
+    let mut width = 0.;
+    surface.draw(|ui, _| {
+        let font = egui::FontId::new(12., egui::FontFamily::Proportional);
+        width = ui
+            .painter()
+            .text(
+                slot.right_center() - egui::vec2(8., 0.),
+                egui::Align2::RIGHT_CENTER,
+                "Copied!",
+                font,
+                egui::Color32::WHITE,
+            )
+            .width();
+    });
+    let expected = surface
+        .paint
+        .region(&surface.context, &surface.shapes, slot);
+    assert_eq!(
+        actual.iter().map(|p| p[3]).collect::<Vec<_>>(),
+        expected.iter().map(|p| p[3]).collect::<Vec<_>>(),
+        "success text must paint at twelve points with eight-point right padding"
+    );
+    assert!(
+        (slot.width() - width - 36.).abs() < 0.01,
+        "sixteen-point icon, four-point gap and eight-point horizontal padding"
+    );
+}

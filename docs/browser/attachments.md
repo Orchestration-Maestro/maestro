@@ -149,4 +149,5 @@ uses the same resolved bound for measurement and publication.
 Tool rows retain placement scopes separately from widget ownership. Detaching an
 ancestor scope detaches its currently placed descendants; retained widget aliases
 keep resources alive but do not keep an inactive row visible. Explicit retained
-artifact visibility remains independent.
+artifact visibility remains independent. A failed re-entry leaves a detached root
+detached; measurement connects it only while hidden and restores its detachment.

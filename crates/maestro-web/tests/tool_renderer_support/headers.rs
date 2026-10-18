@@ -281,3 +281,63 @@ fn independent_sections(surface: &mut crate::markdown_support::Surface) {
         assert_eq!((first.get(), second.get()), wanted);
     }
 }
+
+/// Every collapsible status exposes hover, cursor and visible keyboard focus.
+#[wasm_bindgen]
+pub async fn collapsible_headers_paint_interaction_states() {
+    use crate::markdown_support::{js, publish};
+    let mut surface = surface();
+    surface.time = Some(10.);
+    let pack = surface.pack.clone();
+    let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
+    for state in [
+        ToolHeaderState::Inprogress,
+        ToolHeaderState::Complete,
+        ToolHeaderState::Error,
+    ] {
+        let header = recipe(state, false, Some(Rc::new(Cell::new(false))), "caption");
+        let mut row = ToolRenderState::default();
+        let response = browser::draw(&mut surface, &header, &mut row);
+        surface.events = vec![egui::Event::PointerMoved(response.rect.center())];
+        browser::draw(&mut surface, &header, &mut row);
+        browser::draw(&mut surface, &header, &mut row);
+        publish("hoverText", &presentation.colors["text"].into());
+        let _ = js(
+            "globalThis.expectedHover=document.createElement('span'); expectedHover.style.color=hoverText; document.body.appendChild(expectedHover)",
+        );
+        check(
+            "getComputedStyle(document.querySelector('.maestro-tool-caption')).color === getComputedStyle(expectedHover).color",
+        );
+        check("(expectedHover.remove(),true)");
+        crate::support::reading_paint::observe("tool-header-hover").await;
+        assert_eq!(surface.cursor, egui::CursorIcon::PointingHand);
+        surface
+            .context
+            .memory_mut(|memory| memory.request_focus(response.id));
+        surface.events = vec![egui::Event::PointerGone];
+        let focused = browser::draw(&mut surface, &header, &mut row);
+        assert!(focused.has_focus());
+        browser::has_role(&surface, focused.rect, "accent", &presentation);
+        drop(row);
+        rich_hover_keeps_child_color(&mut surface, state);
+    }
+}
+
+/// Independently styled rich children do not inherit the header's hover color.
+fn rich_hover_keeps_child_color(
+    surface: &mut crate::markdown_support::Surface,
+    state: ToolHeaderState,
+) {
+    use crate::markdown_support::js;
+    let header = recipe(state, true, Some(Rc::new(Cell::new(false))), "rich literal");
+    let mut row = ToolRenderState::default();
+    surface.events = vec![egui::Event::PointerGone];
+    let response = browser::draw(surface, &header, &mut row);
+    let _ = js(
+        "globalThis.richIdleColor=getComputedStyle(document.querySelector('.maestro-code code')).color",
+    );
+    surface.events = vec![egui::Event::PointerMoved(response.rect.center())];
+    browser::draw(surface, &header, &mut row);
+    browser::draw(surface, &header, &mut row);
+    check("getComputedStyle(document.querySelector('.maestro-code code')).color === richIdleColor");
+}

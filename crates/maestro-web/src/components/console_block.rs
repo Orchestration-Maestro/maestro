@@ -97,6 +97,8 @@ impl ConsoleBlock {
             Option<egui::Id>,
         ),
     ) -> Result<egui::Response, AttachmentUiError> {
+        attachment_content::style(ui, presentation)?;
+        copy.compact = true;
         copy.set_feedback_duration(1500);
         copy.hover = attachment_content::GhostHover::Accent;
         copy.title = i18n.text("Copy output")?;

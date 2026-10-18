@@ -139,7 +139,34 @@ impl Header {
                 )
             });
         }
+        if collapsible {
+            Self::decorate(ui, view, retained, &response)?;
+            return Ok(response.on_hover_cursor(egui::CursorIcon::PointingHand));
+        }
         Ok(response)
+    }
+    /// Keep literal hover color and keyboard focus paint inside the caller's clip.
+    fn decorate(
+        ui: &egui::Ui,
+        view: ToolRenderView<'_>,
+        retained: &Retained,
+        response: &egui::Response,
+    ) -> Result<(), AttachmentUiError> {
+        #[cfg(not(target_arch = "wasm32"))]
+        let _ = retained;
+        #[cfg(target_arch = "wasm32")]
+        if let Some(caption) = &retained.caption {
+            caption.set_hovered(response.hovered())?;
+        }
+        if response.has_focus() {
+            ui.painter().rect_stroke(
+                response.rect,
+                0.,
+                egui::Stroke::new(1., attachment_content::color(view.presentation, "accent")?),
+                egui::StrokeKind::Inside,
+            );
+        }
+        Ok(())
     }
     /// Paint ordered geometry and the literal or rich caption.
     fn row(

@@ -388,14 +388,21 @@ pub(crate) fn ghost_labeled(
     content: (&str, Option<&str>),
     size: egui::Vec2,
 ) -> Result<egui::Response, AttachmentUiError> {
-    ghost_labeled_tinted(ui, p, content, size, (color(p, "text")?, GhostHover::Text))
+    let font = egui::TextStyle::Button.resolve(ui.style());
+    ghost_labeled_tinted(
+        ui,
+        p,
+        content,
+        (size, 0., font),
+        (color(p, "text")?, GhostHover::Text),
+    )
 }
 /// Draw a shared ghost control with caller-selected idle tint and highlight treatment.
 pub(crate) fn ghost_labeled_tinted(
     ui: &mut egui::Ui,
     p: &BrandPresentation<'_>,
     (name, label): (&str, Option<&str>),
-    size: egui::Vec2,
+    (size, label_padding, font): (egui::Vec2, f32, egui::FontId),
     (tint, hover): (egui::Color32, GhostHover),
 ) -> Result<egui::Response, AttachmentUiError> {
     let response = ui
@@ -441,10 +448,10 @@ pub(crate) fn ghost_labeled_tinted(
     )?;
     if let Some(label) = label {
         ui.painter().text(
-            response.rect.right_center(),
+            response.rect.right_center() - egui::vec2(label_padding, 0.),
             egui::Align2::RIGHT_CENTER,
             label,
-            egui::TextStyle::Button.resolve(ui.style()),
+            font,
             if accent {
                 foreground
             } else {

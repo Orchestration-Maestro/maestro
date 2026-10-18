@@ -75,9 +75,28 @@ pub(super) fn transaction<T>(
         .map(|e| (e, e.get_attribute("style")))
         .collect();
     let scroll = Scroll::read(nodes.1)?;
-    let result = operation(&scroll);
+    let detached = !nodes.0.is_connected();
+    let result = (|| {
+        if detached {
+            attr(
+                nodes.0,
+                "position:fixed;visibility:hidden;pointer-events:none;",
+            )?;
+            nodes
+                .0
+                .owner_document()
+                .and_then(|document| document.body())
+                .ok_or_else(|| AttachmentUiError::Host("Document has no body".into()))?
+                .append_child(nodes.0)
+                .map_err(|error| host_error(&error))?;
+        }
+        operation(&scroll)
+    })();
     if phase == ReadingPhase::Publish && result.is_ok() {
         return result;
+    }
+    if detached {
+        nodes.0.remove();
     }
     let mut restored = Ok(());
     for (element, style) in &saved {

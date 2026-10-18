@@ -260,9 +260,7 @@ impl BrowserAttachmentHost {
     ) -> Result<(), AttachmentUiError> {
         let retained = self.surfaces.borrow_mut().remove(&s.id);
         let mut surface = retained.map_or_else(|| self.create("div"), Ok)?;
-        let result = self
-            .reattach_reading(&surface)
-            .and_then(|()| self.update_reading(s, p, &mut surface));
+        let result = self.update_reading(s, p, &mut surface);
         if result.is_ok()
             && matches!(&s.content, AttachmentContent::Reading(placement) if placement.phase == ReadingPhase::Publish)
         {
@@ -274,17 +272,6 @@ impl BrowserAttachmentHost {
         let displaced = self.surfaces.borrow_mut().insert(s.id, surface);
         drop(displaced);
         result
-    }
-    /// Restore a retained but detached root before native measurement.
-    fn reattach_reading(&self, surface: &DomSurface) -> Result<(), AttachmentUiError> {
-        if surface.reading.is_some() && !surface.wrapper.is_connected() {
-            self.document
-                .body()
-                .ok_or_else(|| AttachmentUiError::Host("Document has no body".into()))?
-                .append_child(&surface.wrapper)
-                .map_err(|error| host_error(&error))?;
-        }
-        Ok(())
     }
     /// Update the reached native owner without committing partial placement.
     fn update_reading(
