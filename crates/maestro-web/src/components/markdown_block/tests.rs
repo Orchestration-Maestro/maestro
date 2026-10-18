@@ -111,3 +111,70 @@ fn escaping_keeps_stable_code_and_autolinks_literal() {
     assert_eq!(block.code[0].code, "<img src=x onerror=alert(1)>\n");
     assert_eq!(prepare("<b>x</b>", false).html, "<p><b>x</b></p>\n");
 }
+
+/// Independent native spans following code whose surrounding structure changes.
+const SUFFIXES: [(&str, &str, Option<&str>); 5] = [
+    ("`<i>`", "<p><code>&lt;i&gt;</code></p>\n", None),
+    (
+        "```html\n<i>\n```",
+        "<div class=\"maestro-code-slot\" data-maestro-listing=\"0\"></div>\n",
+        Some("<i>\n"),
+    ),
+    (
+        "separator\n\n    <i>",
+        "<p>separator</p>\n<div class=\"maestro-code-slot\" data-maestro-listing=\"0\"></div>\n",
+        Some("<i>\n"),
+    ),
+    (
+        "<https://example.com/a>",
+        "<p><a target=\"_blank\" rel=\"noopener noreferrer\" \
+         href=\"https://example.com/a\">https://example.com/a</a></p>\n",
+        None,
+    ),
+    (
+        "<a@example.com>",
+        "<p><a target=\"_blank\" rel=\"noopener noreferrer\" \
+         href=\"mailto:a@example.com\">a@example.com</a></p>\n",
+        None,
+    ),
+];
+
+#[test]
+fn escaped_document_keeps_native_suffix_after_lost_span() {
+    let lost: Vec<_> = SUFFIXES
+        .iter()
+        .filter_map(|(suffix, _, _)| {
+            let source = format!("<pre>x</pre>\n    <img src=x>\n\n{suffix}");
+            let document = escape_tags(source);
+            (!document.source.ends_with(suffix)).then_some(*suffix)
+        })
+        .collect();
+    assert!(lost.is_empty(), "rewritten native suffixes: {lost:?}");
+}
+
+#[test]
+fn escaped_markup_keeps_native_suffix_after_lost_span() {
+    let failures: Vec<_> = SUFFIXES
+        .iter()
+        .filter_map(|(suffix, html, payload)| {
+            let source = format!("<pre>x</pre>\n    <img src=x>\n\n{suffix}");
+            let rendered = prepare(&source, true);
+            let expected = format!("<p>&lt;pre&gt;x&lt;/pre&gt;\n&lt;img src=x&gt;</p>\n{html}");
+            let copied: Vec<_> = rendered
+                .code
+                .iter()
+                .map(|code| code.code.as_str())
+                .collect();
+            let expected_copy: Vec<_> = payload.iter().copied().collect();
+            (rendered.html != expected || copied != expected_copy).then_some((
+                *suffix,
+                rendered.html,
+                copied.into_iter().map(str::to_owned).collect::<Vec<_>>(),
+            ))
+        })
+        .collect();
+    assert!(
+        failures.is_empty(),
+        "corrupted native suffixes: {failures:?}"
+    );
+}

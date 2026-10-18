@@ -76,8 +76,7 @@ fn literal(document: &Document) -> Vec<Range<usize>> {
 ///
 /// Escaping can change the structure around a span, so a span stays literal only while
 /// it is still native code or an autolink at the same place in the escaped document.
-/// The first span that is not, and every later span, whose structure may follow from
-/// it, are escaped too.
+/// Only spans that lose that status are escaped; later native spans keep their text.
 pub(super) fn escape_tags(source: String) -> Document {
     let first = markdown::parse(source);
     let mut kept = literal(&first);
@@ -86,15 +85,18 @@ pub(super) fn escape_tags(source: String) -> Document {
         let (text, moved) = shown_outside(&source, &kept);
         let document = markdown::parse(text);
         let native = literal(&document);
-        let lost = moved.iter().position(|at| {
-            !native
-                .binary_search_by_key(&at.start, |span| span.start)
-                .is_ok_and(|index| native[index] == *at)
+        let count = kept.len();
+        let mut moved = moved.into_iter();
+        kept.retain(|_| {
+            moved.next().is_some_and(|at| {
+                native
+                    .binary_search_by_key(&at.start, |span| span.start)
+                    .is_ok_and(|index| native[index] == at)
+            })
         });
-        let Some(lost) = lost else {
+        if kept.len() == count {
             return document;
-        };
-        kept.truncate(lost);
+        }
     }
 }
 
