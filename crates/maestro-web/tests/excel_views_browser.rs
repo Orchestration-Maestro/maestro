@@ -308,9 +308,14 @@ pub fn excel_native_states_follow_live_brand_and_localization() {
     check(
         "(()=>{const r=document.querySelector('.maestro-excel');const b=r.getBoundingClientRect();return Math.abs(b.width/r.offsetWidth-1)<.02&&Math.abs(b.height/r.offsetHeight-.75)<.02})()",
     );
+    // The surface follows the slot exactly; a narrower slot scrolls the table instead of squeezing it.
     for width in [0., 1., 180.] {
         view.size.x = width;
         view.draw(false, vec![]);
+        check(&format!(
+            "(()=>{{const r=document.querySelector('.maestro-excel'),p=r.parentElement,t=r.querySelector('table'),w={width},h={};return r.offsetWidth===w&&p.offsetWidth===w&&r.offsetHeight===h&&p.offsetHeight===h&&(t.offsetWidth>w?p.scrollWidth===t.offsetWidth:t.offsetWidth===w&&p.scrollWidth===w)}})()",
+            view.size.y
+        ));
     }
 }
 /// Identical rewrites retain selection; transitions and drop release old roots.
@@ -326,6 +331,12 @@ pub fn excel_native_lifetimes_keep_selection_and_cancel_old_roots() {
     check(
         "table===document.querySelector('.maestro-excel table')&&getSelection().toString()===selected",
     );
+    let shown = "(()=>{const s=document.querySelectorAll('.maestro-excel-sheet');return getComputedStyle(s[0]).display==='none'&&getComputedStyle(s[1]).display!=='none'})()";
+    tab(&mut view, 1);
+    check(shown);
+    view.element.set_content(encoded("two"));
+    view.draw(false, vec![]);
+    check(shown);
     let record = record();
     let mut overlay = AttachmentOverlay::open(record.clone(), None, view.host.clone());
     view.overlay(&mut overlay, vec![]);
