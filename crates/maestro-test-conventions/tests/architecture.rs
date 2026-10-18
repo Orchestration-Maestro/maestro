@@ -492,7 +492,7 @@ fn export_reuses_text_and_json_without_frontend_edge() {
     for owner in ["maestro-text", "maestro-json"] {
         let workspace = Workspace::new();
         workspace.foundation(&["maestro-export", owner]);
-        check_permitted_declarations(&workspace, "maestro-export", owner, &[owner]);
+        check_permitted_declarations(&workspace, "maestro-export", &[owner]);
     }
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-export", "maestro-web"]);
@@ -515,7 +515,7 @@ fn catalog_pattern_edge_is_scoped() {
     for from in ["maestro-catalog", "maestro-resources", "maestro-packages"] {
         let workspace = Workspace::new();
         workspace.foundation(&[from, "maestro-pattern"]);
-        check_permitted_declarations(&workspace, from, "maestro-pattern", &["maestro-pattern"]);
+        check_permitted_declarations(&workspace, from, &["maestro-pattern"]);
     }
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-catalog", "maestro-pattern"]);
@@ -553,7 +553,7 @@ fn process_capture_consumers_may_declare_the_owner() {
     ] {
         let workspace = Workspace::new();
         workspace.foundation(&[from, "maestro-process"]);
-        check_permitted_declarations(&workspace, from, "maestro-process", &["maestro-process"]);
+        check_permitted_declarations(&workspace, from, &["maestro-process"]);
         workspace.member(
             from,
             from,
@@ -601,12 +601,7 @@ fn process_leaf_cannot_depend_on_cancellation() {
 fn session_shared_records_edge_is_scoped() {
     let workspace = Workspace::new();
     workspace.foundation(&["maestro-session", "maestro-request"]);
-    check_permitted_declarations(
-        &workspace,
-        "maestro-session",
-        "maestro-request",
-        &["maestro-request"],
-    );
+    check_permitted_declarations(&workspace, "maestro-session", &["maestro-request"]);
     workspace.member(
         "maestro-session",
         "maestro-session",
@@ -634,12 +629,7 @@ fn session_shared_records_edge_is_scoped() {
 fn theme_shared_records_edge_is_scoped() {
     let allowed = Workspace::new();
     allowed.foundation(&["maestro-theme", "maestro-request"]);
-    check_permitted_declarations(
-        &allowed,
-        "maestro-theme",
-        "maestro-request",
-        &["maestro-request"],
-    );
+    check_permitted_declarations(&allowed, "maestro-theme", &["maestro-request"]);
     for (from, to) in [
         ("maestro-tui", "maestro-request"),
         ("maestro-request", "maestro-theme"),
@@ -684,12 +674,8 @@ fn permitted_downward_edges_pass_without_absent_crates() {
         workspace.foundation(&[&[from], targets].concat());
         if targets.is_empty() {
             assert_eq!(check_workspace(&workspace.root), Ok(()), "{from}");
-        }
-        for to in targets {
-            if support::exact(from) && to != &targets[0] {
-                continue;
-            }
-            check_permitted_declarations(&workspace, from, to, targets);
+        } else {
+            check_permitted_declarations(&workspace, from, targets);
         }
     }
 }
@@ -1319,14 +1305,10 @@ fn documented_foundation_graph_matches_policy() {
     assert_eq!(documented, expected);
 }
 
-fn check_permitted_declarations(workspace: &Workspace, from: &str, to: &str, targets: &[&str]) {
+/// Declares the targets together in each form; the checker judges and names every edge on its own.
+fn check_permitted_declarations(workspace: &Workspace, from: &str, targets: &[&str]) {
     for (kind, extra) in DECLARATIONS {
-        let selected = if support::exact(from) {
-            targets
-        } else {
-            std::slice::from_ref(&to)
-        };
-        let selected: std::collections::BTreeSet<_> = selected
+        let selected: std::collections::BTreeSet<_> = targets
             .iter()
             .chain(support::required(from))
             .copied()
@@ -1347,7 +1329,7 @@ fn check_permitted_declarations(workspace: &Workspace, from: &str, to: &str, tar
         assert_eq!(
             check_workspace(&workspace.root),
             Ok(()),
-            "{from} -> {to} ({kind}{extra})"
+            "{from} -> {targets:?} ({kind}{extra})"
         );
     }
 }
