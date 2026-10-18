@@ -392,7 +392,7 @@ fn git_probes(
         } else {
             upstream_head.as_ref()
         };
-        let value = if args == ["symbolic-ref", "--quiet", "HEAD"] {
+        let value = if args == ["rev-parse", "--symbolic-full-name", "HEAD"] {
             Ok("refs/heads/main".into())
         } else if args[1] == "HEAD" {
             Ok(if current { "new" } else { "old" }.into())

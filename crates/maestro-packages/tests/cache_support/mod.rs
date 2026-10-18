@@ -260,7 +260,7 @@ fn hooks(
             Err(io::Error::other("probe failed"))
         } else if r.fail.as_deref() == Some("head") && args == ["rev-parse", "HEAD"] {
             Err(io::Error::other("head failed"))
-        } else if args == ["symbolic-ref", "--quiet", "HEAD"] {
+        } else if args == ["rev-parse", "--symbolic-full-name", "HEAD"] {
             Ok("refs/heads/main".into())
         } else if args.iter().any(|a| a == "--abbrev-ref") {
             Ok("origin/main\n".into())

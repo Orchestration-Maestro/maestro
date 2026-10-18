@@ -76,8 +76,12 @@ reported. Dropping the staging guard attempts cleanup, not child cancellation.
 
 Existing checkouts with a changed explicit ref, and changed upstream updates,
 are prepared in place using their effective Git configuration. Before mutation,
-the manager records HEAD and its attached/detached selection. Failed checkout,
-reset, clean or dependency preparation restores the original selection before
+the manager records HEAD and its attached/detached selection. Probe failures
+propagate instead of being mistaken for an absent ref or detached HEAD. Native
+checkout resolves revision expressions, including unique merge bases. A checkout
+that selects the current commit restores the original selection without resetting
+files, installing dependencies or replacing settings. Failed checkout, reset,
+clean or dependency preparation restores the original selection before
 resetting its original commit, so another requested branch is not rewound and a
 retry still prepares dependencies. Failed recovery is reported and cannot
 promise restoration. Fetch and branch metadata are not transactional.

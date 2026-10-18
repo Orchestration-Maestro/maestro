@@ -6108,8 +6108,8 @@
           "mode": "capture",
           "command": "git",
           "args": [
-            "symbolic-ref",
-            "--quiet",
+            "rev-parse",
+            "--symbolic-full-name",
             "HEAD"
           ],
           "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
@@ -6812,8 +6812,8 @@
           "mode": "capture",
           "command": "git",
           "args": [
-            "symbolic-ref",
-            "--quiet",
+            "rev-parse",
+            "--symbolic-full-name",
             "HEAD"
           ],
           "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
@@ -7005,8 +7005,8 @@
           "mode": "capture",
           "command": "git",
           "args": [
-            "symbolic-ref",
-            "--quiet",
+            "rev-parse",
+            "--symbolic-full-name",
             "HEAD"
           ],
           "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
@@ -7207,8 +7207,8 @@
           "mode": "capture",
           "command": "git",
           "args": [
-            "symbolic-ref",
-            "--quiet",
+            "rev-parse",
+            "--symbolic-full-name",
             "HEAD"
           ],
           "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
@@ -7500,8 +7500,8 @@
           "mode": "capture",
           "command": "git",
           "args": [
-            "symbolic-ref",
-            "--quiet",
+            "rev-parse",
+            "--symbolic-full-name",
             "HEAD"
           ],
           "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",

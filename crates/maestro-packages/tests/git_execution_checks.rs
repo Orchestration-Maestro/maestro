@@ -56,7 +56,7 @@ fn git_fetch_compares_refreshed_heads_before_replacement() {
             vec!["rev-parse", "HEAD"],
             vec!["rev-parse", "@{upstream}"],
             vec!["rev-parse", "HEAD"],
-            vec!["symbolic-ref", "--quiet", "HEAD"],
+            vec!["rev-parse", "--symbolic-full-name", "HEAD"],
             vec!["reset", "--hard", "@{upstream}"],
             vec!["clean", "-fdx"]
         ]

@@ -206,8 +206,10 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         self.change_git_revision(
             &path,
             &["reset", "--hard", target.reference].map(str::to_owned),
+            false,
         )
         .await
+        .map(drop)
     }
 }
 
@@ -218,33 +220,38 @@ struct GitHead {
     /// Original symbolic HEAD, absent for detached checkouts.
     symbolic: Option<String>,
 }
+impl GitHead {
+    /// Restores the original selection, forcing detached checkout only during recovery.
+    fn selection_args(&self, force: bool) -> Vec<String> {
+        if let Some(symbolic) = &self.symbolic {
+            return vec!["symbolic-ref".into(), "HEAD".into(), symbolic.clone()];
+        }
+        let mut args = vec!["checkout".into(), "--detach".into()];
+        if force {
+            args.push("--force".into());
+        }
+        args.push(self.oid.clone());
+        args
+    }
+}
 impl<O: PackageOperations> DefaultPackageManager<O> {
     /// Captures selection before any checkout mutation.
     async fn get_git_head(&self, path: &str) -> io::Result<GitHead> {
         let oid = self.git_capture(path, &["rev-parse", "HEAD"], &[]).await?;
         let symbolic = self
-            .git_capture(path, &["symbolic-ref", "--quiet", "HEAD"], &[])
-            .await
-            .ok();
+            .git_capture(path, &["rev-parse", "--symbolic-full-name", "HEAD"], &[])
+            .await?;
+        let symbolic = crate::trim(&symbolic);
         Ok(GitHead {
             oid: crate::trim(&oid).to_owned(),
-            symbolic: symbolic.map(|text| crate::trim(&text).to_owned()),
+            symbolic: (symbolic != "HEAD").then(|| symbolic.to_owned()),
         })
     }
+
     /// Restores selection first, without rewinding a different requested branch.
     async fn restore_git_head(&self, path: &str, previous: &GitHead) -> io::Result<()> {
-        let selection = previous.symbolic.as_ref().map_or_else(
-            || {
-                vec![
-                    "checkout".into(),
-                    "--detach".into(),
-                    "--force".into(),
-                    previous.oid.clone(),
-                ]
-            },
-            |symbolic| vec!["symbolic-ref".into(), "HEAD".into(), symbolic.clone()],
-        );
-        self.run_command("git", &selection, Some(path)).await?;
+        self.run_command("git", &previous.selection_args(true), Some(path))
+            .await?;
         self.run_command(
             "git",
             &["reset", "--hard", &previous.oid].map(str::to_owned),
@@ -253,23 +260,20 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         .await
     }
     /// Resolves native revision syntax, then an origin tracking branch.
-    async fn resolve_git_ref(&self, path: &str, reference: &str) -> Option<String> {
+    async fn resolve_git_ref(&self, path: &str, reference: &str) -> io::Result<Option<String>> {
         for candidate in [
             format!("{reference}^{{commit}}"),
             format!("refs/remotes/origin/{reference}^{{commit}}"),
         ] {
-            if let Ok(oid) = self
-                .git_capture(
-                    path,
-                    &["rev-parse", "--verify", crate::trim(&candidate)],
-                    &[],
-                )
-                .await
-            {
-                return Some(crate::trim(&oid).to_owned());
+            let oid = self
+                .git_capture(path, &["rev-parse", "--revs-only", &candidate], &[])
+                .await?;
+            let oid = crate::trim(&oid);
+            if !oid.is_empty() {
+                return Ok(Some(oid.to_owned()));
             }
         }
-        None
+        Ok(None)
     }
     /// Applies an explicit changed ref in the original checkout and configuration.
     async fn repin_git(&self, git: &GitSource, path: &str) -> io::Result<SourceAcquisition> {
@@ -277,34 +281,44 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             return Ok(SourceAcquisition::CurrentGit);
         };
         let current = self.git_capture(path, &["rev-parse", "HEAD"], &[]).await?;
-        let mut desired = self.resolve_git_ref(path, reference).await;
+        let mut desired = self.resolve_git_ref(path, reference).await?;
         if desired.is_none() {
             self.run_command("git", &["fetch", "origin"].map(str::to_owned), Some(path))
                 .await?;
-            desired = self.resolve_git_ref(path, reference).await;
+            desired = self.resolve_git_ref(path, reference).await?;
         }
-        let desired = desired.ok_or_else(|| {
-            io::Error::new(io::ErrorKind::NotFound, "Requested Git ref not found")
-        })?;
-        if desired == crate::trim(&current) {
+        if desired.as_deref() == Some(crate::trim(&current)) {
             return Ok(SourceAcquisition::CurrentGit);
         }
-        self.change_git_revision(path, &["checkout", reference].map(str::to_owned))
-            .await?;
-        Ok(SourceAcquisition::Prepared)
+        self.change_git_revision(path, &["checkout", reference].map(str::to_owned), true)
+            .await
     }
     /// Changes revision and prepares dependencies, recovering HEAD after any mutation failure.
-    async fn change_git_revision(&self, path: &str, args: &[String]) -> io::Result<()> {
+    async fn change_git_revision(
+        &self,
+        path: &str,
+        args: &[String],
+        compare_checkout: bool,
+    ) -> io::Result<SourceAcquisition> {
         let previous = self.get_git_head(path).await?;
         let result = async {
             self.run_command("git", args, Some(path)).await?;
+            if compare_checkout
+                && crate::trim(&self.git_capture(path, &["rev-parse", "HEAD"], &[]).await?)
+                    == previous.oid
+            {
+                self.run_command("git", &previous.selection_args(false), Some(path))
+                    .await?;
+                return Ok(SourceAcquisition::CurrentGit);
+            }
             self.run_command("git", &["clean", "-fdx"].map(str::to_owned), Some(path))
                 .await?;
-            self.install_git_dependencies(path).await
+            self.install_git_dependencies(path).await?;
+            Ok(SourceAcquisition::Prepared)
         }
         .await;
         match result {
-            Ok(()) => Ok(()),
+            Ok(outcome) => Ok(outcome),
             Err(error) => Err(with_recovery(
                 error,
                 self.restore_git_head(path, &previous).await,

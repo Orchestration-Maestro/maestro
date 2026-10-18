@@ -12,8 +12,6 @@ pub fn git(path: &std::path::Path, args: &[&str]) -> String {
             "commit.gpgsign=false",
             "-c",
             "tag.gpgsign=false",
-            "-c",
-            "tag.gpgsign=false",
         ])
         .args(args)
         .current_dir(path)
