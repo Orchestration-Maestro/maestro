@@ -1,6 +1,9 @@
 //! Native child-process lifecycles shared by tools, packages, credentials and the toolkit.
 
 #[cfg(not(target_arch = "wasm32"))]
+pub mod byte_queue;
+
+#[cfg(not(target_arch = "wasm32"))]
 pub mod child_process;
 
 #[cfg(not(target_arch = "wasm32"))]

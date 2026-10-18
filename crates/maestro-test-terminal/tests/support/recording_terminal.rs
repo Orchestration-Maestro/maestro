@@ -21,6 +21,8 @@ type ResizeCallback = Rc<RefCell<Box<dyn FnMut()>>>;
 struct State {
     /// Width in columns.
     columns: usize,
+    /// Controlled output bytes still waiting to drain.
+    pending_output_bytes: usize,
     /// Height in rows.
     rows: usize,
     /// Writes and cursor visibility escapes in the order requested.
@@ -52,6 +54,7 @@ impl RecordingTerminal {
         Self {
             state: Rc::new(RefCell::new(State {
                 columns,
+                pending_output_bytes: 0,
                 rows,
                 writes: Vec::new(),
                 events: Vec::new(),
@@ -62,6 +65,11 @@ impl RecordingTerminal {
                 stop_error: None,
             })),
         }
+    }
+
+    /// Sets the count the retained frame writer observes.
+    pub fn set_pending_output_bytes(&self, bytes: usize) {
+        self.state.borrow_mut().pending_output_bytes = bytes;
     }
 
     /// The terminal as the writer receives it.
@@ -199,6 +207,10 @@ impl Terminal for RecordingTerminal {
     fn write(&mut self, data: &str) -> io::Result<()> {
         self.record(data);
         Ok(())
+    }
+
+    fn pending_output_bytes(&self) -> usize {
+        self.state.borrow().pending_output_bytes
     }
 
     fn columns(&self) -> usize {

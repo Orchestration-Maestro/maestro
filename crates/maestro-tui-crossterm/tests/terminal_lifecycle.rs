@@ -131,7 +131,7 @@ fn native_start_stop_restores_modes_and_listeners() {
         let (cooked, flags) = (stdin_attributes(), stdin_flags());
         rig.run(async {
             let mut session = start(&rig);
-            assert_eq!(output.take(), "\x1b[?2004h\x1b[?u");
+            output.written("\x1b[?2004h\x1b[?u").await;
             assert_raw(&attributes(stdin()));
             assert!(stdin_flags().contains(OFlags::NONBLOCK));
             let reader = open_descriptors();
@@ -143,10 +143,10 @@ fn native_start_stop_restores_modes_and_listeners() {
                 (100, 30)
             );
             session.terminal.stop().unwrap();
-            assert_eq!(output.take(), "\x1b[?2004l");
+            output.written("\x1b[?2004l").await;
             assert_eq!((stdin_attributes(), stdin_flags()), (cooked, flags));
             session.terminal.stop().unwrap();
-            assert_eq!(output.take(), "\x1b[?2004l");
+            output.written("\x1b[?2004l").await;
             until(|| open_descriptors() < reader).await;
             output.resize(120, 40);
             window_change();
@@ -406,10 +406,10 @@ fn native_replaces_invalid_utf8_and_flushes_decoder_at_eof() {
 }
 
 /// Starts a session over a fresh pipe and drops the start-up bytes from `output`.
-fn started(rig: &Rig, output: &Capture) -> (Feed, Session) {
+async fn started(rig: &Rig, output: &Capture) -> (Feed, Session) {
     let feed = pipe_input();
     let session = start(rig);
-    assert_eq!(output.take(), START_BYTES);
+    output.written(START_BYTES).await;
     (feed, session)
 }
 
@@ -419,7 +419,7 @@ fn native_enables_fallback_at_150ms() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (feed, mut session) = started(&rig, &output);
+            let (feed, mut session) = started(&rig, &output).await;
             elapse(149).await;
             feed.send(b"x");
             consumed().await;
@@ -430,7 +430,7 @@ fn native_enables_fallback_at_150ms() {
             assert_eq!(output.take(), "");
             assert!(!session.terminal.kitty_protocol_active());
             session.terminal.stop().unwrap();
-            assert_eq!(output.take(), "\x1b[?2004l\x1b[>4;0m");
+            output.written("\x1b[?2004l\x1b[>4;0m").await;
         });
     });
 }
@@ -441,7 +441,7 @@ fn native_enables_flags_and_consumes_first_response() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (feed, mut session) = started(&rig, &output);
+            let (feed, mut session) = started(&rig, &output).await;
             feed.send(b"\x1b[?0u");
             output.written("\x1b[>7u").await;
             assert!(session.terminal.kitty_protocol_active());
@@ -453,7 +453,7 @@ fn native_enables_flags_and_consumes_first_response() {
             assert_eq!(session.inputs.all(), ["\x1b[?1u"]);
             assert_eq!(output.take(), "");
             session.terminal.stop().unwrap();
-            assert_eq!(output.take(), "\x1b[?2004l\x1b[<u");
+            output.written("\x1b[?2004l\x1b[<u").await;
             assert!(!session.terminal.kitty_protocol_active());
             assert!(!maestro_tui::is_kitty_protocol_active());
         });
@@ -463,7 +463,7 @@ fn native_enables_flags_and_consumes_first_response() {
 /// Starts a terminal whose fallback mode was enabled and whose support reply came late, so
 /// both keyboard modes are on, and returns it with its input and what it has written.
 async fn with_both_keyboard_modes(rig: &Rig, output: &Capture) -> (Feed, Session) {
-    let (feed, session) = started(rig, output);
+    let (feed, session) = started(rig, output).await;
     elapse(150).await;
     output.written("\x1b[>4;2m").await;
     feed.send(b"\x1b[?25u");
@@ -481,7 +481,7 @@ fn native_accepts_late_support_without_disabling_fallback() {
         rig.run(async {
             let (_feed, mut session) = with_both_keyboard_modes(&rig, &output).await;
             session.terminal.stop().unwrap();
-            assert_eq!(output.take(), "\x1b[?2004l\x1b[<u\x1b[>4;0m");
+            output.written("\x1b[?2004l\x1b[<u\x1b[>4;0m").await;
         });
     });
     isolated!(1, &[], || {
@@ -495,9 +495,9 @@ fn native_accepts_late_support_without_disabling_fallback() {
                 .drain_input(Some(max), Some(idle))
                 .await
                 .unwrap();
-            assert_eq!(output.take(), "\x1b[<u\x1b[>4;0m");
+            output.written("\x1b[<u\x1b[>4;0m").await;
             session.terminal.stop().unwrap();
-            assert_eq!(output.take(), "\x1b[?2004l");
+            output.written("\x1b[?2004l").await;
         });
     });
 }
@@ -515,7 +515,7 @@ fn native_recognizes_only_ascii_decimal_protocol_replies() {
                 .into_iter()
                 .chain(others.map(|o| (o, false)))
             {
-                let (feed, mut session) = started(&rig, &output);
+                let (feed, mut session) = started(&rig, &output).await;
                 feed.send(reply.as_bytes());
                 consumed().await;
                 let (written, delivered) = (output.take(), session.inputs.all());
@@ -536,7 +536,7 @@ fn native_buffers_split_replies_until_complete() {
         rig.run(async {
             let reply = b"\x1b[?12u";
             for cut in 1..reply.len() {
-                let (feed, mut session) = started(&rig, &output);
+                let (feed, mut session) = started(&rig, &output).await;
                 feed.send(&reply[..cut]);
                 consumed().await;
                 assert_eq!(
@@ -554,7 +554,7 @@ fn native_buffers_split_replies_until_complete() {
                 session.terminal.stop().unwrap();
                 output.take();
             }
-            let (feed, mut session) = started(&rig, &output);
+            let (feed, mut session) = started(&rig, &output).await;
             feed.send(b"\x1b[?");
             consumed().await;
             elapse(9).await;
@@ -575,7 +575,7 @@ fn native_expires_only_the_pending_fragment() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (feed, mut session) = started(&rig, &output);
+            let (feed, mut session) = started(&rig, &output).await;
             feed.send(b"\x1b[?");
             consumed().await;
             elapse(9).await;
@@ -598,13 +598,13 @@ fn native_stop_cancels_all_mode_enable_work() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (_feed, mut session) = started(&rig, &output);
+            let (_feed, mut session) = started(&rig, &output).await;
             let reader = open_descriptors();
             session.terminal.stop().unwrap();
             until(|| open_descriptors() < reader).await;
             elapse(151).await;
             elapse(1000).await;
-            assert_eq!(output.take(), "\x1b[?2004l");
+            output.written("\x1b[?2004l").await;
         });
     });
 }
@@ -621,7 +621,7 @@ fn native_stop_discards_pending_input() {
                 (&[240, 159], &[142, 137]),
             ];
             for (before, after) in pending {
-                let (feed, mut session) = started(&rig, &output);
+                let (feed, mut session) = started(&rig, &output).await;
                 let reader = open_descriptors();
                 feed.send(before);
                 consumed().await;
@@ -643,15 +643,15 @@ fn native_restart_ignores_prior_generation_timers() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (_feed, mut session) = started(&rig, &output);
+            let (_feed, mut session) = started(&rig, &output).await;
             elapse(50).await;
             session.terminal.stop().unwrap();
-            assert_eq!(output.take(), "\x1b[?2004l");
+            output.written("\x1b[?2004l").await;
             session
                 .terminal
                 .start(session.inputs.callback(), session.resizes.callback())
                 .unwrap();
-            assert_eq!(output.take(), START_BYTES);
+            output.written(START_BYTES).await;
             elapse(101).await;
             assert_eq!(output.take(), "");
             elapse(49).await;
@@ -671,7 +671,7 @@ fn native_eof_keeps_pending_buffer_and_negotiation_deadlines() {
         rig.run(async {
             let pipe = pipe_input();
             let mut session = start(&rig);
-            output.take();
+            output.written(START_BYTES).await;
             pipe.send(b"\x1b[");
             consumed().await;
             pipe.close();
@@ -685,7 +685,7 @@ fn native_eof_keeps_pending_buffer_and_negotiation_deadlines() {
             elapse(140).await;
             output.written("\x1b[>4;2m").await;
             session.terminal.stop().unwrap();
-            assert_eq!(output.take(), "\x1b[?2004l\x1b[>4;0m");
+            output.written("\x1b[?2004l\x1b[>4;0m").await;
         });
     });
 }
@@ -718,12 +718,12 @@ fn native_drain_uses_default_idle_exit_and_restores_handler() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (feed, mut session) = started(&rig, &output);
+            let (feed, mut session) = started(&rig, &output).await;
             feed.send(b"\x1b[?1u");
             output.written("\x1b[>7u").await;
             let done = Cell::new(false);
             let drain = session.terminal.drain_input(None, None);
-            assert_eq!(output.take(), "\x1b[<u");
+            output.written("\x1b[<u").await;
             drain_beside(drain, &done, async {
                 elapse(49).await;
                 assert!(!done.get());
@@ -745,13 +745,13 @@ fn busy_drain_with_explicit_limits() {
     let rig = Rig::paused();
     let output = pipe_output();
     rig.run(async {
-        let (feed, mut session) = started(&rig, &output);
+        let (feed, mut session) = started(&rig, &output).await;
         elapse(150).await;
         output.written("\x1b[>4;2m").await;
         let done = Cell::new(false);
         let (max, idle) = (Duration::from_millis(120), Duration::from_millis(50));
         let drain = session.terminal.drain_input(Some(max), Some(idle));
-        assert_eq!(output.take(), "\x1b[>4;0m");
+        output.written("\x1b[>4;0m").await;
         drain_beside(drain, &done, async {
             elapse(40).await;
             feed.send(b"a");
@@ -797,7 +797,7 @@ fn busy_drain_with_default_limits() {
     let rig = Rig::paused();
     let output = pipe_output();
     rig.run(async {
-        let (feed, mut session) = started(&rig, &output);
+        let (feed, mut session) = started(&rig, &output).await;
         let done = Cell::new(false);
         let drain = session.terminal.drain_input(None, None);
         let script = input_every_forty_milliseconds(&feed, &done);
@@ -819,7 +819,7 @@ fn native_drain_checks_idle_on_its_wait_cadence() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (feed, mut session) = started(&rig, &output);
+            let (feed, mut session) = started(&rig, &output).await;
             let done = Cell::new(false);
             let (max, idle) = (Duration::from_millis(1000), Duration::from_millis(50));
             let drain = session.terminal.drain_input(Some(max), Some(idle));
@@ -848,7 +848,7 @@ fn native_drain_zero_limit_restores_immediately() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (feed, mut session) = started(&rig, &output);
+            let (feed, mut session) = started(&rig, &output).await;
             feed.send(b"\x1b[?1u");
             output.written("\x1b[>7u").await;
             let (max, idle) = (Duration::ZERO, Duration::from_millis(50));
@@ -857,7 +857,7 @@ fn native_drain_zero_limit_restores_immediately() {
                 .drain_input(Some(max), Some(idle))
                 .await
                 .unwrap();
-            assert_eq!(output.take(), "\x1b[<u");
+            output.written("\x1b[<u").await;
             feed.send(b"z");
             session.inputs.delivered(1).await;
             assert_eq!(session.inputs.all(), ["z"]);
@@ -872,7 +872,7 @@ fn native_drain_zero_idle_restores_immediately() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (feed, mut session) = started(&rig, &output);
+            let (feed, mut session) = started(&rig, &output).await;
             let done = Cell::new(false);
             let (max, idle) = (Duration::from_millis(1000), Duration::ZERO);
             session
@@ -903,7 +903,7 @@ fn native_drain_cannot_reenable_keyboard_modes() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (feed, mut session) = started(&rig, &output);
+            let (feed, mut session) = started(&rig, &output).await;
             let done = Cell::new(false);
             let (max, idle) = (Duration::from_millis(1000), Duration::from_millis(200));
             let drain = session.terminal.drain_input(Some(max), Some(idle));
@@ -925,7 +925,7 @@ fn native_drain_cannot_reenable_keyboard_modes() {
             assert!(!session.terminal.kitty_protocol_active());
             assert_eq!((output.take(), session.inputs.count()), (String::new(), 0));
             session.terminal.stop().unwrap();
-            assert_eq!(output.take(), "\x1b[?2004l");
+            output.written("\x1b[?2004l").await;
         });
     });
 }
@@ -936,7 +936,7 @@ fn native_drain_keeps_an_unfinished_character_and_paste() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (feed, mut session) = started(&rig, &output);
+            let (feed, mut session) = started(&rig, &output).await;
             let unfinished: [(&[u8], &[u8], &str); 2] = [
                 (&[240, 159], &[142, 137], "\u{1f389}"),
                 (b"\x1b[200~ab", b"cd\x1b[201~", "\x1b[200~abcd\x1b[201~"),
@@ -962,7 +962,7 @@ fn native_drain_leaves_a_sequence_to_its_own_buffer_deadline() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (feed, mut session) = started(&rig, &output);
+            let (feed, mut session) = started(&rig, &output).await;
             let (max, idle) = (Duration::from_millis(5), Duration::from_millis(50));
             feed.send(b"\x1b[");
             consumed().await;
@@ -1004,7 +1004,7 @@ fn native_drain_discards_a_prefix_released_before_paste() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (feed, mut session) = started(&rig, &output);
+            let (feed, mut session) = started(&rig, &output).await;
             feed.send(b"\x1b[");
             consumed().await;
             let max = Duration::from_millis(5);
@@ -1033,11 +1033,11 @@ fn native_cancelled_drain_restores_handler() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (feed, mut session) = started(&rig, &output);
+            let (feed, mut session) = started(&rig, &output).await;
             feed.send(b"\x1b[?1u");
             output.written("\x1b[>7u").await;
             let drain = session.terminal.drain_input(None, None);
-            assert_eq!(output.take(), "\x1b[<u");
+            output.written("\x1b[<u").await;
             tokio::select! {
                 biased;
                 _ = drain => unreachable!("the drain outlasts ten milliseconds"),
@@ -1047,7 +1047,7 @@ fn native_cancelled_drain_restores_handler() {
             session.inputs.delivered(1).await;
             assert_eq!(session.inputs.all(), ["z"]);
             session.terminal.stop().unwrap();
-            assert_eq!(output.take(), "\x1b[?2004l");
+            output.written("\x1b[?2004l").await;
         });
     });
 }
@@ -1058,7 +1058,7 @@ fn native_drain_counts_decoded_input_activity() {
         let rig = Rig::paused();
         let output = pipe_output();
         rig.run(async {
-            let (feed, mut session) = started(&rig, &output);
+            let (feed, mut session) = started(&rig, &output).await;
             let done = Cell::new(false);
             let drain = session.terminal.drain_input(None, None);
             drain_beside(drain, &done, async {
@@ -1112,12 +1112,12 @@ fn native_callbacks_can_reenter_output_and_stop() {
                 .borrow_mut()
                 .start(Box::new(on_input), Box::new(|| {}))
                 .unwrap();
-            assert_eq!(output.take(), START_BYTES);
+            output.written(START_BYTES).await;
             let reader = open_descriptors();
             feed.send(b"ab");
             until(|| open_descriptors() < reader).await;
             assert_eq!(*seen.borrow(), ["a"]);
-            assert_eq!(output.take(), "reentered\x1b[?2004l");
+            output.written("reentered\x1b[?2004l").await;
             assert_eq!(Rc::strong_count(&terminal), 1);
         });
     });
@@ -1251,12 +1251,13 @@ fn native_failed_start_and_stop_release_owned_resources() {
             drop(pipe_output());
             let baseline = open_descriptors();
             let mut terminal = ProcessTerminal::new(rig.local());
-            let failure = terminal
-                .start(Box::new(|_| {}), Box::new(|| {}))
-                .unwrap_err();
+            terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
+            assert!(terminal.pending_output_bytes() > 0);
+            until(|| terminal.pending_output_bytes() == 0).await;
+            let failure = terminal.stop().unwrap_err();
             assert_eq!(failure.kind(), std::io::ErrorKind::BrokenPipe);
             assert_eq!((stdin_attributes(), stdin_flags()), (before.clone(), flags));
-            assert_eq!(open_descriptors(), baseline);
+            until(|| open_descriptors() == baseline).await;
             assert!(!terminal.kitty_protocol_active());
 
             let output = pipe_output();
@@ -1322,9 +1323,9 @@ fn native_dropped_terminal_releases_only_owned_active_resources() {
             drop(ProcessTerminal::new(rig.local()));
             assert_eq!(output.take(), "");
             let session = start(&rig);
-            output.take();
+            output.written(START_BYTES).await;
             drop(session);
-            assert_eq!(output.take(), "\x1b[?2004l");
+            output.written("\x1b[?2004l").await;
             assert_eq!((stdin_attributes(), stdin_flags()), (before, flags));
             let mut session = start(&rig);
             session.terminal.stop().unwrap();
@@ -1335,7 +1336,7 @@ fn native_dropped_terminal_releases_only_owned_active_resources() {
             terminal.set_progress(true).unwrap();
             output.take();
             drop(terminal);
-            assert_eq!(output.take(), "\x1b]9;4;0;\x07");
+            output.written("\x1b]9;4;0;\x07").await;
             elapse(3001).await;
             assert_eq!(output.take(), "");
         });
@@ -1354,7 +1355,7 @@ fn native_failed_restart_releases_every_owned_mode() {
             feed.send(b"\x1b[?1u");
             output.written(&format!("{START_BYTES}\x1b[>7u")).await;
             session.terminal.set_progress(true).unwrap();
-            assert_eq!(output.take(), "\x1b]9;4;3\x07");
+            output.written("\x1b]9;4;3\x07").await;
             let limit = DescriptorLimit::reached();
             let restart = session
                 .terminal
@@ -1362,12 +1363,12 @@ fn native_failed_restart_releases_every_owned_mode() {
             drop(limit);
             let failure = restart.unwrap_err();
             assert_eq!(failure.raw_os_error(), Some(Errno::MFILE.raw_os_error()));
-            assert_eq!(output.take(), "\x1b[?2004l\x1b[<u");
+            output.written("\x1b[?2004l\x1b[<u").await;
             assert!(!session.terminal.kitty_protocol_active());
             assert!(!maestro_tui::is_kitty_protocol_active());
             assert_eq!((stdin_attributes(), stdin_flags()), (cooked, flags));
             drop(session);
-            assert_eq!(output.take(), "\x1b]9;4;0;\x07");
+            output.written("\x1b]9;4;0;\x07").await;
         });
     });
     isolated!(1, &[], || {
@@ -1385,7 +1386,7 @@ fn native_failed_restart_releases_every_owned_mode() {
             drop(limit);
             let failure = restart.unwrap_err();
             assert_eq!(failure.raw_os_error(), Some(Errno::MFILE.raw_os_error()));
-            assert_eq!(output.take(), "\x1b[?2004l\x1b[>4;0m");
+            output.written("\x1b[?2004l\x1b[>4;0m").await;
             drop(session);
             assert_eq!(output.take(), "");
         });
@@ -1403,13 +1404,15 @@ fn native_restarting_active_terminal_replaces_resources_once() {
             let mut first = start(&rig);
             first.terminal.set_progress(true).unwrap();
             let one_reader = open_descriptors();
-            assert_eq!(output.take(), format!("{START_BYTES}\x1b]9;4;3\x07"));
+            output
+                .written(&format!("{START_BYTES}\x1b]9;4;3\x07"))
+                .await;
             let second = (Inputs::default(), Resizes::default());
             first
                 .terminal
                 .start(second.0.callback(), second.1.callback())
                 .unwrap();
-            assert_eq!(output.take(), START_BYTES);
+            output.written(START_BYTES).await;
             until(|| open_descriptors() == one_reader).await;
             feed.send(b"a");
             second.0.delivered(1).await;
@@ -1420,7 +1423,7 @@ fn native_restarting_active_terminal_replaces_resources_once() {
             elapse(1000).await;
             output.written("\x1b[>4;2m\x1b]9;4;3\x07").await;
             first.terminal.stop().unwrap();
-            assert_eq!(output.take(), "\x1b]9;4;0;\x07\x1b[?2004l\x1b[>4;0m");
+            output.written("\x1b]9;4;0;\x07\x1b[?2004l\x1b[>4;0m").await;
             assert_eq!((stdin_attributes(), stdin_flags()), (before, flags));
         });
     });

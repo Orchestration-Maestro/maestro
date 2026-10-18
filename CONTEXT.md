@@ -264,3 +264,5 @@ From `docs/specs/packages.md`.
   `maestro-skills`.
 - **Type-only skill:** a skill marked `disable-model-invocation: true`; it stays out of the model's skill list and
   runs only when typed as `/skill:<name>` or through an alias command.
+
+- **Output backlog:** Bytes the native terminal has queued and not yet written.

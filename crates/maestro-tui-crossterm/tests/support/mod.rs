@@ -14,7 +14,9 @@
 use std::cell::{Cell, RefCell};
 use std::future::Future;
 use std::os::fd::OwnedFd;
-use std::process::{Command, Stdio};
+use std::process::Stdio;
+
+use maestro_test_process::TestProcess;
 use std::rc::Rc;
 use std::time::Duration;
 
@@ -49,23 +51,21 @@ pub fn isolated(test: &str, case: usize, environment: &[(&str, &str)], scenario:
         }
         return;
     }
-    let mut command =
-        Command::new(std::env::current_exe().expect("the test executable has a path"));
+    let mut process = TestProcess::current(test).expect("the selected test identity");
     for name in SCENARIO_VARIABLES {
-        command.env_remove(name);
+        process = process.env_remove(name);
     }
-    let output = command
-        .args([test, "--exact", "--test-threads=1", "--nocapture"])
+    let output = process
+        .nocapture()
+        .single_threaded()
         .env(CHILD_MARKER, "1")
         .env(CASE_MARKER, case.to_string())
         .envs(environment.iter().copied())
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .spawn()
-        .expect("the child test starts")
-        .wait_with_output()
-        .expect("the child output is collected");
+        .output()
+        .expect("the checked child test starts");
     assert!(
         output.status.success(),
         "{test} case {case} failed in its child:\n{}\n{}",
@@ -294,4 +294,11 @@ impl Resizes {
         let count = Rc::clone(&self.0);
         Box::new(move || count.set(count.get() + 1))
     }
+}
+
+/// How many descriptors this process holds open.
+pub fn open_descriptors() -> usize {
+    std::fs::read_dir("/dev/fd")
+        .expect("descriptors list")
+        .count()
 }
