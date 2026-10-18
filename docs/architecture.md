@@ -25,9 +25,12 @@ The extension domain may depend directly on resources. The crates that list
 message and model-request records, including command provenance records
 `SlashCommandInfo` and the open `SlashCommandSource` label, and the renderer option
 record `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
-`UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`. Resources, application presentation data, session and
-guest authoring re-export these declarations; the declaration
-scanner rejects copies outside the request owner or duplicates within it.
+`UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`. Resources and
+application presentation data re-export the two command provenance records; session
+re-exports the six others; guest authoring re-exports every record except
+`CustomMessageInput`, which it defines as its own alias. The declaration scanner rejects
+a declaration of any of these records except `CustomMessageInput` outside the request
+owner, and duplicates within it.
 The request owner has no workspace dependencies.
 No reverse dependency is permitted.
 

@@ -76,14 +76,10 @@ fn command_unbinding_restores_noop_and_false_cancelled_results() {
     local_support::local(async {
         let runner = runner(&Rc::new(RwLock::new(Vec::new())));
         let ctx = runner.create_command_context();
+        let record = Recorder::default();
         for bound in [false, true] {
             if bound {
-                runner.bind_command_context(Some(
-                    maestro_extensions::ExtensionCommandContextActions {
-                        reload: Rc::new(|| panic!("unbound operation invoked")),
-                        ..Default::default()
-                    },
-                ));
+                runner.bind_command_context(Some(record.actions(true)));
                 runner.bind_command_context(None);
             }
             ctx.wait_for_idle().await.unwrap();
@@ -108,6 +104,7 @@ fn command_unbinding_restores_noop_and_false_cancelled_results() {
                     .unwrap()
                     .cancelled
             );
+            assert!(record.take().is_empty());
         }
     });
 }

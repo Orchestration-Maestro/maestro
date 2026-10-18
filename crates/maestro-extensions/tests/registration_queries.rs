@@ -1,5 +1,7 @@
 //! Owned registration and current query behavior.
 #![cfg(not(target_arch = "wasm32"))]
+#[path = "support/limited_host.rs"]
+mod limited_host;
 #[path = "support/registration.rs"]
 mod support;
 use maestro_extensions::types::RegisteredCommandOptions;

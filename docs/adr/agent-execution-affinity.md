@@ -24,10 +24,10 @@ both. The base and command contexts are concrete single-thread
 thread-safe command or shortcut callback can read its context only before it suspends; a
 local callback may keep it. Message renderers also
 follow the family, stored per family without their details type. The extension
-UI handle and its factories are always local: a runner that retains a UI host or
-the live headless theme is not thread-safe, while registrations, the API facade
-and default callbacks keep their thread-safe defaults. No crate or dependency
-edge is added.
+UI handle and its factories are always local, and so is every runner, whatever
+its callback family; registrations, the API facade and default callbacks keep
+their thread-safe defaults. The callback families add no crate or dependency
+edge.
 
 ## Trade-off
 

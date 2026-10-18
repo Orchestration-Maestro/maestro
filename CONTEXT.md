@@ -76,7 +76,7 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 ### Execution
 
 - **Agent:** The conversation runner, not a supervisor persona.
-- **Execution affinity:** The compile-time local or thread-safe representation of agent callables and submitted futures; local interactive work uses a caller-owned local executor, while the embedding SDK defaults to thread-safe execution.
+- **Execution affinity:** The compile-time local or thread-safe representation of agent callables and submitted futures; local interactive work uses a caller-owned local executor, while the embedding SDK defaults to thread-safe execution on native targets; on browser targets the default family is single-thread.
 - **Run:** One foreground prompt or continuation through low-level idle.
 - **Turn:** One assistant response with its tool results.
 - **Tool:** An executable definition with preparation, input validation, execution, progress and preview/render callbacks.

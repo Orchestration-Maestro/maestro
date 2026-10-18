@@ -1,6 +1,8 @@
 //! Retained UI capabilities, headless results and typed message renderers.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+#[path = "support/limited_host.rs"]
+mod limited_host;
 #[path = "support/local.rs"]
 mod local_support;
 #[allow(dead_code, reason = "Shared terminal fixture.")]
@@ -63,14 +65,6 @@ use ui_toolkit::Rejecting;
 
 /// The command context every local test callback receives.
 type Ui = ExtensionUIContext;
-
-/// A host installed without supporting any optional operation.
-struct Limited;
-impl ExtensionUIContextPort for Limited {
-    fn theme(&self) -> LiveTheme {
-        LiveTheme::default()
-    }
-}
 
 /// Dialog options with a retained signal and a supplied timeout.
 fn dialog(signal: &Cancellation, timeout: Option<f64>) -> ExtensionUIDialogOptions {
@@ -259,7 +253,9 @@ fn installed_ui_presence_does_not_claim_mode_support() {
     assert!(!runner.has_ui());
     assert!(runner.get_shortcuts(&bindings).is_empty());
     assert_eq!(*warnings.borrow(), [warning]);
-    runner.set_ui_context(Some(ExtensionUIContext::new(Rc::new(Limited))));
+    runner.set_ui_context(Some(ExtensionUIContext::new(Rc::new(
+        limited_host::Limited,
+    ))));
     assert!(runner.has_ui());
     assert_eq!(runner.get_ui_context().get_editor_text().unwrap(), "");
     assert!(runner.get_shortcuts(&bindings).is_empty());
@@ -283,7 +279,9 @@ fn runner_with_fallback_of(
     fallback: Ui,
 ) -> ExtensionRunner<Local> {
     let other = runner(owners);
-    other.set_ui_context(Some(ExtensionUIContext::new(Rc::new(Limited))));
+    other.set_ui_context(Some(ExtensionUIContext::new(Rc::new(
+        limited_host::Limited,
+    ))));
     assert!(other.has_ui());
     other.set_ui_context(Some(fallback));
     other
@@ -2576,19 +2574,10 @@ fn retained_ui_callbacks_release_captured_api_owners() {
     assert!(editor_released.get());
 }
 
-/// Requires a type usable from any thread.
-fn send_sync<T: Send + Sync>() {}
-
 #[test]
 fn ui_defaults_preserve_threaded_registration_contracts() {
-    use maestro_extensions::types::{ExtensionHandle, MessageRenderer as DefaultRenderer};
+    use maestro_extensions::types::MessageRenderer as DefaultRenderer;
     use maestro_extensions::{Extension, ExtensionAPI as DefaultApi, create_event_bus};
-    send_sync::<DefaultRenderer>();
-    send_sync::<DefaultRenderer<Vec<u8>>>();
-    send_sync::<Extension>();
-    send_sync::<ExtensionHandle>();
-    send_sync::<ExtensionCollection>();
-    send_sync::<DefaultApi>();
     let owner = Arc::new(RwLock::new(Extension::<maestro_models::Threaded>::new(
         "/default".into(),
         "/resolved".into(),

@@ -83,7 +83,9 @@ executor.block_on(shortcut(runner.create_context()))?;
 ## Local callbacks
 
 Registration records, the facade and the runner take an execution family, which
-defaults to the thread-safe `maestro_models::Threaded`. With `maestro_models::Local`,
+defaults to `maestro_models::Threaded`, thread-safe on native targets; on browser
+targets it uses `Rc` and callbacks without `Send + Sync`. The family selects only
+the callback representation: the runner itself is always local. With `maestro_models::Local`,
 command, shortcut, completion and event callbacks use `Rc` and may hold
 single-thread values such as terminal components. Both families share one
 registration owner, one query algorithm and one event bus implementation.

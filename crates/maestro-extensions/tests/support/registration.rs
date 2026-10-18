@@ -116,13 +116,6 @@ struct Replay {
     flag: Option<Arc<RwLock<ExtensionFlag>>>,
     command: Option<ResolvedCommand<Local>>,
 }
-/// A host installed without supporting any optional operation.
-struct LimitedHost;
-impl ExtensionUIContextPort for LimitedHost {
-    fn theme(&self) -> LiveTheme {
-        LiveTheme::default()
-    }
-}
 fn value(v: Value) -> FlagValue {
     match v {
         Value::Bool(v) => FlagValue::Boolean(v),
@@ -516,7 +509,7 @@ impl Replay {
                 .push(diagnostic_view(self.diagnostics.as_ref().unwrap())),
             "ui" => self.runner.set_ui_context(
                 s.installed
-                    .then(|| ExtensionUIContext::new(Rc::new(LimitedHost))),
+                    .then(|| ExtensionUIContext::new(Rc::new(crate::limited_host::Limited))),
             ),
             "append_owner" => {
                 let path = s.path.unwrap();

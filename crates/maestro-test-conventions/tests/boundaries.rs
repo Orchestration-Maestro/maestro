@@ -1064,102 +1064,24 @@ fn wit_async_selector_keeps_static_path_admission() {
 #[test]
 fn slash_command_records_have_one_shared_owner() {
     for name in ["SlashCommandInfo", "SlashCommandSource"] {
-        let workspace = Workspace::new();
-        workspace.foundation(&[
+        assert_single_owner(
+            name,
             "maestro-request",
-            "maestro-app",
-            "maestro-extensions-wasm",
-            "maestro-tui",
-        ]);
-        for owner in ["maestro-app", "maestro-extensions-wasm", "maestro-tui"] {
-            source(
-                &workspace,
-                owner,
-                "src/lib.rs",
-                &format!("pub struct {name};"),
-            );
-            assert!(
-                check_workspace(&workspace.root)
-                    .unwrap_err()
-                    .contains("belongs to maestro-request")
-            );
-            source(
-                &workspace,
-                owner,
-                "src/lib.rs",
-                &format!("pub use maestro_request::slash_commands::{name};"),
-            );
-        }
-        source(
-            &workspace,
-            "maestro-request",
-            "src/lib.rs",
-            &format!("pub struct {name};"),
-        );
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
-        source(
-            &workspace,
-            "maestro-request",
-            "other.rs",
-            &format!("pub type {name} = ();"),
-        );
-        assert!(
-            check_workspace(&workspace.root)
-                .unwrap_err()
-                .contains("duplicate declaration")
+            &["maestro-app", "maestro-extensions-wasm", "maestro-tui"],
         );
     }
 }
 
 #[test]
 fn message_render_options_have_one_shared_owner() {
-    let workspace = Workspace::new();
-    workspace.foundation(&[
+    assert_single_owner(
+        "MessageRenderOptions",
         "maestro-request",
-        "maestro-session",
-        "maestro-extensions",
-        "maestro-extensions-wasm",
-    ]);
-    for owner in [
-        "maestro-session",
-        "maestro-extensions",
-        "maestro-extensions-wasm",
-    ] {
-        source(
-            &workspace,
-            owner,
-            "src/lib.rs",
-            "// struct MessageRenderOptions;\nfn f() { let _ = \"struct MessageRenderOptions\"; }\npub struct MessageRenderOptions { pub expanded: bool }",
-        );
-        let error = check_workspace(&workspace.root).unwrap_err();
-        assert!(
-            error.contains("src/lib.rs:3:") && error.contains("belongs to maestro-request"),
-            "{error}"
-        );
-        source(
-            &workspace,
-            owner,
-            "src/lib.rs",
-            "pub use maestro_request::messages::MessageRenderOptions;",
-        );
-    }
-    source(
-        &workspace,
-        "maestro-request",
-        "src/messages.rs",
-        "pub struct MessageRenderOptions { pub expanded: bool }",
-    );
-    assert_eq!(check_workspace(&workspace.root), Ok(()));
-    source(
-        &workspace,
-        "maestro-request",
-        "src/other.rs",
-        "pub type MessageRenderOptions = ();",
-    );
-    assert!(
-        check_workspace(&workspace.root)
-            .unwrap_err()
-            .contains("duplicate declaration")
+        &[
+            "maestro-session",
+            "maestro-extensions",
+            "maestro-extensions-wasm",
+        ],
     );
 }
 
@@ -1173,54 +1095,14 @@ fn session_operation_records_have_one_shared_owner() {
         ("ForkPosition", "maestro-entry"),
         ("NavigateTreeOptions", "maestro-entry"),
     ] {
-        let workspace = Workspace::new();
-        workspace.foundation(&[
-            "maestro-request",
-            "maestro-entry",
-            "maestro-session",
-            "maestro-extensions",
-            "maestro-extensions-wasm",
-        ]);
-        for consumer in [
-            "maestro-session",
-            "maestro-extensions",
-            "maestro-extensions-wasm",
-        ] {
-            source(
-                &workspace,
-                consumer,
-                "src/lib.rs",
-                &format!("pub struct {name};"),
-            );
-            let error = check_workspace(&workspace.root).unwrap_err();
-            assert!(
-                error.contains("src/lib.rs:1:") && error.contains(&format!("belongs to {owner}")),
-                "{error}"
-            );
-            source(
-                &workspace,
-                consumer,
-                "src/lib.rs",
-                &format!("pub use shared::{name};"),
-            );
-        }
-        source(
-            &workspace,
+        assert_single_owner(
+            name,
             owner,
-            "src/lib.rs",
-            &format!("pub struct {name};"),
-        );
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
-        source(
-            &workspace,
-            owner,
-            "src/other.rs",
-            &format!("pub type {name} = ();"),
-        );
-        assert!(
-            check_workspace(&workspace.root)
-                .unwrap_err()
-                .contains("duplicate declaration")
+            &[
+                "maestro-session",
+                "maestro-extensions",
+                "maestro-extensions-wasm",
+            ],
         );
     }
 }
@@ -1285,5 +1167,51 @@ fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
     assert!(
         error.contains("src/types/actions.rs:1:") && error.contains("belongs to maestro-request"),
         "{error}"
+    );
+}
+
+/// Rejects a copy of `name` in each consumer, past a commented and a quoted decoy, until it
+/// becomes a re-export; then accepts one declaration in `owner` and rejects a second.
+fn assert_single_owner(name: &str, owner: &str, consumers: &[&str]) {
+    let workspace = Workspace::new();
+    workspace.foundation(&[&[owner], consumers].concat());
+    for consumer in consumers {
+        source(
+            &workspace,
+            consumer,
+            "src/lib.rs",
+            &format!(
+                "// struct {name};\nfn f() {{ let _ = \"struct {name}\"; }}\npub struct {name};"
+            ),
+        );
+        let error = check_workspace(&workspace.root).unwrap_err();
+        assert!(
+            error.contains("src/lib.rs:3:") && error.contains(&format!("belongs to {owner}")),
+            "{error}"
+        );
+        source(
+            &workspace,
+            consumer,
+            "src/lib.rs",
+            &format!("pub use shared::{name};"),
+        );
+    }
+    source(
+        &workspace,
+        owner,
+        "src/lib.rs",
+        &format!("pub struct {name};"),
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    source(
+        &workspace,
+        owner,
+        "other.rs",
+        &format!("pub type {name} = ();"),
+    );
+    assert!(
+        check_workspace(&workspace.root)
+            .unwrap_err()
+            .contains("duplicate declaration")
     );
 }
