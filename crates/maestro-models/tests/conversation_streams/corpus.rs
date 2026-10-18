@@ -95,10 +95,7 @@ pub async fn rows(test: &str) -> TestResult {
         let mut events = Vec::new();
         while let Some(event) = stream.next().await {
             assert!(
-                Arc::ptr_eq(
-                    crate::conversation_streams::lifecycle::handle(&event),
-                    &result
-                ),
+                Arc::ptr_eq(crate::response_output::handle(&event), &result),
                 "{name}: cumulative identity"
             );
             let mut value = serde_json::to_value(event)?;

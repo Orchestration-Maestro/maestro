@@ -74,23 +74,6 @@ impl Drop for WitnessBody {
         }
     }
 }
-/// Extract the live message identity from any event.
-pub(super) fn handle(event: &Event) -> &SharedAssistantMessage {
-    match event {
-        Event::Start { partial }
-        | Event::TextStart { partial, .. }
-        | Event::TextDelta { partial, .. }
-        | Event::TextEnd { partial, .. }
-        | Event::ThinkingStart { partial, .. }
-        | Event::ThinkingDelta { partial, .. }
-        | Event::ThinkingEnd { partial, .. }
-        | Event::ToolcallStart { partial, .. }
-        | Event::ToolcallDelta { partial, .. }
-        | Event::ToolcallEnd { partial, .. } => partial,
-        Event::Done { message, .. } => message,
-        Event::Error { error, .. } => error,
-    }
-}
 
 /// Producer progresses without polling its reader or result after a gated hook.
 pub async fn dropped_reader() -> TestResult {
@@ -214,7 +197,7 @@ pub async fn shared_admission() -> TestResult {
     let stream = stream_mistral(corpus::model()?, context()?, Some(settings));
     let start = stream.next().await.unwrap();
     assert!(matches!(start, Event::Start { .. }));
-    let retained = Arc::clone(handle(&start));
+    let retained = Arc::clone(crate::response_output::handle(&start));
     until_delta(&stream, Some(&retained)).await;
     waiting.await?;
     assert!(
@@ -222,7 +205,10 @@ pub async fn shared_admission() -> TestResult {
     );
     release.send(()).unwrap();
     while let Some(event) = stream.next().await {
-        assert!(Arc::ptr_eq(handle(&event), &retained));
+        assert!(Arc::ptr_eq(
+            crate::response_output::handle(&event),
+            &retained
+        ));
     }
     let result = stream.result().await;
     assert!(Arc::ptr_eq(&result, &retained));
@@ -528,7 +514,10 @@ async fn until_delta(
 ) {
     while let Some(event) = stream.next().await {
         if let Some(retained) = retained {
-            assert!(Arc::ptr_eq(handle(&event), retained));
+            assert!(Arc::ptr_eq(
+                crate::response_output::handle(&event),
+                retained
+            ));
         }
         if matches!(event, Event::TextDelta { .. }) {
             return;

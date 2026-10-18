@@ -311,7 +311,7 @@ async fn streamed(
     assert!(
         events
             .iter()
-            .all(|event| Arc::ptr_eq(handle(event), &result)),
+            .all(|event| Arc::ptr_eq(crate::response_output::handle(event), &result)),
         "{} shared result handle",
         "stream"
     );
@@ -497,22 +497,4 @@ fn request_record(request: &maestro_models::HttpRequest, wire: &Wire) -> TestRes
     Ok(
         json!({"url":request.url,"headers":headers,"body":serde_json::from_slice::<Value>(&request.body)?}),
     )
-}
-
-/// Each public event carries the same invocation object.
-fn handle(event: &AssistantMessageEvent) -> &SharedAssistantMessage {
-    match event {
-        AssistantMessageEvent::Start { partial }
-        | AssistantMessageEvent::TextStart { partial, .. }
-        | AssistantMessageEvent::TextDelta { partial, .. }
-        | AssistantMessageEvent::TextEnd { partial, .. }
-        | AssistantMessageEvent::ThinkingStart { partial, .. }
-        | AssistantMessageEvent::ThinkingDelta { partial, .. }
-        | AssistantMessageEvent::ThinkingEnd { partial, .. }
-        | AssistantMessageEvent::ToolcallStart { partial, .. }
-        | AssistantMessageEvent::ToolcallDelta { partial, .. }
-        | AssistantMessageEvent::ToolcallEnd { partial, .. } => partial,
-        AssistantMessageEvent::Done { message, .. } => message,
-        AssistantMessageEvent::Error { error, .. } => error,
-    }
 }

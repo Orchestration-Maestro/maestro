@@ -900,24 +900,6 @@ fn maestro_chat_replaces_earlier_finish_reasons() -> TestResult {
     })
 }
 
-/// The shared message handle an update carries.
-fn handle(event: &AssistantMessageEvent) -> &SharedAssistantMessage {
-    match event {
-        AssistantMessageEvent::Start { partial }
-        | AssistantMessageEvent::TextStart { partial, .. }
-        | AssistantMessageEvent::TextDelta { partial, .. }
-        | AssistantMessageEvent::TextEnd { partial, .. }
-        | AssistantMessageEvent::ThinkingStart { partial, .. }
-        | AssistantMessageEvent::ThinkingDelta { partial, .. }
-        | AssistantMessageEvent::ThinkingEnd { partial, .. }
-        | AssistantMessageEvent::ToolcallStart { partial, .. }
-        | AssistantMessageEvent::ToolcallDelta { partial, .. }
-        | AssistantMessageEvent::ToolcallEnd { partial, .. } => partial,
-        AssistantMessageEvent::Done { message, .. } => message,
-        AssistantMessageEvent::Error { error, .. } => error,
-    }
-}
-
 /// Counts whether the message could be written at the moment a reader is woken.
 #[derive(Default)]
 struct WriteProbe {
@@ -980,7 +962,7 @@ async fn read_with_probe(
     let mut release = Some(release);
     let mut handles = Vec::new();
     while let Some(event) = next_probed(stream, probe).await {
-        let shared = handle(&event).clone();
+        let shared = crate::response_output::handle(&event).clone();
         probe.message.get_or_init(|| shared.clone());
         if matches!(event, AssistantMessageEvent::TextDelta { .. }) {
             shared
@@ -1043,7 +1025,9 @@ async fn finish_after_edit(
             .map(str::to_owned);
         labels.push(label.ok_or("update type")?);
         if matches!(event, AssistantMessageEvent::TextDelta { .. }) {
-            let mut message = handle(&event).write().map_err(|error| error.to_string())?;
+            let mut message = crate::response_output::handle(&event)
+                .write()
+                .map_err(|error| error.to_string())?;
             message.stop_reason = stop_reason.clone();
             message.error_message = Some(error_message.to_owned());
             drop(message);
