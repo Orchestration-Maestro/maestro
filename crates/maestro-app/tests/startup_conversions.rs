@@ -249,18 +249,26 @@ fn relocated_referent(name: &str, alias_first: bool) {
     }
     let scratch = child::Scratch::new();
     let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\noriginal transcript";
-    for file in ["a.jsonl", "b.jsonl"] {
-        fs::write(scratch.0.join(file), body).unwrap();
-    }
-    let order = fs::read_dir(&scratch.0)
-        .unwrap()
-        .map(|entry| entry.unwrap().file_name())
-        .collect::<Vec<_>>();
-    let alias_index = usize::from(!alias_first);
-    let alias = &order[alias_index];
-    let referent = &order[1 - alias_index];
-    fs::remove_file(scratch.0.join(alias)).unwrap();
-    symlink(referent, scratch.0.join(alias)).unwrap();
+    let entry = |file: &str| scratch.0.join(file);
+    // Enumeration order follows names or creation, so try both until the wanted role is first.
+    let (alias, referent) = [("a.jsonl", "b.jsonl"), ("b.jsonl", "a.jsonl")]
+        .into_iter()
+        .flat_map(|roles| [(roles, false), (roles, true)])
+        .find_map(|((alias, referent), rewrite_referent)| {
+            for file in [alias, referent] {
+                let _ = fs::remove_file(entry(file));
+                fs::write(entry(file), body).unwrap();
+            }
+            fs::remove_file(entry(alias)).unwrap();
+            symlink(referent, entry(alias)).unwrap();
+            if rewrite_referent {
+                fs::remove_file(entry(referent)).unwrap();
+                fs::write(entry(referent), body).unwrap();
+            }
+            let first = fs::read_dir(&scratch.0).unwrap().next().unwrap().unwrap();
+            ((first.file_name() == alias) == alias_first).then_some((alias, referent))
+        })
+        .expect("the directory enumerates the wanted role first");
     for _ in 0..2 {
         child::probe(
             &crate::child_process::selector(name).unwrap(),
