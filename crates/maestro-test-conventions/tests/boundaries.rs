@@ -181,7 +181,7 @@ fn check_tool_fragment_owner(workspace: &Workspace, name: &str) {
 
 #[test]
 fn application_selectors_stay_in_chat() {
-    for (component, module) in [
+    let declarations: Vec<_> = [
         ("ConfigSelectorComponent", "config_selector"),
         ("ExtensionSelectorComponent", "extension_selector"),
         ("ModelSelectorComponent", "model_selector"),
@@ -195,30 +195,39 @@ fn application_selectors_stay_in_chat() {
         ("TreeSelectorComponent", "tree_selector"),
         ("UserMessageSelectorComponent", "user_message_selector"),
         ("SessionSelectorComponent", "session_selector_search"),
-    ] {
-        for owner in ["maestro-tui", "maestro-app"] {
-            let workspace = Workspace::new();
-            workspace.foundation(&[owner, "maestro-chat"]);
-            for declaration in [
-                format!("pub struct {component};"),
-                format!("pub(crate) mod\n{module} {{}}"),
-            ] {
-                source(&workspace, owner, "src/lib.rs", &declaration);
-                let error = check_workspace(&workspace.root).unwrap_err();
-                assert!(
-                    error.contains(owner) && error.contains("belongs to maestro-chat"),
-                    "{error}"
-                );
-                source(
-                    &workspace,
-                    owner,
-                    "src/lib.rs",
-                    "pub struct SelectList; pub struct SettingsList;",
-                );
-                source(&workspace, "maestro-chat", "src/lib.rs", &declaration);
-                assert_eq!(check_workspace(&workspace.root), Ok(()));
-            }
+    ]
+    .iter()
+    .flat_map(|(component, module)| {
+        [
+            format!("pub struct {component};"),
+            format!("pub(crate) mod\n{module} {{}}"),
+        ]
+    })
+    .collect();
+    for owner in ["maestro-tui", "maestro-app"] {
+        let workspace = Workspace::new();
+        workspace.foundation(&[owner, "maestro-chat"]);
+        for declaration in &declarations {
+            source(&workspace, owner, "src/lib.rs", declaration);
+            let error = check_workspace(&workspace.root).unwrap_err();
+            assert!(
+                error.contains(owner) && error.contains("belongs to maestro-chat"),
+                "{error}"
+            );
         }
+        source(
+            &workspace,
+            owner,
+            "src/lib.rs",
+            "pub struct SelectList; pub struct SettingsList;",
+        );
+        source(
+            &workspace,
+            "maestro-chat",
+            "src/lib.rs",
+            &declarations.join("\n"),
+        );
+        assert_eq!(check_workspace(&workspace.root), Ok(()));
     }
 }
 
