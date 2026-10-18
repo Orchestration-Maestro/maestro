@@ -1,7 +1,7 @@
 experimental = ["setup-scripts"]
 
 [scripts.setup.author-component]
-command = { command-line = "debug/examples/prepare_author_component", relative-to = "target" }
+command = "sh .config/prepare-author-component.sh"
 
 [[profile.default.scripts]]
 filter = "package(maestro-extensions-wasm)"
