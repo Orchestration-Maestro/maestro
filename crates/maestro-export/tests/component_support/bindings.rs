@@ -1,18 +1,9 @@
 //! Heterogeneous bindings and the independent serialized observations.
-use super::{definition, environment};
-use maestro_export::ToolHtmlResult;
+use super::{Line, definition, environment};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeBg, ThemeColor, ThemeOptions};
 use maestro_tools::{ToolRenderEnvironment, ToolRenderResult, ToolRendererBinding};
-use maestro_tui::Component;
-
-pub struct Line(pub String);
-impl Component for Line {
-    fn render(&self, _: usize) -> Vec<String> {
-        vec![self.0.clone()]
-    }
-}
 use serde::{Deserialize, Deserializer};
-use serde_json::{Value, json};
+use serde_json::Value;
 use std::{collections::HashMap, rc::Rc};
 
 #[derive(Deserialize)]
@@ -59,22 +50,6 @@ pub struct Document {
 }
 pub fn corpus() -> Corpus {
     serde_json::from_str(include_str!("../fixtures/renderer_bindings.json")).unwrap()
-}
-pub fn output(result: ToolHtmlResult) -> Value {
-    let mut out = json!({});
-    if let Some(collapsed) = result.collapsed {
-        out["collapsed"] = json!(collapsed);
-    }
-    if let Some(expanded) = result.expanded {
-        out["expanded"] = json!(expanded);
-    }
-    out
-}
-pub fn presence(value: Option<&Value>) -> Value {
-    value.map_or_else(
-        || json!({"presence":"missing"}),
-        |value| json!({"presence":"present","value":value}),
-    )
 }
 pub fn native_environment() -> (Rc<Theme>, Rc<ToolRenderEnvironment>) {
     let theme = Rc::new(

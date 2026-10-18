@@ -100,11 +100,19 @@ pub fn definition<C, P, D, S>() -> ToolDefinition<C, P, D, S> {
         render_result: None,
     }
 }
-fn presence(value: Option<&Value>) -> Value {
+/// Observes an optional value with its presence.
+pub fn presence(value: Option<&Value>) -> Value {
     value.map_or_else(
         || json!({"presence":"missing"}),
         |v| json!({"presence":"present","value":v}),
     )
+}
+/// A component rendering one fixed line.
+pub struct Line(pub String);
+impl Component for Line {
+    fn render(&self, _: usize) -> Vec<String> {
+        vec![self.0.clone()]
+    }
 }
 #[derive(Default)]
 struct Observations {
@@ -252,7 +260,8 @@ fn observe(config: &Config) -> Value {
     outputs(config, &*renderer, &observations)
 }
 
-fn result_value(result: maestro_export::ToolHtmlResult) -> Value {
+/// Observes the produced collapsed and expanded HTML.
+pub fn result_value(result: maestro_export::ToolHtmlResult) -> Value {
     let mut value = json!({});
     if let Some(html) = result.collapsed {
         value["collapsed"] = json!(html);
