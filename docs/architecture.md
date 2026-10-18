@@ -375,3 +375,7 @@ Shared extension event/result schemas and assembled prompt records belong to
 `maestro-request`, specialized with existing native/guest operands. The declaration
 scanner rejects duplicate schemas while allowing specialization aliases and
 re-exports. One event inventory feeds author unions and guest adapter data.
+
+The extension `ToolDefinition<P,D,S>` alias specializes the existing tools record
+with its concrete context and local invocation. The ownership scanner permits
+that alias in native registration; the application root keeps standalone defaults.

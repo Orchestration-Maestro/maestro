@@ -117,8 +117,8 @@ pub fn create_bash_tool_definition<C: 'static>(
             let operations = Arc::clone(&operations);
             Box::pin($run(operations, context, input.timeout, signal, update))
         }),
-        render_call: Some(std::rc::Rc::new(crate::process::bash::render::render_call)),
-        render_result: Some(crate::ToolRenderResult::Raw(std::rc::Rc::new(crate::process::bash::render::render_result))),
+        render_call: Some($ptr::new(crate::process::bash::render::render_call)),
+        render_result: Some(crate::ToolRenderResult::Raw($ptr::new(crate::process::bash::render::render_result) as _)),
     }
 }
 

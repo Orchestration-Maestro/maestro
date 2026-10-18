@@ -1,7 +1,7 @@
 //! Owned extension registration records.
 mod contexts;
 mod execution;
-mod registration;
+pub(crate) mod registration;
 mod renderers;
 mod ui;
 pub use contexts::*;
@@ -24,3 +24,7 @@ mod providers;
 mod runtime;
 pub use providers::*;
 pub use runtime::*;
+
+/// Native event contracts.
+pub mod events;
+pub use events::*;

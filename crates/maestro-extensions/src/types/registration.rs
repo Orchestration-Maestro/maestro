@@ -1,9 +1,17 @@
 //! Owned records for extension registration.
+use crate::ExtensionContext;
 use crate::{EventBus, ExtensionExecution};
 use indexmap::IndexMap;
+use maestro_models::Local;
 use maestro_models::{Execution, Threaded};
 use maestro_resources::SourceInfo;
+use maestro_tools::{
+    ToolDefinitionRecord, ToolExecution, renderer_binding::ToolRendererBinding,
+    tool_definition_wrapper::ToolDefinitionInput,
+};
 use maestro_tui::KeyId;
+use serde::de::DeserializeOwned;
+use serde_json::Value;
 use std::{
     ops::Deref,
     sync::{Arc, RwLock},
@@ -119,6 +127,10 @@ pub struct Extension<E: ExtensionExecution = Threaded> {
     pub resolved_path: String,
     /// Current owner-produced provenance object.
     pub source_info: Arc<RwLock<SourceInfo>>,
+    /// Ordered event handlers, retaining duplicate callbacks.
+    pub handlers: IndexMap<String, Vec<E::HandlerRegistration>>,
+    /// Ordered heterogeneous tool definitions.
+    pub tools: IndexMap<String, RegisteredTool<E>>,
     /// Ordered command registrations.
     pub commands: IndexMap<String, E::Shared<RwLock<RegisteredCommand<E>>>>,
     /// Ordered flag registrations.
@@ -183,3 +195,101 @@ impl<E: ExtensionExecution> Clone for ExtensionAPI<E> {
         }
     }
 }
+
+/// Retained tool projections.
+pub(crate) mod tools;
+
+/// Extension-owned typed definition. Callback ownership and invocation are independent.
+type Definition<P = Value, D = Value, S = Value, E = Threaded> =
+    ToolDefinitionRecord<ExtensionContext, P, D, S, E, Local>;
+/// Per-call Local context factory retained by wrapped tools, never by the registry.
+type ContextFactory = maestro_tools::types::local::ToolContextFactory<ExtensionContext>;
+/// One typed handler; mutations remain borrowed through its awaited continuation.
+pub type ExtensionHandler<V, R, E = Threaded> =
+    <E as Execution>::Shared<<E as ExtensionExecution>::Handler<V, R>>;
+/// Controlled factory callback with synchronous-ready or suspended initialization.
+pub type ExtensionFactory<E = Threaded> =
+    <E as Execution>::Shared<<E as ExtensionExecution>::Factory>;
+
+/// Existing renderer-binding choice retained without changing execution or registration ownership.
+type RendererProjection<P, D, S, E> =
+    fn(&Definition<P, D, S, E>) -> Result<ToolRendererBinding, maestro_models::DiagnosticErrorInfo>;
+/// One native registration argument, preserving the existing typed and raw binding routes.
+pub struct RegisteredToolInput<P, D, S, E: ExtensionExecution = Threaded> {
+    /// The original owned or retained definition.
+    pub(super) definition: ToolDefinitionInput<ExtensionContext, P, D, S, E, Local>,
+    /// No supplied callback runs during this projection.
+    pub(super) project_renderers: RendererProjection<P, D, S, E>,
+}
+impl<P, D, S: Default + 'static, E: ExtensionExecution> RegisteredToolInput<P, D, S, E> {
+    /// Selects the existing raw/no-result-renderer binding without requiring a details decoder.
+    /// A typed result slot retains the existing lower-owner diagnostic when binding is requested.
+    #[must_use]
+    pub fn from_raw(
+        definition: impl Into<ToolDefinitionInput<ExtensionContext, P, D, S, E, Local>>,
+    ) -> Self {
+        Self {
+            definition: definition.into(),
+            project_renderers: ToolRendererBinding::from_raw,
+        }
+    }
+}
+impl<P, D: DeserializeOwned + 'static, S: Default + 'static, E: ExtensionExecution>
+    From<ToolDefinitionInput<ExtensionContext, P, D, S, E, Local>>
+    for RegisteredToolInput<P, D, S, E>
+{
+    fn from(definition: ToolDefinitionInput<ExtensionContext, P, D, S, E, Local>) -> Self {
+        Self {
+            definition,
+            project_renderers: |definition| Ok(ToolRendererBinding::from_definition(definition)),
+        }
+    }
+}
+impl<P, D: DeserializeOwned + 'static, S: Default + 'static, E: ExtensionExecution>
+    From<Definition<P, D, S, E>> for RegisteredToolInput<P, D, S, E>
+{
+    fn from(definition: Definition<P, D, S, E>) -> Self {
+        Self::from(ToolDefinitionInput::Owned(definition))
+    }
+}
+
+/// One retained definition with source identity.
+pub struct RegisteredTool<E: ExtensionExecution = Threaded> {
+    /// The definition owner.
+    pub definition: E::Shared<E::RegisteredDefinition>,
+    /// The source info owner.
+    pub source_info: Arc<RwLock<SourceInfo>>,
+}
+impl<E: ExtensionExecution> Clone for RegisteredTool<E> {
+    fn clone(&self) -> Self {
+        Self {
+            definition: self.definition.clone(),
+            source_info: self.source_info.clone(),
+        }
+    }
+}
+
+/// A registered tool with the concrete extension context and local invocation.
+///
+/// ```
+/// use maestro_extensions::{ToolDefinition, define_tool};
+/// use maestro_models::Tool;
+/// use serde_json::{Value, json};
+/// use std::sync::Arc;
+///
+/// let tool: ToolDefinition<Value, Value, ()> = define_tool(ToolDefinition {
+///     definition: Tool { name: "echo".into(), description: "Echo arguments".into(),
+///         parameters: json!({"type":"object"}) },
+///     label: "Echo".into(), prompt_snippet: None, prompt_guidelines: None,
+///     render_shell: None, prepare_arguments: None, execution_mode: None,
+///     execute: Arc::new(|_, params, _, _, context| Box::pin(async move {
+///         assert!(context.is_some());
+///         Ok(maestro_agent::AgentToolResult {
+///             content: vec![], details: Some(params), terminate: None,
+///         })
+///     })),
+///     render_call: None, render_result: None,
+/// });
+/// assert_eq!(tool.definition.name, "echo");
+/// ```
+pub type ToolDefinition<P, D, S> = maestro_tools::ToolDefinition<ExtensionContext, P, D, S, Local>;

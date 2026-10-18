@@ -120,8 +120,8 @@ pub fn registry() -> HashMap<String, ToolRendererBinding> {
     text.render_call = Some(Rc::new(|_, _, _| {
         Ok(Rc::new(Line("custom_text:call".into())))
     }));
-    text.render_result = Some(ToolRenderResult::Typed(Rc::new(
-        |result, options, _, row| {
+    text.render_result = Some(ToolRenderResult::<_, _, maestro_models::Local>::Typed(
+        Rc::new(|result, options, _, row| {
             row.state
                 .borrow_mut()
                 .push(result.details.unwrap().label.clone());
@@ -130,8 +130,8 @@ pub fn registry() -> HashMap<String, ToolRendererBinding> {
                 result.details.unwrap().label,
                 options.expanded
             ))))
-        },
-    )));
+        }),
+    ));
     bindings.insert(
         "custom_text".into(),
         ToolRendererBinding::from_definition(&text),
@@ -140,24 +140,24 @@ pub fn registry() -> HashMap<String, ToolRendererBinding> {
     count.render_call = Some(Rc::new(|_, _, _| {
         Ok(Rc::new(Line("custom_count:call".into())))
     }));
-    count.render_result = Some(ToolRenderResult::Typed(Rc::new(
-        |result, options, _, row| {
+    count.render_result = Some(ToolRenderResult::<_, _, maestro_models::Local>::Typed(
+        Rc::new(|result, options, _, row| {
             *row.state.borrow_mut() += result.details.unwrap().value;
             Ok(Rc::new(Line(format!(
                 "custom_count:{}:{}",
                 result.details.unwrap().value,
                 options.expanded
             ))))
-        },
-    )));
+        }),
+    ));
     bindings.insert(
         "custom_count".into(),
         ToolRendererBinding::from_definition(&count),
     );
     let mut raw = definition::<(), (), NeverDecode, ()>();
-    raw.render_result = Some(ToolRenderResult::Raw(Rc::new(|_, _, _, _| {
-        Ok(Rc::new(Line("raw".into())))
-    })));
+    raw.render_result = Some(ToolRenderResult::<_, _, maestro_models::Local>::Raw(
+        Rc::new(|_, _, _, _| Ok(Rc::new(Line("raw".into())))),
+    ));
     bindings.insert("raw".into(), ToolRendererBinding::from_raw(&raw).unwrap());
     bindings
 }

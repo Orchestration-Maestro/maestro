@@ -211,7 +211,11 @@ fn check_declarations(
             && kind == "type"
             && member.name == "maestro-extensions-wasm"
             && source.path == member.directory.join("src/types/actions.rs");
-        if member.name != owner && !guest_tool && !guest_metadata {
+        let extension_tool = name == "ToolDefinition"
+            && kind == "type"
+            && member.name == "maestro-extensions"
+            && source.path == member.directory.join("src/types/registration.rs");
+        if member.name != owner && !guest_tool && !guest_metadata && !extension_tool {
             return Err(format!(
                 "{}:{line}: {name} declaration belongs to {owner}, not {}",
                 source.path.display(),

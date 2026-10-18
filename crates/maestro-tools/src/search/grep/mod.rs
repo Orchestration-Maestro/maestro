@@ -10,7 +10,7 @@ use maestro_agent::AgentTool;
 use maestro_models::{BoxFuture, DiagnosticErrorInfo, Tool};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{rc::Rc, sync::Arc};
+use std::sync::Arc;
 /// Arguments of a content search.
 #[derive(Deserialize)]
 pub struct GrepToolInput {
@@ -85,7 +85,7 @@ pub fn create_grep_tool_definition<C: 'static $($bound)*>(
         execute: $ptr::new(move |_id, input, signal, _update, _context| {
             let searcher = Arc::clone(&searcher);
             Box::pin(async move { searcher.search(input, signal).await })
-        }), render_call: Some(Rc::new(render::render_call)), render_result: Some(crate::ToolRenderResult::Raw(Rc::new(render::render_result))),
+        }), render_call: Some($ptr::new(render::render_call)), render_result: Some(crate::ToolRenderResult::Raw($ptr::new(render::render_result) as _)),
     }
 }
 /// Build the executable content search with no caller context.

@@ -1,4 +1,6 @@
 //! Registration and invalidation of owned extension records.
+use crate::types::registration::tools::RetainedDefinition;
+use crate::types::{ExtensionHandler, RegisteredTool, RegisteredToolInput};
 use crate::{
     EventBus, EventError, ExtensionExecution, SourceInfo,
     types::{
@@ -9,6 +11,7 @@ use crate::{
 };
 use indexmap::IndexMap;
 use maestro_tui::KeyId;
+use serde::{Serialize, de::DeserializeOwned};
 use std::sync::{Arc, RwLock};
 
 /// Guidance for an invalidated or released registration facade.
@@ -22,6 +25,8 @@ impl<E: ExtensionExecution> Extension<E> {
             path,
             resolved_path,
             source_info,
+            handlers: IndexMap::new(),
+            tools: IndexMap::new(),
             commands: IndexMap::new(),
             flags: IndexMap::new(),
             shortcuts: IndexMap::new(),
@@ -187,5 +192,55 @@ impl<E: ExtensionExecution> ExtensionAPI<E> {
             return Ok(None);
         }
         Ok(read(&self.runtime.flag_values).get(name).cloned())
+    }
+}
+
+impl<E: ExtensionExecution> ExtensionAPI<E> {
+    /// Append even duplicate handlers; no event dispatch is introduced.
+    /// # Errors
+    /// Returns the existing stale-owner or callback error.
+    pub fn on<V: 'static, R: 'static>(
+        &self,
+        event: String,
+        handler: ExtensionHandler<V, R, E>,
+    ) -> Result<(), EventError> {
+        let owner = self.owner()?;
+        write(&owner)
+            .handlers
+            .entry(event)
+            .or_default()
+            .push(E::erase_handler(handler));
+        Ok(())
+    }
+    /// Replace in the original slot, then invoke the live refresh outside the guard.
+    /// # Errors
+    /// Returns the stale error before writing, or the refresh error after writing.
+    pub fn register_tool<
+        P: DeserializeOwned + 'static,
+        D: Serialize + 'static,
+        S: Default + 'static,
+    >(
+        &self,
+        definition: impl Into<RegisteredToolInput<P, D, S, E>>,
+    ) -> Result<(), EventError> {
+        let owner = self.owner()?;
+        let definition = E::retain_definition(definition.into());
+        let name = definition.name();
+        let retired = {
+            let mut owner = write(&owner);
+            let source_info = owner.source_info.clone();
+            owner.tools.insert(
+                name,
+                RegisteredTool {
+                    definition,
+                    source_info,
+                },
+            )
+        };
+        drop(retired);
+        {
+            let refresh = read(&self.runtime.actions).refresh_tools.clone();
+            refresh()
+        }
     }
 }

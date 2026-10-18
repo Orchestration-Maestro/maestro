@@ -1,8 +1,7 @@
 //! Renderer-only projections without retaining executable definitions.
 use crate::{
     PreparedToolRenderResult, ToolDefinitionRecord, ToolExecution, ToolRenderCall,
-    ToolRenderContext, ToolRenderResult, ToolRenderResultCallback, ToolRenderShell,
-    ToolRendererState,
+    ToolRenderContext, ToolRenderResult, ToolRenderShell, ToolRendererState,
 };
 use maestro_models::DiagnosticErrorInfo;
 use serde::de::DeserializeOwned;
@@ -32,8 +31,8 @@ impl ToolRenderResultBinding {
         (self.prepare)(result)
     }
     /// Project native and custom prepared callbacks through the same row owner.
-    fn project<D: 'static, S: Default + 'static>(
-        callback: ToolRenderResult<D, S>,
+    fn project<D: 'static, S: Default + 'static, E: ToolExecution>(
+        callback: ToolRenderResult<D, S, E>,
         decode: impl Fn(&Value) -> Result<D, DiagnosticErrorInfo> + 'static,
     ) -> Self {
         Self {
@@ -49,11 +48,23 @@ impl ToolRenderResultBinding {
         }
     }
 }
-impl From<ToolRenderResultCallback<Value, ToolRendererState>> for ToolRenderResultBinding {
-    fn from(callback: ToolRenderResultCallback<Value, ToolRendererState>) -> Self {
+/// Concrete local pointer required by coherence against core's identity conversion.
+type LocalResultCallback = Rc<
+    dyn Fn(
+        &crate::output::render_utils::ToolRenderResultLike<'_, Value>,
+        crate::ToolRenderResultOptions,
+        &maestro_theme::Theme,
+        &ToolRenderContext<'_, ToolRendererState>,
+    ) -> Result<maestro_tui::tui::ComponentHandle, DiagnosticErrorInfo>,
+>;
+impl From<LocalResultCallback> for ToolRenderResultBinding {
+    fn from(callback: LocalResultCallback) -> Self {
         Self {
             prepare: Rc::new(move |result| {
-                Ok(PreparedToolRenderResult::raw(Rc::clone(&callback), result))
+                Ok(PreparedToolRenderResult::raw::<maestro_models::Local>(
+                    Rc::clone(&callback),
+                    result,
+                ))
             }),
         }
     }
@@ -82,8 +93,8 @@ fn context<'a, S: Default + 'static>(
 impl ToolRendererBinding {
     /// Clone custom renderers, decoding only details required by typed callbacks.
     #[must_use]
-    pub fn from_definition<C, P, D, S, E: ToolExecution>(
-        definition: &ToolDefinitionRecord<C, P, D, S, E>,
+    pub fn from_definition<C, P, D, S, E: ToolExecution, I: maestro_agent::AgentExecution>(
+        definition: &ToolDefinitionRecord<C, P, D, S, E, I>,
     ) -> Self
     where
         D: DeserializeOwned + 'static,
@@ -92,15 +103,22 @@ impl ToolRendererBinding {
         let result = definition
             .render_result
             .clone()
-            .map(|callback| ToolRenderResultBinding::project(callback, decode::<D>));
+            .map(|callback| ToolRenderResultBinding::project::<D, S, E>(callback, decode::<D>));
         Self::new(definition, result)
     }
     /// Clone factory raw callbacks without requiring a decoder for execution details.
     ///
     /// # Errors
     /// Rejects a typed result slot that requires the typed constructor.
-    pub fn from_raw<C, P, D, S: Default + 'static, E: ToolExecution>(
-        definition: &ToolDefinitionRecord<C, P, D, S, E>,
+    pub fn from_raw<
+        C,
+        P,
+        D,
+        S: Default + 'static,
+        E: ToolExecution,
+        I: maestro_agent::AgentExecution,
+    >(
+        definition: &ToolDefinitionRecord<C, P, D, S, E, I>,
     ) -> Result<Self, DiagnosticErrorInfo> {
         let result = match &definition.render_result {
             Some(ToolRenderResult::Typed(_)) => {
@@ -108,23 +126,25 @@ impl ToolRendererBinding {
                     "Typed result callback requires ToolRendererBinding::from_definition",
                 ));
             }
-            Some(ToolRenderResult::Raw(callback)) => Some(ToolRenderResultBinding::project(
-                ToolRenderResult::<Value, S>::Raw(Rc::clone(callback)),
-                decode::<Value>,
-            )),
+            Some(ToolRenderResult::Raw(callback)) => {
+                Some(ToolRenderResultBinding::project::<Value, S, E>(
+                    ToolRenderResult::<Value, S, E>::Raw(callback.clone()),
+                    decode::<Value>,
+                ))
+            }
             None => None,
         };
         Ok(Self::new(definition, result))
     }
     /// Share call projection between native and custom result representations.
-    fn new<C, P, D, S: Default + 'static, E: ToolExecution>(
-        definition: &ToolDefinitionRecord<C, P, D, S, E>,
+    fn new<C, P, D, S: Default + 'static, E: ToolExecution, I: maestro_agent::AgentExecution>(
+        definition: &ToolDefinitionRecord<C, P, D, S, E, I>,
         render_result: Option<ToolRenderResultBinding>,
     ) -> Self {
         Self {
             render_shell: definition.render_shell,
             render_call: definition.render_call.as_ref().map(|callback| {
-                let callback = Rc::clone(callback);
+                let callback = callback.clone();
                 Rc::new(
                     move |args: Option<&Value>,
                           theme: &maestro_theme::Theme,

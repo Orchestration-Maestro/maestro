@@ -6,17 +6,10 @@ use maestro_models::DiagnosticErrorInfo;
 use maestro_theme::Theme;
 use maestro_tui::tui::ComponentHandle;
 use serde_json::Value;
-use std::rc::Rc;
 
 /// Draws a borrowed result with its selected details representation.
-pub type ToolRenderResultCallback<D, S> = Rc<
-    dyn Fn(
-        &ToolRenderResultLike<'_, D>,
-        ToolRenderResultOptions,
-        &Theme,
-        &ToolRenderContext<'_, S>,
-    ) -> Result<ComponentHandle, DiagnosticErrorInfo>,
->;
+pub type ToolRenderResultCallback<D, S, E = maestro_models::Local> =
+    <E as maestro_models::Execution>::Shared<<E as crate::ToolExecution>::RenderResult<D, S>>;
 
 /// An operation-local renderer accepting fresh context for each phase.
 pub(crate) type PreparedRender<'a, S> = dyn Fn(
@@ -45,8 +38,8 @@ impl<'a, S: 'a> PreparedToolRenderResult<'a, S> {
         (self.render)(options, theme, context)
     }
     /// Retain a raw callback without copying its borrowed inputs.
-    pub(crate) fn raw(
-        callback: ToolRenderResultCallback<Value, S>,
+    pub(crate) fn raw<E: crate::ToolExecution>(
+        callback: ToolRenderResultCallback<Value, S, E>,
         result: ToolRenderResultLike<'a, Value>,
     ) -> Self {
         Self {
@@ -58,21 +51,21 @@ impl<'a, S: 'a> PreparedToolRenderResult<'a, S> {
 }
 
 /// One result slot, retaining custom typed callbacks or borrowed JSON selection.
-pub enum ToolRenderResult<D, S> {
+pub enum ToolRenderResult<D, S, E: crate::ToolExecution = maestro_models::Local> {
     /// A caller-defined details contract.
-    Typed(ToolRenderResultCallback<D, S>),
+    Typed(ToolRenderResultCallback<D, S, E>),
     /// A renderer that selects only the JSON fields it consumes.
-    Raw(ToolRenderResultCallback<Value, S>),
+    Raw(ToolRenderResultCallback<Value, S, E>),
 }
-impl<D, S> Clone for ToolRenderResult<D, S> {
+impl<D, S, E: crate::ToolExecution> Clone for ToolRenderResult<D, S, E> {
     fn clone(&self) -> Self {
         match self {
-            Self::Typed(callback) => Self::Typed(Rc::clone(callback)),
-            Self::Raw(callback) => Self::Raw(Rc::clone(callback)),
+            Self::Typed(callback) => Self::Typed(callback.clone()),
+            Self::Raw(callback) => Self::Raw(callback.clone()),
         }
     }
 }
-impl<D, S> ToolRenderResult<D, S> {
+impl<D, S, E: crate::ToolExecution> ToolRenderResult<D, S, E> {
     /// Render native details, serializing only when a raw callback needs present details.
     ///
     /// # Errors
@@ -147,10 +140,10 @@ impl<D, S> ToolRenderResult<D, S> {
         F: FnOnce(&Value) -> Result<D, DiagnosticErrorInfo>,
     {
         match self {
-            Self::Raw(callback) => Ok(PreparedToolRenderResult::raw(Rc::clone(callback), result)),
+            Self::Raw(callback) => Ok(PreparedToolRenderResult::raw::<E>(callback.clone(), result)),
             Self::Typed(callback) => {
                 let details = result.details.map(decode).transpose()?;
-                let callback = Rc::clone(callback);
+                let callback = callback.clone();
                 Ok(PreparedToolRenderResult {
                     render: Box::new(move |options, theme, context| {
                         callback(

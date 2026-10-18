@@ -149,8 +149,8 @@ pub fn check(range: std::ops::Range<usize>) {
 use std::rc::Rc;
 
 /// Custom definition whose executable callback must never be retained or called by a binding.
-pub fn definition<S, D>() -> maestro_tools::ToolDefinition<(), (), D, S> {
-    maestro_tools::ToolDefinition {
+pub fn definition<S, D>() -> maestro_tools::types::local::ToolDefinition<(), (), D, S> {
+    maestro_tools::types::local::ToolDefinition {
         definition: maestro_models::Tool {
             name: "custom".into(),
             description: String::new(),
@@ -162,7 +162,7 @@ pub fn definition<S, D>() -> maestro_tools::ToolDefinition<(), (), D, S> {
         render_shell: Some(maestro_tools::ToolRenderShell::SelfRendered),
         prepare_arguments: None,
         execution_mode: None,
-        execute: Arc::new(|_, (), _, _, _| {
+        execute: Rc::new(|_, (), _, _, _| {
             Box::pin(async { panic!("renderer binding must not execute") })
         }),
         render_call: None,

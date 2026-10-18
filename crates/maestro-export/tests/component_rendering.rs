@@ -123,23 +123,25 @@ struct Parameters;
 type SavedStates = Rc<RefCell<Vec<Rc<RefCell<State>>>>>;
 fn typed_definition(
     states: &SavedStates,
-) -> maestro_tools::ToolDefinition<u32, Parameters, Details, State> {
+) -> maestro_tools::types::local::ToolDefinition<u32, Parameters, Details, State> {
     let saved = Rc::clone(states);
     let mut tool = component_support::definition::<u32, Parameters, Details, State>();
-    tool.render_result = Some(maestro_tools::ToolRenderResult::Typed(Rc::new(
-        move |result, options, _, ctx| {
-            saved.borrow_mut().push(Rc::clone(&ctx.state));
-            let mut state = ctx.state.borrow_mut();
-            state.count += 1;
-            let text = format!(
-                "{}:{}:{}",
-                result.details.unwrap().label,
-                state.count,
-                options.expanded
-            );
-            Ok(Rc::new(component_support::Line(text)) as ComponentHandle)
-        },
-    )));
+    tool.render_result = Some(
+        maestro_tools::ToolRenderResult::<_, _, maestro_models::Local>::Typed(Rc::new(
+            move |result, options, _, ctx| {
+                saved.borrow_mut().push(Rc::clone(&ctx.state));
+                let mut state = ctx.state.borrow_mut();
+                state.count += 1;
+                let text = format!(
+                    "{}:{}:{}",
+                    result.details.unwrap().label,
+                    state.count,
+                    options.expanded
+                );
+                Ok(Rc::new(component_support::Line(text)) as ComponentHandle)
+            },
+        )),
+    );
     tool
 }
 
@@ -171,20 +173,22 @@ fn assert_nested_failure(padded: bool, failing_phase: usize) {
     };
     use std::cell::Cell;
     let reached = Rc::new(Cell::new(0));
-    let mut tool: maestro_tools::ToolDefinition = component_support::definition();
+    let mut tool: maestro_tools::types::local::ToolDefinition = component_support::definition();
     let seen = Rc::clone(&reached);
     tool.render_call = Some(Rc::new(move |_, _, _| {
         seen.set(seen.get() + 1);
         Ok(nest(Rc::new(Fallible(failing_phase == 0)), padded))
     }));
     let seen = Rc::clone(&reached);
-    tool.render_result = Some(maestro_tools::ToolRenderResult::Typed(Rc::new(
-        move |_, options, _, _| {
-            seen.set(seen.get() + 1);
-            let phase = if options.expanded { 2 } else { 1 };
-            Ok(nest(Rc::new(Fallible(failing_phase == phase)), padded))
-        },
-    )));
+    tool.render_result = Some(
+        maestro_tools::ToolRenderResult::<_, _, maestro_models::Local>::Typed(Rc::new(
+            move |_, options, _, _| {
+                seen.set(seen.get() + 1);
+                let phase = if options.expanded { 2 } else { 1 };
+                Ok(nest(Rc::new(Fallible(failing_phase == phase)), padded))
+            },
+        )),
+    );
     let tool = Rc::new(tool);
     let theme = component_support::theme();
     let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
@@ -262,16 +266,18 @@ fn export_typed_details_decode_once_and_share_both_phases() {
     let tokens = Rc::new(RefCell::new(Vec::new()));
     let seen = Rc::clone(&tokens);
     let mut tool = component_support::definition::<(), (), Decoded, serde_json::Value>();
-    tool.render_result = Some(maestro_tools::ToolRenderResult::Typed(Rc::new(
-        move |result, options, _, _| {
-            seen.borrow_mut()
-                .push(Rc::clone(&result.details.unwrap().token));
-            Ok(Rc::new(component_support::Line(format!(
-                "phase:{}",
-                options.expanded
-            ))))
-        },
-    )));
+    tool.render_result = Some(
+        maestro_tools::ToolRenderResult::<_, _, maestro_models::Local>::Typed(Rc::new(
+            move |result, options, _, _| {
+                seen.borrow_mut()
+                    .push(Rc::clone(&result.details.unwrap().token));
+                Ok(Rc::new(component_support::Line(format!(
+                    "phase:{}",
+                    options.expanded
+                ))))
+            },
+        )),
+    );
     let tool = Rc::new(tool);
     let theme = component_support::theme();
     let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {
@@ -426,7 +432,7 @@ fn export_wrapped_native_edit_keeps_shared_row_state() {
 /// A custom state wrapper delegates both slots to the native edit state owner.
 fn wrapped_edit(
     states: &Rc<RefCell<Vec<Rc<RefCell<maestro_tools::EditRenderState>>>>>,
-) -> maestro_tools::ToolDefinition<(), (), serde_json::Value, u32> {
+) -> maestro_tools::types::local::ToolDefinition<(), (), serde_json::Value, u32> {
     use maestro_tools::{EditRenderState, ToolRenderResult};
     let tool = maestro_tools::create_edit_tool_definition::<()>(
         "/work".into(),
@@ -447,8 +453,8 @@ fn wrapped_edit(
         call_slot.replace(Some(Rc::clone(&call)));
         Ok(call)
     }));
-    tool.render_result = Some(ToolRenderResult::Raw(Rc::new(
-        move |result, options, theme, row| {
+    tool.render_result = Some(ToolRenderResult::<_, _, maestro_models::Local>::Raw(
+        Rc::new(move |result, options, theme, row| {
             assert_eq!(*row.state.borrow(), 1);
             let state = row.renderer_state().unwrap().state::<EditRenderState>();
             seen.borrow_mut().push(Rc::clone(&state));
@@ -467,8 +473,8 @@ fn wrapped_edit(
                 assert!(html.contains("persisted"));
             }
             Ok(output)
-        },
-    )));
+        }),
+    ));
     tool
 }
 
@@ -776,7 +782,12 @@ fn export_binding_changes_keep_native_state_per_call() {
 fn raw_observer(
     details: Option<*const serde_json::Value>,
     observed: Rc<RefCell<Vec<serde_json::Value>>>,
-) -> maestro_tools::ToolDefinition<(), (), component_support::bindings::NeverDecode, u32> {
+) -> maestro_tools::types::local::ToolDefinition<
+    (),
+    (),
+    component_support::bindings::NeverDecode,
+    u32,
+> {
     use component_support::{bindings::NeverDecode, presence};
     use maestro_tools::ToolRenderResult;
     use serde_json::json;
@@ -787,8 +798,8 @@ fn raw_observer(
         *row.state.borrow_mut() += 1;
         Ok(Rc::new(component_support::Line("call custom".into())))
     }));
-    tool.render_result = Some(ToolRenderResult::Raw(Rc::new(
-        move |result, options, _, row| {
+    tool.render_result = Some(ToolRenderResult::<_, _, maestro_models::Local>::Raw(
+        Rc::new(move |result, options, _, row| {
             let ptr = result.content.as_ptr();
             let previous = content_ptr.borrow_mut().replace(ptr);
             let previous_state = prior_state.borrow_mut().replace(Rc::clone(&row.state));
@@ -809,8 +820,8 @@ fn raw_observer(
                 }
                 .into(),
             )))
-        },
-    )));
+        }),
+    ));
     tool
 }
 
@@ -827,9 +838,9 @@ fn reentrant_renderer(
     let version = Rc::new(std::cell::Cell::new(false));
     let binding = reentrant_binding(&events, &slot, &version, inner);
     let mut replacement = component_support::definition::<(), (), serde_json::Value, bool>();
-    replacement.render_result = Some(ToolRenderResult::Raw(Rc::new(|_, _, _, _| {
-        Ok(Rc::new(component_support::Line("replacement".into())))
-    })));
+    replacement.render_result = Some(ToolRenderResult::<_, _, maestro_models::Local>::Raw(
+        Rc::new(|_, _, _, _| Ok(Rc::new(component_support::Line("replacement".into())))),
+    ));
     let replacement = ToolRendererBinding::from_raw(&replacement).unwrap();
     let lookups = events.clone();
     let renderer: Rc<dyn ToolHtmlRenderer> = Rc::new(create_tool_html_renderer(
@@ -877,8 +888,8 @@ fn reentrant_binding(
     let current = version.clone();
     let handle = slot.clone();
 
-    tool.render_result = Some(ToolRenderResult::Typed(Rc::new(
-        move |result, options, _, row| {
+    tool.render_result = Some(ToolRenderResult::<_, _, maestro_models::Local>::Typed(
+        Rc::new(move |result, options, _, row| {
             let label = &result.details.unwrap().label;
             let last = row
                 .last_component
@@ -908,8 +919,8 @@ fn reentrant_binding(
                 "{label}:{}",
                 options.expanded
             ))))
-        },
-    )));
+        }),
+    ));
     ToolRendererBinding::from_definition(&tool)
 }
 
@@ -917,6 +928,7 @@ fn edit_result_wrapper(
     callback: maestro_tools::ToolRenderResultCallback<
         serde_json::Value,
         maestro_tools::EditRenderState,
+        maestro_models::Threaded,
     >,
     states: &Rc<RefCell<Vec<Rc<RefCell<maestro_tools::EditRenderState>>>>>,
 ) -> maestro_tools::ToolRendererBinding {
@@ -924,8 +936,8 @@ fn edit_result_wrapper(
     let seen = states.clone();
     let mut custom =
         component_support::definition::<String, bool, serde_json::Value, Vec<String>>();
-    custom.render_result = Some(ToolRenderResult::Raw(Rc::new(
-        move |result, options, theme, row| {
+    custom.render_result = Some(ToolRenderResult::<_, _, maestro_models::Local>::Raw(
+        Rc::new(move |result, options, theme, row| {
             row.state.borrow_mut().push("result".into());
             let state = row
                 .renderer_state()
@@ -933,8 +945,8 @@ fn edit_result_wrapper(
                 .state::<maestro_tools::EditRenderState>();
             seen.borrow_mut().push(state.clone());
             callback(result, options, theme, &row.with_state(state))
-        },
-    )));
+        }),
+    ));
     ToolRendererBinding::from_raw(&custom).unwrap()
 }
 

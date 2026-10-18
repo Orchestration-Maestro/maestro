@@ -43,3 +43,8 @@ pub use maestro_tools::{
     EditToolOptions, ReadToolOptions, WriteToolOptions, create_edit_tool_definition,
     create_read_tool_definition, create_write_tool_definition,
 };
+
+/// Caller-local tool definitions for local rendering consumers.
+pub use maestro_tools::types::local;
+
+pub use maestro_tools::define_tool;

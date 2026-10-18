@@ -11,7 +11,8 @@ use maestro_theme::{
     ColorMode, NativeThemeOperations, SyntaxHighlighter, SyntaxSpan, Theme, ThemeDirectories,
     ThemeOptions, ThemeState,
 };
-use maestro_tools::{ToolDefinition, ToolRenderContext, ToolRenderEnvironment};
+use maestro_tools::types::local::ToolDefinition;
+use maestro_tools::{ToolRenderContext, ToolRenderEnvironment};
 use maestro_tui::{
     TerminalImage,
     tui::{Component, ComponentHandle},
@@ -22,7 +23,6 @@ use std::{
     cell::{Cell, RefCell},
     collections::HashMap,
     rc::{Rc, Weak},
-    sync::Arc,
 };
 
 #[derive(Deserialize)]
@@ -95,7 +95,7 @@ pub fn definition<C, P, D, S>() -> ToolDefinition<C, P, D, S> {
         render_shell: None,
         prepare_arguments: None,
         execution_mode: None,
-        execute: Arc::new(|_, _, _, _, _| Box::pin(async { Err(failure()) })),
+        execute: Rc::new(|_, _, _, _, _| Box::pin(async { Err(failure()) })),
         render_call: None,
         render_result: None,
     }
@@ -288,26 +288,29 @@ fn observed_tool(observations: &Rc<Observations>, theme: &Rc<Theme>) -> Rc<ToolD
     }));
     let seen = Rc::clone(observations);
     let supplied = Rc::clone(theme);
-    tool.render_result = Some(maestro_tools::ToolRenderResult::Typed(Rc::new(
-        move |result, options, theme, ctx| {
-            let phase = if options.expanded {
-                "expanded"
-            } else {
-                "collapsed"
-            };
-            let mut event = context(&seen, ctx, &format!("{phase}_callback"));
-            event["content"] = presence(Some(&serde_json::to_value(result.content).unwrap()));
-            event["details"] = presence(result.details);
-            event["result_error"] = json!(result.is_error.unwrap());
-            event["options"] = json!({"expanded":options.expanded,"isPartial":options.is_partial});
-            event["same_theme"] = json!(std::ptr::eq(theme, Rc::as_ptr(&supplied)));
-            seen.events.borrow_mut().push(event);
-            if seen.step.borrow()["fail"] == format!("{phase}_callback") {
-                return Err(failure());
-            }
-            Ok(component(&seen, phase, ctx))
-        },
-    )));
+    tool.render_result = Some(
+        maestro_tools::ToolRenderResult::<_, _, maestro_models::Local>::Typed(Rc::new(
+            move |result, options, theme, ctx| {
+                let phase = if options.expanded {
+                    "expanded"
+                } else {
+                    "collapsed"
+                };
+                let mut event = context(&seen, ctx, &format!("{phase}_callback"));
+                event["content"] = presence(Some(&serde_json::to_value(result.content).unwrap()));
+                event["details"] = presence(result.details);
+                event["result_error"] = json!(result.is_error.unwrap());
+                event["options"] =
+                    json!({"expanded":options.expanded,"isPartial":options.is_partial});
+                event["same_theme"] = json!(std::ptr::eq(theme, Rc::as_ptr(&supplied)));
+                seen.events.borrow_mut().push(event);
+                if seen.step.borrow()["fail"] == format!("{phase}_callback") {
+                    return Err(failure());
+                }
+                Ok(component(&seen, phase, ctx))
+            },
+        )),
+    );
     Rc::new(tool)
 }
 

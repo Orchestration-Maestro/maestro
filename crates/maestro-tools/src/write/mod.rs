@@ -16,7 +16,7 @@ use maestro_models::{BoxFuture, DiagnosticErrorInfo, Tool};
 use maestro_path::dirname;
 use serde::Deserialize;
 use serde_json::json;
-use std::{rc::Rc, sync::Arc};
+use std::sync::Arc;
 
 /// Arguments of one write.
 #[derive(Clone, Debug, Deserialize)]
@@ -95,8 +95,8 @@ pub fn create_write_tool_definition<C: 'static>(
                 write_file(operations, (absolute_path, dir), input, signal)
             })
         }),
-        render_call: Some(Rc::new(render::render_call)),
-        render_result: Some(crate::ToolRenderResult::Raw(Rc::new(render::render_result))),
+        render_call: Some($ptr::new(render::render_call)),
+        render_result: Some(crate::ToolRenderResult::Raw($ptr::new(render::render_result) as _)),
     }
 }
 

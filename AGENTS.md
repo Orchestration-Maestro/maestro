@@ -213,7 +213,8 @@ the required toolkit/text set. The scenario harness is not a
 general dev-dependency target.
 
 The guest may declare `ToolDefinition` only in `src/types/tools.rs`, in addition to
-its domain owner; renderer declarations retain their domain ownership.
+its domain owner. Native extensions may specialize it with the alias in
+`src/types/registration.rs`; renderer declarations retain their domain ownership.
 
 Bounded source/build checks enforce tool/selector ownership, direct runtime-engine
 and toolkit library placement, canonical guest-owned WIT inputs and planning-comment
@@ -446,3 +447,8 @@ Presence adaptation stays beside shared schemas. Fork position stays entry-owned
 Tool callback ownership and invocation are independent: SDK defaults remain
 Threaded/Threaded, registered invocation is Local. Registration stores no runner
 or context factory; the single tools wrapper creates a fresh context per call.
+
+The native extension `ToolDefinition<P,D,S>` alias specializes the tools-owned
+record with ExtensionContext and local invocation; the application keeps its
+standalone default alias. The declaration checker permits only this native alias
+at `maestro-extensions/src/types/registration.rs`, never a second struct or enum.

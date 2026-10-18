@@ -21,7 +21,7 @@ fn native_renderer_keeps_typed_details_without_serializing() {
     );
     let called = Rc::new(Cell::new(false));
     let observed = Rc::clone(&called);
-    let callback = ToolRenderResult::Typed(Rc::new(
+    let callback = ToolRenderResult::<_, _, maestro_models::Local>::Typed(Rc::new(
         move |result: &ToolRenderResultLike<'_, u32>, options, _, context| {
             assert_eq!(result.details, Some(&42));
             assert_eq!(result.terminate, Some(true));
@@ -269,14 +269,14 @@ fn renderer_binding_keeps_same_type_state_across_slots() {
         assert_eq!(*other.borrow(), json!({}));
         Ok(empty())
     }));
-    tool.render_result = Some(ToolRenderResult::Typed(Rc::new(
-        move |result, _, _, row| {
+    tool.render_result = Some(ToolRenderResult::<_, _, maestro_models::Local>::Typed(
+        Rc::new(move |result, _, _, row| {
             assert_eq!(result.details.unwrap(), &["custom"]);
             assert_eq!(*row.state.borrow(), 73);
             result_aliases.borrow_mut().push(Rc::clone(&row.state));
             Ok(empty())
-        },
-    )));
+        }),
+    ));
     let first = ToolRendererBinding::from_definition(&tool);
     let second = ToolRendererBinding::from_definition(&tool);
     assert_eq!(first.render_shell, Some(ToolRenderShell::SelfRendered));
@@ -343,7 +343,9 @@ fn renderer_binding_coexists_with_builtin_private_state() {
             .state::<maestro_tools::BashRenderState>()
     ));
     if let maestro_tools::ToolDef::Bash(mut tool) = tool {
-        tool.render_result = Some(ToolRenderResult::Typed(Rc::new(|_, _, _, _| Ok(empty()))));
+        tool.render_result = Some(ToolRenderResult::<_, _, maestro_models::Threaded>::Typed(
+            std::sync::Arc::new(|_, _, _, _| Ok(empty())),
+        ));
         assert!(
             maestro_tools::ToolDef::Bash(tool)
                 .renderer_binding()
@@ -396,7 +398,7 @@ fn renderer_binding_drop_releases_captures_and_row_state() {
     }));
     let executable = std::sync::Arc::new(());
     let executable_weak = std::sync::Arc::downgrade(&executable);
-    tool.execute = std::sync::Arc::new(move |_, (), _, _, _| {
+    tool.execute = Rc::new(move |_, (), _, _, _| {
         assert_eq!(std::sync::Arc::strong_count(&executable), 1);
         Box::pin(async { Err(failure()) })
     });
@@ -580,7 +582,9 @@ fn check_wrong_field(tool: &str, field: &str, env: &Env) {
 }
 
 /// Arbitrary custom details/state delegate to the existing native edit state and callback.
-fn wrapped_edit(cwd: &str) -> maestro_tools::ToolDefinition<(), (), Vec<String>, u32> {
+fn wrapped_edit(
+    cwd: &str,
+) -> maestro_tools::types::local::ToolDefinition<(), (), Vec<String>, u32> {
     let native = maestro_tools::create_edit_tool_definition::<()>(
         cwd.to_owned(),
         maestro_tools::EditToolOptions::default(),
@@ -598,19 +602,19 @@ fn wrapped_edit(cwd: &str) -> maestro_tools::ToolDefinition<(), (), Vec<String>,
             .state::<maestro_tools::EditRenderState>();
         call(args, theme, &row.with_state(state))
     }));
-    custom.render_result = Some(ToolRenderResult::Typed(Rc::new(
-        move |value, options, theme, row| {
+    custom.render_result = Some(ToolRenderResult::<_, _, maestro_models::Local>::Typed(
+        Rc::new(move |value, options, theme, row| {
             assert_eq!(*row.state.borrow(), 17);
             let state = row
                 .renderer_state()
                 .unwrap()
                 .state::<maestro_tools::EditRenderState>();
-            ToolRenderResult::<Vec<String>, maestro_tools::EditRenderState>::Raw(Rc::clone(&result))
+            ToolRenderResult::<Vec<String>, maestro_tools::EditRenderState, maestro_models::Threaded>::Raw(std::sync::Arc::clone(&result))
                 .invoke_native((value, options), theme, &row.with_state(state), |details| {
                     Ok(json!({"diff":details[0],"firstChangedLine":details[1].parse::<f64>().unwrap()}))
                 })
-        },
-    )));
+        }),
+    ));
     custom
 }
 
@@ -822,11 +826,13 @@ fn check_prepared_binding_release() {
     let capture = Rc::new(());
     let weak = Rc::downgrade(&capture);
     let mut tool = definition::<(), Vec<String>>();
-    tool.render_result = Some(ToolRenderResult::Typed(Rc::new(move |result, _, _, _| {
-        assert_eq!(Rc::strong_count(&capture), 1);
-        assert_eq!(result.details.unwrap(), &["retained"]);
-        Ok(empty())
-    })));
+    tool.render_result = Some(ToolRenderResult::<_, _, maestro_models::Local>::Typed(
+        Rc::new(move |result, _, _, _| {
+            assert_eq!(Rc::strong_count(&capture), 1);
+            assert_eq!(result.details.unwrap(), &["retained"]);
+            Ok(empty())
+        }),
+    ));
     let binding = ToolRendererBinding::from_definition(&tool);
     let payload = json!(["retained"]);
     let operation = binding

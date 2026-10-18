@@ -1,4 +1,5 @@
 //! Execution-family declarations for retained extension callbacks.
+use super::registration::{ExtensionAPI, ExtensionHandler, RegisteredToolInput};
 use super::{ExtensionActions, ProviderConfig};
 use crate::loader::runtime::{NOT_INITIALIZED, SET_MODEL_NOT_INITIALIZED};
 use crate::{
@@ -11,7 +12,9 @@ use maestro_resources::SlashCommandInfo;
 use maestro_session::messages::{CustomMessage, MessageRenderOptions};
 use maestro_session::messages::{CustomMessageInput, SendMessageOptions, SendUserMessageOptions};
 use maestro_theme::LiveTheme;
+use maestro_tools::tool_definition_wrapper::ToolDefinitionInput;
 use maestro_tui::{AutocompleteItem, tui::ComponentHandle};
+use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 use std::{
     any::Any,
@@ -53,7 +56,31 @@ use std::{
 ///     actions
 /// }
 /// ```
-pub trait ExtensionExecution: Execution + Clone + Default {
+pub trait ExtensionExecution: maestro_tools::ToolExecution + Clone + Default {
+    /// Private family-owned object-safe projection, not a root SDK accessor.
+    type RegisteredDefinition: super::registration::tools::RetainedDefinition + ?Sized;
+    /// Opaque typed handler storage, like the existing message-renderer registration.
+    type HandlerRegistration;
+    /// Typed event callback.
+    type Handler<V, R>: for<'a> Fn(
+            &'a mut V,
+            ExtensionContext,
+        ) -> <Local as Execution>::Future<'a, Result<Option<R>, EventError>>
+        + ?Sized;
+    /// Factory callback.
+    type Factory: Fn(ExtensionAPI<Self>) -> Self::Future<'static, Result<(), EventError>> + ?Sized;
+    /// Retain the concrete definition without erasing its typed state or details.
+    fn retain_definition<
+        P: DeserializeOwned + 'static,
+        D: Serialize + 'static,
+        S: Default + 'static,
+    >(
+        definition: RegisteredToolInput<P, D, S, Self>,
+    ) -> Self::Shared<Self::RegisteredDefinition>;
+    /// Retain a typed callback in the existing ordered event owner.
+    fn erase_handler<V: 'static, R: 'static>(
+        handler: ExtensionHandler<V, R, Self>,
+    ) -> Self::HandlerRegistration;
     /// Sends a custom message.
     type SendMessage: Fn(CustomMessageInput, Option<SendMessageOptions>) -> Result<(), EventError>
         + ?Sized;
@@ -140,6 +167,16 @@ pub trait ExtensionExecution: Execution + Clone + Default {
 macro_rules! family {
     ($mode:ty, [$($bound:tt)*]) => {
         impl ExtensionExecution for $mode {
+            type RegisteredDefinition=dyn super::registration::tools::RetainedDefinition $($bound)*;
+            type HandlerRegistration=Box<dyn std::any::Any $($bound)*>;
+            type Handler<V,R>=dyn for<'a> Fn(&'a mut V,ExtensionContext)-><Local as Execution>::Future<'a,Result<Option<R>,EventError>> $($bound)*;
+            type Factory=dyn Fn(ExtensionAPI<Self>)->Self::Future<'static,Result<(),EventError>> $($bound)*;
+            fn retain_definition<P:DeserializeOwned+'static,D:Serialize+'static,S:Default+'static>(input:RegisteredToolInput<P,D,S,Self>)->Self::Shared<Self::RegisteredDefinition> {
+                let definition=match input.definition { ToolDefinitionInput::Owned(x)=>Self::share(RwLock::new(x)),ToolDefinitionInput::Retained(x)=>x };
+                Self::share(super::registration::tools::Definition::<P,D,S,Self>{definition,project_renderers:input.project_renderers})
+            }
+            fn erase_handler<V:'static,R:'static>(handler:ExtensionHandler<V,R,Self>)->Self::HandlerRegistration { Box::new(handler) }
+
             type SendMessage = dyn Fn(CustomMessageInput, Option<SendMessageOptions>) -> Result<(), EventError> $($bound)*;
             type SendUserMessage = dyn Fn(UserContent, Option<SendUserMessageOptions>) -> Result<(), EventError> $($bound)*;
             type AppendEntry = dyn Fn(String, Option<Value>) -> Result<(), EventError> $($bound)*;

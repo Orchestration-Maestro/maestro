@@ -73,3 +73,14 @@ pub use types::{
     SendUserMessageHandler, SetActiveToolsHandler, SetLabelHandler, SetModelHandler,
     SetThinkingLevelHandler,
 };
+
+/// Registered-tool invocation adapters.
+pub mod wrapper;
+pub use loader::load_extension_from_factory;
+pub use types::{ExtensionFactory, ExtensionHandler, RegisteredTool, RegisteredToolInput};
+pub use wrapper::{wrap_registered_tool, wrap_registered_tools};
+
+pub use types::events::*;
+
+pub use maestro_tools::define_tool;
+pub use types::ToolDefinition;

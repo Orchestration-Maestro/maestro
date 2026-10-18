@@ -1218,6 +1218,7 @@ fn assert_single_owner(name: &str, owner: &str, consumers: &[&str]) {
 
 #[test]
 fn shared_event_records_have_one_owner() {
+    registered_definition_alias_keeps_tools_ownership();
     let workspace = Workspace::new();
     workspace.foundation(&[
         "maestro-request",
@@ -1264,5 +1265,29 @@ fn shared_event_records_have_one_owner() {
     assert!(
         error.contains(".rs:1:") && error.contains("duplicate declaration ContextEvent"),
         "{error}"
+    );
+}
+
+/// The native extension alias specializes the tools owner without duplicating its record.
+fn registered_definition_alias_keeps_tools_ownership() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions", "maestro-tools"]);
+    source(
+        &workspace,
+        "maestro-extensions",
+        "src/types/registration.rs",
+        "pub type ToolDefinition<P,D,S> = maestro_tools::ToolDefinition<ExtensionContext,P,D,S,Local>;",
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    source(
+        &workspace,
+        "maestro-extensions",
+        "src/types/registration.rs",
+        "pub struct ToolDefinition;",
+    );
+    assert!(
+        check_workspace(&workspace.root)
+            .unwrap_err()
+            .contains("ToolDefinition declaration belongs to maestro-tools")
     );
 }
