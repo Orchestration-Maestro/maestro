@@ -18,7 +18,7 @@ use maestro_models::{BoxFuture, DiagnosticErrorInfo, Model, Tool};
 pub(crate) use native::{NativeReadOperations, access_file};
 use serde::Deserialize;
 use serde_json::json;
-use std::{rc::Rc, sync::Arc};
+use std::sync::Arc;
 
 /// Arguments of one read.
 #[derive(Clone, Debug, Deserialize)]
@@ -127,8 +127,8 @@ pub fn create_read_tool_definition<C: ReadContext + 'static $($bound)*>(
                 Err(error) => Box::pin(std::future::ready(Err(diagnostic(&error)))),
             }
         }),
-        render_call: Some(Rc::new(render::render_call)),
-        render_result: Some(crate::ToolRenderResult::Raw(Rc::new(render::render_result))),
+        render_call: Some($ptr::new(render::render_call)),
+        render_result: Some(crate::ToolRenderResult::Raw($ptr::new(render::render_result) as _)),
     }
 }
 

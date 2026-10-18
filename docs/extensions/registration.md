@@ -1,6 +1,6 @@
 # Owned extension registration
 
-`maestro-extensions` registers commands, flags, shortcuts and message renderers on
+`maestro-extensions` registers tools, typed events, commands, flags, shortcuts and message renderers on
 caller-supplied extension owners, and creates the base [contexts](#contexts) their
 callbacks receive. It does not load extension artifacts or own application policy.
 The caller supplies provenance, an existing event bus, the served session,
@@ -382,3 +382,71 @@ runner.bind_core(actions, Default::default(), providers)?;
 # Ok(())
 # }
 ```
+
+## Retained tools and typed events
+
+`ExtensionAPI::register_tool` retains owned or shared mutable definitions alongside
+provenance in the same ordered owner. Replacement keeps its slot, then calls the
+current refresh operation after releasing the owner guard. A refresh failure does
+not undo registration; the loading runtime's refresh is inert.
+
+`get_all_registered_tools` deduplicates current definition names in load order.
+`get_tool_definition::<P, D, S>` instead searches stored registration keys and
+returns the original typed handle. A type mismatch on the first owner is absent;
+it does not select a later owner. Different parameter, details and renderer-state
+types coexist in one owner.
+
+The tools-owned wrapper snapshots declaration/preparation/mode metadata when
+created. Each execution selects the current retained execute callback before
+creating a fresh concrete runner context. A context keeps the model reader bound
+when it was created. Both ownership families invoke registered tools locally;
+Threaded captures stay Send + Sync, while a registered invocation may retain its
+local context across an await. Standalone SDK invocation remains Threaded by
+default. Renderer state remains local and is projected by `ToolRendererBinding`.
+Typed result renderers decode details through `from_definition`; raw renderers and
+Serialize-only details use `RegisteredToolInput::from_raw` without a decoder.
+
+```rust
+use maestro_extensions::{ExtensionContext, ExtensionFactory, load_extension_from_factory};
+use maestro_models::{Local, Tool};
+use maestro_tools::{ToolDefinitionRecord, tool_definition_wrapper::ToolDefinitionInput};
+use serde_json::{Value, json};
+use std::{rc::Rc, sync::RwLock};
+
+# fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+# let executor = tokio::runtime::Builder::new_current_thread().build()?;
+# executor.block_on(async {
+let factory: ExtensionFactory<Local> = Rc::new(|api| {
+    let tool: ToolDefinitionRecord<ExtensionContext, Value, Value, (), Local, Local> =
+        ToolDefinitionRecord {
+            definition: Tool { name: "echo".into(), description: "Echo arguments".into(),
+                parameters: json!({"type":"object"}) },
+            label: "Echo".into(), prompt_snippet: None, prompt_guidelines: None,
+            render_shell: None, prepare_arguments: None, execution_mode: None,
+            execute: Rc::new(|_, params, _, _, ctx| Box::pin(async move {
+                let context = ctx.ok_or_else(|| maestro_models::DiagnosticErrorInfo::error("missing context"))?;
+                let _cwd = context.cwd().map(str::to_owned)
+                    .map_err(|error| maestro_models::DiagnosticErrorInfo::error(error.to_string()))?;
+                Ok(maestro_agent::AgentToolResult { content: vec![], details: Some(params), terminate: None })
+            })), render_call: None, render_result: None,
+        };
+    let retained = Rc::new(RwLock::new(tool));
+    let registered = api.register_tool(ToolDefinitionInput::<_, _, _, _, Local, Local>::Retained(retained));
+    Box::pin(async move { registered })
+});
+let bus = maestro_extensions::create_event_bus_for::<Local>(Rc::new(|_| {}), Rc::new(|_| {}));
+let owner = load_extension_from_factory::<Local>(factory, "/work".into(), bus.for_extension(),
+    maestro_extensions::create_extension_runtime::<Local>(), None).await?;
+assert!(owner.read().map_err(|error| error.to_string())?.tools.contains_key("echo"));
+# Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
+# })
+# }
+```
+
+`on<V, R>` stores typed callbacks under unchanged string event names, including
+unknown and empty names; repeated callback registrations remain separate entries.
+It does not dispatch hooks. Event/result schemas and assembled prompt records
+belong to the shared request owner, re-exported by models and specialized with
+native domain handles or the guest's existing carriers. `BuildSystemPromptOptions`
+is also exported at the extension root for constructing prompt operands. The guest adapter alone
+snapshots stream observations and encodes capability resources.

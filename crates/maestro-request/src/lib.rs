@@ -8,3 +8,6 @@ pub mod slash_commands;
 pub mod source_info;
 pub mod tool_info;
 pub mod types;
+
+pub mod extension_events;
+pub mod system_prompt;

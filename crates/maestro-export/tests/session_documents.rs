@@ -662,9 +662,11 @@ fn standard_renderer_integrates_with_document_export() {
     }
     let theme = component_support::theme();
     let mut tool = component_support::definition::<(), Value, Value, Value>();
-    tool.render_result = Some(maestro_tools::ToolRenderResult::Typed(Rc::new(
-        |_, _, _, _| Ok(Rc::new(Row)),
-    )));
+    tool.render_result = Some(
+        maestro_tools::ToolRenderResult::<_, _, maestro_models::Local>::Typed(Rc::new(
+            |_, _, _, _| Ok(Rc::new(Row)),
+        )),
+    );
     let tool = Rc::new(tool);
     for available in [true, false] {
         let renderer = create_tool_html_renderer(ToolHtmlRendererDeps {

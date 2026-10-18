@@ -330,9 +330,9 @@ pub fn typed_rebuilds() {
 fn typed_definition(
     states: &Rc<RefCell<Vec<Rc<RefCell<u32>>>>>,
     events: RebuildEvents,
-) -> maestro_app::ToolDefinition<(), (), Decoded, u32> {
-    use maestro_app::{ToolDefinition, ToolRenderResult};
-    use std::sync::Arc;
+) -> maestro_app::local::ToolDefinition<(), (), Decoded, u32> {
+    use maestro_app::ToolRenderResult;
+    use maestro_app::local::ToolDefinition;
     let seen = states.clone();
     ToolDefinition::<(), (), Decoded, u32> {
         definition: serde_json::from_value(
@@ -344,16 +344,14 @@ fn typed_definition(
         prompt_guidelines: None,
         prepare_arguments: None,
         execution_mode: None,
-        execute: Arc::new(|_, (), _, _, _| {
-            Box::pin(async { panic!("rendering must not execute") })
-        }),
+        execute: Rc::new(|_, (), _, _, _| Box::pin(async { panic!("rendering must not execute") })),
         render_shell: Some(maestro_app::ToolRenderShell::SelfRendered),
         render_call: Some(Rc::new(move |_, _, row| {
             *row.state.borrow_mut() += 1;
             seen.borrow_mut().push(row.state.clone());
             Ok(Rc::new(maestro_tui::Text::new("call".into(), 0, 0, None)))
         })),
-        render_result: Some(ToolRenderResult::Typed(Rc::new(
+        render_result: Some(ToolRenderResult::<Decoded, u32>::Typed(Rc::new(
             move |result, options, _, row| {
                 events.borrow_mut().push((
                     result.details.unwrap().0,

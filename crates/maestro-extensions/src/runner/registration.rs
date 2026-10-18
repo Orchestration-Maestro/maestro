@@ -1,10 +1,14 @@
 //! Command invocation resolution and current flag queries.
 use super::ExtensionRunner;
+use crate::types::registration::tools::RetainedDefinition;
+use crate::{ExtensionContext, types::RegisteredTool};
 use crate::{
     ExtensionExecution,
     types::{ExtensionFlag, FlagValue, MessageRenderer, ResolvedCommand, read, write},
 };
 use indexmap::{IndexMap, IndexSet};
+use maestro_models::Local;
+use serde::{Serialize, de::DeserializeOwned};
 use std::sync::{Arc, RwLock};
 
 impl<E: ExtensionExecution> ExtensionRunner<E> {
@@ -104,5 +108,49 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
                 }
             })
             .collect()
+    }
+}
+
+impl<E: ExtensionExecution> ExtensionRunner<E> {
+    /// Returns the first current-name registration in owner and insertion order.
+    #[must_use]
+    pub fn get_all_registered_tools(&self) -> Vec<RegisteredTool<E>> {
+        let mut first = IndexMap::new();
+        for owner in read(&self.extensions).iter() {
+            for tool in read(owner).tools.values() {
+                first
+                    .entry(tool.definition.name())
+                    .or_insert_with(|| tool.clone());
+            }
+        }
+        first.into_values().collect()
+    }
+    #[must_use]
+    /// Returns the first stored-key match when its parameter, details and state types match.
+    pub fn get_tool_definition<
+        P: DeserializeOwned + 'static,
+        D: Serialize + 'static,
+        S: Default + 'static,
+    >(
+        &self,
+        name: &str,
+    ) -> Option<
+        maestro_tools::tool_definition_wrapper::RetainedToolDefinition<
+            ExtensionContext,
+            P,
+            D,
+            S,
+            E,
+            Local,
+        >,
+    > {
+        let registered = read(&self.extensions)
+            .iter()
+            .find_map(|x| read(x).tools.get(name).cloned())?;
+        registered
+            .definition
+            .as_any()
+            .downcast_ref::<crate::types::registration::tools::Definition<P, D, S, E>>()
+            .map(|x| x.definition.clone())
     }
 }

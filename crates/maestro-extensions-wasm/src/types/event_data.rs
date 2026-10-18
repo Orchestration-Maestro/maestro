@@ -12,7 +12,7 @@ use super::events::{
     AfterProviderResponseEvent, BeforeProviderRequestEvent, ExtensionEvent, InputEvent,
     ResourcesDiscoverEvent, SessionBeforeCompactEvent, SessionBeforeCompactEventData,
     SessionBeforeForkEvent, SessionBeforeSwitchEvent, SessionEvent, SessionShutdownEvent,
-    SessionStartEvent, event_table,
+    SessionStartEvent,
 };
 use super::object;
 use super::selection_events::{ModelSelectEvent, ThinkingLevelSelectEvent};
@@ -70,7 +70,7 @@ macro_rules! event_data_types {
     };
 }
 
-event_table!(event_data_types);
+maestro_request::extension_event_table!(event_data_types);
 
 /// The only property read before the record of the event is.
 #[derive(Deserialize)]
@@ -164,7 +164,7 @@ impl From<ExtensionEvent> for EventData {
             ExtensionEvent::TurnEnd(event) => Self::TurnEnd(event),
             ExtensionEvent::MessageStart(event) => Self::MessageStart(event),
             ExtensionEvent::MessageUpdate(mut event) => {
-                event.snapshot();
+                snapshot_stream(&mut event);
                 Self::MessageUpdate(event)
             }
             ExtensionEvent::MessageEnd(event) => Self::MessageEnd(event),
@@ -193,4 +193,29 @@ impl From<ExtensionEvent> for EventData {
             ExtensionEvent::Input(event) => Self::Input(event),
         }
     }
+}
+
+/// Detach one stream observation before output validation.
+#[cfg(any(test, target_arch = "wasm32"))]
+fn snapshot_stream(event: &mut MessageUpdateEvent) {
+    use crate::AssistantMessageEvent as Event;
+    let handle = match &mut event.assistant_message_event {
+        Event::Start { partial }
+        | Event::TextStart { partial, .. }
+        | Event::TextDelta { partial, .. }
+        | Event::TextEnd { partial, .. }
+        | Event::ThinkingStart { partial, .. }
+        | Event::ThinkingDelta { partial, .. }
+        | Event::ThinkingEnd { partial, .. }
+        | Event::ToolcallStart { partial, .. }
+        | Event::ToolcallDelta { partial, .. }
+        | Event::ToolcallEnd { partial, .. } => partial,
+        Event::Done { message, .. } => message,
+        Event::Error { error, .. } => error,
+    };
+    let snapshot = handle
+        .read()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .clone();
+    *handle = std::sync::Arc::new(std::sync::RwLock::new(snapshot));
 }

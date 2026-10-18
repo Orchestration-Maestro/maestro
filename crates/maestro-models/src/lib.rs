@@ -129,3 +129,6 @@ pub use providers::content::google_vertex::{
     GoogleVertexOptions, stream_google_vertex, stream_google_vertex_for,
     stream_simple_google_vertex, stream_simple_google_vertex_for,
 };
+
+/// Shared extension events and assembled prompt records.
+pub use maestro_request::{extension_events, system_prompt};

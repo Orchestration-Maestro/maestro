@@ -168,7 +168,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   catalog and guest authoring library, default zero usage, message-only diagnostic
   construction and the shared optional-field helper. Only the crates that list it in the spec table
   (models, resources, theme, catalog, session, entry, tool and guest authoring)
-  may depend on it; it has no internal dependencies. Keep existing models/resources public paths as re-exports.
+  may depend on it; it depends only on the JSON leaf. Keep existing models/resources public paths as re-exports.
   Provider/runtime operations and resource discovery stay in their owners.
   The spec's shared-record amendment governs extraction; update the enforced
   table, inventory, graph policy and architecture tests together with the code.
@@ -213,7 +213,8 @@ the required toolkit/text set. The scenario harness is not a
 general dev-dependency target.
 
 The guest may declare `ToolDefinition` only in `src/types/tools.rs`, in addition to
-its domain owner; renderer declarations retain their domain ownership.
+its domain owner. Native extensions may specialize it with the alias in
+`src/types/registration.rs`; renderer declarations retain their domain ownership.
 
 Bounded source/build checks enforce tool/selector ownership, direct runtime-engine
 and toolkit library placement, canonical guest-owned WIT inputs and planning-comment
@@ -436,3 +437,18 @@ its existing `ToolInfo<String>` alias. Identity-deduplicated live callback stora
 belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions
 and extension error delivery reuse it; dispatch and lifecycle policy remain with
 their callers. The collection returns removed ownership for release outside guards.
+
+
+Shared extension event/result schemas and assembled prompt records belong to
+`maestro-request`, re-exported through models and specialized by native/guest
+aliases. One event inventory feeds author unions and the guest data adapter.
+Request depends only on the JSON leaf; object reading stays JSON-owned and
+Presence adaptation stays beside shared schemas. Fork position stays entry-owned.
+Tool callback ownership and invocation are independent: SDK defaults remain
+Threaded/Threaded, registered invocation is Local. Registration stores no runner
+or context factory; the single tools wrapper creates a fresh context per call.
+
+The native extension `ToolDefinition<P,D,S>` alias specializes the tools-owned
+record with ExtensionContext and local invocation; the application keeps its
+standalone default alias. The declaration checker permits only this native alias
+at `maestro-extensions/src/types/registration.rs`, never a second struct or enum.

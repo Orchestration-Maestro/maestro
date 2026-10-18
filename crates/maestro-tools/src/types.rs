@@ -109,46 +109,61 @@ impl<S> ToolRenderContext<'_, S> {
 }
 
 /// Draws a tool call from its borrowed arguments, or reports why it cannot.
-pub type ToolRenderCall<S> = Rc<
-    dyn Fn(
-        Option<&Value>,
-        &Theme,
-        &ToolRenderContext<'_, S>,
-    ) -> Result<ComponentHandle, DiagnosticErrorInfo>,
->;
+pub type ToolRenderCall<S, E = Local> =
+    <E as maestro_models::Execution>::Shared<<E as ToolExecution>::RenderCall<S>>;
 
 /// Callable signatures for tool definitions in the agent's execution family.
 pub trait ToolExecution: maestro_agent::AgentExecution {
     /// Definition execution with an owned per-call context.
-    type Definition<C, P, D>: Fn(
+    type Definition<C, P, D, I: maestro_agent::AgentExecution>: Fn(
             String,
             P,
             Option<Cancellation>,
-            Option<AgentToolUpdateCallback<D, Self>>,
+            Option<AgentToolUpdateCallback<D, I>>,
             Option<C>,
-        ) -> Self::Future<'static, Result<AgentToolResult<D>, DiagnosticErrorInfo>>
+        ) -> I::Future<'static, Result<AgentToolResult<D>, DiagnosticErrorInfo>>
         + ?Sized;
+    /// The retained call renderer follows storage affinity, not invocation.
+    type RenderCall<S>: Fn(
+            Option<&Value>,
+            &Theme,
+            &ToolRenderContext<'_, S>,
+        ) -> Result<ComponentHandle, DiagnosticErrorInfo>
+        + ?Sized;
+    /// The retained result renderer follows storage affinity.
+    type RenderResult<D, S>: Fn(
+            &crate::output::render_utils::ToolRenderResultLike<'_, D>,
+            ToolRenderResultOptions,
+            &Theme,
+            &ToolRenderContext<'_, S>,
+        ) -> Result<ComponentHandle, DiagnosticErrorInfo>
+        + ?Sized;
+    /// Project argument preparation into the local invocation, without executing it.
+    fn local_prepare(prepare: PrepareArguments<Self>) -> PrepareArguments<Local>;
     /// Fresh context construction before each execution.
     type ContextFactory<C>: Fn() -> Result<C, DiagnosticErrorInfo> + ?Sized;
 }
 /// One callable declaration with concrete pointer and thread-safety bounds.
 macro_rules! family {
-    ($mode:ty, [$($bound:tt)*]) => {
+    ($mode:ty, [$($bound:tt)*], $local:expr) => {
         impl ToolExecution for $mode {
-            type Definition<C, P, D> = dyn Fn(String, P, Option<Cancellation>, Option<AgentToolUpdateCallback<D, Self>>, Option<C>) -> Self::Future<'static, Result<AgentToolResult<D>, DiagnosticErrorInfo>> $($bound)*;
+            type Definition<C, P, D, I: maestro_agent::AgentExecution> = dyn Fn(String, P, Option<Cancellation>, Option<AgentToolUpdateCallback<D, I>>, Option<C>) -> I::Future<'static, Result<AgentToolResult<D>, DiagnosticErrorInfo>> $($bound)*;
+            type RenderCall<S> = dyn Fn(Option<&Value>, &Theme, &ToolRenderContext<'_, S>) -> Result<ComponentHandle, DiagnosticErrorInfo> $($bound)*;
+            type RenderResult<D,S> = dyn Fn(&crate::output::render_utils::ToolRenderResultLike<'_, D>, ToolRenderResultOptions, &Theme, &ToolRenderContext<'_, S>) -> Result<ComponentHandle, DiagnosticErrorInfo> $($bound)*;
+            fn local_prepare(prepare: PrepareArguments<Self>) -> PrepareArguments<Local> { ($local)(prepare) }
             type ContextFactory<C> = dyn Fn() -> Result<C, DiagnosticErrorInfo> $($bound)*;
         }
     };
 }
-family!(Local, []);
+family!(Local, [], std::convert::identity);
 #[cfg(not(target_arch = "wasm32"))]
-family!(Threaded, [+ Send + Sync]);
+family!(Threaded, [+ Send + Sync], |prepare: PrepareArguments<Threaded>| Rc::new(move |args: &mut Value| prepare(args)));
 #[cfg(target_arch = "wasm32")]
-family!(Threaded, []);
+family!(Threaded, [], std::convert::identity);
 
 /// Executes a tool with its call id, arguments, signal, observer and context.
-pub type ExecuteToolDefinition<C, P, D, E = Threaded> =
-    <E as maestro_models::Execution>::Shared<<E as ToolExecution>::Definition<C, P, D>>;
+pub type ExecuteToolDefinition<C, P, D, E = Threaded, I = E> =
+    <E as maestro_models::Execution>::Shared<<E as ToolExecution>::Definition<C, P, D, I>>;
 /// Supplies a fresh caller context or its original failure.
 pub type ToolContextFactory<C, E = Threaded> =
     <E as maestro_models::Execution>::Shared<<E as ToolExecution>::ContextFactory<C>>;
@@ -163,6 +178,7 @@ pub struct ToolDefinitionRecord<
     D = Value,
     S = Value,
     E: ToolExecution = Threaded,
+    I: maestro_agent::AgentExecution = E,
 > {
     /// Model-facing declaration.
     pub definition: Tool,
@@ -179,24 +195,24 @@ pub struct ToolDefinitionRecord<
     /// Scheduling preference.
     pub execution_mode: Option<ToolExecutionMode>,
     /// Execution callback.
-    pub execute: ExecuteToolDefinition<C, P, D, E>,
+    pub execute: ExecuteToolDefinition<C, P, D, E, I>,
     /// Call renderer.
-    pub render_call: Option<ToolRenderCall<S>>,
+    pub render_call: Option<ToolRenderCall<S, E>>,
     /// Result renderer.
-    pub render_result: Option<ToolRenderResult<D, S>>,
+    pub render_result: Option<ToolRenderResult<D, S, E>>,
 }
 
 /// One identity implementation for each concrete namespace.
 macro_rules! definition_identity {
     ($mode:ty) => {
         /// Executable definition in this namespace's concrete callback family.
-        pub type ToolDefinition<C = (), P = Value, D = Value, S = Value> =
-            ToolDefinitionRecord<C, P, D, S, $mode>;
+        pub type ToolDefinition<C = (), P = Value, D = Value, S = Value, I = $mode> =
+            ToolDefinitionRecord<C, P, D, S, $mode, I>;
         /// Return the definition unchanged, fixing its types for the caller.
         #[must_use]
-        pub fn define_tool<C, P, D, S>(
-            tool: ToolDefinition<C, P, D, S>,
-        ) -> ToolDefinition<C, P, D, S> {
+        pub fn define_tool<C, P, D, S, I: maestro_agent::AgentExecution>(
+            tool: ToolDefinition<C, P, D, S, I>,
+        ) -> ToolDefinition<C, P, D, S, I> {
             tool
         }
     };

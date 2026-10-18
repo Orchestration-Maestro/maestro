@@ -3,7 +3,7 @@
 `maestro-extensions-wasm` is the Rust library an extension author links to. It owns the
 canonical interface files in `crates/maestro-extensions-wasm/wit/` (package
 `maestro:extension`) and a facade over the generated bindings, so an extension is ordinary
-async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model, resource and application message records.
+async Rust that the host runs as a WebAssembly component. The facade uses `maestro-request` for shared model, resource, application message, event/result and assembled prompt records. Native and guest aliases select their existing domain operands; the guest keeps its opaque text, header pairs and capability resources. Stream snapshots remain guest-adapter operations.
 This page describes what is delivered so far: registration, 29 events and thirteen result
 families, tool callbacks, command completions, shortcuts, flags, command contexts, session continuations, session readers,
 event channels, live context observations, model catalog queries, ordinary actions, compaction notifications and custom message components.

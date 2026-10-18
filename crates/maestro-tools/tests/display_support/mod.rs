@@ -688,8 +688,8 @@ pub fn shipped_theme(name: &str, mode: Option<ColorMode>) -> Rc<Theme> {
 }
 
 /// Invoke a native callback with conversion only at its raw boundary.
-pub fn native<D: serde::Serialize, S>(
-    callback: &maestro_tools::ToolRenderResult<D, S>,
+pub fn native<D: serde::Serialize, S, E: maestro_tools::ToolExecution>(
+    callback: &maestro_tools::ToolRenderResult<D, S, E>,
     result: &maestro_tools::output::render_utils::ToolRenderResultLike<'_, D>,
     options: ToolRenderResultOptions,
     theme: &Theme,

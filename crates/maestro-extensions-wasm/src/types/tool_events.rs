@@ -1,124 +1,74 @@
-//! Tool execution notifications, without execution policy.
+//! Guest aliases of the shared extension schemas.
 #![forbid(
     clippy::pedantic,
     clippy::too_many_arguments,
     clippy::excessive_nesting
 )]
+
+/// Shared schema specialized for the guest operands.
+pub type ToolExecutionStartEvent =
+    maestro_request::extension_events::tool_events::ToolExecutionStartEvent<String>;
+/// Shared schema specialized for the guest operands.
+pub type ToolExecutionUpdateEvent =
+    maestro_request::extension_events::tool_events::ToolExecutionUpdateEvent<String, String>;
+/// Shared schema specialized for the guest operands.
+pub type ToolExecutionEndEvent =
+    maestro_request::extension_events::tool_events::ToolExecutionEndEvent<String>;
+/// Shared schema specialized for the guest operands.
+pub type ToolCallEvent<I = ToolInput> =
+    maestro_request::extension_events::tool_events::ToolCallEvent<I>;
+/// Shared schema specialized for the guest operands.
+pub type ToolResultEvent<D = ToolDetails> =
+    maestro_request::extension_events::tool_events::ToolResultEvent<D, String>;
+/// Shared schema specialized for the guest operands.
+pub type CustomToolCallEvent =
+    maestro_request::extension_events::tool_events::CustomToolCallEvent<String>;
+/// Shared schema specialized for the guest operands.
+pub type CustomToolResultEvent =
+    maestro_request::extension_events::tool_events::CustomToolResultEvent<String, String>;
+/// Shared schema specialized for the guest operands.
+pub type BashToolCallEvent =
+    maestro_request::extension_events::tool_events::ToolCallEvent<crate::BashToolInput>;
+/// Shared schema specialized for the guest operands.
+pub type BashToolResultEvent =
+    maestro_request::extension_events::tool_events::ToolResultEvent<crate::BashToolDetails, String>;
+/// Shared schema specialized for the guest operands.
+pub type ReadToolCallEvent =
+    maestro_request::extension_events::tool_events::ToolCallEvent<crate::ReadToolInput>;
+/// Shared schema specialized for the guest operands.
+pub type ReadToolResultEvent =
+    maestro_request::extension_events::tool_events::ToolResultEvent<crate::ReadToolDetails, String>;
+/// Shared schema specialized for the guest operands.
+pub type EditToolCallEvent =
+    maestro_request::extension_events::tool_events::ToolCallEvent<crate::EditToolInput>;
+/// Shared schema specialized for the guest operands.
+pub type EditToolResultEvent =
+    maestro_request::extension_events::tool_events::ToolResultEvent<crate::EditToolDetails, String>;
+/// Shared schema specialized for the guest operands.
+pub type WriteToolCallEvent =
+    maestro_request::extension_events::tool_events::ToolCallEvent<crate::WriteToolInput>;
+/// Shared schema specialized for the guest operands.
+pub type WriteToolResultEvent =
+    maestro_request::extension_events::tool_events::ToolResultEvent<(), String>;
+/// Shared schema specialized for the guest operands.
+pub type GrepToolCallEvent =
+    maestro_request::extension_events::tool_events::ToolCallEvent<crate::GrepToolInput>;
+/// Shared schema specialized for the guest operands.
+pub type GrepToolResultEvent =
+    maestro_request::extension_events::tool_events::ToolResultEvent<crate::GrepToolDetails, String>;
+/// Shared schema specialized for the guest operands.
+pub type FindToolCallEvent =
+    maestro_request::extension_events::tool_events::ToolCallEvent<crate::FindToolInput>;
+/// Shared schema specialized for the guest operands.
+pub type FindToolResultEvent =
+    maestro_request::extension_events::tool_events::ToolResultEvent<crate::FindToolDetails, String>;
+/// Shared schema specialized for the guest operands.
+pub type LsToolCallEvent =
+    maestro_request::extension_events::tool_events::ToolCallEvent<crate::LsToolInput>;
+/// Shared schema specialized for the guest operands.
+pub type LsToolResultEvent =
+    maestro_request::extension_events::tool_events::ToolResultEvent<crate::LsToolDetails, String>;
 use serde::{Deserialize, Serialize};
-
-/// A tool starts executing.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ToolExecutionStartEvent {
-    /// Invocation identifier.
-    pub tool_call_id: String,
-    /// Tool name.
-    pub tool_name: String,
-    /// Opaque arguments text.
-    pub args: String,
-}
-
-/// Partial output from a tool execution.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ToolExecutionUpdateEvent {
-    /// Invocation identifier.
-    pub tool_call_id: String,
-    /// Tool name.
-    pub tool_name: String,
-    /// Opaque arguments text.
-    pub args: String,
-    /// Opaque partial result text.
-    pub partial_result: String,
-}
-
-/// A tool execution finishes.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ToolExecutionEndEvent {
-    /// Invocation identifier.
-    pub tool_call_id: String,
-    /// Tool name.
-    pub tool_name: String,
-    /// Opaque result text.
-    pub result: String,
-    /// Whether execution failed.
-    pub is_error: bool,
-}
-
-use crate::{Presence, UserBlock};
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// Tool event payload.
-pub struct ToolCallEvent<I = ToolInput> {
-    /// Tool call id.
-    pub tool_call_id: String,
-    /// Tool name.
-    pub tool_name: String,
-    /// Input.
-    pub input: I,
-}
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-#[serde(bound(deserialize = "D: Deserialize<'de>"))]
-/// Tool event payload.
-pub struct ToolResultEvent<D = ToolDetails> {
-    /// Tool call id.
-    pub tool_call_id: String,
-    /// Tool name.
-    pub tool_name: String,
-    /// Input.
-    pub input: String,
-    /// Content.
-    pub content: Vec<UserBlock>,
-    /// Is error.
-    pub is_error: bool,
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    /// Details.
-    pub details: Presence<D>,
-}
-/// Tool event payload.
-pub type CustomToolCallEvent = ToolCallEvent<String>;
-/// Tool event payload.
-pub type CustomToolResultEvent = ToolResultEvent<String>;
-/// Compares the exact tool name.
-pub fn is_bash_tool_result<D>(event: &ToolResultEvent<D>) -> bool {
-    event.tool_name == "bash"
-}
-/// Compares the exact tool name.
-pub fn is_read_tool_result<D>(event: &ToolResultEvent<D>) -> bool {
-    event.tool_name == "read"
-}
-/// Compares the exact tool name.
-pub fn is_edit_tool_result<D>(event: &ToolResultEvent<D>) -> bool {
-    event.tool_name == "edit"
-}
-/// Compares the exact tool name.
-pub fn is_write_tool_result<D>(event: &ToolResultEvent<D>) -> bool {
-    event.tool_name == "write"
-}
-/// Compares the exact tool name.
-pub fn is_grep_tool_result<D>(event: &ToolResultEvent<D>) -> bool {
-    event.tool_name == "grep"
-}
-/// Compares the exact tool name.
-pub fn is_find_tool_result<D>(event: &ToolResultEvent<D>) -> bool {
-    event.tool_name == "find"
-}
-/// Compares the exact tool name.
-pub fn is_ls_tool_result<D>(event: &ToolResultEvent<D>) -> bool {
-    event.tool_name == "ls"
-}
-/// Compares the exact tool name.
-pub fn is_tool_call_event_type<I>(tool_name: &str, event: &ToolCallEvent<I>) -> bool {
-    event.tool_name == tool_name
-}
-
-use crate::tools::{
-    BashToolDetails, BashToolInput, EditToolDetails, EditToolInput, FindToolDetails, FindToolInput,
-    GrepToolDetails, GrepToolInput, LsToolDetails, LsToolInput, ReadToolDetails, ReadToolInput,
-    WriteToolInput,
-};
 /// JSON retained independently of the tool's registered name.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -147,31 +97,8 @@ impl ToolInput {
 
 /// Result details use the same JSON carrier as tool input.
 pub type ToolDetails = ToolInput;
-/// `BashToolCallEvent` data.
-pub type BashToolCallEvent = ToolCallEvent<BashToolInput>;
-/// `BashToolResultEvent` data.
-pub type BashToolResultEvent = ToolResultEvent<BashToolDetails>;
-/// `ReadToolCallEvent` data.
-pub type ReadToolCallEvent = ToolCallEvent<ReadToolInput>;
-/// `ReadToolResultEvent` data.
-pub type ReadToolResultEvent = ToolResultEvent<ReadToolDetails>;
-/// `EditToolCallEvent` data.
-pub type EditToolCallEvent = ToolCallEvent<EditToolInput>;
-/// `EditToolResultEvent` data.
-pub type EditToolResultEvent = ToolResultEvent<EditToolDetails>;
-/// `WriteToolCallEvent` data.
-pub type WriteToolCallEvent = ToolCallEvent<WriteToolInput>;
-/// `WriteToolResultEvent` data.
-pub type WriteToolResultEvent = ToolResultEvent<()>;
-/// `GrepToolCallEvent` data.
-pub type GrepToolCallEvent = ToolCallEvent<GrepToolInput>;
-/// `GrepToolResultEvent` data.
-pub type GrepToolResultEvent = ToolResultEvent<GrepToolDetails>;
-/// `FindToolCallEvent` data.
-pub type FindToolCallEvent = ToolCallEvent<FindToolInput>;
-/// `FindToolResultEvent` data.
-pub type FindToolResultEvent = ToolResultEvent<FindToolDetails>;
-/// `LsToolCallEvent` data.
-pub type LsToolCallEvent = ToolCallEvent<LsToolInput>;
-/// `LsToolResultEvent` data.
-pub type LsToolResultEvent = ToolResultEvent<LsToolDetails>;
+
+pub use maestro_request::extension_events::tool_events::{
+    is_bash_tool_result, is_edit_tool_result, is_find_tool_result, is_grep_tool_result,
+    is_ls_tool_result, is_read_tool_result, is_tool_call_event_type, is_write_tool_result,
+};

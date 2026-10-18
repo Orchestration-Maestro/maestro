@@ -184,7 +184,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Terminal scenario harness:** The dedicated `maestro-test-terminal` scenario runner, not a reusable internal dev-dependency target.
 - **Guest authoring:** The `maestro-extensions-wasm` library, whose allowed internal dependencies are the request, entry, tool and JSON owners (never native session, tool or catalog runtimes), owning the canonical WIT source inputs and the facade extension authors write against.
 - **Shared request owner:** The core `maestro-request` library below layer 0, whose job is to define shared message and model-request records, including model/message/content/usage/stream/diagnostic records, `SourceInfo`, `Skill`, `SlashCommandInfo`, `SlashCommandSource`, `MessageRenderOptions`, `CustomMessageInput<T>`, `MessageDelivery`,
-`UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`, the four application message records and their existing `Presence<T>` wrapper; it also owns `model_registry::ResolvedRequestAuth`, re-exported by the native catalog and guest authoring library, default zero usage, message-only diagnostic construction and the shared optional-field helper; only the crates that list it in the spec table (models, resources, theme, catalog, session, entry, tool and guest authoring) may depend on it directly, and it depends on no workspace crate.
+`UserMessageDelivery`, `SendMessageOptions` and `SendUserMessageOptions`, the four application message records and their existing `Presence<T>` wrapper; it also owns `model_registry::ResolvedRequestAuth`, re-exported by the native catalog and guest authoring library, default zero usage, message-only diagnostic construction and the shared optional-field helper; only the crates that list it in the spec table (models, resources, theme, catalog, session, entry, tool and guest authoring) may depend on it directly, and it depends only on the JSON leaf.
 - **Extension JSON wire:** Plain serde_json payloads beside typed capabilities; finite numbers retain their value and signed zero, ordinary host nonfinite values serialize as null, and extension-written Infinity or NaN fails clearly before output. Shared records have no bit-number encoding or added Presence wrapper.
 - **Runtime adapter:** The replaceable artifact executor in `maestro-extensions-wasmtime`, whose only permitted internal target is extensions.
 - **Attachment:** Application-owned original bytes, media metadata and optional derived text/preview, with browser-message conversion. See [browser attachments](docs/application/browser-attachments.md).
@@ -242,3 +242,11 @@ its existing `ToolInfo<String>` alias. Identity-deduplicated live callback stora
 belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions
 and extension error delivery reuse it; dispatch and lifecycle policy remain with
 their callers. The collection returns removed ownership for release outside guards.
+
+
+- **Registered tool:** A retained typed definition with shared provenance in the
+  extension's ordered owner. Callback ownership follows the facade; invocation is
+  local with a fresh concrete context. SDK standalone defaults remain threaded.
+- **Shared extension events:** Generic event/result schemas and assembled prompt
+  records owned by request, re-exported by models and specialized by native/guest
+  aliases; adapter capabilities and stream snapshots remain adapter-owned.

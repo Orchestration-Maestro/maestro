@@ -196,7 +196,8 @@ fn check_declarations(
                 | "UserMessageDelivery"
                 | "SendMessageOptions"
                 | "SendUserMessageOptions"
-        ) {
+        ) || (shared_event_record(name) && kind != "type")
+        {
             "maestro-request"
         } else if matches!(name.as_str(), "ForkPosition" | "NavigateTreeOptions") {
             "maestro-entry"
@@ -210,7 +211,11 @@ fn check_declarations(
             && kind == "type"
             && member.name == "maestro-extensions-wasm"
             && source.path == member.directory.join("src/types/actions.rs");
-        if member.name != owner && !guest_tool && !guest_metadata {
+        let extension_tool = name == "ToolDefinition"
+            && kind == "type"
+            && member.name == "maestro-extensions"
+            && source.path == member.directory.join("src/types/registration.rs");
+        if member.name != owner && !guest_tool && !guest_metadata && !extension_tool {
             return Err(format!(
                 "{}:{line}: {name} declaration belongs to {owner}, not {}",
                 source.path.display(),
@@ -227,4 +232,67 @@ fn check_declarations(
         }
     }
     Ok(())
+}
+
+/// Shared schema declarations whose specialization aliases remain owner-local.
+fn shared_event_record(name: &str) -> bool {
+    matches!(
+        name,
+        "ContextFile"
+            | "BuildSystemPromptOptions"
+            | "ModelSelectSource"
+            | "ModelSelectEvent"
+            | "ThinkingLevelSelectEvent"
+            | "SessionCompactEvent"
+            | "TreePreparation"
+            | "SessionTreeEvent"
+            | "SessionBeforeTreeSummary"
+            | "SessionBeforeTreeResult"
+            | "SessionBeforeTreeEvent"
+            | "ContextEvent"
+            | "BeforeAgentStartEvent"
+            | "AgentStartEvent"
+            | "AgentEndEvent"
+            | "TurnStartEvent"
+            | "TurnEndEvent"
+            | "MessageStartEvent"
+            | "MessageUpdateEvent"
+            | "MessageEndEvent"
+            | "ResourcesDiscoverReason"
+            | "ResourcesDiscoverEvent"
+            | "ResourcesDiscoverResult"
+            | "SessionStartReason"
+            | "SessionStartEvent"
+            | "SessionBeforeSwitchReason"
+            | "SessionBeforeSwitchEvent"
+            | "SessionBeforeForkEvent"
+            | "SessionShutdownReason"
+            | "SessionShutdownEvent"
+            | "SessionBeforeSwitchResult"
+            | "SessionBeforeForkResult"
+            | "BeforeProviderRequestEvent"
+            | "AfterProviderResponseEvent"
+            | "InputSource"
+            | "InputEvent"
+            | "InputTransform"
+            | "InputEventResult"
+            | "SessionBeforeCompactEventData"
+            | "SessionBeforeCompactEvent"
+            | "SessionBeforeCompactResult"
+            | "ToolExecutionStartEvent"
+            | "ToolExecutionUpdateEvent"
+            | "ToolExecutionEndEvent"
+            | "ToolCallEvent"
+            | "ToolResultEvent"
+            | "SessionEvent"
+            | "ExtensionEvent"
+            | "ExtensionEventResult"
+            | "UserBashEvent"
+            | "UserBashEventResult"
+            | "ToolCallEventResult"
+            | "ToolResultEventResult"
+            | "ContextEventResult"
+            | "MessageEndEventResult"
+            | "BeforeAgentStartEventResult"
+    )
 }

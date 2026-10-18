@@ -1215,3 +1215,79 @@ fn assert_single_owner(name: &str, owner: &str, consumers: &[&str]) {
             .contains("duplicate declaration")
     );
 }
+
+#[test]
+fn shared_event_records_have_one_owner() {
+    registered_definition_alias_keeps_tools_ownership();
+    let workspace = Workspace::new();
+    workspace.foundation(&[
+        "maestro-request",
+        "maestro-models",
+        "maestro-extensions-wasm",
+    ]);
+    source(
+        &workspace,
+        "maestro-models",
+        "src/lib.rs",
+        "pub struct ContextEvent<M> { messages: Vec<M> }",
+    );
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(
+        error.contains("ContextEvent declaration belongs to maestro-request"),
+        "{error}"
+    );
+    source(
+        &workspace,
+        "maestro-models",
+        "src/lib.rs",
+        "pub type ContextEvent<M> = maestro_request::extension_events::ContextEvent<M>;",
+    );
+    source(
+        &workspace,
+        "maestro-request",
+        "src/lib.rs",
+        "pub struct ContextEvent<M> { messages: Vec<M> }",
+    );
+    source(
+        &workspace,
+        "maestro-extensions-wasm",
+        "src/types/events.rs",
+        "pub type ContextEvent = maestro_request::extension_events::ContextEvent<String>;",
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    source(
+        &workspace,
+        "maestro-request",
+        "other.rs",
+        "pub enum ContextEvent {}",
+    );
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(
+        error.contains(".rs:1:") && error.contains("duplicate declaration ContextEvent"),
+        "{error}"
+    );
+}
+
+/// The native extension alias specializes the tools owner without duplicating its record.
+fn registered_definition_alias_keeps_tools_ownership() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-extensions", "maestro-tools"]);
+    source(
+        &workspace,
+        "maestro-extensions",
+        "src/types/registration.rs",
+        "pub type ToolDefinition<P,D,S> = maestro_tools::ToolDefinition<ExtensionContext,P,D,S,Local>;",
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    source(
+        &workspace,
+        "maestro-extensions",
+        "src/types/registration.rs",
+        "pub struct ToolDefinition;",
+    );
+    assert!(
+        check_workspace(&workspace.root)
+            .unwrap_err()
+            .contains("ToolDefinition declaration belongs to maestro-tools")
+    );
+}

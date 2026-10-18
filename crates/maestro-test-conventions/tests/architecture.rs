@@ -620,7 +620,7 @@ fn session_shared_records_edge_is_scoped() {
         );
         assert_eq!(
             check_workspace(&workspace.root),
-            Err("maestro-request must not depend on workspace crate maestro-session".into())
+            Err("forbidden production dependency: maestro-request -> maestro-session".into())
         );
     }
 }
@@ -667,7 +667,7 @@ fn permitted_downward_edges_pass_without_absent_crates() {
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        142
+        143
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
@@ -745,7 +745,7 @@ fn path_utility_edges_preserve_native_layer_rules() {
         .collect();
     assert_eq!(rows.len(), 47);
     assert_eq!(consumers.len(), 30);
-    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 13);
+    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 12);
     for from in consumers {
         native_consumer_may_declare_the_utility(from);
     }

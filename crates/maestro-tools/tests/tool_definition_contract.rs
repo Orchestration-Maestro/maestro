@@ -401,9 +401,9 @@ type Flags = [bool; 6];
 
 /// A definition whose renderers share row state and log what the result renderer saw.
 fn render_definition(
-    observed: &Rc<RefCell<Vec<Observed>>>,
+    observed: &Arc<Mutex<Vec<Observed>>>,
 ) -> ToolDefinition<(), CallArgs, Value, u32> {
-    let seen = Rc::clone(observed);
+    let seen = Arc::clone(observed);
     ToolDefinition {
         definition: Tool {
             name: "render".into(),
@@ -417,7 +417,7 @@ fn render_definition(
         prepare_arguments: None,
         execution_mode: None,
         execute: Arc::new(|_, _, _, _, _| Box::pin(async { Err(failure("unused")) })),
-        render_call: Some(Rc::new(|args, _, context| {
+        render_call: Some(Arc::new(|args, _, context| {
             if args.unwrap()["fail"] == json!(true) {
                 return Err(failure("call failed"));
             }
@@ -425,28 +425,30 @@ fn render_definition(
             (context.invalidate)();
             Ok(Rc::new(Row))
         })),
-        render_result: Some(maestro_tools::ToolRenderResult::Typed(Rc::new(
-            move |_, options, _, context| {
-                *context.state.borrow_mut() += 1;
-                seen.borrow_mut().push(Observed {
-                    args: context.args.cloned().unwrap(),
-                    calls: *context.state.borrow(),
-                    id: context.tool_call_id.clone(),
-                    options: (options.expanded, options.is_partial),
-                    flags: [
-                        context.phase.execution_started,
-                        context.phase.args_complete,
-                        context.phase.is_partial,
-                        context.expanded,
-                        context.show_images,
-                        context.is_error,
-                    ],
-                    cwd: context.cwd.clone(),
-                    readme: context.environment.readme_path.clone(),
-                });
-                Ok(context.last_component.clone().unwrap())
-            },
-        ))),
+        render_result: Some(maestro_tools::ToolRenderResult::<
+            Value,
+            u32,
+            maestro_models::Threaded,
+        >::Typed(Arc::new(move |_, options, _, context| {
+            *context.state.borrow_mut() += 1;
+            seen.lock().unwrap().push(Observed {
+                args: context.args.cloned().unwrap(),
+                calls: *context.state.borrow(),
+                id: context.tool_call_id.clone(),
+                options: (options.expanded, options.is_partial),
+                flags: [
+                    context.phase.execution_started,
+                    context.phase.args_complete,
+                    context.phase.is_partial,
+                    context.expanded,
+                    context.show_images,
+                    context.is_error,
+                ],
+                cwd: context.cwd.clone(),
+                readme: context.environment.readme_path.clone(),
+            });
+            Ok(context.last_component.clone().unwrap())
+        }))),
     }
 }
 
@@ -516,7 +518,7 @@ fn assert_failure_and_typed_execution(
 
 #[test]
 fn tool_definition_borrows_each_calls_arguments_and_keeps_row_state() {
-    let observed = Rc::new(RefCell::new(Vec::new()));
+    let observed = Arc::new(Mutex::new(Vec::new()));
     let tool = define_tool(render_definition(&observed));
     let theme = Theme::new(
         Vec::new(),
@@ -562,16 +564,14 @@ fn tool_definition_borrows_each_calls_arguments_and_keeps_row_state() {
         assert!(Rc::ptr_eq(&row, &again));
         assert_eq!(*state.borrow(), 2);
         let last = observed
-            .borrow()
+            .lock()
+            .unwrap()
             .last()
             .map(|seen| (seen.flags, seen.options, seen.args.clone()));
         assert_eq!(last, Some((flags, (!flags[3], !flags[2]), second)));
     }
     assert_eq!(*invalidations.borrow(), 6);
-    assert!(observed.borrow().iter().all(|seen| seen.id == "stable"
-        && seen.cwd == "/work"
-        && seen.readme == "/opt/maestro/README.md"
-        && seen.calls == 2));
+    check_render_observations(&observed);
     assert_failure_and_typed_execution(&tool, &theme, &invalidations);
 }
 
@@ -655,4 +655,18 @@ fn repl_tool_conversion_captures_description_once() {
         corpus["dynamic"]["snapshotDescription"]
     );
     assert!(wrapped.description.is_none());
+}
+
+/// Every recorded call kept the unchanged context fields.
+fn check_render_observations(observed: &Arc<Mutex<Vec<Observed>>>) {
+    assert!(
+        observed
+            .lock()
+            .unwrap()
+            .iter()
+            .all(|seen| seen.id == "stable"
+                && seen.cwd == "/work"
+                && seen.readme == "/opt/maestro/README.md"
+                && seen.calls == 2)
+    );
 }

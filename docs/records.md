@@ -363,3 +363,13 @@ its existing `ToolInfo<String>` alias. Identity-deduplicated live callback stora
 belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions
 and extension error delivery reuse it; dispatch and lifecycle policy remain with
 their callers. The collection returns removed ownership for release outside guards.
+
+
+## Extension event records
+
+`maestro-request::extension_events` owns generic event/result schemas and
+`maestro-request::system_prompt` owns assembled prompt inputs. Models re-exports
+both; the extension root also exports `BuildSystemPromptOptions`. Native and
+guest specializations retain their existing domain operands;
+stream snapshots and capability encoding remain adapter operations. The shared
+Presence adapter delegates object-list admission to `maestro-json`.

@@ -3427,10 +3427,12 @@ name = "maestro-extensions"
 version = "0.1.0"
 dependencies = [
  "indexmap 2.14.2",
+ "maestro-agent",
  "maestro-catalog",
  "maestro-credentials",
  "maestro-dependencies",
  "maestro-models",
+ "maestro-path",
  "maestro-resources",
  "maestro-session",
  "maestro-test-process",
@@ -3621,6 +3623,7 @@ version = "0.1.0"
 dependencies = [
  "indexmap 2.14.2",
  "maestro-dependencies",
+ "maestro-json",
  "serde",
  "serde_json",
 ]
