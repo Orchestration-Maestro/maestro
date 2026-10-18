@@ -1,4 +1,5 @@
 //! Recorded standalone formatting operations.
+pub mod date_code;
 mod workbooks;
 use maestro_app::browser::ssf::{CellValue, FormatOptions, NumberFormat, Ssf};
 use serde::Deserialize;

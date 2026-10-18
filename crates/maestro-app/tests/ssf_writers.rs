@@ -1,9 +1,8 @@
 //! Spreadsheet field writers through the application interface.
 #![cfg(test)]
 
-use maestro_app::browser::ssf::{
-    DateCode, DateToken, FormatError, NumberToken, write_date, write_num,
-};
+use crate::ssf_support::date_code::DateObservation;
+use maestro_app::browser::ssf::{DateToken, FormatError, NumberToken, write_date, write_num};
 use serde::Deserialize;
 
 /// One consumed numeric query.
@@ -50,49 +49,6 @@ struct DateArgs {
     format: String,
     date: DateObservation,
     subsecond_digits: u8,
-}
-
-/// Calendar record emitted by the independent oracle.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct DateObservation {
-    #[serde(rename = "D")]
-    serial_day: i32,
-    #[serde(rename = "T")]
-    seconds: i32,
-    #[serde(rename = "u")]
-    fraction: f64,
-    #[serde(rename = "y")]
-    year: i32,
-    #[serde(rename = "m")]
-    month: u32,
-    #[serde(rename = "d")]
-    day: u32,
-    #[serde(rename = "H")]
-    hour: u32,
-    #[serde(rename = "M")]
-    minute: u32,
-    #[serde(rename = "S")]
-    second: u32,
-    #[serde(rename = "q")]
-    weekday: u32,
-}
-
-impl From<DateObservation> for DateCode {
-    fn from(date: DateObservation) -> Self {
-        Self {
-            serial_day: date.serial_day,
-            seconds: date.seconds,
-            fraction: date.fraction,
-            year: date.year,
-            month: date.month,
-            day: date.day,
-            hour: date.hour,
-            minute: date.minute,
-            second: date.second,
-            weekday: date.weekday,
-        }
-    }
 }
 
 /// Decode the closed date-writer vocabulary.
