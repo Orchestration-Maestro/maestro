@@ -1,7 +1,7 @@
 //! Explicit command execution observed through its public operation.
 #![cfg(test)]
 #![cfg(unix)]
-use crate::process_support;
+use crate::{agent_shell_support, process_support, read_support};
 
 use maestro_models::Cancellation;
 use maestro_tools::{ExecOptions, ExecResult, exec_command};
@@ -12,23 +12,6 @@ use std::task::Poll;
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
-
-/// A single-threaded runtime with I/O and timers.
-fn runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-}
-
-/// A single-threaded runtime whose clock starts paused.
-fn paused_runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap()
-}
 
 /// Reports `READY`, then waits for one byte and prints `bye`.
 const HOLDER: &str = r"
@@ -142,7 +125,7 @@ async fn release(mut held: Held) -> Vec<u8> {
 
 #[test]
 fn exec_preserves_literal_operands_and_positional_directory() {
-    runtime().block_on(async {
+    read_support::run(async {
         let script = "import os, sys\nassert sys.stdin.buffer.read() == b''\nsys.stdout.write(sys.argv[1] + '|' + os.getcwd() + '|' + os.environ['HOME'])";
         let result = python(script, &["a b*$HOME 'q'"], ExecOptions::default()).await;
         let home = std::env::var("HOME").unwrap();
@@ -156,7 +139,7 @@ fn exec_preserves_literal_operands_and_positional_directory() {
 
 #[test]
 fn exec_separates_unbounded_unsanitized_streams() {
-    runtime().block_on(async {
+    read_support::run(async {
         let script = r"
 import sys
 sys.stdout.buffer.write(b'\x1b[31mred\x1b[0m\r\0' + b'o' * 300000)
@@ -175,7 +158,7 @@ sys.stderr.buffer.write(b'e' * 300000 + b'\r\n')
 
 #[test]
 fn exec_preserves_utf8_across_pipe_fragments() {
-    runtime().block_on(async {
+    read_support::run(async {
         let script = r"
 import os, socket, sys
 split = int(sys.argv[2])
@@ -208,7 +191,7 @@ for fd in (1, 2): os.write(fd, b'\xf0\x90\x8d\x88'[split:])
 
 #[test]
 fn exec_preserves_status_and_maps_signal_exit_to_zero() {
-    runtime().block_on(async {
+    read_support::run(async {
         for (script, code) in [("exit 0", 0), ("exit 7", 7), ("kill -9 $$", 0)] {
             let result = run("sh", &["-c", script], ExecOptions::default()).await;
             assert_eq!((result.code, result.killed), (code, false), "{script}");
@@ -218,7 +201,7 @@ fn exec_preserves_status_and_maps_signal_exit_to_zero() {
 
 #[test]
 fn exec_spawn_errors_preserve_phase_and_preabort_state() {
-    runtime().block_on(async {
+    read_support::run(async {
         let temp = cwd();
         let cases = [
             ("maestro-missing-executable", cwd()),
@@ -263,7 +246,7 @@ fn exec_spawn_errors_preserve_phase_and_preabort_state() {
 
 #[test]
 fn exec_empty_cwd_runs_in_the_inherited_directory() {
-    runtime().block_on(async {
+    read_support::run(async {
         let result = exec_command(
             "python3",
             &args(&["-c", "import os; print(os.getcwd(), end='')"]),
@@ -282,7 +265,7 @@ fn exec_empty_cwd_runs_in_the_inherited_directory() {
 
 #[test]
 fn exec_rejects_an_empty_command_before_observing_the_signal() {
-    runtime().block_on(async {
+    read_support::run(async {
         let aborted = Cancellation::new();
         aborted.abort();
         for signal in [None, Some(&aborted)] {
@@ -298,7 +281,7 @@ fn exec_rejects_an_empty_command_before_observing_the_signal() {
 
 #[test]
 fn exec_spawns_before_observing_preaborted_signal() {
-    runtime().block_on(async {
+    read_support::run(async {
         let aborted = Cancellation::new();
         aborted.abort();
         let options = || ExecOptions {
@@ -346,7 +329,7 @@ async fn run_released(timeout: Option<Duration>) -> ExecResult {
 
 #[test]
 fn exec_timeout_is_opt_in_and_released_after_completion() {
-    runtime().block_on(async {
+    read_support::run(async {
         for timeout in [None, Some(Duration::ZERO), Some(Duration::from_secs(600))] {
             let result = run_released(timeout).await;
             assert_eq!(
@@ -379,7 +362,7 @@ enum Trigger {
 
 #[test]
 fn exec_terminates_on_abort_timeout_or_both() {
-    paused_runtime().block_on(async {
+    agent_shell_support::runtime().block_on(async {
         let timeout = Duration::from_secs(1);
         let cases: [&[Trigger]; 4] = [
             &[Trigger::Abort],
@@ -445,7 +428,7 @@ fn read_signal_answer(socket: &mut std::net::TcpStream) {
 
 #[test]
 fn exec_kills_and_reaps_a_term_resistant_child_after_the_escalation_delay() {
-    paused_runtime().block_on(async {
+    agent_shell_support::runtime().block_on(async {
         let (listener, port) = blocking_listener();
         let signal = Cancellation::new();
         let options = ExecOptions {
@@ -479,7 +462,7 @@ fn exec_kills_and_reaps_a_term_resistant_child_after_the_escalation_delay() {
 
 #[test]
 fn exec_finishes_after_inherited_pipe_grace() {
-    runtime().block_on(async {
+    read_support::run(async {
         let (listener, port) = listen().await;
         let exec = python(DESCENDANT, &[&port], ExecOptions::default());
         let (result, held) = tokio::join!(exec, ready(&listener));
@@ -505,7 +488,7 @@ fn exec_finishes_after_inherited_pipe_grace() {
 
 #[test]
 fn exec_settlement_releases_cancellation_observation() {
-    runtime().block_on(async {
+    read_support::run(async {
         let signal = Cancellation::new();
         let options = ExecOptions {
             signal: Some(&signal),
@@ -574,7 +557,7 @@ fn answers(socket: &mut std::net::TcpStream) -> bool {
 
 #[test]
 fn exec_timeout_requests_termination_exactly_at_the_deadline() {
-    paused_runtime().block_on(async {
+    agent_shell_support::runtime().block_on(async {
         let timeout = Duration::from_secs(1);
         let (listener, port) = blocking_listener();
         let options = ExecOptions {
@@ -598,7 +581,7 @@ fn exec_timeout_requests_termination_exactly_at_the_deadline() {
 
 #[test]
 fn exec_registers_a_cancellation_observer_until_it_settles() {
-    runtime().block_on(async {
+    read_support::run(async {
         let (listener, port) = listen().await;
         let signal = Cancellation::new();
         let options = ExecOptions {

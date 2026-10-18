@@ -5,52 +5,38 @@ use maestro_tools::{BashExecOptions, create_local_bash_operations};
 
 #[test]
 fn local_bash_preserves_command_directory_and_closed_input() {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(async {
-            let operations =
-                create_local_bash_operations("/tool-bin".into(), Some("/bin/bash".into()));
-            let mut bytes = Vec::new();
-            let mut sink = |data: &[u8]| bytes.extend_from_slice(data);
-            let cwd = std::env::current_dir().unwrap();
-            let result = operations
-                .exec(
-                    "read ignored; printf '%s\\n' \"$?\"; pwd; exit 7",
-                    cwd.to_str().unwrap(),
-                    BashExecOptions {
-                        on_data: &mut sink,
-                        signal: None,
-                        timeout: None,
-                        env: None,
-                    },
-                )
-                .await
-                .unwrap();
-            assert_eq!(result.exit_code, Some(7.0));
-            assert_eq!(
-                String::from_utf8(bytes).unwrap(),
-                format!("1\n{}\n", cwd.display())
-            );
-        });
+    run(async {
+        let operations = create_local_bash_operations("/tool-bin".into(), Some("/bin/bash".into()));
+        let mut bytes = Vec::new();
+        let mut sink = |data: &[u8]| bytes.extend_from_slice(data);
+        let cwd = std::env::current_dir().unwrap();
+        let result = operations
+            .exec(
+                "read ignored; printf '%s\\n' \"$?\"; pwd; exit 7",
+                cwd.to_str().unwrap(),
+                BashExecOptions {
+                    on_data: &mut sink,
+                    signal: None,
+                    timeout: None,
+                    env: None,
+                },
+            )
+            .await
+            .unwrap();
+        assert_eq!(result.exit_code, Some(7.0));
+        assert_eq!(
+            String::from_utf8(bytes).unwrap(),
+            format!("1\n{}\n", cwd.display())
+        );
+    });
 }
 
 use crate::read_support;
 use maestro_models::Cancellation;
 use maestro_tools::BashError;
 use maestro_tools::utils::shell::{ShellEnv, get_shell_config};
-use read_support::TempDir;
+use read_support::{TempDir, run};
 use std::{ffi::OsString, future::Future};
-
-/// Drives native operations with the I/O and timer drivers enabled.
-fn run<T>(future: impl Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
-}
 
 #[test]
 fn shell_native_probes_validate_filesystem_boundaries() {

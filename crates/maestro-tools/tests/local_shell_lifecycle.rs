@@ -1,7 +1,7 @@
 //! Local shell grace and completed observer lifetimes.
 #![cfg(unix)]
 #![cfg(test)]
-use crate::{process_support, read_support};
+use crate::{agent_shell_support::runtime, process_support, read_support};
 use futures_util::FutureExt;
 use maestro_models::Cancellation;
 use maestro_tools::{BashExecOptions, create_local_bash_operations};
@@ -28,15 +28,6 @@ impl Wake for Wakes {
     fn wake_by_ref(self: &Arc<Self>) {
         self.0.fetch_add(1, Ordering::SeqCst);
     }
-}
-
-/// Runtime with an explicitly driven clock.
-fn runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap()
 }
 
 #[test]
