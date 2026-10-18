@@ -1,6 +1,7 @@
 //! Real children launched through the native package operations.
 #![cfg(unix)]
 #![cfg(test)]
+use crate::capture_checks::runtime;
 use crate::scratch;
 use maestro_packages::{
     DefaultPackageManager, NativePackageOperations, PackageManager, PackageManagerOptions,
@@ -21,14 +22,6 @@ use std::{
 /// A path below the directory.
 fn at(root: &Scratch, relative: &str) -> String {
     root.0.join(relative).to_string_lossy().into_owned()
-}
-
-/// A runtime with process support for driving native futures.
-fn runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
 }
 
 /// A native manager running the given shell script as its package command.

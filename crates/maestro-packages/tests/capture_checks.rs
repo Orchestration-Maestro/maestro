@@ -7,7 +7,7 @@ use maestro_packages::{CommandCaptureOptions, NativePackageOperations, PackageOp
 use std::{io, rc::Rc, time::Duration};
 
 /// A native runtime with process and timer support.
-fn runtime() -> tokio::runtime::Runtime {
+pub(crate) fn runtime() -> tokio::runtime::Runtime {
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()

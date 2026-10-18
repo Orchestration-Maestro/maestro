@@ -115,6 +115,13 @@ mod startup_conversions;
 mod startup_timings;
 /// Strict recorded observations shared by several test modules.
 mod support {
+    /// Drive one operation on a current-thread runtime with I/O and time drivers disabled.
+    pub fn run<T>(future: impl std::future::Future<Output = T>) -> T {
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(future)
+    }
     pub mod attachment_observation;
     pub mod attachments;
     pub mod browser_providers;

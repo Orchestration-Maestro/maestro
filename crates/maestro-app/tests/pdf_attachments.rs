@@ -149,12 +149,12 @@ fn pdf_url_failures_precede_parsing() {
             })
         });
         assert!(
-            matches!(support::pdf::run(load_attachment(AttachmentSource::Url("https://example.test/a.pdf"), None, &fetch)), Err(maestro_app::browser::utils::attachment_utils::AttachmentError::HttpStatus(actual)) if actual == status)
+            matches!(support::run(load_attachment(AttachmentSource::Url("https://example.test/a.pdf"), None, &fetch)), Err(maestro_app::browser::utils::attachment_utils::AttachmentError::HttpStatus(actual)) if actual == status)
         );
     }
     let fetch: maestro_app::Fetch = Arc::new(|_| Box::pin(async { Err(FetchError::Aborted) }));
     assert!(matches!(
-        support::pdf::run(load_attachment(
+        support::run(load_attachment(
             AttachmentSource::Url("https://example.test/a.pdf"),
             None,
             &fetch
@@ -178,7 +178,7 @@ fn pdf_url_failures_precede_parsing() {
         })
     });
     assert!(matches!(
-        support::pdf::run(load_attachment(
+        support::run(load_attachment(
             AttachmentSource::Url("https://example.test/a.pdf"),
             None,
             &fetch
@@ -260,7 +260,7 @@ fn pdf_translated_fill_and_stroke_shows_keep_both_texts() {
         false,
     );
     let fetch: maestro_app::Fetch = Arc::new(|_| panic!("local input fetched"));
-    let attachment = support::pdf::run(load_attachment(
+    let attachment = support::run(load_attachment(
         AttachmentSource::Buffer(&bytes),
         Some("translated.pdf"),
         &fetch,
@@ -279,7 +279,7 @@ fn pdf_preview_preserves_full_precision_direct_and_inherited_boxes() {
     for inherited in [false, true] {
         let bytes = support::pdf::synthetic("", inherited);
         let fetch: maestro_app::Fetch = Arc::new(|_| panic!("local input fetched"));
-        let attachment = support::pdf::run(load_attachment(
+        let attachment = support::run(load_attachment(
             AttachmentSource::Buffer(&bytes),
             Some("geometry.pdf"),
             &fetch,

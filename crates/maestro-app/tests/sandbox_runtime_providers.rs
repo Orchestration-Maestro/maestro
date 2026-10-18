@@ -1,6 +1,7 @@
 //! Retained sandbox provider behavior through the application contracts.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+use crate::support::run;
 use maestro_app::browser::components::sandbox::{
     console_runtime_provider::ConsoleRuntimeProvider,
     sandbox_runtime_provider::SandboxRuntimeProvider,
@@ -53,14 +54,6 @@ async fn exchange(
         )
         .await?;
     Ok(Arc::try_unwrap(replies).unwrap().into_inner().unwrap())
-}
-
-/// Execute futures using the existing asynchronous runtime.
-fn run<T>(future: impl std::future::Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .build()
-        .unwrap()
-        .block_on(future)
 }
 
 #[test]
