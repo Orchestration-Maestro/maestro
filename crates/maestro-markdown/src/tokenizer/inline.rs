@@ -6,7 +6,7 @@ use super::{capture, node};
 use crate::{
     Definition, Kind, MarkedOptions, Node, Text, inline::ScopeKey, rules, source::ScopeSource,
 };
-pub(crate) use entities::{decode, decode_operand};
+pub(crate) use entities::decode_operand;
 use std::{collections::HashMap, ops::Range};
 
 /// One inline invocation; original definitions and policy are never reconstructed.
@@ -62,6 +62,7 @@ impl<'a> Tokenizer<'a> {
         let mut output = Vec::new();
         let mut cursor = extent.start;
         let masked = self.mask(extent.clone(), atoms);
+        let code_mask = self.code_mask(extent.clone(), atoms);
         while cursor < extent.end {
             let atom = atoms.partition_point(|range| range.end <= cursor);
             if let Some(range) = atoms.get(atom).filter(|range| range.start == cursor) {
@@ -83,7 +84,14 @@ impl<'a> Tokenizer<'a> {
                 })
                 .or_else(|| Self::code(text))
                 .or_else(|| self.line_break(text))
-                .or_else(|| self.deletion(cursor..extent.end, atoms, in_link))
+                .or_else(|| {
+                    self.deletion(
+                        cursor..extent.end,
+                        (&code_mask, extent.start),
+                        atoms,
+                        in_link,
+                    )
+                })
                 .or_else(|| self.angle(cursor..extent.end, in_link));
             if let Some((size, kind)) = token.filter(|(size, kind)| {
                 *size > 0
@@ -96,21 +104,28 @@ impl<'a> Tokenizer<'a> {
             }
             let size = self.text(&text[..limit - cursor]);
             let size = text[..size].find('\n').unwrap_or(size);
-            let range = cursor..cursor + size;
+            self.push_text(cursor..cursor + size, &mut output);
+            cursor += size;
+        }
+        output
+    }
+
+    /// Emit decoded units with their original source boundaries.
+    fn push_text(&self, range: Range<usize>, output: &mut Vec<Node>) {
+        entities::decode_units(&self.source.text[range.clone()], |unit, decoded| {
+            let range = range.start + unit.start..range.start + unit.end;
             append_text(
-                &mut output,
+                output,
                 node(
                     self.source,
                     range.clone(),
                     Kind::Text(Text {
-                        authored: self.source.text[range.clone()].to_owned(),
-                        decoded: decode(&self.source.text[range]),
+                        authored: self.source.text[range].to_owned(),
+                        decoded: decoded.to_owned(),
                     }),
                 ),
             );
-            cursor += size;
-        }
-        output
+        });
     }
 
     /// Authored soft breaks apply the selected continuation policy before decoding text.
@@ -204,6 +219,7 @@ impl<'a> Tokenizer<'a> {
     fn deletion(
         &mut self,
         range: Range<usize>,
+        masked: (&str, usize),
         atoms: &[Range<usize>],
         in_link: bool,
     ) -> Option<(usize, Kind)> {
@@ -211,9 +227,7 @@ impl<'a> Tokenizer<'a> {
         if !text.starts_with('~') {
             return None;
         }
-        let mut masked = text.as_bytes().to_vec();
-        mask_code(&mut masked, text);
-        let matched = rules::inline_del(self.options)?.find(std::str::from_utf8(&masked).ok()?)?;
+        let matched = rules::inline_del(self.options)?.find(&masked.0[range.start - masked.1..])?;
         let body = matched.group(2)?;
         let children = self.tokens(
             range.start + body.start..range.start + body.end,
@@ -221,6 +235,28 @@ impl<'a> Tokenizer<'a> {
             in_link,
         );
         Some((matched.end(), Kind::Strike(children)))
+    }
+
+    /// Index code once in this invocation, excluding caller-owned opaque spans.
+    fn code_mask(&self, extent: Range<usize>, atoms: &[Range<usize>]) -> String {
+        let text = &self.source.text[extent.clone()];
+        let mut bytes = text.as_bytes().to_vec();
+        let mut start = extent.start;
+        for atom in atoms
+            .iter()
+            .filter(|atom| atom.start >= extent.start && atom.end <= extent.end)
+        {
+            mask_code(
+                &mut bytes[start - extent.start..atom.start - extent.start],
+                &self.source.text[start..atom.start],
+            );
+            start = atom.end;
+        }
+        mask_code(
+            &mut bytes[start - extent.start..],
+            &self.source.text[start..extent.end],
+        );
+        String::from_utf8(bytes).unwrap_or_else(|_| text.to_owned())
     }
 
     /// Mask only references selected from the original document index.
@@ -317,26 +353,15 @@ fn append_text(output: &mut Vec<Node>, node: Node) {
     output.push(node);
 }
 
-/// Protect complete code spans without admitting a backslash-escaped opening tick.
+/// Consume opaque syntax in source order, masking only complete code spans.
 fn mask_code(bytes: &mut [u8], text: &str) {
     #[cfg(test)]
     crate::tests::WORK.with_borrow_mut(|work| work.mask_bytes += text.len());
     let Some(rule) = rules::INLINE_CODE_SEARCH.as_ref() else {
         return;
     };
-    let mut cursor = 0;
-    while let Some(matched) = rule.find_from(text, cursor).next() {
-        let escaped = text[..matched.start()]
-            .bytes()
-            .rev()
-            .take_while(|byte| *byte == b'\\')
-            .count()
-            % 2
-            != 0;
-        if escaped {
-            cursor = matched.start() + 1;
-        } else {
-            cursor = matched.end();
+    for matched in rule.find_iter(text) {
+        if matched.group(1).is_some() {
             mask_barrier(bytes, matched.range());
         }
     }
@@ -355,6 +380,8 @@ fn mask_barrier(bytes: &mut [u8], range: Range<usize>) {
 
 /// Borrowed inline syntax that a block extension cannot split.
 pub(crate) fn barriers(text: &str, options: MarkedOptions) -> Vec<Range<usize>> {
+    #[cfg(test)]
+    crate::tests::WORK.with_borrow_mut(|work| work.mask_bytes += text.len());
     let projected = mask_source(text, options);
     let text = projected.as_ref();
     let mut ranges = Vec::new();

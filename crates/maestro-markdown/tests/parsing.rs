@@ -277,3 +277,97 @@ fn inline_scopes_map_container_prefixes_escaped_labels_and_table_pipes() {
         "https://example.test/a|b/$x$"
     );
 }
+
+#[test]
+fn mapped_links_keep_entity_units_and_suffix_source_ranges() {
+    for entity in ["&amp;", "&#38;", "&#x26;"] {
+        for (frame, source_tail, decoded_tail) in [
+            ("", " tail", " tail"),
+            ("> ", "\n> tail", "\ntail"),
+            ("- ", "\n  tail", "\ntail"),
+        ] {
+            assert_mapped_entity_link(entity, frame, source_tail, decoded_tail);
+        }
+    }
+}
+
+/// Observe a complete mapped link and its decoded suffix in one source frame.
+fn assert_mapped_entity_link(entity: &str, frame: &str, source_tail: &str, decoded_tail: &str) {
+    let label = format!("https://x.y/a{entity}b");
+    let mut document = parse(format!("{frame}{label}{source_tail}"));
+    maestro_markdown::autolinks(&mut document);
+    let mut nodes = document.nodes.as_slice();
+    let nodes = loop {
+        nodes = match &nodes[0].kind {
+            Kind::Quote(children, _) | Kind::List(_, children) | Kind::Item(children) => children,
+            Kind::Paragraph(children) | Kind::Inline(children) => break children,
+            _ => panic!("container"),
+        };
+    };
+    assert_eq!(nodes.len(), 2);
+    assert_eq!(nodes[0].range, frame.len()..frame.len() + label.len());
+    let Kind::Link(children, actual, href, _) = &nodes[0].kind else {
+        panic!("link")
+    };
+    assert_eq!(actual, &label);
+    assert_eq!(href, &label);
+    assert!(matches!(&children[0].kind, Kind::Text(text) if text.decoded == label));
+    assert_eq!(&document.source[nodes[1].range.clone()], source_tail);
+    assert!(matches!(&nodes[1].kind, Kind::Text(text) if text.decoded == decoded_tail));
+}
+
+#[test]
+fn list_lazy_continuations_stop_after_nonparagraph_blocks() {
+    for first in ["# h", "    code", "```", "***"] {
+        let source = format!("- {first}\noutside");
+        let document = parse(source.clone());
+        assert_eq!(document.nodes.len(), 2, "{source:?}");
+        assert!(matches!(&document.nodes[0].kind, Kind::List(..)));
+        assert_eq!(
+            &document.source[document.nodes[0].range.clone()],
+            format!("- {first}")
+        );
+        assert_eq!(&document.source[document.nodes[1].range.clone()], "outside");
+    }
+}
+
+#[test]
+fn list_tabs_align_continuations_without_losing_source_ranges() {
+    let document = parse("- a\n\n\tb".into());
+    assert_eq!(document.nodes.len(), 1);
+    let Kind::List(_, items) = &document.nodes[0].kind else {
+        panic!("list")
+    };
+    let Kind::Item(children) = &items[0].kind else {
+        panic!("item")
+    };
+    let paragraphs: Vec<_> = children
+        .iter()
+        .filter(|node| matches!(node.kind, Kind::Paragraph(_)))
+        .collect();
+    assert_eq!(paragraphs.len(), 2);
+    assert_eq!(&document.source[paragraphs[1].range.clone()], "\tb");
+}
+
+#[test]
+fn tabbed_list_table_operands_keep_original_source_coordinates() {
+    let source = "- | a |\n  | - |\n  | x\thttps://x.y/a&amp;b tail |";
+    let mut document = parse(source.into());
+    maestro_markdown::autolinks(&mut document);
+    let Kind::List(_, items) = &document.nodes[0].kind else {
+        panic!("list")
+    };
+    let Kind::Item(children) = &items[0].kind else {
+        panic!("item")
+    };
+    let Kind::Table(table) = &children[0].kind else {
+        panic!("table")
+    };
+    let cell = &table.rows[0][0];
+    let context = maestro_markdown::InlineContext::new(&document);
+    let scope = context.scope(&cell.range, false).unwrap();
+    assert_eq!(scope.operands.len(), 1);
+    let (range, node) = &scope.operands[0];
+    assert_eq!(&scope.text()[range.clone()], "https://x.y/a&amp;b");
+    assert_eq!(&document.source[node.range.clone()], "https://x.y/a&amp;b");
+}

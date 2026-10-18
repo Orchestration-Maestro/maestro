@@ -183,7 +183,7 @@ impl<'a, E> Lexer<'a, E> {
         if self.context == BlockContext::ListItem || self.tokenizer.is_none() {
             return source.len();
         }
-        let barriers = tokenizer::inline::barriers(source, self.options);
+        let mut barriers = None;
         let mut begin = source.chars().next().map_or(0, char::len_utf8);
         while begin < source.len() {
             let Some(tokenizer) = self.tokenizer.as_mut() else {
@@ -197,6 +197,8 @@ impl<'a, E> Lexer<'a, E> {
                     break;
                 }
             };
+            let barriers =
+                barriers.get_or_insert_with(|| tokenizer::inline::barriers(source, self.options));
             let boundary = barriers.partition_point(|range| range.end <= start);
             if let Some(range) = barriers
                 .get(boundary)

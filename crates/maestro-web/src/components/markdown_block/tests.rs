@@ -269,3 +269,36 @@ fn display_block_definitions_resolve_forward_and_keep_first_identity() {
         assert!(!html.contains("[a]: /u"), "{html}");
     }
 }
+
+#[test]
+fn mapped_entity_links_keep_browser_suffixes_once() {
+    for entity in ["&amp;", "&#38;", "&#x26;"] {
+        for frame in ["", "> ", "- "] {
+            let html = prepare(&format!("{frame}https://x.y/a{entity}b tail"), true).html;
+            let literal = format!("https://x.y/a&amp;{}b", &entity[1..]);
+            assert!(
+                html.contains(&format!("href=\"{literal}\">{literal}</a> tail")),
+                "{html}"
+            );
+            assert_eq!(html.matches(" tail").count(), 1, "{html}");
+        }
+    }
+}
+
+#[test]
+fn browser_list_continuations_keep_following_blocks_outside() {
+    for first in ["# h", "    code", "```", "***"] {
+        let html = prepare(&format!("- {first}\noutside"), true).html;
+        assert!(html.ends_with("</ul>\n<p>outside</p>\n"), "{html}");
+    }
+    let html = prepare("- a\n\n\tb", true).html;
+    assert_eq!(html, "<ul>\n<li><p>a</p>\n<p>  b</p>\n</li>\n</ul>\n");
+}
+
+#[test]
+fn ordinary_browser_paragraphs_preserve_content_at_doubled_input() {
+    for count in [32, 64] {
+        let html = prepare(&"ordinary paragraph\n\n".repeat(count), true).html;
+        assert_eq!(html, "<p>ordinary paragraph</p>\n".repeat(count));
+    }
+}

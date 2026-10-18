@@ -213,3 +213,46 @@ fn mapped_link_source_ranges_use_ordered_boundaries() {
     eprintln!("source-range work={counts:?}");
     assert!(counts[2].source_examinations < 3 * counts[1].source_examinations);
 }
+
+/// The browser's ordinary paragraphs reach the extension's absent-start branch.
+struct NoBlockHint;
+impl crate::BlockTokenizer for NoBlockHint {
+    fn start(&self, _source: &str) -> Option<usize> {
+        None
+    }
+    fn tokenize(&mut self, _source: &str) -> Option<crate::BlockToken> {
+        None
+    }
+}
+
+/// Compare actual shared-owner scan work through either public entry route.
+fn suffix_work(extension: bool) {
+    let counts = [32, 64].map(|count| {
+        WORK.with_borrow_mut(|work| *work = Work::default());
+        let source = if extension {
+            "ordinary paragraph\n\n".repeat(count)
+        } else {
+            "~ ".repeat(count)
+        };
+        let options = crate::MarkedOptions::Browser { escape_html: true };
+        let document = if extension {
+            crate::parse_with_tokenizer(source, options, Some(&mut NoBlockHint)).unwrap()
+        } else {
+            crate::parse_with_options(source, options)
+        };
+        assert!(!document.nodes.is_empty());
+        WORK.with_borrow(|work| work.mask_bytes)
+    });
+    eprintln!("extension={extension} N/2N mask bytes={counts:?}");
+    assert_eq!(counts[1], 2 * counts[0], "extension={extension}");
+}
+
+#[test]
+fn deletion_candidates_reuse_code_barriers() {
+    suffix_work(false);
+}
+
+#[test]
+fn absent_extension_hints_skip_barrier_scans() {
+    suffix_work(true);
+}

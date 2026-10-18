@@ -69,13 +69,8 @@ fn interrupts(line: &str, indent: usize, options: MarkedOptions) -> bool {
         return false;
     }
     let line = &line[spaces..];
-    line.starts_with("```")
-        || line.starts_with("~~~")
-        || line.starts_with('#')
+    block_end(line)
         || marker(line).is_some()
-        || rules::BLOCK_HR
-            .as_ref()
-            .is_some_and(|rule| rule.find(line).is_some())
         || (options != (MarkedOptions::Browser { escape_html: true })
             && line.strip_prefix('<').is_some_and(|text| {
                 text.starts_with("!--")
@@ -85,6 +80,22 @@ fn interrupts(line: &str, indent: usize, options: MarkedOptions) -> bool {
                         .is_some_and(|byte| byte.is_ascii_alphabetic())
                         && text.contains('>')
             }))
+}
+
+/// Headings, fences and rules cannot accept a following lazy paragraph line.
+fn block_end(line: &str) -> bool {
+    line.starts_with("```")
+        || line.starts_with("~~~")
+        || line.starts_with('#')
+        || rules::BLOCK_HR
+            .as_ref()
+            .is_some_and(|rule| rule.find(line).is_some())
+}
+
+/// A previous nonparagraph block ends a dedented continuation.
+fn ends_lazy(line: &str, indent: usize) -> bool {
+    let spaces = line.bytes().take_while(|byte| *byte == b' ').count();
+    spaces >= 4 || spaces < indent.min(4) && block_end(&line[spaces..])
 }
 
 impl<E> Lexer<'_, E> {
@@ -98,13 +109,8 @@ impl<E> Lexer<'_, E> {
             if !current.follows(&first) {
                 break;
             }
-            let (consumed, pieces, lazy) =
-                item_lines(&source.text[cursor..], &current, self.options);
-            let pieces = pieces
-                .into_iter()
-                .map(|range| cursor + range.start..cursor + range.end);
-            let mut body = source.select(pieces);
-            body.lazy_lines = lazy;
+            let view = source.suffix(cursor);
+            let (consumed, body) = item_lines(&view, &current, self.options);
             let (body, task) = task(body);
             let following =
                 marker(&source.text[cursor + consumed..]).is_some_and(|next| next.follows(&first));
@@ -143,26 +149,33 @@ impl<E> Lexer<'_, E> {
 
 /// Project a first line and its eligible continuations into one item body.
 fn item_lines(
-    source: &str,
+    source: &Source<'_>,
     marker: &Marker,
     options: MarkedOptions,
-) -> (usize, Vec<std::ops::Range<usize>>, Vec<usize>) {
-    let mut pieces = std::iter::once(marker.content..marker.line).collect::<Vec<_>>();
+) -> (usize, ScopeSource) {
+    let mut body = source.select(std::iter::once(marker.content..marker.line));
     let mut consumed = marker.line;
-    let mut lazy = Vec::new();
-    let mut local = marker.line - marker.content;
-    let mut blank = source[marker.content..marker.line]
-        .trim_matches(is_whitespace_scalar)
-        .is_empty();
-    for range in lines(&source[marker.line..]) {
+    let mut previous = 0..body.text.len();
+    let mut blank = body.text.trim_matches(is_whitespace_scalar).is_empty();
+    for range in lines(&source.text[marker.line..]) {
         let range = marker.line + range.start..marker.line + range.end;
-        let line = &source[range.clone()];
+        let line = &source.text[range.clone()];
         if interrupts(line, marker.indent, options) {
             break;
         }
-        let spaces = line.bytes().take_while(|byte| *byte == b' ').count();
-        let empty = line.trim_matches(is_whitespace_scalar).is_empty();
-        if spaces < marker.indent && blank && !empty {
+        let aligned = source
+            .select(std::iter::once(range.clone()))
+            .replace("\t", "    ");
+        let spaces = aligned
+            .text
+            .bytes()
+            .take_while(|byte| *byte == b' ')
+            .count();
+        let empty = aligned.text.trim_matches(is_whitespace_scalar).is_empty();
+        if spaces < marker.indent
+            && !empty
+            && (blank || ends_lazy(&body.text[previous.clone()], marker.indent))
+        {
             break;
         }
         let strip = if spaces >= marker.indent {
@@ -171,14 +184,14 @@ fn item_lines(
             0
         };
         if strip == 0 && !empty {
-            lazy.push(local);
+            body.lazy_lines.push(body.text.len());
         }
-        local += range.len() - strip;
-        pieces.push(range.start + strip..range.end);
+        previous = body.text.len()..body.text.len() + aligned.text.len() - strip;
+        body.append(aligned.select(std::iter::once(strip..aligned.text.len())));
         consumed = range.end;
         blank |= empty;
     }
-    (consumed, pieces, lazy)
+    (consumed, body)
 }
 
 /// Task markers are consumed before the item's ordinary inline grammar.

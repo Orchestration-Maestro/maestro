@@ -564,3 +564,52 @@ fn deletion_keeps_code_closers_opaque_without_protecting_incomplete_links() {
     };
     assert!(matches!(&children[0].kind, Kind::Strike(children) if text(children) == "a `b"));
 }
+
+#[test]
+fn deletion_barriers_do_not_reuse_ticks_from_prior_opaque_tags() {
+    let document = parse("a <b title=\"`\"> ~~a~~ `".into());
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    assert!(
+        children
+            .iter()
+            .any(|node| matches!(node.kind, Kind::Strike(_)))
+    );
+}
+
+#[test]
+fn deletion_barriers_ignore_ticks_in_caller_atoms() {
+    let document = parse("$`$ ~~a~~ `".into());
+    let context = InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    let run = scope.interpret(0..scope.text().len(), std::slice::from_ref(&(0..3)));
+    let Kind::Paragraph(children) = &run.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    assert!(matches!(children[0].kind, Kind::Atom(0)));
+    assert!(
+        children
+            .iter()
+            .any(|node| matches!(node.kind, Kind::Strike(_)))
+    );
+}
+
+#[test]
+fn deletion_barriers_keep_code_inside_recursive_link_labels() {
+    let document = parse("[~~a `b~~` c~~](/u)".into());
+    let Kind::Paragraph(children) = &document.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    let Kind::Link(children, ..) = &children[0].kind else {
+        panic!("link")
+    };
+    let Kind::Strike(children) = &children[0].kind else {
+        panic!("strike")
+    };
+    assert!(
+        children
+            .iter()
+            .any(|node| matches!(&node.kind, Kind::Code(code) if code == "b~~"))
+    );
+}

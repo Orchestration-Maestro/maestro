@@ -15,7 +15,7 @@ pub(crate) struct ScopeSource {
     pub(crate) text: String,
     /// Source-ordered starts of lazy container continuations that cannot open tables.
     pub(crate) lazy_lines: Vec<usize>,
-    /// Ordered identity spans or atomic table-pipe transformations.
+    /// Ordered identity spans or atomic spelling transformations.
     units: Vec<(Range<usize>, Range<usize>)>,
 }
 impl ScopeSource {
@@ -78,27 +78,6 @@ impl ScopeSource {
         Some(start..end)
     }
 }
-impl ScopeSource {
-    /// Record equal spans and the table parser's one atomic spelling transform.
-    fn push(&mut self, mut text: &str, mut native: usize, cell: bool) {
-        while !text.is_empty() {
-            let end = if cell {
-                text.find("\\|").unwrap_or(text.len())
-            } else {
-                text.len()
-            };
-            let size = if end == 0 { 2 } else { end };
-            let shown = if end == 0 { "|" } else { &text[..end] };
-            let start = self.text.len();
-            self.text.push_str(shown);
-            self.units
-                .push((native..native + size, start..self.text.len()));
-            native += size;
-            text = &text[size..];
-        }
-    }
-}
-
 impl ScopeSource {
     /// Capture an unchanged source buffer with absolute provenance.
     pub(crate) fn identity(text: &str) -> Self {
@@ -183,17 +162,41 @@ impl ScopeSource {
         self.select(pieces)
     }
 
+    /// Replace native spelling units without rebuilding earlier transformation spans.
+    pub(crate) fn replace(&self, from: &str, to: &str) -> Self {
+        let mut output = self.select(std::iter::empty());
+        let mut start = 0;
+        for (offset, _) in self.text.match_indices(from) {
+            self.select_piece(start..offset, &mut output);
+            let begin = output.text.len();
+            output.text.push_str(to);
+            output.units.push((
+                self.extent(offset..offset + from.len()),
+                begin..begin + to.len(),
+            ));
+            start = offset + from.len();
+        }
+        self.select_piece(start..self.text.len(), &mut output);
+        output
+    }
+
+    /// Append a framed span without losing transformations or lazy-line boundaries.
+    pub(crate) fn append(&mut self, other: Self) {
+        let base = self.text.len();
+        self.text.push_str(&other.text);
+        self.units.extend(
+            other
+                .units
+                .into_iter()
+                .map(|(native, local)| (native, base + local.start..base + local.end)),
+        );
+        self.lazy_lines
+            .extend(other.lazy_lines.into_iter().map(|offset| base + offset));
+    }
+
     /// Apply table-pipe spelling once while preserving each atomic source unit.
     pub(crate) fn pipes(&self) -> Self {
-        let mut output = Self {
-            text: String::new(),
-            units: Vec::new(),
-            lazy_lines: Vec::new(),
-        };
-        for (native, local) in &self.units {
-            output.push(&self.text[local.clone()], native.start, true);
-        }
-        output
+        self.replace("\\|", "|")
     }
 }
 
@@ -224,6 +227,14 @@ impl Source<'_> {
             text: &self.text[..end],
             owner: self.owner,
             offset: self.offset,
+        }
+    }
+    /// Borrow the unconsumed suffix without copying its text or mapping.
+    pub(crate) fn suffix(&self, start: usize) -> Source<'_> {
+        Source {
+            text: &self.text[start..],
+            owner: self.owner,
+            offset: self.offset + start,
         }
     }
     /// Retain only selected construct bytes, never the unconsumed document suffix.

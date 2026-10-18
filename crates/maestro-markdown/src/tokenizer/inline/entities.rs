@@ -1,6 +1,6 @@
 //! Native entity decoding and punctuation unescaping.
 use regress::Regex;
-use std::{collections::HashMap, sync::LazyLock};
+use std::{collections::HashMap, ops::Range, sync::LazyLock};
 
 /// Complete approved named-entity table, shared across parser invocations.
 static NAMED: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|| {
@@ -22,11 +22,6 @@ static UNITS: LazyLock<Option<Regex>> = LazyLock::new(|| {
 static OPERANDS: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::with_flags(&format!(r"\\[\p{{P}}\p{{S}}]|{ENTITY}"), "u").ok());
 
-/// Decode one authored native field, preserving malformed and semicolonless units.
-pub(crate) fn decode(source: &str) -> String {
-    decode_with(source, UNITS.as_ref())
-}
-
 /// Decode a structured operand once, before it reaches a renderer.
 pub(crate) fn decode_operand(source: &str) -> String {
     decode_with(source, OPERANDS.as_ref())
@@ -34,16 +29,30 @@ pub(crate) fn decode_operand(source: &str) -> String {
 
 /// Share entity substitution without sharing the callers' escape alphabets.
 fn decode_with(source: &str, units: Option<&Regex>) -> String {
-    let Some(units) = units else {
-        return source.to_owned();
-    };
     let mut output = String::new();
+    visit_units(source, units, |_, text| output.push_str(text));
+    output
+}
+
+/// Retain each native transformation's authored extent for mapped text consumers.
+pub(super) fn decode_units(source: &str, emit: impl FnMut(Range<usize>, &str)) {
+    visit_units(source, UNITS.as_ref(), emit);
+}
+
+/// Decode once, emitting unchanged spans and individual atomic transformations.
+fn visit_units(source: &str, units: Option<&Regex>, mut emit: impl FnMut(Range<usize>, &str)) {
+    let Some(units) = units else {
+        emit(0..source.len(), source);
+        return;
+    };
     let mut cursor = 0;
     for matched in units.find_iter(source) {
-        output.push_str(&source[cursor..matched.start()]);
+        if cursor < matched.start() {
+            emit(cursor..matched.start(), &source[cursor..matched.start()]);
+        }
         let unit = &source[matched.range()];
         if let Some(escaped) = unit.strip_prefix('\\') {
-            output.push_str(escaped);
+            emit(matched.range(), escaped);
         } else if let Some(number) = unit
             .strip_prefix("&#")
             .and_then(|text| text.strip_suffix(';'))
@@ -52,18 +61,18 @@ fn decode_with(source: &str, units: Option<&Regex>) -> String {
                 || number.parse::<u32>(),
                 |digits| u32::from_str_radix(digits, 16),
             );
-            output.push(
-                value
-                    .ok()
-                    .filter(|value| *value != 0)
-                    .and_then(char::from_u32)
-                    .unwrap_or('\u{fffd}'),
-            );
+            let scalar = value
+                .ok()
+                .filter(|value| *value != 0)
+                .and_then(char::from_u32)
+                .unwrap_or('\u{fffd}');
+            emit(matched.range(), scalar.encode_utf8(&mut [0; 4]));
         } else {
-            output.push_str(NAMED.get(unit).copied().unwrap_or(unit));
+            emit(matched.range(), NAMED.get(unit).copied().unwrap_or(unit));
         }
         cursor = matched.end();
     }
-    output.push_str(&source[cursor..]);
-    output
+    if cursor < source.len() {
+        emit(cursor..source.len(), &source[cursor..]);
+    }
 }
