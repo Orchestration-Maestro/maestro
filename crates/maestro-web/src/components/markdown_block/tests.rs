@@ -38,9 +38,26 @@ const SHIFTED: [(&str, &str); 7] = [
     ),
 ];
 
+/// Tag starts that no complete tag shape covers, with the document HTML that shows them
+/// as text.
+const UNCLOSED: [(&str, &str); 3] = [
+    (
+        "<div onmouseover=alert(1)\n\nnext",
+        "<p>&lt;div onmouseover=alert(1)</p>\n<p>next</p>\n",
+    ),
+    (
+        "<p is a prime\n\nnext",
+        "<p>&lt;p is a prime</p>\n<p>next</p>\n",
+    ),
+    (
+        "a <div \"x\n<img src=x onerror=alert(1)//>-->",
+        "<p>a &lt;div &quot;x\n&lt;img src=x onerror=alert(1)//&gt;--&gt;</p>\n",
+    ),
+];
+
 #[test]
 fn escaped_documents_open_no_element_in_raw_html() {
-    for (source, _) in SHIFTED {
+    for (source, _) in SHIFTED.into_iter().chain(UNCLOSED) {
         let document = escape_tags(source.to_owned());
         visit(&document.nodes, &mut |node| {
             if let Kind::Html(html) | Kind::HtmlBlock(html) = &node.kind {
@@ -62,6 +79,13 @@ fn escaped_markup_stays_text_when_code_shifts() {
 }
 
 #[test]
+fn escaped_markup_stays_text_after_unclosed_tag_starts() {
+    for (source, html) in UNCLOSED {
+        assert_eq!(prepare(source, true).html, html, "{source:?}");
+    }
+}
+
+#[test]
 fn escaping_keeps_stable_code_and_autolinks_literal() {
     let cases = [
         (
@@ -74,6 +98,7 @@ fn escaping_keeps_stable_code_and_autolinks_literal() {
              href=\"https://example.com/a\">https://example.com/a</a></p>\n",
         ),
         ("<!-- c -->\n\ntext", "<!-- c -->\n<p>text</p>\n"),
+        ("a <b", "<p>a &lt;b</p>\n"),
     ];
     for (source, html) in cases {
         assert_eq!(prepare(source, true).html, html, "{source:?}");

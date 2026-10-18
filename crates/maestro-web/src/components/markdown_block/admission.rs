@@ -5,8 +5,10 @@ use maestro_app::{
 };
 use std::{ops::Range, sync::LazyLock};
 
-/// Tag shapes that are shown as text, in the order they are applied.
-static TAGS: LazyLock<[(regress::Regex, &str); 3]> = LazyLock::new(|| {
+/// Tag shapes that are shown as text, in the order they are applied. The last one
+/// catches a tag start that no complete tag shape covers, since `<` followed by a
+/// letter is what opens an element.
+static TAGS: LazyLock<[(regress::Regex, &str); 4]> = LazyLock::new(|| {
     let pattern = |source, replacement| {
         (
             regress::Regex::new(source).unwrap_or_else(|_| unreachable!("constant pattern")),
@@ -17,6 +19,7 @@ static TAGS: LazyLock<[(regress::Regex, &str); 3]> = LazyLock::new(|| {
         pattern(r"<(\w+)([^>]*)>", "&lt;$1$2&gt;"),
         pattern(r"</(\w+)>", "&lt;/$1&gt;"),
         pattern(r"<(?![^\s])", "&lt;"),
+        pattern(r"<(?=[A-Za-z])", "&lt;"),
     ]
 });
 

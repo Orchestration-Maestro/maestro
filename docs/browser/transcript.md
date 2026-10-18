@@ -35,7 +35,7 @@ One document-scoped context retains resolved operands and original label scopes;
 formula atoms precede ordinary inline grammar without resolving rewritten labels.
 Link labels use inline-only grammar, keeping list, heading and quote punctuation literal.
 Tag-like text outside code and angle autolinks is
-shown literally when escaping is on. Code and autolinks keep their text only while
+shown literally when escaping is on, including a tag start that never closes. Code and autolinks keep their text only while
 they are still code or autolinks once the text around them is escaped; escaping can
 change the structure around them, and then their tags are shown literally too. Formulas written with `$…$`, `\(…\)`,
 `$$…$$` and `\[…\]` render through the math library as HTML with errors shown
