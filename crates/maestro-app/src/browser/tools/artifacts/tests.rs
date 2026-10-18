@@ -431,7 +431,7 @@ fn state(panel: &ArtifactsPanel) -> State {
 async fn call(tool: &AgentTool, args: Value) -> Value {
     observe((tool.execute)("call".into(), args, None, None)).await
 }
-/// Require a text-only command result and serialize it.
+/// Require a command result without details or termination, then serialize it.
 async fn observe<E: std::fmt::Debug>(
     result: impl Future<Output = Result<AgentToolResult<Value>, E>>,
 ) -> Value {
