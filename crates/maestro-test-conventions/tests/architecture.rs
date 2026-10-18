@@ -124,13 +124,14 @@ fn crate_list_requires_core_or_dedicated_layers() {
 }
 
 fn all_crates_require_their_declared_layer() {
-    for &(name, _) in support::policy::POLICY {
-        let workspace = Workspace::new();
-        workspace.foundation(&[name]);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
-        let path = workspace.root.join("workspace-crates.json");
-        let mut list: serde_json::Value =
-            serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+    let names: Vec<_> = support::policy::POLICY.iter().map(|row| row.0).collect();
+    let workspace = Workspace::new();
+    workspace.foundation(&names);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    let path = workspace.root.join("workspace-crates.json");
+    let mut list: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(&path).unwrap()).unwrap();
+    for name in names {
         let wrong = if support::class(name) == "core" {
             "dedicated"
         } else {
@@ -146,9 +147,9 @@ fn all_crates_require_their_declared_layer() {
             ))
         );
         list[name] = support::class(name).into();
-        std::fs::write(&path, serde_json::to_vec(&list).unwrap()).unwrap();
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
     }
+    std::fs::write(&path, serde_json::to_vec(&list).unwrap()).unwrap();
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
 }
 
 #[test]
@@ -1022,9 +1023,11 @@ fn terminal_adapter_and_harness_require_toolkit() {
                 "{error}"
             );
         }
-        workspace.foundation(&[from, "maestro-test-terminal"]);
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
     }
+    let workspace = Workspace::new();
+    let names: Vec<_> = support::policy::POLICY.iter().map(|row| row.0).collect();
+    workspace.foundation(&names);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
 }
 
 #[test]
