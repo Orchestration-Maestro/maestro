@@ -68,7 +68,10 @@ impl Paint {
         point: egui::Pos2,
     ) -> [f32; 4] {
         let mut pixel = [0.; 4];
-        for primitive in ctx.tessellate(shapes.to_vec(), ctx.pixels_per_point()) {
+        for primitive in shapes
+            .iter()
+            .flat_map(|shape| ctx.tessellate(vec![shape.clone()], ctx.pixels_per_point()))
+        {
             if !primitive.clip_rect.contains(point) {
                 continue;
             }

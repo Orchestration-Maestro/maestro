@@ -1,10 +1,9 @@
 //! Mounted Close properties and non-overlapping focus-shadow paint.
 use crate::browser::{
-    attachment_content::{self as content, AttachmentUiError},
+    attachment_content::{self as content, AttachmentUiError, channel},
     transition::{Transition, TransitionStyle},
 };
 use maestro_theme::BrandPresentation;
-use num_traits::ToPrimitive as _;
 
 /// Resolved CSS property endpoints, before quantization.
 pub(crate) struct Operands {
@@ -148,10 +147,6 @@ impl Paint {
         }
         Ok(())
     }
-}
-/// Quantize only at final paint.
-fn channel(value: f32) -> u8 {
-    value.round().clamp(0., 255.).to_u8().unwrap_or_default()
 }
 /// Encode premultiplied sRGB after whole-control opacity.
 fn shadow_color(value: &[f32], opacity: f32) -> [f32; 4] {

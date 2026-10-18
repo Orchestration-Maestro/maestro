@@ -1,5 +1,5 @@
 //! Fractional focus-shadow coverage rasterized before whole-control composition.
-use crate::browser::attachment_content::AttachmentUiError;
+use crate::browser::attachment_content::{AttachmentUiError, channel};
 use num_traits::ToPrimitive as _;
 use resvg::tiny_skia::{FillRule, Mask, PathBuilder, Transform};
 
@@ -72,7 +72,7 @@ fn raster(ring: &Ring, pixels: egui::Rect) -> Result<egui::ColorImage, Attachmen
         let coverage = [(inner - base).max(0.), (outer - inner).max(0.)];
         for (inner, outer) in colors[0].iter().zip(colors[1]) {
             let value = (inner * coverage[0] + outer * coverage[1]) / 255.;
-            rgba.push(value.round().clamp(0., 255.).to_u8().unwrap_or_default());
+            rgba.push(channel(value));
         }
     }
     Ok(egui::ColorImage::from_rgba_premultiplied(

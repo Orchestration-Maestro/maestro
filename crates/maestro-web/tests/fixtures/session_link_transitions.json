@@ -1,0 +1,4827 @@
+{
+  "timepoints": [
+    0,
+    16.666667,
+    37.5,
+    75,
+    112.5,
+    150,
+    166.666667,
+    1000
+  ],
+  "cases": [
+    {
+      "kind": "enter-exit",
+      "pack": "brand.json",
+      "mode": "dark",
+      "initial": {
+        "opacity": 0,
+        "hover": false,
+        "messageHover": false,
+        "copied": false
+      },
+      "enter": [
+        {
+          "opacity": 0,
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.11263,
+          "background": [
+            62,
+            46,
+            35
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.408511,
+          "background": [
+            113,
+            84,
+            57
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.802403,
+          "background": [
+            182,
+            135,
+            87
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.960459,
+          "background": [
+            210,
+            155,
+            99
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            217,
+            160,
+            102
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            217,
+            160,
+            102
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            217,
+            160,
+            102
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        }
+      ],
+      "exit": [
+        {
+          "opacity": 1,
+          "background": [
+            217,
+            160,
+            102
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.88737,
+          "background": [
+            197,
+            145,
+            93
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.591489,
+          "background": [
+            146,
+            107,
+            71
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.197597,
+          "background": [
+            77,
+            56,
+            41
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.039541,
+          "background": [
+            49,
+            36,
+            29
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "enter-exit",
+      "pack": "brand.json",
+      "mode": "light",
+      "initial": {
+        "opacity": 0,
+        "hover": false,
+        "messageHover": false,
+        "copied": false
+      },
+      "enter": [
+        {
+          "opacity": 0,
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.11263,
+          "background": [
+            219,
+            209,
+            198
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.408511,
+          "background": [
+            160,
+            150,
+            141
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.802403,
+          "background": [
+            82,
+            71,
+            64
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.960459,
+          "background": [
+            50,
+            39,
+            34
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            242,
+            232,
+            220
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            242,
+            232,
+            220
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            242,
+            232,
+            220
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        }
+      ],
+      "exit": [
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            242,
+            232,
+            220
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.88737,
+          "background": [
+            65,
+            54,
+            48
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.591489,
+          "background": [
+            124,
+            113,
+            105
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.197597,
+          "background": [
+            202,
+            192,
+            182
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.039541,
+          "background": [
+            234,
+            224,
+            212
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "enter-exit",
+      "pack": "packs/signal.json",
+      "mode": "dark",
+      "initial": {
+        "opacity": 0,
+        "hover": false,
+        "messageHover": false,
+        "copied": false
+      },
+      "enter": [
+        {
+          "opacity": 0,
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.11263,
+          "background": [
+            44,
+            55,
+            45
+          ],
+          "border": [
+            182,
+            240,
+            90
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.408511,
+          "background": [
+            90,
+            116,
+            60
+          ],
+          "border": [
+            182,
+            240,
+            90
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.802403,
+          "background": [
+            151,
+            199,
+            80
+          ],
+          "border": [
+            182,
+            240,
+            90
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.960459,
+          "background": [
+            176,
+            232,
+            88
+          ],
+          "border": [
+            182,
+            240,
+            90
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            182,
+            240,
+            90
+          ],
+          "color": [
+            11,
+            13,
+            16
+          ],
+          "border": [
+            182,
+            240,
+            90
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            182,
+            240,
+            90
+          ],
+          "color": [
+            11,
+            13,
+            16
+          ],
+          "border": [
+            182,
+            240,
+            90
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            182,
+            240,
+            90
+          ],
+          "color": [
+            11,
+            13,
+            16
+          ],
+          "border": [
+            182,
+            240,
+            90
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        }
+      ],
+      "exit": [
+        {
+          "opacity": 1,
+          "background": [
+            182,
+            240,
+            90
+          ],
+          "color": [
+            11,
+            13,
+            16
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.88737,
+          "background": [
+            164,
+            216,
+            84
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.591489,
+          "background": [
+            118,
+            155,
+            69
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.197597,
+          "background": [
+            57,
+            72,
+            49
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.039541,
+          "background": [
+            32,
+            39,
+            41
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "enter-exit",
+      "pack": "packs/signal.json",
+      "mode": "light",
+      "initial": {
+        "opacity": 0,
+        "hover": false,
+        "messageHover": false,
+        "copied": false
+      },
+      "enter": [
+        {
+          "opacity": 0,
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.11263,
+          "background": [
+            209,
+            213,
+            219
+          ],
+          "border": [
+            26,
+            31,
+            39
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.408511,
+          "background": [
+            148,
+            152,
+            159
+          ],
+          "border": [
+            26,
+            31,
+            39
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.802403,
+          "background": [
+            67,
+            72,
+            79
+          ],
+          "border": [
+            26,
+            31,
+            39
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.960459,
+          "background": [
+            34,
+            39,
+            47
+          ],
+          "border": [
+            26,
+            31,
+            39
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            26,
+            31,
+            39
+          ],
+          "color": [
+            232,
+            236,
+            242
+          ],
+          "border": [
+            26,
+            31,
+            39
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            26,
+            31,
+            39
+          ],
+          "color": [
+            232,
+            236,
+            242
+          ],
+          "border": [
+            26,
+            31,
+            39
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            26,
+            31,
+            39
+          ],
+          "color": [
+            232,
+            236,
+            242
+          ],
+          "border": [
+            26,
+            31,
+            39
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        }
+      ],
+      "exit": [
+        {
+          "opacity": 1,
+          "background": [
+            26,
+            31,
+            39
+          ],
+          "color": [
+            232,
+            236,
+            242
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.88737,
+          "background": [
+            49,
+            54,
+            62
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.591489,
+          "background": [
+            110,
+            115,
+            122
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.197597,
+          "background": [
+            191,
+            195,
+            202
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.039541,
+          "background": [
+            224,
+            228,
+            234
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "reversal",
+      "fraction": 0.25,
+      "before": {
+        "opacity": 0.408511,
+        "background": [
+          113,
+          84,
+          57
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "after": {
+        "opacity": 0.408511,
+        "background": [
+          113,
+          84,
+          57
+        ],
+        "border": [
+          94,
+          115,
+          131
+        ],
+        "hover": false,
+        "messageHover": false,
+        "copied": false
+      },
+      "duration": 61.27658870333056,
+      "reverse": [
+        {
+          "opacity": 0.408511,
+          "background": [
+            113,
+            84,
+            57
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.222197,
+          "background": [
+            81,
+            60,
+            43
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.0807203,
+          "background": [
+            56,
+            41,
+            32
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "reversal",
+      "fraction": 0.5,
+      "before": {
+        "opacity": 0.802403,
+        "background": [
+          182,
+          135,
+          87
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "after": {
+        "opacity": 0.802403,
+        "background": [
+          182,
+          135,
+          87
+        ],
+        "border": [
+          94,
+          115,
+          131
+        ],
+        "hover": false,
+        "messageHover": false,
+        "copied": false
+      },
+      "duration": 120.36050865897654,
+      "reverse": [
+        {
+          "opacity": 0.802403,
+          "background": [
+            182,
+            135,
+            87
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.672138,
+          "background": [
+            160,
+            118,
+            77
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.158552,
+          "background": [
+            70,
+            51,
+            38
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "reversal",
+      "fraction": 0.75,
+      "before": {
+        "opacity": 0.960459,
+        "background": [
+          210,
+          155,
+          99
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "after": {
+        "opacity": 0.960459,
+        "background": [
+          210,
+          155,
+          99
+        ],
+        "border": [
+          94,
+          115,
+          131
+        ],
+        "hover": false,
+        "messageHover": false,
+        "copied": false
+      },
+      "duration": 144.06884675474652,
+      "reverse": [
+        {
+          "opacity": 0.960459,
+          "background": [
+            210,
+            155,
+            99
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.844834,
+          "background": [
+            190,
+            140,
+            90
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0.189783,
+          "background": [
+            75,
+            55,
+            40
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "repeated-reversal",
+      "a": {
+        "opacity": 0.802403,
+        "background": [
+          182,
+          135,
+          87
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "b": {
+        "opacity": 0.158552,
+        "background": [
+          70,
+          51,
+          38
+        ],
+        "border": [
+          94,
+          115,
+          131
+        ],
+        "hover": false,
+        "messageHover": false,
+        "copied": false
+      },
+      "c": {
+        "opacity": 0.158552,
+        "background": [
+          70,
+          51,
+          38
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "d1": 120.36050865897654,
+      "d2": 126.2171716386739,
+      "next": [
+        {
+          "opacity": 0.158552,
+          "background": [
+            70,
+            51,
+            38
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.284754,
+          "background": [
+            92,
+            68,
+            48
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.833733,
+          "background": [
+            188,
+            139,
+            89
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            217,
+            160,
+            102
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "visible-color-enter-exit",
+      "pack": "brand.json",
+      "mode": "dark",
+      "enter": [
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            217,
+            160,
+            102
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            62,
+            46,
+            35
+          ],
+          "color": [
+            194,
+            143,
+            92
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            113,
+            84,
+            57
+          ],
+          "color": [
+            134,
+            99,
+            64
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            182,
+            135,
+            87
+          ],
+          "color": [
+            54,
+            40,
+            27
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            210,
+            155,
+            99
+          ],
+          "color": [
+            22,
+            17,
+            13
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            217,
+            160,
+            102
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            217,
+            160,
+            102
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            217,
+            160,
+            102
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        }
+      ],
+      "exit": [
+        {
+          "opacity": 1,
+          "background": [
+            217,
+            160,
+            102
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            197,
+            145,
+            93
+          ],
+          "color": [
+            37,
+            28,
+            19
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            146,
+            107,
+            71
+          ],
+          "color": [
+            97,
+            72,
+            47
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            77,
+            56,
+            41
+          ],
+          "color": [
+            177,
+            131,
+            84
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            49,
+            36,
+            29
+          ],
+          "color": [
+            209,
+            154,
+            98
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            217,
+            160,
+            102
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            217,
+            160,
+            102
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            217,
+            160,
+            102
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "visible-color-enter-exit",
+      "pack": "brand.json",
+      "mode": "light",
+      "enter": [
+        {
+          "opacity": 1,
+          "background": [
+            242,
+            232,
+            220
+          ],
+          "color": [
+            42,
+            31,
+            26
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            219,
+            209,
+            198
+          ],
+          "color": [
+            65,
+            54,
+            48
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            160,
+            150,
+            141
+          ],
+          "color": [
+            124,
+            113,
+            105
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            82,
+            71,
+            64
+          ],
+          "color": [
+            202,
+            192,
+            182
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            50,
+            39,
+            34
+          ],
+          "color": [
+            234,
+            224,
+            212
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            242,
+            232,
+            220
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            242,
+            232,
+            220
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            242,
+            232,
+            220
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        }
+      ],
+      "exit": [
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            242,
+            232,
+            220
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            65,
+            54,
+            48
+          ],
+          "color": [
+            219,
+            209,
+            198
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            124,
+            113,
+            105
+          ],
+          "color": [
+            160,
+            150,
+            141
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            202,
+            192,
+            182
+          ],
+          "color": [
+            82,
+            71,
+            64
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            234,
+            224,
+            212
+          ],
+          "color": [
+            50,
+            39,
+            34
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            242,
+            232,
+            220
+          ],
+          "color": [
+            42,
+            31,
+            26
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            242,
+            232,
+            220
+          ],
+          "color": [
+            42,
+            31,
+            26
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            242,
+            232,
+            220
+          ],
+          "color": [
+            42,
+            31,
+            26
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "visible-color-enter-exit",
+      "pack": "packs/signal.json",
+      "mode": "dark",
+      "enter": [
+        {
+          "opacity": 1,
+          "background": [
+            26,
+            31,
+            39
+          ],
+          "color": [
+            232,
+            236,
+            242
+          ],
+          "border": [
+            182,
+            240,
+            90
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            44,
+            55,
+            45
+          ],
+          "color": [
+            207,
+            211,
+            217
+          ],
+          "border": [
+            182,
+            240,
+            90
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            90,
+            116,
+            60
+          ],
+          "color": [
+            142,
+            145,
+            150
+          ],
+          "border": [
+            182,
+            240,
+            90
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            151,
+            199,
+            80
+          ],
+          "color": [
+            55,
+            57,
+            61
+          ],
+          "border": [
+            182,
+            240,
+            90
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            176,
+            232,
+            88
+          ],
+          "color": [
+            20,
+            22,
+            25
+          ],
+          "border": [
+            182,
+            240,
+            90
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            182,
+            240,
+            90
+          ],
+          "color": [
+            11,
+            13,
+            16
+          ],
+          "border": [
+            182,
+            240,
+            90
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            182,
+            240,
+            90
+          ],
+          "color": [
+            11,
+            13,
+            16
+          ],
+          "border": [
+            182,
+            240,
+            90
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            182,
+            240,
+            90
+          ],
+          "color": [
+            11,
+            13,
+            16
+          ],
+          "border": [
+            182,
+            240,
+            90
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        }
+      ],
+      "exit": [
+        {
+          "opacity": 1,
+          "background": [
+            182,
+            240,
+            90
+          ],
+          "color": [
+            11,
+            13,
+            16
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            164,
+            216,
+            84
+          ],
+          "color": [
+            36,
+            38,
+            41
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            118,
+            155,
+            69
+          ],
+          "color": [
+            101,
+            104,
+            108
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            57,
+            72,
+            49
+          ],
+          "color": [
+            188,
+            192,
+            197
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            32,
+            39,
+            41
+          ],
+          "color": [
+            223,
+            227,
+            233
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            26,
+            31,
+            39
+          ],
+          "color": [
+            232,
+            236,
+            242
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            26,
+            31,
+            39
+          ],
+          "color": [
+            232,
+            236,
+            242
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            26,
+            31,
+            39
+          ],
+          "color": [
+            232,
+            236,
+            242
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "visible-color-enter-exit",
+      "pack": "packs/signal.json",
+      "mode": "light",
+      "enter": [
+        {
+          "opacity": 1,
+          "background": [
+            232,
+            236,
+            242
+          ],
+          "color": [
+            26,
+            31,
+            39
+          ],
+          "border": [
+            26,
+            31,
+            39
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            209,
+            213,
+            219
+          ],
+          "color": [
+            49,
+            54,
+            62
+          ],
+          "border": [
+            26,
+            31,
+            39
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            148,
+            152,
+            159
+          ],
+          "color": [
+            110,
+            115,
+            122
+          ],
+          "border": [
+            26,
+            31,
+            39
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            67,
+            72,
+            79
+          ],
+          "color": [
+            191,
+            195,
+            202
+          ],
+          "border": [
+            26,
+            31,
+            39
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            34,
+            39,
+            47
+          ],
+          "color": [
+            224,
+            228,
+            234
+          ],
+          "border": [
+            26,
+            31,
+            39
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            26,
+            31,
+            39
+          ],
+          "color": [
+            232,
+            236,
+            242
+          ],
+          "border": [
+            26,
+            31,
+            39
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            26,
+            31,
+            39
+          ],
+          "color": [
+            232,
+            236,
+            242
+          ],
+          "border": [
+            26,
+            31,
+            39
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            26,
+            31,
+            39
+          ],
+          "color": [
+            232,
+            236,
+            242
+          ],
+          "border": [
+            26,
+            31,
+            39
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        }
+      ],
+      "exit": [
+        {
+          "opacity": 1,
+          "background": [
+            26,
+            31,
+            39
+          ],
+          "color": [
+            232,
+            236,
+            242
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            49,
+            54,
+            62
+          ],
+          "color": [
+            209,
+            213,
+            219
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            110,
+            115,
+            122
+          ],
+          "color": [
+            148,
+            152,
+            159
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            191,
+            195,
+            202
+          ],
+          "color": [
+            67,
+            72,
+            79
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            224,
+            228,
+            234
+          ],
+          "color": [
+            34,
+            39,
+            47
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            232,
+            236,
+            242
+          ],
+          "color": [
+            26,
+            31,
+            39
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            232,
+            236,
+            242
+          ],
+          "color": [
+            26,
+            31,
+            39
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            232,
+            236,
+            242
+          ],
+          "color": [
+            26,
+            31,
+            39
+          ],
+          "border": [
+            108,
+            99,
+            255
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "copied",
+      "exitTo": "button",
+      "before": {
+        "opacity": 1,
+        "background": [
+          182,
+          135,
+          87
+        ],
+        "color": [
+          54,
+          40,
+          27
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "success": {
+        "opacity": 1,
+        "background": [
+          182,
+          135,
+          87
+        ],
+        "color": [
+          54,
+          40,
+          27
+        ],
+        "border": [
+          255,
+          106,
+          26
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": true
+      },
+      "during": [
+        {
+          "opacity": 1,
+          "background": [
+            182,
+            135,
+            87
+          ],
+          "color": [
+            54,
+            40,
+            27
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            191,
+            131,
+            80
+          ],
+          "color": [
+            36,
+            27,
+            19
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            212,
+            123,
+            62
+          ],
+          "color": [
+            22,
+            17,
+            13
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            241,
+            112,
+            38
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            252,
+            107,
+            28
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        }
+      ],
+      "moved": {
+        "opacity": 1,
+        "background": [
+          255,
+          106,
+          26
+        ],
+        "color": [
+          14,
+          11,
+          9
+        ],
+        "border": [
+          255,
+          106,
+          26
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": true
+      },
+      "movedDuring": [
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        }
+      ],
+      "restored": {
+        "opacity": 1,
+        "background": [
+          255,
+          106,
+          26
+        ],
+        "color": [
+          14,
+          11,
+          9
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "restore": [
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            251,
+            112,
+            35
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            239,
+            128,
+            57
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            225,
+            149,
+            87
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            219,
+            158,
+            99
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            217,
+            160,
+            102
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            217,
+            160,
+            102
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            217,
+            160,
+            102
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "copied",
+      "exitTo": "message",
+      "before": {
+        "opacity": 1,
+        "background": [
+          182,
+          135,
+          87
+        ],
+        "color": [
+          54,
+          40,
+          27
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "success": {
+        "opacity": 1,
+        "background": [
+          182,
+          135,
+          87
+        ],
+        "color": [
+          54,
+          40,
+          27
+        ],
+        "border": [
+          255,
+          106,
+          26
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": true
+      },
+      "during": [
+        {
+          "opacity": 1,
+          "background": [
+            182,
+            135,
+            87
+          ],
+          "color": [
+            54,
+            40,
+            27
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            191,
+            131,
+            80
+          ],
+          "color": [
+            36,
+            27,
+            19
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            212,
+            123,
+            62
+          ],
+          "color": [
+            22,
+            17,
+            13
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            241,
+            112,
+            38
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            252,
+            107,
+            28
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        }
+      ],
+      "moved": {
+        "opacity": 1,
+        "background": [
+          255,
+          106,
+          26
+        ],
+        "color": [
+          14,
+          11,
+          9
+        ],
+        "border": [
+          255,
+          106,
+          26
+        ],
+        "hover": false,
+        "messageHover": true,
+        "copied": true
+      },
+      "movedDuring": [
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": true
+        }
+      ],
+      "restored": {
+        "opacity": 1,
+        "background": [
+          255,
+          106,
+          26
+        ],
+        "color": [
+          14,
+          11,
+          9
+        ],
+        "border": [
+          94,
+          115,
+          131
+        ],
+        "hover": false,
+        "messageHover": true,
+        "copied": false
+      },
+      "restore": [
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            231,
+            98,
+            26
+          ],
+          "color": [
+            37,
+            28,
+            19
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            168,
+            75,
+            26
+          ],
+          "color": [
+            97,
+            72,
+            47
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            84,
+            46,
+            26
+          ],
+          "color": [
+            177,
+            131,
+            84
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            50,
+            34,
+            26
+          ],
+          "color": [
+            209,
+            154,
+            98
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            217,
+            160,
+            102
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            217,
+            160,
+            102
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            217,
+            160,
+            102
+          ],
+          "border": [
+            94,
+            115,
+            131
+          ],
+          "hover": false,
+          "messageHover": true,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "copied",
+      "exitTo": "outside",
+      "before": {
+        "opacity": 1,
+        "background": [
+          182,
+          135,
+          87
+        ],
+        "color": [
+          54,
+          40,
+          27
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "success": {
+        "opacity": 1,
+        "background": [
+          182,
+          135,
+          87
+        ],
+        "color": [
+          54,
+          40,
+          27
+        ],
+        "border": [
+          255,
+          106,
+          26
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": true
+      },
+      "during": [
+        {
+          "opacity": 1,
+          "background": [
+            182,
+            135,
+            87
+          ],
+          "color": [
+            54,
+            40,
+            27
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            191,
+            131,
+            80
+          ],
+          "color": [
+            36,
+            27,
+            19
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            212,
+            123,
+            62
+          ],
+          "color": [
+            22,
+            17,
+            13
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            241,
+            112,
+            38
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            252,
+            107,
+            28
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        },
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": true
+        }
+      ],
+      "moved": {
+        "opacity": 1,
+        "background": [
+          255,
+          106,
+          26
+        ],
+        "color": [
+          14,
+          11,
+          9
+        ],
+        "border": [
+          255,
+          106,
+          26
+        ],
+        "hover": false,
+        "messageHover": false,
+        "copied": true
+      },
+      "movedDuring": [
+        {
+          "opacity": 1,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": true
+        },
+        {
+          "opacity": 0.88737,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": true
+        },
+        {
+          "opacity": 0.591489,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": true
+        },
+        {
+          "opacity": 0.197597,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": true
+        },
+        {
+          "opacity": 0.039541,
+          "background": [
+            255,
+            106,
+            26
+          ],
+          "border": [
+            255,
+            106,
+            26
+          ],
+          "hover": false,
+          "messageHover": false,
+          "copied": true
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": true
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": true
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": true
+        }
+      ],
+      "restored": {
+        "opacity": 0,
+        "hover": false,
+        "messageHover": false,
+        "copied": false
+      },
+      "restore": [
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        },
+        {
+          "opacity": 0,
+          "hover": false,
+          "messageHover": false,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "independent-properties",
+      "opacityBefore": {
+        "opacity": 0.408511,
+        "background": [
+          42,
+          31,
+          26
+        ],
+        "border": [
+          94,
+          115,
+          131
+        ],
+        "hover": false,
+        "messageHover": true,
+        "copied": false
+      },
+      "hoverOn": {
+        "opacity": 0.408511,
+        "background": [
+          42,
+          31,
+          26
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "independent": [
+        {
+          "opacity": 0.408511,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.802403,
+          "background": [
+            113,
+            84,
+            57
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.960459,
+          "background": [
+            182,
+            135,
+            87
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            210,
+            155,
+            99
+          ],
+          "color": [
+            22,
+            17,
+            13
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            217,
+            160,
+            102
+          ],
+          "color": [
+            14,
+            11,
+            9
+          ],
+          "border": [
+            217,
+            160,
+            102
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "remount",
+      "position": "outside",
+      "first": {
+        "opacity": 0,
+        "hover": false,
+        "messageHover": false,
+        "copied": false
+      },
+      "next": {
+        "opacity": 0,
+        "hover": false,
+        "messageHover": false,
+        "copied": false
+      }
+    },
+    {
+      "kind": "retained-parent-remount",
+      "position": "message",
+      "before": {
+        "opacity": 1,
+        "background": [
+          42,
+          31,
+          26
+        ],
+        "color": [
+          217,
+          160,
+          102
+        ],
+        "border": [
+          94,
+          115,
+          131
+        ],
+        "hover": false,
+        "messageHover": true,
+        "copied": false
+      },
+      "first": {
+        "opacity": 1,
+        "background": [
+          42,
+          31,
+          26
+        ],
+        "color": [
+          217,
+          160,
+          102
+        ],
+        "border": [
+          94,
+          115,
+          131
+        ],
+        "hover": false,
+        "messageHover": true,
+        "copied": false
+      }
+    },
+    {
+      "kind": "palette-retarget",
+      "old": {
+        "opacity": 0.802403,
+        "background": [
+          182,
+          135,
+          87
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "zero": {
+        "opacity": 0.802403,
+        "background": [
+          182,
+          135,
+          87
+        ],
+        "border": [
+          42,
+          31,
+          26
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "samples": [
+        {
+          "opacity": 0.802403,
+          "background": [
+            182,
+            135,
+            87
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.892603,
+          "background": [
+            160,
+            118,
+            77
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 0.960459,
+          "background": [
+            107,
+            79,
+            54
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            56,
+            41,
+            32
+          ],
+          "color": [
+            205,
+            194,
+            182
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            235,
+            224,
+            212
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            242,
+            232,
+            220
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            242,
+            232,
+            220
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        },
+        {
+          "opacity": 1,
+          "background": [
+            42,
+            31,
+            26
+          ],
+          "color": [
+            242,
+            232,
+            220
+          ],
+          "border": [
+            42,
+            31,
+            26
+          ],
+          "hover": true,
+          "messageHover": true,
+          "copied": false
+        }
+      ]
+    },
+    {
+      "kind": "same-time",
+      "sameFirst": {
+        "opacity": 0.408511,
+        "background": [
+          113,
+          84,
+          57
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      },
+      "sameSecond": {
+        "opacity": 0.408511,
+        "background": [
+          113,
+          84,
+          57
+        ],
+        "border": [
+          217,
+          160,
+          102
+        ],
+        "hover": true,
+        "messageHover": true,
+        "copied": false
+      }
+    }
+  ]
+}

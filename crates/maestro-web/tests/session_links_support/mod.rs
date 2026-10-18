@@ -57,6 +57,10 @@ pub struct Geometry {
     pub glyph_height: f32,
     pub transition_seconds: f32,
 }
+/// Read the committed control cases.
+/// # Panics
+/// Panics if the fixture does not match its schema.
+#[must_use]
 pub fn fixture() -> Fixture {
     serde_json::from_str(include_str!("../fixtures/session_links.json")).unwrap()
 }
@@ -70,11 +74,14 @@ pub struct Canvas {
     pub hovered: bool,
     pub enabled: bool,
     pub time: f64,
+    pub paint: crate::canvas_paint::Paint,
     pub pixels: Vec<egui::Color32>,
     pub covered: bool,
     pub layout: egui::Layout,
 }
 impl Canvas {
+    /// Construct an idle controlled canvas.
+    #[must_use]
     pub fn new() -> Self {
         let host = Rc::new(Host::default());
         Self {
@@ -87,6 +94,7 @@ impl Canvas {
             hovered: true,
             enabled: true,
             time: 0.,
+            paint: crate::canvas_paint::Paint::default(),
             pixels: vec![],
             covered: false,
             layout: egui::Layout::top_down(egui::Align::Min),
@@ -101,6 +109,9 @@ impl Canvas {
     ) {
         self.pack_frame(events, "brand.json", BrandMode::Dark)
     }
+    /// Draw one frame using the selected pack.
+    /// # Panics
+    /// Panics if the controlled brand pack or draw result is absent.
     pub fn pack_frame(
         &mut self,
         events: Vec<egui::Event>,
@@ -137,6 +148,7 @@ impl Canvas {
                 egui::ImageData::Color(image) => image.pixels.clone(),
             })
             .collect();
+        self.paint.update(&output);
         output.textures_delta.clear();
         (result.unwrap(), output)
     }
@@ -178,6 +190,9 @@ impl Canvas {
         assert_eq!(parent.next_widget_position(), position);
         result
     }
+    /// Deliver a complete primary gesture.
+    /// # Errors
+    /// Returns an error from the reached control draw.
     pub fn activate(
         &mut self,
     ) -> Result<egui::Response, maestro_web::browser::attachment_content::AttachmentUiError> {
@@ -186,6 +201,7 @@ impl Canvas {
         self.frame(pointer(self.rect.center(), false)).0
     }
 }
+#[must_use]
 pub fn pointer(pos: egui::Pos2, pressed: bool) -> Vec<egui::Event> {
     vec![
         egui::Event::PointerMoved(pos),
@@ -197,6 +213,9 @@ pub fn pointer(pos: egui::Pos2, pressed: bool) -> Vec<egui::Event> {
         },
     ]
 }
+/// Assert URL preparation through control activation.
+/// # Panics
+/// Panics if a selected fixture or its output differs.
 pub fn check_urls(names: &[&str]) {
     let cases: Vec<_> = fixture()
         .urls
@@ -248,6 +267,7 @@ pub fn settle(canvas: &Canvas, index: usize, success: bool) {
     canvas.host.run_work();
 }
 /// Read the painted check indication from this retained control.
+#[must_use]
 pub fn check(output: &egui::FullOutput) -> bool {
     output
         .shapes
@@ -255,6 +275,7 @@ pub fn check(output: &egui::FullOutput) -> bool {
         .any(|shape| matches!(&shape.shape, egui::Shape::Text(text) if text.galley.text()=="✓"))
 }
 /// Read the actual painted catalog glyph bounds.
+#[must_use]
 pub fn link(output: &egui::FullOutput) -> Option<egui::Rect> {
     output.shapes.iter().find_map(|shape| match &shape.shape {
         egui::Shape::Mesh(mesh) => Some(mesh.calc_bounds()),
@@ -270,4 +291,10 @@ fn cover(ui: &egui::Ui, rect: egui::Rect) {
         .show(ui.ctx(), |ui| {
             ui.allocate_response(rect.size(), egui::Sense::click());
         });
+}
+
+impl Default for Canvas {
+    fn default() -> Self {
+        Self::new()
+    }
 }

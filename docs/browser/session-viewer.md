@@ -135,8 +135,15 @@ top/right edges and publishes the measured slot as a canvas hole. The control
 registers full geometry, applies the caller clip and existing primary-gesture
 admission, and returns the response for native focus reveal. It paints its own
 14-point link glyph, border and selected-pack roles; message hover controls
-visibility with a 150-ms transition. Background and foreground colors use the
-same transition; the border switches immediately on hover or successful copy.
+visibility with a 150-ms `ease` transition (`cubic-bezier(0.25, 0.1, 0.25, 1)`).
+Background and foreground colors use independent transitions with the same curve.
+Each property retargets from its current unrounded encoded-sRGB value, with
+shortened reversals; unchanged destinations keep their existing run. New controls
+start at their resolved style and drop their history with their retained state.
+The border switches immediately on hover or successful copy; feedback glyphs
+switch immediately on success and expiry.
+The current painter fades background and glyph separately; overlapping pixels at
+partial opacity remain tracked in [the composition repair](https://github.com/Orchestration-Maestro/maestro/issues/1277).
 The copied check uses the selected pack's body typography, independent of the
 parent button style. It owns no text root or viewport.
 

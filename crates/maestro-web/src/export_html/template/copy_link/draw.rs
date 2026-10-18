@@ -1,6 +1,9 @@
 //! Full-slot canvas interaction and selected-pack decoration.
 use super::{CopyLinkState, build_share_url};
-use crate::browser::attachment_content::{self, AttachmentUiError};
+use crate::browser::{
+    attachment_content::{self, AttachmentUiError, channel, color},
+    transition::{Transition, TransitionStyle},
+};
 use maestro_theme::BrandPresentation;
 /// Borrowed activation and placement operands for one frame.
 #[derive(Clone, Copy)]
@@ -61,30 +64,38 @@ pub fn render_copy_link_button(
 /// Animate the existing visual state without admitting an independent timer.
 fn paint(
     ui: &mut egui::Ui,
-    state: &CopyLinkState,
+    state: &mut CopyLinkState,
     view: &CopyLinkView<'_>,
     response: &egui::Response,
 ) -> Result<(), AttachmentUiError> {
     let copied = state.feedback.copied();
     let hovered = response.hovered() || response.has_focus();
-    let opacity =
-        ui.ctx()
-            .animate_bool_with_time(state.id.with("visibility"), view.message_hovered, 0.15);
-    let accent = ui
-        .ctx()
-        .animate_bool_with_time(state.id.with("hover"), hovered, 0.15);
-    let success = ui
-        .ctx()
-        .animate_bool_with_time(state.id.with("success"), copied, 0.15);
+    let operands = Operands::resolve(view, response, copied)?;
     let p = view.presentation;
-    let border_role = if copied {
-        "success"
-    } else if hovered {
-        "accent"
-    } else {
-        "border"
-    };
-    let (background, border, foreground) = colors(p, accent, success, border_role)?;
+    let border = color(
+        p,
+        if copied {
+            "success"
+        } else if hovered {
+            "accent"
+        } else {
+            "border"
+        },
+    )?;
+    let now = ui.input(|input| input.time);
+    let sampled = state
+        .transitions
+        .get_or_insert_with(|| CopyLinkTransitions::new(&operands))
+        .sample(now, &operands);
+    if sampled.active {
+        ui.ctx().request_repaint();
+    }
+    let Paint {
+        opacity,
+        background,
+        color: foreground,
+        ..
+    } = sampled;
     if opacity <= 0. {
         return Ok(());
     }
@@ -117,31 +128,96 @@ fn paint(
     Ok(())
 }
 
-/// Resolve animated panel/glyph colors and the immediate boundary role.
-fn colors(
-    p: &BrandPresentation<'_>,
-    accent: f32,
-    success: f32,
-    border_role: &str,
-) -> Result<(egui::Color32, egui::Color32, egui::Color32), AttachmentUiError> {
-    let mix = |a: egui::Color32, b: egui::Color32, t: f32| -> egui::Color32 {
-        egui::lerp(egui::Rgba::from(a)..=egui::Rgba::from(b), t).into()
-    };
-    let background = mix(
-        attachment_content::color(p, "panel")?,
-        attachment_content::color(p, "accent")?,
-        accent,
-    );
-    let background = mix(
-        background,
-        attachment_content::color(p, "success")?,
-        success,
-    );
-    let border = attachment_content::color(p, border_role)?;
-    let foreground = mix(
-        attachment_content::color(p, "muted")?,
-        attachment_content::color(p, "on-accent")?,
-        accent.max(success),
-    );
-    Ok((background, border, foreground))
+/// Resolved property destinations for the current frame.
+struct Operands {
+    /// Whole-control opacity.
+    opacity: [f32; 1],
+    /// Encoded-sRGB background components.
+    background: [f32; 3],
+    /// Encoded-sRGB foreground components.
+    color: [f32; 3],
+}
+impl Operands {
+    /// Resolve cascade priority before retaining property destinations.
+    fn resolve(
+        view: &CopyLinkView<'_>,
+        response: &egui::Response,
+        copied: bool,
+    ) -> Result<Self, AttachmentUiError> {
+        let hovered = response.hovered() || response.has_focus();
+        let background = color(
+            view.presentation,
+            if copied {
+                "success"
+            } else if hovered {
+                "accent"
+            } else {
+                "panel"
+            },
+        )?;
+        let foreground = color(
+            view.presentation,
+            if copied || hovered {
+                "on-accent"
+            } else {
+                "muted"
+            },
+        )?;
+        Ok(Self {
+            opacity: [if view.message_hovered { 1. } else { 0. }],
+            background: [background.r(), background.g(), background.b()].map(f32::from),
+            color: [foreground.r(), foreground.g(), foreground.b()].map(f32::from),
+        })
+    }
+}
+/// Three CSS properties retained by one copy-link mount.
+pub(super) struct CopyLinkTransitions {
+    /// Visibility run.
+    opacity: Transition<1>,
+    /// Background run.
+    background: Transition<3>,
+    /// Foreground run.
+    color: Transition<3>,
+}
+impl CopyLinkTransitions {
+    /// Mount at the resolved current destinations.
+    fn new(operands: &Operands) -> Self {
+        Self {
+            opacity: Transition::new(operands.opacity),
+            background: Transition::new(operands.background),
+            color: Transition::new(operands.color),
+        }
+    }
+    /// Sample all properties against one supplied frame instant.
+    fn sample(&mut self, now: f64, target: &Operands) -> Paint {
+        let style = TransitionStyle {
+            duration: 0.15,
+            curve: [0.25, 0.1, 0.25, 1.],
+        };
+        let opacity = self.opacity.sample(now, target.opacity, style);
+        let background = self.background.sample(now, target.background, style);
+        let foreground = self.color.sample(now, target.color, style);
+        Paint {
+            opacity: opacity.value[0],
+            background: opaque_color(background.value),
+            color: opaque_color(foreground.value),
+            active: opacity.active || background.active || foreground.active,
+        }
+    }
+}
+/// Final paint operands, released from the retained transition borrow.
+struct Paint {
+    /// Whole-control opacity.
+    opacity: f32,
+    /// Quantized background.
+    background: egui::Color32,
+    /// Quantized foreground.
+    color: egui::Color32,
+    /// Whether to request another canvas frame.
+    active: bool,
+}
+/// Encode an opaque sRGB value only at the paint boundary.
+fn opaque_color(value: [f32; 3]) -> egui::Color32 {
+    let [r, g, b] = value.map(channel);
+    egui::Color32::from_rgb(r, g, b)
 }
