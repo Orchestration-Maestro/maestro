@@ -46,6 +46,13 @@ pub fn icons() -> Result<IndexMap<String, IconNode>, serde_json::Error> {
     serde_json::from_str(include_str!("../assets/icons.json"))
 }
 
+/// Resolve one owned node without retaining the surrounding catalog.
+/// # Errors
+/// Returns the decoding failure from [`icons`].
+pub(crate) fn icon_node(name: &str) -> Result<Option<IconNode>, serde_json::Error> {
+    Ok(icons()?.swap_remove(name))
+}
+
 /// Relative glyph size at the caller's normal root font size.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum IconSize {

@@ -223,32 +223,14 @@ fn artifact_modes_survive_edits_and_stay_independent() {
 /// Selected, hover and focus treatment survive tessellation and the final clip.
 #[test]
 fn preview_toggle_paints_selected_hover_and_focus() {
-    for frame in branded_frames() {
-        let mode = frame.mode;
+    for (case, frame) in branded_frames().into_iter().enumerate() {
         let mut toggle = PreviewCodeToggle::new();
         let mut paint = canvas_paint::Paint::default();
         let output = toggle_frame(&frame, &mut toggle, vec![], &mut paint).1;
 
         let controls = slots(&frame.context);
         assert_eq!(controls.len(), 2);
-        let presentation = frame.pack.presentation(mode).unwrap();
-        let muted = egui::Color32::from_hex(presentation.colors["muted"])
-            .unwrap()
-            .to_array();
-        let text = egui::Color32::from_hex(presentation.colors["text"])
-            .unwrap()
-            .to_array();
-        let glyph = |r: egui::Rect| egui::Rect::from_center_size(r.center(), egui::vec2(16., 16.));
-        assert!(
-            paint
-                .region(&frame.context, &output.shapes, glyph(controls[0]))
-                .contains(&text)
-        );
-        assert!(
-            paint
-                .region(&frame.context, &output.shapes, glyph(controls[1]))
-                .contains(&muted)
-        );
+        assert_native_toggle_glyphs(&frame, &output, &paint, case);
         let sample = |rect: egui::Rect| rect.shrink2(egui::vec2(12., 4.));
         let preview = paint.region(&frame.context, &output.shapes, sample(controls[0]));
         let code = paint.region(&frame.context, &output.shapes, sample(controls[1]));
@@ -261,6 +243,72 @@ fn preview_toggle_paints_selected_hover_and_focus() {
             paint.region(&frame.context, &output.shapes, sample(controls[0]))
         );
         hover_focus(&frame, &mut toggle, &mut paint, &output, &controls);
+    }
+}
+
+/// Compare every isolated native glyph sample and its unequal-role control.
+fn assert_native_toggle_glyphs(
+    frame: &Frame,
+    output: &egui::FullOutput,
+    paint: &canvas_paint::Paint,
+    case: usize,
+) {
+    let presentation = frame.pack.presentation(frame.mode).unwrap();
+    let muted = egui::Color32::from_hex(presentation.colors["muted"])
+        .unwrap()
+        .to_array();
+    let text = egui::Color32::from_hex(presentation.colors["text"])
+        .unwrap()
+        .to_array();
+    let recorded = canvas_paint::filtering_fixture();
+    let glyphs: Vec<_> = output
+        .shapes
+        .iter()
+        .filter(|s| matches!(s.shape, egui::Shape::Mesh(_)))
+        .collect();
+    assert_eq!(glyphs.len(), 2);
+    for (index, shape) in glyphs.iter().enumerate() {
+        let row = &recorded.preview[case * 2 + index];
+        let tint = if index == 0 { text } else { muted };
+        assert_eq!(row.tint, tint);
+        assert_eq!(row.role, if index == 0 { "text" } else { "muted" });
+        let egui::Shape::Mesh(mesh) = &shape.shape else {
+            unreachable!()
+        };
+        let rect = mesh.calc_bounds();
+        let images = paint.images(std::slice::from_ref(*shape));
+        assert_eq!(row.size, images[0].size);
+        let negative = if text == muted {
+            egui::Color32::from_hex(presentation.colors["accent"])
+                .unwrap()
+                .to_array()
+        } else {
+            [muted, text][index]
+        };
+        let [r, g, b, a] = negative;
+        let (wrong_paint, wrong_shapes) = canvas_paint::icon(
+            &frame.context,
+            rect,
+            if index == 0 { "Eye" } else { "Code" },
+            egui::Color32::from_rgba_premultiplied(r, g, b, a),
+        );
+        let mut rejects_wrong_role = false;
+        for sample in &row.samples {
+            let position = rect.min + rect.size() * egui::vec2(sample.uv[0], sample.uv[1]);
+            let actual = paint.pixel(&frame.context, std::slice::from_ref(*shape), position);
+            let wrong = wrong_paint.pixel(&frame.context, &wrong_shapes, position);
+            rejects_wrong_role |= wrong
+                .into_iter()
+                .zip(sample.expected)
+                .any(|(a, b)| (a - b).abs() > 0.51);
+            for (actual, expected) in actual.into_iter().zip(sample.expected) {
+                assert!(
+                    (actual - expected).abs() <= 0.51,
+                    "native preview pixel differs"
+                );
+            }
+        }
+        assert!(rejects_wrong_role);
     }
 }
 

@@ -304,11 +304,16 @@ pub(crate) fn glyph(
     name: &str,
     tint: egui::Color32,
 ) -> Result<(), ControlError> {
-    let catalog = icons::icons().map_err(|e| ControlError::Host(e.to_string()))?;
-    let node = catalog
-        .get(name)
-        .ok_or_else(|| ControlError::Host(format!("Missing glyph: {name}")))?;
-    paint_icon(ui, rect, node, (IconSize::Md, tint, 0.))
+    let node = glyph_node(name)?;
+    paint_icon(ui, rect, &node, (IconSize::Md, tint, 0.))
+}
+/// Resolve catalog geometry at the existing named-control error boundary.
+/// # Errors
+/// Returns the catalog or missing-glyph control failure.
+pub(crate) fn glyph_node(name: &str) -> Result<icons::IconNode, ControlError> {
+    icons::icon_node(name)
+        .map_err(|error| ControlError::Host(error.to_string()))?
+        .ok_or_else(|| ControlError::Host(format!("Missing glyph: {name}")))
 }
 /// Paint supplied geometry with a caller-selected size, tint and rotation.
 pub(crate) fn paint_icon(

@@ -285,19 +285,12 @@ fn catalog_icon(
     name: &str,
     angle: f32,
 ) -> Result<(), ToolUiError> {
-    let catalog = crate::icons::icons().map_err(|error| {
-        ToolUiError::Control(attachment_content::ControlError::Host(error.to_string()))
-    })?;
-    let node = catalog.get(name).ok_or_else(|| {
-        ToolUiError::Control(attachment_content::ControlError::Host(format!(
-            "Missing glyph: {name}"
-        )))
-    })?;
+    let node = attachment_content::glyph_node(name).map_err(ToolUiError::Control)?;
     let rect = ui.allocate_space(egui::vec2(16., 16.)).1;
     attachment_content::paint_icon(
         ui,
         rect,
-        node,
+        &node,
         (
             IconSize::Sm,
             attachment_content::color(

@@ -19,6 +19,8 @@ pub struct CopyLinkState {
     pressed: Option<()>,
     /// Mounted property histories, absent before the first resolved style.
     transitions: Option<draw::CopyLinkTransitions>,
+    /// One retained composed control image.
+    painter: crate::browser::control_paint::Painter<draw::CopyKey>,
 }
 impl CopyLinkState {
     /// Retain the supplied browser effects and a stable control identity.
@@ -30,6 +32,7 @@ impl CopyLinkState {
             feedback: CopyFeedback::default(),
             pressed: None,
             transitions: None,
+            painter: crate::browser::control_paint::Painter::default(),
         }
     }
     /// Begin the native effect before scheduling its owned completion.

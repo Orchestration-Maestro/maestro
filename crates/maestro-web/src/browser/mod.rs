@@ -1,6 +1,9 @@
 //! Browser-owned attachment content effects.
 pub mod attachment_content;
 
+/// Composed native control decorations.
+pub(crate) mod control_paint;
+
 /// Cancel-on-drop browser timers.
 pub mod timer;
 

@@ -874,10 +874,11 @@ fn native_rings(view: &View) -> Vec<f32> {
 
 /// Read the actual canvas glyph extent, independent of the native body's natural height.
 fn native_close(view: &View) -> egui::Rect {
-    attachment_support::dialog_paint::glyphs(&view.shapes.borrow())
-        .next()
+    view.context
+        .interactive_rects_last_pass()
+        .into_iter()
+        .find(|rect| rect.size() == egui::vec2(16., 16.))
         .unwrap()
-        .calc_bounds()
 }
 
 /// Compare actual keyboard-focus pixel coverage with the recorded fractional spread.
