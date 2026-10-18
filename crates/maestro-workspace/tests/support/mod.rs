@@ -51,16 +51,21 @@ pub fn add_tab(owner: &mut WorkspaceTopology<fn() -> u128>, workspace: usize) ->
 pub fn assert_invariants(workspace: &maestro_workspace::workspace::Workspace) {
     let mut ids = std::collections::HashSet::new();
     let mut terminals = std::collections::HashSet::new();
+    let mut tab_numbers = std::collections::HashSet::new();
+    let mut pane_numbers = std::collections::HashSet::new();
     for tab in &workspace.tabs {
         let leaves = tab.layout.pane_ids();
         assert!(leaves.contains(&tab.root_pane));
         assert!(leaves.contains(&tab.layout.focused()));
         assert_eq!(leaves.len(), tab.panes.len());
-        assert!(tab.number < workspace.next_public_tab_number);
+        assert!((1..workspace.next_public_tab_number).contains(&tab.number));
+        assert!(tab_numbers.insert(tab.number));
         for id in leaves {
             assert!(ids.insert(id));
             assert!(terminals.insert(&tab.panes[&id].attached_terminal_id));
-            assert!(workspace.public_pane_numbers[&id] < workspace.next_public_pane_number);
+            let number = workspace.public_pane_numbers[&id];
+            assert!((1..workspace.next_public_pane_number).contains(&number));
+            assert!(pane_numbers.insert(number));
         }
     }
     assert_eq!(ids.len(), workspace.public_pane_numbers.len());
