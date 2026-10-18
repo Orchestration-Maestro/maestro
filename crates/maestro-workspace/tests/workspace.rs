@@ -168,6 +168,13 @@ fn tab_reorder_preserves_selection_and_public_numbers() {
         ws.tabs.iter().map(|t| t.number).collect::<Vec<_>>(),
         [2, 3, 1]
     );
+    assert_eq!(
+        ws.tabs
+            .iter()
+            .map(|t| t.custom_name.as_deref())
+            .collect::<Vec<_>>(),
+        [Some("custom"), None, None]
+    );
     assert_eq!(ws.tabs[2].root_pane, moved_root);
     assert_eq!(ws.tabs[ws.active_tab].root_pane, active);
     assert_invariants(ws);
