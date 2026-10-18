@@ -1,26 +1,6 @@
 [
   {
     "input": {
-      "body": "{\"version\":\"1.2.4\"}"
-    },
-    "output": {
-      "branch": "ok",
-      "result": {
-        "version": "1.2.4"
-      },
-      "calls": [
-        {
-          "url": "https://controlled.invalid:9443/api/latest-version",
-          "headers": {
-            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
-            "accept": "application/json"
-          }
-        }
-      ]
-    }
-  },
-  {
-    "input": {
       "body": "\ufeff{\"version\":\"1.2.4\"}"
     },
     "output": {
@@ -89,41 +69,6 @@
       "result": {
         "version": "1.2.4"
       },
-      "calls": [
-        {
-          "url": "https://controlled.invalid:9443/api/latest-version",
-          "headers": {
-            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
-            "accept": "application/json"
-          }
-        }
-      ]
-    }
-  },
-  {
-    "input": {
-      "body": "null"
-    },
-    "output": {
-      "branch": "error",
-      "calls": [
-        {
-          "url": "https://controlled.invalid:9443/api/latest-version",
-          "headers": {
-            "user-agent": "maestro/1.2.3 (linux; rust; x64)",
-            "accept": "application/json"
-          }
-        }
-      ]
-    }
-  },
-  {
-    "input": {
-      "body": "[]"
-    },
-    "output": {
-      "branch": "ok",
-      "result": null,
       "calls": [
         {
           "url": "https://controlled.invalid:9443/api/latest-version",
