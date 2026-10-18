@@ -47,7 +47,7 @@ port trait: one implementation needs no seam.
 
 1. As a pane user, I want programs in my pane to draw exactly as they do in the reference, so that shells, editors and agents look and behave the same.
 2. As a pane user, I want wide characters, combining marks, emoji sequences, flags and skin tones to occupy the cells the reference gives them, so that columns line up.
-3. As a pane user, I want scrollback bounded by a byte limit that keeps the same history the reference keeps for that limit, so that memory use and retained history match.
+3. As a pane user, I want scrollback bounded by a byte limit that retains at least as much history as the reference on the recorded controls, with identical visible content.
 4. As a pane user, I want resizing to rewrap soft-wrapped lines and keep wide characters and links, so that history stays readable after a resize.
 5. As a pane user, I want alternate screens, cursor styles and modes to follow what programs request, so that full-screen programs restore my shell when they exit.
 6. As a pane user, I want links, titles, working-directory reports, clipboard writes and colour queries to work through the escape sequences programs use, so that pane programs integrate with the workspace.
@@ -126,13 +126,16 @@ two kinds of handler: the terminal's and recording handlers in tests.
    constant-time, pins keep node identity, and a stale identifier is a checked miss.
 2. **Byte budget.** Scrollback is limited in page bytes: the list prunes its oldest page
    when the next page would exceed the limit, never below the active area. The page byte
-   size is the reference's layout arithmetic (record sizes, set and map layouts, the chunk
-   allocator and the host page size) as pure functions over safe storage, so a byte limit
-   keeps exactly the rows the reference keeps.
+   size uses the page layout arithmetic (record sizes, set and map layouts, the chunk
+   allocator and the host page size) as pure functions over safe storage. This is logical
+   page accounting, not process allocator RSS. Charged history stays within the configured
+   budget, retains at least the reference's recorded rows, and preserves visible cells,
+   styles and links; exact row counts depend on the storage runtime's memory layout.
 3. **Cells and rows** are packed `Copy` newtypes with typed accessors.
-4. **Page tables.** Styles are a vector plus a map from style to identifier with the
-   reference's capacity rule; grapheme and string stores keep the reference's first-fit
-   chunk allocation, because it decides when a page runs out of room and grows.
+4. **Page tables.** Styles and links share one deduplicated, reference-counted owner.
+   Identifiers, probe geometry, interior reuse and growth thresholds are runtime details;
+   admitted operations and value lifetimes are preserved. Grapheme and string stores keep
+   first-fit chunk allocation, because it decides when a page runs out of room and grows.
 5. **Pins.** A pin names a cell by node, row and column. Tracked pins live in a slab the
    page list updates on every edit and releases explicitly.
 6. **Screens.** The primary screen plus an alternate screen created on first use, each
@@ -227,7 +230,8 @@ fingerprints use the standard library's hasher. No other crate is added.
 
 - SIMD dispatch and vector loops; results equal the reference's scalar paths.
 - Page-aligned single allocations, offset pointers, memory mapping, memory pools and the
-  forked hash map; only the size arithmetic and capacity rules stay.
+  forked hash map; only the size arithmetic stays. Internal identifier reuse, probe
+  geometry, growth thresholds and exact byte-budget history-row equality are not copied.
 - The foreign-function layer: result codes, sized structs, opaque handles, getter and setter
   enums, multi-get, "query size then fill" buffers, callback trampolines and send markers.
 - Allocation-failure error unions and fault injection.
