@@ -1223,8 +1223,8 @@ fn open_plain(rig: &Rig) {
 /// Candidates `{argument}1` and `{argument}2`.
 fn numbered(argument: &str) -> Vec<AutocompleteItem> {
     vec![
-        rig::item(&format!("{argument}1")),
-        rig::item(&format!("{argument}2")),
+        crate::fixtures::providers::item(&format!("{argument}1")),
+        crate::fixtures::providers::item(&format!("{argument}2")),
     ]
 }
 
