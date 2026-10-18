@@ -43,6 +43,10 @@ yaml-rust2 = { path = "vendor/yaml-rust2" }
 [profile.dev]
 debug = "line-tables-only"
 
+# Backtraces need file:line for workspace code only; dependency line tables take target space.
+[profile.dev.package."*"]
+debug = false
+
 # Tests compile extension components; an unoptimised code generator makes each compile about five times slower.
 [profile.dev.package.cranelift-codegen]
 opt-level = 3

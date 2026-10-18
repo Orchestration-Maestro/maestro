@@ -205,8 +205,10 @@ such as name filters and `-- --ignored`, `-- --exact NAME` or `-- --nocapture`.
 An unmatched ordinary-test filter fails rather than passing an empty selection.
 Use direct `cargo test --doc` for doctest-only runs and direct `cargo nextest run`
 for runner-only flags or target selection. `tui-test-ansi` runs only nextest.
-Development and test profiles use `debug = "line-tables-only"`: backtraces retain
-file:line, without debugger variable views.
+Development and test profiles use `debug = "line-tables-only"` for workspace crates:
+backtraces retain file:line for workspace code, without debugger variable views.
+Dependencies build without debug info, so their frames show function names only;
+this keeps target directories about a sixth smaller.
 They also build `cranelift-codegen` and `regalloc2` optimised, because tests
 compile extension components and an unoptimised code generator makes each
 compile about five times slower; release builds are unchanged.
