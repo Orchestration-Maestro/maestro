@@ -68,12 +68,7 @@ fn completed<T>(mut future: BoxFuture<T>) -> T {
 }
 /// A caller failure with exact text.
 fn diagnostic(message: &str) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: None,
-        message: message.into(),
-        stack: None,
-        code: None,
-    }
+    DiagnosticErrorInfo::new(None, message)
 }
 /// A declaration for the typed callback tests.
 fn definition() -> Tool {

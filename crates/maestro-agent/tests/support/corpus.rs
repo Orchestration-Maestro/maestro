@@ -141,12 +141,7 @@ impl Input {
 }
 /// Produce a diagnostic at the controlled failure boundary.
 fn error(message: &str) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: Some("Error".into()),
-        message: message.into(),
-        stack: None,
-        code: None,
-    }
+    DiagnosticErrorInfo::error(message)
 }
 /// Convert finite numeric storage variants and remove dynamic timestamps.
 fn normalized(value: Value) -> Value {

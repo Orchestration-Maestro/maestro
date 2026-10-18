@@ -139,6 +139,21 @@ pub fn run_io<T>(future: impl std::future::Future<Output = T>) -> T {
         .unwrap()
         .block_on(future)
 }
+/// Signal entry, then await the caller-owned release, when the callback holds the gate.
+///
+/// # Panics
+/// Panics if either side of the gate was dropped.
+pub async fn wait_gate(
+    gate: Option<(
+        tokio::sync::oneshot::Sender<()>,
+        tokio::sync::oneshot::Receiver<()>,
+    )>,
+) {
+    if let Some((entered, released)) = gate {
+        entered.send(()).unwrap();
+        released.await.unwrap();
+    }
+}
 /// A completed callback future without an extra nested async block.
 #[must_use]
 pub fn ready<T: Send + 'static>(value: T) -> maestro_models::BoxFuture<T> {

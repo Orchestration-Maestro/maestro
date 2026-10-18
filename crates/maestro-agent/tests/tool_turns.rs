@@ -397,12 +397,7 @@ fn progress_failure_sink(
 }
 /// Produce nonsecret controlled callback failures.
 fn diagnostic(message: &str) -> maestro_models::DiagnosticErrorInfo {
-    maestro_models::DiagnosticErrorInfo {
-        name: Some("Error".into()),
-        message: message.into(),
-        stack: None,
-        code: None,
-    }
+    maestro_models::DiagnosticErrorInfo::error(message)
 }
 
 /// A second progress future releases the first before tool finalization.

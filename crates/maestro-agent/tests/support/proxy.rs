@@ -129,12 +129,7 @@ pub fn failing(message: &str) -> (Fetch, Requests) {
     let message = message.to_owned();
     let fetch: Fetch = Arc::new(move |request| {
         record(&seen, request);
-        let cause = maestro_models::DiagnosticErrorInfo {
-            name: None,
-            message: message.clone(),
-            code: None,
-            stack: None,
-        };
+        let cause = maestro_models::DiagnosticErrorInfo::new(None, message.clone());
         Box::pin(async move { Err(FetchError::Connection(cause)) })
     });
     (fetch, requests)

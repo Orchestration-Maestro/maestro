@@ -1,6 +1,6 @@
 //! Registered scripted-model fixtures and Agent history observations.
 use maestro_agent::{
-    Agent, AgentEvent, AgentInitialState, AgentMessage, AgentOptions, AgentSpawner, ThinkingLevel,
+    Agent, AgentInitialState, AgentMessage, AgentOptions, AgentSpawner, ThinkingLevel,
 };
 use maestro_models::{
     AssistantContent, AssistantMessage, FauxAssistantMessageOptions, FauxProviderRegistration,
@@ -167,22 +167,6 @@ pub fn last_assistant(agent: &Agent) -> AssistantMessage {
 pub fn streaming(agent: &Agent) -> bool {
     agent.state().read().unwrap().is_streaming()
 }
-/// The event name of an Agent event.
-#[must_use]
-pub fn label(event: &AgentEvent) -> &'static str {
-    match event {
-        AgentEvent::AgentStart => "agent_start",
-        AgentEvent::AgentEnd { .. } => "agent_end",
-        AgentEvent::TurnStart => "turn_start",
-        AgentEvent::TurnEnd { .. } => "turn_end",
-        AgentEvent::MessageStart { .. } => "message_start",
-        AgentEvent::MessageUpdate { .. } => "message_update",
-        AgentEvent::MessageEnd { .. } => "message_end",
-        AgentEvent::ToolExecutionStart { .. } => "tool_execution_start",
-        AgentEvent::ToolExecutionUpdate { .. } => "tool_execution_update",
-        AgentEvent::ToolExecutionEnd { .. } => "tool_execution_end",
-    }
-}
 /// Record the label of every event the Agent emits.
 ///
 /// # Panics
@@ -191,7 +175,9 @@ pub fn record_events(agent: &Arc<Agent>) -> Arc<Mutex<Vec<&'static str>>> {
     let events = Arc::new(Mutex::new(vec![]));
     let sink = Arc::clone(&events);
     agent.subscribe(Arc::new(move |event, _| {
-        sink.lock().unwrap().push(label(&event.read().unwrap()));
+        sink.lock()
+            .unwrap()
+            .push(super::observable::kind(&event.read().unwrap()));
         Box::pin(std::future::ready(Ok(())))
     }));
     events

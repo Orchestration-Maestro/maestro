@@ -15,9 +15,9 @@ use maestro_models::{
 };
 use serde_json::json;
 use std::sync::{Arc, Mutex, RwLock};
+use support::observable::kind;
 use support::scripted::{
-    Registered, agent_for, block_text, history, label, last_assistant, record_events, say, spawner,
-    user,
+    Registered, agent_for, block_text, history, last_assistant, record_events, say, spawner, user,
 };
 
 /// The shared handle of a registered model, as an Agent's initial model.
@@ -650,7 +650,7 @@ fn label_sink() -> (maestro_agent::AgentEventSink, Labels) {
     let labels = Labels::default();
     let sink = Arc::clone(&labels);
     let emit: maestro_agent::AgentEventSink = Arc::new(move |event| {
-        sink.lock().unwrap().push(label(&event));
+        sink.lock().unwrap().push(kind(&event));
         Box::pin(std::future::ready(Ok(())))
     });
     (emit, labels)
@@ -720,7 +720,7 @@ async fn observable_loops() {
     assert_eq!(stream.result().await.len(), 2);
     let mut names = vec![];
     while let Some(event) = stream.next().await {
-        names.push(label(&event));
+        names.push(kind(&event));
     }
     assert_eq!(names, PROMPT_RUN);
     let empty = AgentContext {
