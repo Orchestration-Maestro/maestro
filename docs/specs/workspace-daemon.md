@@ -186,6 +186,10 @@ need `unsafe` to hand its descriptor to the async runtime.
 
 - **Scope.** `maestro-workspace` holds topology only: layouts, workspaces, tabs, pane viewport state, public
   numbers, metadata tokens and git label rules.
+- **Identity ownership.** One `WorkspaceTopology` owns its workspace collection and the allocator for
+  pane, terminal and workspace identities. Creation and split operations use this allocator. Restore
+  admission reserves saved pane/workspace identities and public counters before new allocation; terminal
+  identities are allocated afresh. Counters survive workspace removal and are independent between owners.
 - **Runtimes.** The daemon passes the spawn closure and inserts the runtime into its one registry.
 - **Repository identity.** It enters topology as data; discovery runs in the daemon.
 - **Geometry.** Topology uses its own rectangle and border set.
