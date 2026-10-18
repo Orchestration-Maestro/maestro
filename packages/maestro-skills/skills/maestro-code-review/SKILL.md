@@ -48,3 +48,6 @@ Report what cannot be verified from the diff rather than claiming a run you did 
 
 Grade by [severity](../../references/severity.md). Subsequent reviews use [RE-REVIEW](RE-REVIEW.md) and the fix diff,
 not an expanding full audit. End with findings per axis and the worst severity within each axis, without a single winner.
+
+Use `/skill:maestro-documentation` as the documentation review lens. It owns the downstream
+prose pass; retain both review axes and the scope rules above.

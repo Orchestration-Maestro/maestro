@@ -26,3 +26,6 @@ Prefer checks before standards and standards before rules-file edits; keep alway
 Remove no-op instructions that do not change behaviour. Put detailed guidance in reference docs and skills,
 with navigation pointers where needed. Distinguish implementation's context pressure from review's ability to
 inspect a fixed diff; place judgement guidance with the reviewer rather than burdening every coding turn.
+
+For a candidate that changes skills or agent rules files, use `/skill:maestro-writing-for-agents`
+to keep triggers, references and completion criteria useful.

@@ -32,7 +32,28 @@ fn skill_pack_loads_with_closed_links_and_router() {
     .unwrap();
     assert!(loaded.diagnostics.is_empty(), "{:?}", loaded.diagnostics);
     let names: BTreeSet<_> = loaded.skills.iter().map(|s| s.name.as_str()).collect();
+    assert_eq!(loaded.skills.len(), 27);
     assert!(names.contains("maestro-ask"));
+    for (name, type_only) in [
+        ("maestro-implement-spec", true),
+        ("maestro-git-workflow", false),
+        ("maestro-handoff", true),
+        ("maestro-wait-what", true),
+        ("maestro-research", false),
+        ("maestro-writing-for-agents", false),
+        ("maestro-documentation", false),
+        ("maestro-humanizer", false),
+        ("maestro-wayfinder", true),
+        ("maestro-triage", true),
+        ("maestro-prototype", false),
+        ("maestro-show-options", false),
+        ("maestro-improve-codebase-architecture", true),
+    ] {
+        let skill = loaded.skills.iter().find(|s| s.name == name).unwrap();
+        assert_eq!(skill.disable_model_invocation, type_only, "{name}");
+        assert!(skill.description.starts_with("Use when"), "{name}");
+        assert!(skill.description.chars().count() < 500, "{name}");
+    }
     assert!(names.iter().all(|name| name.starts_with("maestro-")));
     let entries: BTreeSet<_> = fs::read_dir(package.join("skills"))
         .unwrap()

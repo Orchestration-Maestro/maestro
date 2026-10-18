@@ -14,8 +14,8 @@ Work these branches in order:
    next phase needs, keeping decisions, sources, current state and unresolved questions.
 
 Use `/fork` for an exploratory branch when the current session should remain available, and `/tree` to navigate
-session branches. If work travels to another directory, collaborator or harness, write a portable summary with
-source pointers and decisions; do not assume the other context can read this conversation.
+session branches. If work travels to another directory, collaborator or harness, suggest `/skill:maestro-handoff`
+for a portable summary with source pointers and decisions; the recipient must be able to reach those artifacts.
 
 Every summary trades detail for room. Preserve primary sources and the reasons behind decisions, not only the
 resulting action list. At the next phase, load the relevant spec and files instead of flooding context with unrelated work.

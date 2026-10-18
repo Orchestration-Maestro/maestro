@@ -46,3 +46,46 @@ Read by path; list the directory's tickets. Append comments under `## Comments`,
 label or close a ticket, and retain its history. Use `Part of: <parent-path>` and a parent list for child links.
 Record `Blocked by: <ticket-path>, <ticket-path>` and treat it as unblocked only when every named ticket is resolved.
 Do not replace an existing unfinished spec or combine all tickets into one document.
+
+## Wayfinding operations
+
+Use `/skill:maestro-wayfinder` for the decision-map contract. Reuse the native blocking
+operations above, with the existing textual fallback only when native support is absent.
+Create all tickets before wiring real ids. In every tracker, the frontier is open,
+unblocked and unclaimed; choose first in map order, then number order. A claim is the
+session's first write. Store the resolution once in the ticket and append a named
+link with a gist to the map's Decisions so far.
+
+- GitHub: create one issue labelled `wayfinder:map`; create children with `wayfinder:<type>`
+  and link them through sub-issues or the parent task-list fallback above. List its open
+  children and exclude any with an assignee or an open blocker. Claim with
+  `gh issue edit <n> --add-assignee @me`. Resolve with `gh issue comment <n> --body-file <file>`,
+  then `gh issue close <n>` and update the map.
+- GitLab: create a map issue with `wayfinder:map`, children carrying `Part of #<map>` and
+  `wayfinder:<type>`. Query children and exclude open blocking links or textual blockers
+  and assignees. Claim with `glab issue update <n> --assignee @me`. Resolve with
+  `glab issue note <n> --message "<answer>"`, close with `glab issue close <n>` and update the map.
+- Local Markdown: use `.scratch/<effort>/map.md` and one numbered child file in `issues/`.
+  Keep `Type: research/prototype/grilling/task` and `Status: open/claimed/resolved`.
+  Scan in number order, excluding claimed/resolved files and any unresolved `Blocked by`
+  paths. Claim by saving `Status: claimed` before work. Resolve under `## Answer`, set
+  `Status: resolved` and append a relative named pointer to the map.
+
+## Pull or merge requests as a request surface
+
+Discovery is off by default. Enable it only when the repository explicitly treats
+external contributions as requests, following its role mapping and external-author
+policy. Filter discovered requests to non-owner/non-member/non-collaborator authors;
+an explicitly named request is still handled regardless of author.
+
+GitHub shares issue/request numbers: try `gh pr view <n>` and fall back to
+`gh issue view <n>` when it is not a request. Read requests with `gh pr view <n> --comments`
+and `gh pr diff <n>`. List through `gh api --paginate 'repos/{owner}/{repo}/pulls?state=open'`,
+retaining external authors by `author_association`. Comment with `gh pr comment <n> --body-file <file>`,
+label with `gh pr edit <n> --add-label/--remove-label <label>`, and close with `gh pr close <n>`.
+
+GitLab uses separate issue and merge-request number spaces: determine the intended
+surface first. Read with `glab mr view <n> --comments` and `glab mr diff <n>`; list with
+`glab mr list -F json` and exclude project members/owners. Comment with `glab mr note`,
+label with `glab mr update --label/--unlabel`, and close with `glab mr close`.
+Local Markdown has no remote request surface; use its issue files instead.
