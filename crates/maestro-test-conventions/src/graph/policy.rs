@@ -9,7 +9,7 @@ pub(crate) struct Rule {
 pub(crate) const POLICY: &[(&str, &[&str])] = &[
     ("maestro-path", &[]),
     ("maestro-cancellation", &[]),
-    ("maestro-request", &[]),
+    ("maestro-request", &["maestro-json"]),
     ("maestro-watch", &[]),
     ("maestro-lock", &[]),
     ("maestro-process", &[]),

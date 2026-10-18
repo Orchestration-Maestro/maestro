@@ -252,7 +252,7 @@ from the optional foundation utility described below.
 | `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, CSS string serialization, locale construction and number formatting) | — | below 0 |
 | `maestro-json` | implement JSON boundary semantics (object acceptance, canonical keys, truth, compact and pretty text, JSONL line framing) | — | below 0 |
 | `maestro-cancellation` | signal cooperative cancellation | — | below 0 |
-| `maestro-request` | define shared message and model-request records | — | below 0 |
+| `maestro-request` | define shared message and model-request records | `maestro-json` | below 0 |
 | `maestro-entry` | define session interchange records | `maestro-request` | below 0 |
 | `maestro-tool` | define tool interchange records | `maestro-request` | below 0 |
 | `maestro-brand` | project a brand pack | `maestro-text`, `maestro-json` | below 0 |
@@ -541,3 +541,24 @@ Extension runner sessions and context catalog getters retain one direct shared
 The complete action runtime composes the existing activity/flag state.
 Binding installs action and base-context operations before provider flushing;
 command-context binding remains independent.
+
+
+### Retained tool registration and shared events
+
+Tool definitions separate callback ownership from invocation. SDK defaults remain
+Threaded/Threaded; extension invocation is Local, with ownership following the
+facade. Threaded definitions retain thread-safe execution, preparation and renderer
+captures; execution futures follow invocation. Local definitions retain local
+captures. One ordered owner keeps definitions, provenance and renderers. One
+tools-owned wrapper accepts owned or retained definitions, reads retained execution
+callbacks at call time and creates a fresh runner context per execution.
+
+`maestro-request::extension_events` owns extension event/result schemas with generic
+native/guest operands; `maestro-request::system_prompt` owns assembled prompt input
+records. Models re-exports both modules. Native aliases select existing model,
+session and tool records; guest aliases keep their existing capability carriers.
+Request depends only on the dependency-free JSON leaf: the object reader stays
+JSON-owned and the Presence adaptation belongs beside the shared records. Fork
+position stays entry-owned. One event inventory supplies author unions and the
+guest data adapter. Resources, cancellation, finite-number checks, stream snapshots
+and encoding stay adapter-owned.

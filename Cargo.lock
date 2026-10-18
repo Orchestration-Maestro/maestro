@@ -3621,6 +3621,7 @@ version = "0.1.0"
 dependencies = [
  "indexmap 2.14.2",
  "maestro-dependencies",
+ "maestro-json",
  "serde",
  "serde_json",
 ]

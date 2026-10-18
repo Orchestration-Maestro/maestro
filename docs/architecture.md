@@ -31,7 +31,7 @@ re-exports the six others; guest authoring re-exports every record except
 `CustomMessageInput`, which it defines as its own alias. The declaration scanner rejects
 a declaration of any of these records except `CustomMessageInput` outside the request
 owner, and duplicates within it.
-The request owner has no workspace dependencies.
+The request owner depends only on the dependency-free JSON leaf.
 No reverse dependency is permitted.
 
 The [specification](specs/maestro-port.md#crates-and-delivery-order) declares five more
@@ -369,3 +369,9 @@ Extension runner sessions and context catalog getters retain one direct shared
 The complete action runtime composes the existing activity/flag state.
 Binding installs action and base-context operations before provider flushing;
 command-context binding remains independent.
+
+
+Shared extension event/result schemas and assembled prompt records belong to
+`maestro-request`, specialized with existing native/guest operands. The declaration
+scanner rejects duplicate schemas while allowing specialization aliases and
+re-exports. One event inventory feeds author unions and guest adapter data.

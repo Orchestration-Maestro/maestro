@@ -44,3 +44,13 @@ accepts either family without caller-side mode matching. Local registered dispat
 requires its caller's submission facility in the entry type; a replacement-stream
 entry requires none. Providers retain their existing default submission policy
 when a threaded caller supplies no facility.
+
+
+## Definition ownership and invocation
+
+Callback Send/Sync governs captures, not invocation operands or futures. Local
+registered invocation permits retaining the real context without weakening the
+thread-safe facade or default Threaded SDK invocation. Runner and context
+factories stay outside registration storage. Renderer operands and state stay
+local; retained state types are owned. Family-aware renderer handles and explicit
+invocation typing reuse the existing registration, wrapper and execution owners.

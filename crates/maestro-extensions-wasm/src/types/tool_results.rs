@@ -1,51 +1,19 @@
-//! Tool handler answers and user shell-command data.
-use crate::Presence;
-use crate::{BashResult, UserBlock};
-use serde::{Deserialize, Serialize};
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// `UserBashEvent` data.
-pub struct UserBashEvent {
-    /// Command.
-    pub command: String,
-    /// Exclude from context.
-    pub exclude_from_context: bool,
-    /// Cwd.
-    pub cwd: String,
-}
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// `UserBashEventResult` data.
-pub struct UserBashEventResult {
-    /// Custom execution capability, carried outside the JSON payload.
-    #[serde(skip)]
-    pub operations: Option<crate::BashOperations>,
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    /// Result.
-    pub result: Presence<BashResult>,
-}
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// `ToolCallEventResult` data.
-pub struct ToolCallEventResult {
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    /// Block.
-    pub block: Presence<bool>,
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    /// Reason.
-    pub reason: Presence<String>,
-}
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-/// `ToolResultEventResult` data.
-pub struct ToolResultEventResult {
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    /// Content.
-    pub content: Presence<Vec<UserBlock>>,
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    /// Details.
-    pub details: Presence<String>,
-    #[serde(default, skip_serializing_if = "Presence::is_missing")]
-    /// Is error.
-    pub is_error: Presence<bool>,
-}
+//! Guest aliases of the shared extension schemas.
+#![forbid(
+    clippy::pedantic,
+    clippy::too_many_arguments,
+    clippy::excessive_nesting
+)]
+
+/// Shared schema specialized for the guest operands.
+pub type UserBashEvent = maestro_request::extension_events::tool_results::UserBashEvent;
+/// Shared schema specialized for the guest operands.
+pub type UserBashEventResult = maestro_request::extension_events::tool_results::UserBashEventResult<
+    crate::BashOperations,
+    crate::BashResult,
+>;
+/// Shared schema specialized for the guest operands.
+pub type ToolCallEventResult = maestro_request::extension_events::tool_results::ToolCallEventResult;
+/// Shared schema specialized for the guest operands.
+pub type ToolResultEventResult =
+    maestro_request::extension_events::tool_results::ToolResultEventResult<String>;

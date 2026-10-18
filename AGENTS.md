@@ -168,7 +168,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   catalog and guest authoring library, default zero usage, message-only diagnostic
   construction and the shared optional-field helper. Only the crates that list it in the spec table
   (models, resources, theme, catalog, session, entry, tool and guest authoring)
-  may depend on it; it has no internal dependencies. Keep existing models/resources public paths as re-exports.
+  may depend on it; it depends only on the JSON leaf. Keep existing models/resources public paths as re-exports.
   Provider/runtime operations and resource discovery stay in their owners.
   The spec's shared-record amendment governs extraction; update the enforced
   table, inventory, graph policy and architecture tests together with the code.
@@ -436,3 +436,13 @@ its existing `ToolInfo<String>` alias. Identity-deduplicated live callback stora
 belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions
 and extension error delivery reuse it; dispatch and lifecycle policy remain with
 their callers. The collection returns removed ownership for release outside guards.
+
+
+Shared extension event/result schemas and assembled prompt records belong to
+`maestro-request`, re-exported through models and specialized by native/guest
+aliases. One event inventory feeds author unions and the guest data adapter.
+Request depends only on the JSON leaf; object reading stays JSON-owned and
+Presence adaptation stays beside shared schemas. Fork position stays entry-owned.
+Tool callback ownership and invocation are independent: SDK defaults remain
+Threaded/Threaded, registered invocation is Local. Registration stores no runner
+or context factory; the single tools wrapper creates a fresh context per call.
