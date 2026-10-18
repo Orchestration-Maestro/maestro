@@ -349,11 +349,7 @@ struct Contract {
 /// Reads the contract of the built component.
 fn contract() -> Result<Contract, String> {
     let path = build::author_component()?;
-    let mut config = wasmtime::Config::new();
-    config.wasm_component_model_async(true);
-    let engine = wasmtime::Engine::new(&config).map_err(|error| error.to_string())?;
-    let component = wasmtime::component::Component::from_file(&engine, path)
-        .map_err(|error| error.to_string())?;
+    let (engine, component) = build::compile(path).map_err(|error| error.to_string())?;
     let kind = component.component_type();
     let exported = kind
         .exports(&engine)

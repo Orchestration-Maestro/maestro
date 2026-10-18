@@ -1,14 +1,17 @@
-//! Builds the author component for test harnesses.
+//! Builds and compiles the author component for test harnesses.
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::OnceLock;
+
+use wasmtime::component::Component;
+use wasmtime::{Cache, CacheConfig, Config, Engine};
 
 /// Build target of author components.
 const TARGET: &str = "wasm32-wasip2";
 
 /// The component built from the shared author extension.
 ///
-/// Nextest supplies the artifact prepared before its tests; plain Cargo builds once per process.
+/// Nextest supplies the artifact its setup example prepared; plain Cargo builds once per process.
 /// The compiler wrapper is not passed on, because coverage would instrument the component target.
 ///
 /// # Errors
@@ -52,18 +55,17 @@ fn build() -> Result<PathBuf, String> {
         .ok_or_else(|| "the build reported no component".to_owned())
 }
 
-/// Prepares the artifact and warms its compilation cache before isolated tests start.
-#[test]
-#[ignore = "run by the nextest setup script"]
-fn prepare_nextest_component() -> Result<(), String> {
-    let path = author_component()?;
-    super::host::compiled(path).map_err(|error| error.to_string())?;
-    if let Some(environment) = std::env::var_os("NEXTEST_ENV") {
-        std::fs::write(
-            environment,
-            format!("MAESTRO_AUTHOR_COMPONENT={}\n", path.display()),
-        )
-        .map_err(|error| error.to_string())?;
-    }
-    Ok(())
+/// Compiles the component with the test host's engine, caching the result beside the artifact.
+///
+/// # Errors
+/// Returns Wasmtime's failure to configure the cache or to compile the component.
+pub fn compile(path: &Path) -> wasmtime::Result<(Engine, Component)> {
+    let mut config = Config::new();
+    config.wasm_component_model_async(true);
+    let mut cache = CacheConfig::new();
+    cache.with_directory(path.with_extension("wasmtime-cache"));
+    config.cache(Some(Cache::new(cache)?));
+    let engine = Engine::new(&config)?;
+    let component = Component::from_file(&engine, path)?;
+    Ok((engine, component))
 }
