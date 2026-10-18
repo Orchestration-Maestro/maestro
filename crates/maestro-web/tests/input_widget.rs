@@ -437,30 +437,52 @@ fn input_ref_retains_the_real_element_across_renders() {
     );
 }
 
+/// A host requiring the caller pack's presentation, the unchanged field size and the
+/// caller's placeholder and disabled state.
+fn caller_token_host(
+    expected: std::collections::BTreeMap<String, String>,
+) -> Rc<input_support::Host> {
+    input_support::Host::new(move |s, p| {
+        assert!((s.pixels_per_point - 1.5).abs() < f32::EPSILON);
+        assert!((s.rect.width() - 274.5).abs() < f32::EPSILON);
+        assert!((s.rect.height() - 40.).abs() < f32::EPSILON);
+        let css = p.css_properties();
+        assert_eq!(css, expected);
+        for role in ["text", "border", "muted", "accent", "on-accent", "error"] {
+            assert_eq!(css[&format!("--maestro-color-{role}")], p.colors[role]);
+        }
+        let AttachmentContent::Input { props, .. } = &s.content else {
+            panic!("not input")
+        };
+        assert_eq!((props.placeholder.as_str(), props.disabled), ("hint", true));
+    })
+}
+
 #[test]
 fn input_styles_use_caller_tokens_without_replacing_layout() {
-    for mode in [
-        maestro_theme::BrandMode::Light,
-        maestro_theme::BrandMode::Dark,
+    for (path, mode) in [
+        ("brand.json", maestro_theme::BrandMode::Light),
+        ("brand.json", maestro_theme::BrandMode::Dark),
+        ("packs/signal.json", maestro_theme::BrandMode::Light),
+        ("packs/signal.json", maestro_theme::BrandMode::Dark),
     ] {
         let mut frame = attachment_support::Frame {
+            pack: maestro_theme::load_brand_pack(
+                &format!("{}/../../assets/brand/{path}", env!("CARGO_MANIFEST_DIR")),
+                &maestro_theme::theme::NativeThemeOperations,
+            )
+            .unwrap(),
             mode,
             density: 1.5,
             ..Default::default()
         };
-        let host = input_support::Host::new(move |s, p| {
-            assert!((s.pixels_per_point - 1.5).abs() < f32::EPSILON);
-            assert!((s.rect.width() - 274.5).abs() < f32::EPSILON);
-            assert!((s.rect.height() - 40.).abs() < f32::EPSILON);
-            let css = p.css_properties();
-            for role in ["text", "border", "muted", "accent", "on-accent", "error"] {
-                assert_eq!(css[&format!("--maestro-color-{role}")], p.colors[role]);
-            }
-        });
+        let host = caller_token_host(frame.pack.presentation(mode).unwrap().css_properties());
         let mut input = Input::new(
             InputProps {
                 size: InputSize::Lg,
                 error: "error".into(),
+                placeholder: "hint".into(),
+                disabled: true,
                 ..Default::default()
             },
             host,
