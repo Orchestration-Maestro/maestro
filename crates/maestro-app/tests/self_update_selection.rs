@@ -105,6 +105,18 @@ fn output_probes_preserve_trim_and_failure_precedence() {
     );
 }
 
+/// Only a Unix process can end without an exit code (by signal).
+#[cfg(unix)]
+#[test]
+fn signal_only_probe_status_reports_unknown_exit_code() {
+    support::run(
+        include_str!(
+            "fixtures/configuration/self_update/signal_only_probe_status_reports_unknown_exit_code.json"
+        ),
+        false,
+    );
+}
+
 #[test]
 fn root_evidence_requires_canonical_descendants() {
     support::run(
