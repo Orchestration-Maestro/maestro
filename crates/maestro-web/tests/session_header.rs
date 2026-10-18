@@ -260,14 +260,14 @@ fn header_document_route_draws_all_metadata_and_controls() {
     let presentation = pack.presentation(BrandMode::Dark).unwrap();
     let corpus: serde_json::Value =
         serde_json::from_str(include_str!("fixtures/session_header.json")).unwrap();
-    let data = &corpus
+    let row = corpus
         .as_array()
         .unwrap()
         .iter()
         .find(|r| r["name"] == "populated")
-        .unwrap()["input"]["data"];
+        .unwrap();
     let doc = maestro_web::export_html::template::load_document(
-        &base64::engine::general_purpose::STANDARD.encode(data.to_string()),
+        &base64::engine::general_purpose::STANDARD.encode(row["input"]["data"].to_string()),
         "",
         None,
     )
@@ -288,7 +288,13 @@ fn header_document_route_draws_all_metadata_and_controls() {
             _ => None,
         })
         .collect();
-    assert_eq!(labels, ["Toggle thinking", "Toggle tools", "↓ JSONL"]);
+    let buttons: Vec<_> = row["output"]["buttons"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|button| button["text"].as_str().unwrap())
+        .collect();
+    assert_eq!(labels, buttons);
     let sizes = host.sizes.borrow();
     assert_eq!(sizes.len(), 3);
     assert!(sizes[0].1.x > sizes[1].1.x && sizes[1].1.x > sizes[2].1.x);

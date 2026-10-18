@@ -202,13 +202,7 @@ pub fn header_native_dates_use_browser_locale() {
         } else {
             &row["output"]["info"][0][1]
         };
-        let expected = if !maestro_app::is_truthy(&data["header"]["timestamp"]) {
-            "unknown".into()
-        } else if js(&JsValue::NULL, "return Intl.DateTimeFormat().resolvedOptions().timeZone==='UTC' && navigator.language==='en-US'").as_bool().unwrap() {
-            expected.as_str().unwrap().to_owned()
-        } else {
-            js(&js_sys::JSON::parse(&data["header"]["timestamp"].to_string()).unwrap(), "return new Date(value).toLocaleString()").as_string().unwrap()
-        };
+        let expected = localized(&data["header"]["timestamp"], expected);
         assert_eq!(
             panel()
                 .query_selector(".info-value")
@@ -221,41 +215,72 @@ pub fn header_native_dates_use_browser_locale() {
         count += 1;
     }
     assert_eq!(count, 13);
-    let populated = &rows
+    populated_replays_every_expectation(&mut header, &rows);
+}
+
+/// Mount the populated recording and compare its title, help, labels, date and metadata.
+fn populated_replays_every_expectation(header: &mut Header, rows: &serde_json::Value) {
+    let populated = rows
         .as_array()
         .unwrap()
         .iter()
         .find(|r| r["name"] == "populated")
-        .unwrap()["input"]["data"];
+        .unwrap();
+    let data = &populated["input"]["data"];
     header.document = load_document(
-        &base64::engine::general_purpose::STANDARD.encode(populated.to_string()),
+        &base64::engine::general_purpose::STANDARD.encode(data.to_string()),
         "",
         None,
     )
     .unwrap();
     header.draw(egui::vec2(800., 600.));
-    assert_eq!(
-        panel()
-            .query_selector("h1")
-            .unwrap()
-            .unwrap()
-            .text_content()
-            .unwrap(),
-        "Session: session <雪> & \"quoted\""
-    );
-    let actual = js(&panel(), "return JSON.stringify([...value.querySelectorAll('.info-item')].map(e=>[e.querySelector('.info-label').textContent,e.querySelector('.info-value').textContent]))").as_string().unwrap();
-    let actual: serde_json::Value = serde_json::from_str(&actual).unwrap();
-    let expected = &rows
+    let expected = &populated["output"];
+    for (selector, text) in [
+        ("h1", &expected["title"]),
+        (".help-hint", &expected["help"]),
+    ] {
+        assert_eq!(
+            panel()
+                .query_selector(selector)
+                .unwrap()
+                .unwrap()
+                .text_content()
+                .unwrap(),
+            text.as_str().unwrap()
+        );
+    }
+    let labels: Vec<_> = header
+        .shapes
+        .iter()
+        .filter_map(|s| match &s.shape {
+            egui::Shape::Text(t) => Some(t.galley.text().to_owned()),
+            _ => None,
+        })
+        .collect();
+    let buttons: Vec<_> = expected["buttons"]
         .as_array()
         .unwrap()
         .iter()
-        .find(|r| r["name"] == "populated")
-        .unwrap()["output"]["info"];
-    assert_eq!(actual.as_array().unwrap().len(), 6);
-    for i in 1..6 {
-        assert_eq!(actual[i], expected[i]);
-    }
+        .map(|button| button["text"].as_str().unwrap())
+        .collect();
+    assert_eq!(labels, buttons);
+    let actual = js(&panel(), "return JSON.stringify([...value.querySelectorAll('.info-item')].map(e=>[e.querySelector('.info-label').textContent,e.querySelector('.info-value').textContent]))").as_string().unwrap();
+    let actual: serde_json::Value = serde_json::from_str(&actual).unwrap();
+    let mut info = expected["info"].clone();
+    info[0][1] = localized(&data["header"]["timestamp"], &expected["info"][0][1]).into();
+    assert_eq!(actual, info);
     assert!(panel().query_selector("m").unwrap().is_none());
+}
+
+/// Expect unknown for a falsy timestamp, the recorded en-US UTC text, else the browser's text.
+fn localized(timestamp: &serde_json::Value, recorded: &serde_json::Value) -> String {
+    if !maestro_app::is_truthy(timestamp) {
+        "unknown".into()
+    } else if js(&JsValue::NULL, "return Intl.DateTimeFormat().resolvedOptions().timeZone==='UTC' && navigator.language==='en-US'").as_bool().unwrap() {
+        recorded.as_str().unwrap().to_owned()
+    } else {
+        js(&js_sys::JSON::parse(&timestamp.to_string()).unwrap(), "return new Date(value).toLocaleString()").as_string().unwrap()
+    }
 }
 
 mod session_header_browser_support;
