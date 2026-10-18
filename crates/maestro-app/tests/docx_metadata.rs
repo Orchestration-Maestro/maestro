@@ -2,24 +2,14 @@
 #![cfg(test)]
 use crate::docx_support;
 use crate::metadata;
-use docx_support::cases;
+use docx_support::{XmlInput, cases};
 use maestro_app::browser::docx_preview::{
     CorePropsPart, CustomPropsPart, DocxError, ExtendedPropsPart, parse_xml_string,
 };
-use serde::Deserialize;
 use serde_json::json;
-/// Factory input from the controlled corpus.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Input {
-    /// Selected metadata factory.
-    operation: String,
-    /// Admitted XML source.
-    xml: String,
-}
 /// Dispatch by recorded operation and compare the complete public result.
 fn check(name: &str) {
-    for case in cases::<Input>(include_str!("fixtures/docx/metadata.json"), name) {
+    for case in cases::<XmlInput>(include_str!("fixtures/docx/metadata.json"), name) {
         let xml = parse_xml_string(&case.input.xml, true).unwrap();
         let observed = match case.input.operation.as_str() {
             "core" => metadata::core(&CorePropsPart::parse_xml(&xml, xml.root()).props),

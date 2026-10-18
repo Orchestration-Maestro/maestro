@@ -2,39 +2,17 @@
 #![cfg(test)]
 use crate::body_tree;
 use crate::docx_support;
-use docx_support::cases;
-use maestro_app::browser::docx_preview::{
-    DocxError, OwnedXmlElement, parse_body_elements, parse_paragraph, parse_run, parse_xml_string,
-};
-use serde::Deserialize;
+use docx_support::{XmlInput, cases};
+use maestro_app::browser::docx_preview::DocxError;
 use serde_json::json;
 
-/// Controlled XML operation and input.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Input {
-    /// Public entry to exercise.
-    operation: String,
-    /// Complete XML document.
-    xml: String,
-}
 /// Replay complete independent graph expectations after releasing input owners.
 fn check(name: &str) {
-    for (index, case) in cases::<Input>(include_str!("fixtures/docx/drawing-records.json"), name)
+    for (index, case) in cases::<XmlInput>(include_str!("fixtures/docx/drawing-records.json"), name)
         .into_iter()
         .enumerate()
     {
-        let tree = {
-            let source = case.input.xml;
-            let xml = parse_xml_string(&source, true).unwrap();
-            let input = OwnedXmlElement::new(xml.root());
-            match case.input.operation.as_str() {
-                "body" => parse_body_elements(&input),
-                "paragraph" => parse_paragraph(&input),
-                "run" => parse_run(&input),
-                _ => panic!("unknown operation"),
-            }
-        };
+        let tree = docx_support::framed(&case.input);
         if case.expected.get("error_kind").is_some() {
             assert!(matches!(tree, Err(DocxError::Xml { .. })), "case {index}");
             assert_eq!(case.expected, json!({"error_kind":"Xml"}));

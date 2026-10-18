@@ -2,38 +2,16 @@
 #![cfg(test)]
 use crate::body_tree;
 use crate::docx_support;
-use docx_support::cases;
-use maestro_app::browser::docx_preview::{
-    OwnedXmlElement, parse_body_elements, parse_paragraph, parse_xml_string,
-};
-use serde::Deserialize;
+use docx_support::{XmlInput, cases};
 
-/// Recorded operation and admitted XML.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Input {
-    /// Public parsing route.
-    operation: String,
-    /// Complete XML source.
-    xml: String,
-}
 /// Compare complete owned results after releasing input owners.
 fn check(name: &str) {
-    for (index, case) in cases::<Input>(include_str!("fixtures/docx/section-properties.json"), name)
-        .into_iter()
-        .enumerate()
+    for (index, case) in
+        cases::<XmlInput>(include_str!("fixtures/docx/section-properties.json"), name)
+            .into_iter()
+            .enumerate()
     {
-        let tree = {
-            let source = case.input;
-            let xml = parse_xml_string(&source.xml, true).unwrap();
-            let input = OwnedXmlElement::new(xml.root());
-            match source.operation.as_str() {
-                "paragraph" => parse_paragraph(&input),
-                "body" => parse_body_elements(&input),
-                _ => panic!("unknown operation"),
-            }
-            .unwrap()
-        };
+        let tree = docx_support::framed(&case.input).unwrap();
         assert_eq!(body_tree::full_graph(&tree), case.expected, "case {index}");
     }
 }

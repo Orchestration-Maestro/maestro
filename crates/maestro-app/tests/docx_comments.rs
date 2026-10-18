@@ -3,21 +3,11 @@
 use crate::body_tree;
 use crate::docx_support;
 use crate::metadata;
-use docx_support::cases;
+use docx_support::{XmlInput, cases};
 use maestro_app::browser::docx_preview::{CommentsPart, OwnedXmlElement, parse_xml_string};
-use serde::Deserialize;
-/// Public factory or body operation input.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Input {
-    /// Operation, independent of behavior labels.
-    operation: String,
-    /// Complete admitted source.
-    xml: String,
-}
 #[test]
 fn comments_preserve_metadata_order_and_duplicate_ids() {
-    for case in cases::<Input>(
+    for case in cases::<XmlInput>(
         include_str!("fixtures/docx/comments.json"),
         "comments_preserve_metadata_order_and_duplicate_ids",
     ) {
@@ -30,7 +20,7 @@ fn comments_preserve_metadata_order_and_duplicate_ids() {
 
 /// Compare plain comment factories against the complete controlled observation.
 fn check_comments(name: &str) {
-    for case in cases::<Input>(include_str!("fixtures/docx/comments.json"), name) {
+    for case in cases::<XmlInput>(include_str!("fixtures/docx/comments.json"), name) {
         assert_eq!(case.input.operation, "comments");
         let xml = parse_xml_string(&case.input.xml, true).unwrap();
         let part = CommentsPart::parse_xml(&OwnedXmlElement::new(xml.root())).unwrap();
@@ -47,7 +37,7 @@ fn comment_children_reuse_formatting_and_parent_identity() {
 }
 #[test]
 fn comment_parts_keep_source_after_input_release() {
-    for case in cases::<Input>(
+    for case in cases::<XmlInput>(
         include_str!("fixtures/docx/comments.json"),
         "comment_parts_keep_source_after_input_release",
     ) {
@@ -63,7 +53,7 @@ fn comment_parts_keep_source_after_input_release() {
 }
 #[test]
 fn comment_lookup_shares_records_with_source_list() {
-    for case in cases::<Input>(
+    for case in cases::<XmlInput>(
         include_str!("fixtures/docx/comments.json"),
         "comment_lookup_shares_records_with_source_list",
     ) {
@@ -91,7 +81,7 @@ fn comment_lookup_shares_records_with_source_list() {
 }
 #[test]
 fn comment_extensions_preserve_links_and_nullable_flags() {
-    for case in cases::<Input>(
+    for case in cases::<XmlInput>(
         include_str!("fixtures/docx/comments.json"),
         "comment_extensions_preserve_links_and_nullable_flags",
     ) {
@@ -104,7 +94,7 @@ fn comment_extensions_preserve_links_and_nullable_flags() {
 }
 /// Compare extended records using the public factory.
 fn check_extensions(name: &str) {
-    for case in cases::<Input>(include_str!("fixtures/docx/comments.json"), name) {
+    for case in cases::<XmlInput>(include_str!("fixtures/docx/comments.json"), name) {
         assert_eq!(case.input.operation, "extensions");
         let xml = parse_xml_string(&case.input.xml, true).unwrap();
         let part =
@@ -122,7 +112,7 @@ fn comment_extension_lookup_replaces_duplicates_without_losing_records() {
 }
 #[test]
 fn comment_extension_lookup_shares_retained_record() {
-    for case in cases::<Input>(
+    for case in cases::<XmlInput>(
         include_str!("fixtures/docx/comments.json"),
         "comment_extension_lookup_shares_retained_record",
     ) {
@@ -151,7 +141,7 @@ fn comment_extension_lookup_shares_retained_record() {
 }
 #[test]
 fn comment_body_errors_fail_the_enclosing_part() {
-    for case in cases::<Input>(
+    for case in cases::<XmlInput>(
         include_str!("fixtures/docx/comments.json"),
         "comment_body_errors_fail_the_enclosing_part",
     ) {
@@ -169,20 +159,12 @@ fn comment_body_errors_fail_the_enclosing_part() {
 }
 #[test]
 fn comment_markers_keep_kind_id_and_inline_order() {
-    use maestro_app::browser::docx_preview::{
-        OpenXmlElementData as Data, parse_paragraph, parse_run,
-    };
-    for case in cases::<Input>(
+    use maestro_app::browser::docx_preview::OpenXmlElementData as Data;
+    for case in cases::<XmlInput>(
         include_str!("fixtures/docx/comments.json"),
         "comment_markers_keep_kind_id_and_inline_order",
     ) {
-        let xml = parse_xml_string(&case.input.xml, true).unwrap();
-        let input = OwnedXmlElement::new(xml.root());
-        let tree = match case.input.operation.as_str() {
-            "run" => parse_run(&input).unwrap(),
-            "paragraph" => parse_paragraph(&input).unwrap(),
-            _ => panic!("unexpected marker operation"),
-        };
+        let tree = docx_support::framed(&case.input).unwrap();
         assert!(tree.nodes.iter().any(|n| matches!(
             n.data,
             Data::CommentReference(_) | Data::CommentRangeStart(_) | Data::CommentRangeEnd(_)
