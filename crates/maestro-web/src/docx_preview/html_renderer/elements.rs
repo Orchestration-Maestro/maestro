@@ -60,7 +60,7 @@ impl HtmlRenderer {
                     &JsValue::from_str("fontFamily"),
                     &font.as_deref().map_or(JsValue::NULL, JsValue::from_str),
                 )?;
-                element.set_inner_html(&format!("&#x{};", char.as_deref().unwrap_or("null")));
+                element.set_text_content(Some(&symbol_text(document, char.as_deref())?));
                 Some(element.into())
             }
             _ => None,
@@ -162,6 +162,25 @@ impl HtmlRenderer {
         }
         Ok(element)
     }
+}
+
+/// Decode only a canonical numeric entity; authored suffixes remain literal text.
+fn symbol_text(document: &Document, value: Option<&str>) -> Result<String, JsValue> {
+    let value = value.unwrap_or("null");
+    let end = value.bytes().take_while(u8::is_ascii_hexdigit).count();
+    if end == 0 {
+        return Ok(format!("&#x{value};"));
+    }
+    let number = u32::from_str_radix(&value[..end], 16).unwrap_or(0x11_0000);
+    let decoder = document.create_element("span")?;
+    decoder.set_inner_html(&format!("&#x{number:X};"));
+    let mut text = decoder.text_content().unwrap_or_default();
+    if end < value.len() {
+        let suffix = &value[end..];
+        text.push_str(suffix.strip_prefix(';').unwrap_or(suffix));
+        text.push(';');
+    }
+    Ok(text)
 }
 
 /// Borrow the browser-owned declaration interface without serializing a style map.

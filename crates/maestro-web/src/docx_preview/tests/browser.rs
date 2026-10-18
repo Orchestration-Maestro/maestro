@@ -259,6 +259,47 @@ pub async fn symbols_follow_native_numeric_entity_and_font_semantics() {
     check("symbols_follow_native_numeric_entity_and_font_semantics").await;
 }
 
+/// Symbol attributes remain text while numeric entities keep native decoding.
+#[wasm_bindgen]
+pub fn symbol_attributes_never_create_elements_or_event_handlers() {
+    let document = test_document();
+    let renderer = HtmlRenderer::new("docx".into());
+    for (value, expected) in [
+        (
+            "41;&lt;img src=x onerror=alert(1)&gt;",
+            "A<img src=x onerror=alert(1)>;",
+        ),
+        ("41Z", "AZ;"),
+        ("80", "€"),
+        ("0", "\u{fffd}"),
+        ("D800", "\u{fffd}"),
+        ("FFFFFFFFFFFFFFFF", "\u{fffd}"),
+        ("F0E0", "\u{f0e0}"),
+        ("ZZZZ", "&#xZZZZ;"),
+    ] {
+        let mut tree = body(&format!(
+            r#"<w:p><w:r><w:sym w:font="Wingdings" w:char="{value}"/></w:r></w:p>"#
+        ));
+        let roots = tree.roots.clone();
+        let nodes = renderer
+            .render_elements(&document, &mut tree, &roots)
+            .unwrap();
+        let symbol = nodes[0]
+            .dyn_ref::<web_sys::Element>()
+            .unwrap()
+            .query_selector("span span")
+            .unwrap()
+            .unwrap();
+        assert_eq!(symbol.child_element_count(), 0, "{value}");
+        assert!(symbol.query_selector("[onerror]").unwrap().is_none());
+        assert_eq!(symbol.text_content().as_deref(), Some(expected), "{value}");
+        assert_eq!(
+            symbol.get_attribute("style").as_deref(),
+            Some("font-family: Wingdings;")
+        );
+    }
+}
+
 /// Paragraph common values override converted declarations.
 #[wasm_bindgen]
 pub async fn paragraph_common_values_override_converted_declarations() {

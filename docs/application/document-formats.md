@@ -407,6 +407,7 @@ The same private renderer emits native paragraphs, runs and inline text from the
 owned element tree. Insertions flatten into ordered children; deleted content,
 field runs and non-wrapping breaks are omitted by this selected profile. Tabs use
 an em space, and nonbreaking hyphens remain visible without introducing a break.
+Symbols decode numeric entities without interpreting authored suffixes as HTML.
 Native class tokens, CSS properties and attributes retain browser validation.
 Paragraph tabs inherit only when absent, while an explicit empty group stays
 empty. Local numbering groups suppress style fallback, including empty groups.

@@ -19,8 +19,7 @@ fn check(name: &str) {
                 assert_eq!(class, renderer.numbering_counter(id, level));
                 json!(class)
             }
-            Input::Format { args, namespace } => {
-                assert_eq!(namespace, "docx");
+            Input::Format { args } => {
                 let value = HtmlRenderer::num_format_to_css_value(string(&args[0]));
                 match value {
                     maestro_app::Presence::Missing => json!({"absent":true}),

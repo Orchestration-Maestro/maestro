@@ -32,7 +32,7 @@ pub(super) enum Input {
     NumberingCounter { args: [Value; 2], namespace: String },
     /// CSS format operand.
     #[serde(rename = "numFormatToCssValue")]
-    Format { args: [Value; 1], namespace: String },
+    Format { args: [Value; 1] },
     /// Literal/counter content operands.
     #[serde(rename = "levelTextToContent")]
     Content { args: [Value; 4], namespace: String },
