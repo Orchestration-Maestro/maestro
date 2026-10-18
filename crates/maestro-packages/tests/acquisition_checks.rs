@@ -1332,8 +1332,6 @@ fn grouped_cleanup_keeps_drive_observation_policy() {
 
 #[test]
 fn git_parent_cleanup_uses_resolved_component_containment() {
-    let parsed = parse_git_url("git:git@github.com:../../git-cache/team/repo").unwrap();
-    assert_eq!(parsed.path, "../../git-cache/team/repo");
     let hidden = parse_git_url("https://github.com/..hidden/repo").unwrap();
     assert_eq!(hidden.path, "..hidden/repo");
 
@@ -1352,17 +1350,6 @@ fn git_parent_cleanup_uses_resolved_component_containment() {
     assert!(fixture.script.reads.borrow().is_empty());
 
     let fixture = Fixture::new(&json!({}));
-    native_support::write(&fixture.agent("git-cache/team/repo/file"), "x");
-    block_on(
-        fixture
-            .manager
-            .remove("git:git@github.com:../../git-cache/team/repo", None),
-    )
-    .unwrap();
-    assert!(!std::path::Path::new(&fixture.agent("git-cache/team/repo")).exists());
-    assert!(std::path::Path::new(&fixture.agent("git-cache/team")).is_dir());
-
-    let fixture = Fixture::new(&json!({}));
     native_support::write(&fixture.agent("git/github.com/..hidden/repo/file"), "x");
     block_on(
         fixture
@@ -1372,4 +1359,57 @@ fn git_parent_cleanup_uses_resolved_component_containment() {
     .unwrap();
     assert!(!std::path::Path::new(&fixture.agent("git/github.com")).exists());
     assert!(std::path::Path::new(&fixture.agent("git")).is_dir());
+}
+
+#[test]
+fn git_dot_segments_never_select_a_checkout() {
+    for (source, selected) in [
+        ("git:example.com/a/../../../sibling/repo", "sibling/repo"),
+        ("git:example.com/owner/./repo", "git/example.com/owner/repo"),
+        (
+            "git:git@github.com:../../git-cache/team/repo",
+            "git-cache/team/repo",
+        ),
+        ("https://github.com/..%2F..%2Fsibling/repo", "sibling/repo"),
+        ("git:../owner/repo", "owner/repo"),
+        ("git:git@..:owner/repo", "owner/repo"),
+    ] {
+        rejected_git_source_preserves_checkout(source, selected);
+    }
+    for (source, path) in [
+        ("git:example.com/group/sub/repo", "group/sub/repo"),
+        ("git:example.com/owner/repo/", "owner/repo/"),
+        ("git:example.com/owner//repo", "owner//repo"),
+    ] {
+        assert_eq!(parse_git_url(source).unwrap().path, path, "case {source:?}");
+    }
+}
+
+/// Exercises each operation after source admission with an existing checkout sentinel.
+fn rejected_git_source_preserves_checkout(source: &str, selected: &str) {
+    assert_eq!(parse_git_url(source), None, "case {source:?}");
+    let fixture = Fixture::new(&json!({"packages": [source]}));
+    let file = fixture.agent(&format!("{selected}/file"));
+    native_support::write(&file, "x");
+    assert!(block_on(fixture.manager.install(source, None)).is_err());
+    assert!(std::path::Path::new(&file).is_file(), "install {source:?}");
+    assert!(fixture.calls().is_empty(), "install {source:?}");
+    block_on(Rc::clone(&fixture.manager).update(None)).unwrap();
+    assert!(std::path::Path::new(&file).is_file(), "update {source:?}");
+    assert!(fixture.calls().is_empty(), "update {source:?}");
+    block_on(fixture.manager.remove(source, None)).unwrap();
+    assert!(std::path::Path::new(&file).is_file(), "case {source:?}");
+    assert!(fixture.calls().is_empty(), "case {source:?}");
+}
+
+#[cfg(windows)]
+#[test]
+fn git_windows_dot_segments_never_select_a_checkout() {
+    for (source, selected) in [
+        (r"git:example.com/a\..\..\..\sibling/repo", "sibling/repo"),
+        (r"git:..\../owner/repo", "../owner/repo"),
+        ("https://github.com/..%5C..%5Csibling/repo", "sibling/repo"),
+    ] {
+        rejected_git_source_preserves_checkout(source, selected);
+    }
 }

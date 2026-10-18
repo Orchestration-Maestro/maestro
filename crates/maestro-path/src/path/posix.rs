@@ -6,6 +6,12 @@ use super::{Cwd, CwdUnavailable};
 /// The path separator.
 pub const SEP: char = '/';
 
+/// Report whether `c` separates path components.
+#[must_use]
+pub fn is_separator(c: char) -> bool {
+    c == SEP
+}
+
 /// Report whether `path` starts at the root.
 ///
 /// # Examples

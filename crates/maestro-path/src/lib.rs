@@ -19,12 +19,13 @@ pub use path::{Cwd, CwdUnavailable, posix, resolve_with, resolve_with_flavor, wi
 
 #[cfg(not(windows))]
 pub use path::posix::{
-    ParsedPath, SEP, basename, dirname, is_absolute, join, normalize, parse, relative, resolve,
-    try_resolve,
+    ParsedPath, SEP, basename, dirname, is_absolute, is_separator, join, normalize, parse,
+    relative, resolve, try_resolve,
 };
 #[cfg(windows)]
 pub use path::win32::{
-    SEP, basename, dirname, is_absolute, join, normalize, relative, resolve, try_resolve,
+    SEP, basename, dirname, is_absolute, is_separator, join, normalize, relative, resolve,
+    try_resolve,
 };
 
 /// Read each drive's `=X:` variable through `var`, in letter order.
