@@ -355,6 +355,13 @@ fn decode_osc_8_hyperlink_with_empty_key_and_id() {
             uri: b"empty-both".to_vec()
         })
     );
+    assert_eq!(
+        decode(b"8;=value:id=foo;http://example.com", false, None),
+        Some(Command::HyperlinkStart {
+            id: Some(b"foo".to_vec()),
+            uri: b"http://example.com".to_vec(),
+        })
+    );
 }
 
 #[test]
@@ -1374,4 +1381,45 @@ fn rejected_capture_cannot_resume_before_reset() {
             Some(Command::ChangeWindowTitle(b"fresh".to_vec()))
         );
     }
+}
+
+#[test]
+fn public_prompt_decoder_keeps_failed_capture_invalid() {
+    let mut parser = Parser::init(false);
+    for byte in b"133;" {
+        parser.next(*byte);
+    }
+    assert_eq!(parser.end(None), None);
+    parser.next(b'A');
+    assert_eq!(parser.end(None), None);
+    parser.reset();
+    for byte in b"133;A" {
+        parser.next(*byte);
+    }
+    let expected =
+        maestro_terminal::osc::semantic_prompt::Command::init(PromptAction::FreshLineNewPrompt);
+    assert_eq!(parser.end(None), Some(Command::SemanticPrompt(expected)));
+}
+
+#[test]
+fn public_colour_decoder_rejects_wrong_prefix_before_reuse() {
+    let mut parser = Parser::init(true);
+    parser.next(b'1');
+    assert_eq!(parser.end(None), None);
+    for byte in b"0;?" {
+        parser.next(*byte);
+    }
+    assert_eq!(parser.end(None), None);
+    parser.reset();
+    for byte in b"10;?" {
+        parser.next(*byte);
+    }
+    assert_eq!(
+        parser.end(None),
+        Some(Command::ColorOperation {
+            op: Operation::Osc10,
+            requests: vec![Request::Query(Target::Dynamic(Dynamic::Foreground))],
+            terminator: Terminator::St,
+        })
+    );
 }

@@ -139,7 +139,10 @@ impl Option {
 }
 
 /// Decode one semantic phase and preserve its options verbatim.
-pub fn parse(parser: &mut Parser, _: std::option::Option<u8>) -> std::option::Option<OscCommand> {
+pub(in crate::osc) fn parse(
+    parser: &mut Parser,
+    _: std::option::Option<u8>,
+) -> std::option::Option<OscCommand> {
     let data = parser.data();
     let action = match data.first()? {
         b'L' if data.len() == 1 => Action::FreshLine,

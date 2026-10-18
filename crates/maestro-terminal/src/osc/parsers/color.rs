@@ -129,7 +129,7 @@ impl Operation {
 }
 
 /// Decode colour requests while keeping each list's stopping policy.
-pub fn parse(parser: &mut Parser, terminator_ch: Option<u8>) -> Option<Command> {
+pub(in crate::osc) fn parse(parser: &mut Parser, terminator_ch: Option<u8>) -> Option<Command> {
     if !parser.alloc {
         parser.state = State::Invalid;
         return None;
