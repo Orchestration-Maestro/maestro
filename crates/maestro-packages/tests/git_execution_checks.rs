@@ -55,6 +55,8 @@ fn git_fetch_compares_refreshed_heads_before_replacement() {
             ],
             vec!["rev-parse", "HEAD"],
             vec!["rev-parse", "@{upstream}"],
+            vec!["rev-parse", "HEAD"],
+            vec!["rev-parse", "--symbolic-full-name", "HEAD"],
             vec!["reset", "--hard", "@{upstream}"],
             vec!["clean", "-fdx"]
         ]
@@ -354,7 +356,7 @@ fn missing_unpinned_git_content_uses_existing_install() {
                 vec![
                     "clone".into(),
                     "https://github.com/acme/tool".into(),
-                    "/home/reader/agent/git/github.com/acme/tool".into()
+                    "/home/reader/agent/git/github.com/acme/.controlled-stage".into()
                 ]
             )]
         );
@@ -381,7 +383,7 @@ fn missing_unpinned_git_content_uses_existing_install() {
 }
 
 #[test]
-fn git_failures_stop_later_commands_without_rollback() {
+fn git_failures_recover_only_after_mutation() {
     for failed in [
         "origin",
         "fetch",
@@ -395,7 +397,12 @@ fn git_failures_stop_later_commands_without_rollback() {
             *effects.run_hook.borrow_mut() = Some(failing_command(failed, "command failed"));
         });
         assert_eq!(
-            result.unwrap_err().to_string(),
+            result
+                .unwrap_err()
+                .to_string()
+                .split("; recovery failed:")
+                .next()
+                .unwrap(),
             match failed {
                 "origin" => "origin failed",
                 "HEAD" | "refreshed" => "head failed",
@@ -405,6 +412,7 @@ fn git_failures_stop_later_commands_without_rollback() {
         let calls = effects.calls.borrow();
         let last = match failed {
             "origin" | "HEAD" | "refreshed" => "rev-parse",
+            "reset" | "clean" | "install" => "reset",
             other => other,
         };
         assert_eq!(calls.last().unwrap().1[0], last);
@@ -414,9 +422,9 @@ fn git_failures_stop_later_commands_without_rollback() {
                 "origin" | "fetch" => 3,
                 "HEAD" => 4,
                 "refreshed" => 5,
-                "reset" => 6,
-                "clean" => 7,
-                _ => 8,
+                "reset" => 10,
+                "clean" => 11,
+                _ => 12,
             }
         );
         assert!(calls.iter().all(|(_, args)| args[0] != "pull"));
@@ -537,7 +545,7 @@ fn clone_acquires_dependencies() {
                 vec![
                     "clone".into(),
                     "https://github.com/acme/tool".into(),
-                    "/home/reader/agent/git/github.com/acme/tool".into()
+                    "/home/reader/agent/git/github.com/acme/.controlled-stage".into()
                 ]
             ),
             ("npm".into(), vec!["install".into(), "--omit=dev".into()]),

@@ -20,6 +20,7 @@ mod configured_source_checks;
 mod configured_update_checks;
 mod git_execution_checks;
 mod git_ssh_url_checks;
+mod git_staging_checks;
 mod manifest_expansion_checks;
 mod manifest_resource_checks;
 #[cfg(unix)]

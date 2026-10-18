@@ -110,7 +110,7 @@ fn scoped_changes_preserve_filtered_objects_and_raw_spelling() {
             .add_source_to_settings("npm: pkg@latest ", None)
             .unwrap()
     );
-    assert!(!manager.add_source_to_settings("npm:pkg@2", None).unwrap());
+    assert!(manager.add_source_to_settings("npm:pkg@2", None).unwrap());
     assert!(
         manager
             .add_source_to_settings(
@@ -126,7 +126,7 @@ fn scoped_changes_preserve_filtered_objects_and_raw_spelling() {
     );
     assert_eq!(
         settings.borrow().get_global_settings().0["packages"],
-        json!([original, "npm: pkg@latest "])
+        json!([original, "npm:pkg@2"])
     );
     assert_eq!(
         settings.borrow().get_project_settings().0["packages"],
@@ -134,22 +134,22 @@ fn scoped_changes_preserve_filtered_objects_and_raw_spelling() {
     );
 }
 #[test]
-fn git_transports_match_one_identity_without_rewriting() {
+fn git_transports_match_one_identity_while_replacing_changed_refs() {
     let (manager, settings, _) = support::manager(
         &json!({"packages":["git:git@github.com:u/r@old", {"source":"https://github.com/u/r.git","skills":[]}, "https://github.com/v/r"]}),
     );
     assert!(
-        !manager
+        manager
             .add_source_to_settings("ssh://git@github.com/u/r@new", None)
             .unwrap()
     );
     assert!(
-        !manager
+        manager
             .add_source_to_settings("git:github.com/u/r", None)
             .unwrap()
     );
     assert!(
-        !manager
+        manager
             .add_source_to_settings("https://github.com/u/r@v1", None)
             .unwrap()
     );
@@ -597,7 +597,11 @@ fn configuration_writes_publish_before_flush_without_rewriting_noops() {
     runtime.block_on(settings.borrow().flush());
     let first = storage.writes.load(Ordering::SeqCst);
     assert_eq!(first, 1);
-    assert!(!manager.add_source_to_settings("npm:pkg@2", None).unwrap());
+    assert!(
+        !manager
+            .add_source_to_settings("npm:pkg@latest", None)
+            .unwrap()
+    );
     assert!(
         !manager
             .remove_source_from_settings("npm:absent", None)
@@ -638,11 +642,13 @@ use std::sync::{
 };
 /// Observes completed persistence without holding a lock across updates.
 #[derive(Default)]
-struct Storage {
+pub(crate) struct Storage {
     /// The existing raw-text storage.
-    inner: InMemorySettingsStorage,
+    pub(crate) inner: InMemorySettingsStorage,
     /// Completed writes.
     writes: AtomicUsize,
+    /// Completed setter scopes, in persistence order.
+    pub(crate) scopes: std::sync::Mutex<Vec<String>>,
 }
 impl SettingsStorage for Storage {
     fn with_lock(
@@ -654,6 +660,10 @@ impl SettingsStorage for Storage {
             let next = update(current)?;
             if next.is_some() {
                 self.writes.fetch_add(1, Ordering::SeqCst);
+                self.scopes.lock().unwrap().push(match scope {
+                    SettingsScope::Global => "user".into(),
+                    SettingsScope::Project => "project".into(),
+                });
             }
             Ok(next)
         })
@@ -712,6 +722,12 @@ impl PackageOperations for WorkflowOperations {
         args: &[String],
     ) -> std::io::Result<maestro_packages::CommandOutput> {
         self.0.run_command_sync(command, args)
+    }
+    fn create_temp_dir(&self, parent: &str) -> std::io::Result<String> {
+        self.0.create_temp_dir(parent)
+    }
+    fn rename_path(&self, from: &str, to: &str) -> std::io::Result<()> {
+        self.0.rename_path(from, to)
     }
     fn create_dir_all(&self, path: &str) -> std::io::Result<()> {
         self.0.create_dir_all(path)

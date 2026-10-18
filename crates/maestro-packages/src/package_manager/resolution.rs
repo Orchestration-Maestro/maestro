@@ -104,7 +104,9 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
             }
             match &parsed {
                 Source::Npm { spec, .. } => self.install_npm(spec, scope).await?,
-                Source::Git(git) => self.install_git(git, scope).await?,
+                Source::Git(git) => {
+                    self.install_git(git, scope).await?;
+                }
                 Source::Local(_) => {}
             }
         } else if let Source::Git(git) = &parsed

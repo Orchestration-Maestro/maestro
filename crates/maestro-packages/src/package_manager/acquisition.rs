@@ -5,21 +5,35 @@ use super::{
 };
 use std::io;
 
+/// Whether acquisition changed an existing Git commit.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum SourceAcquisition {
+    /// Prepared contents or a non-Git acquisition.
+    Prepared,
+    /// Git acquisition retained the existing revision.
+    CurrentGit,
+}
+
 impl<O: PackageOperations> DefaultPackageManager<O> {
     /// Acquires or validates the source's contents; `None` means user scope.
     pub(super) async fn acquire(
         &self,
         source: &str,
         scope: Option<InstalledSourceScope>,
-    ) -> io::Result<()> {
+    ) -> io::Result<SourceAcquisition> {
         let scope = scope.unwrap_or(InstalledSourceScope::User);
         let parsed = sources::parse(source);
         let message = format!("Installing {source}...");
         self.with_progress(ProgressAction::Install, source, message, async {
             match parsed {
-                Source::Npm { spec, .. } => self.install_npm(spec, scope.resource_scope()).await,
+                Source::Npm { spec, .. } => self
+                    .install_npm(spec, scope.resource_scope())
+                    .await
+                    .map(|()| SourceAcquisition::Prepared),
                 Source::Git(git) => self.install_git(&git, scope.resource_scope()).await,
-                Source::Local(path) => self.require_local(path),
+                Source::Local(path) => self
+                    .require_local(path)
+                    .map(|()| SourceAcquisition::Prepared),
             }
         })
         .await
@@ -59,8 +73,8 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         source: &str,
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<()> {
-        self.acquire(source, scope).await?;
-        self.add_source(source, scope).map(drop)
+        let acquisition = self.acquire(source, scope).await?;
+        self.record_source(source, scope, acquisition).map(drop)
     }
     /// Removes the contents, then removes the source from settings.
     pub(super) async fn release_and_persist(

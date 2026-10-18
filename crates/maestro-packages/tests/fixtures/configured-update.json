@@ -1413,6 +1413,25 @@
         {
           "program": "git",
           "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--symbolic-full-name",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
             "reset",
             "--hard",
             "@{upstream}"
@@ -1502,6 +1521,25 @@
         {
           "program": "git",
           "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--symbolic-full-name",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
             "reset",
             "--hard",
             "@{upstream}"
@@ -1584,6 +1622,25 @@
           "args": [
             "rev-parse",
             "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--symbolic-full-name",
+            "HEAD"
           ],
           "cwd": "/fixture/agent/git/github.com/acme/tool",
           "timeout_ms": 10000
@@ -1702,6 +1759,25 @@
         {
           "program": "git",
           "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--symbolic-full-name",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
             "reset",
             "--hard",
             "origin/HEAD"
@@ -1803,6 +1879,25 @@
           "args": [
             "rev-parse",
             "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--symbolic-full-name",
+            "HEAD"
           ],
           "cwd": "/fixture/agent/git/github.com/acme/tool",
           "timeout_ms": 10000
@@ -1918,6 +2013,25 @@
         {
           "program": "git",
           "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--symbolic-full-name",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
             "reset",
             "--hard",
             "origin/HEAD"
@@ -2021,6 +2135,25 @@
           "args": [
             "rev-parse",
             "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--symbolic-full-name",
+            "HEAD"
           ],
           "cwd": "/fixture/agent/git/github.com/acme/tool",
           "timeout_ms": 10000
@@ -2148,6 +2281,25 @@
         {
           "program": "git",
           "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--symbolic-full-name",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
             "reset",
             "--hard",
             "origin/HEAD"
@@ -2254,6 +2406,25 @@
           "args": [
             "rev-parse",
             "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--symbolic-full-name",
+            "HEAD"
           ],
           "cwd": "/fixture/agent/git/github.com/acme/tool",
           "timeout_ms": 10000
@@ -2372,6 +2543,25 @@
         {
           "program": "git",
           "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--symbolic-full-name",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
             "reset",
             "--hard",
             "origin/HEAD"
@@ -2476,6 +2666,25 @@
           "args": [
             "rev-parse",
             "origin/HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--symbolic-full-name",
+            "HEAD"
           ],
           "cwd": "/fixture/agent/git/github.com/acme/tool",
           "timeout_ms": 10000
@@ -2763,9 +2972,46 @@
         {
           "program": "git",
           "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--symbolic-full-name",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
             "reset",
             "--hard",
             "@{upstream}"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "symbolic-ref",
+            "HEAD",
+            "refs/heads/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "old"
           ],
           "cwd": "/fixture/agent/git/github.com/acme/tool"
         }
@@ -2781,10 +3027,10 @@
           "type": "error",
           "action": "update",
           "source": "git:github.com/acme/tool",
-          "message": "failed reset"
+          "message": "failed reset; recovery failed: failed reset"
         }
       ],
-      "error": "failed reset"
+      "error": "failed reset; recovery failed: failed reset"
     }
   },
   {
@@ -2847,6 +3093,25 @@
         {
           "program": "git",
           "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--symbolic-full-name",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
             "reset",
             "--hard",
             "@{upstream}"
@@ -2858,6 +3123,24 @@
           "args": [
             "clean",
             "-fdx"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "symbolic-ref",
+            "HEAD",
+            "refs/heads/main"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool"
+        },
+        {
+          "program": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "old"
           ],
           "cwd": "/fixture/agent/git/github.com/acme/tool"
         }
@@ -3080,6 +3363,25 @@
         {
           "program": "git",
           "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--symbolic-full-name",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
             "reset",
             "--hard",
             "@{upstream}"
@@ -3182,6 +3484,25 @@
         {
           "program": "git",
           "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
+            "rev-parse",
+            "--symbolic-full-name",
+            "HEAD"
+          ],
+          "cwd": "/fixture/agent/git/github.com/acme/tool",
+          "timeout_ms": 10000
+        },
+        {
+          "program": "git",
+          "args": [
             "reset",
             "--hard",
             "@{upstream}"
@@ -3233,7 +3554,7 @@
           "args": [
             "clone",
             "https://github.com/acme/tool",
-            "/fixture/agent/git/github.com/acme/tool"
+            "/fixture/agent/git/github.com/acme/.controlled-stage"
           ]
         }
       ],

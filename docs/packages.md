@@ -18,9 +18,10 @@ sources](package-sources.md), `maestro-path` and `maestro-settings`.
   nonempty `npmCommand` array, whose leading arguments come first (an empty array
   selects `npm`). An empty first entry fails with
   `Invalid npmCommand: first array entry must be a non-empty command`.
-- **Git**: a target that already exists, directory or file, ends installation at
-  once. Otherwise the repository is cloned below the scope's `git` root (with a `.gitignore` there),
-  checked out when a ref was given, and its dependencies installed when it has a
+- **Git**: an existing target with no ref or an already-current ref is unchanged.
+  A different explicit ref is selected in place. Missing targets are prepared in
+  an owned sibling directory and published only on success, below the scope's
+  `git` root (with a `.gitignore` there). Dependencies are installed when there is a
   `package.json` (`install --omit=dev`, or plain `install` when a nonempty
   `npmCommand` is configured). The settings are read after the clone. Removal deletes the target and
   then empty ancestors strictly inside the Git root, comparing path components after
@@ -53,8 +54,10 @@ replaces the error.
 
 ## Persistence
 
-`install_and_persist` adds the source to settings after a successful install and
-ignores an existing entry. `remove_and_persist` removes it after a successful removal
+`install_and_persist` records the source after successful acquisition, replacing a
+changed pin in the first identity match while preserving raw object fields.
+Unchanged Git acquisition preserves existing registrations; absent ones are added.
+See [Git preparation and recovery](package-sources.md#git-preparation-and-recovery). `remove_and_persist` removes it after a successful removal
 and returns whether any entry changed. Neither flushes settings nor undoes
 installed contents when the settings edit fails.
 

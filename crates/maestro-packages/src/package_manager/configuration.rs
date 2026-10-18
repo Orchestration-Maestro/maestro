@@ -7,7 +7,7 @@ use maestro_settings::{PackageSource, Settings};
 use serde_json::Value;
 use std::io;
 impl<O: PackageOperations> DefaultPackageManager<O> {
-    /// Appends one normalized source unless the chosen scope already contains its identity.
+    /// Appends a source or replaces the first matching identity when its pin changes.
     /// # Errors
     /// Returns consumed settings, borrow or local resolution failures.
     pub(super) fn add_source(
@@ -15,17 +15,48 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         source: &str,
         scope: Option<InstalledSourceScope>,
     ) -> io::Result<bool> {
+        self.record_source(
+            source,
+            scope,
+            super::acquisition::SourceAcquisition::Prepared,
+        )
+    }
+    /// Edits only the first matching entry, preserving unread raw fields and list order.
+    pub(super) fn record_source(
+        &self,
+        source: &str,
+        scope: Option<InstalledSourceScope>,
+        acquisition: super::acquisition::SourceAcquisition,
+    ) -> io::Result<bool> {
         let scope = scope.unwrap_or(InstalledSourceScope::User);
         let snapshot = self.snapshot(scope)?;
         let normalized = self.normalize_source(source, scope)?;
-        let entries = packages(snapshot)?;
-        for entry in &entries {
-            if self.matches(entry_source(entry)?, source, scope)? {
+        let mut entries = packages(snapshot)?;
+        let mut found = None;
+        for (index, entry) in entries.iter().enumerate() {
+            let stored = entry_source(entry)?;
+            if !self.matches(stored, source, scope)? {
+                continue;
+            }
+            if acquisition == super::acquisition::SourceAcquisition::CurrentGit
+                || same_pin(stored, source)
+            {
                 return Ok(false);
             }
+            found = Some(index);
+            break;
         }
-        let mut next: Vec<_> = entries.into_iter().map(PackageSource::Unknown).collect();
-        next.push(PackageSource::Source(normalized));
+        if let Some(index) = found {
+            match &mut entries[index] {
+                Value::Object(object) => {
+                    object.insert("source".into(), Value::String(normalized));
+                }
+                entry => *entry = Value::String(normalized),
+            }
+        } else {
+            entries.push(Value::String(normalized));
+        }
+        let next = entries.into_iter().map(PackageSource::Unknown).collect();
         self.write(scope, next)?;
         Ok(true)
     }
@@ -187,5 +218,14 @@ fn package_rows(snapshot: &Settings) -> io::Result<&[Value]> {
             io::ErrorKind::InvalidData,
             "packages is not an array",
         )),
+    }
+}
+
+/// Compares parsed pins without normalizing authored source spellings.
+fn same_pin(stored: &str, input: &str) -> bool {
+    match (sources::parse(stored), sources::parse(input)) {
+        (Source::Npm { spec: a, .. }, Source::Npm { spec: b, .. }) => a == b,
+        (Source::Git(a), Source::Git(b)) => a.r#ref == b.r#ref,
+        _ => true,
     }
 }

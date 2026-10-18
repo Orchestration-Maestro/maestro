@@ -69,6 +69,14 @@ pub trait PackageOperations {
     /// # Errors
     /// Returns the adapter's creation failure.
     fn create_dir_all(&self, path: &str) -> io::Result<()>;
+    /// Exclusively allocates an owned directory below the supplied parent.
+    /// # Errors
+    /// Returns the native creation failure; existing names are skipped.
+    fn create_temp_dir(&self, parent: &str) -> io::Result<String>;
+    /// Renames the supplied path to its destination.
+    /// # Errors
+    /// Returns the native rename failure.
+    fn rename_path(&self, from: &str, to: &str) -> io::Result<()>;
     /// Writes UTF-8 text, requiring a new pathname when `exclusive` is true.
     /// Otherwise creates or truncates the destination. Neither mode creates parents.
     /// # Errors
@@ -181,6 +189,26 @@ impl PackageOperations for NativePackageOperations {
     }
     fn create_dir_all(&self, path: &str) -> io::Result<()> {
         std::fs::create_dir_all(path)
+    }
+    fn create_temp_dir(&self, parent: &str) -> io::Result<String> {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        static NEXT: AtomicUsize = AtomicUsize::new(0);
+        loop {
+            let name = format!(
+                ".maestro-stage-{}-{}",
+                std::process::id(),
+                NEXT.fetch_add(1, Ordering::Relaxed)
+            );
+            let path = std::path::Path::new(parent).join(name);
+            match std::fs::create_dir(&path) {
+                Ok(()) => return Ok(path.to_string_lossy().into_owned()),
+                Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
+                Err(error) => return Err(error),
+            }
+        }
+    }
+    fn rename_path(&self, from: &str, to: &str) -> io::Result<()> {
+        std::fs::rename(from, to)
     }
     fn write_file(&self, path: &str, text: &str, exclusive: bool) -> io::Result<()> {
         std::fs::OpenOptions::new()

@@ -241,10 +241,12 @@ fn git_source_forms_choose_clone_target_and_checkout() {
         let fixture = Fixture::new(&json!({}));
         block_on(fixture.manager.install(source, None)).unwrap();
         let target = fixture.agent(&format!("git/{}/{}", git.host, git.path));
-        let mut expected = vec![call("git", &["clone", &git.repo, &target])];
+        let stage = fixture.calls()[0].args[2].clone();
+        assert_ne!(stage, target);
+        let mut expected = vec![call("git", &["clone", &git.repo, &stage])];
         if let Some(reference) = reference {
             expected.push(Call {
-                cwd: Some(target.clone()),
+                cwd: Some(stage.clone()),
                 ..call("git", &["checkout", reference])
             });
         }
@@ -285,7 +287,7 @@ fn unprefixed_shorthands_validate_as_local_paths() {
 }
 
 /// Makes the clone create the target directory, and optionally its manifest.
-fn clone_creates_target(fixture: &Fixture, manifest: bool) {
+pub(crate) fn clone_creates_target(fixture: &Fixture, manifest: bool) {
     fixture
         .script
         .hooks
@@ -316,12 +318,14 @@ fn controlled_repository_installs_checks_out_and_removes() {
     let target = fixture.agent("git/example.test/team/repo");
     assert_eq!(sandbox::read(&format!("{target}/marker")), "one");
     assert_eq!(sandbox::read(&fixture.agent("git/.gitignore")), IGNORE);
+    let stage = fixture.calls()[0].args[2].clone();
+    assert_ne!(stage, target);
     assert_eq!(
         fixture.calls(),
         vec![
-            call("git", &["clone", "https://example.test/team/repo", &target]),
+            call("git", &["clone", "https://example.test/team/repo", &stage]),
             Call {
-                cwd: Some(target.clone()),
+                cwd: Some(stage),
                 ..call("git", &["checkout", "v1"])
             },
         ]
@@ -353,8 +357,8 @@ fn git_dependencies_use_live_configured_command() {
         let fixture = Fixture::new(&settings);
         clone_creates_target(&fixture, true);
         block_on(fixture.manager.install(source, None)).unwrap();
-        let target = fixture.agent("git/github.com/user/repo");
         let calls = fixture.calls();
+        let target = calls[0].args[2].clone();
         assert_eq!(calls.len(), 2);
         assert_eq!(
             calls[1],
@@ -369,7 +373,7 @@ fn git_dependencies_use_live_configured_command() {
     let error = block_on(fixture.manager.install(source, None)).unwrap_err();
     assert!(error.to_string().starts_with("Invalid npmCommand"));
     assert_eq!(fixture.calls().len(), 1);
-    assert!(std::path::Path::new(&fixture.agent("git/github.com/user/repo")).is_dir());
+    assert!(!std::path::Path::new(&fixture.agent("git/github.com/user/repo")).exists());
 
     let fixture = Fixture::new(&json!({"npmCommand": [""]}));
     clone_creates_target(&fixture, false);
@@ -396,7 +400,7 @@ fn git_dependencies_use_live_configured_command() {
 }
 
 #[test]
-fn git_existing_target_does_not_read_command_or_modify_files() {
+fn unpinned_existing_git_target_does_not_read_command_or_modify_files() {
     for as_file in [false, true] {
         let fixture = Fixture::new(&json!({"npmCommand": [""]}));
         let target = fixture.agent("git/github.com/user/repo");
@@ -405,7 +409,7 @@ fn git_existing_target_does_not_read_command_or_modify_files() {
         } else {
             native_support::write(&format!("{target}/package.json"), "keep");
         }
-        let source = "https://github.com/user/repo#pinned";
+        let source = "https://github.com/user/repo";
         block_on(fixture.manager.install(source, None)).unwrap();
         assert!(fixture.calls().is_empty());
         assert!(!std::path::Path::new(&fixture.agent("git/.gitignore")).exists());
@@ -529,10 +533,7 @@ fn git_failures_stop_after_the_completed_effect() {
     assert!(error.to_string().ends_with("failed with code 1"));
     assert_eq!(fixture.calls().len(), 2);
     assert_eq!(sandbox::read(&fixture.agent("git/.gitignore")), IGNORE);
-    assert_eq!(
-        sandbox::read(&fixture.agent("git/github.com/user/repo/package.json")),
-        "not json"
-    );
+    assert!(!std::path::Path::new(&fixture.agent("git/github.com/user/repo")).exists());
 
     let fixture = Fixture::new(&json!({}));
     clone_creates_target(&fixture, true);
@@ -544,7 +545,9 @@ fn git_failures_stop_after_the_completed_effect() {
     let error = block_on(fixture.manager.install(source, None)).unwrap_err();
     assert!(error.to_string().ends_with("failed with code 2"));
     assert_eq!(fixture.calls().len(), 3);
-    assert!(std::path::Path::new(&fixture.agent("git/github.com/user/repo/package.json")).exists());
+    assert!(
+        !std::path::Path::new(&fixture.agent("git/github.com/user/repo/package.json")).exists()
+    );
 }
 
 #[test]

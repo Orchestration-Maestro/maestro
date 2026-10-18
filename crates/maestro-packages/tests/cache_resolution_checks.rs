@@ -215,9 +215,9 @@ fn unchanged_git_refresh_preserves_checkout_and_skips_dependencies() {
     });
 }
 
-/// Replays refresh failures return surviving cache without rollback.
+/// Replays refresh failures returning the recovered cache.
 #[test]
-fn refresh_failures_return_surviving_cache_without_rollback() {
+fn refresh_failures_return_recovered_cache() {
     cache_support::block_on(async {
         cache_support::cases(&[
             "git_fail_upstream",

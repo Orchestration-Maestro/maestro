@@ -10,11 +10,17 @@ pub fn git(path: &std::path::Path, args: &[&str]) -> String {
             "user.email=fixture@example.invalid",
             "-c",
             "commit.gpgsign=false",
+            "-c",
+            "tag.gpgsign=false",
         ])
         .args(args)
         .current_dir(path)
         .output()
         .unwrap();
-    assert!(result.status.success(), "fixture Git command failed");
+    assert!(
+        result.status.success(),
+        "fixture Git command {args:?} failed: {}",
+        String::from_utf8_lossy(&result.stderr)
+    );
     String::from_utf8(result.stdout).unwrap().trim().into()
 }
