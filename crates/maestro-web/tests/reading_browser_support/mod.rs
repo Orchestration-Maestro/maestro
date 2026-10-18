@@ -132,6 +132,8 @@ impl AttachmentHost for Host {
 }
 /// Caller-owned native view retained across explicit input frames.
 pub struct View {
+    /// Native grammar owner loaded once per caller.
+    pub highlighter: maestro_theme::SyntectHighlighter,
     /// Real artifact view.
     pub element: Box<dyn ArtifactElement>,
     /// Real platform adapter with controlled failures.
@@ -156,6 +158,10 @@ impl View {
     pub fn new(filename: &str, content: &str) -> Self {
         let host = Rc::new(Host::new());
         Self {
+            highlighter: match maestro_theme::SyntectHighlighter::new() {
+                Ok(engine) => engine,
+                Err(_) => unreachable!("invalid embedded grammar table"),
+            },
             element: create_artifact_element(filename, content, host.clone()).unwrap(),
             host,
             context: egui::Context::default(),
@@ -182,6 +188,7 @@ impl View {
             .native_pixels_per_point = Some(self.density);
         let mut output = self.context.run_ui(input, |ui| {
             let v = ArtifactView {
+                highlighter: &self.highlighter,
                 i18n: &self.i18n,
                 presentation: &p,
             };

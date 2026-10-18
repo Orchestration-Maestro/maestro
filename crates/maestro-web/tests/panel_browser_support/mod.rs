@@ -80,6 +80,7 @@ impl Panel {
                         ui,
                         &self.caller,
                         ArtifactView {
+                            highlighter: &crate::highlighter_support::NoHighlight,
                             i18n: &self.i18n,
                             presentation: &presentation,
                         },

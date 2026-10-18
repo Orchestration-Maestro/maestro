@@ -11,11 +11,11 @@ use std::rc::Rc;
 #[test]
 fn pdf_factory_installs_only_the_pdf_specialization() {
     let host = Rc::new(session_header_support::Host::default());
-    for name in ["a.pdf", "a.PDF", "a.unknown"] {
+    for name in ["a.pdf", "a.PDF", "a.unknown", "a.txt", "a.png"] {
         let view = create_artifact_element(name, "", host.clone()).unwrap();
         assert_eq!(view.filename(), name);
     }
-    for name in ["a.html", "a.svg", "a.md", "a.png", "a.docx", "a.txt"] {
+    for name in ["a.html", "a.svg", "a.md", "a.docx"] {
         assert!(create_artifact_element(name, "", host.clone()).is_err());
     }
 }
@@ -452,3 +452,5 @@ fn pdf_tool_edits() -> [(serde_json::Value, String, &'static [u8]); 3] {
         ),
     ]
 }
+
+pub mod highlighter_support;

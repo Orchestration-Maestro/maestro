@@ -1,0 +1,64 @@
+//! Retained native image and weak load-failure subscription.
+use super::Body;
+use crate::browser::{
+    attachment_content::{
+        AttachmentUiError, ReadingRoot,
+        browser::{append, element, host_error},
+    },
+    event_subscription::EventSubscription,
+};
+use std::{cell::RefCell, rc::Rc};
+use wasm_bindgen::{JsCast as _, closure::Closure};
+/// Assign only differing attributes, keeping the failure source across frames.
+pub(super) fn sync(body: &Body) -> Result<(), wasm_bindgen::JsValue> {
+    if let Some(image) = &body.image {
+        let source = if body.failed {
+            &body.fallback
+        } else {
+            &body.source
+        };
+        if image.get_attribute("src").as_deref() != Some(source) {
+            image.set_attribute("src", source)?;
+        }
+        if image.get_attribute("alt").as_deref() != Some(&body.alt) {
+            image.set_attribute("alt", &body.alt)?;
+        }
+    }
+    Ok(())
+}
+/// Mount a centred image with a listener owned by the reading root.
+pub(super) fn mount(
+    document: &web_sys::Document,
+    body: &Rc<RefCell<Body>>,
+) -> Result<ReadingRoot, AttachmentUiError> {
+    let root = element(document, "div", "maestro-image-artifact")?;
+    let style = element(document, "style", "")?;
+    style.set_text_content(Some(include_str!("../image_artifact.css")));
+    append(&root, &style)?;
+    let image = element(document, "img", "")?;
+    append(&root, &image)?;
+    body.borrow_mut().image = Some(image.clone());
+    let weak = Rc::downgrade(body);
+    let callback = Closure::<dyn FnMut()>::new(move || {
+        let Some(body) = weak.upgrade() else {
+            return;
+        };
+        let mut body = body.borrow_mut();
+        if body.failed {
+            return;
+        }
+        body.failed = true;
+        if let Err(error) = sync(&body) {
+            wasm_bindgen::throw_val(error);
+        }
+    });
+    let listener = EventSubscription::new(image.unchecked_into(), "error", callback)
+        .map_err(|error| host_error(&error))?;
+    sync(&body.borrow()).map_err(|error| host_error(&error))?;
+    Ok(ReadingRoot {
+        element: root,
+        slots: vec![],
+        owner: Some(Box::new(listener)),
+        commit: None,
+    })
+}

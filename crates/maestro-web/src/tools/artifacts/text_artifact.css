@@ -1,0 +1,12 @@
+.maestro-text-artifact {
+  margin: 0;
+  padding: var(--maestro-spacing-md);
+  font-family: var(--maestro-type-mono-font);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  color: var(--maestro-color-text);
+  white-space: pre;
+}
+.maestro-text-artifact code {
+  font-family: inherit;
+}

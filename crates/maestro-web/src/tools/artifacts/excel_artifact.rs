@@ -115,14 +115,7 @@ impl ArtifactElement for ExcelArtifact {
             self.host.as_ref(),
             &self.filename,
             (
-                if self
-                    .filename
-                    .rsplit('.')
-                    .next()
-                    .unwrap_or("")
-                    .to_lowercase()
-                    == "xls"
-                {
+                if super::extension(&self.filename) == "xls" {
                     "application/vnd.ms-excel"
                 } else {
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

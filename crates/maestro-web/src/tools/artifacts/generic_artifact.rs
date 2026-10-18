@@ -57,14 +57,7 @@ impl GenericArtifact {
     }
     /// Select the explicitly supported download media types.
     fn mime(&self) -> &'static str {
-        match self
-            .filename
-            .rsplit('.')
-            .next()
-            .unwrap_or_default()
-            .to_lowercase()
-            .as_str()
-        {
+        match super::extension(&self.filename).as_str() {
             "pdf" => "application/pdf",
             "zip" => "application/zip",
             "tar" => "application/x-tar",
