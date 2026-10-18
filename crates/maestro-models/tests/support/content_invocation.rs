@@ -382,7 +382,7 @@ async fn observe(input: &Input) -> TestResult<Value> {
 
 /// Compare expected fields after normalizing native diagnostics and JSON numeric representation.
 fn check(row: &Row) -> TestResult {
-    let mut actual = chat::block_on(false, observe(&row.input))?;
+    let mut actual = chat::block_on(true, observe(&row.input))?;
     if let Some(expected) = row.expected["output"]["errorMessage"]
         .as_str()
         .filter(|text| text.starts_with('<'))
