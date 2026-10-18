@@ -1,5 +1,6 @@
 //! Controlled public response invocations with finite producers and consumed observations.
-use crate::chat::{TestResult, context, model};
+use crate::chat::{TestResult, model};
+use crate::response_endpoint::{Log, body, failure, history, number, option, selected};
 use maestro_models::providers::responses::azure_openai_responses::{
     stream_azure_openai_responses, stream_simple_azure_openai_responses,
 };
@@ -9,8 +10,7 @@ use maestro_models::{
     HttpResponse, OnPayload, OnResponse, StreamOptions,
 };
 use serde_json::{Value, json};
-use std::fmt::Write as _;
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::{Arc, PoisonError};
 
 /// Reduced recorded cases.
 pub const FIXTURE: &str = include_str!("../fixtures/azure_endpoint_cases.json");
@@ -27,67 +27,11 @@ fn target(case: &Value) -> TestResult<maestro_models::Model> {
     }
     model(&descriptor)
 }
-/// Conversation defaults overridden by a selected fixture history.
-fn history(case: &Value) -> TestResult<maestro_models::Context> {
-    let mut history =
-        json!({"systemPrompt":"instruction","messages":[{"role":"user","content":"query"}]});
-    if let Some(changes) = case["context"].as_object() {
-        history
-            .as_object_mut()
-            .ok_or("history object")?
-            .extend(changes.clone());
-    }
-    context(&history)
-}
-/// Read a tagged nonfinite test number.
-fn number(value: &Value) -> Option<f64> {
-    match value["number"].as_str() {
-        Some("NaN") => Some(f64::NAN),
-        Some("Infinity") => Some(f64::INFINITY),
-        _ => value.as_f64(),
-    }
-}
-/// Decode an optional typed fixture option.
-fn option<T: serde::de::DeserializeOwned>(value: &Value, key: &str) -> TestResult<Option<T>> {
-    Ok(value
-        .get(key)
-        .filter(|v| !v.is_null())
-        .map(|v| serde_json::from_value(v.clone()))
-        .transpose()?)
-}
-/// Hook failure returned as data.
-fn failure(text: &str) -> maestro_models::DiagnosticErrorInfo {
-    maestro_models::extract_diagnostic_error(maestro_models::DiagnosticInput::Text(text))
-}
-/// Script the finite response body.
-fn body(case: &Value) -> Vec<u8> {
-    if let Some(body) = case["body"].as_str() {
-        return body.as_bytes().to_vec();
-    }
-    let Some(events) = case["events"].as_array() else {
-        return COMPLETE.as_bytes().to_vec();
-    };
-    events
-        .iter()
-        .fold(String::new(), |mut s, e| {
-            let _ = write!(s, "data: {e}\n\n");
-            s
-        })
-        .into_bytes()
-}
-/// Finite observation logs containing only owned JSON data.
-#[derive(Clone, Default)]
-struct Log {
-    /// Captured wire requests.
-    requests: Arc<Mutex<Vec<Value>>>,
-    /// Payload/response hook observations.
-    hooks: Arc<Mutex<Vec<Value>>>,
-}
 /// Controlled transport; body construction never runs under a log lock.
 fn fetch(case: &Value, log: &Log, signal: Cancellation) -> TestResult<Fetch> {
     let (sent, wire, status, fragmented) = (
         Arc::clone(&log.requests),
-        body(case),
+        body(case, COMPLETE),
         u16::try_from(case["status"].as_u64().unwrap_or(200))?,
         case["chunked"] == true,
     );
@@ -306,50 +250,12 @@ fn compare(row: &Value, mut actual: Value) {
         row["case"]
     );
 }
-/// Environment variables named by the scenario.
-fn environment(case: &Value) -> TestResult<Vec<(&str, &str)>> {
-    case["env"]
-        .as_object()
-        .into_iter()
-        .flatten()
-        .map(|(k, v)| Ok((k.as_str(), v.as_str().ok_or("environment value")?)))
-        .collect()
-}
 /// Run each query in an isolated child with its explicit environment.
 pub async fn assert_rows(test: &str) -> TestResult {
     let decoded = crate::azure_cases::rows(FIXTURE)?;
     let rows = crate::chat::rows(&serde_json::to_string(&decoded)?, test)?;
-    assert!(!rows.is_empty(), "{test} owns cases");
-    let Ok(selected) = std::env::var("MAESTRO_CHILD_CASE") else {
-        {
-            let output = maestro_test_process::TestProcess::current(test)?
-                .nocapture()
-                .env_clear()
-                .env("MAESTRO_CHILD_CASE", "*")
-                .output()?;
-            assert!(output.status.success(), "{output:?}");
-        };
-        for (index, row) in rows
-            .iter()
-            .enumerate()
-            .filter(|(_, row)| row["case"].get("env").is_some())
-        {
-            {
-                let output = maestro_test_process::TestProcess::current(test)?
-                    .nocapture()
-                    .env_clear()
-                    .envs(environment(&row["case"])?.iter().copied())
-                    .env("MAESTRO_CHILD_CASE", index.to_string())
-                    .output()?;
-                assert!(output.status.success(), "{output:?}");
-            };
-        }
-        return Ok(());
-    };
-    for (index, row) in rows.iter().enumerate() {
-        if (selected == "*" && row["case"].get("env").is_none()) || selected == index.to_string() {
-            compare(row, run_case(&row["case"]).await?);
-        }
+    for row in selected(test, &rows)? {
+        compare(row, run_case(&row["case"]).await?);
     }
     Ok(())
 }

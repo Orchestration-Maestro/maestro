@@ -1,4 +1,5 @@
-//! Controlled public response invocations with finite producers and consumed observations.
+//! Controlled public response invocations with finite producers and consumed observations,
+//! and the case helpers the cloud response harness reuses.
 use crate::chat::{TestResult, context, model};
 use maestro_models::providers::responses::openai_responses::{
     OpenAIResponsesReasoningSummary, OpenAIResponsesServiceTier, stream_openai_responses,
@@ -28,7 +29,7 @@ fn target(case: &Value) -> TestResult<maestro_models::Model> {
     model(&descriptor)
 }
 /// Conversation defaults overridden by a selected fixture history.
-fn history(case: &Value) -> TestResult<maestro_models::Context> {
+pub fn history(case: &Value) -> TestResult<maestro_models::Context> {
     let mut history =
         json!({"systemPrompt":"instruction","messages":[{"role":"user","content":"query"}]});
     if let Some(changes) = case["context"].as_object() {
@@ -40,7 +41,7 @@ fn history(case: &Value) -> TestResult<maestro_models::Context> {
     context(&history)
 }
 /// Read a tagged nonfinite test number.
-fn number(value: &Value) -> Option<f64> {
+pub fn number(value: &Value) -> Option<f64> {
     match value["number"].as_str() {
         Some("NaN") => Some(f64::NAN),
         Some("Infinity") => Some(f64::INFINITY),
@@ -48,7 +49,7 @@ fn number(value: &Value) -> Option<f64> {
     }
 }
 /// Decode an optional typed fixture option.
-fn option<T: serde::de::DeserializeOwned>(value: &Value, key: &str) -> TestResult<Option<T>> {
+pub fn option<T: serde::de::DeserializeOwned>(value: &Value, key: &str) -> TestResult<Option<T>> {
     Ok(value
         .get(key)
         .filter(|v| !v.is_null())
@@ -56,16 +57,16 @@ fn option<T: serde::de::DeserializeOwned>(value: &Value, key: &str) -> TestResul
         .transpose()?)
 }
 /// Hook failure returned as data.
-fn failure(text: &str) -> maestro_models::DiagnosticErrorInfo {
+pub fn failure(text: &str) -> maestro_models::DiagnosticErrorInfo {
     maestro_models::extract_diagnostic_error(maestro_models::DiagnosticInput::Text(text))
 }
-/// Script the finite response body.
-fn body(case: &Value) -> Vec<u8> {
+/// Script the finite response body, ending with `complete` when the case names no events.
+pub fn body(case: &Value, complete: &str) -> Vec<u8> {
     if let Some(body) = case["body"].as_str() {
         return body.as_bytes().to_vec();
     }
     let Some(events) = case["events"].as_array() else {
-        return COMPLETE.as_bytes().to_vec();
+        return complete.as_bytes().to_vec();
     };
     events
         .iter()
@@ -77,17 +78,17 @@ fn body(case: &Value) -> Vec<u8> {
 }
 /// Finite observation logs containing only owned JSON data.
 #[derive(Clone, Default)]
-struct Log {
+pub struct Log {
     /// Captured wire requests.
-    requests: Arc<Mutex<Vec<Value>>>,
+    pub requests: Arc<Mutex<Vec<Value>>>,
     /// Payload/response hook observations.
-    hooks: Arc<Mutex<Vec<Value>>>,
+    pub hooks: Arc<Mutex<Vec<Value>>>,
 }
 /// Controlled transport; body construction never runs under a log lock.
 fn fetch(case: &Value, log: &Log, signal: Cancellation) -> TestResult<Fetch> {
     let (sent, wire, status, fragmented) = (
         Arc::clone(&log.requests),
-        body(case),
+        body(case, COMPLETE),
         u16::try_from(case["status"].as_u64().unwrap_or(200))?,
         case["chunked"] == true,
     );
@@ -334,10 +335,9 @@ fn environment(case: &Value) -> TestResult<Vec<(&str, &str)>> {
         .map(|(k, v)| Ok((k.as_str(), v.as_str().ok_or("environment value")?)))
         .collect()
 }
-/// Run each query in an isolated child with its explicit environment.
-pub async fn assert_rows(test: &str) -> TestResult {
-    let decoded = crate::response_cases::rows(FIXTURE)?;
-    let rows = crate::chat::rows(&serde_json::to_string(&decoded)?, test)?;
+/// The rows this process runs: none in the parent, which reruns the shared-environment rows
+/// together and each row with its own environment in an isolated child.
+pub fn selected<'a>(test: &str, rows: &'a [Value]) -> TestResult<Vec<&'a Value>> {
     assert!(!rows.is_empty(), "{test} owns cases");
     let Ok(selected) = std::env::var("MAESTRO_CHILD_CASE") else {
         {
@@ -363,12 +363,23 @@ pub async fn assert_rows(test: &str) -> TestResult {
                 assert!(output.status.success(), "{output:?}");
             };
         }
-        return Ok(());
+        return Ok(Vec::new());
     };
-    for (index, row) in rows.iter().enumerate() {
-        if (selected == "*" && row["case"].get("env").is_none()) || selected == index.to_string() {
-            compare(row, run_case(&row["case"]).await?);
-        }
+    Ok(rows
+        .iter()
+        .enumerate()
+        .filter(|(index, row)| {
+            (selected == "*" && row["case"].get("env").is_none()) || selected == index.to_string()
+        })
+        .map(|(_, row)| row)
+        .collect())
+}
+/// Run each query in an isolated child with its explicit environment.
+pub async fn assert_rows(test: &str) -> TestResult {
+    let decoded = crate::response_cases::rows(FIXTURE)?;
+    let rows = crate::chat::rows(&serde_json::to_string(&decoded)?, test)?;
+    for row in selected(test, &rows)? {
+        compare(row, run_case(&row["case"]).await?);
     }
     Ok(())
 }
