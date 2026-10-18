@@ -2,41 +2,26 @@
 #![cfg(test)]
 use crate::body_tree;
 use crate::docx_support;
-use docx_support::cases;
+use docx_support::{XmlInput, cases};
 use maestro_app::browser::docx_preview::{
-    DocxError, OwnedXmlElement, parse_body_elements, parse_paragraph, parse_run, parse_xml_string,
+    DocxError, OwnedXmlElement, parse_paragraph, parse_run, parse_xml_string,
 };
 use serde::Deserialize;
 use serde_json::json;
 use std::fmt::Write;
 
-/// XML framing arguments from the controlled oracle.
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-struct Input {
-    /// Selected operation.
-    operation: String,
-    /// Complete XML input.
-    xml: String,
-}
 /// Replay every case owned by one behavior.
 fn check(name: &str) {
-    for case in cases::<Input>(include_str!("fixtures/docx/body.json"), name) {
-        let parser = parse_xml_string(&case.input.xml, true);
+    for case in cases::<XmlInput>(include_str!("fixtures/docx/body.json"), name) {
         if case.expected.get("error_kind").is_some() {
-            assert!(matches!(parser, Err(DocxError::Xml { .. })));
+            assert!(matches!(
+                parse_xml_string(&case.input.xml, true),
+                Err(DocxError::Xml { .. })
+            ));
             assert_eq!(case.expected, json!({"error_kind":"Xml"}));
             continue;
         }
-        let parser = parser.unwrap();
-        let input = OwnedXmlElement::new(parser.root());
-        let tree = match case.input.operation.as_str() {
-            "body" => parse_body_elements(&input),
-            "paragraph" => parse_paragraph(&input),
-            "run" => parse_run(&input),
-            _ => panic!("unknown framing"),
-        }
-        .unwrap();
+        let tree = docx_support::framed(&case.input).unwrap();
         let observed = if case.expected.get("foreign_slots").is_some() {
             let mut observed =
                 json!({"foreign_slots":body_tree::foreign(&tree, &case.input.operation)});
