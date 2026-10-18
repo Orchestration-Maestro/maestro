@@ -1,13 +1,12 @@
 #![cfg(test)]
 
-use crate::support::scratch;
+use crate::support::Scratch;
 
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use cargo_metadata::{Metadata, MetadataCommand};
-use scratch::Scratch;
 
 /// Resolve the complete delivered workspace without rewriting its owning inputs.
 #[test]

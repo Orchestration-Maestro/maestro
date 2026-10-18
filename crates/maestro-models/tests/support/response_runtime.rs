@@ -15,7 +15,6 @@ use serde_json::{Value, json};
 use std::sync::{Arc, Mutex, PoisonError};
 
 /// Response endpoint under test.
-#[allow(dead_code, reason = "Each test executable selects one endpoint.")]
 #[derive(Clone, Copy)]
 pub enum Endpoint {
     /// Standard response endpoint.

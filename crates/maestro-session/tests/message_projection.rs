@@ -404,10 +404,7 @@ fn parse_timestamp_millis_preserves_native_date_forms() {
     if std::env::var_os("MAESTRO_DYNAMIC_CHILD").is_none() {
         for tz in ["UTC", "America/New_York", "Asia/Kathmandu"] {
             crate::subprocess::run_child(
-                &crate::child_process::selector(
-                    "parse_timestamp_millis_preserves_native_date_forms",
-                )
-                .unwrap(),
+                "parse_timestamp_millis_preserves_native_date_forms",
                 &[("TZ", Some(tz))],
             );
         }

@@ -1,8 +1,13 @@
 //! Configured package resolution through the public operation.
 #![cfg(unix)]
+use crate::configured_resolution_support;
 use crate::resolution_support;
 use crate::scratch;
 use crate::support;
+use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions};
+use maestro_settings::SettingsManager;
+use serde_json::json;
+use std::{cell::RefCell, fs, path::Path, rc::Rc};
 
 #[test]
 fn empty_settings_have_no_package_resources() {
@@ -32,7 +37,7 @@ fn empty_settings_have_no_package_resources() {
     })
     .unwrap();
 }
-use crate::configured_resolution_support;
+
 #[test]
 fn configured_entries_use_each_scope_base() {
     configured_resolution_support::check(&[
@@ -383,11 +388,6 @@ fn missing_callback_borrow_ends_with_operation() {
 fn project_home_failure_precedes_malformed_user_list() {
     configured_resolution_support::check(&["project-home-before-user-decode"]);
 }
-
-use maestro_packages::{DefaultPackageManager, PackageManager, PackageManagerOptions};
-use maestro_settings::SettingsManager;
-use serde_json::json;
-use std::{cell::RefCell, fs, path::Path, rc::Rc};
 
 #[test]
 fn relative_automatic_and_installed_roots_share_ambient_matching_context() {

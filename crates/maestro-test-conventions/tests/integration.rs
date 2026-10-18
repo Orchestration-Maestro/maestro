@@ -3,10 +3,6 @@
 
 mod architecture;
 mod boundaries;
-#[allow(
-    dead_code,
-    reason = "This binary uses part of the shared child-process helper."
-)]
 #[cfg(unix)]
 #[path = "../../maestro-models/tests/support/child_process.rs"]
 mod child_process;

@@ -1,5 +1,4 @@
 //! JSON value comparison helpers shared by the protocol tests.
-#![allow(dead_code, reason = "Each test binary uses part of the JSON helpers.")]
 
 use serde_json::Value;
 
