@@ -31,7 +31,7 @@ pub(super) fn text(xml: &XmlParser<'_>, node: XmlElement<'_, '_>) -> String {
             .map(|text| text.text_content())
             .collect(),
     };
-    super::read::string_cell(&raw)
+    super::unescapexml::unescapexml(&raw)
 }
 /// Load shared string markup once without reopening the workbook archive.
 pub(super) fn shared(
@@ -112,7 +112,7 @@ fn enabled(xml: &XmlParser<'_>, props: XmlElement<'_, '_>, name: &str) -> bool {
 /// Decode authored string escapes once before escaping literal text.
 fn escaped(text: &str) -> String {
     escape(
-        &super::read::string_cell(text).replace("\r\n", "\n"),
+        &super::unescapexml::unescapexml(text).replace("\r\n", "\n"),
         EscapeMode::SpreadsheetHtml,
     )
 }
