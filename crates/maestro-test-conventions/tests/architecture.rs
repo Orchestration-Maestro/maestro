@@ -666,7 +666,7 @@ fn permitted_downward_edges_pass_without_absent_crates() {
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        141
+        142
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();

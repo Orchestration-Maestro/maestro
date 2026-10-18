@@ -180,6 +180,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
     (
         "maestro-app",
         &[
+            "maestro-protocol",
             "maestro-daemon",
             "maestro-markdown",
             "maestro-models",
