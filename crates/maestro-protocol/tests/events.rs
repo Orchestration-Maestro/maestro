@@ -21,9 +21,9 @@ fn event_kinds_match_the_independent_name_inventory() {
 }
 
 #[test]
-/// Plugin hook event names exclude high volume events.
-fn plugin_hooks_filter_frequent_updates_but_keep_pane_moves() {
-    let names = plugin_hook_event_names();
+/// Action hook event names exclude high volume events.
+fn action_hooks_filter_frequent_updates_but_keep_pane_moves() {
+    let names = action_hook_event_names();
     assert!(!names.contains(&"pane.output_changed"));
     assert!(!names.contains(&"layout.updated"));
     assert!(!names.contains(&"workspace.metadata_updated"));

@@ -223,9 +223,10 @@ code-generation evidence and framework/highlighting equivalents. See
 [architecture checks](docs/architecture.md) for commands, diagnostics and limits.
 Publish reusable adapter conformance from the owning leaf, not a forwarding test crate.
 
-`maestro-protocol` owns the daemon's versioned records, binary frames and generated
-JSON Schema, with no domain dependencies. Native input,
-rendering and notification conversions stay with their runtime adapters. See
+`maestro-protocol` owns the shared RPC records, binary screen channel and generated
+JSON Schema, with no domain dependencies. Session and workspace operations use one
+contract across stdio and daemon sockets; JSONL framing belongs to
+`maestro-json::jsonl`. Native input, rendering and notification conversions stay with their runtime adapters. See
 [daemon protocol](docs/daemon-protocol.md).
 
 The workspace daemon is core design: the root always wires the daemon and the

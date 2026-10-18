@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 // ---------------------------------------------------------------------------
 
 /// Current protocol version. Bumped when wire format changes incompatibly.
-pub const PROTOCOL_VERSION: u32 = 20;
+pub use crate::PROTOCOL_VERSION;
 
 /// Maximum allowed frame payload size (2 MB). Frames larger than this are
 /// rejected to prevent denial-of-service via oversized length prefixes.
@@ -48,10 +48,10 @@ pub enum RenderEncoding {
 pub enum ClientKeybindings {
     /// Use the server's own keybinding config.
     Server,
-    /// Use this attached client's normalized local `[keys]` config.
+    /// Use this attached client's local action keymap; empty lists disable actions.
     Local {
-        /// Keys toml.
-        keys_toml: String,
+        /// Action identifiers mapped to key sequences, including the prefix.
+        bindings: std::collections::BTreeMap<String, Vec<String>>,
     },
 }
 

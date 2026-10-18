@@ -511,8 +511,8 @@ impl EventKind {
     }
 }
 
-/// Plugin hook event kinds.
-pub const PLUGIN_HOOK_EVENT_KINDS: &[EventKind] = &[
+/// Action hook event kinds.
+pub const ACTION_HOOK_EVENT_KINDS: &[EventKind] = &[
     EventKind::WorkspaceCreated,
     EventKind::WorkspaceUpdated,
     EventKind::WorkspaceClosed,
@@ -541,8 +541,8 @@ pub const PLUGIN_HOOK_EVENT_KINDS: &[EventKind] = &[
 /// intentionally narrower than `EventKind` until high-volume output-change hook
 /// semantics are implemented.
 #[must_use]
-pub fn plugin_hook_event_names() -> Vec<&'static str> {
-    PLUGIN_HOOK_EVENT_KINDS
+pub fn action_hook_event_names() -> Vec<&'static str> {
+    ACTION_HOOK_EVENT_KINDS
         .iter()
         .copied()
         .map(EventKind::dot_name)

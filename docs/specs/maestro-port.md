@@ -260,7 +260,7 @@ from the optional foundation utility described below.
 | `maestro-lock` | acquire file-write locks | — | below 0 |
 | `maestro-process` | own native child-process lifecycles | — | below 0 |
 | `maestro-pattern` | match file patterns | `maestro-text` | below 0 |
-| `maestro-protocol` | define the daemon protocol | — | below 0 |
+| `maestro-protocol` | define the shared RPC protocol | — | below 0 |
 | `maestro-ipc` | connect local sockets | — | below 0 |
 | `maestro-markdown` | parse Markdown source | `maestro-text` | below 0 |
 | `maestro-extensions-wasm` | provide guest authoring | `maestro-request`, `maestro-entry`, `maestro-tool`, `maestro-json` | 0 |
@@ -286,7 +286,7 @@ from the optional foundation utility described below.
 | `maestro-tools` | execute tool definitions | `maestro-models`, `maestro-agent`, `maestro-tui`, `maestro-theme`, `maestro-tool`, `maestro-text`, `maestro-json`, `maestro-process` | 2 |
 | `maestro-export` | serialize session documents | `maestro-session`, `maestro-models`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-json`, `maestro-text` | 3 |
 | `maestro-extensions` | govern extension semantics | `maestro-models`, `maestro-agent`, `maestro-session`, `maestro-catalog`, `maestro-tools`, `maestro-theme`, `maestro-tui`, `maestro-resources` | 3 |
-| `maestro-app` | coordinate application operations | `maestro-markdown`, `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-daemon` | 4 |
+| `maestro-app` | coordinate application operations | `maestro-protocol`, `maestro-markdown`, `maestro-models`, `maestro-agent`, `maestro-credentials`, `maestro-settings`, `maestro-catalog`, `maestro-session`, `maestro-tools`, `maestro-resources`, `maestro-packages`, `maestro-extensions`, `maestro-export`, `maestro-theme`, `maestro-tui`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-process`, `maestro-daemon` | 4 |
 | `maestro-extensions-wasmtime` | execute artifacts | `maestro-extensions` | 4 |
 | `maestro-chat` | present interactive conversations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
 | `maestro-cli` | present command-line operations | `maestro-app`, `maestro-tui`, `maestro-tui-crossterm`, `maestro-theme` | 5 |
@@ -485,6 +485,26 @@ with daemon operations reached through
 `maestro-app`. There is no Cargo feature, optional dependency or separate install.
 Defaults belong to the daemon. The daemon and multiplexer are native-only; browser
 builds already exclude native process crates. Every frontend calls `maestro-app`.
+
+The workspace daemon, the multiplexer and their commands share the application's single setup. They
+keep no configuration file, plugin registry, state or log root, keybinding file, installer or update
+path of their own. Their preferences are members of the layered `settings.json` under `multiplexer`,
+`daemon` and `update`. The daemon reads and writes only the global scope. Multiplexer bindings and
+custom command bindings are members of `keybindings.json`. Action manifests are package content of
+the `actions` resource kind, installed, updated, listed and removed by the package manager. Daemon
+files, sockets and logs live under the configuration root through one path table. Release checks, the
+detection catalog, remote installs and announcements use one hosted fetch, which the offline switch
+stops. An input format that users already hold may be read as an input alias of the one owner. It is
+never written back and never becomes a second setting, registry or format.
+
+Maestro has one protocol: the 29 established session commands and all workspace commands share one
+command set, the established `type`-tagged request and `response` envelopes, one `type`-tagged event
+format and one protocol version on both stdio and daemon sockets. The 29 session commands keep their
+exact wire bytes, fields, omission/null rules and results. Workspace commands are additive on stdio.
+`maestro-protocol` owns the records and schema; `maestro-json::jsonl` owns JSONL framing;
+`maestro-rpc` presents the shared contract through `maestro-app`. Live screen traffic stays binary in
+a channel of the same protocol and version. Plain JSONL clients need no new header, handshake or
+version member, and receive no unsolicited startup record or binary bytes.
 
 `maestro-terminal` is a pure-Rust terminal emulator, specified in
 [terminal emulator](terminal-emulator.md): no foreign code, no build script and no

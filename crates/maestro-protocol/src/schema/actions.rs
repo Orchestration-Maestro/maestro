@@ -1,4 +1,4 @@
-//! Plugins protocol records.
+//! Actions protocol records.
 //! Adapted for Maestro: names, module layout and Rust documentation changed.
 use std::collections::HashMap;
 
@@ -11,9 +11,9 @@ use super::workspaces::WorkspaceWorktreeInfo;
 use crate::shared::PopupSize;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin link params record.
+/// Action link params record.
 #[schemars(description = "")]
-pub struct PluginLinkParams {
+pub struct ActionManifestLinkParams {
     /// Path.
     #[schemars(description = "")]
     pub path: String,
@@ -21,47 +21,43 @@ pub struct PluginLinkParams {
     /// Enabled.
     #[schemars(description = "")]
     pub enabled: bool,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    /// Source.
-    #[schemars(description = "")]
-    pub source: Option<PluginSourceInfo>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Default)]
-/// Plugin list params record.
+/// Action list params record.
 #[schemars(description = "")]
-pub struct PluginListParams {
+pub struct ActionManifestListParams {
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    /// Plugin id.
+    /// Manifest identifier.
     #[schemars(description = "")]
-    pub plugin_id: Option<String>,
+    pub manifest_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin unlink params record.
+/// Action unlink params record.
 #[schemars(description = "")]
-pub struct PluginUnlinkParams {
-    /// Plugin id.
+pub struct ActionManifestUnlinkParams {
+    /// Manifest identifier.
     #[schemars(description = "")]
-    pub plugin_id: String,
+    pub manifest_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin set enabled params record.
+/// Action set enabled params record.
 #[schemars(description = "")]
-pub struct PluginSetEnabledParams {
-    /// Plugin id.
+pub struct ActionManifestSetEnabledParams {
+    /// Manifest identifier.
     #[schemars(description = "")]
-    pub plugin_id: String,
+    pub manifest_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Installed plugin info record.
+/// Installed manifest info record.
 #[schemars(description = "")]
-pub struct InstalledPluginInfo {
-    /// Plugin id.
+pub struct ActionManifestInfo {
+    /// Manifest identifier.
     #[schemars(description = "")]
-    pub plugin_id: String,
+    pub manifest_id: String,
     /// Name.
     #[schemars(description = "")]
     pub name: String,
@@ -82,66 +78,61 @@ pub struct InstalledPluginInfo {
     /// Manifest path.
     #[schemars(description = "")]
     pub manifest_path: String,
-    /// Plugin root.
+    /// Manifest root.
     #[schemars(description = "")]
-    pub plugin_root: String,
+    pub manifest_root: String,
     /// Enabled.
     #[schemars(description = "")]
     pub enabled: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Platforms.
     #[schemars(description = "")]
-    pub platforms: Option<Vec<PluginPlatform>>,
+    pub platforms: Option<Vec<ActionPlatform>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     /// Build.
     #[schemars(description = "")]
-    pub build: Vec<PluginManifestBuild>,
+    pub build: Vec<ActionManifestBuild>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     /// Startup.
     #[schemars(description = "")]
-    pub startup: Vec<PluginManifestStartup>,
+    pub startup: Vec<ActionManifestStartup>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     /// Actions.
     #[schemars(description = "")]
-    pub actions: Vec<PluginManifestAction>,
+    pub actions: Vec<ActionManifestAction>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     /// Events.
     #[schemars(description = "")]
-    pub events: Vec<PluginManifestEventHook>,
+    pub events: Vec<ActionManifestEventHook>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     /// Panes.
     #[schemars(description = "")]
-    pub panes: Vec<PluginManifestPane>,
+    pub panes: Vec<ActionManifestPane>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     /// Link handlers.
     #[schemars(description = "")]
-    pub link_handlers: Vec<PluginManifestLinkHandler>,
+    pub link_handlers: Vec<ActionManifestLinkHandler>,
     #[serde(default)]
     /// Source.
     #[schemars(description = "")]
-    pub source: PluginSourceInfo,
+    pub source: PackageSourceInfo,
     /// Warnings collected at link time or on registry load (e.g. unknown event names,
-    /// missing manifest file). Non-fatal — the entry is kept and surfaced by plugin.list.
+    /// missing manifest file). Non-fatal — the entry is kept and surfaced by action.manifest.list.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub warnings: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin source info record.
+/// Package-source projection.
 #[schemars(description = "")]
-pub struct PluginSourceInfo {
+pub struct PackageSourceInfo {
     #[serde(default)]
     /// Kind.
     #[schemars(description = "")]
-    pub kind: PluginSourceKind,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    /// Owner.
-    #[schemars(description = "")]
-    pub owner: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    /// Repo.
-    #[schemars(description = "")]
-    pub repo: Option<String>,
+    pub kind: PackageSourceKind,
+    #[serde(default)]
+    /// Package settings source string.
+    pub source: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Subdir.
     #[schemars(description = "")]
@@ -164,13 +155,12 @@ pub struct PluginSourceInfo {
     pub installed_unix_ms: Option<u64>,
 }
 
-impl Default for PluginSourceInfo {
+impl Default for PackageSourceInfo {
     /// Default.
     fn default() -> Self {
         Self {
-            kind: PluginSourceKind::Local,
-            owner: None,
-            repo: None,
+            kind: PackageSourceKind::Local,
+            source: String::new(),
             subdir: None,
             requested_ref: None,
             resolved_commit: None,
@@ -184,49 +174,52 @@ impl Default for PluginSourceInfo {
     Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Default,
 )]
 #[serde(rename_all = "snake_case")]
-/// Plugin source kind record.
+/// Action source kind record.
 #[schemars(description = "")]
 #[schemars(transform = crate::schema::string_enum)]
-pub enum PluginSourceKind {
+pub enum PackageSourceKind {
     #[default]
     /// Local.
     #[schemars(description = "")]
     Local,
-    /// Github.
+    /// Git checkout.
     #[schemars(description = "")]
-    Github,
+    Git,
+    /// Registry package.
+    #[schemars(description = "")]
+    Npm,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin manifest build record.
+/// Action manifest build record.
 #[schemars(description = "")]
-pub struct PluginManifestBuild {
+pub struct ActionManifestBuild {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Platforms.
     #[schemars(description = "")]
-    pub platforms: Option<Vec<PluginPlatform>>,
+    pub platforms: Option<Vec<ActionPlatform>>,
     /// Command.
     #[schemars(description = "")]
     pub command: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin manifest startup record.
+/// Action manifest startup record.
 #[schemars(description = "")]
-pub struct PluginManifestStartup {
+pub struct ActionManifestStartup {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Platforms.
     #[schemars(description = "")]
-    pub platforms: Option<Vec<PluginPlatform>>,
+    pub platforms: Option<Vec<ActionPlatform>>,
     /// Command.
     #[schemars(description = "")]
     pub command: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin manifest action record.
+/// Action manifest action record.
 #[schemars(description = "")]
-pub struct PluginManifestAction {
+pub struct ActionManifestAction {
     /// Id.
     #[schemars(description = "")]
     pub id: String,
@@ -240,36 +233,36 @@ pub struct PluginManifestAction {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     /// Contexts.
     #[schemars(description = "")]
-    pub contexts: Vec<PluginActionContext>,
+    pub contexts: Vec<ActionContext>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Platforms.
     #[schemars(description = "")]
-    pub platforms: Option<Vec<PluginPlatform>>,
+    pub platforms: Option<Vec<ActionPlatform>>,
     /// Command.
     #[schemars(description = "")]
     pub command: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin manifest event hook record.
+/// Action manifest event hook record.
 #[schemars(description = "")]
-pub struct PluginManifestEventHook {
+pub struct ActionManifestEventHook {
     /// On.
     #[schemars(description = "")]
     pub on: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Platforms.
     #[schemars(description = "")]
-    pub platforms: Option<Vec<PluginPlatform>>,
+    pub platforms: Option<Vec<ActionPlatform>>,
     /// Command.
     #[schemars(description = "")]
     pub command: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin manifest pane record.
+/// Action manifest pane record.
 #[schemars(description = "")]
-pub struct PluginManifestPane {
+pub struct ActionManifestPane {
     /// Id.
     #[schemars(description = "")]
     pub id: String,
@@ -283,11 +276,11 @@ pub struct PluginManifestPane {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Platforms.
     #[schemars(description = "")]
-    pub platforms: Option<Vec<PluginPlatform>>,
+    pub platforms: Option<Vec<ActionPlatform>>,
     #[serde(default)]
     /// Placement.
     #[schemars(description = "")]
-    pub placement: PluginPanePlacement,
+    pub placement: ActionPanePlacement,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Width.
     #[schemars(description = "")]
@@ -302,9 +295,9 @@ pub struct PluginManifestPane {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin manifest link handler record.
+/// Action manifest link handler record.
 #[schemars(description = "")]
-pub struct PluginManifestLinkHandler {
+pub struct ActionManifestLinkHandler {
     /// Id.
     #[schemars(description = "")]
     pub id: String,
@@ -320,27 +313,27 @@ pub struct PluginManifestLinkHandler {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Platforms.
     #[schemars(description = "")]
-    pub platforms: Option<Vec<PluginPlatform>>,
+    pub platforms: Option<Vec<ActionPlatform>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Default)]
-/// Plugin action list params record.
+/// Action list params record.
 #[schemars(description = "")]
-pub struct PluginActionListParams {
+pub struct ActionListParams {
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    /// Plugin id.
+    /// Manifest identifier.
     #[schemars(description = "")]
-    pub plugin_id: Option<String>,
+    pub manifest_id: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Default)]
-/// Plugin log list params record.
+/// Action log list params record.
 #[schemars(description = "")]
-pub struct PluginLogListParams {
+pub struct ActionLogListParams {
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    /// Plugin id.
+    /// Manifest identifier.
     #[schemars(description = "")]
-    pub plugin_id: Option<String>,
+    pub manifest_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Limit.
     #[schemars(description = "")]
@@ -348,34 +341,34 @@ pub struct PluginLogListParams {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin action invoke params record.
+/// Action invoke params record.
 #[schemars(description = "")]
-pub struct PluginActionInvokeParams {
-    /// Action id.
+pub struct ActionInvokeParams {
+    /// Manifest identifier.
     #[schemars(description = "")]
     pub action_id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    /// Plugin id.
+    /// Manifest identifier.
     #[schemars(description = "")]
-    pub plugin_id: Option<String>,
+    pub manifest_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Context.
     #[schemars(description = "")]
-    pub context: Option<PluginInvocationContext>,
+    pub context: Option<ActionInvocationContext>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin command log info record.
+/// Action command log info record.
 #[schemars(description = "")]
-pub struct PluginCommandLogInfo {
+pub struct ActionCommandLogInfo {
     /// Log id.
     #[schemars(description = "")]
     pub log_id: String,
-    /// Plugin id.
+    /// Manifest identifier.
     #[schemars(description = "")]
-    pub plugin_id: String,
+    pub manifest_id: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    /// Action id.
+    /// Manifest identifier.
     #[schemars(description = "")]
     pub action_id: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -387,7 +380,7 @@ pub struct PluginCommandLogInfo {
     pub command: Vec<String>,
     /// Status.
     #[schemars(description = "")]
-    pub status: PluginCommandStatus,
+    pub status: ActionCommandStatus,
     /// Started unix ms.
     #[schemars(description = "")]
     pub started_unix_ms: u64,
@@ -415,10 +408,10 @@ pub struct PluginCommandLogInfo {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
-/// Plugin command status record.
+/// Action command status record.
 #[schemars(description = "")]
 #[schemars(transform = crate::schema::string_enum)]
-pub enum PluginCommandStatus {
+pub enum ActionCommandStatus {
     /// Running.
     #[schemars(description = "")]
     Running,
@@ -432,10 +425,10 @@ pub enum PluginCommandStatus {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
-/// Plugin platform record.
+/// Action platform record.
 #[schemars(description = "")]
 #[schemars(transform = crate::schema::string_enum)]
-pub enum PluginPlatform {
+pub enum ActionPlatform {
     /// Linux.
     #[schemars(description = "")]
     Linux,
@@ -449,10 +442,10 @@ pub enum PluginPlatform {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
-/// Plugin action context record.
+/// Action context record.
 #[schemars(description = "")]
 #[schemars(transform = crate::schema::string_enum)]
-pub enum PluginActionContext {
+pub enum ActionContext {
     /// Global.
     #[schemars(description = "")]
     Global,
@@ -471,9 +464,9 @@ pub enum PluginActionContext {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin invocation context record.
+/// Action invocation context record.
 #[schemars(description = "")]
-pub struct PluginInvocationContext {
+pub struct ActionInvocationContext {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Workspace id.
     #[schemars(description = "")]
@@ -537,13 +530,13 @@ pub struct PluginInvocationContext {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin action info record.
+/// Action info record.
 #[schemars(description = "")]
-pub struct PluginActionInfo {
-    /// Plugin id.
+pub struct ActionInfo {
+    /// Manifest identifier.
     #[schemars(description = "")]
-    pub plugin_id: String,
-    /// Action id.
+    pub manifest_id: String,
+    /// Manifest identifier.
     #[schemars(description = "")]
     pub action_id: String,
     /// Title.
@@ -556,38 +549,38 @@ pub struct PluginActionInfo {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     /// Contexts.
     #[schemars(description = "")]
-    pub contexts: Vec<PluginActionContext>,
+    pub contexts: Vec<ActionContext>,
     /// Command.
     #[schemars(description = "")]
     pub command: Vec<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Platforms.
     #[schemars(description = "")]
-    pub platforms: Option<Vec<PluginPlatform>>,
+    pub platforms: Option<Vec<ActionPlatform>>,
 }
 
-impl PluginActionInfo {
+impl ActionInfo {
     /// Qualified id.
     #[must_use]
     pub fn qualified_id(&self) -> String {
-        format!("{}.{}", self.plugin_id, self.action_id)
+        format!("{}.{}", self.manifest_id, self.action_id)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin pane open params record.
+/// Action pane open params record.
 #[schemars(description = "")]
-pub struct PluginPaneOpenParams {
-    /// Plugin id.
+pub struct ActionPaneOpenParams {
+    /// Manifest identifier.
     #[schemars(description = "")]
-    pub plugin_id: String,
+    pub manifest_id: String,
     /// Entrypoint.
     #[schemars(description = "")]
     pub entrypoint: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Placement.
     #[schemars(description = "")]
-    pub placement: Option<PluginPanePlacement>,
+    pub placement: Option<ActionPanePlacement>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Width.
     #[schemars(description = "")]
@@ -626,10 +619,10 @@ pub struct PluginPaneOpenParams {
     Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema, Default,
 )]
 #[serde(rename_all = "snake_case")]
-/// Plugin pane placement record.
+/// Action pane placement record.
 #[schemars(description = "")]
 #[schemars(transform = crate::schema::string_enum)]
-pub enum PluginPanePlacement {
+pub enum ActionPanePlacement {
     #[default]
     /// Overlay.
     #[schemars(description = "")]
@@ -649,30 +642,30 @@ pub enum PluginPanePlacement {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin pane focus params record.
+/// Action pane focus params record.
 #[schemars(description = "")]
-pub struct PluginPaneFocusParams {
+pub struct ActionPaneFocusParams {
     /// Pane id.
     #[schemars(description = "")]
     pub pane_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin pane close params record.
+/// Action pane close params record.
 #[schemars(description = "")]
-pub struct PluginPaneCloseParams {
+pub struct ActionPaneCloseParams {
     /// Pane id.
     #[schemars(description = "")]
     pub pane_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
-/// Plugin pane info record.
+/// Action pane info record.
 #[schemars(description = "")]
-pub struct PluginPaneInfo {
-    /// Plugin id.
+pub struct ActionPaneInfo {
+    /// Manifest identifier.
     #[schemars(description = "")]
-    pub plugin_id: String,
+    pub manifest_id: String,
     /// Entrypoint.
     #[schemars(description = "")]
     pub entrypoint: String,

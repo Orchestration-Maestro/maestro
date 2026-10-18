@@ -223,9 +223,11 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 
 ## Workspace daemon
 
+- **Action manifest:** A file declaring one identifier's workspace actions, action panes, event hooks, link handlers, build steps and startup steps, delivered as package content of the `actions` resource kind. It is distinct from a package manifest, a detection manifest and an organization manifest.
+
 - **Workspace daemon:** The long-lived Maestro process owning workspaces, tabs, panes, pane terminals and pane agents for one user; closing a client never stops its work.
 - **Named daemon:** An independent workspace daemon with its own sockets and snapshot, chosen by name.
-- **Daemon protocol:** The versioned records shared by the daemon socket, its clients and the RPC frontend. `maestro-protocol` owns the JSON records, JSON Schema and binary frames; JSONL transport framing belongs to the IPC owner. See [daemon protocol](docs/daemon-protocol.md).
+- **Daemon protocol:** Maestro's single versioned RPC contract shared by stdio, daemon sockets and SDK clients. `maestro-protocol` owns command, response, event, UI and binary-channel records and JSON Schema; `maestro-json::jsonl` owns JSONL framing. Live screen frames are binary within that contract. See [daemon protocol](docs/daemon-protocol.md).
 - **Workspace:** A named project space in the daemon holding ordered tabs; not the Cargo workspace.
 - **Tab:** An ordered split layout of panes within a workspace.
 - **Pane:** One leaf of a tab's layout, showing one pane terminal.
