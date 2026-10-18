@@ -1,11 +1,12 @@
 //! Controlled response-account policy and recorded protocol cases.
 use super::{callback, token};
+use crate::oauth::tests::run;
 use crate::{
     BoxFuture, EventStream, Fetch, FetchError, HttpResponse, OAuthCredentials, OAuthError,
 };
 use futures_util::FutureExt as _;
 use serde::Deserialize;
-use std::{collections::BTreeMap, future::Future, sync::Arc};
+use std::{collections::BTreeMap, sync::Arc};
 
 /// Consumed protocol observations grouped by their owning behavior.
 #[derive(Deserialize)]
@@ -193,14 +194,6 @@ fn corpus() -> Corpus {
     corpus
 }
 
-/// Run one operation with controlled native scheduling.
-fn run<T>(work: impl Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(work)
-}
 /// Fixed oracle completion time.
 fn clock() -> f64 {
     1_700_000_000_123.0

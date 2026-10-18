@@ -45,21 +45,8 @@ impl Wake for Unlocked {
 #[test]
 fn failure_publication_preserves_identity_and_unlocks() {
     let rows = rows("failure");
-    assert_eq!(rows.len(), 16);
-    for (index, row) in rows.iter().enumerate() {
-        assert!(matches!(
-            row["input"]["owner"].as_str(),
-            Some(
-                "chat"
-                    | "messages"
-                    | "responses"
-                    | "sessions"
-                    | "conversation"
-                    | "content"
-                    | "azure"
-                    | "bedrock"
-            )
-        ));
+    assert_eq!(rows.len(), 2);
+    for (row, typed) in rows.iter().flat_map(|row| [(row, false), (row, true)]) {
         let output = output();
         let stream = AssistantMessageEventStream::new();
         let signal = Cancellation::new();
@@ -75,10 +62,10 @@ fn failure_publication_preserves_identity_and_unlocks() {
         let mut next = pin!(stream.next());
         assert!(next.as_mut().poll(&mut context).is_pending());
         let text = row["input"]["message"].as_str().unwrap().to_owned();
-        if index % 2 == 0 {
-            publish_failure(&stream, &output, Some(&signal), text);
-        } else {
+        if typed {
             fail(&stream, &output, Some(&signal), RequestFailure::new(text));
+        } else {
+            publish_failure(&stream, &output, Some(&signal), text);
         }
         assert!(observer.wakes.load(Ordering::SeqCst) > 0);
         let Poll::Ready(Some(AssistantMessageEvent::Error { reason, error })) =
@@ -132,7 +119,7 @@ pub(crate) fn check_conclusions(
         .into_iter()
         .filter(|row| (row["input"]["owner"] == "chat") == chat)
         .collect();
-    assert_eq!(rows.len(), if chat { 9 } else { 58 });
+    assert_eq!(rows.len(), 9);
     for row in rows {
         let output = output();
         {

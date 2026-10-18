@@ -13,7 +13,6 @@ fn maestro_guide_invokes_custom_descriptors() -> TestResult {
     assert!(get_model("openai", "gpt-4o-mini").is_some());
     assert!(get_models("missing-guide-provider").is_empty());
     assert!(get_model("openai", "missing-guide-model").is_none());
-    assert!(get_models("missing-guide-provider").is_empty());
     block_on(false, async {
         let model = crate::chat::model(&json!({
             "id":"local-weather", "provider":"local-guide", "baseUrl":"https://controlled.invalid/v1",

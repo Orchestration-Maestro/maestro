@@ -3,6 +3,7 @@ use super::{
     callback::{AuthorizationCode, parse_authorization_input, route},
     exchange,
 };
+use crate::oauth::tests::run;
 use crate::{
     DiagnosticCode, DiagnosticErrorInfo, Fetch, FetchError, HttpResponse, OAuthCredentials,
     OAuthError,
@@ -233,14 +234,6 @@ fn corpus() -> Corpus {
         "../../../../tests/fixtures/oauth_subscription.json"
     ))
     .unwrap()
-}
-/// Execute a native operation with a controllable scheduler.
-fn run<T>(work: impl Future<Output = T>) -> T {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(work)
 }
 thread_local! {
     /// Completion time supplied by token cases.

@@ -87,6 +87,17 @@ impl Attempt {
         Self::streaming_with_status(200, build)
     }
 
+    /// A successful response that hands out `body` once; a later call's body fails as aborted.
+    pub fn streaming_once(body: HttpBody) -> Self {
+        let body = Mutex::new(Some(body));
+        Self::streaming(move || {
+            body.lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .take()
+                .unwrap_or_else(|| Box::pin(futures_util::stream::iter([Err(FetchError::Aborted)])))
+        })
+    }
+
     /// A response with the given status whose body is built by `build` for each call.
     pub fn streaming_with_status(
         status: u16,
