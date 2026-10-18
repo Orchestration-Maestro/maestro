@@ -51,7 +51,8 @@ fn body(
 /// Install scoped viewer styles and root-owned output disclosure listeners.
 /// Retain the returned owner in the mounted parent's `ReadingRoot::owner`.
 /// # Errors
-/// Returns native stylesheet, selection or listener failures.
+/// Returns document, stylesheet, presentation or listener-installation failures.
+/// Later selection or class-toggle failures are thrown by the native click callback.
 #[cfg(target_arch = "wasm32")]
 pub fn bind_expandable_output(
     root: &web_sys::Element,

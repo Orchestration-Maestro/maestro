@@ -181,6 +181,10 @@ double tildes with non-whitespace edges. Rejected script, VBScript and data URLs
 retain their label or literal image alternative. Attribute escaping prevents
 quoted content from creating attributes. Export code uses the supplied viewer
 highlighter without chat-only formulas, copy controls or language labels.
+Source preparation neutralizes parser-recognized HTML openers, not less-than
+characters inside escapes, definitions, destinations or code. Comments and
+declarations retain literal punctuation. Ordinary tag-like lines follow the
+shared parser's paragraph structure.
 
 [`format_expandable_output`](../../crates/maestro-web/src/export_html/template/output.rs)
 replaces tabs with three spaces, preserves LF-split rows and prepares independent
@@ -195,3 +199,5 @@ installs scoped viewer presentation, and removes listeners on release. Native
 selection in the element's owning window prevents a toggle; otherwise the live
 expanded class is toggled without replacing unrelated classes. The containing
 viewer supplies its base typography and selected brand properties.
+Binding reports mount-time document, presentation and listener failures;
+selection and class-toggle failures are thrown by the later native click callback.

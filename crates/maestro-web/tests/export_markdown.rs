@@ -87,6 +87,18 @@ mod tests {
         );
     }
 
+    /// Literal markup leaves escapes, definitions and code operands intact.
+    /// # Panics
+    /// Panics if a parser operand or literal declaration changes.
+    #[cfg_attr(not(target_arch = "wasm32"), test)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen::prelude::wasm_bindgen)]
+    pub fn export_markdown_keeps_operands_when_markup_is_literal() {
+        check_rows(
+            "export_markdown_keeps_operands_when_markup_is_literal",
+            "markdown",
+        );
+    }
+
     /// Exercise complete corpus operations through the public formatting boundary.
     fn check_rows(witness: &str, operation: &str) {
         #[cfg(target_arch = "wasm32")]
@@ -173,6 +185,28 @@ mod tests {
     #[cfg_attr(not(target_arch = "wasm32"), test)]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen::prelude::wasm_bindgen)]
     pub fn export_code_uses_viewer_policy_without_chat_controls() {
+        let code = "{\"enabled\": true, \"value\": 42}";
+        for (label, grammar) in [
+            ("javascript", "javascript"),
+            ("js", "javascript"),
+            ("", "json"),
+            ("missing-language", "json"),
+            ("javascript metadata", "json"),
+        ] {
+            let engine = Faults {
+                calls: std::cell::RefCell::default(),
+                fail: 0,
+            };
+            let html = safe_marked_parse(&format!("```{label}\n{code}\n```"), &engine);
+            assert_eq!(
+                &*engine.calls.borrow(),
+                &[(code.to_owned(), grammar.to_owned())]
+            );
+            assert!(
+                html.contains("<span class=\"hljs-comment\">"),
+                "{label}: {html}"
+            );
+        }
         check_rows(
             "export_code_uses_viewer_policy_without_chat_controls",
             "markdown",
@@ -271,6 +305,7 @@ mod tests {
             } else {
                 assert_eq!(row.input["method"], "highlightAuto");
                 assert_eq!(expected.as_array().unwrap().len(), 1);
+                assert_eq!(lang, "bash", "{}", row.id);
             }
         }
     }

@@ -137,26 +137,68 @@ mod tests {
         let html = [
             format_expandable_output("one\n\nthree", 5, None, &engine),
             format_expandable_output("one\n\nthree", 2, None, &engine),
-            format_expandable_output("one\n\nthree", 1, Some("text"), &engine),
+            format_expandable_output("one\n\nthree\n\nfive", 3, Some("text"), &engine),
         ]
         .join("");
         let root = export_mount::mount(&mut slots, html);
-        let verify = "const rows=[...value.querySelectorAll('.tool-output>div:not(.output-preview):not(.output-full),.output-preview>div:not(.expand-hint),.expanded .output-full>div')].filter(e=>e.getBoundingClientRect().height>0);const blank=rows.filter(e=>e.textContent==='');return blank.length>0&&blank.every(e=>Math.abs(e.getBoundingClientRect().height-e.previousElementSibling.getBoundingClientRect().height)<0.01&&e.getBoundingClientRect().height>0)";
-        assert_eq!(js(&root, verify).as_bool(), Some(true));
-        let second = root
-            .first_element_child()
-            .unwrap()
-            .next_element_sibling()
-            .unwrap();
+        let short = root.first_element_child().unwrap();
+        let second = short.next_element_sibling().unwrap();
+        assert_plain_rows(&short, "", 3);
+        assert_plain_rows(&second, ".output-preview", 2);
         click(&second);
-        assert_eq!(js(&root, verify).as_bool(), Some(true));
+        assert_plain_rows(&second, ".output-full", 3);
         let code = root.last_element_child().unwrap();
+        assert_code_rows(&code, ".output-preview", "one\n\nthree", 3);
+        click(&code);
+        assert_code_rows(&code, ".output-full", "one\n\nthree\n\nfive", 5);
+    }
+
+    /// Every expected plain row is visible, including each explicitly empty row.
+    fn assert_plain_rows(root: &web_sys::Element, body: &str, count: usize) {
+        let body = if body.is_empty() {
+            root.clone()
+        } else {
+            root.query_selector(body).unwrap().unwrap()
+        };
+        assert_eq!(js(&body, &format!("const rows=[...value.children].filter(e=>!e.classList.contains('expand-hint'));return rows.length==={count}&&rows[1].textContent===''&&rows.every(e=>e.getBoundingClientRect().height>0&&Math.abs(e.getBoundingClientRect().height-rows[0].getBoundingClientRect().height)<0.01)")).as_bool(), Some(true));
+    }
+
+    /// The mounted code body reserves measured line height for its interior empty rows.
+    fn assert_code_rows(root: &web_sys::Element, body: &str, text: &str, count: usize) {
+        let body = root.query_selector(body).unwrap().unwrap();
         assert_eq!(
-            js(
-                &code,
-                "return value.querySelector('.output-full code').textContent==='one\\n\\nthree'"
-            )
-            .as_bool(),
+            body.query_selector("code")
+                .unwrap()
+                .unwrap()
+                .text_content()
+                .as_deref(),
+            Some(text)
+        );
+        assert_eq!(js(&body, &format!("const ordinary=value.closest('.maestro-export').firstElementChild.firstElementChild;const line=ordinary.getBoundingClientRect().height;return line>0&&Math.abs(value.querySelector('pre').getBoundingClientRect().height-line*{count})<0.1")).as_bool(), Some(true));
+    }
+
+    /// Selected font metrics match an independently styled native text specimen.
+    fn assert_typography(
+        root: &web_sys::Element,
+        presentation: &maestro_theme::BrandPresentation<'_>,
+    ) {
+        let typography = &presentation.typography["mono"];
+        let font = &presentation.fonts[&typography.font];
+        let expected = serde_json::json!({
+            "family": font.family,
+            "fallbacks": font.fallbacks,
+            "size": typography.size,
+            "lineHeight": typography.line_height,
+            "weight": typography.weight,
+        });
+        js_sys::Reflect::set(
+            &js_sys::global(),
+            &"exportTypography".into(),
+            &expected.to_string().into(),
+        )
+        .unwrap();
+        assert_eq!(
+            js(root, include_str!("export_support/typography.js")).as_bool(),
             Some(true)
         );
     }
@@ -194,6 +236,7 @@ mod tests {
                 slots.mode = mode;
                 let root = export_mount::mount(&mut slots, html.clone());
                 let presentation = slots.pack.presentation(mode).unwrap();
+                assert_typography(&root, &presentation);
                 let colors: serde_json::Map<String, serde_json::Value> = presentation
                     .colors
                     .iter()

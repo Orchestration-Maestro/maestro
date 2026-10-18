@@ -3033,5 +3033,221 @@
     "expected": {
       "kind": "InvalidData"
     }
+  },
+  {
+    "id": "literal-operands-1",
+    "operation": "markdown",
+    "input": {
+      "text": "\\<"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;</p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-2",
+    "operation": "markdown",
+    "input": {
+      "text": "\\<div>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;div&gt;</p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-3",
+    "operation": "markdown",
+    "input": {
+      "text": "[r][r]\n\n[r]: <https://safe.test>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"https://safe.test\">r</a></p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-4",
+    "operation": "markdown",
+    "input": {
+      "text": "[r][r]\n\n[r]: </docs>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"/docs\">r</a></p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-5",
+    "operation": "markdown",
+    "input": {
+      "text": "![alt][r]\n\n[r]: </image.png>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p><img src=\"/image.png\" alt=\"alt\"></p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-6",
+    "operation": "markdown",
+    "input": {
+      "text": "<div>\n```text\n<tag>\n```\n</div>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;div&gt;</p>\n<pre><code class=\"hljs\">&lt;tag&gt;</code></pre><p>&lt;/div&gt;</p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-7",
+    "operation": "markdown",
+    "input": {
+      "text": "\\<!DOCTYPE html>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;!DOCTYPE html&gt;</p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-8",
+    "operation": "markdown",
+    "input": {
+      "text": "<!-- **comment** -->"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;!-- **comment** --&gt;</p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-9",
+    "operation": "markdown",
+    "input": {
+      "text": "<!DOCTYPE html>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;!DOCTYPE html&gt;</p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-10",
+    "operation": "markdown",
+    "input": {
+      "text": "a <!-- **comment** --> z"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>a &lt;!-- **comment** --&gt; z</p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-11",
+    "operation": "markdown",
+    "input": {
+      "text": "<div>**literal** [r][r]</div>\n\n[r]: </docs>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;div&gt;<strong>literal</strong> <a href=\"/docs\">r</a>&lt;/div&gt;</p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-12",
+    "operation": "markdown",
+    "input": {
+      "text": "<https://safe.test/a> <a@example.test>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"https://safe.test/a\">https://safe.test/a</a> <a href=\"mailto:a@example.test\">a@example.test</a></p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-13",
+    "operation": "markdown",
+    "input": {
+      "text": "    <tag>\n"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<pre><code class=\"hljs\"><span class=\"language-xml\"><span class=\"hljs-tag\">&lt;<span class=\"hljs-name\">tag</span>&gt;</span></span></code></pre>"
+    }
+  },
+  {
+    "id": "literal-operands-14",
+    "operation": "markdown",
+    "input": {
+      "text": "`<tag>`"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p><code>&lt;tag&gt;</code></p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-15",
+    "operation": "markdown",
+    "input": {
+      "text": "[a](</docs> \"<title>\") ![a](</image.png>)"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p><a href=\"/docs\" title=\"&lt;title&gt;\">a</a> <img src=\"/image.png\" alt=\"a\"></p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-16",
+    "operation": "markdown",
+    "input": {
+      "text": "<!DOCTYPE **html**>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;!DOCTYPE **html**&gt;</p>\n"
+    }
+  },
+  {
+    "id": "literal-operands-17",
+    "operation": "markdown",
+    "input": {
+      "text": "<!-- **comment**\n-->\n```text\n<tag>\n```"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;!-- **comment**<br>--&gt;</p>\n<pre><code class=\"hljs\">&lt;tag&gt;</code></pre>"
+    }
+  },
+  {
+    "id": "literal-operands-18",
+    "operation": "markdown",
+    "input": {
+      "text": "<div>\n<div>\n<tag>\n</div>\n</div>"
+    },
+    "test": "export_markdown_keeps_operands_when_markup_is_literal",
+    "branch": "success",
+    "expected": {
+      "html": "<p>&lt;div&gt;<br>&lt;div&gt;<br>&lt;tag&gt;<br>&lt;/div&gt;<br>&lt;/div&gt;</p>\n"
+    }
   }
 ]
