@@ -8,7 +8,6 @@ mod types;
 pub use autolinks::autolinks;
 pub use inline::{InlineAtom, InlineContext, InlineRun, InlineScope};
 pub use parse::parse;
-pub use pulldown_cmark::{Alignment, LinkType};
 pub use types::*;
 
 #[cfg(test)]

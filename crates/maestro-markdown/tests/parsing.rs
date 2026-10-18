@@ -40,6 +40,48 @@ fn parser_keeps_owned_browser_metadata() {
 }
 
 #[test]
+fn source_framed_images_keep_code_and_document_references() {
+    let document = {
+        let input =
+            String::from("> ![a `[b]` [c][r]][img]\n\n[r]: /c \"child\"\n[img]: /img \"tip\"\n");
+        parse(input)
+    };
+    let Kind::Quote(quote, _) = &document.nodes[0].kind else {
+        panic!("quote")
+    };
+    let Kind::Paragraph(children) = &quote[0].kind else {
+        panic!("paragraph")
+    };
+    let image = &children[0];
+    assert_eq!(image.authored, "![a `[b]` [c][r]][img]");
+    assert_eq!(
+        &document.source[image.range.clone()],
+        "![a `[b]` [c][r]][img]"
+    );
+    let Kind::Image(_, metadata) = &image.kind else {
+        panic!("image")
+    };
+    assert_eq!(metadata.destination, "/img");
+    assert_eq!(metadata.title, "tip");
+    assert_eq!(metadata.id, "img");
+    assert_eq!(metadata.link_type, LinkType::Reference);
+    assert_image_reference_children(metadata);
+}
+
+/// Check opaque code and the separately resolved definition inside an image label.
+fn assert_image_reference_children(metadata: &maestro_markdown::ImageMetadata) {
+    assert!(matches!(&metadata.children[1].kind, Kind::Code(code) if code == "[b]"));
+    let Kind::Link(label, _, href, child) = &metadata.children[3].kind else {
+        panic!("reference child")
+    };
+    assert_eq!(href, "/c");
+    assert_eq!(child.title, "child");
+    assert_eq!(child.id, "r");
+    assert_eq!(child.link_type, LinkType::Reference);
+    assert!(matches!(&label[0].kind, Kind::Text(text) if text.decoded == "c"));
+}
+
+#[test]
 fn parser_retains_container_source_extents() {
     let document = parse(
         "> $$x\n> y$$\n\n- a \\*b\\* `opaque`\n  tail\n\n| a | b |\n| - | - |\n| \\| | &amp; |\n"

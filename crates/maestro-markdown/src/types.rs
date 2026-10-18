@@ -1,6 +1,46 @@
 //! Owned native source records.
-use pulldown_cmark::LinkType;
 use std::ops::Range;
+
+/// Alignment of a table column.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Alignment {
+    /// No authored alignment.
+    None,
+    /// Left alignment.
+    Left,
+    /// Center alignment.
+    Center,
+    /// Right alignment.
+    Right,
+}
+
+/// Source classification of a link or image.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LinkType {
+    /// Inline destination.
+    Inline,
+    /// Explicit reference definition.
+    Reference,
+    /// Unresolved explicit reference supplied by a caller.
+    ReferenceUnknown,
+    /// Collapsed reference definition.
+    Collapsed,
+    /// Unresolved collapsed reference supplied by a caller.
+    CollapsedUnknown,
+    /// Shortcut reference definition.
+    Shortcut,
+    /// Unresolved shortcut reference supplied by a caller.
+    ShortcutUnknown,
+    /// Angle-enclosed URI or mapped bare destination.
+    Autolink,
+    /// Angle-enclosed email address.
+    Email,
+    /// Caller-supplied wiki classification; parsing does not enable wiki syntax.
+    WikiLink {
+        /// Whether an explicit label separates the destination from its display text.
+        has_pothole: bool,
+    },
+}
 
 /// A native node together with its source extent.
 pub struct Node {
@@ -74,7 +114,7 @@ pub struct Table {
     /// Header cells in column order.
     pub header: Cells,
     /// Per-column native alignment.
-    pub alignments: Vec<pulldown_cmark::Alignment>,
+    pub alignments: Vec<Alignment>,
     /// Body rows in authored order.
     pub rows: Vec<Cells>,
     /// Authored rows without container prefixes or the final line terminator.

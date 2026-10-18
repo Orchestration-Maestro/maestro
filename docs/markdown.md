@@ -3,6 +3,10 @@
 `maestro_markdown::parse(source: String)` returns a `Document` owning the supplied
 source and all native nodes, metadata and authored ranges. The same operations
 are exposed through `maestro_app::markdown` for frontend consumers.
+`Alignment` and `LinkType` belong to the shared Markdown owner. They describe
+column alignment and link provenance without exposing the parsing dependency's
+types. All reference classifications remain constructible; wiki classifications
+do not enable wiki syntax.
 
 After mapped-link selection, `InlineContext::new(&document)` indexes original
 container and link-label scopes. `scope(range, label)` exposes authored bytes,

@@ -1,10 +1,38 @@
 //! Native event adaptation with retained source operands.
 use crate::{
     source::{Frame, Prefix, Source, strip_quote},
-    types::{Cell, Cells, Document, ImageMetadata, Kind, LinkMetadata, Node, Table, Text},
+    types::{
+        Alignment, Cell, Cells, Document, ImageMetadata, Kind, LinkMetadata, Node, Table, Text,
+    },
 };
 use pulldown_cmark::{CodeBlockKind, Event, LinkType, Options, Parser, Tag, TagEnd};
 use std::{cell::RefCell, collections::HashMap, ops::Range};
+
+/// Retain every source classification at the owned-record boundary.
+fn owned_link_type(value: LinkType) -> crate::LinkType {
+    match value {
+        LinkType::Inline => crate::LinkType::Inline,
+        LinkType::Reference => crate::LinkType::Reference,
+        LinkType::ReferenceUnknown => crate::LinkType::ReferenceUnknown,
+        LinkType::Collapsed => crate::LinkType::Collapsed,
+        LinkType::CollapsedUnknown => crate::LinkType::CollapsedUnknown,
+        LinkType::Shortcut => crate::LinkType::Shortcut,
+        LinkType::ShortcutUnknown => crate::LinkType::ShortcutUnknown,
+        LinkType::Autolink => crate::LinkType::Autolink,
+        LinkType::Email => crate::LinkType::Email,
+        LinkType::WikiLink { has_pothole } => crate::LinkType::WikiLink { has_pothole },
+    }
+}
+
+/// Retain the authored column alignment independently of the parser's enum.
+fn alignment(value: pulldown_cmark::Alignment) -> Alignment {
+    match value {
+        pulldown_cmark::Alignment::None => Alignment::None,
+        pulldown_cmark::Alignment::Left => Alignment::Left,
+        pulldown_cmark::Alignment::Center => Alignment::Center,
+        pulldown_cmark::Alignment::Right => Alignment::Right,
+    }
+}
 /// Parse caller-normalized owned source into native structure.
 #[must_use]
 pub fn parse(source: String) -> Document {
@@ -31,24 +59,13 @@ pub(crate) fn native(
         Options::ENABLE_STRIKETHROUGH | Options::ENABLE_TASKLISTS | Options::ENABLE_TABLES,
     );
     let mut events = parser.into_offset_iter();
-    let nodes = gaps(
-        children(
-            &mut events,
-            &Source {
-                text: &source,
-                frame: None,
-                cell: false,
-                scopes,
-            },
-        ),
-        &Source {
-            text: &source,
-            frame: None,
-            cell: false,
-            scopes,
-        },
-        0..source.len(),
-    );
+    let view = Source {
+        text: &source,
+        frame: None,
+        cell: false,
+        scopes,
+    };
+    let nodes = gaps(children(&mut events, &view), &view, 0..source.len());
     Document {
         source,
         nodes,
@@ -234,7 +251,7 @@ fn container<'a>(
         } => link(
             LinkMetadata {
                 title: title.into_string(),
-                link_type,
+                link_type: owned_link_type(link_type),
                 id: id.into_string(),
             },
             dest_url,
@@ -251,7 +268,7 @@ fn container<'a>(
             ImageMetadata {
                 destination: dest_url.into_string(),
                 title: title.into_string(),
-                link_type,
+                link_type: owned_link_type(link_type),
                 id: id.into_string(),
                 children: Vec::new(),
             },
@@ -424,7 +441,7 @@ fn table<'a>(
     let authored = source.authored(range.clone());
     Kind::Table(Table {
         header,
-        alignments,
+        alignments: alignments.into_iter().map(alignment).collect(),
         rows: rows.collect(),
         authored: format!(
             "{indent}{}",
@@ -442,12 +459,12 @@ fn link<'a>(
     range: &Range<usize>,
 ) -> Kind {
     let mut children = children(events, source);
-    let mut href = if meta.link_type == LinkType::Email {
+    let mut href = if meta.link_type == crate::LinkType::Email {
         format!("mailto:{dest_url}")
     } else {
         dest_url.into_string()
     };
-    if meta.link_type == LinkType::Autolink {
+    if meta.link_type == crate::LinkType::Autolink {
         for node in &mut children {
             spell_text(node, source);
         }

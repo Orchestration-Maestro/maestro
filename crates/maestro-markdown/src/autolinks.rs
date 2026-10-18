@@ -306,7 +306,7 @@ fn extend(parts: Vec<Node>, mapping: Option<&ScopeSource>) -> Vec<Node> {
                 href,
                 crate::types::LinkMetadata {
                     title: String::new(),
-                    link_type: pulldown_cmark::LinkType::Autolink,
+                    link_type: crate::LinkType::Autolink,
                     id: String::new(),
                 },
             ),
