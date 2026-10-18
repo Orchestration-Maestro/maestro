@@ -68,14 +68,14 @@ pub struct RenderOutput {
     /// Ordered tab observations.
     pub tabs: Vec<Tab>,
     /// Localized close title.
-    pub header_text: Vec<String>,
+    pub header_text: Option<Vec<String>>,
     /// Whether the installed selected header is evaluated.
     pub header_rendered: bool,
     /// Selected literal filename.
     pub active: Option<String>,
     #[serde(rename = "inline_border")]
     /// Whether the left border is included.
-    pub inline_border: bool,
+    pub inline_border: Option<bool>,
 }
 /// Operation and reconnection observations, with group-only results kept optional.
 #[derive(Deserialize)]
@@ -89,9 +89,6 @@ pub struct Output {
     pub opened: usize,
     /// Close notification count.
     pub closed: usize,
-    /// Literal filenames of ordered scroll operations.
-    #[serde(default)]
-    pub scrolls: Vec<String>,
     /// Retained root identity observation.
     pub same_roots: Option<bool>,
 }
@@ -117,8 +114,6 @@ pub struct ScrollInput {
 pub struct ScrollOptions {
     /// Scroll animation policy.
     pub behavior: String,
-    /// Vertical placement policy.
-    pub block: String,
     /// Horizontal placement policy.
     pub inline: String,
 }

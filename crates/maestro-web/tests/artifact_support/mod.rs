@@ -105,8 +105,12 @@ pub struct DownloadCase {
 pub fn corpus() -> Corpus {
     serde_json::from_str(include_str!("../fixtures/generic_artifacts.json")).unwrap()
 }
+/// Observer of submitted paint before texture updates are discarded.
+pub type PaintObserver = Box<dyn Fn(&egui::FullOutput)>;
 /// Owned native drawing operands.
 pub struct Frame {
+    /// Optional observer of submitted paint and texture updates.
+    pub paint: Option<PaintObserver>,
     /// Caller-owned classifier reused across frames.
     pub highlighter: std::rc::Rc<dyn maestro_theme::SyntaxHighlighter>,
     /// Retained drawing context.
@@ -123,6 +127,7 @@ pub struct Frame {
 impl Default for Frame {
     fn default() -> Self {
         Self {
+            paint: None,
             highlighter: std::rc::Rc::new(crate::highlighter_support::NoHighlight),
             context: egui::Context::default(),
             size: egui::vec2(400., 300.),
@@ -281,6 +286,9 @@ impl Frame {
             },
         );
         observe(&output);
+        if let Some(paint) = &self.paint {
+            paint(&output);
+        }
         output.textures_delta.clear();
         result.map(|()| output)
     }

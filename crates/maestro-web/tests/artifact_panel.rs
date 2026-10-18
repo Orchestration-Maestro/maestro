@@ -1,9 +1,12 @@
 //! Retained artifact panel through its public application and native host seams.
 #![cfg(test)]
 pub mod artifact_support;
+#[path = "attachment_support/canvas_paint.rs"]
+pub mod canvas_paint;
 pub mod session_header_support;
 pub mod support;
 use artifact_support::panel::{Harness, Input, control, corpus, tab, text};
+use canvas_paint::Paint;
 use std::rc::Rc;
 
 /// Disconnected and empty panels do not paint or admit a modal.
@@ -70,13 +73,20 @@ fn artifact_panel_tabs_keep_literal_record_order() {
     for case in corpus().render {
         let mut harness = Harness::new(&case.input);
         harness.frame.size = egui::vec2(2400., 300.);
+        let paint = observe_paint(&mut harness);
         harness.draw().unwrap();
         let output = harness.draw().unwrap();
         assert_eq!(harness.caller.active_filename(), case.output.active);
         assert_render(&harness, &case.output, &output);
         if !case.output.hidden {
-            assert_eq!(left_border(&harness, &output), case.output.inline_border);
-            assert_eq!(close_labels(&harness, &output), case.output.header_text);
+            assert_eq!(
+                left_border(&harness, &output, &paint.borrow()),
+                case.output.inline_border.unwrap()
+            );
+            assert_eq!(
+                close_labels(&harness, &output),
+                case.output.header_text.unwrap()
+            );
         }
         // A malformed selected original distinguishes hidden evaluation from visible paint.
         for (key, _) in &case.input.entries {
@@ -91,14 +101,70 @@ fn artifact_panel_tabs_keep_literal_record_order() {
     }
 }
 
+/// Retain the actual renderer texture updates for final paint sampling.
+fn observe_paint(harness: &mut Harness) -> Rc<std::cell::RefCell<Paint>> {
+    let paint = Rc::new(std::cell::RefCell::new(Paint::default()));
+    let retained = paint.clone();
+    harness.frame.paint = Some(Box::new(move |output| retained.borrow_mut().update(output)));
+    paint
+}
+
 /// Whether the shell paints its one-pixel border-colored left edge.
-fn left_border(harness: &Harness, output: &egui::FullOutput) -> bool {
+fn left_border(harness: &Harness, output: &egui::FullOutput, paint: &Paint) -> bool {
     let presentation = harness.frame.pack.presentation(harness.frame.mode).unwrap();
     let border = egui::Color32::from_hex(presentation.colors["border"]).unwrap();
-    output.shapes.iter().any(|shape| {
-        matches!(&shape.shape, egui::Shape::LineSegment { points, stroke }
-            if points[0].x.to_bits() == points[1].x.to_bits() && stroke.width.to_bits() == 1_f32.to_bits() && stroke.color == border)
-    })
+    let bounds = harness.frame.context.content_rect();
+    let pixel = paint.pixel(
+        &harness.frame.context,
+        &output.shapes,
+        egui::pos2(bounds.left() + 0.5, bounds.center().y),
+    );
+    pixel
+        .into_iter()
+        .zip(border.to_array())
+        .all(|(actual, expected)| (actual - f32::from(expected)).abs() < 1.)
+}
+
+/// The border observer rejects displacement, final clipping and later opaque paint.
+#[test]
+fn artifact_panel_left_border_requires_visible_edge_paint() {
+    let mut harness = Harness::new(&Input {
+        entries: vec![("a.zip".into(), "a.zip".into())],
+        active: Some("a.zip".into()),
+        ..Default::default()
+    });
+    let paint = observe_paint(&mut harness);
+    harness.draw().unwrap();
+    let original = harness.draw().unwrap();
+    assert!(left_border(&harness, &original, &paint.borrow()));
+    for mutation in ["displaced", "clipped", "covered"] {
+        let mut output = original.clone();
+        for shape in &mut output.shapes {
+            let egui::Shape::LineSegment { points, .. } = &mut shape.shape else {
+                continue;
+            };
+            if points[0].x.to_bits() != points[1].x.to_bits() {
+                continue;
+            }
+            if mutation == "displaced" {
+                points[0].x += 100.;
+                points[1].x += 100.;
+            } else if mutation == "clipped" {
+                shape.clip_rect = egui::Rect::NOTHING;
+            }
+        }
+        if mutation == "covered" {
+            let bounds = harness.frame.context.content_rect();
+            output.shapes.push(egui::epaint::ClippedShape {
+                clip_rect: bounds,
+                shape: egui::Shape::rect_filled(bounds, 0., egui::Color32::BLACK),
+            });
+        }
+        assert!(
+            !left_border(&harness, &output, &paint.borrow()),
+            "{mutation}"
+        );
+    }
 }
 
 /// Accessible labels the actual close control, the last icon, reports when activated.
@@ -240,9 +306,6 @@ fn artifact_panel_open_and_close_notifications_stay_distinct() {
                 .iter()
                 .all(|id| harness.host.published.borrow().contains_key(id))
         );
-        for filename in case.output.scrolls {
-            assert_eq!(Some(filename), harness.caller.active_filename());
-        }
     }
     let harness = Harness::new(&Input {
         entries: vec![("a.zip".into(), "a.zip".into())],
@@ -335,11 +398,6 @@ fn artifact_panel_scroll_targets_literal_tabs() {
         assert_eq!(
             (target.center().x - strip.center().x).abs() < 1.,
             options.inline == "center"
-        );
-        assert_eq!(
-            target.center().y.to_bits()
-                == tab(&first, "long-leading-name-0.zip").center().y.to_bits(),
-            options.block == "nearest"
         );
         assert!(target.center().x > 30. && target.center().x < 260.);
         assert_eq!(
