@@ -42,7 +42,7 @@ pub(super) fn load(root: &Path, host: Option<&str>) -> Result<Metadata, String> 
     MetadataCommand::parse(text).map_err(|error| format!("invalid cargo metadata: {error}"))
 }
 
-/// Read the compiler's native target triple from its version output, once per process.
+/// Cache the first successfully read compiler host for this process.
 pub(super) fn compiler_host() -> Result<String, String> {
     static HOST: OnceLock<String> = OnceLock::new();
     if let Some(host) = HOST.get() {
