@@ -115,7 +115,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   or workspace dependency.
 - `maestro-text` and `maestro-json` are declared core leaves below layer 0 with
   no workspace dependencies. Text owns common text operations (whitespace,
-  lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, newline
+  lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, terminal control cleaning, newline
   normalization shared with `maestro-tools`); JSON owns JSON
   boundary semantics (object acceptance, canonical keys, truth, compact and
   pretty text, JSONL line framing). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
