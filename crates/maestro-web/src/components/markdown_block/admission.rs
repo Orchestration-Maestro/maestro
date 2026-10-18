@@ -50,32 +50,65 @@ fn authored_label(document: &Document, node: &Node) -> bool {
     document.source[node.range.clone()].starts_with('[')
 }
 
-/// Escape tag-like text outside native code and angle autolinks.
-pub(super) fn escape_tags(source: String) -> String {
-    let document = markdown::parse(source);
-    let mut spans = Vec::new();
-    visit(&document.nodes, &mut |node| match &node.kind {
-        Kind::Code(_) | Kind::CodeBlock(..) => spans.push(node.range.clone()),
-        Kind::Link(_, _, _, meta)
-            if matches!(meta.link_type, LinkType::Autolink | LinkType::Email)
-                && !authored_label(&document, node) =>
-        {
+/// Native code and angle autolink extents, in source order and without overlap.
+fn literal(document: &Document) -> Vec<Range<usize>> {
+    let mut spans: Vec<Range<usize>> = Vec::new();
+    visit(&document.nodes, &mut |node| {
+        let native = match &node.kind {
+            Kind::Code(_) | Kind::CodeBlock(..) => true,
+            Kind::Link(_, _, _, meta) => {
+                matches!(meta.link_type, LinkType::Autolink | LinkType::Email)
+                    && !authored_label(document, node)
+            }
+            _ => false,
+        };
+        if native && spans.last().is_none_or(|last| last.end <= node.range.start) {
             spans.push(node.range.clone());
         }
-        _ => {}
     });
-    let mut out = String::with_capacity(document.source.len());
+    spans
+}
+
+/// Escape tag-like text outside native code and angle autolinks, and parse the result.
+///
+/// Escaping can change the structure around a span, so a span stays literal only while
+/// it is still native code or an autolink at the same place in the escaped document.
+/// The first span that is not, and every later span, whose structure may follow from
+/// it, are escaped too.
+pub(super) fn escape_tags(source: String) -> Document {
+    let first = markdown::parse(source);
+    let mut kept = literal(&first);
+    let source = first.source;
+    loop {
+        let (text, moved) = shown_outside(&source, &kept);
+        let document = markdown::parse(text);
+        let native = literal(&document);
+        let lost = moved.iter().position(|at| {
+            !native
+                .binary_search_by_key(&at.start, |span| span.start)
+                .is_ok_and(|index| native[index] == *at)
+        });
+        let Some(lost) = lost else {
+            return document;
+        };
+        kept.truncate(lost);
+    }
+}
+
+/// `source` with tag-like text outside `spans` shown as text, and where each span lands.
+fn shown_outside(source: &str, spans: &[Range<usize>]) -> (String, Vec<Range<usize>>) {
+    let mut out = String::with_capacity(source.len());
+    let mut moved = Vec::with_capacity(spans.len());
     let mut cursor = 0;
     for span in spans {
-        if span.start < cursor {
-            continue;
-        }
-        out.push_str(&shown_as_text(&document.source[cursor..span.start]));
-        out.push_str(&document.source[span.clone()]);
+        out.push_str(&shown_as_text(&source[cursor..span.start]));
+        let start = out.len();
+        out.push_str(&source[span.clone()]);
+        moved.push(start..out.len());
         cursor = span.end;
     }
-    out.push_str(&shown_as_text(&document.source[cursor..]));
-    out
+    out.push_str(&shown_as_text(&source[cursor..]));
+    (out, moved)
 }
 
 /// Turn tag-like text into entity text.

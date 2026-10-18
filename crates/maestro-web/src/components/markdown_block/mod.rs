@@ -14,6 +14,8 @@ use std::{
 mod admission;
 pub(super) mod browser;
 mod render;
+#[cfg(test)]
+mod tests;
 
 /// Complete native content: document HTML and its code listings in slot order.
 pub(crate) struct Document {
