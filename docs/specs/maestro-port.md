@@ -527,6 +527,8 @@ A crate is reached when every crate it depends on has its first tickets landed. 
 
 ## Completion and explicit later scope
 
+Owner-approved tool and terminal additions are specified in [tool and terminal additions](tool-additions.md).
+
 Completion requires the entire file/function/test/fixture matrix, all R01–R12 acceptance, full shipped examples/docs, platform prerequisites and selected service destinations to close with no unapproved behavioral omission. A generic abstraction, a passing subset or a complete file map does not substitute for the delivered capability. The library equivalents are supervisor-selected and qualified on the reference inputs under the common semantic and boundary contract. A mismatch requires matching results through the owning Rust implementation, not an engine port or caller workaround. Added task scope still goes through plan approval.
 
 Deferred model responses, remote core catalog refresh, newer transcript/tool-change replay, nested tool calls, cache warming, project trust and the four later RPC commands are not part of this baseline. Classification, generated images, embeddings/reranking, `maestro init`, native out-of-process extensions, alternate default session storage, jobs and added MCP/supervisor capabilities remain later owner phases. Their absence does not justify omitting baseline examples, browser discovery, JSONL persistence or existing conversions.
