@@ -200,7 +200,7 @@ fn legacy_metadata_work_tracks_tokens_templates_and_link_cells() {
             )
             .unwrap();
             let book = super::read(&bytes, &file, &super::Ssf::default()).unwrap();
-            let sheet = &book.sheets["Data"];
+            let sheet = book.sheets["Data"].as_ref().unwrap();
             let work = [
                 TOKEN_WORK.get(),
                 ANCHOR_WORK.get(),
@@ -314,7 +314,10 @@ fn formula_assembly_writes_linear_bytes_for_every_composition() {
             .unwrap();
             ASSEMBLY_WORK.set(0);
             let book = super::read(&bytes, &file, &super::Ssf::default()).unwrap();
-            let expression = book.sheets["Data"].cells["A1"].f.as_deref().unwrap();
+            let expression = book.sheets["Data"].as_ref().unwrap().cells["A1"]
+                .f
+                .as_deref()
+                .unwrap();
             let expected = match kind {
                 "tokens" => format!("1{}", "+2".repeat(size)),
                 "sum" => format!("{}1{}", "SUM(".repeat(size), ")".repeat(size)),
@@ -476,7 +479,10 @@ fn measured_range_formula(kind: &str, size: usize) -> String {
     ASSEMBLY_WORK.set(0);
     ASSEMBLY_SCAN.set(0);
     let book = super::read(&bytes, &file, &super::Ssf::default()).unwrap();
-    let actual = book.sheets["Data"].cells["A1"].f.clone().unwrap();
+    let actual = book.sheets["Data"].as_ref().unwrap().cells["A1"]
+        .f
+        .clone()
+        .unwrap();
     let expected = if kind.ends_with("index") {
         format!(
             "{}Data!$A$1{}",

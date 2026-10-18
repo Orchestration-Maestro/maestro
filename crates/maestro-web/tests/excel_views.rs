@@ -312,3 +312,40 @@ fn excel_tool_commands_retain_and_update_live_view() {
 }
 
 pub mod highlighter_support;
+
+#[test]
+fn excel_mixed_workbooks_do_not_latch_workbook_failure() {
+    use base64::Engine as _;
+    let bytes = include_bytes!("../../maestro-app/tests/fixtures/workbooks/mixed-bad-first.xlsx");
+    let content = base64::engine::general_purpose::STANDARD.encode(bytes);
+    let host = Rc::new(session_header_support::Host::default());
+    host.controls.set(true);
+    let frame = artifact_support::Frame::default();
+    let mut view = create_artifact_element("mixed.xlsx", &content, host.clone()).unwrap();
+    let output = frame.draw(view.as_mut(), false, vec![]).unwrap();
+    let labels: Vec<_> = output
+        .shapes
+        .iter()
+        .filter_map(|s| match &s.shape {
+            egui::Shape::Text(t) => Some(t.galley.job.text.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(labels, ["Data", "Good"]);
+    let center = output
+        .shapes
+        .iter()
+        .find_map(|s| match &s.shape {
+            egui::Shape::Text(t) if t.galley.job.text == "Good" => {
+                Some(t.pos + t.galley.rect.center().to_vec2())
+            }
+            _ => None,
+        })
+        .unwrap();
+    frame
+        .draw(view.as_mut(), false, attachment_support::click(center))
+        .unwrap();
+    assert_eq!(host.sizes.borrow().len(), 2);
+    frame.click(view.as_mut()).unwrap();
+    assert_eq!(host.downloads.borrow().last().unwrap().2, bytes);
+}

@@ -201,7 +201,12 @@ pub fn workbooks(names: &[&str]) {
             row.expected.iter().map(|s| &s.name).collect::<Vec<_>>()
         );
         for expected in row.expected {
-            let actual = workbook.sheets.get_mut(&expected.name).unwrap();
+            let actual = workbook
+                .sheets
+                .get_mut(&expected.name)
+                .unwrap()
+                .as_mut()
+                .unwrap();
             let sheet = worksheet(expected.cells);
             assert_eq!(actual.range, sheet.range, "{}", row.file);
             assert_eq!(actual.merges, sheet.merges, "{}", row.file);

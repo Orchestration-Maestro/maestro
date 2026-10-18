@@ -17,9 +17,12 @@ use std::collections::BTreeMap;
 /// Legacy sheets include declared blank bounds and load repaired formats into the live table.
 /// Both formats retain formulas, array ranges and hyperlink targets beside cached values.
 /// Binary rich strings retain decoded plain text without generated run markup.
+/// XLSX retains sheet-local errors beside readable sheets, including valid blank sheets.
+/// A workbook with no declared sheets succeeds with an empty collection.
 ///
 /// # Errors
-/// Returns contextual archive, missing-part, XML, container, record or address failures.
+/// Returns contextual archive, shared metadata, container, record or address failures.
+/// When every declared XLSX sheet fails, returns the first sheet's original error.
 pub fn read(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook, WorkbookError> {
     if data.starts_with(&[0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1]) {
         return xls::read(data, workbook_name, ssf);
@@ -55,27 +58,7 @@ fn read_xlsx(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook
         .element(xml.root(), "workbookPr")
         .and_then(|n| xml.bool_attr(n, "date1904", None))
         .unwrap_or(false);
-    let rels = package
-        .archive
-        .relationships(Some(workbook))
-        .map_err(|e| WorkbookError::Xml(format!("{workbook_name}: {workbook}: {e}")))?;
-    let mut sheets = IndexMap::new();
-    if let Some(parent) = xml.element(xml.root(), "sheets") {
-        for node in xml.elements(parent, Some("sheet")) {
-            let name = xml.attr(node, "name").unwrap_or("");
-            let target = xml
-                .attr(node, "id")
-                .and_then(|id| Relationship::find_target(rels.as_deref(), id))
-                .ok_or_else(|| {
-                    WorkbookError::MissingPart(format!("{workbook_name}: sheet {name}"))
-                })?;
-            let path = resolve_path(target, workbook);
-            sheets.insert(
-                name.to_owned(),
-                sheet(&package, &path, (&xfs, ssf, date1904), &shared)?,
-            );
-        }
-    }
+    let sheets = read_sheets(&package, &xml, workbook, (&xfs, ssf, date1904), &shared)?;
     Ok(WorkBook {
         sheets,
         date1904,
@@ -84,6 +67,78 @@ fn read_xlsx(data: &[u8], workbook_name: &str, ssf: &mut Ssf) -> Result<WorkBook
             .read()
             .map_or_else(|error| error.into_inner().clone(), |table| table.clone()),
     })
+}
+/// Resolve worksheet-local results without discarding readable siblings.
+/// An unresolved identity switches every sheet to ordered positional paths.
+fn read_sheets(
+    package: &Package<'_>,
+    xml: &XmlParser<'_>,
+    workbook: &str,
+    format: (&[u32], &Ssf, bool),
+    shared: &[SharedString],
+) -> Result<IndexMap<String, Result<WorkSheet, WorkbookError>>, WorkbookError> {
+    let rels = package
+        .archive
+        .relationships(Some(workbook))
+        .map_err(|e| WorkbookError::Xml(format!("{}: {workbook}: {e}", package.name)))?;
+    let targets = sheet_targets(rels.as_deref(), package.name)?;
+    let names: Vec<_> = xml
+        .element(xml.root(), "sheets")
+        .into_iter()
+        .flat_map(|parent| xml.elements(parent, Some("sheet")))
+        .map(|node| {
+            (
+                xml.attr(node, "name").unwrap_or(""),
+                xml.attr(node, "id").filter(|id| !id.is_empty()),
+            )
+        })
+        .collect();
+    let fallback = names
+        .iter()
+        .any(|(_, id)| id.is_none_or(|id| !targets.contains_key(id)));
+    let nmode = package.archive.contains("xl/worksheets/sheet.xml");
+    let mut sheets = IndexMap::new();
+    for (i, (name, id)) in names.into_iter().enumerate() {
+        let path = if fallback {
+            let suffix = if nmode && i == 0 {
+                String::new()
+            } else {
+                (i + usize::from(!nmode)).to_string()
+            };
+            Ok(format!("xl/worksheets/sheet{suffix}.xml"))
+        } else {
+            id.and_then(|id| targets.get(id))
+                .filter(|target| !target.is_empty())
+                .map(|target| resolve_path(target, workbook))
+                .ok_or_else(|| {
+                    WorkbookError::MissingPart(format!("{}: sheet {name}", package.name))
+                })
+        };
+        let result = path.and_then(|path| sheet(package, &path, format, shared));
+        sheets.insert(name.to_owned(), result);
+    }
+    if sheets.values().all(Result::is_err)
+        && let Some((_, Err(error))) = sheets.shift_remove_index(0)
+    {
+        return Err(error);
+    }
+    Ok(sheets)
+}
+/// Index workbook targets once, keeping the last authored relationship for each identity.
+fn sheet_targets<'a>(
+    rels: Option<&'a [Relationship]>,
+    workbook_name: &str,
+) -> Result<IndexMap<&'a str, &'a str>, WorkbookError> {
+    let mut targets = IndexMap::new();
+    for rel in rels.into_iter().flatten() {
+        let target = rel.target.as_deref().ok_or_else(|| {
+            WorkbookError::MissingPart(format!("{workbook_name}: relationship target"))
+        })?;
+        if let Some(id) = rel.id.as_deref() {
+            targets.insert(id, target);
+        }
+    }
+    Ok(targets)
 }
 /// Decode stored scalars and authored metadata in the same XML pass.
 fn sheet(

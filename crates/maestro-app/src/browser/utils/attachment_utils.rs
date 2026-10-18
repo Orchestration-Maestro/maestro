@@ -355,7 +355,9 @@ fn process_excel(bytes: &[u8], name: &str) -> Result<String, WorkbookError> {
     let mut workbook = ssf::read(bytes, name, &mut ssf)?;
     let mut output = format!("<excel filename=\"{name}\">");
     for (index, (name, sheet)) in workbook.sheets.iter_mut().enumerate() {
-        let csv = ssf::sheet_to_csv(sheet, &ssf);
+        let csv = sheet
+            .as_mut()
+            .map_or_else(|_| String::new(), |sheet| ssf::sheet_to_csv(sheet, &ssf));
         let _ = write!(
             output,
             "\n<sheet name=\"{name}\" index=\"{}\">\n{csv}\n</sheet>",

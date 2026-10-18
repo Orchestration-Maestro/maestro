@@ -131,7 +131,12 @@ fn check_book(mut book: ssf::WorkBook, record: Record, ok: Expected, file: &str,
         ok.sheets.iter().map(|s| &s.name).collect::<Vec<_>>()
     );
     for expected in ok.sheets {
-        let sheet = book.sheets.get_mut(&expected.name).unwrap();
+        let sheet = book
+            .sheets
+            .get_mut(&expected.name)
+            .unwrap()
+            .as_mut()
+            .unwrap();
         assert_eq!(sheet.range.map(ssf::encode_range), expected.range);
         assert_eq!(
             sheet.merges,
@@ -349,7 +354,7 @@ fn workbook_numeric_values_follow_decimal_prefix_rules() {
         &mut ssf,
     )
     .unwrap();
-    let CellValue::Number(number) = book.sheets["Data"].cells["B1"].v else {
+    let CellValue::Number(number) = book.sheets["Data"].as_ref().unwrap().cells["B1"].v else {
         panic!("expected number")
     };
     assert!(number.is_sign_negative());
@@ -387,5 +392,206 @@ fn check_error(error: &Error, error_value: &WorkbookError) {
     }
     if let Some(part) = &error.part {
         assert!(error_value.to_string().contains(part));
+    }
+}
+
+/// Read a qualified byte fixture through the public workbook boundary.
+fn partial_book(file: &str) -> Result<ssf::WorkBook, WorkbookError> {
+    let bytes = crate::workbook_fixture::bytes(file);
+    let mut ssf = Ssf::default();
+    let book = ssf::read(&bytes, file, &mut ssf)?;
+    assert!(!book.date1904);
+    assert_eq!(*ssf.get_table().read().unwrap(), book.ssf);
+    Ok(book)
+}
+#[test]
+fn workbook_mixed_sheet_results_preserve_order_and_values() {
+    for file in [
+        "mixed-bad-first.xlsx",
+        "mixed-bad-last.xlsx",
+        "mixed-valid-control.xlsx",
+    ] {
+        let result = partial_book(file);
+        assert!(
+            result.is_ok(),
+            "readable sheets must survive a corrupt sibling: {file}"
+        );
+        let book = result.unwrap();
+        let names = if file == "mixed-bad-last.xlsx" {
+            ["Good", "Data"]
+        } else {
+            ["Data", "Good"]
+        };
+        assert_eq!(
+            book.sheets.keys().map(String::as_str).collect::<Vec<_>>(),
+            names
+        );
+        let good = book.sheets["Good"].as_ref().unwrap();
+        assert_eq!(good.cells["A1"].v, CellValue::Number(42.));
+        assert_eq!(good.cells["A1"].w.as_deref(), Some("42"));
+        if file == "mixed-valid-control.xlsx" {
+            assert_eq!(
+                book.sheets["Data"].as_ref().unwrap().cells["A1"].v,
+                CellValue::Text("one".into())
+            );
+        } else {
+            assert!(matches!(book.sheets["Data"], Err(WorkbookError::Reader(_))));
+        }
+    }
+}
+
+#[test]
+fn workbook_failed_sheet_discards_partial_cells() {
+    let book = partial_book("mixed-partial-bad.xlsx").unwrap();
+    assert!(matches!(book.sheets["Data"], Err(WorkbookError::Reader(_))));
+    assert_eq!(
+        book.sheets["Good"].as_ref().unwrap().cells["A1"].v,
+        CellValue::Number(42.)
+    );
+}
+
+#[test]
+fn workbook_empty_valid_sibling_is_success() {
+    let book = partial_book("mixed-empty-valid.xlsx").unwrap();
+    assert!(matches!(book.sheets["Data"], Err(WorkbookError::Reader(_))));
+    assert!(book.sheets["Good"].as_ref().unwrap().cells.is_empty());
+}
+
+#[test]
+fn workbook_all_corrupt_sheets_keep_first_typed_error() {
+    for file in ["bad-shared-index.xlsx", "all-corrupt-two.xlsx"] {
+        let error = partial_book(file).unwrap_err();
+        assert!(matches!(error, WorkbookError::Reader(_)));
+        assert_eq!(
+            error.to_string(),
+            format!("{file}: xl/worksheets/sheet1.xml: shared string 3")
+        );
+    }
+}
+
+#[test]
+fn workbook_missing_sheet_part_is_local() {
+    let book = partial_book("missing-sheet-part.xlsx").unwrap();
+    assert_eq!(
+        book.sheets.keys().map(String::as_str).collect::<Vec<_>>(),
+        ["Data", "Good"]
+    );
+    let error = book.sheets["Data"].as_ref().unwrap_err();
+    assert!(matches!(error, WorkbookError::MissingPart(_)));
+    assert!(error.to_string().contains("xl/worksheets/missing.xml"));
+    assert_eq!(
+        book.sheets["Good"].as_ref().unwrap().cells["A1"].v,
+        CellValue::Number(42.)
+    );
+}
+
+#[test]
+fn workbook_many_sheet_results_keep_input_order() {
+    for (file, count) in [
+        ("sheets-32.xlsx", 32),
+        ("sheets-64.xlsx", 64),
+        ("relationships-many-32.xlsx", 32),
+        ("relationships-many-64.xlsx", 64),
+    ] {
+        let book = partial_book(file).unwrap();
+        assert_eq!(book.sheets.len(), count);
+        for (i, (name, sheet)) in book.sheets.into_iter().enumerate() {
+            assert_eq!(name, format!("Sheet{i}"));
+            assert_eq!(
+                sheet.unwrap().cells["A1"].v,
+                CellValue::Number(f64::from(u32::try_from(i).unwrap()))
+            );
+        }
+    }
+    let bytes = include_bytes!("fixtures/spreadsheet/operand-grammar.xlsx");
+    let book = ssf::read(bytes, "largest.xlsx", &mut Ssf::default()).unwrap();
+    assert_eq!(book.sheets.len(), 433);
+    assert!(book.sheets.values().all(Result::is_ok));
+}
+
+#[test]
+fn workbook_relationship_duplicate_ids_keep_last_target() {
+    for (file, expected) in [
+        ("relationships-duplicate-last.xlsx", CellValue::Number(42.)),
+        (
+            "relationships-duplicate-first.xlsx",
+            CellValue::Text("one".into()),
+        ),
+        (
+            "relationships-first-empty-target.xlsx",
+            CellValue::Text("one".into()),
+        ),
+    ] {
+        let book = partial_book(file).unwrap();
+        assert_eq!(
+            book.sheets["Data"].as_ref().unwrap().cells["A1"].v,
+            expected
+        );
+        assert_eq!(
+            book.sheets["Good"].as_ref().unwrap().cells["A1"].v,
+            CellValue::Number(42.)
+        );
+    }
+}
+
+#[test]
+fn workbook_relationship_fallback_applies_to_every_sheet() {
+    for file in [
+        "relationships-missing-id.xlsx",
+        "relationships-missing-sheet-id.xlsx",
+        "relationships-empty-id.xlsx",
+        "relationships-unknown-id.xlsx",
+        "relationships-case-id.xlsx",
+        "relationships-no-records.xlsx",
+        "relationships-absent-file.xlsx",
+        "relationships-fallback-all.xlsx",
+        "relationships-zero-based-fallback.xlsx",
+    ] {
+        let book = partial_book(file).unwrap();
+        assert_eq!(
+            book.sheets.keys().map(String::as_str).collect::<Vec<_>>(),
+            ["Data", "Good"]
+        );
+        assert_eq!(
+            book.sheets["Data"].as_ref().unwrap().cells["A1"].v,
+            CellValue::Text("one".into())
+        );
+        assert_eq!(
+            book.sheets["Good"].as_ref().unwrap().cells["A1"].v,
+            CellValue::Number(42.)
+        );
+    }
+}
+
+#[test]
+fn workbook_missing_relationship_target_fails_globally() {
+    for file in [
+        "relationships-missing-target.xlsx",
+        "relationships-unreferenced-missing-target.xlsx",
+    ] {
+        let error = partial_book(file).unwrap_err();
+        assert!(matches!(error, WorkbookError::MissingPart(_)));
+        assert_eq!(error.to_string(), format!("{file}: relationship target"));
+    }
+}
+
+#[test]
+fn workbook_empty_relationship_target_is_a_sheet_error() {
+    for file in [
+        "relationships-empty-target.xlsx",
+        "relationships-last-empty-target.xlsx",
+    ] {
+        let book = partial_book(file).unwrap();
+        assert_eq!(
+            book.sheets.keys().map(String::as_str).collect::<Vec<_>>(),
+            ["Data", "Good"]
+        );
+        let error = book.sheets["Data"].as_ref().unwrap_err();
+        assert!(matches!(error, WorkbookError::MissingPart(_)));
+        assert_eq!(error.to_string(), format!("{file}: sheet Data"));
+        assert_eq!(
+            book.sheets["Good"].as_ref().unwrap().cells["A1"].v,
+            CellValue::Number(42.)
+        );
     }
 }

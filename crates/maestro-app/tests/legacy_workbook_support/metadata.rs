@@ -86,7 +86,7 @@ pub fn run(test: &str) {
 fn check_book(mut book: ssf::WorkBook, expected: &Book, ssf: &Ssf) {
     check_sheets(&book, &expected.sheets);
     for view in &expected.views {
-        let sheet = book.sheets.get_mut(&view.name).unwrap();
+        let sheet = book.sheets.get_mut(&view.name).unwrap().as_mut().unwrap();
         assert_eq!(ssf::sheet_to_csv(sheet, ssf), view.csv);
         assert_eq!(
             ssf::sheet_to_html(sheet, &format!("sheet-{}", view.name), ssf),
@@ -98,6 +98,7 @@ fn check_book(mut book: ssf::WorkBook, expected: &Book, ssf: &Ssf) {
 fn check_sheets(book: &ssf::WorkBook, expected: &[Sheet]) {
     assert_eq!(book.sheets.len(), expected.len());
     for ((name, actual), expected) in book.sheets.iter().zip(expected) {
+        let actual = actual.as_ref().unwrap();
         assert_eq!(name, &expected.name);
         assert_eq!(actual.range.map(ssf::encode_range), expected.range);
         assert_eq!(actual.cells.len(), expected.cells.len());

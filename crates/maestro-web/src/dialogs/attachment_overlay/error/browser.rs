@@ -6,7 +6,7 @@ use crate::browser::attachment_content::{
 };
 use std::{cell::RefCell, rc::Rc};
 /// Update changed text only, preserving unchanged native selection.
-pub(super) fn sync(text: &Text) {
+pub(in crate::dialogs::attachment_overlay) fn sync(text: &Text) {
     if let Some(nodes) = &text.nodes {
         for (node, value) in nodes.iter().zip(&text.values) {
             set_text_if_changed(node, value);
@@ -14,7 +14,7 @@ pub(super) fn sync(text: &Text) {
     }
 }
 /// Mount a centered panel with literal heading and diagnostic.
-pub(super) fn mount(
+pub(in crate::dialogs::attachment_overlay) fn mount(
     document: &web_sys::Document,
     text: &Rc<RefCell<Text>>,
     padded: bool,

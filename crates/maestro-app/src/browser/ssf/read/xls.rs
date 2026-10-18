@@ -112,7 +112,7 @@ fn workbook(data: &[u8], ssf: &Ssf) -> Result<WorkBook> {
             .finished
             .remove(&index(position)?)
             .ok_or(ParseError::Invalid("sheet position"))?;
-        sheets.insert(name, sheet.finish());
+        sheets.insert(name, Ok(sheet.finish()));
     }
     let table = ssf
         .table

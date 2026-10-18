@@ -61,6 +61,26 @@ Both readers repair the producer date code `d.m` to `d\.m` before loading it;
 direct `Ssf::load` calls preserve the supplied code.
 `WorkBook::ssf` is a detached snapshot. `WorkBook` preserves sheet order and the date epoch; each
 `WorkSheet` retains ordered populated cells, its range and merged regions.
+`WorkBook::sheets` stores a `Result<WorkSheet, WorkbookError>` for each named sheet.
+An XLSX sheet decoding failure retains its typed error and discards partial cells,
+while readable siblings remain available. A successfully decoded blank sheet counts
+as readable. If all declared sheets fail, reading returns the first sheet's error;
+a zero-sheet workbook remains empty. Binary XLS stream failures still fail the
+whole workbook. Archive, workbook metadata, shared strings/styles and malformed
+relationship XML failures remain workbook-level errors.
+
+Workbook relationships are indexed once by exact, case-sensitive identity; the
+last duplicate wins. A missing target fails the whole workbook, even when unused.
+A selected empty target is a sheet error. Missing, empty or unresolved sheet
+identities select positional paths for the whole workbook, using `sheet.xml`,
+`sheet1.xml`, … when the zero-based first part exists. Document and hyperlink
+relationship resolution is unchanged.
+
+Spreadsheet attachment extraction keeps each sheet's name, order and indexed
+wrapper. A failed sheet in a mixed XLSX workbook contributes an empty CSV body,
+not a diagnostic; valid siblings contribute their formatted CSV. All-corrupt
+workbooks remain extraction errors.
+
 In XLSX, blank sheets retain declared rectangular ranges; empty singleton defaults
 are omitted. Retained XLSX error cells load implicit formats into the live table and
 workbook snapshot. Cells retain raw typed values and optional formatted text.

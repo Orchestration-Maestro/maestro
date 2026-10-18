@@ -226,7 +226,7 @@ impl AttachmentOverlay {
             self.host.as_ref(),
             ui,
             (self.id, rect, Some(self.id), false),
-            p,
+            (p, &i.text("Error loading spreadsheet")?),
         ) {
             Err(AttachmentUiError::Presentation(message)) => {
                 if !message.is_empty() {

@@ -21,6 +21,21 @@ fn bytes(name: &str) -> &'static [u8] {
         "legacy-shared" => include_bytes!(
             "../../maestro-app/tests/fixtures/workbooks/metadata-shared-sheet-local.xls"
         ),
+        "mixed-first" => {
+            include_bytes!("../../maestro-app/tests/fixtures/workbooks/mixed-bad-first.xlsx")
+        }
+        "mixed-last" => {
+            include_bytes!("../../maestro-app/tests/fixtures/workbooks/mixed-bad-last.xlsx")
+        }
+        "mixed-literal" => {
+            include_bytes!("../../maestro-app/tests/fixtures/workbooks/mixed-literal-error.xlsx")
+        }
+        "mixed-control" => {
+            include_bytes!("../../maestro-app/tests/fixtures/workbooks/mixed-valid-control.xlsx")
+        }
+        "all-corrupt" => {
+            include_bytes!("../../maestro-app/tests/fixtures/workbooks/all-corrupt-two.xlsx")
+        }
         "zero" => {
             include_bytes!("../../maestro-app/tests/fixtures/spreadsheet_html/zero-sheets.xlsx")
         }
@@ -510,4 +525,248 @@ pub fn excel_legacy_metadata_reaches_retained_tables() {
     check(
         "legacyFirst===document.querySelector('#sheet-First')&&getComputedStyle(legacyFirst.parentElement).display!=='none'",
     );
+}
+
+/// Drive the actual consumer without substituting a prepared sheet renderer.
+fn mixed_frame(view: &mut View, overlay: &mut Option<AttachmentOverlay>, events: Vec<egui::Event>) {
+    if let Some(overlay) = overlay {
+        view.overlay(overlay, events);
+    } else {
+        view.draw(false, events);
+    }
+}
+/// Both actual consumers preserve failed and valid tabs from their first frame.
+/// # Panics
+/// Panics if a mounted body, ordered tab or input transition differs from the contract.
+#[wasm_bindgen]
+pub fn excel_mixed_workbooks_show_valid_and_failed_tabs() {
+    for attachment in [false, true] {
+        for name in ["mixed-first", "mixed-last"] {
+            let (mut view, mut overlay) = mixed_view(attachment, name);
+            mixed_frame(&mut view, &mut overlay, vec![]);
+            check(
+                "document.querySelectorAll('.maestro-excel-tab').length===2&&document.querySelectorAll('.maestro-excel-sheet').length===2",
+            );
+            let (bad, good) = if name == "mixed-first" {
+                (0, 1)
+            } else {
+                (1, 0)
+            };
+            js(&format!(
+                "globalThis.bad=document.querySelectorAll('.maestro-excel-sheet')[{bad}];globalThis.good=document.querySelectorAll('.maestro-excel-sheet')[{good}];"
+            ));
+            check(
+                "bad.querySelector('h3').textContent==='Error loading spreadsheet'&&bad.querySelector('p').textContent==='spreadsheet: xl/worksheets/sheet1.xml: shared string 3'&&!bad.querySelector('table')&&good.querySelector('td').textContent==='42'",
+            );
+            check(if bad == 0 {
+                "getComputedStyle(bad).display!=='none'&&getComputedStyle(good).display==='none'"
+            } else {
+                "getComputedStyle(good).display!=='none'&&getComputedStyle(bad).display==='none'"
+            });
+            mixed_frame(&mut view, &mut overlay, vec![]);
+            mixed_frame(&mut view, &mut overlay, click(tab_position(good)));
+            check(
+                "getComputedStyle(good).display!=='none'&&getComputedStyle(bad).display==='none'",
+            );
+            mixed_frame(&mut view, &mut overlay, click(tab_position(bad)));
+            check(
+                "getComputedStyle(bad).display!=='none'&&getComputedStyle(good).display==='none'",
+            );
+            mixed_keyboard(&mut view, &mut overlay, good);
+            check("bad.isConnected&&good.isConnected&&getComputedStyle(good).display!=='none'");
+            drop(overlay);
+            drop(view);
+            check("!bad.isConnected&&!good.isConnected");
+        }
+    }
+}
+
+/// Traverse registered controls until the actual sheet endpoint owns keyboard focus.
+fn mixed_keyboard(view: &mut View, overlay: &mut Option<AttachmentOverlay>, index: usize) {
+    let target = tab_position(index);
+    let mut reached = false;
+    for _ in view.context.interactive_rects_last_pass() {
+        for pressed in [true, false] {
+            mixed_frame(
+                view,
+                overlay,
+                vec![
+                    egui::Event::PointerMoved(egui::pos2(900., 700.)),
+                    egui::Event::Key {
+                        key: egui::Key::Tab,
+                        physical_key: None,
+                        pressed,
+                        repeat: false,
+                        modifiers: egui::Modifiers::NONE,
+                    },
+                ],
+            );
+        }
+        reached = view
+            .context
+            .memory(egui::Memory::focused)
+            .and_then(|id| view.context.read_response(id))
+            .is_some_and(|r| r.rect.contains(target));
+        if reached {
+            break;
+        }
+    }
+    assert!(reached, "sheet tab must be keyboard reachable");
+    mixed_frame(
+        view,
+        overlay,
+        vec![egui::Event::Key {
+            key: egui::Key::Enter,
+            physical_key: None,
+            pressed: true,
+            repeat: false,
+            modifiers: egui::Modifiers::NONE,
+        }],
+    );
+}
+
+/// Open either public consumer with the same original workbook bytes.
+fn mixed_view(attachment: bool, name: &str) -> (View, Option<AttachmentOverlay>) {
+    let mut view = View::new("a.xlsx", "");
+    let overlay = if attachment {
+        let record = record();
+        record.borrow_mut().content = encoded(name);
+        Some(AttachmentOverlay::open(record, None, view.host.clone()))
+    } else {
+        view.element.set_content(encoded(name));
+        None
+    };
+    (view, overlay)
+}
+/// Failed-sheet diagnostics stay literal, localized and correctly painted in place.
+/// # Errors
+/// Returns an invalid controlled brand presentation or color.
+/// # Panics
+/// Panics if the actual error body, fallback, localization or computed style is wrong.
+#[wasm_bindgen]
+pub fn excel_sheet_errors_are_literal_localized_and_live() -> Result<(), JsValue> {
+    let mut fallback = View::new("a.xlsx", &encoded("zero"));
+    fallback.draw(false, vec![]);
+    check(
+        "document.querySelector('.maestro-file-error p').textContent==='Failed to load spreadsheet'",
+    );
+    drop(fallback);
+    for attachment in [false, true] {
+        let (mut view, mut overlay) = mixed_view(attachment, "mixed-literal");
+        mixed_frame(&mut view, &mut overlay, vec![]);
+        js(
+            "globalThis.literalRoot=document.querySelector('.maestro-excel');globalThis.literalHeading=literalRoot.querySelector('h3');",
+        );
+        check(
+            "literalRoot.querySelector('p').textContent==='spreadsheet: xl/worksheets/sheet1.xml: shared string <img src=x onerror=alert(1)>'&&!literalRoot.querySelector('img,[onerror]')&&literalRoot.querySelector('td').textContent==='42'",
+        );
+        let translations = view.i18n.get_translations();
+        let _ = translations.borrow()["en"].borrow_mut().insert(
+            "Error loading spreadsheet".into(),
+            maestro_web::TranslationValue::Text("Spreadsheet error localized".into()),
+        );
+        view.i18n.set_translations(translations);
+        for pack in ["brand.json", "signal.json"] {
+            view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack)
+                .map_err(|e| JsValue::from_str(&e.to_string()))?;
+            for mode in [
+                maestro_theme::BrandMode::Dark,
+                maestro_theme::BrandMode::Light,
+            ] {
+                view.mode = mode;
+                mixed_frame(&mut view, &mut overlay, vec![]);
+                check(
+                    "literalRoot===document.querySelector('.maestro-excel')&&literalHeading===literalRoot.querySelector('h3')&&literalHeading.textContent==='Spreadsheet error localized'",
+                );
+                mixed_error_style(&view)?;
+            }
+        }
+        drop(overlay);
+        drop(view);
+        check("!literalRoot.isConnected");
+    }
+    Ok(())
+}
+/// Compare the actual panel's computed colors and composited text contrast.
+fn mixed_error_style(view: &View) -> Result<(), JsValue> {
+    let p = view
+        .pack
+        .presentation(view.mode)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    for (role, selector, property) in [
+        ("error", ".maestro-file-error h3", "color"),
+        ("error", ".maestro-file-error>div", "borderTopColor"),
+        ("panel", ".maestro-file-error>div", "backgroundColor"),
+    ] {
+        let color = egui::Color32::from_hex(p.colors[role])
+            .map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
+        check(&format!(
+            "getComputedStyle(document.querySelector('{selector}')).{property}==='rgb({}, {}, {})'",
+            color.r(),
+            color.g(),
+            color.b()
+        ));
+    }
+    check(
+        r"(()=>{
+        const panel=document.querySelector('.maestro-file-error>div'), heading=panel.querySelector('h3'), detail=panel.querySelector('p');
+        const rgb=s=>s.match(/[\d.]+/g).slice(0,3).map(Number);
+        const luminance=c=>c.map(v=>v/255).map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4).reduce((s,v,i)=>s+v*[.2126,.7152,.0722][i],0);
+        const contrast=(a,b)=>{const x=luminance(a),y=luminance(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
+        const background=rgb(getComputedStyle(panel).backgroundColor), ink=rgb(getComputedStyle(heading).color), alpha=Number(getComputedStyle(detail).opacity), detailInk=rgb(getComputedStyle(detail).color).map((v,i)=>v*alpha+background[i]*(1-alpha));
+        return contrast(ink,background)>=4.5&&contrast(detailInk,background)>=4.5&&contrast(rgb(getComputedStyle(panel).borderTopColor),background)>=3&&panel.getBoundingClientRect().width>0;
+    })()",
+    );
+    Ok(())
+}
+
+/// Retained mixed bodies preserve selection, rewrite cleanly and release with their owners.
+/// # Panics
+/// Panics if a native root is replaced early, retained after teardown or loses selection.
+#[wasm_bindgen]
+pub fn excel_mixed_sheet_roots_keep_selection_and_release_on_rewrite() {
+    let mut view = View::new("a.xlsx", &encoded("mixed-first"));
+    view.draw(false, vec![]);
+    view.draw(false, vec![]);
+    tab(&mut view, 1);
+    js(
+        "globalThis.mixedRoot=document.querySelector('.maestro-excel');globalThis.badRoot=mixedRoot.querySelectorAll('.maestro-excel-sheet')[0];globalThis.goodRoot=mixedRoot.querySelectorAll('.maestro-excel-sheet')[1];const range=document.createRange();range.selectNodeContents(goodRoot.querySelector('td'));getSelection().removeAllRanges();getSelection().addRange(range);globalThis.mixedSelection=getSelection().toString();",
+    );
+    check("mixedSelection==='42'");
+    view.element.set_content(encoded("mixed-first"));
+    view.draw(false, vec![]);
+    check(
+        "mixedRoot===document.querySelector('.maestro-excel')&&goodRoot===mixedRoot.querySelectorAll('.maestro-excel-sheet')[1]&&getSelection().toString()===mixedSelection",
+    );
+    tab(&mut view, 0);
+    check(
+        "badRoot===mixedRoot.querySelectorAll('.maestro-excel-sheet')[0]&&getComputedStyle(badRoot).display!=='none'&&getComputedStyle(goodRoot).display==='none'",
+    );
+    tab(&mut view, 1);
+    check(
+        "goodRoot===mixedRoot.querySelectorAll('.maestro-excel-sheet')[1]&&getComputedStyle(goodRoot).display!=='none'",
+    );
+    view.element.set_content(encoded("mixed-control"));
+    view.draw(false, vec![]);
+    check(
+        "!mixedRoot.isConnected&&document.querySelector('.maestro-excel')!==mixedRoot&&!document.querySelector('.maestro-file-error')&&document.querySelectorAll('.maestro-excel table').length===2&&document.querySelector('td').textContent==='one'",
+    );
+    js("globalThis.repairedRoot=document.querySelector('.maestro-excel');");
+    view.element.set_content(encoded("all-corrupt"));
+    view.draw(false, vec![]);
+    check(
+        "!repairedRoot.isConnected&&!document.querySelector('.maestro-excel')&&document.querySelector('.maestro-file-error h3').textContent==='Error loading spreadsheet'&&document.querySelector('.maestro-file-error p').textContent==='spreadsheet: xl/worksheets/sheet1.xml: shared string 3'",
+    );
+    drop(view);
+    check("!document.querySelector('.maestro-file-error')");
+    let panel = panel_browser_support::Panel::new();
+    panel.create("mixed.xlsx", &encoded("mixed-first"));
+    js(
+        "globalThis.mixedPanelRoot=document.querySelector('.maestro-excel');globalThis.mixedPanelError=mixedPanelRoot.querySelector('.maestro-file-error');",
+    );
+    check(
+        "mixedPanelError.querySelector('p').textContent==='spreadsheet: xl/worksheets/sheet1.xml: shared string 3'&&mixedPanelRoot.querySelector('td').textContent==='42'",
+    );
+    drop(panel);
+    check("!mixedPanelRoot.isConnected&&!mixedPanelError.isConnected");
 }

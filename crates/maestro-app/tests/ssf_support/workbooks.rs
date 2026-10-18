@@ -31,6 +31,7 @@ fn value(value: &CellValue, typed: bool) -> Value {
 
 pub(super) fn project(book: ssf::WorkBook, ssf: &Ssf, typed: bool) -> Value {
     let sheets: Vec<_> = book.sheets.into_iter().map(|(name, sheet)| {
+        let sheet = sheet.unwrap();
         let cells: Vec<_> = sheet.cells.into_iter().map(|(address, mut cell)| {
             let kind = match cell.t.unwrap() {
                 ssf::ExcelDataType::Number => "n", ssf::ExcelDataType::Text => "s",
@@ -85,7 +86,7 @@ pub(super) fn format_codes(args: &Value) -> Value {
     let book = ssf::read(&bytes(file), file, &mut ssf).unwrap();
     assert!(!book.date1904);
     assert_eq!(book.sheets.len(), 1);
-    let sheet = book.sheets.into_values().next().unwrap();
+    let sheet = book.sheets.into_values().next().unwrap().unwrap();
     let cells: Vec<_> = sheet.cells.into_iter().enumerate().map(|(i, (address, mut cell))| {
         assert_eq!(cell.t, Some(ssf::ExcelDataType::Number));
         let CellValue::Number(raw) = cell.v else { panic!("expected numeric operand") };

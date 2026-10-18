@@ -15,8 +15,8 @@ pub struct WorkSheet {
 /// Owned workbook projection.
 #[derive(Debug)]
 pub struct WorkBook {
-    /// Sheets in workbook order.
-    pub sheets: IndexMap<String, WorkSheet>,
+    /// Worksheets or their typed decoding errors in workbook order.
+    pub sheets: IndexMap<String, Result<WorkSheet, WorkbookError>>,
     /// Whether serials use the 1904 epoch.
     pub date1904: bool,
     /// Detached number-format table snapshot.
