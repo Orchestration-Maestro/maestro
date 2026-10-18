@@ -1,10 +1,15 @@
 //! Byte control activation and geometry.
+#[cfg(not(target_arch = "wasm32"))]
 use super::*;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::browser::attachment_content::*;
+#[cfg(not(target_arch = "wasm32"))]
 use std::{cell::RefCell, rc::Rc};
 /// Byte-only controlled effect boundary.
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Default)]
 pub(crate) struct Host(RefCell<Vec<(String, String, Vec<u8>)>>);
+#[cfg(not(target_arch = "wasm32"))]
 impl AttachmentHost for Host {
     fn copy_to_clipboard(
         &self,
@@ -91,6 +96,7 @@ impl AttachmentHost for Host {
 }
 /// Mouse and keyboard activation preserve the selected slice and original media type.
 #[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn download_control_preserves_original_bytes_and_slice_bounds() {
     let corpus: serde_json::Value = serde_json::from_str(include_str!(
         "../../../tests/fixtures/generic_artifacts.json"
@@ -144,7 +150,9 @@ fn download_control_preserves_original_bytes_and_slice_bounds() {
     }
 }
 /// English-only host for the byte-control title.
+#[cfg(not(target_arch = "wasm32"))]
 pub(crate) struct Language;
+#[cfg(not(target_arch = "wasm32"))]
 impl crate::LanguageHost for Language {
     fn stored_language(&self) -> Result<Option<String>, crate::I18nError> {
         Ok(None)
@@ -167,6 +175,7 @@ impl crate::LanguageHost for Language {
 }
 
 /// Draw the actual control and preserve existing ghost caller geometry.
+#[cfg(not(target_arch = "wasm32"))]
 fn frame(
     context: &egui::Context,
     events: Vec<egui::Event>,
@@ -212,6 +221,7 @@ fn frame(
 }
 
 /// Keyboard focus traversal and pointer press/release activation.
+#[cfg(not(target_arch = "wasm32"))]
 fn activation(index: usize) -> Vec<Vec<egui::Event>> {
     if index == 1 {
         [egui::Key::Tab, egui::Key::Enter]
@@ -246,5 +256,6 @@ fn activation(index: usize) -> Vec<Vec<egui::Event>> {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[path = "../../../tests/highlighter_support/mod.rs"]
 pub(crate) mod highlighter;

@@ -401,10 +401,26 @@ group retains its nullable fields rather than inheriting over them.
 
 The renderer emits ordered stylesheet text with CRLF rule delimiters, default
 document CSS with an explicit print-wrapper policy, and wrapper HTML. It does not
-mount a preview. [Numbering and element styling](https://github.com/Orchestration-Maestro/maestro/issues/781),
-[element and page construction](https://github.com/Orchestration-Maestro/maestro/issues/782)
-and [complete preview composition](https://github.com/Orchestration-Maestro/maestro/issues/784)
-remain separate consumers of these retained styles.
+mount a preview.
+
+The same private renderer emits native paragraphs, runs and inline text from the
+owned element tree. Insertions flatten into ordered children; deleted content,
+field runs and non-wrapping breaks are omitted by this selected profile. Tabs use
+an em space, and nonbreaking hyphens remain visible without introducing a break.
+Symbols decode numeric entities without interpreting authored suffixes as HTML.
+Native class tokens, CSS properties and attributes retain browser validation.
+Paragraph tabs inherit only when absent, while an explicit empty group stays
+empty. Local numbering groups suppress style fallback, including empty groups.
+Numbering preparation updates the last retained matching style occurrence.
+
+Numbering CSS preserves counter levels, resets, authored declarations and picture
+placeholders. Literal marker text is serialized separately from numeric counter
+placeholders, so quotes, backslashes, newlines and literal percent signs cannot
+become CSS syntax or phantom counters. Picture loading and alternate-chunk
+settlement remain with [complete preview composition](https://github.com/Orchestration-Maestro/maestro/issues/784).
+[Hyperlink and smart-tag wiring](https://github.com/Orchestration-Maestro/maestro/issues/760)
+and [element and page construction](https://github.com/Orchestration-Maestro/maestro/issues/782)
+remain separate consumers; this does not expose a partial preview entry point.
 
 ## Worksheet tables
 

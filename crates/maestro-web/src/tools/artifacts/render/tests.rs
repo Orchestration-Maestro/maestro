@@ -1,11 +1,17 @@
 //! Unbounded caller headers cannot displace the panel-owned close control.
+#[cfg(not(target_arch = "wasm32"))]
 use super::*;
+#[cfg(not(target_arch = "wasm32"))]
 use crate::components::download_button::tests::{Host, Language};
+#[cfg(not(target_arch = "wasm32"))]
 use crate::tools::artifacts::artifact_element::ArtifactElement;
+#[cfg(not(target_arch = "wasm32"))]
 use std::{cell::RefCell, rc::Rc};
 
 /// External header with a control wider than the initial reservation.
+#[cfg(not(target_arch = "wasm32"))]
 struct WideHeader;
+#[cfg(not(target_arch = "wasm32"))]
 impl ArtifactElement for WideHeader {
     fn filename(&self) -> &'static str {
         "wide"
@@ -33,6 +39,7 @@ impl ArtifactElement for WideHeader {
 
 /// A wide header is clipped, while close remains visible and accepts pointer input.
 #[test]
+#[cfg(not(target_arch = "wasm32"))]
 fn artifact_panel_wide_header_cannot_displace_close() {
     let panel = ArtifactsPanel::new(Rc::new(Host::default()));
     panel.elements.borrow_mut().insert(

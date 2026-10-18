@@ -8,6 +8,10 @@ use maestro_app::markup::{EscapeMode, escape};
 use std::collections::HashSet;
 use std::fmt::Write;
 
+#[cfg(target_arch = "wasm32")]
+mod elements;
+mod numbering;
+
 /// Prepared document stylesheet state.
 pub(crate) struct HtmlRenderer {
     /// Namespace supplied by the caller.
@@ -94,7 +98,14 @@ impl HtmlRenderer {
                     style.target.as_deref().unwrap_or("null")
                 );
             }
-            result.push_str(&Self::style_to_string(&selector, &substyle.values, None));
+            result.push_str(&Self::style_to_string(
+                &selector,
+                substyle
+                    .values
+                    .iter()
+                    .map(|(key, value)| (key.as_str(), value.as_deref())),
+                None,
+            ));
         }
         result
     }
@@ -156,19 +167,15 @@ section.{c}>footer {{ z-index: 1; }}
     }
 
     /// Emit one CSS rule with ordered declarations and a literal suffix.
-    pub(crate) fn style_to_string(
+    pub(crate) fn style_to_string<'a>(
         selectors: &str,
-        values: &IndexMap<String, Option<String>>,
+        values: impl IntoIterator<Item = (&'a str, Option<&'a str>)>,
         css_text: Option<&str>,
     ) -> String {
         let mut result = format!("{selectors} {{\r\n");
         for (key, value) in values {
             if !key.starts_with('$') {
-                let _ = write!(
-                    result,
-                    "  {key}: {};\r\n",
-                    value.as_deref().unwrap_or("null")
-                );
+                let _ = write!(result, "  {key}: {};\r\n", value.unwrap_or("null"));
             }
         }
         result.push_str(css_text.unwrap_or_default());
