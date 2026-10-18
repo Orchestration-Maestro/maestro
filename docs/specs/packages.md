@@ -18,7 +18,7 @@ like any reference:
 - every capability is kept, and nothing is added without a reference line or an owner decision.
 
 The packages are the subagents, MCP gateway, web-access, question, todo, usage, CLI-bridge provider, code-insight,
-context-saving, minimal-mode, ADHD-mode and plan-review packages. Five skill packs need no build: they already load
+context-saving, lean-mode, focus-mode and plan-review packages. Five skill packs need no build: they already load
 as package content, with per-package skill filters.
 
 ## Problem statement
@@ -68,7 +68,7 @@ Without a port, every capability they give a user is lost. A direct port runs in
    edits.
 7. As a user, I want bulky tool output kept out of my context, with a content index and continuity across
    compaction.
-8. As a user, I want the minimal-code and ADHD instruction modes, and an optional plan review in the browser.
+8. As a user, I want the lean and focus instruction modes, and an optional plan review in the browser.
 9. As a user of another agent, I want Maestro's tools served over MCP.
 10. As a new user, I want the base packages installed by default and easy to turn off.
 11. As a maintainer, I want no `unsafe`, no patched fork, no copy of a host algorithm in a guest and no duplicate
@@ -87,7 +87,7 @@ Without a port, every capability they give a user is lost. A direct port runs in
 | CLI bridge | the subscription provider, in-session tools, session rebuilds, accounts and AskClaude | 8, 9 |
 | Code insight | language servers and diagnostics, navigation, structural search and rewrite, code understanding, the read guard, formatting, autofix and scanners, commands and widget | 43–50 |
 | Context saving | execution tools, routing, the content index and search, continuity and commands | 40–42 |
-| Instruction modes | minimal-code mode levels and commands; the ADHD ruleset, flag, command and always-on file | 4, 5 |
+| Instruction modes | lean and focus levels, commands, rulesets and persisted settings | 4, 5 |
 | Plan review (optional) | plan mode, browser plan review, code review and annotation, tools, inbox and event API | 53–58 |
 | Serving tools | every tool of a headless session over MCP | 60 |
 
@@ -164,8 +164,17 @@ Package-to-package edges, each through the depended-on package's library:
 
 ### P4: Instruction modes
 
-`maestro-minimal-mode` and `maestro-adhd-mode` inject instructions through `before_agent_start` and hidden custom
-messages, and keep their state in custom entries (deliveries 4–5).
+`maestro-minimal-mode` provides Maestro's `lean` mode through `/lean lite|full|ultra|off`.
+`maestro-focus-mode` provides `focus` through `/focus lite|full|ultra|off`. Both are on by default at `full`.
+
+Focus levels are:
+
+- `lite`: action first and one next step at the end;
+- `full`: the whole ruleset;
+- `ultra`: full plus at most three items per list and the shortest working answer.
+
+Lean injects instructions through `before_agent_start`; focus uses hidden custom messages, reinjected after
+compaction or a level change. Both persist their settings (deliveries 4–5).
 
 ### P5: Usage
 
@@ -212,7 +221,7 @@ as `maestro mcp`. No package carries server code (delivery 60).
 
 ### Base packages
 
-Every package except plan review is a base package. Each release publishes the base packages' components as package
+Every package except plan review is a base package. Plan review is the only optional package and is off by default. Each release publishes the base packages' components as package
 sources. The application lists those sources as the lowest default `packages` source. The reference's
 missing-source install installs them on first run, and a user's object-form filter entry turns one off
 (delivery 61).
@@ -315,8 +324,8 @@ Results match the reference. These mechanisms are replaced, each listed once:
 | 1 | Expose sessions, settings, package roots and schema checks to components | — |
 | 2 | Track tasks with the todo package | — |
 | 3 | Ask the user structured questions | 2 |
-| 4 | Inject minimal-code mode instructions | 2 |
-| 5 | Inject the ADHD-mode ruleset | 2 |
+| 4 | Inject lean-mode instructions | 2 |
+| 5 | Inject the focus-mode ruleset | 2 |
 | 6 | Report provider usage and quotas | 2 |
 | 7 | Route Codex requests to the priority tier with /fast | 1, 6 |
 | 8 | Serve subscription models through the Anthropic command-line client | 1, 2 |
