@@ -96,10 +96,7 @@ fn key_gate(
     *agent.get_api_key.write().unwrap() = Some(Arc::new(move |_| {
         let gate = gates.lock().unwrap().take();
         Box::pin(async move {
-            if let Some((entered, released)) = gate {
-                entered.send(()).unwrap();
-                released.await.unwrap();
-            }
+            super::wait_gate(gate).await;
             Ok(None)
         })
     }));
@@ -466,10 +463,7 @@ fn retained_requests(
         let gate = gates.lock().unwrap().take();
         let turn = requests.lock().unwrap().len();
         Box::pin(async move {
-            if let Some((entered, released)) = gate {
-                entered.send(()).unwrap();
-                released.await.unwrap();
-            }
+            super::wait_gate(gate).await;
             Ok(Some(format!("key-{turn}")))
         })
     }));
