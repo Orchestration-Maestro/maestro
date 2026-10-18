@@ -57,12 +57,20 @@ fn delayed_grant(delay: u64, calls: Arc<AtomicUsize>) -> crate::Fetch {
 #[test]
 fn metadata_tokens_require_google_flavor_and_an_object_body() {
     super::run(async {
+        let array = serde_json::json!(["controlled-access", 3600, null]);
+        assert!(
+            serde_json::from_value::<super::super::base_external_client::TokenResponse>(
+                array.clone()
+            )
+            .is_ok()
+        );
         for (flavor, body) in [
             (
                 false,
                 serde_json::json!({"access_token":"controlled-access","expires_in":3600}),
             ),
             (true, serde_json::json!({"access_token":5})),
+            (true, array),
         ] {
             let (fetch, urls) = super::recording(move |_| Ok(token_reply(flavor, &body)));
             let effects = Effects {
@@ -109,6 +117,84 @@ fn metadata_token_deadline_applies_only_off_google_hosts() {
                 assert_eq!(error.code, None);
             }
             assert_eq!(calls.load(Ordering::SeqCst), attempts);
+        }
+    });
+}
+
+/// A token exchange held at headers or body collection until explicitly released.
+fn gated_grant(
+    body: bool,
+    attempts: Arc<std::sync::Mutex<Vec<tokio::sync::oneshot::Sender<()>>>>,
+) -> crate::Fetch {
+    Arc::new(move |_| {
+        let (release, ready) = tokio::sync::oneshot::channel();
+        attempts.lock().unwrap().push(release);
+        Box::pin(async move {
+            let mut response = super::google_response_with(
+                &serde_json::json!({"access_token":"controlled-access","expires_in":3600}),
+            );
+            if !body {
+                ready.await.unwrap();
+                return Ok(response);
+            }
+            response.body = Box::pin(futures_util::stream::once(async move {
+                ready.await.unwrap();
+                Ok(br#"{"access_token":"controlled-access","expires_in":3600}"#.to_vec())
+            }));
+            Ok(response)
+        })
+    })
+}
+
+#[test]
+fn metadata_token_deadline_covers_pending_headers_and_body() {
+    super::run_paused(async {
+        for (resident, body) in [(false, false), (false, true), (true, false), (true, true)] {
+            let attempts = Arc::new(std::sync::Mutex::new(Vec::new()));
+            let effects = Effects {
+                fetch: gated_grant(body, attempts.clone()),
+                ..Effects::default()
+            };
+            let client = super::client(
+                compute("m.invalid", effects, resident),
+                indexmap::IndexMap::new(),
+            );
+            let projected = super::super::super::project_content_request(
+                serde_json::json!({"model":"model","contents":"hello"}),
+            )
+            .unwrap();
+            let mut operation = std::pin::pin!(client.prepare_request(projected, None));
+            let mut context = std::task::Context::from_waker(std::task::Waker::noop());
+            assert!(std::future::Future::poll(operation.as_mut(), &mut context).is_pending());
+            assert_eq!(attempts.lock().unwrap().len(), 1);
+            tokio::time::advance(std::time::Duration::from_millis(2999)).await;
+            assert!(std::future::Future::poll(operation.as_mut(), &mut context).is_pending());
+            assert!(!attempts.lock().unwrap()[0].is_closed());
+            tokio::time::advance(std::time::Duration::from_millis(1)).await;
+            assert!(std::future::Future::poll(operation.as_mut(), &mut context).is_pending());
+            assert_eq!(attempts.lock().unwrap()[0].is_closed(), !resident);
+            assert_eq!(attempts.lock().unwrap().len(), 1);
+            if resident {
+                tokio::time::advance(std::time::Duration::from_secs(3600)).await;
+                assert!(std::future::Future::poll(operation.as_mut(), &mut context).is_pending());
+                attempts.lock().unwrap().pop().unwrap().send(()).unwrap();
+                assert_eq!(
+                    operation.await.unwrap().request.headers["authorization"],
+                    "Bearer controlled-access"
+                );
+            } else {
+                let error = operation.await.err().unwrap();
+                assert_eq!(error.name.as_deref(), Some("TransientAuthenticationError"));
+                assert_eq!(error.code, None);
+                assert_eq!(attempts.lock().unwrap().len(), 4);
+                assert!(
+                    attempts
+                        .lock()
+                        .unwrap()
+                        .iter()
+                        .all(tokio::sync::oneshot::Sender::is_closed)
+                );
+            }
         }
     });
 }
