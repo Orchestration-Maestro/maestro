@@ -49,6 +49,8 @@ enum Case {
         exit: Vec<Snapshot>,
     },
     Reversal {
+        #[serde(default)]
+        visible: bool,
         fraction: f64,
         before: Snapshot,
         after: Snapshot,
@@ -56,6 +58,8 @@ enum Case {
         reverse: Vec<Snapshot>,
     },
     RepeatedReversal {
+        #[serde(default)]
+        visible: bool,
         a: Snapshot,
         b: Snapshot,
         c: Snapshot,
@@ -89,6 +93,8 @@ enum Case {
         first: Snapshot,
     },
     PaletteRetarget {
+        #[serde(default)]
+        visible: bool,
         old: Snapshot,
         zero: Snapshot,
         samples: Vec<Snapshot>,
@@ -237,7 +243,11 @@ fn copy_link_transitions_match_ease_enter_and_exit() {
 #[test]
 fn copy_link_interrupted_hover_keeps_current_paint() {
     for case in fixture().cases {
-        let mut h = Harness::new(false);
+        let visible = matches!(
+            case,
+            Case::Reversal { visible: true, .. } | Case::RepeatedReversal { visible: true, .. }
+        );
+        let mut h = Harness::new(visible);
         h.canvas.time = 1.;
         h.canvas.hovered = true;
         h.frame(true);
@@ -248,6 +258,7 @@ fn copy_link_interrupted_hover_keeps_current_paint() {
                 after,
                 duration,
                 reverse,
+                ..
             } => {
                 let start = 1. + 0.15 * fraction;
                 h.observe(start, &before);
@@ -272,9 +283,10 @@ fn copy_link_interrupted_hover_keeps_current_paint() {
                 d1,
                 d2,
                 next,
+                ..
             } => {
                 h.observe(1.075, &a);
-                h.canvas.hovered = false;
+                h.canvas.hovered = visible;
                 h.frame(false);
                 let start = 1.075 + d1 / 2000.;
                 h.observe(start, &b);
@@ -412,10 +424,16 @@ fn copy_link_transition_mounts_resolved_and_drops_with_state() {
 fn copy_link_live_palette_change_retargets_only_changed_properties() {
     let fixture = fixture();
     for case in fixture.cases {
-        let Case::PaletteRetarget { old, zero, samples } = case else {
+        let Case::PaletteRetarget {
+            visible,
+            old,
+            zero,
+            samples,
+        } = case
+        else {
             continue;
         };
-        let mut h = Harness::new(false);
+        let mut h = Harness::new(visible);
         h.canvas.time = 1.;
         h.canvas.hovered = true;
         h.frame(true);
