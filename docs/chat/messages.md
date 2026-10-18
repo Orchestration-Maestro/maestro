@@ -13,6 +13,7 @@ custom callbacks remain supported. Layout delegates to the
 The user widget puts Markdown inside a padded `userMessageBg` panel with
 `userMessageText` foreground. Nonempty user rendering prefixes the first row with
 OSC 133 A and the last row with OSC 133 B/C, without adding a row.
+User-authored Markdown keeps pasted terminal colour sequences unchanged.
 
 The assistant constructor accepts an optional shared assistant message and
 `AssistantMessageOptions`. Defaults show thinking, use the hidden label
@@ -41,7 +42,9 @@ Branch and compaction summaries start collapsed in a `customMessageBg` panel.
 current display. Collapsed hints read the active `app.tools.expand` keys when
 rebuilt, using the application's [`key_text`](../../crates/maestro-tools/src/keybinding_hints.rs).
 Expanded summaries show a Markdown header and the summary body, without prompt
-markers. The compaction constructor formats its token count once with the supplied
+markers. Both summary kinds enable the same decoded-content
+[Markdown cleaning policy](../terminal/markdown.md) as assistant text and thinking.
+The compaction constructor formats its token count once with the supplied
 [`LocaleNumberFormat`](../text.md#numbers), returning an I/O error on conversion
 failure; toggling does not read the environment.
 

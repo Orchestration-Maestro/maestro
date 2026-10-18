@@ -71,7 +71,10 @@ impl SummaryDisplay {
             panel,
             text,
             expanded: Cell::new(false),
-            rendering: super::MessageRendering::new(theme, markdown, terminal),
+            rendering: super::MessageRendering {
+                clean_content: true,
+                ..super::MessageRendering::new(theme, markdown, terminal)
+            },
         };
         display.rebuild();
         display

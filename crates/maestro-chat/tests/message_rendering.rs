@@ -142,3 +142,18 @@ const FIXTURE_GROUPS: &[&str] = &[
     "summary_empty_text_keeps_its_header",
     "compaction_count_uses_locale_formatter",
 ];
+
+#[test]
+fn branch_summary_drops_terminal_controls() {
+    message_support::summary_controls("branch");
+}
+
+#[test]
+fn compaction_summary_drops_terminal_controls() {
+    message_support::summary_controls("compaction");
+}
+
+#[test]
+fn user_message_keeps_authored_terminal_styles() {
+    message_support::user_styles();
+}
