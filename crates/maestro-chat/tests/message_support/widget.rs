@@ -51,7 +51,15 @@ impl Widget {
         live: LiveTheme,
         markdown: Rc<MarkdownTheme>,
     ) -> (Self, Option<SharedAssistantMessage>) {
-        let terminal = TerminalImage::new(|_| None, || 1);
+        Self::with_terminal(input, live, markdown, TerminalImage::new(|_| None, || 1))
+    }
+    /// Uses the same constructor route with caller-controlled terminal capabilities.
+    pub fn with_terminal(
+        input: &Input,
+        live: LiveTheme,
+        markdown: Rc<MarkdownTheme>,
+        terminal: TerminalImage,
+    ) -> (Self, Option<SharedAssistantMessage>) {
         match input.kind.as_str() {
             "user" => (
                 Self::User(UserMessageComponent::new(

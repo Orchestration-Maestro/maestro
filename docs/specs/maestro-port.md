@@ -351,7 +351,8 @@ The shared omission predicate `Omittable` belongs to `maestro-request::presence`
 No `common`, `utils`, `shared-types` or background-runtime crate is added. Terminal escape stripping and binary-output control filtering belong to `maestro-text`,
 shared by tools and opt-in terminal Markdown content emission. Tools retain their existing
 public display-helper paths. Markdown cleaning runs after decoding, before styling or
-hyperlink generation; assistant text and thinking enable it.
+hyperlink generation; assistant text, thinking, and expanded branch and compaction
+summaries enable it. User-authored Markdown leaves it disabled.
 
 `maestro-tools` may depend directly on `maestro-text`, the
 single owner of newline normalization shared by the edit tool, frontmatter and the editor.

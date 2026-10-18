@@ -62,3 +62,42 @@ fn shared_home_prefix_matches_existing_source_expression() {
     }
     assert_eq!(super::shorten_home_path("relative", None), "relative");
 }
+
+#[test]
+fn shared_summary_display_cleans_emitted_markdown() {
+    use super::branch_summary_message::{SummaryDisplay, SummaryText};
+    use maestro_tui::Component;
+    use std::rc::Rc;
+    let theme = maestro_theme::Theme::new(
+        vec![],
+        vec![],
+        maestro_theme::ColorMode::Truecolor,
+        maestro_theme::ThemeOptions::default(),
+    )
+    .unwrap();
+    let live = maestro_theme::LiveTheme::from_theme(Rc::new(theme));
+    let markdown = Rc::new(maestro_theme::get_markdown_theme(
+        live.clone(),
+        Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
+        true,
+    ));
+    let display = SummaryDisplay::new(
+        SummaryText {
+            summary: "before &#27;]52;c;b3duZWQ=&#7; after".into(),
+            label: "[branch]",
+            header: "**Branch Summary**\n\n".into(),
+            collapsed: "Branch summary (".into(),
+        },
+        live,
+        markdown,
+        maestro_tui::TerminalImage::new(|_| None, || 1),
+    );
+    display.set_expanded(true);
+    let rows = display.panel.render(160).join("\n");
+    assert!(
+        !rows.contains("\x1b]52;"),
+        "shared summary emits clipboard escape"
+    );
+    assert_eq!(rows.matches("before").count(), 1);
+    assert_eq!(rows.matches("after").count(), 1);
+}

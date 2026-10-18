@@ -1,7 +1,9 @@
 //! Strict recorded message constructor and operation replay.
 mod input;
+mod summaries;
 use crate::palette;
 use crate::published;
+pub use summaries::{summary_controls, user_styles};
 mod widget;
 use crate::registry::REGISTRY;
 use input::{Action, Case};
@@ -141,6 +143,12 @@ pub fn releases_handles() {
 /// Literal and decoded attacks, with ordinary terminal styling as a control.
 const TERMINAL_CONTROL_CASES: &[(&str, &str)] = &[
     ("clipboard", "\x1b]52;c;b3duZWQ=\x07"),
+    ("whitespace", "tab\tvalue\r\nline\nnext"),
+    (
+        "binary",
+        "left\x01\x08\x0b\x1f\u{fff9}\u{fffa}\u{fffb}right",
+    ),
+    ("unicode", "café 中文 👩‍💻"),
     ("safe styles", "**bold** [safe](https://safe.example)"),
     ("numeric entity", "&#27;]52;c;b3duZWQ=&#7;"),
     (
