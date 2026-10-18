@@ -99,3 +99,17 @@ the four stored sets; `CharsetActiveSlot` distinguishes the left and right sets.
 `parse_table::TABLE` is indexed by input byte and `parser::State`. Each entry
 contains the destination state and `parser::TransitionAction`. It describes byte
 transitions only; it does not execute commands or maintain a terminal screen.
+
+## Parsing
+
+`color::Rgb::parse` accepts named X11 colours, hexadecimal channels and decimal
+intensities. Palette assignments retain separate grammar and overflow errors.
+The default indexed palette and dynamic colours support independent overrides
+and default replacement. X11 lookup folds ASCII case only and keeps internal
+spaces unchanged.
+
+`sgr::Parser` iterates borrowed numeric parameters with positional colon bits.
+It returns typed attributes, including direct and indexed foreground, background
+and underline colours. Unknown attributes retain the complete input plus the
+unrecognised group or remaining suffix. This decoder does not apply attributes
+to screen cells.

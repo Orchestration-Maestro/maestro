@@ -30,3 +30,5 @@ pub use charsets::{
 
 pub mod parse_table;
 pub mod parser;
+
+pub mod x11_color;

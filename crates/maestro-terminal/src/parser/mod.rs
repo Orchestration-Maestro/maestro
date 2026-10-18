@@ -59,3 +59,34 @@ pub enum TransitionAction {
     /// Deliver an application command byte.
     ApcPut,
 }
+
+/// Colon positions in the retained 24-parameter representation.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct SepList(pub u32);
+impl SepList {
+    /// Read a colon bit, ignoring positions outside the representation.
+    #[must_use]
+    pub const fn is_set(self, index: usize) -> bool {
+        index < 24 && self.0 & (1 << index) != 0
+    }
+    /// Mark a colon after a retained parameter.
+    pub fn set(&mut self, index: usize) {
+        if index < 24 {
+            self.0 |= 1 << index;
+        }
+    }
+    /// Count retained colon positions.
+    #[must_use]
+    pub const fn count(self) -> u32 {
+        (self.0 & 0x00ff_ffff).count_ones()
+    }
+}
+
+/// Parameter separator vocabulary.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Sep {
+    /// Ordinary parameter separator.
+    Semicolon,
+    /// Subparameter separator.
+    Colon,
+}

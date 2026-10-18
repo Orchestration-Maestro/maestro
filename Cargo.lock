@@ -3721,6 +3721,7 @@ dependencies = [
  "flate2",
  "icu_properties",
  "maestro-dependencies",
+ "num-traits",
  "png 0.17.16",
  "rustix",
  "serde",

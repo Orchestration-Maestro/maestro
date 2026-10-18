@@ -92,3 +92,7 @@ mod page_storage;
 
 mod character_sets;
 mod vt_sequences;
+
+mod terminal_colors;
+
+mod sgr_attributes;

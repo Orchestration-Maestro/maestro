@@ -178,9 +178,15 @@ All are already locked. `icu_properties` 2.3.0 (compiled data) supplies Unicode 
 properties; `base64` 0.23.1 decodes clipboard payloads strictly and image payloads with
 indifferent padding; `flate2` 1.1.10 (zlib-rs) decompresses images; `png` 0.17.16 decodes
 PNG; `rustix` 1.1.5 with `shm` opens and unlinks shared-memory objects on Unix. Image
-fingerprints use the standard library's hasher. No other crate is added.
+fingerprints use the standard library's hasher. `num-traits` 0.2.19 supplies checked
+floating-point intensity conversion.
 
 ## Implementation decisions
+
+- **Numeric presence.** Saturated CSI/DCS parameters remain present regardless of
+  digit count; a wrapping digit counter must not discard them.
+- **Special colour reset.** OSC105 reaches the special-colour reset decoder through
+  both standalone capture and VT dispatch.
 
 - **One decoding path.** The reference's vector fast paths (UTF-8 runs, escape scanning,
   APC payloads, the print loop) must equal its scalar paths, so Rust keeps the scalar
@@ -275,12 +281,12 @@ Each item is unreachable from every workspace path or replaced by a Maestro owne
 | 1 | Create the crate, amend the foundation, codepoint width and grapheme rules | — |
 | 2 | Page storage | 1 |
 | 3 | Page list and byte-bounded scrollback | 2 |
-| 4 | VT parser, SGR, colours and character sets | 1 |
+| 4 | VT parser, SGR, colours, character sets and standalone OSC decoding | 1 |
 | 5 | Screens | 3, 4 |
 | 6 | Terminal printing, cursor, tabs and modes | 5 |
 | 7 | Terminal editing, screens, resize and reset | 6 |
 | 8 | Byte input through the stream | 7 |
-| 9 | OSC, APC, replies and effects | 8 |
+| 9 | OSC effects, APC routing and replies | 8 |
 | 10 | Selection, formatters and the render snapshot | 9 |
 | 11 | Image-protocol parsing and media loading | 1 |
 | 12 | Image protocol in the screen | 10, 11 |
