@@ -211,10 +211,13 @@ They also build `cranelift-codegen` and `regalloc2` optimised, because tests
 compile extension components and an unoptimised code generator makes each
 compile about five times slower; release builds are unchanged.
 
-Nextest prepares the author component before guest-authoring tests and exports
-its path to their processes. The test host caches Wasmtime compilation beside
-the component in the build output directory; plain Cargo tests retain their
-self-building fallback. Native OAuth callback tests that bind a fixed port
+Before guest-authoring tests, nextest runs the `prepare_author_component`
+example from its own build output, so the coverage run compiles no second host.
+The example builds the author component, warms the Wasmtime compilation cache
+beside it in the build output directory and exports its path to the tests'
+processes. Select those tests with filter expressions rather than `--lib`,
+which skips building the example; plain Cargo tests retain their self-building
+fallback. Native OAuth callback tests that bind a fixed port
 belong in an `oauth_callback` module, which joins a single-thread nextest group
 because their redirect URIs require fixed ports; other tests remain parallel.
 

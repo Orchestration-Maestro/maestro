@@ -1,7 +1,7 @@
 experimental = ["setup-scripts"]
 
 [scripts.setup.author-component]
-command = "cargo test -p maestro-extensions-wasm --locked --lib -- --ignored --exact tests::build::prepare_nextest_component"
+command = { command-line = "debug/examples/prepare_author_component", relative-to = "target" }
 
 [[profile.default.scripts]]
 filter = "package(maestro-extensions-wasm)"

@@ -5,7 +5,7 @@ use std::sync::OnceLock;
 
 use tokio::sync::oneshot;
 use wasmtime::component::{Accessor, Component, HasData, Linker, Resource, ResourceTable};
-use wasmtime::{Cache, CacheConfig, Config, Engine, Store};
+use wasmtime::{Engine, Store};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder, WasiCtxView, WasiView};
 
 use super::observed::{Observed, Session, pause};
@@ -846,17 +846,7 @@ pub struct Harness {
 pub(super) fn compiled(path: &Path) -> wasmtime::Result<&'static (Engine, Component)> {
     static COMPILED: OnceLock<Result<(Engine, Component), String>> = OnceLock::new();
     COMPILED
-        .get_or_init(|| {
-            let mut config = Config::new();
-            config.wasm_component_model_async(true);
-            let mut cache = CacheConfig::new();
-            cache.with_directory(path.with_extension("wasmtime-cache"));
-            config.cache(Some(Cache::new(cache).map_err(|error| error.to_string())?));
-            let engine = Engine::new(&config).map_err(|error| error.to_string())?;
-            let component =
-                Component::from_file(&engine, path).map_err(|error| error.to_string())?;
-            Ok((engine, component))
-        })
+        .get_or_init(|| super::build::compile(path).map_err(|error| error.to_string()))
         .as_ref()
         .map_err(|message| wasmtime::format_err!("{message}"))
 }
