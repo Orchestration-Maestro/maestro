@@ -29,7 +29,8 @@ aliases (browser targets use `Rc` callbacks and local futures); the correspondin
 code can use their `*Record` owners. Agent hooks borrow mutable arguments across
 awaits in either representation. Model payload and response hooks follow the same
 representation: local hooks and their futures may retain `Rc` state, while the default
-agent keeps thread-safe hooks.
+agent keeps thread-safe hooks on native targets (browser targets use local callbacks and
+futures).
 
 ```rust
 use maestro_agent::{Agent, AgentOptions, Local};
@@ -59,11 +60,15 @@ as the native thread-safe examples below require a running task facility. See
 
 A run uses the hooks captured when it was admitted; replacing `on_payload` or
 `on_response` affects later runs only. The registered provider calls `on_payload`
-with its request body: the returned record is the body it sends, and a rejection
-ends the run with an error assistant message whose text the agent also retains as
-its error. `on_response` observes the response status and headers at the provider's
-usual point and cannot replace them; a rejection ends the run the same way. In the
-default agent, hook closures need no type annotations:
+with its request body: the returned record's `payload` member is input to the
+provider's request preparation. `on_response` observes the response status and headers
+at the provider's usual point and cannot replace them. Each provider controls whether
+it invokes the hooks and handles rejections under its own error and retry policy,
+so a rejection does not always end the run: a failed response-session setup can be
+retried successfully. When a run does end with an
+error assistant message, the agent retains that message's `error_message`, not its
+text content, as its error. In the default agent, hook closures need no type
+annotations:
 
 ```rust
 use maestro_agent::{Agent, AgentOptions};

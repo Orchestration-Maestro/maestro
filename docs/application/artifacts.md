@@ -58,9 +58,10 @@ descriptions; their actual runtime operations are separate from this command
 owner.
 
 `ArtifactsPanel` defaults to the existing shared presentation pointer.
-`browser::tools::artifacts::LocalArtifactsPanel::new_local` instead retains the
-existing local execution pointer and returns a local executable tool, permitting
-native `Rc` captures. Both use the same command state, declarations and policy.
+`browser::tools::artifacts::LocalArtifactsPanel::new_local` instead returns a panel
+retaining the existing local execution pointer, permitting native `Rc` captures; its
+`tool()` then builds the local executable tool over that panel's command state. Both
+panels use the same command state, declarations and policy.
 The module also exposes `LocalArtifactPresentation` and the typed `FileType`.
 These local types do not change the default SDK tool's thread-safety.
 

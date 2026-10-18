@@ -89,11 +89,13 @@ Invalidation is inert because these widgets have no render cache.
 The global rename action opens one retained input when `rename_session` is
 supplied and the visible scope is not loading. It prefills the selected name
 without resetting the edit cursor. Enter trims surrounding whitespace and saves
-a nonblank new name with the selected authored path. The owned callback and
-refresh settle before returning to the list, including on failure. Callback
-errors reach the supplied runtime; refresh errors use the existing load status.
-Escape restores the retained list and query without saving. Independently
-submitted saves settle independently; there is no busy state.
+a nonblank new name with the selected authored path. After Enter, the view
+returns to the list automatically once the owned callback and refresh settle,
+including on failure. Callback errors reach the supplied runtime; refresh errors
+use the existing load status. Escape returns immediately, restoring the retained
+list and query without saving; it does not cancel a save Enter already admitted,
+which still settles. Independently submitted saves settle independently; there
+is no busy state.
 
 Delete enters confirmation even with a query. The convenience delete action
 edits a nonempty raw query instead, and confirms only with an empty query.
