@@ -411,6 +411,7 @@ async fn style_corpus() {
                 &root,
                 "for(const e of value.querySelectorAll('.expandable,.tool-item'))e.dispatchEvent(new Event('click'));for(const e of value.querySelectorAll('.tool-params-content')){const s=getComputedStyle(e);if(s.display!=='block'||parseFloat(s.marginLeft)<=0||parseFloat(s.paddingLeft)<=0||parseFloat(s.borderLeftWidth)<=0)throw Error('parameter geometry');}for(const e of value.querySelectorAll('.tool-item:not(:has(.tool-params-hint))'))if(e.classList.contains('params-expanded'))throw Error('plain tool toggled');for(const e of value.querySelectorAll('.tool-param-desc'))if(e.textContent==='  '&&e.getBoundingClientRect().height!==0)throw Error('whitespace height')",
             );
+            rendered_whitespace(&root, &row["name"]);
             let presentation = slots.pack.presentation(mode).unwrap();
             let roles = serde_json::json!({"text":presentation.colors["text"],"muted":presentation.colors["muted"],"accent":presentation.colors["accent"],"warning":presentation.colors["warning"],"border":presentation.colors["border"]});
             assert!(js(&root,&format!("const roles={roles};const color=k=>{{const e=document.createElement('span');e.style.color=roles[k];return e.style.color}};return [['.system-prompt-header','accent'],['.tools-header','accent'],['.tool-item-name','text'],['.tool-param-type','muted'],['.tool-param-required','warning']].every(([s,k])=>[...value.querySelectorAll(s)].every(e=>getComputedStyle(e).color===color(k))) && [...value.querySelectorAll('.tool-param-type,.tool-params-hint')].every(e=>getComputedStyle(e).fontStyle==='italic') && [...value.querySelectorAll('.tool-params-content')].every(e=>getComputedStyle(e).borderLeftColor===color('border'))")).as_bool().unwrap());
@@ -444,4 +445,24 @@ async fn style_corpus() {
         }
         assert_eq!(count, 80);
     }
+}
+
+/// Native line boxes of expanded rows whose whitespace rendering the text projection cannot see.
+fn rendered_whitespace(root: &web_sys::Element, name: &serde_json::Value) {
+    let checks = match name.as_str() {
+        Some("normal-description-whitespace") => {
+            "const d=value.querySelector('.tool-item-desc'),style=d.style.cssText,wide=lines(d);d.style.cssText='display:block;width:1px';const narrow=lines(d);d.style.cssText=style;return {collapsed:d.innerText==='one two three\\u00a0four',unbroken:wide===1,nonbreaking:narrow===3,empty:value.querySelector('.tool-param-desc').getBoundingClientRect().height===0}"
+        }
+        Some("prompt-trailing-newline") => {
+            "return {preserved:lines(value.querySelector('.system-prompt-full'))===10}"
+        }
+        _ => return,
+    };
+    let failed = js(
+        root,
+        &format!(
+            "const lines=e=>{{const r=document.createRange();r.selectNodeContents(e);return new Set([...r.getClientRects()].filter(q=>q.height>0).map(q=>Math.round(q.top))).size}};const ok=(()=>{{{checks}}})();return Object.keys(ok).filter(k=>!ok[k]).join()"
+        ),
+    );
+    assert_eq!(failed.as_string().as_deref(), Some(""), "{name}");
 }
