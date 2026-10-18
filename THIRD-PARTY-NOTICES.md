@@ -717,13 +717,15 @@ SOFTWARE.
 ## herdr workspace daemon
 
 The daemon protocol records, schema and tests in `crates/maestro-protocol/` and
-`docs/daemon-protocol.schema.json`, plus the socket transport and path selection in
-`crates/maestro-ipc/`, derive from herdr v0.8.2 under Apache-2.0.
+`docs/daemon-protocol.schema.json`, the socket transport and path selection in
+`crates/maestro-ipc/`, and the topology in `crates/maestro-workspace/` derive from
+herdr v0.8.2 under Apache-2.0. The topology derives from layout, metadata tokens,
+pane state, terminal identity, workspace, tab and git label/status modules.
 Changes include Maestro naming, module placement, required documentation,
-lint-compatible representations and separation of native runtime conversions.
-Socket changes include supplied paths and overrides, preservation of occupied
-non-socket entries, and input termination through reads rather than a consuming
-peer probe.
+lint-compatible representations, owned identity allocation and separation of
+native runtime effects. Socket changes include supplied paths and overrides,
+preservation of occupied non-socket entries, and input termination through reads
+rather than a consuming peer probe.
 The original licence follows.
 
 ```text

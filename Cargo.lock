@@ -3926,6 +3926,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-workspace"
+version = "0.1.0"
+dependencies = [
+ "maestro-dependencies",
+ "maestro-protocol",
+ "num-traits",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "maybe-owned"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"

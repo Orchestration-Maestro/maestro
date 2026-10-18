@@ -46,3 +46,38 @@ not consumed by a disconnect probe.
 Windows transport is tracked in [Windows sockets](https://github.com/Orchestration-Maestro/maestro/issues/1473),
 and other Unix qualification in [Unix qualification](https://github.com/Orchestration-Maestro/maestro/issues/1472).
 See [socket libraries](libraries/workspace-daemon.md) for dependency features and licences.
+
+## Topology
+
+`maestro-workspace` models workspaces, tabs, split layouts and pane viewport
+state. A `WorkspaceTopology` owns the collection and one identity allocator.
+Its clock is supplied by the caller; separate owners have independent counters.
+
+Workspace handles and public tab and pane numbers stay stable when tabs move.
+Closed numbers are not reused. Restore admission reserves saved numeric
+identities and public counters before subsequent allocation, and assigns fresh
+terminal identities.
+
+Layouts keep a binary split tree, ratios and focus history. Closing the selected
+pane returns to the remembered live pane, or a neighbouring leaf in tree order.
+Resizing uses the nearest eligible divider, with an opposite-edge fallback.
+Geometry uses cell rectangles without frontend decorations.
+
+Creation and splitting take a consuming spawn callback. The callback receives
+owned workspace, tab, pane and terminal identities; its result returns directly
+to the caller without a thread-safety or cloning requirement. A failed split
+restores the layout, focus history and viewport state. Failed tab creation keeps
+its reserved tab number but does not consume a public pane number.
+
+Pane transfers return their original state when insertion fails. The source
+keeps its public pane mapping until the caller explicitly unregisters it. Taking
+the sole pane can leave an empty source workspace for the caller to remove or
+refill.
+
+Repository status and native identity paths arrive as data. Labels use supplied
+HOME and checkout observations without reopening paths. Metadata expiry is
+explicit: callers supply an instant and request a sweep; reading values does
+not expire them.
+
+The topology API starts no terminal, background task or daemon listener. See the
+[daemon design](specs/workspace-daemon.md) for the remaining runtime boundaries.
