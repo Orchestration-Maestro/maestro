@@ -289,13 +289,8 @@ fn handoff_pauses_reads_and_input_until_rollback() {
             .contains(rustix::io::FdFlags::CLOEXEC)
     );
     assert_eq!(handle.foreground_process_group_id().await, None);
+    assert_quiesced_read_decision().await;
     peer.write_all(b"held").await.unwrap();
-    handle.write_terminal_response(|| Some(b"quiesced".to_vec()));
-    let mut barrier = [0; 8];
-    peer.read_exact(&mut barrier).await.unwrap();
-    assert_eq!(&barrier, b"quiesced");
-    tokio::task::yield_now().await;
-    assert!(reads.try_recv().is_err());
     handle.rollback_handoff().await.unwrap();
     assert_eq!(reads.recv().await.unwrap(), b"held");
     handle.write_user_input(b"after".to_vec()).await.unwrap();
@@ -668,6 +663,15 @@ fn controlled_runner(
     fd: std::os::fd::OwnedFd,
     controls: Arc<controls::Controls>,
 ) -> runner::Runner {
+    controlled_read_runner(fd, controls, Box::new(|_| PtyReadResult::default()))
+}
+
+/// Builds the readiness owner with an observable byte consumer.
+fn controlled_read_runner(
+    fd: std::os::fd::OwnedFd,
+    controls: Arc<controls::Controls>,
+    on_read: ReadCallback,
+) -> runner::Runner {
     crate::pty::fd::set_nonblocking(&fd).unwrap();
     let (_, data) = mpsc::channel(1);
     let (_, commands) = mpsc::unbounded_channel();
@@ -676,7 +680,7 @@ fn controlled_runner(
             pane_id: 7,
             master_fd: fd,
             initially_quiesced: false,
-            on_read: Box::new(|_| PtyReadResult::default()),
+            on_read,
             on_reader_exit: None,
         },
         data,
@@ -685,6 +689,34 @@ fn controlled_runner(
         controls,
     )
     .unwrap()
+}
+
+/// Closes the quiesced read decision after proving the same socket can deliver bytes.
+async fn assert_quiesced_read_decision() {
+    let (socket, peer) = std::os::unix::net::UnixStream::pair().unwrap();
+    let (tx, mut reads) = mpsc::unbounded_channel();
+    let mut runner = controlled_read_runner(
+        socket.into(),
+        Arc::default(),
+        Box::new(move |bytes| {
+            tx.send(bytes.to_vec()).unwrap();
+            PtyReadResult::default()
+        }),
+    );
+    rustix::io::write(&peer, b"running").unwrap();
+    drop(runner.fd.readable().await.unwrap());
+    assert!(runner.interest().is_readable());
+    assert!(runner.service_ready(tokio::io::Ready::READABLE));
+    assert_eq!(reads.try_recv().unwrap(), b"running");
+    runner.begin_handoff().await.unwrap();
+    assert!(!runner.interest().is_readable());
+    rustix::io::write(&peer, b"held").unwrap();
+    drop(runner.fd.readable().await.unwrap());
+    assert!(runner.service_ready(tokio::io::Ready::READABLE));
+    assert!(matches!(
+        reads.try_recv(),
+        Err(mpsc::error::TryRecvError::Empty)
+    ));
 }
 
 #[test]
