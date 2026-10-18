@@ -119,12 +119,6 @@ struct Details {
     label: String,
 }
 struct Parameters;
-struct Line(String);
-impl Component for Line {
-    fn render(&self, _: usize) -> Vec<String> {
-        vec![self.0.clone()]
-    }
-}
 
 type SavedStates = Rc<RefCell<Vec<Rc<RefCell<State>>>>>;
 fn typed_definition(
@@ -143,7 +137,7 @@ fn typed_definition(
                 state.count,
                 options.expanded
             );
-            Ok(Rc::new(Line(text)) as ComponentHandle)
+            Ok(Rc::new(component_support::Line(text)) as ComponentHandle)
         },
     )));
     tool
@@ -272,7 +266,10 @@ fn export_typed_details_decode_once_and_share_both_phases() {
         move |result, options, _, _| {
             seen.borrow_mut()
                 .push(Rc::clone(&result.details.unwrap().token));
-            Ok(Rc::new(Line(format!("phase:{}", options.expanded))))
+            Ok(Rc::new(component_support::Line(format!(
+                "phase:{}",
+                options.expanded
+            ))))
         },
     )));
     let tool = Rc::new(tool);
@@ -547,7 +544,7 @@ fn export_mixed_bindings_require_only_selected_decoder() {
 }
 
 fn check_native_registry(renderer: &dyn maestro_export::ToolHtmlRenderer) {
-    use component_support::bindings::{corpus, output};
+    use component_support::{bindings::corpus, result_value};
     use maestro_export::ToolHtmlResultInput;
     for case in corpus().native {
         assert_eq!(
@@ -572,7 +569,7 @@ fn check_native_registry(renderer: &dyn maestro_export::ToolHtmlRenderer) {
             .unwrap()
             .unwrap();
         assert_eq!(
-            serde_json::json!({"call":call,"result":output(result)}),
+            serde_json::json!({"call":call,"result":result_value(result)}),
             case.expected
         );
     }
@@ -629,7 +626,7 @@ fn check_custom_registry(renderer: &dyn maestro_export::ToolHtmlRenderer) {
 
 #[test]
 fn export_raw_bindings_borrow_details_in_both_phases() {
-    use component_support::bindings::{corpus, output};
+    use component_support::{bindings::corpus, result_value};
     use maestro_export::{
         ToolHtmlRenderer, ToolHtmlRendererDeps, ToolHtmlResultInput, create_tool_html_renderer,
     };
@@ -677,7 +674,7 @@ fn export_raw_bindings_borrow_details_in_both_phases() {
                 .unwrap()
                 .unwrap();
             assert_eq!(
-                json!({"output":output(result),"events":*events.borrow()}),
+                json!({"output":result_value(result),"events":*events.borrow()}),
                 case.expected
             );
         }
@@ -686,7 +683,7 @@ fn export_raw_bindings_borrow_details_in_both_phases() {
 
 #[test]
 fn export_prepared_results_survive_reentry_and_live_lookup() {
-    use component_support::bindings::{corpus, output};
+    use component_support::{bindings::corpus, result_value};
     use maestro_export::ToolHtmlResultInput;
     use serde_json::json;
     let case = corpus().mixed.remove(7);
@@ -712,7 +709,7 @@ fn export_prepared_results_survive_reentry_and_live_lookup() {
         .unwrap()
         .unwrap();
     assert_eq!(
-        json!({"output":output(result),"events":*events.borrow()}),
+        json!({"output":result_value(result),"events":*events.borrow()}),
         case.expected
     );
     let result = renderer
@@ -780,7 +777,7 @@ fn raw_observer(
     details: Option<*const serde_json::Value>,
     observed: Rc<RefCell<Vec<serde_json::Value>>>,
 ) -> maestro_tools::ToolDefinition<(), (), component_support::bindings::NeverDecode, u32> {
-    use component_support::bindings::{NeverDecode, presence};
+    use component_support::{bindings::NeverDecode, presence};
     use maestro_tools::ToolRenderResult;
     use serde_json::json;
     let content_ptr = RefCell::new(None);
@@ -788,7 +785,7 @@ fn raw_observer(
     let mut tool = component_support::definition::<(), (), NeverDecode, u32>();
     tool.render_call = Some(Rc::new(|_, _, row| {
         *row.state.borrow_mut() += 1;
-        Ok(Rc::new(Line("call custom".into())))
+        Ok(Rc::new(component_support::Line("call custom".into())))
     }));
     tool.render_result = Some(ToolRenderResult::Raw(Rc::new(
         move |result, options, _, row| {
@@ -804,7 +801,7 @@ fn raw_observer(
                 "args":presence(row.args), "is_error":result.is_error.unwrap(),
                 "count":*row.state.borrow(), "content":result.content,
             }));
-            Ok(Rc::new(Line(
+            Ok(Rc::new(component_support::Line(
                 if options.expanded {
                     "expanded"
                 } else {
@@ -831,7 +828,7 @@ fn reentrant_renderer(
     let binding = reentrant_binding(&events, &slot, &version, inner);
     let mut replacement = component_support::definition::<(), (), serde_json::Value, bool>();
     replacement.render_result = Some(ToolRenderResult::Raw(Rc::new(|_, _, _, _| {
-        Ok(Rc::new(Line("replacement".into())))
+        Ok(Rc::new(component_support::Line("replacement".into())))
     })));
     let replacement = ToolRendererBinding::from_raw(&replacement).unwrap();
     let lookups = events.clone();
@@ -870,7 +867,7 @@ fn reentrant_binding(
     let seen = events.clone();
     tool.render_call = Some(Rc::new(move |args, _, _| {
         seen.borrow_mut().push(json!({"slot":"call","args":args}));
-        Ok(Rc::new(Line(format!(
+        Ok(Rc::new(component_support::Line(format!(
             "call {}",
             args.unwrap()["version"].as_str().unwrap()
         ))))
@@ -907,7 +904,10 @@ fn reentrant_binding(
                     .unwrap()
                     .unwrap();
             }
-            Ok(Rc::new(Line(format!("{label}:{}", options.expanded))))
+            Ok(Rc::new(component_support::Line(format!(
+                "{label}:{}",
+                options.expanded
+            ))))
         },
     )));
     ToolRendererBinding::from_definition(&tool)
@@ -944,7 +944,7 @@ fn check_edit_replacement(
     case: &component_support::bindings::Case<component_support::bindings::Mixed>,
     states: &Rc<RefCell<Vec<Rc<RefCell<maestro_tools::EditRenderState>>>>>,
 ) {
-    use component_support::bindings::output;
+    use component_support::result_value;
     use maestro_export::ToolHtmlResultInput;
     use serde_json::json;
     let call = renderer
@@ -976,7 +976,7 @@ fn check_edit_replacement(
     let states = states.borrow();
     assert_eq!(states.len(), 2);
     assert_eq!(
-        json!({"call":call,"result":output(result),"settled":settled,"other":other,"same_state":Rc::ptr_eq(&states[0], &states[1])}),
+        json!({"call":call,"result":result_value(result),"settled":settled,"other":other,"same_state":Rc::ptr_eq(&states[0], &states[1])}),
         case.expected
     );
 }
