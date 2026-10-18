@@ -1,0 +1,14 @@
+//! Existing text owners exposed at the application root.
+
+pub use maestro_text::markup;
+
+pub use maestro_text::is_whitespace_scalar;
+
+pub use maestro_text::number_format::LocaleNumberFormat;
+
+pub use maestro_text::decode_utf8;
+
+/// Shared with the terminal frontend.
+pub use maestro_text::truncate_utf16;
+
+pub use maestro_text::normalize_to_lf;

@@ -104,7 +104,7 @@ fn tool_declarations_have_one_owner() {
         "ToolRenderResultOptions",
     ] {
         let workspace = Workspace::new();
-        workspace.foundation(&["maestro-tools", "maestro-tui"]);
+        workspace.foundation(&["maestro-tools", "maestro-tui", "maestro-app"]);
         source(
             &workspace,
             "maestro-tui",
@@ -130,7 +130,7 @@ fn tool_declarations_have_one_owner() {
             "src/lib.rs",
             &format!("pub struct {name}<Context> {{ context: Context }}"),
         );
-        assert_eq!(check_workspace(&workspace.root), Ok(()));
+        check_tool_fragment_owner(&workspace, name);
         source(
             &workspace,
             "maestro-tools",
@@ -145,6 +145,37 @@ fn tool_declarations_have_one_owner() {
         std::fs::remove_file(workspace.root.join("crates/maestro-tools/other.rs")).unwrap();
         assert_eq!(check_workspace(&workspace.root), Ok(()));
     }
+}
+
+/// Check admitted, copied and restored tool declarations in a private fragment.
+fn check_tool_fragment_owner(workspace: &Workspace, name: &str) {
+    source(
+        workspace,
+        "maestro-app",
+        "src/exports/tools.rs",
+        &format!("pub use maestro_tools::{name};"),
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    source(
+        workspace,
+        "maestro-app",
+        "src/exports/tools.rs",
+        &format!("pub struct {name}<Context> {{ context: Context }}"),
+    );
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(
+        error.contains("maestro-app/src/exports/tools.rs:1:")
+            && error.contains(name)
+            && error.contains("maestro-tools"),
+        "{error}"
+    );
+    source(
+        workspace,
+        "maestro-app",
+        "src/exports/tools.rs",
+        &format!("pub use maestro_tools::{name};"),
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
 }
 
 #[test]

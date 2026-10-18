@@ -4,6 +4,16 @@ The [foundation specification](specs/maestro-port.md#crates-and-delivery-order)
 owns the crate graph. `maestro-test-conventions` checks that graph through
 `check_workspace(root)`; it does not execute product capabilities.
 
+## Application export layout
+
+`maestro-app` keeps its public imports at the crate root. Private, static
+`src/exports/` fragments hold the declarations by area: `browser_storage`,
+`browser_tools`, `clipboard`, `configuration`, `credentials`, `extensions`, `json`,
+`markdown`, `models`, `packages`, `presentation_data`, `process`, `resources`,
+`session`, `settings`, `text` and `tools`. Each area owns its matching `.rs` file;
+`exports/mod.rs` aggregates them without changing the original owners or target
+gates. Unrelated areas therefore need not edit the same declaration file.
+
 ## Inventory and dependencies
 
 Dependency descriptions here state domain edges, subject to the
