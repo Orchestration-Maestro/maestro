@@ -3417,6 +3417,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-detection"
+version = "0.1.0"
+dependencies = [
+ "maestro-dependencies",
+ "maestro-process",
+ "maestro-protocol",
+ "maestro-test-process",
+ "maestro-text",
+]
+
+[[package]]
 name = "maestro-entry"
 version = "0.1.0"
 dependencies = [

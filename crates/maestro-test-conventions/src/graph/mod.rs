@@ -163,20 +163,7 @@ fn declared_edges(metadata: &Metadata) -> Result<BTreeSet<Edge>, String> {
             let member = path.as_ref().and_then(|path| names.get(path)).copied();
             let name = dependency.name.as_str();
             check_library_dependency(package.name.as_str(), name, &kind)?;
-            if member == Some(UNIFIER) && !native_declared(dependency, &kind, &Kind::Normal) {
-                return Err(format!(
-                    "{}: {UNIFIER} must be a native, normal, non-optional dependency",
-                    package.name
-                ));
-            }
-            if member == Some(TEST_PROCESS)
-                && !native_declared(dependency, &kind, &Kind::Development)
-            {
-                return Err(format!(
-                    "{}: {TEST_PROCESS} must be a native, non-optional development dependency",
-                    package.name
-                ));
-            }
+            check_native_declaration(package.name.as_str(), member, dependency, &kind)?;
             if names.values().any(|member| *member == name) && member != Some(name) {
                 return Err(format!(
                     "dependency {} -> {name} must use a path to that workspace member",
@@ -193,6 +180,33 @@ fn declared_edges(metadata: &Metadata) -> Result<BTreeSet<Edge>, String> {
         }
     }
     Ok(edges)
+}
+
+/// Enforces the target and kind of dependencies restricted to native declarations.
+fn check_native_declaration(
+    owner: &str,
+    member: Option<&str>,
+    dependency: &cargo_metadata::Dependency,
+    kind: &Kind,
+) -> Result<(), String> {
+    if member == Some(UNIFIER) && !native_declared(dependency, kind, &Kind::Normal) {
+        return Err(format!(
+            "{owner}: {UNIFIER} must be a native, normal, non-optional dependency"
+        ));
+    }
+    if member == Some(TEST_PROCESS) && !native_declared(dependency, kind, &Kind::Development) {
+        return Err(format!(
+            "{owner}: {TEST_PROCESS} must be a native, non-optional development dependency"
+        ));
+    }
+    if owner == "maestro-detection"
+        && member == Some("maestro-text")
+        && *kind == Kind::Development
+        && !native_declared(dependency, kind, &Kind::Development)
+    {
+        return Err("maestro-detection: maestro-text test support must be a native, non-optional development dependency".into());
+    }
+    Ok(())
 }
 
 /// Report whether a declaration is a non-optional dependency of `wanted` kind on native targets.

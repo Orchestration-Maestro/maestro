@@ -125,3 +125,22 @@ Shell builders retain login-shell custom commands, plain pane commands and
 shell-evaluated scrollback editor selection. Foreground observations contain process
 facts rather than application classifications. Application wiring is described by the
 [workspace daemon contract](specs/workspace-daemon.md).
+
+## Pane agents
+
+[`maestro_detection::agents`](../crates/maestro-detection/src/agents.rs) owns the
+22-entry agent catalogue, canonical labels, aliases and interactive executables.
+Canonical lookup is strict; alias lookup trims whitespace, ignores case and
+removes one recognized executable suffix.
+
+On Linux, `identify_agent_in_job` consumes supplied foreground facts from
+`maestro-process`. A recognized process-group leader wins. Otherwise wrapped
+identities rank ahead of native names, and the first equal-priority member wins.
+Recognition includes runtime script operands, supported package entry points and
+symbolic-link targets. Inline code and module operands do not become script names.
+
+`AgentState` reuses the protocol's four-state `PaneAgentState`. `AgentDetection`
+carries screen confidence, with independent indicators grouped in
+`AgentVisibility`. The catalogue distinguishes lifecycle-authoritative integration
+pairs from identity-only pairs; it does not evaluate screens or derive completion
+state.

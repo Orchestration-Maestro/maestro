@@ -25,7 +25,10 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-lock",
         ],
     ),
-    ("maestro-detection", &["maestro-protocol", "maestro-text"]),
+    (
+        "maestro-detection",
+        &["maestro-protocol", "maestro-text", "maestro-process"],
+    ),
     (
         "maestro-daemon",
         &[
@@ -253,6 +256,7 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
 
 /// Internal development edges permitted beyond the production table.
 pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
+    ("maestro-detection", "maestro-text"),
     ("maestro-tui-crossterm", "maestro-brand"),
     ("maestro-extensions", "maestro-credentials"),
 ];
@@ -270,6 +274,7 @@ pub(crate) const TEST_PROCESS_CALLERS: &[&str] = &[
     "maestro-catalog",
     "maestro-chat",
     "maestro-credentials",
+    "maestro-detection",
     "maestro-extensions",
     "maestro-ipc",
     "maestro-models",
