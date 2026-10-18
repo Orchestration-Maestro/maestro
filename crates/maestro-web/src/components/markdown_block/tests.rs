@@ -1,20 +1,70 @@
 //! Escaped Markdown keeps authored markup inert.
-use super::{
-    admission::{escape_tags, visit},
-    render::prepare,
-};
-use maestro_app::markdown::Kind;
+use super::render::prepare;
+use maestro_app::markdown::{self, Kind, Node};
+
+/// Parse the escaping policy directly without rewriting authored source.
+fn escaped_document(source: String) -> markdown::Document {
+    markdown::parse_with_options(
+        source,
+        markdown::MarkedOptions::Browser { escape_html: true },
+    )
+}
+
+/// Visit every native node in source order, including table cells.
+fn visit<'a>(nodes: &'a [Node], f: &mut impl FnMut(&'a Node)) {
+    for node in nodes {
+        f(node);
+        match &node.kind {
+            Kind::Paragraph(c)
+            | Kind::Inline(c)
+            | Kind::Heading(_, c, _)
+            | Kind::List(_, c)
+            | Kind::Item(c)
+            | Kind::Quote(c, _)
+            | Kind::Link(c, ..)
+            | Kind::Strong(c)
+            | Kind::Strike(c)
+            | Kind::Emphasis(c) => visit(c, f),
+            Kind::Table(table) => {
+                for cell in std::iter::once(&table.header).chain(&table.rows).flatten() {
+                    visit(&cell.children, f);
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+/// Escaped markup inside otherwise raw directives, including malformed comment closers.
+const DIRECTIVES: [(&str, &str); 4] = [
+    (
+        "<!-- --!><img src=x onerror=alert(1)>",
+        "<!-- --!>&lt;img src=x onerror=alert(1)&gt;",
+    ),
+    (
+        "a <!-- <b>x</b> --> tail",
+        "<p>a <!-- &lt;b&gt;x&lt;/b&gt; --> tail</p>\n",
+    ),
+    (
+        "<!thing <b>x</b>> **suffix**",
+        "<!thing &lt;b&gt;x&lt;/b&gt;><p> <strong>suffix</strong></p>\n",
+    ),
+    (
+        "<!thing [a](/a)> **suffix**",
+        "<!thing [a](/a)><p> <strong>suffix</strong></p>\n",
+    ),
+];
 
 /// Inputs whose escaping changes the structure around a native code span or block,
 /// with the document HTML that shows every tag outside earlier stable code as text.
 const SHIFTED: [(&str, &str); 7] = [
     (
         "<x y=\"`\"> `<img src=x onerror=alert(1)>`",
-        "<p>&lt;x y=&quot;<code>&quot;&amp;gt; </code>&lt;img src=x onerror=alert(1)&gt;`</p>\n",
+        "<p>&lt;x y=&quot;<code>&quot;&gt; </code>&lt;img src=x onerror=alert(1)&gt;`</p>\n",
     ),
     (
         "<x y='`'> `<img src=x onerror=alert(1)>`",
-        "<p>&lt;x y=&#39;<code>&#39;&amp;gt; </code>&lt;img src=x onerror=alert(1)&gt;`</p>\n",
+        "<p>&lt;x y=&#39;<code>&#39;&gt; </code>&lt;img src=x onerror=alert(1)&gt;`</p>\n",
     ),
     (
         "<pre>x</pre>\n    <img src=x onerror=alert(1)>",
@@ -57,8 +107,8 @@ const UNCLOSED: [(&str, &str); 3] = [
 
 #[test]
 fn escaped_documents_open_no_element_in_raw_html() {
-    for (source, _) in SHIFTED.into_iter().chain(UNCLOSED) {
-        let document = escape_tags(source.to_owned());
+    for (source, _) in SHIFTED.into_iter().chain(UNCLOSED).chain(DIRECTIVES) {
+        let document = escaped_document(source.to_owned());
         visit(&document.nodes, &mut |node| {
             if let Kind::Html(html) | Kind::HtmlBlock(html) = &node.kind {
                 let opens = html
@@ -145,7 +195,7 @@ fn escaped_document_keeps_native_suffix_after_lost_span() {
         .iter()
         .filter_map(|(suffix, _, _)| {
             let source = format!("<pre>x</pre>\n    <img src=x>\n\n{suffix}");
-            let document = escape_tags(source);
+            let document = escaped_document(source);
             (!document.source.ends_with(suffix)).then_some(*suffix)
         })
         .collect();
@@ -177,4 +227,45 @@ fn escaped_markup_keeps_native_suffix_after_lost_span() {
         failures.is_empty(),
         "corrupted native suffixes: {failures:?}"
     );
+}
+
+#[test]
+fn escaped_directives_keep_boundaries_and_inert_nested_tags() {
+    let failures: Vec<_> = DIRECTIVES
+        .into_iter()
+        .enumerate()
+        .filter_map(|(index, (source, expected))| {
+            let actual = prepare(source, true).html;
+            (actual != expected).then_some((index, actual, expected))
+        })
+        .collect();
+    assert!(failures.is_empty(), "directive outputs: {failures:?}");
+}
+
+#[test]
+fn display_neighbors_keep_authored_whitespace_once() {
+    let html = prepare("before $$x$$ after", true).html;
+    assert!(html.starts_with("<p>before </p>"), "{html}");
+    assert!(html.ends_with("<p> after</p>\n"), "{html}");
+    let html = prepare("| a |\n| - |\n| $x$ |", true).html;
+    assert!(!html.contains("<td> "), "{html}");
+    assert!(!html.contains(" </td>"), "{html}");
+}
+
+#[test]
+fn display_block_definitions_resolve_forward_and_keep_first_identity() {
+    for (source, href, count) in [
+        ("$$x$$ [a]: /u\n\n[a]", "/u", 1),
+        ("[a]\n\n$$x$$ [a]: /u\n\n[a]", "/u", 2),
+        ("[a]: /first\n\n$$x$$ [a]: /u\n\n[a]", "/first", 1),
+        ("before $$x$$ [a]: /u\n\n[a]", "/u", 1),
+    ] {
+        let html = prepare(source, true).html;
+        assert_eq!(
+            html.matches(&format!("href=\"{href}\"")).count(),
+            count,
+            "{html}"
+        );
+        assert!(!html.contains("[a]: /u"), "{html}");
+    }
 }

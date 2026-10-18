@@ -12,12 +12,12 @@ syn's defaults (`derive`, `parsing`, `printing`, `clone-impls`, `proc-macro`).
 matching Unicode tables; the hold lifts when `unicode-properties` publishes
 the newer tables.
 
-Documentation parsing and the shared Markdown parser use
-`pulldown-cmark =0.13.4` with defaults off (MIT). The shared parser enables
-strikethrough, task lists and tables. It retains task markers as data; the
-terminal adapter does not render checkboxes.
-Its additional dependencies are `bitflags =2.13.2` and `unicase =2.10.0`
-(MIT OR Apache-2.0).
+Documentation checks use the shared `maestro-markdown` parser. It uses
+`regress =0.12.0` with defaults and `prohibit-unsafe` (MIT OR Apache-2.0),
+with the existing `memchr =2.8.3` dependency, and `entities =1.0.1` (MIT).
+The entity table has no features or production dependencies. Reference keys use
+`unicase =2.10.0` (MIT OR Apache-2.0) for full Unicode folding. Parser records
+retain task markers as data; terminal formatting does not render checkboxes.
 
 `maestro-tooling` alone may use `cargo_metadata =0.23.1` with default features
 (MIT). Its dependency closure uses MIT OR Apache-2.0 (camino, cargo-platform,

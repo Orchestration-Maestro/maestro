@@ -3,6 +3,7 @@
 use crate::support;
 
 use maestro_test_conventions::check_workspace;
+use std::fmt::Write as _;
 use support::Workspace;
 
 #[test]
@@ -298,5 +299,54 @@ fn nested_test_module_declarations_follow_layout_conventions() {
             assert!(error.contains(&format!("{}:1:", path.display())), "{error}");
             assert!(error.contains("test module convention"), "{error}");
         }
+    }
+}
+
+#[test]
+fn documentation_code_ranges_match_existing_exclusions() {
+    let workspace = Workspace::new();
+    workspace.member("tui", "maestro-tui", "");
+    workspace.list(&[("maestro-tui", "core")]);
+    let path = workspace.root.join("crates/tui/src/lib.rs");
+    let markdown = [
+        "Intro.",
+        "",
+        "```text",
+        "same",
+        "same",
+        "```",
+        "",
+        "- item",
+        "  ```text",
+        "  nested",
+        "  nested",
+        "  ```",
+        "",
+        "> ```text",
+        "> quoted",
+        "> quoted",
+        "> ```",
+        "",
+        "    indented",
+        "    indented",
+        "",
+        "Last prose.",
+        "Last prose.",
+    ];
+    for owner in ["///", "//!"] {
+        let comments = markdown.iter().fold(String::new(), |mut text, line| {
+            writeln!(text, "{owner} {line}").unwrap();
+            text
+        });
+        std::fs::write(&path, format!("{comments}fn sample() {{}}\n")).unwrap();
+        assert_eq!(
+            check_workspace(&workspace.root).unwrap_err(),
+            format!(
+                "{}:{}: repeated documentation; first at line {}",
+                path.display(),
+                markdown.len(),
+                markdown.len() - 1
+            )
+        );
     }
 }

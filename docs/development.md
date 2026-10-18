@@ -211,7 +211,7 @@ Dependencies build without debug info, so their frames show function names only;
 this keeps target directories about a sixth smaller.
 They also build `cranelift-codegen` and `regalloc2` optimised, because tests
 compile extension components and an unoptimised code generator makes each
-compile about five times slower, and `syn`, `proc-macro2` and `pulldown-cmark`
+compile about five times slower, and `syn` and `proc-macro2`
 optimised, because the conventions tests parse every workspace source; release
 builds are unchanged.
 

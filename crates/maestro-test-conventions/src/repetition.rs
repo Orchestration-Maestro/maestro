@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use pulldown_cmark::{Event, Parser, Tag};
+use maestro_markdown::{Kind, MarkedOptions, Node, parse_with_options};
 use ra_ap_rustc_lexer::{FrontmatterAllowed, TokenKind};
 use syn::visit::Visit;
 
@@ -81,12 +81,9 @@ impl Documentation {
 
     /// Compare physical lines, excluding parser-selected code block ranges.
     fn check(&self, source: &Source) -> Result<(), String> {
-        let code: Vec<_> = Parser::new(&self.markdown)
-            .into_offset_iter()
-            .filter_map(|(event, range)| {
-                matches!(event, Event::Start(Tag::CodeBlock(_))).then_some(range)
-            })
-            .collect();
+        let document = parse_with_options(self.markdown.clone(), MarkedOptions::Documentation);
+        let mut code = Vec::new();
+        code_ranges(&document.nodes, &mut code);
         let mut previous = None;
         let mut offset = 0;
         for (index, text) in self.markdown.lines().enumerate() {
@@ -115,6 +112,19 @@ impl Documentation {
             previous = Some((text, line));
         }
         Ok(())
+    }
+}
+
+/// Collect original code-block ranges, including those inside list and quote containers.
+fn code_ranges(nodes: &[Node], ranges: &mut Vec<std::ops::Range<usize>>) {
+    for node in nodes {
+        match &node.kind {
+            Kind::CodeBlock(..) => ranges.push(node.range.clone()),
+            Kind::List(_, children) | Kind::Item(children) | Kind::Quote(children, _) => {
+                code_ranges(children, ranges);
+            }
+            _ => {}
+        }
     }
 }
 

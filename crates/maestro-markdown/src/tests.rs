@@ -15,6 +15,14 @@ pub(crate) struct Work {
     pub(crate) local_bytes: usize,
     /// Operand comparisons and selected operand visits during range lookup.
     pub(crate) operand_examinations: usize,
+    /// Authored bytes copied when selecting mapped source.
+    pub(crate) source_bytes: usize,
+    /// Authored bytes supplied to actual inline mask construction.
+    pub(crate) mask_bytes: usize,
+    /// Unit comparisons in actual authored-to-source range searches.
+    pub(crate) source_examinations: usize,
+    /// Original definition indexes constructed by the document lexer.
+    pub(crate) reference_indexes: usize,
 }
 thread_local! {
     /// Instrument all complete-parse/index and local-parse entry points.
@@ -57,19 +65,16 @@ fn interpret(nodes: &[Node], context: &InlineContext<'_>) {
     }
 }
 
-/// Measure the same pipeline with and without the browser's constant escape preflight.
+/// Measure actual caller-selected admission without a rewrite preflight.
 fn measured(paragraphs: usize, paragraph: &str, escaping: bool) -> Work {
     let source = paragraph.repeat(paragraphs) + "[r]: /docs \"tip\"\n";
     WORK.with_borrow_mut(|work| *work = Work::default());
-    if escaping {
-        drop(parse(source.clone()));
-    }
-    let source = if escaping {
-        source.replace('<', "&lt;").replace('>', "&gt;")
-    } else {
-        source
-    };
-    let mut document = parse(source);
+    let mut document = crate::parse_with_options(
+        source,
+        crate::MarkedOptions::Browser {
+            escape_html: escaping,
+        },
+    );
     autolinks(&mut document);
     let context = InlineContext::new(&document);
     interpret(&document.nodes, &context);
@@ -85,7 +90,8 @@ fn inline_document_work_stays_constant_as_math_paragraphs_grow() {
         for escaping in [false, true] {
             let counts = [8, 16, 32].map(|paragraphs| measured(paragraphs, paragraph, escaping));
             for work in counts {
-                assert_eq!(work.documents, 1 + usize::from(escaping));
+                assert_eq!(work.documents, 1);
+                assert_eq!(work.reference_indexes, 1);
                 assert_eq!(work.indexes, 1);
             }
             assert_eq!(
@@ -151,4 +157,59 @@ fn inline_subrange_operand_work_is_bounded_in_one_paragraph() {
         }
         assert!(counts[2].operand_examinations < 3 * counts[1].operand_examinations);
     }
+}
+
+mod grammar_rules;
+
+#[test]
+fn parser_does_not_repeat_document_admission() {
+    let measure = |count| {
+        WORK.with_borrow_mut(|work| *work = Work::default());
+        let source = "<div> *tail* [r][r]\n\n".repeat(count) + "[r]: /target\n";
+        let document =
+            crate::parse_with_options(source, crate::MarkedOptions::Browser { escape_html: true });
+        assert!(count == 0 || !document.nodes.is_empty());
+        let _context = InlineContext::new(&document);
+        WORK.with_borrow(|work| *work)
+    };
+    let [base, small, large] = [0, 32, 64].map(measure);
+    assert_eq!(small.documents, 1);
+    assert_eq!(large.documents, 1);
+    assert_eq!(
+        large.source_bytes - base.source_bytes,
+        2 * (small.source_bytes - base.source_bytes)
+    );
+    assert_eq!(large.mask_bytes, 2 * small.mask_bytes);
+    assert_eq!(large.visits, 2 * small.visits);
+}
+
+/// Measure selected URL ranges after quote-prefix projection and entity decoding.
+fn measured_link_sources(count: usize) -> Work {
+    let line = "> https://frame.test/&amp;\n";
+    WORK.with_borrow_mut(|work| *work = Work::default());
+    let mut document = parse(line.repeat(count));
+    autolinks(&mut document);
+    let Kind::Quote(children, _) = &document.nodes[0].kind else {
+        panic!("quote")
+    };
+    let Kind::Paragraph(children) = &children[0].kind else {
+        panic!("paragraph")
+    };
+    let links: Vec<_> = children
+        .iter()
+        .filter(|node| matches!(node.kind, Kind::Link(..)))
+        .collect();
+    assert_eq!(links.len(), count);
+    for (index, link) in links.into_iter().enumerate() {
+        let start = index * line.len() + 2;
+        assert_eq!(link.range, start..start + "https://frame.test/".len());
+    }
+    WORK.with_borrow(|work| *work)
+}
+
+#[test]
+fn mapped_link_source_ranges_use_ordered_boundaries() {
+    let counts = [32, 64, 128].map(measured_link_sources);
+    eprintln!("source-range work={counts:?}");
+    assert!(counts[2].source_examinations < 3 * counts[1].source_examinations);
 }

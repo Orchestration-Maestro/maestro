@@ -31,6 +31,9 @@ syntax engine and containing-modal identity and is never retained.
 
 Markdown parsing and scoped inline interpretation use the shared
 [Markdown owner](../markdown.md), reached through `maestro_app::markdown`.
+The browser grammar receives the component's escaping policy and parses authored
+source once per document. Display formulas enter the
+block phase through the component's tokenizer, before reference resolution.
 One document-scoped context retains resolved operands and original label scopes;
 formula atoms precede ordinary inline grammar without resolving rewritten labels.
 Link labels use inline-only grammar, keeping list, heading and quote punctuation literal.

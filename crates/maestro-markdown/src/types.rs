@@ -1,6 +1,42 @@
 //! Owned native source records.
 use std::ops::Range;
 
+/// Immutable grammar selection for an existing Markdown consumer.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum MarkedOptions {
+    /// Terminal grammar and strict double-tilde deletion.
+    #[default]
+    Terminal,
+    /// Browser grammar with caller-selected authored HTML handling.
+    Browser {
+        /// Show authored tags as text instead of live markup.
+        escape_html: bool,
+    },
+    /// Standalone document grammar and strict double-tilde deletion.
+    Export,
+    /// Code-block source ranges for documentation checks.
+    Documentation,
+}
+
+/// A caller-admitted block extension token.
+pub struct BlockToken {
+    /// Authored input prefix; admission requires it to be nonempty.
+    pub raw: String,
+    /// Caller-owned token classification.
+    pub kind: String,
+    /// Parsed content retained for the caller's renderer.
+    pub text: String,
+}
+
+/// A resolved, first-wins document reference definition.
+#[derive(Clone)]
+pub(crate) struct Definition {
+    /// Authored destination, decoded only when resolving an operand.
+    pub(crate) destination: String,
+    /// Authored optional title, decoded only when resolving an operand.
+    pub(crate) title: String,
+}
+
 /// Alignment of a table column.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Alignment {
@@ -53,6 +89,8 @@ pub struct Node {
 }
 /// Block and inline structures admitted by the configured parser.
 pub enum Kind {
+    /// Caller-owned block classification and parsed content.
+    CustomBlock(String, String),
     /// Opaque atom in a locally interpreted inline run, indexed by that run.
     Atom(usize),
     /// Ordinary paragraph children.
@@ -151,6 +189,10 @@ pub struct ImageMetadata {
 }
 /// Owned shared document; source coordinates name this exact string.
 pub struct Document {
+    /// Grammar retained for local inline interpretation.
+    pub(crate) options: MarkedOptions,
+    /// Definitions shared by all inline scopes, including forward references.
+    pub(crate) definitions: std::collections::HashMap<String, Definition>,
     /// Captured inline source provenance, owned by this document.
     pub(crate) scopes:
         std::collections::HashMap<crate::inline::ScopeKey, crate::source::ScopeSource>,

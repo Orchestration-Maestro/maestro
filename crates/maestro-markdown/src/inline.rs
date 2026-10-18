@@ -5,9 +5,6 @@ use std::{collections::HashMap, ops::Range};
 /// Native scope identity: start, end and whether this is an authored link label.
 pub(crate) type ScopeKey = (usize, usize, bool);
 
-/// Inline HTML whose generated extent identifies an opaque atom or label boundary.
-const ATOM: &str = "<m></m>";
-
 /// A document's inline scopes, indexed once after mapped link selection.
 pub struct InlineContext<'a> {
     /// Container and label scopes keyed by native extent and label classification.
@@ -17,8 +14,14 @@ pub struct InlineContext<'a> {
 pub struct InlineScope<'a> {
     /// Authored container bytes and their native provenance.
     source: &'a ScopeSource,
-    /// Authored link labels admit only inline grammar.
+    /// An authored label retains its raw source for caller admission.
     label: bool,
+    /// Actual semantic child extent within the retained authored scope.
+    content: Range<usize>,
+    /// Immutable original-document grammar.
+    options: crate::MarkedOptions,
+    /// First-wins definitions retained by the original document.
+    definitions: &'a HashMap<String, crate::Definition>,
     /// Native opaque operands, in authored order.
     pub operands: Vec<(Range<usize>, &'a Node)>,
     /// Code, image, HTML and autolink barriers, including those inside authored labels.
@@ -67,6 +70,13 @@ impl<'a> InlineContext<'a> {
             let mut scope = InlineScope {
                 source,
                 label,
+                content: children
+                    .first()
+                    .zip(children.last())
+                    .and_then(|(first, last)| source.local(&(first.range.start..last.range.end)))
+                    .unwrap_or(0..0),
+                options: document.options,
+                definitions: &document.definitions,
                 operands: Vec::new(),
                 opaque: Vec::new(),
             };
@@ -146,6 +156,12 @@ impl<'a> InlineScope<'a> {
         &self.source.text
     }
 
+    /// Semantic content selected by the original parser, excluding container padding.
+    #[must_use]
+    pub fn content_range(&self) -> Range<usize> {
+        self.content.clone()
+    }
+
     /// Interpret a subrange with caller-admitted spans ahead of ordinary inline grammar.
     /// Resolved operands survive unless an earlier admitted span consumes their syntax.
     /// The range and sorted disjoint spans must name UTF-8 boundaries in `text()`;
@@ -170,26 +186,29 @@ impl<'a> InlineScope<'a> {
             }
         }
         selected.sort_by_key(|(span, _)| span.start);
-        // An inert inline atom prevents block recognition at the label start.
-        let mut generated = if self.label {
-            ATOM.to_owned()
+        let source = self.source.select(std::iter::once(range));
+        let source = if self.label && self.options == crate::MarkedOptions::Export {
+            source.brackets()
         } else {
-            String::new()
+            source
         };
         let mut slots = Vec::new();
         let mut atoms = Vec::new();
-        let mut end = range.start;
         for (span, atom) in selected {
-            generated.push_str(&self.text()[end..span.start]);
-            let start = generated.len();
-            generated.push_str(ATOM);
-            slots.push(start..generated.len());
-            atoms.push(atom);
-            end = span.end;
+            if let Some(local) = source.local(&self.source.extent(span)) {
+                slots.push(local);
+                atoms.push(atom);
+            }
         }
-        generated.push_str(&self.text()[end..range.end]);
+        let children =
+            crate::tokenizer::inline::Tokenizer::new(&source, self.options, self.definitions, None)
+                .parse(&slots);
         InlineRun {
-            nodes: self.nodes(generated, &slots),
+            nodes: vec![crate::tokenizer::node(
+                &source,
+                0..source.text.len(),
+                Kind::Paragraph(children),
+            )],
             atoms,
         }
     }
@@ -205,67 +224,4 @@ impl<'a> InlineScope<'a> {
         };
         &self.operands[boundary(range.start)..boundary(range.end)]
     }
-
-    /// Preserve label edge spaces inside paragraph grammar, then remove generated boundaries.
-    fn nodes(&self, mut generated: String, slots: &[Range<usize>]) -> Vec<Node> {
-        let end = generated.len();
-        if self.label {
-            generated.push_str(ATOM);
-        }
-        let mut document = crate::parse::native(generated, None);
-        if self.label
-            && let Some(Node {
-                kind: Kind::Paragraph(children),
-                ..
-            }) = document.nodes.first_mut()
-        {
-            children.retain(|node| node.range.start >= ATOM.len() && node.range.end <= end);
-        }
-        lower(&mut document.nodes, slots);
-        document.nodes
-    }
-}
-/// Decode only generated spans, never authored marker-looking HTML, in blocks, table cells
-/// and inline formatting.
-fn lower(nodes: &mut Vec<Node>, slots: &[Range<usize>]) {
-    nodes.retain_mut(|node| {
-        match &mut node.kind {
-            Kind::Paragraph(c)
-            | Kind::Inline(c)
-            | Kind::Heading(_, c, _)
-            | Kind::List(_, c)
-            | Kind::Item(c)
-            | Kind::Quote(c, _)
-            | Kind::Strong(c)
-            | Kind::Strike(c)
-            | Kind::Emphasis(c) => lower(c, slots),
-            Kind::Table(table) => {
-                for cell in std::iter::once(&mut table.header)
-                    .chain(&mut table.rows)
-                    .flatten()
-                {
-                    lower(&mut cell.children, slots);
-                }
-            }
-            Kind::Html(_) => return lower_atom(node, slots),
-            _ => {}
-        }
-        true
-    });
-}
-
-/// Replace a generated opening marker and remove its matching closing marker.
-fn lower_atom(node: &mut Node, slots: &[Range<usize>]) -> bool {
-    let index = slots.partition_point(|span| span.end <= node.range.start);
-    let Some(span) = slots
-        .get(index)
-        .filter(|span| span.contains(&node.range.start))
-    else {
-        return true;
-    };
-    if span.start != node.range.start {
-        return false;
-    }
-    node.kind = Kind::Atom(index);
-    true
 }

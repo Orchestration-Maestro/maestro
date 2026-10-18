@@ -831,3 +831,23 @@ fn markdown_autolinks_do_not_recognize_decoded_email_separators() {
         assert_mixed_escape_link(input, display);
     }
 }
+
+#[test]
+fn markdown_continuation_keeps_authored_indentation() {
+    for (input, expected) in [
+        ("alpha\n  beta", "  beta              "),
+        ("alpha\n    beta", "    beta            "),
+    ] {
+        let case = markdown::Case {
+            text: input.to_owned(),
+            width: 20,
+            padding_x: 0,
+            padding_y: 0,
+            profile: "plain".to_owned(),
+            hyperlinks: false,
+            indent: None,
+            lines: vec!["alpha               ".to_owned(), expected.to_owned()],
+        };
+        assert_eq!(markdown::component(&case).render(case.width), case.lines);
+    }
+}
