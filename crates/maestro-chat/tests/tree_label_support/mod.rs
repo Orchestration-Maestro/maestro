@@ -1,5 +1,6 @@
 //! Whole-frame recorded panel observations.
 mod errors;
+use crate::bindings::{self, Binding};
 use crate::manual_runtime;
 use crate::palette;
 use crate::published;
@@ -46,13 +47,6 @@ struct Input {
     now: String,
     callback: String,
     clock_reenter: bool,
-}
-/// Key override shape.
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum Binding {
-    Single(String),
-    Multiple(Vec<String>),
 }
 /// Key input or one public operation.
 #[derive(Deserialize)]

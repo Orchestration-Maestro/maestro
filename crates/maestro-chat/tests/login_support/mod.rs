@@ -1,5 +1,6 @@
 //! Public dialog construction, operations and lossless corpus comparison.
 mod records;
+use crate::bindings;
 use maestro_chat::{
     LoginDialogComponent, LoginDialogOptions, LoginDialogPlatform, LoginInputFuture,
 };
@@ -9,7 +10,6 @@ use records::{Case, Frame, Operation, Query};
 use serde_json::Value;
 use std::{
     cell::{Cell, RefCell},
-    collections::HashMap,
     rc::{Rc, Weak},
     task::{Context, Poll, Waker},
 };
@@ -32,26 +32,6 @@ pub fn colors(shift: u8) -> Rc<Theme> {
         )
         .unwrap(),
     )
-}
-/// Publish bindings through the existing active-manager owner.
-fn bindings(overrides: HashMap<String, records::Keys>) {
-    maestro_tui::set_keybindings(maestro_tui::KeybindingsManager::new(
-        maestro_tui::TUI_KEYBINDINGS.clone(),
-        overrides
-            .into_iter()
-            .map(|(key, value)| {
-                (
-                    key,
-                    Some(match value {
-                        records::Keys::Single(key) => maestro_tui::KeybindingKeys::Single(key),
-                        records::Keys::Multiple(keys) => {
-                            maestro_tui::KeybindingKeys::Multiple(keys)
-                        }
-                    }),
-                )
-            })
-            .collect(),
-    ));
 }
 /// Map the source's host observation without consulting global environment.
 fn platform(value: Option<&str>) -> LoginDialogPlatform {
@@ -207,7 +187,7 @@ impl Run {
             Operation::Theme { theme } => self.state.set_theme_instance(colors(theme)).unwrap(),
             Operation::Bindings {
                 bindings: overrides,
-            } => bindings(overrides),
+            } => bindings::replace_toolkit(&overrides),
             Operation::Invalidate { invalidate } => {
                 assert!(invalidate);
                 self.dialog.invalidate();
@@ -325,7 +305,7 @@ pub fn replay(name: &str) {
     let mut count = 0;
     for mut case in cases.into_iter().filter(|case| case.test == name) {
         count += 1;
-        bindings(case.input.bindings.take().unwrap_or_default());
+        bindings::replace_toolkit(&case.input.bindings.take().unwrap_or_default());
         let width = case.input.width.unwrap_or(80);
         let mut run = Run::new(&mut case.input);
         let mut expected = case.expected.frames.into_iter();

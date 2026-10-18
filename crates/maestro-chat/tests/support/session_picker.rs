@@ -2,6 +2,12 @@
 use maestro_tui::tui::InputHandler;
 #[allow(
     dead_code,
+    reason = "The library tests use only the override shape and its conversion."
+)]
+#[path = "recorded_keys/bindings.rs"]
+pub(crate) mod bindings;
+#[allow(
+    dead_code,
     reason = "The controlled host supports other terminal effects."
 )]
 #[path = "../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
@@ -11,6 +17,7 @@ pub(crate) mod manual_runtime;
 pub(crate) mod published;
 #[path = "registry.rs"]
 pub(crate) mod registry;
+use bindings::Binding;
 use maestro_app::presentation_data::keybindings::KEYBINDINGS;
 use maestro_chat::{
     NameFilter, SessionScope, SessionSelectorHeader, SessionSelectorHeaderOptions, SortMode,
@@ -202,30 +209,11 @@ struct HeaderInput {
     delay: Option<u64>,
     next: Option<String>,
 }
-/// The registry accepts a scalar key or ordered key list.
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum Binding {
-    One(String),
-    Many(Vec<String>),
-}
-/// Preserve the registry's input shape.
+/// Recorded overrides, none when absent.
 fn overrides(
     values: Option<&std::collections::BTreeMap<String, Binding>>,
 ) -> maestro_tui::KeybindingsConfig {
-    values
-        .into_iter()
-        .flatten()
-        .map(|(id, v)| {
-            (
-                id.clone(),
-                Some(match v {
-                    Binding::One(s) => maestro_tui::KeybindingKeys::Single(s.clone()),
-                    Binding::Many(s) => maestro_tui::KeybindingKeys::Multiple(s.clone()),
-                }),
-            )
-        })
-        .collect()
+    values.map(bindings::bindings).unwrap_or_default()
 }
 /// Strict possible header observation fields.
 #[derive(Deserialize)]

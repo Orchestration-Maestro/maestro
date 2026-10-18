@@ -1,4 +1,5 @@
 //! Strict model-picker corpus and controlled owner operations.
+use crate::bindings::Binding;
 use maestro_app::{
     AuthStorage, Model, ModelFileOperations, ModelRegistry, ProviderConfigInput, ProviderModelInput,
 };
@@ -150,7 +151,7 @@ pub struct Query {
     pub initial: Option<String>,
     /// Initial binding overrides.
     #[serde(default)]
-    pub bindings: BTreeMap<String, Keys>,
+    pub bindings: BTreeMap<String, Binding>,
     /// Synchronous selection reentry.
     #[serde(default)]
     pub reenter: bool,
@@ -166,15 +167,6 @@ pub struct Query {
 /// Ordinary frame width.
 fn width() -> usize {
     120
-}
-/// Binding scalar/list shapes.
-#[derive(Deserialize)]
-#[serde(untagged)]
-pub enum Keys {
-    /// Single key.
-    One(String),
-    /// Multiple keys, including empty.
-    Many(Vec<String>),
 }
 /// Native model edit.
 #[derive(Deserialize)]
@@ -210,7 +202,7 @@ pub enum Operation {
 #[serde(rename_all = "camelCase")]
 pub enum Action {
     /// Publish bindings.
-    Bindings(BTreeMap<String, Keys>),
+    Bindings(BTreeMap<String, Binding>),
     /// Publish theme.
     Theme(u8),
     /// Set outer focus.
@@ -296,25 +288,6 @@ pub fn colors(shift: u8) -> Rc<Theme> {
         )
         .unwrap(),
     )
-}
-/// Replace the active manager in an isolated child transaction.
-pub fn bindings(keys: BTreeMap<String, Keys>) {
-    let overrides = keys
-        .into_iter()
-        .map(|(name, keys)| {
-            (
-                name,
-                Some(match keys {
-                    Keys::One(key) => maestro_tui::KeybindingKeys::Single(key),
-                    Keys::Many(keys) => maestro_tui::KeybindingKeys::Multiple(keys),
-                }),
-            )
-        })
-        .collect();
-    maestro_tui::set_keybindings(maestro_tui::KeybindingsManager::new(
-        maestro_tui::TUI_KEYBINDINGS.clone(),
-        overrides,
-    ));
 }
 /// Read counter and optional diagnostic owned by a real file boundary.
 struct Files {

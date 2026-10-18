@@ -1,6 +1,7 @@
 //! Complete recorded provider-picker replay through public interfaces.
 pub mod failures;
 mod records;
+use crate::bindings;
 use maestro_app::{AuthSource, AuthStatus, AuthStorage};
 use maestro_chat::{OAuthSelectorComponent, OAuthSelectorMode, OAuthSelectorOptions};
 use maestro_theme::{ColorMode, ColorValue, Theme, ThemeColor, ThemeOptions, ThemeState};
@@ -32,16 +33,6 @@ pub fn colors(shift: u8) -> Rc<Theme> {
         )
         .unwrap(),
     )
-}
-/// Publish a fresh keybinding manager, including explicitly disabled actions.
-fn bindings(overrides: BTreeMap<String, Keys>) {
-    maestro_tui::set_keybindings(maestro_tui::KeybindingsManager::new(
-        maestro_tui::TUI_KEYBINDINGS.clone(),
-        overrides
-            .into_iter()
-            .map(|(key, value)| (key, Some(value.into())))
-            .collect(),
-    ));
 }
 /// Mutable caller observations without a strong path back to the component.
 #[derive(Default)]
@@ -193,7 +184,7 @@ impl Replay {
             }
             Operation::Bindings {
                 bindings: overrides,
-            } => bindings(overrides),
+            } => bindings::replace_toolkit(&overrides),
             Operation::ChildSubmit { child_submit } => self.search().handle_input(&child_submit),
             Operation::Focus { focus } => self.panel.focus_flag().set(focus),
             Operation::InputFocus { input_focus } => self.search().focus_flag().set(input_focus),
@@ -274,7 +265,7 @@ pub fn replay(name: &str) {
 /// Drive one constructor and compare full output without exposing credentials in failures.
 fn run(expected: serde_json::Value, query: &mut Query, name: &str) {
     let expected: Expected = serde_json::from_value(expected).unwrap();
-    bindings(std::mem::take(&mut query.bindings));
+    bindings::replace_toolkit(&query.bindings);
     let replay = Replay::new(query, name == "selector_focus_forwards_to_retained_input");
     let stored = replay.storage.get_all();
     let mut frames = vec![replay.snapshot()];
@@ -326,7 +317,7 @@ fn child(name: &str, index: usize, env: &BTreeMap<String, String>) {
 /// The corrected toolkit never overflows a one-cell viewport.
 pub fn narrow_rows_fit() {
     let _admission = super::keybindings::bindings_guard();
-    bindings(BTreeMap::new());
+    bindings::replace_toolkit(&BTreeMap::new());
     let panel = Replay::new(&mut Query::default(), false);
     let lines = panel.panel.render(1);
     assert!(!lines.is_empty());
@@ -339,7 +330,7 @@ pub fn narrow_rows_fit() {
 /// Actual writer focus forwards immediately, and retained children release captures on drop.
 pub fn writer_focus_and_teardown() {
     let _admission = super::keybindings::bindings_guard();
-    bindings(BTreeMap::new());
+    bindings::replace_toolkit(&BTreeMap::new());
     let replay = Replay::new(&mut Query::default(), false);
     let runtime = super::manual_runtime::ManualRuntime::new();
     let terminal = super::recording_terminal::RecordingTerminal::new(80, 24);
@@ -388,7 +379,7 @@ pub fn writer_focus_and_teardown() {
 /// Shipped themes color the new surface through their semantic roles.
 pub fn brand_roles() {
     let _admission = super::keybindings::bindings_guard();
-    bindings(BTreeMap::new());
+    bindings::replace_toolkit(&BTreeMap::new());
     for name in ["dark", "light"] {
         let path = format!(
             "{}/../maestro-theme/assets/theme/{name}.json",

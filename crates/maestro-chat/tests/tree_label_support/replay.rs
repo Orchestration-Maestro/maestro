@@ -1,9 +1,6 @@
 //! Controlled effects and exact complete-frame assertions.
 use super::*;
-use maestro_tui::{
-    KeybindingKeys, KeybindingsConfig, KeybindingsManager, get_keybindings, set_keybindings,
-    tui::Focusable,
-};
+use maestro_tui::tui::Focusable;
 use serde_json::json;
 use std::time::{Duration, SystemTime};
 
@@ -15,21 +12,6 @@ fn instant(text: &str) -> SystemTime {
     } else {
         SystemTime::UNIX_EPOCH - Duration::from_millis(millis.unsigned_abs())
     }
-}
-/// Retains scalar and disabled-list overrides.
-fn bindings(input: &std::collections::BTreeMap<String, Binding>) -> KeybindingsConfig {
-    input
-        .iter()
-        .map(|(id, key)| {
-            (
-                id.clone(),
-                Some(match key {
-                    Binding::Single(s) => KeybindingKeys::Single(s.clone()),
-                    Binding::Multiple(s) => KeybindingKeys::Multiple(s.clone()),
-                }),
-            )
-        })
-        .collect()
 }
 /// Maps recorded category names to their public variants.
 fn mode(name: &str) -> maestro_chat::FilterMode {
@@ -149,7 +131,7 @@ fn operation(panel: &TreeSelectorComponent, op: &Operation, context: &Context) {
         Operation::Key(data) => panel.handle_input(data).unwrap(),
         Operation::Change(c) => {
             if let Some(b) = &c.set_bindings {
-                get_keybindings().set_user_bindings(bindings(b));
+                bindings::mutate(b);
             }
             if let Some(focus) = c.focus {
                 panel.focus_flag().set(focus);
@@ -192,10 +174,7 @@ fn operation(panel: &TreeSelectorComponent, op: &Operation, context: &Context) {
 /// Replays construction and every ordered input in one controlled world.
 pub(super) fn case(case: &Case) {
     let input = &case.input;
-    set_keybindings(KeybindingsManager::new(
-        maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
-        bindings(&input.bindings),
-    ));
+    bindings::replace(&input.bindings);
     let host = manual_runtime::ManualRuntime::new();
     let (publication, theme) = published::published(&palette::palette(&input.palette));
     let effects = Rc::new(Effects {

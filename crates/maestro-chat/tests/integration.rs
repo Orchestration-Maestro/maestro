@@ -1,8 +1,6 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
-#[path = "support/recorded_keys/bindings.rs"]
-mod bindings;
 #[cfg(not(target_arch = "wasm32"))]
 #[path = "../../maestro-app/tests/support/directories.rs"]
 mod directories;
@@ -51,7 +49,7 @@ mod session_picker_scopes;
 mod session_picker_support;
 // The session picker's helpers are compiled once, here and in the library tests that include it.
 use registry::input_support;
-use session_picker_support::{manual_runtime, published, registry};
+use session_picker_support::{bindings, manual_runtime, published, registry};
 mod session_rename_and_delete;
 mod session_search;
 mod settings_display;

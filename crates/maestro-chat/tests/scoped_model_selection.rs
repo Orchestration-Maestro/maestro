@@ -268,7 +268,7 @@ fn failed_tail(persist: bool) {
     use maestro_chat::components::{ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent};
     use maestro_tui::{Component, tui::InputHandler};
     use std::{cell::Cell, rc::Rc};
-    scoped_model_support::bindings(std::collections::BTreeMap::default());
+    crate::bindings::replace(&std::collections::BTreeMap::default());
     let runtime = manual_runtime::ManualRuntime::new();
     let ready = Rc::new(Cell::new(false));
     let changes = Rc::new(Cell::new(0));
