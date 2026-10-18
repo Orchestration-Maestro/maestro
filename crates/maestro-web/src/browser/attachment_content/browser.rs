@@ -17,6 +17,8 @@ pub struct BrowserAttachmentHost {
     document: Document,
     /// Independently retained content elements.
     surfaces: RefCell<HashMap<egui::Id, DomSurface>>,
+    /// Current row placement owner; activation handles restore nesting.
+    scopes: Rc<RefCell<Vec<egui::Id>>>,
     /// Open modal identities in mounting order.
     overlays: RefCell<Vec<egui::Id>>,
     /// Escape pending from native field focus.
@@ -42,6 +44,8 @@ struct DomSurface {
     retained: Option<(bool, Option<egui::Id>)>,
     /// Containing modal identity, distinct from the field identity.
     modal: Option<egui::Id>,
+    /// Row placement lifetime, independent of explicit retained-artifact visibility.
+    ancestors: Vec<egui::Id>,
 }
 impl DomSurface {
     /// Project the current independent policy once onto base placement.
@@ -102,6 +106,7 @@ impl BrowserAttachmentHost {
             canvas,
             document,
             surfaces: RefCell::new(HashMap::new()),
+            scopes: Rc::default(),
             overlays: RefCell::new(Vec::new()),
             escape: Rc::new(std::cell::Cell::new(false)),
         })
@@ -129,6 +134,7 @@ impl BrowserAttachmentHost {
             pending: None,
             modal: None,
             retained: None,
+            ancestors: Vec::new(),
         })
     }
     /// Map canvas points to viewport CSS pixels without resizing for clipping.
@@ -285,11 +291,31 @@ impl BrowserAttachmentHost {
 }
 
 impl AttachmentHost for BrowserAttachmentHost {
+    fn enter_placement_scope(&self, scope: egui::Id) -> super::PlacementScope {
+        let depth = self.scopes.borrow().len();
+        self.scopes.borrow_mut().push(scope);
+        let active = Rc::clone(&self.scopes);
+        super::PlacementScope::new(move || active.borrow_mut().truncate(depth))
+    }
+    fn hide_placement_scope(&self, scope: egui::Id) {
+        let wrappers: Vec<_> = self
+            .surfaces
+            .borrow()
+            .values()
+            .filter(|surface| surface.ancestors.contains(&scope))
+            .map(|surface| surface.wrapper.clone())
+            .collect();
+        for wrapper in wrappers {
+            wrapper.remove();
+        }
+    }
+
     fn copy_to_clipboard(
         &self,
         text: &str,
+        mode: super::ClipboardMode,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
-        crate::utils::clipboard::copy_to_clipboard(&self.document, text)
+        crate::utils::clipboard::copy_to_clipboard(&self.document, text, mode)
     }
     fn capture_focus(&self) -> Result<Option<Rc<super::FocusTarget>>, AttachmentUiError> {
         self.capture_native_focus()
@@ -341,6 +367,9 @@ impl AttachmentHost for BrowserAttachmentHost {
         let retained = self.surfaces.borrow_mut().remove(&s.id);
         let mut surface = retained.map_or_else(|| self.create(tag), Ok)?;
         let result = self.present_content(&mut surface, tag, &s, p);
+        if result.is_ok() {
+            surface.ancestors.clone_from(&self.scopes.borrow());
+        }
         let displaced = self.surfaces.borrow_mut().insert(s.id, surface);
         drop(displaced);
         result?;

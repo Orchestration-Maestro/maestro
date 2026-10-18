@@ -9,7 +9,8 @@ pub use maestro_models::{
     Context, DiagnosticErrorInfo, Fetch, FetchError, HttpBody, HttpRequest, HttpResponse,
     ImageContent, Message, Model, ModelInput, OAuthCallbacks, OAuthCredentials, OAuthError,
     OAuthProviderInterface, ProviderStreamOptions, SharedAssistantMessage, SharedHandle,
-    SimpleStreamOptions, StopReason, TextContent, UserBlock, UserContent, default_fetch,
+    SimpleStreamOptions, StopReason, TextContent, ToolResultMessage, UserBlock, UserContent,
+    default_fetch,
 };
 
 /// Agent reasoning levels, including disabled reasoning.

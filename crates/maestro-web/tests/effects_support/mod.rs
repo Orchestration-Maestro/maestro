@@ -30,6 +30,14 @@ pub struct Host {
     pub downloads: RefCell<Vec<(String, String, Vec<u8>)>>,
     /// Exact clipboard admissions.
     pub copies: RefCell<Vec<String>>,
+    /// Selected clipboard policy for each admission.
+    pub modes: RefCell<Vec<ClipboardMode>>,
+    /// Controlled native measurements keyed by the placed surface.
+    layouts: RefCell<std::collections::HashMap<egui::Id, Vec<(egui::Id, egui::Rect)>>>,
+    /// Published canvas control rectangles for pointer input.
+    pub controls: RefCell<Vec<egui::Rect>>,
+    /// Surface owners released by retained components.
+    pub removed: RefCell<Vec<egui::Id>>,
     /// Separately resolved native operations.
     pub results: RefCell<Vec<Rc<Cell<Option<bool>>>>>,
     /// Current instant.
@@ -94,8 +102,13 @@ impl Host {
     }
 }
 impl AttachmentHost for Host {
-    fn copy_to_clipboard(&self, text: &str) -> Pin<Box<dyn Future<Output = bool>>> {
+    fn copy_to_clipboard(
+        &self,
+        text: &str,
+        mode: maestro_web::browser::attachment_content::ClipboardMode,
+    ) -> Pin<Box<dyn Future<Output = bool>>> {
         self.copies.borrow_mut().push(text.into());
+        self.modes.borrow_mut().push(mode);
         let result = Rc::new(Cell::new(None));
         self.results.borrow_mut().push(result.clone());
         Box::pin(std::future::poll_fn(move |_| {
@@ -125,9 +138,12 @@ impl AttachmentHost for Host {
 
     fn reading_layout(
         &self,
-        _: egui::Id,
+        id: egui::Id,
     ) -> Result<maestro_web::browser::attachment_content::ReadingLayout, AttachmentUiError> {
-        unreachable!("this suite does not create reading content")
+        Ok(ReadingLayout {
+            height: 64.,
+            controls: self.layouts.borrow().get(&id).cloned().unwrap(),
+        })
     }
     fn timer(
         &self,
@@ -156,15 +172,33 @@ impl AttachmentHost for Host {
     }
     fn present(
         &self,
-        _: AttachmentSurface<'_>,
+        surface: AttachmentSurface<'_>,
         _: &BrandPresentation<'_>,
     ) -> Result<(), AttachmentUiError> {
-        self.failure.take().map_or(Ok(()), Err)
+        self.failure.take().map_or(Ok(()), Err)?;
+        if let AttachmentContent::Reading(reading) = surface.content {
+            let controls: Vec<_> = reading
+                .sizes
+                .iter()
+                .map(|(id, size)| (*id, egui::Rect::from_min_size(egui::pos2(100., 4.), *size)))
+                .collect();
+            if reading.phase == ReadingPhase::Publish {
+                *self.controls.borrow_mut() = controls
+                    .iter()
+                    .map(|(_, rect)| rect.translate(surface.rect.min.to_vec2()))
+                    .collect();
+            }
+            self.layouts.borrow_mut().insert(surface.id, controls);
+        }
+        Ok(())
     }
     fn take_escape(&self) -> bool {
         false
     }
-    fn remove(&self, _: egui::Id) {}
+    fn remove(&self, id: egui::Id) {
+        self.removed.borrow_mut().push(id);
+        self.layouts.borrow_mut().remove(&id);
+    }
     fn set_retained_visibility(
         &self,
         _: egui::Id,

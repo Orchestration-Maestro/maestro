@@ -148,9 +148,10 @@ The copied check uses the selected pack's body typography, independent of the
 parent button style. It owns no text root or viewport.
 
 `AttachmentHost::copy_to_clipboard` starts the native call before local dispatch,
-returning owned local settlement work. The default browser host uses its canvas
-document, preferring the Clipboard API and falling back to a selected temporary
-textarea. Refusal or reached native failure reports false; scoped cleanup removes
+returning owned local settlement work. Its explicit `ClipboardMode` selects direct
+writing or fallback. Message links select `Fallback`: the default browser host uses
+its canvas document, preferring the Clipboard API and falling back to a selected
+temporary textarea. Refusal or reached native failure reports false; scoped cleanup removes
 the textarea even if another observer removed it first. Direct effect calls have
 no control feedback. A successful control completion shows the selected pack's
 passed symbol for 1500 ms. The weak completion and restoring-timer owner is

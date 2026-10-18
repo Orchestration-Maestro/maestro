@@ -261,6 +261,11 @@ impl BrowserAttachmentHost {
         let retained = self.surfaces.borrow_mut().remove(&s.id);
         let mut surface = retained.map_or_else(|| self.create("div"), Ok)?;
         let result = self.update_reading(s, p, &mut surface);
+        if result.is_ok()
+            && matches!(&s.content, AttachmentContent::Reading(placement) if placement.phase == ReadingPhase::Publish)
+        {
+            surface.ancestors.clone_from(&self.scopes.borrow());
+        }
         if result.is_err() {
             drop(surface.pending.take());
         }

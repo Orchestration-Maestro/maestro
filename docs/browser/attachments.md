@@ -145,4 +145,12 @@ reserved slot rectangles through the viewport/caller clip and interact only with
 the current positive visible intersection at both pointer press and release.
 Both endpoints also require an enabled control on the toolkit's input-owning layer.
 A release activates only the control that owned the press. Keyboard activation
-is unaffected. The header is the first mixed-content consumer.
+is unaffected. Natural-flow consumers can grow horizontal rows beyond their provisional height;
+the offline header keeps an explicit viewport bound. The shared allocation owner
+uses the same resolved bound for measurement and publication.
+
+Tool rows retain placement scopes separately from widget ownership. Detaching an
+ancestor scope detaches its currently placed descendants; retained widget aliases
+keep resources alive but do not keep an inactive row visible. Explicit retained
+artifact visibility remains independent. A failed re-entry leaves a detached root
+detached; measurement connects it only while hidden and restores its detachment.

@@ -24,6 +24,12 @@ pub struct CopyButton {
     feedback: CopyFeedback,
     /// Primary gesture admitted in this control's visible slot.
     pressed: Option<()>,
+    /// Restoring interval for this retained control.
+    feedback_duration: i32,
+    /// Console controls use compact source dimensions and twelve-point success text.
+    pub(crate) compact: bool,
+    /// Console controls use muted idle and accent hover roles.
+    pub(crate) hover: attachment_content::GhostHover,
 }
 impl CopyButton {
     /// Retain the host and initialize empty text with the localized copy title.
@@ -38,7 +44,18 @@ impl CopyButton {
             id: attachment_content::identity(),
             feedback: CopyFeedback::default(),
             pressed: None,
+            feedback_duration: 2000,
+            compact: false,
+            hover: attachment_content::GhostHover::Text,
         })
+    }
+    /// Select the restoring interval without adding another timer owner.
+    pub(crate) fn set_feedback_duration(&mut self, delay: i32) {
+        self.feedback_duration = delay;
+    }
+    /// Whether successful copy feedback is currently active.
+    pub(crate) fn copied(&self) -> bool {
+        self.feedback.copied()
     }
     /// Draw and activate the original-text control.
     /// # Errors
@@ -58,20 +75,31 @@ impl CopyButton {
         ui: &egui::Ui,
         i18n: &I18n<F>,
     ) -> Result<egui::Vec2, I18nError> {
-        let mut size = attachment_content::GHOST_SIZE;
+        let mut size = if self.compact {
+            egui::vec2(32., 20.)
+        } else {
+            attachment_content::GHOST_SIZE
+        };
         if self.feedback.copied() && self.show_text {
             let text = i18n.text("Copied!")?;
             size.x += ui
                 .painter()
-                .layout_no_wrap(
-                    text,
-                    egui::TextStyle::Button.resolve(ui.style()),
-                    egui::Color32::WHITE,
-                )
+                .layout_no_wrap(text, self.font(ui), egui::Color32::WHITE)
                 .size()
                 .x;
+            if self.compact {
+                size.x += 4.;
+            }
         }
         Ok(size)
+    }
+    /// Resolve the selected family with this control's text metrics.
+    fn font(&self, ui: &egui::Ui) -> egui::FontId {
+        let mut font = egui::TextStyle::Button.resolve(ui.style());
+        if self.compact {
+            font.size = 12.;
+        }
+        font
     }
     /// Paint a full measured slot; only its visible intersection admits pointer endpoints.
     pub(crate) fn render_at<F: ?Sized>(
@@ -87,11 +115,22 @@ impl CopyButton {
         let label = (copied && self.show_text)
             .then(|| i18n.text("Copied!"))
             .transpose()?;
-        let response = attachment_content::ghost_labeled(
+        let font = self.font(&child);
+        let response = attachment_content::ghost_labeled_tinted(
             &mut child,
             presentation,
             (if copied { "Check" } else { "Copy" }, label.as_deref()),
-            rect.size(),
+            (rect.size(), if self.compact { 8. } else { 0. }, font),
+            (
+                attachment_content::color(
+                    presentation,
+                    match self.hover {
+                        attachment_content::GhostHover::Text => "text",
+                        attachment_content::GhostHover::Accent => "muted",
+                    },
+                )?,
+                self.hover,
+            ),
         )?
         .on_hover_text(&self.title);
         response.widget_info(|| {
@@ -112,7 +151,12 @@ impl CopyButton {
         )
         .is_empty();
         if pointer || (response.clicked() && !response.clicked_by(egui::PointerButton::Primary)) {
-            self.feedback.copy(&self.host, &self.text, 2000, ui.ctx());
+            self.feedback.copy(
+                &self.host,
+                (&self.text, attachment_content::ClipboardMode::Direct),
+                self.feedback_duration,
+                ui.ctx(),
+            );
         }
         Ok(response)
     }

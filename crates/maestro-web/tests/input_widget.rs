@@ -26,6 +26,7 @@ impl AttachmentHost for DefaultHost {
     fn copy_to_clipboard(
         &self,
         _: &str,
+        _: maestro_web::browser::attachment_content::ClipboardMode,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
         unreachable!("unexpected clipboard operation")
     }

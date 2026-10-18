@@ -141,6 +141,21 @@ pub enum UserBlock {
     #[serde(rename = "image")]
     Image(ImageContent),
 }
+impl UserBlock {
+    /// Join text blocks in order with one newline, retaining empty and repeated text.
+    /// Images are ignored; text is not trimmed, normalized or formatted.
+    #[must_use]
+    pub fn text_output(blocks: &[Self]) -> String {
+        blocks
+            .iter()
+            .filter_map(|block| match block {
+                Self::Text(text) => Some(text.text.as_str()),
+                Self::Image(_) => None,
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
+}
 /// Represent assistant text, thinking and tool-call blocks.
 #[derive(Clone, Debug, PartialEq, Deserialize)]
 #[serde(tag = "type")]

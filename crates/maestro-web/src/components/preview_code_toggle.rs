@@ -82,12 +82,19 @@ impl PreviewCodeToggle {
                 );
             }
             let title = i18n.text(title)?;
+            let font = egui::TextStyle::Button.resolve(ui.style());
             let response = attachment_content::ghost_labeled_tinted(
                 ui,
                 presentation,
                 (glyph, None),
-                egui::vec2(32., 26.),
-                attachment_content::color(presentation, if selected { "text" } else { "muted" })?,
+                (egui::vec2(32., 26.), 0., font),
+                (
+                    attachment_content::color(
+                        presentation,
+                        if selected { "text" } else { "muted" },
+                    )?,
+                    attachment_content::GhostHover::Text,
+                ),
             )?
             .on_hover_text(&title);
             response.widget_info(|| {

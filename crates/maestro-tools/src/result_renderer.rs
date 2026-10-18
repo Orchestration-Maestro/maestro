@@ -86,12 +86,7 @@ impl<D, S, E: crate::ToolExecution> ToolRenderResult<D, S, E> {
             Self::Raw(callback) => {
                 let details = result.details.map(serialize).transpose()?;
                 callback(
-                    &ToolRenderResultLike {
-                        content: result.content,
-                        details: details.as_ref(),
-                        terminate: result.terminate,
-                        is_error: result.is_error,
-                    },
+                    &result.with_details(details.as_ref()),
                     options,
                     theme,
                     context,
@@ -114,16 +109,8 @@ impl<D, S, E: crate::ToolExecution> ToolRenderResult<D, S, E> {
         F: FnOnce(&Value) -> Result<D, DiagnosticErrorInfo>,
     {
         let (result, options) = input;
-        self.prepare_raw(
-            ToolRenderResultLike {
-                content: result.content,
-                details: result.details,
-                terminate: result.terminate,
-                is_error: result.is_error,
-            },
-            decode,
-        )?
-        .render(options, theme, context)
+        self.prepare_raw(result.with_details(result.details), decode)?
+            .render(options, theme, context)
     }
     /// Decode present typed details once, retaining them for repeated rendering.
     ///
@@ -147,12 +134,7 @@ impl<D, S, E: crate::ToolExecution> ToolRenderResult<D, S, E> {
                 Ok(PreparedToolRenderResult {
                     render: Box::new(move |options, theme, context| {
                         callback(
-                            &ToolRenderResultLike {
-                                content: result.content,
-                                details: details.as_ref(),
-                                terminate: result.terminate,
-                                is_error: result.is_error,
-                            },
+                            &result.with_details(details.as_ref()),
                             options,
                             theme,
                             context,

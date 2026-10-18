@@ -322,3 +322,35 @@ fn message_diagnostic_constructors_preserve_fields() {
         assert_eq!(serde_json::to_value(actual).unwrap(), row["expected"]);
     }
 }
+
+#[test]
+fn user_block_text_output_keeps_empty_repeated_and_literal_text() {
+    use maestro_request::types::{ImageContent, TextContent, UserBlock};
+    let text = |value: &str| {
+        UserBlock::Text(TextContent {
+            text: value.into(),
+            text_signature: None,
+        })
+    };
+    let image = || {
+        UserBlock::Image(ImageContent {
+            data: "AA==".into(),
+            mime_type: "image/png".into(),
+        })
+    };
+    for (blocks, expected) in [
+        (vec![], ""),
+        (vec![image()], ""),
+        (vec![text(""), text("")], "\n"),
+        (
+            vec![text("one"), image(), text(""), text("雪"), text("one")],
+            "one\n\n雪\none",
+        ),
+        (
+            vec![text("\u{1b}[31mraw\u{1b}[0m"), text(" \t\0 ")],
+            "\u{1b}[31mraw\u{1b}[0m\n \t\0 ",
+        ),
+    ] {
+        assert_eq!(UserBlock::text_output(&blocks), expected);
+    }
+}

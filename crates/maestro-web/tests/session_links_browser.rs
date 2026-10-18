@@ -116,7 +116,10 @@ pub async fn browser_clipboard_prefers_api_and_falls_back() {
         "api", "missing", "method", "getter", "call", "reject", "false",
     ] {
         begin(mode, "literal 雪😀\n<entry>&");
-        let work = host.copy_to_clipboard("literal 雪😀\n<entry>&");
+        let work = host.copy_to_clipboard(
+            "literal 雪😀\n<entry>&",
+            maestro_web::browser::attachment_content::ClipboardMode::Fallback,
+        );
         immediate(mode);
         finish(work.await);
     }
@@ -129,7 +132,10 @@ pub async fn browser_clipboard_cleans_every_temporary_textarea() {
         "create", "body", "append", "exec", "missing", "false", "removed",
     ] {
         begin(mode, "original 雪😀\ntext");
-        let work = host.copy_to_clipboard("original 雪😀\ntext");
+        let work = host.copy_to_clipboard(
+            "original 雪😀\ntext",
+            maestro_web::browser::attachment_content::ClipboardMode::Fallback,
+        );
         immediate(mode);
         finish(work.await);
     }

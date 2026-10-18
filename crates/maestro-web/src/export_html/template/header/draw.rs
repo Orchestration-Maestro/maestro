@@ -1,7 +1,8 @@
 //! Canvas controls sharing the native reading surface's measured slots.
 use super::{CONTROLS, HeaderAction, HeaderState, HeaderView, SessionDocument, prepare};
 use crate::browser::attachment_content::{
-    self, ReadingContent, reading::controlled::ControlledReading,
+    self, ReadingContent,
+    reading::controlled::{ControlledReading, ReadingHeight},
 };
 use std::{io, rc::Rc};
 
@@ -20,6 +21,7 @@ impl Placement<'_> {
     /// Measure and publish through the shared mixed-content flow.
     fn draw(&mut self, ui: &mut egui::Ui) -> io::Result<Vec<HeaderAction>> {
         let layout = ControlledReading {
+            height: ReadingHeight::Viewport,
             host: self.state.host.as_ref(),
             id: self.state.id,
             content: &self.content,
