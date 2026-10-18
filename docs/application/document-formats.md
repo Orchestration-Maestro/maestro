@@ -128,7 +128,9 @@ escapes once. Invalid shared-string indices fail with workbook and sheet context
 Binary expressions retain their token order, independent absolute axes and
 version-specific reference layouts. Relative rows use the version's negative-offset
 wrap rule; displaced areas retain whole-row and whole-column spelling. Expression
-composition retains operand handles until final text emission.
+composition retains operand handles and qualifier splits until final text emission.
+Qualifier comparison uses composable case-fold summaries as a rejection filter,
+with byte-for-byte verification of matches.
 Counted older external-sheet records inside BIFF8 do not prevent ordinary cells
 from reading, but provide no usable sheet selection.
 Shared expressions expand per consuming cell;

@@ -1,0 +1,42 @@
+[
+  {
+    "file": "metadata-range-same-function-prefix.xls",
+    "sheet": "Data",
+    "formula": "INDEX(Data!$A$1,1):$A$2,2)"
+  },
+  {
+    "file": "metadata-range-same-paren-prefix.xls",
+    "sheet": "Data",
+    "formula": "(Data!$A$1):$A$2)"
+  },
+  {
+    "file": "metadata-range-literal-bang.xls",
+    "sheet": "Data",
+    "formula": "\"Data!A\":B\""
+  },
+  {
+    "file": "metadata-range-expanding-case.xls",
+    "sheet": "İ",
+    "formula": "'İ'!$A$1:$A$2"
+  },
+  {
+    "file": "metadata-range-prefix-is-not-sheet.xls",
+    "sheet": "Data",
+    "formula": "(Data!$A$1):data!$A$2"
+  },
+  {
+    "file": "metadata-range-cross-leaf-final-sigma.xls",
+    "sheet": "Α",
+    "formula": "ΟΣ:'Α'!$A$1:$A$2"
+  },
+  {
+    "file": "metadata-range-empty-older-qualifier.xls",
+    "sheet": "Data",
+    "formula": "!$A$1:!$A$2"
+  },
+  {
+    "file": "metadata-range-greek-not-equal.xls",
+    "sheet": "ΟΣ",
+    "formula": "'ΟΣ'!$A$1:'οσ'!$A$2"
+  }
+]

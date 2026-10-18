@@ -615,3 +615,26 @@ fn legacy_unused_external_sheet_layouts_keep_ordinary_cells_readable() {
         assert!(cell.f.is_none());
     }
 }
+
+#[test]
+fn legacy_range_prefixes_keep_complete_expression_identity() {
+    use maestro_app::browser::ssf::{self, Ssf};
+    let rows: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/ssf/legacy_range_prefixes.json")).unwrap();
+    for row in rows.as_array().unwrap() {
+        let file = row["file"].as_str().unwrap();
+        let book = ssf::read(
+            &legacy_workbook_support::bytes(file),
+            file,
+            &mut Ssf::default(),
+        )
+        .unwrap();
+        assert_eq!(
+            book.sheets[row["sheet"].as_str().unwrap()].cells["A1"]
+                .f
+                .as_deref(),
+            Some(row["formula"].as_str().unwrap()),
+            "{file}"
+        );
+    }
+}

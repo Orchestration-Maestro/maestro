@@ -7,111 +7,8 @@ use super::types::{
 use crate::browser::ssf::{
     CellAddress, CellValue, encode_col, format_cell::error_label, write_num::spelling,
 };
-/// A suffix of one expression node, with byte offsets on character boundaries.
-#[derive(Clone, Copy)]
-struct Expression {
-    /// Index into the flat assembly owner.
-    node: usize,
-    /// Retained byte count.
-    length: usize,
-}
-/// One text allocation or an ordered concatenation of expression handles.
-enum Fragment {
-    /// Newly emitted text.
-    Text(String),
-    /// Already-owned operands and delimiters, never copied into parent nodes.
-    Join(Vec<Expression>),
-}
-/// Flat ownership keeps concatenation and destruction independent of expression depth.
-#[derive(Default)]
-struct Assembly(Vec<Fragment>);
-impl Assembly {
-    /// Introduce newly emitted text exactly once.
-    fn text(&mut self, text: String) -> Expression {
-        #[cfg(test)]
-        super::super::tests::ASSEMBLY_WORK.with(|work| work.set(work.get() + text.len()));
-        let expression = Expression {
-            node: self.0.len(),
-            length: text.len(),
-        };
-        self.0.push(Fragment::Text(text));
-        expression
-    }
-    /// Combine handles without copying accumulated operand text.
-    fn join(&mut self, parts: Vec<Expression>) -> Expression {
-        let length = parts.iter().map(|part| part.length).sum();
-        let expression = Expression {
-            node: self.0.len(),
-            length,
-        };
-        self.0.push(Fragment::Join(parts));
-        expression
-    }
-    /// Surround an operand through the same concatenation owner.
-    fn surround(&mut self, operand: Expression, before: String, after: String) -> Expression {
-        let before = self.text(before);
-        let after = self.text(after);
-        self.join(vec![before, operand, after])
-    }
-    /// Traverse retained text iteratively, including suffixes selected by range operators.
-    fn fragments(&self, expression: Expression) -> impl Iterator<Item = &str> {
-        let mut pending = vec![expression];
-        std::iter::from_fn(move || self.next_fragment(&mut pending))
-    }
-    /// Resolve the next leaf without recursive calls into nested expressions.
-    fn next_fragment(&self, pending: &mut Vec<Expression>) -> Option<&str> {
-        while let Some(expression) = pending.pop() {
-            match &self.0[expression.node] {
-                Fragment::Text(text) => return Some(&text[text.len() - expression.length..]),
-                Fragment::Join(parts) => Self::expand(parts, expression.length, pending),
-            }
-        }
-        None
-    }
-    /// Schedule the retained suffix of a concatenation in reverse traversal order.
-    fn expand(parts: &[Expression], mut remaining: usize, pending: &mut Vec<Expression>) {
-        for part in parts.iter().rev() {
-            let length = remaining.min(part.length);
-            if length != 0 {
-                pending.push(Expression {
-                    node: part.node,
-                    length,
-                });
-                remaining -= length;
-            }
-        }
-    }
-    /// Visit visible characters without materializing an intermediate expression.
-    fn chars(&self, expression: Expression) -> impl Iterator<Item = char> {
-        self.fragments(expression).flat_map(str::chars)
-    }
-    /// Locate the last sheet separator in character coordinates.
-    fn qualifier(&self, expression: Expression) -> Option<usize> {
-        self.chars(expression)
-            .enumerate()
-            .filter_map(|(i, c)| (c == '!').then_some(i))
-            .last()
-    }
-    /// Remove a sheet qualifier by advancing the expression's visible suffix.
-    fn trim_start(&self, expression: &mut Expression, count: usize) {
-        let bytes: usize = self
-            .chars(*expression)
-            .take(count)
-            .map(char::len_utf8)
-            .sum();
-        expression.length -= bytes;
-    }
-    /// Write the completed expression once, without recursive traversal or destruction.
-    fn finish(&self, expression: Expression) -> String {
-        let mut result = String::with_capacity(expression.length);
-        for fragment in self.fragments(expression) {
-            #[cfg(test)]
-            super::super::tests::ASSEMBLY_WORK.with(|work| work.set(work.get() + fragment.len()));
-            result.push_str(fragment);
-        }
-        result
-    }
-}
+mod assembly;
+use assembly::{Assembly, Expression};
 /// Assemble an expression without its leading equals sign.
 pub(super) fn stringify(
     tokens: &[Ptg],
@@ -179,22 +76,10 @@ fn binary(
         && matches!(space.kind, SpaceType::BeforeSpace | SpaceType::BeforeReturn)
     {
         let text = assembly.text(whitespace(space));
-        left = assembly.join(vec![left, text]);
+        left = assembly.join(&[left, text]);
     }
-    if matches!(op, PtgBinOp::Range)
-        && let (Some(first), Some(last)) = (assembly.qualifier(left), assembly.qualifier(right))
-        && assembly
-            .chars(left)
-            .take(first)
-            .collect::<String>()
-            .to_lowercase()
-            == assembly
-                .chars(right)
-                .take(last)
-                .collect::<String>()
-                .to_lowercase()
-    {
-        assembly.trim_start(&mut right, last + 1);
+    if matches!(op, PtgBinOp::Range) {
+        right = assembly.range_right(left, right);
     }
     let separator = match op {
         PtgBinOp::Scalar(s) => s,
@@ -203,7 +88,7 @@ fn binary(
         PtgBinOp::Range => ":",
     };
     let separator = assembly.text(separator.into());
-    stack.push(assembly.join(vec![left, separator, right]));
+    stack.push(assembly.join(&[left, separator, right]));
     Ok(())
 }
 /// Render independent absolute-axis markers.
@@ -421,5 +306,5 @@ fn function(
         parts.push(argument);
     }
     parts.push(assembly.text(")".into()));
-    Ok(assembly.join(parts))
+    Ok(assembly.join(&parts))
 }

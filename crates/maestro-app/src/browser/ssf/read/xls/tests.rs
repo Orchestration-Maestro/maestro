@@ -295,6 +295,8 @@ fn check_materialized_arrays(sheet: &super::WorkSheet, size: usize, work: usize)
 
 thread_local! {
     /// Bytes written while assembling owned expression fragments and final text.
+    pub(super) static ASSEMBLY_SCAN: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Bytes written by expression assembly, including normalization temporaries.
     pub(super) static ASSEMBLY_WORK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
 }
 
@@ -418,4 +420,79 @@ fn external_sheet_layout_selection_accepts_both_payload_forms() {
         );
         assert_eq!(payload.remaining(), 0);
     }
+}
+
+#[test]
+fn formula_range_assembly_keeps_linear_normalization_work() {
+    for kind in ["range-paren", "range-index", "zero-spacing"] {
+        let mut previous = (0, 0);
+        for size in [32, 64] {
+            let expression = measured_range_formula(kind, size);
+            let written = ASSEMBLY_WORK.get();
+            let scanned = ASSEMBLY_SCAN.get();
+            println!(
+                "range kind={kind} size={size} output={} written={written} scanned={scanned}",
+                expression.len()
+            );
+            assert!(
+                scanned < 20 * expression.len(),
+                "repeated prefix normalization: {scanned}"
+            );
+            if previous.0 != 0 {
+                assert!(written <= 2 * previous.0 + 128);
+                assert!(scanned <= 2 * previous.1 + 128);
+            }
+            previous = (written, scanned);
+        }
+    }
+}
+
+#[test]
+fn formula_range_assembly_keeps_format_bound_outputs() {
+    for (kind, size) in [("bound-index", 4368), ("bound-paren", 7280)] {
+        let expression = measured_range_formula(kind, size);
+        println!(
+            "bound kind={kind} size={size} output={} written={} scanned={}",
+            expression.len(),
+            ASSEMBLY_WORK.get(),
+            ASSEMBLY_SCAN.get()
+        );
+        assert!(
+            ASSEMBLY_SCAN.get() < 20 * expression.len(),
+            "repeated bound prefix normalization"
+        );
+    }
+}
+
+/// Decode a complete workbook and compare the retained result with its source expression.
+fn measured_range_formula(kind: &str, size: usize) -> String {
+    let file = format!("metadata-{kind}-{size}.xls");
+    let bytes = std::fs::read(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/workbooks")
+            .join(&file),
+    )
+    .unwrap();
+    ASSEMBLY_WORK.set(0);
+    ASSEMBLY_SCAN.set(0);
+    let book = super::read(&bytes, &file, &super::Ssf::default()).unwrap();
+    let actual = book.sheets["Data"].cells["A1"].f.clone().unwrap();
+    let expected = if kind.ends_with("index") {
+        format!(
+            "{}Data!$A$1{}",
+            "Data!$A$1:INDEX(".repeat(size),
+            ",1)".repeat(size)
+        )
+    } else if kind == "zero-spacing" {
+        format!("Data!$A$1{}", ":$A$2".repeat(size))
+    } else {
+        use std::fmt::Write;
+        let mut suffix = String::new();
+        for row in 3..=size + 1 {
+            write!(suffix, ":Data!A{row})").unwrap();
+        }
+        format!("SUM({}Data!A1:A2){suffix})", "(".repeat(size))
+    };
+    assert_eq!(actual, expected, "{file}");
+    actual
 }
