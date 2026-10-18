@@ -1,14 +1,9 @@
 //! Complete ordered observations of prepared Word part records.
 #![cfg(test)]
+use crate::body_tree::member;
 use maestro_app::browser::docx_preview::{IDomStyle, OpenXmlElementData as Data};
 use serde_json::{Value, json};
 
-/// Add an encountered field, keeping null distinct from absence.
-fn member<T>(out: &mut Value, name: &str, value: Option<T>, encode: impl FnOnce(T) -> Value) {
-    if let Some(value) = value {
-        out[name] = encode(value);
-    }
-}
 /// Observe complete style records with ordered CSS declarations.
 pub fn styles(styles: Vec<IDomStyle>) -> Value {
     json!(styles.into_iter().map(style).collect::<Vec<_>>())

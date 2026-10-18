@@ -429,12 +429,18 @@ fn state(panel: &ArtifactsPanel) -> State {
 }
 /// Execute through the retained public tool boundary.
 async fn call(tool: &AgentTool, args: Value) -> Value {
-    let result = (tool.execute)("call".into(), args, None, None)
-        .await
-        .unwrap();
+    observe((tool.execute)("call".into(), args, None, None)).await
+}
+/// Require a text-only command result and serialize it.
+async fn observe<E: std::fmt::Debug>(
+    result: impl Future<Output = Result<AgentToolResult<Value>, E>>,
+) -> Value {
+    let result = result.await.unwrap();
     assert!(result.details.is_none() && result.terminate.is_none());
     serde_json::to_value(result).unwrap()
 }
+/// One command through either caller representation's executable tool.
+type Call<'a> = &'a dyn Fn(Value) -> std::pin::Pin<Box<dyn Future<Output = Value> + 'a>>;
 /// Replay disjoint command scenarios, retaining each step's complete observations.
 async fn rows(ids: &[&str]) {
     let cases: Vec<_> = corpus()
@@ -823,53 +829,68 @@ fn artifact_tool_declares_six_commands_and_plain_results() {
         );
     });
 }
-/// Surviving aliases observe mutation before a shallow map replacement.
+/// Surviving aliases observe mutation before a shallow map replacement in both representations.
 #[test]
 fn artifact_handles_keep_map_replacements_and_record_identity() {
-    run(async {
-        let expected = corpus().aliases;
-        let panel = maestro_app::ArtifactsPanel::new(Arc::new(Host::default()));
-        let initial = panel.artifacts();
-        let tool = panel.tool();
-        call(
-            &tool,
-            json!({"command":"create","filename":"a.txt","content":"a"}),
-        )
-        .await;
-        let after_create = panel.artifacts();
-        let record = Arc::clone(&after_create.read().unwrap()["a.txt"]);
-        assert_eq!(keys(&initial), expected.initial_after_create);
-        assert_eq!(
-            !Arc::ptr_eq(&initial, &after_create),
-            expected.create_replaces.0
-        );
-        check_edit_aliases(&panel, &tool, &after_create, &record, &expected).await;
-        record.write().unwrap().content = "external".into();
-        assert_eq!(
-            call(&tool, json!({"command":"get","filename":"a.txt"})).await,
-            expected.external_get
-        );
-        call(
-            &tool,
-            json!({"command":"create","filename":"b.txt","content":"b"}),
-        )
-        .await;
-        let after_second = panel.artifacts();
-        assert_eq!(keys(&after_create), expected.after_create_after_second);
-        call(&tool, json!({"command":"delete","filename":"a.txt"})).await;
-        assert_eq!(keys(&after_second), expected.after_second_after_delete);
-        assert_eq!(keys(&panel.artifacts()), expected.current_keys);
-        assert_eq!(
-            !Arc::ptr_eq(&after_second, &panel.artifacts()),
-            expected.delete_replaces.0
-        );
-        assert_eq!(record.read().unwrap().content, expected.record_after_delete);
-        panel.artifacts().write().unwrap().shift_remove("b.txt");
-        assert_eq!(
-            call(&tool, json!({"command":"logs","filename":"b.txt"})).await,
-            expected.external_deleted_record_logs
-        );
-    });
+    let expected = corpus().aliases;
+    let panel = maestro_app::ArtifactsPanel::new(Arc::new(Host::default()));
+    let tool = panel.tool();
+    run(check_aliases(
+        &|| panel.artifacts(),
+        &|args| Box::pin(call(&tool, args)),
+        &expected,
+    ));
+    let local = LocalArtifactsPanel::new_local(std::rc::Rc::new(Host::default()));
+    let tool = local.tool();
+    run(check_aliases(
+        &|| local.artifacts(),
+        &|args| Box::pin(observe((tool.execute)("call".into(), args, None, None))),
+        &expected,
+    ));
+}
+/// Replay the recorded alias observations through one panel's map handle and tool.
+async fn check_aliases(artifacts: &dyn Fn() -> Artifacts, call: Call<'_>, expected: &Aliases) {
+    let initial = artifacts();
+    call(json!({"command":"create","filename":"a.txt","content":"a"})).await;
+    let after_create = artifacts();
+    let record = Arc::clone(&after_create.read().unwrap()["a.txt"]);
+    assert_eq!(keys(&initial), expected.initial_after_create);
+    assert_eq!(
+        !Arc::ptr_eq(&initial, &after_create),
+        expected.create_replaces.0
+    );
+    check_edit_aliases(artifacts, call, &after_create, &record, expected).await;
+    record.write().unwrap().content = "external".into();
+    assert_eq!(
+        call(json!({"command":"get","filename":"a.txt"})).await,
+        expected.external_get
+    );
+    check_replacement_aliases(artifacts, call, &after_create, &record, expected).await;
+}
+/// A second create and a delete replace the map while surviving aliases keep their view.
+async fn check_replacement_aliases(
+    artifacts: &dyn Fn() -> Artifacts,
+    call: Call<'_>,
+    after_create: &Artifacts,
+    record: &Arc<RwLock<Artifact>>,
+    expected: &Aliases,
+) {
+    call(json!({"command":"create","filename":"b.txt","content":"b"})).await;
+    let after_second = artifacts();
+    assert_eq!(keys(after_create), expected.after_create_after_second);
+    call(json!({"command":"delete","filename":"a.txt"})).await;
+    assert_eq!(keys(&after_second), expected.after_second_after_delete);
+    assert_eq!(keys(&artifacts()), expected.current_keys);
+    assert_eq!(
+        !Arc::ptr_eq(&after_second, &artifacts()),
+        expected.delete_replaces.0
+    );
+    assert_eq!(record.read().unwrap().content, expected.record_after_delete);
+    artifacts().write().unwrap().shift_remove("b.txt");
+    assert_eq!(
+        call(json!({"command":"logs","filename":"b.txt"})).await,
+        expected.external_deleted_record_logs
+    );
 }
 /// Ordered map keys without record locking.
 fn keys(artifacts: &Artifacts) -> Vec<String> {
@@ -1016,36 +1037,28 @@ fn run<T>(future: impl std::future::Future<Output = T>) -> T {
 
 /// Retained map and record identities survive both in-place edit commands.
 async fn check_edit_aliases(
-    panel: &ArtifactsPanel,
-    tool: &AgentTool,
+    artifacts: &dyn Fn() -> Artifacts,
+    call: Call<'_>,
     after_create: &Artifacts,
     record: &Arc<RwLock<Artifact>>,
     expected: &Aliases,
 ) {
-    call(
-        tool,
-        json!({"command":"update","filename":"a.txt","old_str":"a","new_str":"b"}),
-    )
-    .await;
+    call(json!({"command":"update","filename":"a.txt","old_str":"a","new_str":"b"})).await;
     assert_eq!(
-        Arc::ptr_eq(after_create, &panel.artifacts()),
+        Arc::ptr_eq(after_create, &artifacts()),
         expected.update_same.0
     );
     assert_eq!(
-        Arc::ptr_eq(record, &panel.artifacts().read().unwrap()["a.txt"]),
+        Arc::ptr_eq(record, &artifacts().read().unwrap()["a.txt"]),
         expected.record_same.0
     );
-    call(
-        tool,
-        json!({"command":"rewrite","filename":"a.txt","content":"rewrite"}),
-    )
-    .await;
+    call(json!({"command":"rewrite","filename":"a.txt","content":"rewrite"})).await;
     assert_eq!(
-        Arc::ptr_eq(after_create, &panel.artifacts()),
+        Arc::ptr_eq(after_create, &artifacts()),
         expected.rewrite_same.0
     );
     assert_eq!(
-        Arc::ptr_eq(record, &panel.artifacts().read().unwrap()["a.txt"]),
+        Arc::ptr_eq(record, &artifacts().read().unwrap()["a.txt"]),
         expected.rewrite_record_same.0
     );
 }
