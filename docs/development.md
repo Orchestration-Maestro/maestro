@@ -207,6 +207,9 @@ Use direct `cargo test --doc` for doctest-only runs and direct `cargo nextest ru
 for runner-only flags or target selection. `tui-test-ansi` runs only nextest.
 Development and test profiles use `debug = "line-tables-only"`: backtraces retain
 file:line, without debugger variable views.
+They also build `cranelift-codegen` and `regalloc2` optimised, because tests
+compile extension components and an unoptimised code generator makes each
+compile about five times slower; release builds are unchanged.
 
 Nextest prepares the author component before guest-authoring tests and exports
 its path to their processes. The test host caches Wasmtime compilation beside
