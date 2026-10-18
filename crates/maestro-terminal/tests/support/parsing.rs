@@ -24,7 +24,7 @@ pub(crate) fn wire_name(value: impl std::fmt::Debug) -> String {
 }
 
 /// All RGB fields in their source representation.
-fn rgb(v: Rgb) -> Value {
+pub(crate) fn rgb(v: Rgb) -> Value {
     json!({"r":v.r,"g":v.g,"b":v.b})
 }
 

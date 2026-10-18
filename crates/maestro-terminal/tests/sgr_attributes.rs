@@ -2,6 +2,8 @@
 
 use maestro_terminal::sgr::{Attribute, Parser};
 
+use crate::support::parsing::rgb;
+
 #[test]
 fn decode_sgr_parser() {
     let mut parser = Parser::EMPTY;
@@ -48,7 +50,7 @@ fn attribute_value(attribute: Attribute<'_>) -> Value {
                 maestro_terminal::sgr::Underline::Dashed => "dashed",
             }),
         ),
-        A::UnderlineColor(v) => ("underline_color", rgb_value(v)),
+        A::UnderlineColor(v) => ("underline_color", rgb(v)),
         A::Palette256UnderlineColor(v) => ("256_underline_color", json!(v)),
         A::ResetUnderlineColor => ("reset_underline_color", json!({})),
         A::Overline => ("overline", json!({})),
@@ -61,8 +63,8 @@ fn attribute_value(attribute: Attribute<'_>) -> Value {
         A::ResetInvisible => ("reset_invisible", json!({})),
         A::Strikethrough => ("strikethrough", json!({})),
         A::ResetStrikethrough => ("reset_strikethrough", json!({})),
-        A::DirectColorFg(v) => ("direct_color_fg", rgb_value(v)),
-        A::DirectColorBg(v) => ("direct_color_bg", rgb_value(v)),
+        A::DirectColorFg(v) => ("direct_color_fg", rgb(v)),
+        A::DirectColorBg(v) => ("direct_color_bg", rgb(v)),
         A::Color8Bg(v) => ("8_bg", name_value(v)),
         A::Color8Fg(v) => ("8_fg", name_value(v)),
         A::ResetFg => ("reset_fg", json!({})),
@@ -73,11 +75,6 @@ fn attribute_value(attribute: Attribute<'_>) -> Value {
         A::Palette256Fg(v) => ("256_fg", json!(v)),
     };
     json!({tag: payload})
-}
-
-/// Preserve all RGB channels in the recorded representation.
-fn rgb_value(v: maestro_terminal::color::Rgb) -> Value {
-    json!({"r":v.r,"g":v.g,"b":v.b})
 }
 
 /// Render the source's named palette alternatives.
