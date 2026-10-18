@@ -23,9 +23,11 @@ and rejects both older and newer clients, including version zero.
 JSON method names, discriminants, field defaults and omission rules belong to
 the record definitions. Unknown methods fail deserialization. The committed
 [JSON Schema bundle](daemon-protocol.schema.json) is checked against those types.
-Rust documentation does not add schema descriptions or change compact string
-enums. Existing wire selector and version-key spellings remain unchanged even
-where Rust names use Maestro's identity.
+Pane right-click targets serialize as `maestro` or `pane`; installed plugins
+serialize their minimum supported version as `min_maestro_version`. Both records
+also accept the original input spelling, documented in their Rust API and the
+schema bundle. Compact string enums are preserved; schema descriptions document
+these input aliases.
 
 Run the focused tests with `cargo nextest run -p maestro-protocol` and build the
 public API documentation with `cargo doc -p maestro-protocol --no-deps`.

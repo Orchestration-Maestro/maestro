@@ -26,13 +26,13 @@ use super::common::{PaneAgentState, ReadFormat, ReadSource, SplitDirection};
 )]
 #[serde(rename_all = "snake_case")]
 /// Pane right click target record.
-#[schemars(description = "")]
+#[schemars(description = "The `herdr` input alias selects `maestro`; output uses `maestro`.")]
 #[schemars(transform = crate::schema::string_enum)]
 pub enum PaneRightClickTarget {
     #[default]
-    /// Maestro.
+    /// Maestro. Accepts `herdr` as an input alias.
     #[schemars(description = "")]
-    #[serde(rename = "herdr")]
+    #[serde(alias = "herdr")]
     Maestro,
     /// Pane.
     #[schemars(description = "")]
