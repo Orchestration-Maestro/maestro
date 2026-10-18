@@ -69,9 +69,11 @@ pub struct InstalledPluginInfo {
     #[schemars(description = "")]
     pub version: String,
     #[serde(default)]
-    #[serde(rename = "min_herdr_version")]
-    /// Min maestro version.
-    #[schemars(description = "")]
+    #[serde(alias = "min_herdr_version")]
+    /// Minimum Maestro version. Accepts `min_herdr_version` as an input alias.
+    #[schemars(
+        description = "Minimum Maestro version. Accepts `min_herdr_version` as an input alias."
+    )]
     pub min_maestro_version: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     /// Description.

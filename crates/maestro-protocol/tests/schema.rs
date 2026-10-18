@@ -69,6 +69,31 @@ fn request_method_serializes_with_a_dot_separator() {
 }
 
 #[test]
+/// Pane input accepts both target spellings and emits the Maestro spelling.
+fn pane_input_normalizes_target_alias() {
+    for target in ["maestro", "herdr"] {
+        let request: Request = serde_json::from_value(serde_json::json!({
+            "id": "input",
+            "method": "pane.input.set",
+            "params": {"pane_id": "p_1", "right_click": target}
+        }))
+        .unwrap();
+        let Method::PaneInputSet(params) = &request.method else {
+            panic!("wrong method parsed");
+        };
+        assert_eq!(params.right_click, PaneRightClickTarget::Maestro);
+        assert_eq!(
+            serde_json::to_value(&request).unwrap()["params"]["right_click"],
+            "maestro"
+        );
+    }
+    assert_eq!(
+        serde_json::to_value(PaneRightClickTarget::Pane).unwrap(),
+        "pane"
+    );
+}
+
+#[test]
 /// Agent start and prompt requests round trip.
 fn agent_launch_and_prompt_options_survive_json() {
     let start = Request {
@@ -861,6 +886,33 @@ fn plugin_registration_commands_preserve_json_records() {
         let restored: SuccessResponse = serde_json::from_str(&json).unwrap();
         assert_eq!(restored, response);
     }
+}
+
+#[test]
+/// Plugin version input aliases normalize to the Maestro field on output.
+fn plugin_version_normalizes_input_alias() {
+    let plugin = installed_plugin();
+    let mut json = serde_json::to_value(&plugin).unwrap();
+    assert_eq!(json["min_maestro_version"], plugin.min_maestro_version);
+    assert!(json.get("min_herdr_version").is_none());
+    assert_eq!(
+        serde_json::from_value::<InstalledPluginInfo>(json.clone()).unwrap(),
+        plugin
+    );
+    let version = json
+        .as_object_mut()
+        .unwrap()
+        .shift_remove("min_maestro_version")
+        .unwrap();
+    json["min_herdr_version"] = version;
+    let restored: InstalledPluginInfo = serde_json::from_value(json).unwrap();
+    assert_eq!(restored, plugin);
+    assert!(
+        serde_json::to_value(restored)
+            .unwrap()
+            .get("min_herdr_version")
+            .is_none()
+    );
 }
 
 #[test]

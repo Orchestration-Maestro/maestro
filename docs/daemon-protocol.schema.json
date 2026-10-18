@@ -3005,8 +3005,9 @@
           "type": "object"
         },
         "PaneRightClickTarget": {
+          "description": "The `herdr` input alias selects `maestro`; output uses `maestro`.",
           "enum": [
-            "herdr",
+            "maestro",
             "pane"
           ],
           "type": "string"
@@ -3094,7 +3095,7 @@
             },
             "right_click": {
               "$ref": "#/schemas/request/$defs/PaneRightClickTarget",
-              "default": "herdr"
+              "default": "maestro"
             },
             "target_pane_id": {
               "type": [
@@ -7084,8 +7085,9 @@
             "manifest_path": {
               "type": "string"
             },
-            "min_herdr_version": {
+            "min_maestro_version": {
               "default": "",
+              "description": "Minimum Maestro version. Accepts `min_herdr_version` as an input alias.",
               "type": "string"
             },
             "name": {
