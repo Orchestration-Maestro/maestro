@@ -3,28 +3,10 @@ use super::{Agent, CustomAgentMessages, lock};
 use crate::AgentEvent;
 use crate::types::{AgentExecution, Threaded};
 use maestro_models::{Cancellation, DiagnosticErrorInfo};
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, RwLock},
-};
+use std::sync::{Arc, RwLock};
 /// Awaited listener after state reduction.
 pub type AgentListener<C = crate::NoCustomMessages, E = Threaded> =
     <E as maestro_models::Execution>::Shared<<E as AgentExecution>::Listener<C>>;
-/// Live callbacks indexed by monotonically increasing registration order.
-pub(super) struct Listeners<C: CustomAgentMessages, E: AgentExecution> {
-    /// Next registration identity.
-    next: u64,
-    /// Current registrations.
-    entries: BTreeMap<u64, AgentListener<C, E>>,
-}
-impl<C: CustomAgentMessages, E: AgentExecution> Default for Listeners<C, E> {
-    fn default() -> Self {
-        Self {
-            next: 0,
-            entries: BTreeMap::new(),
-        }
-    }
-}
 /// Explicit removal handle; dropping it leaves the listener registered.
 pub struct Subscription<
     C: CustomAgentMessages = crate::NoCustomMessages,
@@ -38,26 +20,11 @@ pub struct Subscription<
 impl<C: CustomAgentMessages, E: AgentExecution> Agent<C, E> {
     /// Register one callback identity in source order.
     pub(crate) fn register(&self, listener: AgentListener<C, E>) {
-        let mut listeners = lock(&self.listeners);
-        if !listeners
-            .entries
-            .values()
-            .any(|old| std::ptr::addr_eq(&raw const **old, &raw const *listener))
-        {
-            let id = listeners.next;
-            listeners.next += 1;
-            listeners.entries.insert(id, listener);
-        }
+        lock(&self.listeners).add(listener);
     }
     /// Remove the current registration with the retained weak identity.
     pub(crate) fn remove_listener(&self, pointer: *const E::Listener<C>) {
-        let removed = {
-            let mut listeners = lock(&self.listeners);
-            let key = listeners.entries.iter().find_map(|(key, value)| {
-                std::ptr::addr_eq(&raw const **value, pointer).then_some(*key)
-            });
-            key.and_then(|key| listeners.entries.remove(&key))
-        };
+        let removed = lock(&self.listeners).remove(pointer);
         drop(removed);
     }
 }
@@ -107,12 +74,10 @@ impl<C: CustomAgentMessages + 'static, E: AgentExecution> Agent<C, E> {
 
         let mut invoke_next = move || {
             let listener = lock(&agent.listeners)
-                .entries
-                .range(next..)
-                .next()
-                .map(|(id, listener)| (*id, listener.clone()));
+                .next_from(next)
+                .map(|(cursor, listener)| (cursor, listener.clone()));
             listener.map(|(id, listener)| {
-                next = id + 1;
+                next = id;
                 listener(Arc::clone(&event), signal.clone())
             })
         };

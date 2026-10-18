@@ -10,7 +10,7 @@ the fallback. `has_ui` reports whether an installed host, rather than a
 fallback, is current. It never inspects which operations a host supports.
 
 ```rust
-use maestro_extensions::types::{ExtensionRuntimeState, ExtensionUIContextPort};
+use maestro_extensions::types::{ExtensionUIContextPort};
 use maestro_extensions::{EventError, ExtensionRunner, ExtensionUIContext};
 use maestro_models::Local;
 use maestro_theme::LiveTheme;
@@ -40,11 +40,11 @@ fn retained_ui_owned_host_example() -> Result<(), EventError> {
 #   let session = maestro_extensions::runner::ExtensionRunnerSession {
 #       cwd: "/work".into(),
 #       session_manager: Rc::new(RefCell::new(maestro_session::SessionManager::in_memory(None)?)),
-#       model_registry: Rc::new(RefCell::new(maestro_catalog::ModelRegistry::in_memory(auth)?)),
+#       model_registry: maestro_models::SharedHandle::new(maestro_catalog::ModelRegistry::in_memory(auth)?),
 #   };
     let runner = ExtensionRunner::<Local>::new(
         Rc::new(RwLock::new(Vec::new())),
-        Arc::new(ExtensionRuntimeState::new()),
+        maestro_extensions::create_extension_runtime::<maestro_models::Local>(),
         session,
         Rc::new(|line| eprint!("{line}")),
         LiveTheme::default(),

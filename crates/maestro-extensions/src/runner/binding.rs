@@ -1,5 +1,7 @@
 //! Runner state shared with its contexts, and the operations that bind it.
 use super::ExtensionRunner;
+use crate::loader::runtime::BoundProviders;
+use crate::types::{ExtensionActions, ProviderActions, write};
 use crate::{
     EventError, ExtensionExecution,
     types::{
@@ -8,6 +10,7 @@ use crate::{
     },
 };
 use maestro_catalog::ModelRegistry;
+use maestro_models::SharedHandle;
 use maestro_session::session_manager::ReadonlySessionManager;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
@@ -18,7 +21,7 @@ pub struct ExtensionRunnerSession {
     /// Live session history, read-only to extensions.
     pub session_manager: Rc<RefCell<dyn ReadonlySessionManager>>,
     /// Live model catalog.
-    pub model_registry: Rc<RefCell<ModelRegistry>>,
+    pub model_registry: SharedHandle<ModelRegistry>,
 }
 
 /// Runner state that its contexts read when used.
@@ -49,9 +52,37 @@ impl ContextBinding {
 }
 
 impl<E: ExtensionExecution> ExtensionRunner<E> {
-    /// Binds the application operations read by current and later contexts.
-    pub fn bind_core(&self, context_actions: ExtensionContextActions) {
+    /// Binds the actions behind every API and context, then applies queued providers.
+    ///
+    /// Each failed queued registration is reported to the error listeners with its
+    /// extension path, and the next one is applied. Afterwards registrations take
+    /// effect immediately, through `provider_actions` or else the catalog.
+    /// # Errors
+    /// Returns a listener failure without replacing it.
+    pub fn bind_core(
+        &self,
+        actions: ExtensionActions<E>,
+        context_actions: ExtensionContextActions,
+        provider_actions: ProviderActions<E>,
+    ) -> Result<(), crate::EventError> {
+        let replaced = std::mem::replace(&mut *write(&self.runtime.actions), actions);
+        drop(replaced);
         drop(self.binding.actions.replace(context_actions));
+        let bound = BoundProviders {
+            actions: provider_actions,
+            catalog: SharedHandle::clone(&self.binding.session.model_registry),
+        };
+        let mut cursor = 0;
+        while let Some((id, pending)) = self.runtime.next_or_bind(cursor, &bound) {
+            cursor = id + 1;
+            if let Err(error) = bound.register_provider(pending.name, pending.config) {
+                self.emit_error(&super::errors::queued_error(pending.extension_path, &error))?;
+            } else {
+                let retired = write(&self.runtime.pending_provider_registrations).remove(&id);
+                drop(retired);
+            }
+        }
+        Ok(())
     }
     /// Invalidates this runner's contexts and registration, keeping the first message.
     ///

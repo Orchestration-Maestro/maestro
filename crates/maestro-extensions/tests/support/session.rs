@@ -14,7 +14,7 @@ pub fn runner_session(cwd: &str) -> (ExtensionRunnerSession, Rc<RefCell<SessionM
     let session = ExtensionRunnerSession {
         cwd: cwd.into(),
         session_manager: history.clone(),
-        model_registry: Rc::new(RefCell::new(ModelRegistry::in_memory(auth).unwrap())),
+        model_registry: maestro_models::SharedHandle::new(ModelRegistry::in_memory(auth).unwrap()),
     };
     (session, history)
 }

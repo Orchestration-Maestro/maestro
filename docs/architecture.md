@@ -79,7 +79,7 @@ not satisfy a direct requirement. The permitted internal development edges are
 `maestro-tui-crossterm` to `maestro-brand` for the terminal examples, the
 native-only `maestro-extensions` to `maestro-credentials` edge for extension
 tests that build a real model catalog, and the
-native development edges from the sixteen declared callers to the dependency-free
+native development edges from the seventeen declared callers to the dependency-free
 `maestro-test-process` owner (see the
 [specification](specs/maestro-port.md#test-process-owner)). The brand exception
 permits neither a normal/build brand dependency nor a theme dependency, and does
@@ -353,3 +353,16 @@ existing directories. The conventions check covers every crate whose
 When such a crate has top-level integration-test sources, the check requires
 `autotests = false` and exactly one test target: the runnable `integration`
 target at `tests/integration.rs`.
+
+Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
+Native callers use its default JSON schema through models; guest authoring keeps
+its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
+belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions
+and extension error delivery reuse it; dispatch and lifecycle policy remain with
+their callers. The collection returns removed ownership for release outside guards.
+
+Extension runner sessions and context catalog getters retain one direct shared
+`ModelRegistry` holder; its internal synchronization stays catalog-owned.
+The complete action runtime composes the existing activity/flag state.
+Binding installs action and base-context operations before provider flushing;
+command-context binding remains independent.

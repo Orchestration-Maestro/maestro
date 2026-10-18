@@ -1,14 +1,22 @@
 //! Execution-family declarations for retained extension callbacks.
+use super::{ExtensionActions, ProviderConfig};
+use crate::loader::runtime::{NOT_INITIALIZED, SET_MODEL_NOT_INITIALIZED};
 use crate::{
     CallbackEmitter, EventBus, EventError, EventTail,
     types::{ExtensionCommandContext, ExtensionContext, MessageRenderer},
 };
 use maestro_models::{Execution, Local, Threaded};
+use maestro_models::{Model, ModelThinkingLevel as ThinkingLevel, ToolInfo, UserContent};
+use maestro_resources::SlashCommandInfo;
 use maestro_session::messages::{CustomMessage, MessageRenderOptions};
+use maestro_session::messages::{CustomMessageInput, SendMessageOptions, SendUserMessageOptions};
 use maestro_theme::LiveTheme;
 use maestro_tui::{AutocompleteItem, tui::ComponentHandle};
 use serde_json::Value;
-use std::{any::Any, sync::Arc};
+use std::{
+    any::Any,
+    sync::{Arc, RwLock},
+};
 
 /// Callback representations for extension registration and channel delivery.
 ///
@@ -29,7 +37,61 @@ use std::{any::Any, sync::Arc};
 ///     })
 /// }
 /// ```
+/// A native action cannot retain a local-only capture:
+///
+/// ```compile_fail,E0277
+/// use maestro_extensions::{ExtensionActions, ExtensionExecution};
+/// use maestro_models::Threaded;
+/// use std::{rc::Rc, sync::Arc};
+/// fn threaded_action_rejects_local_capture() -> ExtensionActions {
+///     let local = Rc::new(());
+///     let mut actions = Threaded::unbound_actions();
+///     actions.get_active_tools = Arc::new(move || {
+///         let _ = &local;
+///         Ok(Vec::new())
+///     });
+///     actions
+/// }
+/// ```
 pub trait ExtensionExecution: Execution + Clone + Default {
+    /// Sends a custom message.
+    type SendMessage: Fn(CustomMessageInput, Option<SendMessageOptions>) -> Result<(), EventError>
+        + ?Sized;
+    /// Sends a user message.
+    type SendUserMessage: Fn(UserContent, Option<SendUserMessageOptions>) -> Result<(), EventError>
+        + ?Sized;
+    /// Appends a custom entry.
+    type AppendEntry: Fn(String, Option<Value>) -> Result<(), EventError> + ?Sized;
+    /// Sets the session name.
+    type SetSessionName: Fn(String) -> Result<(), EventError> + ?Sized;
+    /// Reads the session name.
+    type GetSessionName: Fn() -> Result<Option<String>, EventError> + ?Sized;
+    /// Sets or clears an entry label.
+    type SetLabel: Fn(String, Option<String>) -> Result<(), EventError> + ?Sized;
+    /// Reads the active tool names.
+    type GetActiveTools: Fn() -> Result<Vec<String>, EventError> + ?Sized;
+    /// Reads every configured tool.
+    type GetAllTools: Fn() -> Result<Vec<ToolInfo>, EventError> + ?Sized;
+    /// Selects the active tools.
+    type SetActiveTools: Fn(Vec<String>) -> Result<(), EventError> + ?Sized;
+    /// Refreshes the tool inventory.
+    type RefreshTools: Fn() -> Result<(), EventError> + ?Sized;
+    /// Reads the available commands.
+    type GetCommands: Fn() -> Result<Vec<SlashCommandInfo>, EventError> + ?Sized;
+    /// Selects a model, resolving whether it was accepted.
+    type SetModel: Fn(Arc<RwLock<Model>>) -> Self::Future<'static, Result<bool, EventError>>
+        + ?Sized;
+    /// Reads the thinking level.
+    type GetThinkingLevel: Fn() -> Result<ThinkingLevel, EventError> + ?Sized;
+    /// Sets the thinking level.
+    type SetThinkingLevel: Fn(ThinkingLevel) -> Result<(), EventError> + ?Sized;
+    /// Registers a provider.
+    type RegisterProvider: Fn(String, Arc<RwLock<ProviderConfig>>) -> Result<(), EventError>
+        + ?Sized;
+    /// Unregisters a provider.
+    type UnregisterProvider: Fn(String) -> Result<(), EventError> + ?Sized;
+    /// The operations of a runtime no runner has bound yet.
+    fn unbound_actions() -> ExtensionActions<Self>;
     /// Command invocation callback.
     type Command: Fn(String, ExtensionCommandContext) -> Self::Future<'static, Result<(), EventError>>
         + ?Sized;
@@ -78,6 +140,42 @@ pub trait ExtensionExecution: Execution + Clone + Default {
 macro_rules! family {
     ($mode:ty, [$($bound:tt)*]) => {
         impl ExtensionExecution for $mode {
+            type SendMessage = dyn Fn(CustomMessageInput, Option<SendMessageOptions>) -> Result<(), EventError> $($bound)*;
+            type SendUserMessage = dyn Fn(UserContent, Option<SendUserMessageOptions>) -> Result<(), EventError> $($bound)*;
+            type AppendEntry = dyn Fn(String, Option<Value>) -> Result<(), EventError> $($bound)*;
+            type SetSessionName = dyn Fn(String) -> Result<(), EventError> $($bound)*;
+            type GetSessionName = dyn Fn() -> Result<Option<String>, EventError> $($bound)*;
+            type SetLabel = dyn Fn(String, Option<String>) -> Result<(), EventError> $($bound)*;
+            type GetActiveTools = dyn Fn() -> Result<Vec<String>, EventError> $($bound)*;
+            type GetAllTools = dyn Fn() -> Result<Vec<ToolInfo>, EventError> $($bound)*;
+            type SetActiveTools = dyn Fn(Vec<String>) -> Result<(), EventError> $($bound)*;
+            type RefreshTools = dyn Fn() -> Result<(), EventError> $($bound)*;
+            type GetCommands = dyn Fn() -> Result<Vec<SlashCommandInfo>, EventError> $($bound)*;
+            type SetModel = dyn Fn(Arc<RwLock<Model>>) -> Self::Future<'static, Result<bool, EventError>> $($bound)*;
+            type GetThinkingLevel = dyn Fn() -> Result<ThinkingLevel, EventError> $($bound)*;
+            type SetThinkingLevel = dyn Fn(ThinkingLevel) -> Result<(), EventError> $($bound)*;
+            type RegisterProvider = dyn Fn(String, Arc<RwLock<ProviderConfig>>) -> Result<(), EventError> $($bound)*;
+            type UnregisterProvider = dyn Fn(String) -> Result<(), EventError> $($bound)*;
+            fn unbound_actions() -> ExtensionActions<Self> {
+                ExtensionActions {
+                    send_message: Self::share(|_, _| Err(NOT_INITIALIZED.into())),
+                    send_user_message: Self::share(|_, _| Err(NOT_INITIALIZED.into())),
+                    append_entry: Self::share(|_, _| Err(NOT_INITIALIZED.into())),
+                    set_session_name: Self::share(|_| Err(NOT_INITIALIZED.into())),
+                    get_session_name: Self::share(|| Err(NOT_INITIALIZED.into())),
+                    set_label: Self::share(|_, _| Err(NOT_INITIALIZED.into())),
+                    get_active_tools: Self::share(|| Err(NOT_INITIALIZED.into())),
+                    get_all_tools: Self::share(|| Err(NOT_INITIALIZED.into())),
+                    set_active_tools: Self::share(|_| Err(NOT_INITIALIZED.into())),
+                    refresh_tools: Self::share(|| Ok(())),
+                    get_commands: Self::share(|| Err(NOT_INITIALIZED.into())),
+                    set_model: Self::share(|_| {
+                        Box::pin(std::future::ready(Err(SET_MODEL_NOT_INITIALIZED.into())))
+                    }),
+                    get_thinking_level: Self::share(|| Err(NOT_INITIALIZED.into())),
+                    set_thinking_level: Self::share(|_| Err(NOT_INITIALIZED.into())),
+                }
+            }
             type Command =
                 dyn Fn(String, ExtensionCommandContext) -> Self::Future<'static, Result<(), EventError>> $($bound)*;
             type Shortcut =

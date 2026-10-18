@@ -116,7 +116,7 @@ pub struct Agent<C: CustomAgentMessages = crate::NoCustomMessages, E: AgentExecu
     /// Reserved run and independent completion observers.
     active: Mutex<Option<execution::ActiveRun>>,
     /// Live callback registrations.
-    listeners: Mutex<listeners::Listeners<C, E>>,
+    listeners: Mutex<maestro_models::records::listeners::Listeners<listeners::AgentListener<C, E>>>,
     /// Replacement stream captured at run admission.
     pub stream_fn: RwLock<Option<StreamFn<E>>>,
     /// Caller execution facility that retains submitted work independently.
@@ -160,7 +160,7 @@ impl<C: CustomAgentMessages, E: AgentExecution> Agent<C, E> {
             get_api_key: RwLock::new(options.get_api_key),
             thinking_budgets: RwLock::new(options.thinking_budgets),
             active: Mutex::new(None),
-            listeners: Mutex::new(listeners::Listeners::default()),
+            listeners: Mutex::new(maestro_models::records::listeners::Listeners::default()),
             stream_fn: RwLock::new(options.stream_fn),
             spawn: RwLock::new(options.spawn),
             follow_up: RwLock::new(VecDeque::new()),

@@ -105,7 +105,7 @@ struct Step {
 struct Replay {
     owners: ExtensionCollection<Local>,
     apis: Vec<ExtensionAPI<Local>>,
-    runtime: Arc<ExtensionRuntimeState>,
+    runtime: Rc<maestro_extensions::ExtensionRuntime<maestro_models::Local>>,
     runner: Rc<ExtensionRunner<Local>>,
     bus: EventBusController<Local>,
     trace: Arc<Mutex<Vec<Value>>>,
@@ -216,7 +216,7 @@ impl Replay {
     fn new(sources: Vec<Provenance>) -> Self {
         let trace = Arc::new(Mutex::new(Vec::new()));
         let warnings = Arc::new(Mutex::new(Vec::new()));
-        let runtime = Arc::new(ExtensionRuntimeState::new());
+        let runtime = maestro_extensions::create_extension_runtime::<maestro_models::Local>();
         let bus = create_event_bus_for::<Local>(
             Rc::new(|tail| {
                 tokio::task::spawn_local(tail);
@@ -239,7 +239,7 @@ impl Replay {
             let owners = Rc::clone(&owners);
             ExtensionRunner::<Local>::new(
                 Rc::clone(&owners),
-                Arc::clone(&runtime),
+                runtime.clone(),
                 session::runner_session("/workspace").0,
                 Rc::new(move |s: &str| {
                     let runner = runner.upgrade().unwrap();
@@ -282,8 +282,9 @@ impl Replay {
         assert_eq!(owner.read().unwrap().resolved_path, resolved);
         self.apis.push(ExtensionAPI::new(
             &owner,
-            Arc::clone(&self.runtime),
+            self.runtime.clone(),
             self.bus.for_extension(),
+            "/workspace".into(),
         ));
         self.owners.write().unwrap().push(owner);
     }

@@ -1224,3 +1224,66 @@ fn session_operation_records_have_one_shared_owner() {
         );
     }
 }
+
+#[test]
+fn tool_metadata_has_one_shared_owner_and_one_guest_specialization() {
+    let workspace = Workspace::new();
+    workspace.foundation(&[
+        "maestro-request",
+        "maestro-models",
+        "maestro-extensions-wasm",
+    ]);
+    source(
+        &workspace,
+        "maestro-models",
+        "src/lib.rs",
+        "pub struct ToolInfo;",
+    );
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(
+        error.contains("ToolInfo declaration belongs to maestro-request"),
+        "{error}"
+    );
+    source(
+        &workspace,
+        "maestro-models",
+        "src/lib.rs",
+        "pub use maestro_request::tool_info::ToolInfo;",
+    );
+    source(
+        &workspace,
+        "maestro-request",
+        "src/lib.rs",
+        "pub struct ToolInfo<P> { parameters: P }",
+    );
+    source(
+        &workspace,
+        "maestro-extensions-wasm",
+        "src/types/actions.rs",
+        "pub type ToolInfo = maestro_request::tool_info::ToolInfo<String>;",
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+    source(
+        &workspace,
+        "maestro-request",
+        "other.rs",
+        "pub struct ToolInfo;",
+    );
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(
+        error.contains(".rs:1:") && error.contains("duplicate declaration ToolInfo"),
+        "{error}"
+    );
+    std::fs::remove_file(workspace.root.join("crates/maestro-request/other.rs")).unwrap();
+    source(
+        &workspace,
+        "maestro-extensions-wasm",
+        "src/types/actions.rs",
+        "pub struct ToolInfo;",
+    );
+    let error = check_workspace(&workspace.root).unwrap_err();
+    assert!(
+        error.contains("src/types/actions.rs:1:") && error.contains("belongs to maestro-request"),
+        "{error}"
+    );
+}

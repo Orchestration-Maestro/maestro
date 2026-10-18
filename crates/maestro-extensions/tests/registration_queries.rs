@@ -2,6 +2,12 @@
 #![cfg(not(target_arch = "wasm32"))]
 #[path = "support/registration.rs"]
 mod support;
+use maestro_extensions::types::RegisteredCommandOptions;
+use maestro_extensions::{Extension, ExtensionAPI, ExtensionRunner, SourceInfo, create_event_bus};
+use std::sync::{
+    Arc, RwLock,
+    atomic::{AtomicBool, Ordering},
+};
 #[test]
 fn owned_registration_records_keep_sources_and_callbacks() {
     support::run("owned_registration_records_keep_sources_and_callbacks");
@@ -152,14 +158,6 @@ fn retained_flags_and_command_sources_follow_their_owners() {
 
 #[test]
 fn callback_lifetimes_end_after_last_retained_owner() {
-    use maestro_extensions::types::{ExtensionRuntimeState, RegisteredCommandOptions};
-    use maestro_extensions::{
-        Extension, ExtensionAPI, ExtensionRunner, SourceInfo, create_event_bus,
-    };
-    use std::sync::{
-        Arc, RwLock,
-        atomic::{AtomicBool, Ordering},
-    };
     struct Capture(Arc<AtomicBool>);
     impl Drop for Capture {
         fn drop(&mut self) {
@@ -175,9 +173,14 @@ fn callback_lifetimes_end_after_last_retained_owner() {
         Arc::new(RwLock::new(source)),
     )));
     let owners = Arc::new(RwLock::new(vec![Arc::clone(&owner)]));
-    let runtime = Arc::new(ExtensionRuntimeState::new());
+    let runtime = maestro_extensions::create_extension_runtime::<maestro_models::Threaded>();
     let bus = create_event_bus(Arc::new(|_| {}), Arc::new(|_| {}));
-    let api = ExtensionAPI::new(&owner, Arc::clone(&runtime), bus.for_extension());
+    let api = ExtensionAPI::new(
+        &owner,
+        runtime.clone(),
+        bus.for_extension(),
+        "/workspace".into(),
+    );
     api.register_command(
         "hello".into(),
         RegisteredCommandOptions {
@@ -239,8 +242,8 @@ mod tests {
     }
 
     use maestro_extensions::types::{
-        ExtensionFlagOptions, ExtensionHandle, ExtensionRuntimeState, ExtensionShortcutOptions,
-        FlagType, FlagValue, RegisteredCommandOptions,
+        ExtensionFlagOptions, ExtensionHandle, ExtensionShortcutOptions, FlagType, FlagValue,
+        RegisteredCommandOptions,
     };
     use maestro_extensions::{
         Extension, ExtensionAPI, ExtensionContext, ExtensionRunner, SourceInfo, create_event_bus,
@@ -260,8 +263,9 @@ mod tests {
         let bus = create_event_bus(Arc::new(|_| {}), Arc::new(|_| {}));
         let api = ExtensionAPI::new(
             &owner,
-            Arc::new(ExtensionRuntimeState::new()),
+            maestro_extensions::create_extension_runtime::<maestro_models::Threaded>(),
             bus.for_extension(),
+            "/workspace".into(),
         );
         api.register_flag(
             "live".into(),
@@ -327,7 +331,7 @@ mod tests {
     fn context_runner() -> ExtensionRunner {
         ExtensionRunner::<maestro_models::Threaded>::new(
             Arc::new(RwLock::new(Vec::new())),
-            Arc::new(ExtensionRuntimeState::new()),
+            maestro_extensions::create_extension_runtime::<maestro_models::Threaded>(),
             crate::support::session::runner_session("/workspace").0,
             Arc::new(|_| {}),
             maestro_theme::LiveTheme::default(),

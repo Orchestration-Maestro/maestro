@@ -13,14 +13,20 @@ use ui_host::Named;
 use local_support::{LocalBus, STALE, loaded, local, session::runner_session};
 use maestro_catalog::ModelRegistry;
 use maestro_extensions::types::{
-    ExtensionCollection, ExtensionFlagOptions, ExtensionRuntimeState, ExtensionShortcutOptions,
-    ExtensionUIContextPort, FlagType, RegisteredCommandOptions, ShortcutHandler,
+    ExtensionCollection, ExtensionFlagOptions, ExtensionShortcutOptions, ExtensionUIContextPort,
+    FlagType, RegisteredCommandOptions, ShortcutHandler,
+};
+#[path = "support/context_actions.rs"]
+mod context_actions;
+use context_actions::{
+    Recorder, SharedModel, check_bound_operations, check_compaction_forwarding, full_compaction,
+    same_model,
 };
 use maestro_extensions::{
-    CompactOptions, ContextUsage, EventError, Extension, ExtensionAPI, ExtensionContext,
-    ExtensionContextActions, ExtensionRunner, create_event_bus,
+    CompactOptions, EventError, Extension, ExtensionAPI, ExtensionContext, ExtensionContextActions,
+    ExtensionRunner, create_event_bus,
 };
-use maestro_models::{Cancellation, Local, Model};
+use maestro_models::{Cancellation, Local};
 use maestro_session::SessionManager;
 use maestro_theme::LiveTheme;
 #[path = "support/error.rs"]
@@ -36,11 +42,6 @@ use tokio::task::yield_now;
 
 /// A local runner without registrations.
 type Runner = ExtensionRunner<Local>;
-/// A shared model handle.
-type SharedModel = Arc<RwLock<Model>>;
-/// Names of the bound operations called, in order.
-type Log = Rc<RefCell<Vec<&'static str>>>;
-
 /// A runner with the history and catalog the application keeps.
 struct Served {
     /// The runner under test.
@@ -48,20 +49,20 @@ struct Served {
     /// The writable history behind the runner's read-only handle.
     history: Rc<RefCell<SessionManager>>,
     /// The runner's catalog.
-    catalog: Rc<RefCell<ModelRegistry>>,
+    catalog: maestro_models::SharedHandle<ModelRegistry>,
 }
 
 /// Serves `cwd` for the supplied registrations and activity state.
 fn served_with(
     cwd: &str,
     owners: &ExtensionCollection<Local>,
-    runtime: &Arc<ExtensionRuntimeState>,
+    runtime: &Rc<maestro_extensions::ExtensionRuntime<maestro_models::Local>>,
 ) -> Served {
     let (session, history) = runner_session(cwd);
-    let catalog = Rc::clone(&session.model_registry);
+    let catalog = maestro_models::SharedHandle::clone(&session.model_registry);
     let runner = Runner::new(
         Rc::clone(owners),
-        Arc::clone(runtime),
+        runtime.clone(),
         session,
         Rc::new(|_| {}),
         LiveTheme::default(),
@@ -78,117 +79,8 @@ fn served(cwd: &str) -> Served {
     served_with(
         cwd,
         &Rc::new(RwLock::new(Vec::new())),
-        &Arc::new(ExtensionRuntimeState::new()),
+        &maestro_extensions::create_extension_runtime::<maestro_models::Local>(),
     )
-}
-
-/// Whether two optional model handles are the same model.
-fn same_model(actual: Option<SharedModel>, expected: &SharedModel) -> bool {
-    actual.is_some_and(|actual| Arc::ptr_eq(&actual, expected))
-}
-
-/// Bound operations that log their own name and return fixed values.
-struct Recorder {
-    /// Operation names in call order.
-    log: Log,
-    /// Compaction requests in call order.
-    compacts: Rc<RefCell<Vec<Option<CompactOptions>>>>,
-    /// The model the reader returns.
-    model: SharedModel,
-    /// The cancellation the signal reader returns.
-    signal: Cancellation,
-}
-impl Recorder {
-    /// A recorder with an empty log.
-    fn new() -> Self {
-        Self {
-            log: Log::default(),
-            compacts: Rc::default(),
-            model: model("bound"),
-            signal: Cancellation::new(),
-        }
-    }
-    /// Takes the names logged since the last call.
-    fn take(&self) -> Vec<&'static str> {
-        std::mem::take(&mut *self.log.borrow_mut())
-    }
-    /// Operations returning this recorder's values after logging their names.
-    fn actions(&self) -> ExtensionContextActions {
-        let log = |name| {
-            let log = Rc::clone(&self.log);
-            move || log.borrow_mut().push(name)
-        };
-        let (model, signal, compacts) = (
-            Arc::clone(&self.model),
-            self.signal.clone(),
-            Rc::clone(&self.compacts),
-        );
-        let (get_model, is_idle, get_signal) =
-            (log("get_model"), log("is_idle"), log("get_signal"));
-        let (abort, pending, shutdown) =
-            (log("abort"), log("has_pending_messages"), log("shutdown"));
-        let (usage, compact) = (log("get_context_usage"), log("compact"));
-        let prompt = log("get_system_prompt");
-        ExtensionContextActions {
-            get_model: Rc::new(move || {
-                get_model();
-                Ok(Some(Arc::clone(&model)))
-            }),
-            is_idle: Rc::new(move || {
-                is_idle();
-                Ok(false)
-            }),
-            get_signal: Rc::new(move || {
-                get_signal();
-                Ok(Some(signal.clone()))
-            }),
-            abort: Rc::new(move || {
-                abort();
-                Ok(())
-            }),
-            has_pending_messages: Rc::new(move || {
-                pending();
-                Ok(true)
-            }),
-            shutdown: Rc::new(move || {
-                shutdown();
-                Ok(())
-            }),
-            get_context_usage: Rc::new(move || {
-                usage();
-                Ok(Some(ContextUsage {
-                    tokens: None,
-                    context_window: 200_000.0,
-                    percent: None,
-                }))
-            }),
-            compact: Rc::new(move |options| {
-                compact();
-                compacts.borrow_mut().push(options);
-                Ok(())
-            }),
-            get_system_prompt: Rc::new(move || {
-                prompt();
-                Ok("bound prompt".to_owned())
-            }),
-        }
-    }
-}
-
-/// A full compaction request whose callbacks reject and record any call.
-fn full_compaction(called: &Rc<Cell<bool>>) -> CompactOptions {
-    let (complete, error) = (Rc::clone(called), Rc::clone(called));
-    CompactOptions {
-        custom_instructions: Some("keep".into()),
-        on_complete: Some(Rc::new(move |_| {
-            complete.set(true);
-            Err("unexpected completion".into())
-        })),
-        on_error: Some(Rc::new(move |_| {
-            error.set(true);
-            Err("unexpected failure".into())
-        })),
-    }
 }
 
 /// Calls every context operation, returning each error message in order.
@@ -231,16 +123,22 @@ fn existing_context_observes_later_bindings_except_captured_model_getter() {
     let (first, second, later) = (model("a1"), model("a2"), model("b"));
     let flip = Rc::new(Cell::new(false));
     let (a1, a2) = (Arc::clone(&first), Arc::clone(&second));
-    s.runner.bind_core(reading(
-        move || {
-            Some(Arc::clone(if flip.replace(!flip.get()) {
-                &a2
-            } else {
-                &a1
-            }))
-        },
-        false,
-    ));
+    s.runner
+        .bind_core(
+            <maestro_models::Local as maestro_extensions::ExtensionExecution>::unbound_actions(),
+            reading(
+                move || {
+                    Some(Arc::clone(if flip.replace(!flip.get()) {
+                        &a2
+                    } else {
+                        &a1
+                    }))
+                },
+                false,
+            ),
+            maestro_extensions::types::ProviderActions::default(),
+        )
+        .unwrap();
     assert!(early.model().unwrap().is_none());
     assert!(!early.is_idle().unwrap());
     let ctx = s.runner.create_context();
@@ -248,7 +146,12 @@ fn existing_context_observes_later_bindings_except_captured_model_getter() {
     assert!(same_model(ctx.model().unwrap(), &second));
     let b = Arc::clone(&later);
     s.runner
-        .bind_core(reading(move || Some(Arc::clone(&b)), true));
+        .bind_core(
+            <maestro_models::Local as maestro_extensions::ExtensionExecution>::unbound_actions(),
+            reading(move || Some(Arc::clone(&b)), true),
+            maestro_extensions::types::ProviderActions::default(),
+        )
+        .unwrap();
     assert!(same_model(ctx.model().unwrap(), &first));
     assert!(ctx.is_idle().unwrap());
     assert!(early.model().unwrap().is_none());
@@ -275,13 +178,22 @@ fn existing_context_observes_later_bindings_except_captured_model_getter() {
 fn base_context_methods_forward_current_capabilities() {
     let s = served("/work");
     let recorder = Recorder::new();
-    s.runner.bind_core(recorder.actions());
+    s.runner
+        .bind_core(
+            <maestro_models::Local as maestro_extensions::ExtensionExecution>::unbound_actions(),
+            recorder.actions(),
+            maestro_extensions::types::ProviderActions::default(),
+        )
+        .unwrap();
     let ctx = s.runner.create_context();
     assert_eq!(ctx.cwd().unwrap(), "/work");
     let history = ctx.session_manager().unwrap();
     s.history.borrow_mut().append_session_info("named").unwrap();
     assert_eq!(history.borrow().get_session_name().unwrap(), Some("named"));
-    assert!(Rc::ptr_eq(&ctx.model_registry().unwrap(), &s.catalog));
+    assert!(maestro_models::SharedHandle::ptr_eq(
+        &ctx.model_registry().unwrap(),
+        &s.catalog
+    ));
     assert!(recorder.take().is_empty());
     check_bound_operations(&ctx, &recorder);
     check_compaction_forwarding(&ctx, &recorder);
@@ -289,59 +201,6 @@ fn base_context_methods_forward_current_capabilities() {
     assert_eq!(ctx.ui().unwrap().get_editor_text().unwrap(), "");
     s.runner.shutdown().unwrap();
     assert_eq!(recorder.take(), ["shutdown"]);
-}
-
-/// Each forwarding operation returns its bound value and calls only itself.
-fn check_bound_operations(ctx: &ExtensionContext, recorder: &Recorder) {
-    assert!(same_model(ctx.model().unwrap(), &recorder.model));
-    assert_eq!(recorder.take(), ["get_model"]);
-    assert!(!ctx.is_idle().unwrap());
-    assert_eq!(recorder.take(), ["is_idle"]);
-    assert!(ctx.signal().unwrap().is_some());
-    assert_eq!(recorder.take(), ["get_signal"]);
-    ctx.abort().unwrap();
-    assert_eq!(recorder.take(), ["abort"]);
-    assert!(ctx.has_pending_messages().unwrap());
-    assert_eq!(recorder.take(), ["has_pending_messages"]);
-    ctx.shutdown().unwrap();
-    assert_eq!(recorder.take(), ["shutdown"]);
-    let usage = ctx.get_context_usage().unwrap();
-    let expected = ContextUsage {
-        tokens: None,
-        context_window: 200_000.0,
-        percent: None,
-    };
-    assert_eq!(usage, Some(expected));
-    assert_eq!(recorder.take(), ["get_context_usage"]);
-    assert_eq!(ctx.get_system_prompt().unwrap(), "bound prompt");
-    assert_eq!(recorder.take(), ["get_system_prompt"]);
-}
-
-/// Forwards absent, default and full compaction requests unchanged.
-fn check_compaction_forwarding(ctx: &ExtensionContext, recorder: &Recorder) {
-    let called = Rc::new(Cell::new(false));
-    let full = full_compaction(&called);
-    let (complete, error) = (
-        full.on_complete.clone().unwrap(),
-        full.on_error.clone().unwrap(),
-    );
-    ctx.compact(None).unwrap();
-    ctx.compact(Some(CompactOptions::default())).unwrap();
-    ctx.compact(Some(full)).unwrap();
-    assert_eq!(recorder.take(), ["compact", "compact", "compact"]);
-    let compacts = recorder.compacts.borrow();
-    assert!(compacts[0].is_none());
-    let default = compacts[1].as_ref().unwrap();
-    assert!(default.custom_instructions.is_none());
-    assert!(default.on_complete.is_none() && default.on_error.is_none());
-    let forwarded = compacts[2].as_ref().unwrap();
-    assert_eq!(forwarded.custom_instructions.as_deref(), Some("keep"));
-    assert!(Rc::ptr_eq(
-        forwarded.on_complete.as_ref().unwrap(),
-        &complete
-    ));
-    assert!(Rc::ptr_eq(forwarded.on_error.as_ref().unwrap(), &error));
-    assert!(!called.get());
 }
 
 #[test]
@@ -363,7 +222,10 @@ fn unbound_context_actions_return_runner_defaults() {
     assert!(!called.get());
     assert_eq!(ctx.cwd().unwrap(), "/work");
     assert_eq!(ctx.session_manager().unwrap().borrow().get_cwd(), "/work");
-    assert!(Rc::ptr_eq(&ctx.model_registry().unwrap(), &s.catalog));
+    assert!(maestro_models::SharedHandle::ptr_eq(
+        &ctx.model_registry().unwrap(),
+        &s.catalog
+    ));
 }
 
 #[test]
@@ -372,7 +234,13 @@ fn stale_access_is_catchable_without_revoking_retained_raw_objects() {
     let owner = loaded("/stale", bus.controller.for_extension());
     let s = served_with("/work", &owner.owners, &owner.runtime);
     let recorder = Recorder::new();
-    s.runner.bind_core(recorder.actions());
+    s.runner
+        .bind_core(
+            <maestro_models::Local as maestro_extensions::ExtensionExecution>::unbound_actions(),
+            recorder.actions(),
+            maestro_extensions::types::ProviderActions::default(),
+        )
+        .unwrap();
     let (ui, host) = Named::install("context");
     s.runner.set_ui_context(Some(ui));
     let ctx = s.runner.create_context();
@@ -391,7 +259,7 @@ fn stale_access_is_catchable_without_revoking_retained_raw_objects() {
     ui.set_editor_text("kept".into()).unwrap();
     assert_eq!(host.get_editor_text().unwrap(), "kept");
     assert_eq!(history.borrow().get_cwd(), "/work");
-    assert_eq!(catalog.borrow().get_error(), None);
+    assert_eq!(catalog.get_error(), None);
     signal.abort();
     assert!(signal.is_aborted());
     assert_eq!(model.read().unwrap().id, "bound");
@@ -490,17 +358,23 @@ fn marker<T>(result: Result<T, EventError>) -> &'static str {
 #[test]
 fn context_actions_propagate_their_original_errors() {
     let s = served("/work");
-    s.runner.bind_core(ExtensionContextActions {
-        get_model: Rc::new(|| fail("get_model")),
-        is_idle: Rc::new(|| fail("is_idle")),
-        get_signal: Rc::new(|| fail("get_signal")),
-        abort: Rc::new(|| fail("abort")),
-        has_pending_messages: Rc::new(|| fail("has_pending_messages")),
-        shutdown: Rc::new(|| fail("shutdown")),
-        get_context_usage: Rc::new(|| fail("get_context_usage")),
-        compact: Rc::new(|_| fail("compact")),
-        get_system_prompt: Rc::new(|| fail("get_system_prompt")),
-    });
+    s.runner
+        .bind_core(
+            <maestro_models::Local as maestro_extensions::ExtensionExecution>::unbound_actions(),
+            ExtensionContextActions {
+                get_model: Rc::new(|| fail("get_model")),
+                is_idle: Rc::new(|| fail("is_idle")),
+                get_signal: Rc::new(|| fail("get_signal")),
+                abort: Rc::new(|| fail("abort")),
+                has_pending_messages: Rc::new(|| fail("has_pending_messages")),
+                shutdown: Rc::new(|| fail("shutdown")),
+                get_context_usage: Rc::new(|| fail("get_context_usage")),
+                compact: Rc::new(|_| fail("compact")),
+                get_system_prompt: Rc::new(|| fail("get_system_prompt")),
+            },
+            maestro_extensions::types::ProviderActions::default(),
+        )
+        .unwrap();
     let ctx = s.runner.create_context();
     let markers = [
         marker(ctx.model()),
@@ -534,10 +408,16 @@ fn context_exposes_the_current_cancellation_signal() {
     let s = served("/work");
     let signal = Cancellation::new();
     let bound = signal.clone();
-    s.runner.bind_core(ExtensionContextActions {
-        get_signal: Rc::new(move || Ok(Some(bound.clone()))),
-        ..ExtensionContextActions::default()
-    });
+    s.runner
+        .bind_core(
+            <maestro_models::Local as maestro_extensions::ExtensionExecution>::unbound_actions(),
+            ExtensionContextActions {
+                get_signal: Rc::new(move || Ok(Some(bound.clone()))),
+                ..ExtensionContextActions::default()
+            },
+            maestro_extensions::types::ProviderActions::default(),
+        )
+        .unwrap();
     let ctx = s.runner.create_context();
     let earlier = ctx.signal().unwrap().unwrap();
     assert!(!earlier.is_aborted());
@@ -601,9 +481,14 @@ fn threaded_shortcut_reads_its_context_before_suspending() {
         local_support::source("/threaded"),
     )));
     let owners = Arc::new(RwLock::new(vec![Arc::clone(&owner)]));
-    let runtime = Arc::new(ExtensionRuntimeState::new());
+    let runtime = maestro_extensions::create_extension_runtime::<maestro_models::Threaded>();
     let bus = create_event_bus(Arc::new(|_| {}), Arc::new(|_| {}));
-    let api = ExtensionAPI::new(&owner, Arc::clone(&runtime), bus.for_extension());
+    let api = ExtensionAPI::new(
+        &owner,
+        runtime.clone(),
+        bus.for_extension(),
+        "/workspace".into(),
+    );
     let seen = Arc::new(Mutex::new(Vec::new()));
     let output = Arc::clone(&seen);
     let options: ExtensionShortcutOptions = ExtensionShortcutOptions {
@@ -644,30 +529,36 @@ fn context_callbacks_can_rebind_without_retaining_the_registration_owner() {
     let weak_runner = Rc::downgrade(&runner);
     let captured = Rc::new(Cell::new(false));
     let released = Rc::downgrade(&captured);
-    runner.bind_core(ExtensionContextActions {
+    runner.bind_core(<maestro_models::Local as maestro_extensions::ExtensionExecution>::unbound_actions(), ExtensionContextActions {
         is_idle: Rc::new(move || {
             captured.set(true);
             weak_runner
                 .upgrade()
                 .unwrap()
-                .bind_core(ExtensionContextActions::default());
+                .bind_core(<maestro_models::Local as maestro_extensions::ExtensionExecution>::unbound_actions(), ExtensionContextActions::default(), maestro_extensions::types::ProviderActions::default()).unwrap();
             Ok(false)
         }),
         ..ExtensionContextActions::default()
-    });
+    }, maestro_extensions::types::ProviderActions::default()).unwrap();
     let ctx = runner.create_context();
     assert!(!ctx.is_idle().unwrap());
     assert!(ctx.is_idle().unwrap());
     assert!(released.upgrade().is_none());
     let retained = Rc::new(Cell::new(false));
     let released = Rc::downgrade(&retained);
-    runner.bind_core(ExtensionContextActions {
-        is_idle: Rc::new(move || {
-            retained.set(true);
-            Ok(false)
-        }),
-        ..ExtensionContextActions::default()
-    });
+    runner
+        .bind_core(
+            <maestro_models::Local as maestro_extensions::ExtensionExecution>::unbound_actions(),
+            ExtensionContextActions {
+                is_idle: Rc::new(move || {
+                    retained.set(true);
+                    Ok(false)
+                }),
+                ..ExtensionContextActions::default()
+            },
+            maestro_extensions::types::ProviderActions::default(),
+        )
+        .unwrap();
     owner
         .api
         .register_shortcut(

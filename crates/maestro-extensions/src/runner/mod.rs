@@ -1,12 +1,13 @@
 //! Queries over current shared extension registrations.
 mod binding;
 mod contexts;
+mod errors;
 mod registration;
 mod shortcuts;
 mod ui;
 use crate::{
     ErrorReporter, ExtensionExecution,
-    types::{ExtensionCollection, ExtensionRuntimeState, ExtensionUIContext, read},
+    types::{ExtensionCollection, ExtensionRuntime, ExtensionUIContext, read},
 };
 pub(crate) use binding::ContextBinding;
 pub use binding::ExtensionRunnerSession;
@@ -21,6 +22,14 @@ use std::{
 
 /// Queries current owners while retaining registration and diagnostic identities.
 pub struct ExtensionRunner<E: ExtensionExecution = Threaded> {
+    /// Shared action runtime.
+    runtime: E::Shared<ExtensionRuntime<E>>,
+    /// Live attributed error observers.
+    error_listeners: Rc<
+        RefCell<
+            maestro_models::records::listeners::Listeners<crate::types::ExtensionErrorListener>,
+        >,
+    >,
     /// Current extension load order.
     extensions: ExtensionCollection<E>,
     /// State shared with this runner's contexts.
@@ -39,16 +48,19 @@ impl<E: ExtensionExecution> ExtensionRunner<E> {
     #[must_use]
     pub fn new(
         extensions: ExtensionCollection<E>,
-        runtime: Arc<ExtensionRuntimeState>,
+        runtime: E::Shared<ExtensionRuntime<E>>,
         session: ExtensionRunnerSession,
         warning_reporter: ErrorReporter<E>,
         theme: LiveTheme,
     ) -> Self {
+        let state = Arc::clone(&runtime.state);
         let no_ui = ExtensionUIContext::no_ui(theme);
         Self {
             extensions,
+            runtime,
+            error_listeners: Rc::default(),
             binding: Rc::new(ContextBinding {
-                runtime,
+                runtime: state,
                 session,
                 actions: RefCell::default(),
                 command_actions: RefCell::default(),
