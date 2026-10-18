@@ -2,7 +2,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/readme/hero-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="assets/readme/hero-light.svg">
-    <img src="assets/readme/hero-light.svg" width="100%" alt="Maestro. Conduct every model. One agent run written as a score on four staves: prompt, maestro-agent, maestro-models and maestro-tools.">
+    <img src="assets/readme/hero-light.svg" width="100%" alt="Maestro. Conduct every model. An agent engine in Rust, shown as one agent run written as a score on four staves: prompt, maestro-agent, maestro-models and maestro-tools.">
   </picture>
 </h1>
 
