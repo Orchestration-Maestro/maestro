@@ -8,21 +8,22 @@ const CHECK_FAILURE: &str = "❌ Checks failed. Please fix the errors before com
 
 /// Format captured index paths, restage surviving files and run checks.
 ///
+/// The full conventions suite runs only when a captured path belongs to the
+/// conventions checker, and the browser smoke check only when one affects
+/// browser compilation.
+///
 /// # Errors
 /// Returns native process and filesystem failures.
 pub fn run(
     root: &Path,
     format: &mut Command,
     check: &mut Command,
+    conventions: &mut Command,
     smoke: Option<&mut Command>,
 ) -> io::Result<ExitCode> {
     let paths = capture(root)?;
     println!("Running formatting, linting, and type checking...");
-    if !format
-        .status()
-        .inspect_err(|error| eprintln!("{error}"))
-        .is_ok_and(|status| status.success())
-    {
+    if !passed(format) {
         println!("{CHECK_FAILURE}");
         return Ok(ExitCode::FAILURE);
     }
@@ -40,27 +41,55 @@ pub fn run(
             return Ok(ExitCode::FAILURE);
         }
     }
-    if !check
-        .status()
-        .inspect_err(|error| eprintln!("{error}"))
-        .is_ok_and(|status| status.success())
-    {
+    if !passed(check) {
         println!("{CHECK_FAILURE}");
         return Ok(ExitCode::FAILURE);
     }
-    if let Some(smoke) = smoke.filter(|_| needs_smoke(&paths)) {
-        println!("Running browser smoke check...");
-        if !smoke
-            .status()
-            .inspect_err(|error| eprintln!("{error}"))
-            .is_ok_and(|status| status.success())
-        {
-            println!("❌ Browser smoke check failed.");
-            return Ok(ExitCode::FAILURE);
-        }
+    if needs_conventions(&paths)
+        && !step(
+            "Running the full conventions suite...",
+            conventions,
+            "❌ Conventions suite failed.",
+        )
+    {
+        return Ok(ExitCode::FAILURE);
+    }
+    if let Some(smoke) = smoke.filter(|_| needs_smoke(&paths))
+        && !step(
+            "Running browser smoke check...",
+            smoke,
+            "❌ Browser smoke check failed.",
+        )
+    {
+        return Ok(ExitCode::FAILURE);
     }
     println!("✅ All pre-commit checks passed!");
     Ok(ExitCode::SUCCESS)
+}
+
+/// Run a step, reporting a launch failure, and tell whether it succeeded.
+fn passed(command: &mut Command) -> bool {
+    command
+        .status()
+        .inspect_err(|error| eprintln!("{error}"))
+        .is_ok_and(|status| status.success())
+}
+
+/// Announce and run a path-selected step, printing `failure` when it does not pass.
+fn step(announcement: &str, command: &mut Command, failure: &str) -> bool {
+    println!("{announcement}");
+    let succeeded = passed(command);
+    if !succeeded {
+        println!("{failure}");
+    }
+    succeeded
+}
+
+/// Check whether captured paths change the conventions checker or its fixtures.
+fn needs_conventions(paths: &[OsString]) -> bool {
+    paths
+        .iter()
+        .any(|path| Path::new(path).starts_with("crates/maestro-test-conventions"))
 }
 
 /// Check whether captured paths affect browser compilation.

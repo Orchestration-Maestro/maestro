@@ -154,6 +154,10 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
     format.current_dir(checkout).args(["fmt", "--all"]);
     let mut check = Command::new("just");
     check.current_dir(checkout).arg("check");
+    let mut conventions = Command::new(cargo);
+    conventions
+        .current_dir(checkout)
+        .args(["test", "-p", "maestro-test-conventions", "--locked"]);
     let mut smoke = Command::new(std::env::current_exe()?);
     smoke.arg("check-browser-smoke");
     let active = checkout
@@ -163,6 +167,7 @@ fn hook(cargo: &Path, checkout: &Path) -> io::Result<ExitCode> {
         checkout,
         &mut format,
         &mut check,
+        &mut conventions,
         active.then_some(&mut smoke),
     )
 }

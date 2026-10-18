@@ -19,7 +19,9 @@ just ci
 ```
 
 `just setup` installs pinned tools and prek hooks. `just check` runs formatting,
-`cargo hakari verify`, Clippy with warnings denied, strict public rustdoc and workspace conventions.
+`cargo hakari verify`, Clippy with warnings denied, strict public rustdoc and the
+workspace conventions on this checkout; the conventions checker's own suite runs
+with the workspace tests.
 `just test` runs workspace tests with cargo-nextest, then Cargo doctests after
 success. `just ci` runs checks and both test phases. Development and test builds
 use line-table debug information: backtraces retain file:line, but debugger
@@ -31,7 +33,8 @@ Run `cargo hakari generate` after changing dependencies, their features or
 Use `mise exec -- just <recipe>` if mise is not active in your shell.
 
 The commit hook formats the code, re-stages the staged files and runs
-`just check`; unformatted code is fixed, never rejected. It also rejects
+`just check`, then the full conventions suite when a staged path is under
+`crates/maestro-test-conventions/`; unformatted code is fixed, never rejected. It also rejects
 merge-conflict markers and invalid TOML or YAML. Commit messages need a
 conventional header and every line must be at most 80 columns.
 

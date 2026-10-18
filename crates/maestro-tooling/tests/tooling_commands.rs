@@ -474,11 +474,14 @@ fn drive() {
         format.arg("format");
         let mut check = Command::new(&cargo);
         check.arg("check");
+        let mut conventions = Command::new(&cargo);
+        conventions.arg("conventions");
         let mut smoke = Command::new(&cargo);
         smoke.arg("smoke");
         match std::env::var("MAESTRO_MISSING_PHASE").as_deref() {
             Ok("format") => format = Command::new("missing-tool"),
             Ok("check") => check = Command::new("missing-tool"),
+            Ok("conventions") => conventions = Command::new("missing-tool"),
             Ok("smoke") => smoke = Command::new("missing-tool"),
             _ => {}
         }
@@ -486,6 +489,7 @@ fn drive() {
             Path::new(&root),
             &mut format,
             &mut check,
+            &mut conventions,
             (std::env::var("MAESTRO_ACTIVE_SMOKE").as_deref() == Ok("true")).then_some(&mut smoke),
         )
     } else {
@@ -1517,7 +1521,8 @@ fn assert_hook_restages_only_captured_paths() {
         .env("MAESTRO_RECEIPT", fixture.root.join("receipt"))
         .env("HOME", &fixture.root);
     check.env("MAESTRO_CHECK_INDEX", &fixture.root);
-    tooling::pre_commit::run(&fixture.root, &mut format, &mut check, None).unwrap();
+    let mut unused = Command::new("missing-tool");
+    tooling::pre_commit::run(&fixture.root, &mut format, &mut check, &mut unused, None).unwrap();
     for entry in fs::read_dir(fixture.root.join("receipt/env")).unwrap() {
         assert_ne!(fs::read(entry.unwrap().path()).unwrap(), b"secret-value");
     }
@@ -1549,7 +1554,12 @@ fn assert_hook_phase(phase: &str) {
     let fixture = Fixture::new();
     git(&fixture.root, &["init", "--quiet"]);
     fs::write(fixture.root.join("Cargo.toml"), "manifest").unwrap();
-    git(&fixture.root, &["add", "Cargo.toml"]);
+    let checker = fixture
+        .root
+        .join("crates/maestro-test-conventions/src/lib.rs");
+    fs::create_dir_all(checker.parent().unwrap()).unwrap();
+    fs::write(checker, "checker").unwrap();
+    git(&fixture.root, &["add", "Cargo.toml", "crates"]);
     let output = fixture
         .invoke("maestro_hook_messages_follow_phase_results", "hook", &[])
         .env("PATH", std::env::var_os("PATH").unwrap())
@@ -1560,6 +1570,10 @@ fn assert_hook_phase(phase: &str) {
     let text = stdout(&output);
     assert!(text.contains("Running formatting, linting, and type checking...\n"));
     assert_eq!(
+        text.contains("Running the full conventions suite...\n"),
+        matches!(phase, "conventions" | "smoke" | "success")
+    );
+    assert_eq!(
         text.contains("Running browser smoke check...\n"),
         matches!(phase, "smoke" | "success")
     );
@@ -1568,18 +1582,23 @@ fn assert_hook_phase(phase: &str) {
         phase == "success"
     );
     assert!(output.stderr.is_empty());
-    let failure = match phase {
-        "format" | "check" => "❌ Checks failed. Please fix the errors before committing.\n",
-        "smoke" => "❌ Browser smoke check failed.\n",
-        _ => "",
+    let (announcement, failure) = match phase {
+        "format" | "check" => (
+            "Running formatting, linting, and type checking...\n",
+            "❌ Checks failed. Please fix the errors before committing.\n",
+        ),
+        "conventions" => (
+            "Running the full conventions suite...\n",
+            "❌ Conventions suite failed.\n",
+        ),
+        "smoke" => (
+            "Running browser smoke check...\n",
+            "❌ Browser smoke check failed.\n",
+        ),
+        _ => ("", ""),
     };
     if !failure.is_empty() {
         assert!(text.ends_with(failure), "{text}");
-        let announcement = if phase == "smoke" {
-            "Running browser smoke check...\n"
-        } else {
-            "Running formatting, linting, and type checking...\n"
-        };
         assert!(text.find(announcement).unwrap() < text.find(failure).unwrap());
     }
     assert_eq!(output.status.success(), phase == "success");
@@ -1588,7 +1607,8 @@ fn assert_hook_phase(phase: &str) {
         match phase {
             "format" => b"format\n".as_slice(),
             "check" => b"format\ncheck\n",
-            _ => b"format\ncheck\nsmoke\n",
+            "conventions" => b"format\ncheck\nconventions\n",
+            _ => b"format\ncheck\nconventions\nsmoke\n",
         }
     );
 }
@@ -1596,7 +1616,7 @@ fn assert_hook_phase(phase: &str) {
 #[test]
 fn maestro_hook_messages_follow_phase_results() {
     drive();
-    for phase in ["format", "check", "smoke", "success"] {
+    for phase in ["format", "check", "conventions", "smoke", "success"] {
         assert_hook_phase(phase);
     }
 
@@ -1628,16 +1648,27 @@ fn maestro_hook_messages_follow_phase_results() {
 }
 
 #[test]
-fn maestro_hook_selects_smoke_from_original_paths() {
+fn maestro_hook_selects_extra_steps_from_original_paths() {
     drive();
     for (name, active, expected) in [
-        ("crates/maestro-models/src/lib.rs", true, true),
-        ("crates/maestro-web/src/lib.rs", true, true),
-        ("Cargo.toml", true, true),
-        ("Cargo.lock", true, true),
-        ("crates/maestro-agent/src/lib.rs", true, false),
-        ("crates/maestro-models-old/src/lib.rs", true, false),
-        ("Cargo.toml", false, false),
+        ("crates/maestro-models/src/lib.rs", true, "smoke\n"),
+        ("crates/maestro-web/src/lib.rs", true, "smoke\n"),
+        ("Cargo.toml", true, "smoke\n"),
+        ("Cargo.lock", true, "smoke\n"),
+        ("crates/maestro-agent/src/lib.rs", true, ""),
+        ("crates/maestro-models-old/src/lib.rs", true, ""),
+        ("Cargo.toml", false, ""),
+        (
+            "crates/maestro-test-conventions/src/lib.rs",
+            true,
+            "conventions\n",
+        ),
+        (
+            "crates/maestro-test-conventions/tests/integration.rs",
+            false,
+            "conventions\n",
+        ),
+        ("crates/maestro-test-conventions-old/src/lib.rs", true, ""),
     ] {
         let fixture = Fixture::new();
         git(&fixture.root, &["init", "--quiet"]);
@@ -1648,7 +1679,7 @@ fn maestro_hook_selects_smoke_from_original_paths() {
         fs::remove_file(&path).unwrap();
         let output = fixture
             .invoke(
-                "maestro_hook_selects_smoke_from_original_paths",
+                "maestro_hook_selects_extra_steps_from_original_paths",
                 "hook",
                 &[],
             )
@@ -1657,18 +1688,21 @@ fn maestro_hook_selects_smoke_from_original_paths() {
             .output()
             .unwrap();
         assert!(output.status.success());
+        let text = stdout(&output);
         assert_eq!(
-            stdout(&output).contains("Running browser smoke check...\n"),
-            expected,
+            text.contains("Running the full conventions suite...\n"),
+            expected.contains("conventions"),
+            "{name}"
+        );
+        assert_eq!(
+            text.contains("Running browser smoke check...\n"),
+            expected.contains("smoke"),
             "{name}"
         );
         assert_eq!(
             fixture.receipt("phases"),
-            if expected {
-                b"format\ncheck\nsmoke\n".as_slice()
-            } else {
-                b"format\ncheck\n"
-            }
+            format!("format\ncheck\n{expected}").as_bytes(),
+            "{name}"
         );
     }
 }
@@ -1734,11 +1768,16 @@ fn maestro_browser_missing_tool_logs_smoke_failure() {
 #[test]
 fn maestro_hook_missing_tool_announces_failed_step() {
     drive();
-    for phase in ["format", "check", "smoke"] {
+    for phase in ["format", "check", "conventions", "smoke"] {
         let fixture = Fixture::new();
         git(&fixture.root, &["init", "--quiet"]);
         fs::write(fixture.root.join("Cargo.toml"), "manifest").unwrap();
-        git(&fixture.root, &["add", "Cargo.toml"]);
+        let checker = fixture
+            .root
+            .join("crates/maestro-test-conventions/src/lib.rs");
+        fs::create_dir_all(checker.parent().unwrap()).unwrap();
+        fs::write(checker, "checker").unwrap();
+        git(&fixture.root, &["add", "Cargo.toml", "crates"]);
         let output = fixture
             .invoke(
                 "maestro_hook_missing_tool_announces_failed_step",
@@ -1751,10 +1790,10 @@ fn maestro_hook_missing_tool_announces_failed_step() {
             .output()
             .unwrap();
         assert_eq!(output.status.code(), Some(1));
-        let message = if phase == "smoke" {
-            "❌ Browser smoke check failed.\n"
-        } else {
-            "❌ Checks failed. Please fix the errors before committing.\n"
+        let message = match phase {
+            "conventions" => "❌ Conventions suite failed.\n",
+            "smoke" => "❌ Browser smoke check failed.\n",
+            _ => "❌ Checks failed. Please fix the errors before committing.\n",
         };
         assert!(stdout(&output).ends_with(message), "{}", stdout(&output));
         assert!(!stdout(&output).contains("All pre-commit checks passed"));

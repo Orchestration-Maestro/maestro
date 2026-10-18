@@ -27,12 +27,13 @@ rustup, not mise. `mise.lock` records the tool downloads and checksums.
 
 - `just setup`: install the pinned tools and git hooks.
 - `just check`: formatting, Clippy with warnings denied, strict public
-  documentation, and workspace conventions tests.
+  documentation, and the workspace conventions on this checkout.
 - `just test`: the full workspace test suite.
 - `just ci`: checks and tests, matching shared Linux CI.
 
 Before each commit, prek formats the code with `cargo fmt`, re-stages the
-staged files and runs `just check`. It also rejects merge-conflict markers and
+staged files and runs `just check`, then the full conventions suite when a
+staged path is under `crates/maestro-test-conventions/`. It also rejects merge-conflict markers and
 invalid TOML or YAML. Commit messages require a conventional header and lines
 of at most 80 columns.
 
