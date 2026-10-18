@@ -301,12 +301,7 @@ async fn proxy_transport_failure_retains_partial_case() {
     assert_eq!(run.message(), failure("network failed"));
     assert_eq!(requests.lock().unwrap().len(), 1);
     let mut reply = Reply::chunks(vec![join(&canonical_lines()[..5])]);
-    let cause = maestro_models::DiagnosticErrorInfo {
-        name: None,
-        message: "body failed".into(),
-        code: None,
-        stack: None,
-    };
+    let cause = maestro_models::DiagnosticErrorInfo::new(None, "body failed");
     reply.body.push(Err(FetchError::Connection(cause)));
     let (run, _) = exchange(reply).await;
     assert_eq!(run.events[..5], canonical_events()[..5]);

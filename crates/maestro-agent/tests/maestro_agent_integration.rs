@@ -10,9 +10,10 @@ use maestro_models::{
 };
 use serde_json::{Value, json};
 use std::sync::{Arc, Mutex, RwLock};
+use support::observable::kind;
 use support::scripted::{
-    Registered, agent_for, ask_calculator, block_text, history, label, last_assistant,
-    record_events, say, set_history, streaming, user,
+    Registered, agent_for, ask_calculator, block_text, history, last_assistant, record_events, say,
+    set_history, streaming, user,
 };
 use support::utils::calculate::{calculate, calculate_tool};
 
@@ -59,7 +60,7 @@ async fn maestro_calculator_execution_tracks_pending_ids_case() {
     let pending = Arc::new(Mutex::new(vec![]));
     let (sink, state) = (Arc::clone(&pending), Arc::clone(agent.state()));
     agent.subscribe(Arc::new(move |event, _| {
-        let name = label(&event.read().unwrap());
+        let name = kind(&event.read().unwrap());
         if name.starts_with("tool_execution_") && name != "tool_execution_update" {
             let ids = state.read().unwrap().pending_tool_calls().to_vec();
             sink.lock().unwrap().push((name, ids));

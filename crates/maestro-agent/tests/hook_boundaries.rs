@@ -141,12 +141,7 @@ async fn recovery_case() {
 }
 /// Construct controlled, nonsecret diagnostic text.
 fn diagnostic(message: &str) -> maestro_models::DiagnosticErrorInfo {
-    maestro_models::DiagnosticErrorInfo {
-        name: None,
-        message: message.into(),
-        stack: None,
-        code: None,
-    }
+    maestro_models::DiagnosticErrorInfo::new(None, message)
 }
 
 /// Blocking retains exact nonempty reason bytes and permits false blocks.

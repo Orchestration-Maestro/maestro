@@ -45,12 +45,7 @@ pub fn input(text: &str) -> PromptInput {
 /// Caller diagnostics preserved by the failure path.
 #[must_use]
 pub fn failure(text: &str) -> DiagnosticErrorInfo {
-    DiagnosticErrorInfo {
-        name: Some("Error".into()),
-        message: text.into(),
-        code: None,
-        stack: None,
-    }
+    DiagnosticErrorInfo::error(text)
 }
 /// The operation-specific busy diagnostic.
 pub const BUSY: &str = "Agent is already processing a prompt. Use steer() or followUp() to queue messages, or wait for completion.";

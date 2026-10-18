@@ -55,12 +55,7 @@ pub fn calculate_tool() -> SharedAgentTool {
         }),
     };
     let execute = Arc::new(|_, params: CalculateParams, _, _| {
-        let result = calculate(&params.expression).map_err(|message| DiagnosticErrorInfo {
-            name: Some("Error".into()),
-            message,
-            code: None,
-            stack: None,
-        });
+        let result = calculate(&params.expression).map_err(DiagnosticErrorInfo::error);
         Box::pin(std::future::ready(result)) as maestro_models::BoxFuture<_>
     });
     Arc::new(RwLock::new(AgentTool::typed(

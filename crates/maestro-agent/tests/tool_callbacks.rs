@@ -211,14 +211,7 @@ fn maestro_typed_tool_returns_callback_and_encoding_failures() {
         definition(),
         "Failure".into(),
         Arc::new(|_, _, _, _| {
-            Box::pin(async {
-                Err(DiagnosticErrorInfo {
-                    name: None,
-                    message: "body failed".into(),
-                    stack: None,
-                    code: None,
-                })
-            })
+            Box::pin(async { Err(DiagnosticErrorInfo::new(None, "body failed")) })
         }),
     );
     assert_eq!(
