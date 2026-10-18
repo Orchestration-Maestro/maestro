@@ -28,9 +28,9 @@ units retain exact selected source subranges; decoded transformations stay atomi
 The parser retains link titles, destinations, reference identities and inline
 labels; image destinations, titles and alt children; table alignments and authored
 cell spans; task markers; and full code information and bodies. Container-local
-source removes quote/list continuation prefixes and expands list continuation tabs
-to four spaces. A node's range still names the original document source, not its
-container-local spelling.
+source removes quote/list continuation prefixes. Aligned list continuations expand
+tabs to four spaces; lazy continuations retain authored tabs. A node's range still
+names the original document source, not its container-local spelling.
 
 Callers own normalization and presentation. The terminal adapter normalizes line
 endings, expands tabs and replaces NUL before parsing; it removes one final code

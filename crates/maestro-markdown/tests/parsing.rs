@@ -371,3 +371,47 @@ fn tabbed_list_table_operands_keep_original_source_coordinates() {
     assert_eq!(&scope.text()[range.clone()], "https://x.y/a&amp;b");
     assert_eq!(&document.source[node.range.clone()], "https://x.y/a&amp;b");
 }
+
+#[test]
+fn list_continuations_separate_measurement_spelling_and_history() {
+    for (source, expected, outside) in [
+        ("- a\n`b\tc`", "b\tc", false),
+        ("- a\n\t`b\tc`", "b    c", false),
+        ("- a\n`b\tc`\ntail", "b\tc", true),
+    ] {
+        for options in [
+            maestro_markdown::MarkedOptions::Terminal,
+            maestro_markdown::MarkedOptions::Browser { escape_html: false },
+            maestro_markdown::MarkedOptions::Browser { escape_html: true },
+            maestro_markdown::MarkedOptions::Export,
+        ] {
+            let document = maestro_markdown::parse_with_options(source.into(), options);
+            let Kind::List(_, items) = &document.nodes[0].kind else {
+                panic!("list")
+            };
+            let Kind::Item(children) = &items[0].kind else {
+                panic!("item")
+            };
+            let Kind::Inline(children) = &children[0].kind else {
+                panic!("inline")
+            };
+            let code = children
+                .iter()
+                .find(|n| matches!(n.kind, Kind::Code(_)))
+                .unwrap();
+            assert_eq!(&source[code.range.clone()], "`b\tc`");
+            assert!(
+                matches!(&code.kind, Kind::Code(text) if text == expected),
+                "{source:?} {options:?}"
+            );
+            assert_eq!(
+                document.nodes.len(),
+                if outside { 2 } else { 1 },
+                "{source:?}"
+            );
+            if outside {
+                assert_eq!(&source[document.nodes[1].range.clone()], "tail");
+            }
+        }
+    }
+}

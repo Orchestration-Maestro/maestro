@@ -59,10 +59,12 @@ impl<'a> Tokenizer<'a> {
         if self.local {
             crate::tests::WORK.with_borrow_mut(|work| work.local_bytes += extent.len());
         }
+        #[cfg(test)]
+        let _invocation = crate::tests::inline_invocation();
         let mut output = Vec::new();
         let mut cursor = extent.start;
         let masked = self.mask(extent.clone(), atoms);
-        let code_mask = self.code_mask(extent.clone(), atoms);
+        let (code_mask, mut admitted) = self.operand_index(extent.clone(), atoms, in_link);
         while cursor < extent.end {
             let atom = atoms.partition_point(|range| range.end <= cursor);
             if let Some(range) = atoms.get(atom).filter(|range| range.start == cursor) {
@@ -76,13 +78,15 @@ impl<'a> Tokenizer<'a> {
             let text = &self.source.text[cursor..extent.end];
             let token = self
                 .soft_break(text)
-                .or_else(|| Self::escape(text))
-                .or_else(|| self.tag(text))
-                .or_else(|| self.link(cursor..extent.end, atoms, in_link))
+                .or_else(|| {
+                    admitted
+                        .entry(cursor)
+                        .or_insert_with(|| self.admit_operand(cursor..extent.end, atoms, in_link))
+                        .take()
+                })
                 .or_else(|| {
                     self.emphasis(cursor..extent.end, (&masked, extent.start), atoms, in_link)
                 })
-                .or_else(|| Self::code(text))
                 .or_else(|| self.line_break(text))
                 .or_else(|| {
                     self.deletion(
@@ -91,8 +95,7 @@ impl<'a> Tokenizer<'a> {
                         atoms,
                         in_link,
                     )
-                })
-                .or_else(|| self.angle(cursor..extent.end, in_link));
+                });
             if let Some((size, kind)) = token.filter(|(size, kind)| {
                 *size > 0
                     && (cursor + size <= limit
@@ -237,26 +240,77 @@ impl<'a> Tokenizer<'a> {
         Some((matched.end(), Kind::Strike(children)))
     }
 
-    /// Index code once in this invocation, excluding caller-owned opaque spans.
-    fn code_mask(&self, extent: Range<usize>, atoms: &[Range<usize>]) -> String {
-        let text = &self.source.text[extent.clone()];
-        let mut bytes = text.as_bytes().to_vec();
-        let mut start = extent.start;
-        for atom in atoms
-            .iter()
-            .filter(|atom| atom.start >= extent.start && atom.end <= extent.end)
-        {
-            mask_code(
-                &mut bytes[start - extent.start..atom.start - extent.start],
-                &self.source.text[start..atom.start],
-            );
-            start = atom.end;
+    /// Admit native operands through the token-producing recognizers.
+    fn admit_operand(
+        &mut self,
+        range: Range<usize>,
+        atoms: &[Range<usize>],
+        in_link: bool,
+    ) -> Option<(usize, Kind)> {
+        #[cfg(test)]
+        crate::tests::admit_operand(range.start);
+        let text = &self.source.text[range.clone()];
+        match text.as_bytes().first()? {
+            b'\\' => Self::escape(text),
+            b'<' => self.tag(text).or_else(|| self.angle(range, in_link)),
+            b'[' | b'!' => self.link(range, atoms, in_link),
+            b'`' => Self::code(text),
+            _ => None,
         }
-        mask_code(
-            &mut bytes[start - extent.start..],
-            &self.source.text[start..extent.end],
-        );
-        String::from_utf8(bytes).unwrap_or_else(|_| text.to_owned())
+    }
+
+    /// Retain admitted results for the parser; only code leaves mask deletion.
+    fn operand_index(
+        &mut self,
+        extent: Range<usize>,
+        atoms: &[Range<usize>],
+        in_link: bool,
+    ) -> (String, HashMap<usize, Option<(usize, Kind)>>) {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.operand_index_bytes += extent.len());
+        let mut bytes = self.source.text[extent.clone()].as_bytes().to_vec();
+        let mut admitted = HashMap::new();
+        let mut cursor = extent.start;
+        while cursor < extent.end {
+            let atom = atoms.partition_point(|range| range.end <= cursor);
+            if let Some(range) = atoms.get(atom).filter(|range| range.start == cursor) {
+                cursor = range.end;
+                continue;
+            }
+            let limit = atoms
+                .get(atom)
+                .map_or(extent.end, |range| range.start.min(extent.end));
+            let token = self
+                .admit_operand(cursor..extent.end, atoms, in_link)
+                .filter(|(size, _)| cursor + size <= limit);
+            let size = token.as_ref().map_or_else(
+                || {
+                    self.source.text[cursor..]
+                        .chars()
+                        .next()
+                        .map_or(0, char::len_utf8)
+                },
+                |(size, _)| *size,
+            );
+            match &token {
+                Some((size, Kind::Code(_))) => mask_barrier(
+                    &mut bytes,
+                    cursor - extent.start..cursor - extent.start + size,
+                ),
+                Some((
+                    _,
+                    Kind::Link(children, ..)
+                    | Kind::Image(_, crate::ImageMetadata { children, .. }),
+                )) => index_children(children, self.source, &extent, &mut bytes),
+                _ => {}
+            }
+            admitted.insert(cursor, token);
+            cursor += size;
+        }
+        (
+            String::from_utf8(bytes).unwrap_or_else(|_| self.source.text[extent].to_owned()),
+            admitted,
+        )
     }
 
     /// Mask only references selected from the original document index.
@@ -353,16 +407,24 @@ fn append_text(output: &mut Vec<Node>, node: Node) {
     output.push(node);
 }
 
-/// Consume opaque syntax in source order, masking only complete code spans.
-fn mask_code(bytes: &mut [u8], text: &str) {
-    #[cfg(test)]
-    crate::tests::WORK.with_borrow_mut(|work| work.mask_bytes += text.len());
-    let Some(rule) = rules::INLINE_CODE_SEARCH.as_ref() else {
-        return;
-    };
-    for matched in rule.find_iter(text) {
-        if matched.group(1).is_some() {
-            mask_barrier(bytes, matched.range());
+/// Reuse the label's already interpreted code leaves and original provenance.
+fn index_children(nodes: &[Node], source: &ScopeSource, extent: &Range<usize>, bytes: &mut [u8]) {
+    for node in nodes {
+        match &node.kind {
+            Kind::Code(_) => {
+                if let Some(range) = source.local(&node.range)
+                    && range.start >= extent.start
+                    && range.end <= extent.end
+                {
+                    mask_barrier(bytes, range.start - extent.start..range.end - extent.start);
+                }
+            }
+            Kind::Image(_, metadata) => index_children(&metadata.children, source, extent, bytes),
+            Kind::Link(children, ..)
+            | Kind::Strong(children)
+            | Kind::Emphasis(children)
+            | Kind::Strike(children) => index_children(children, source, extent, bytes),
+            _ => {}
         }
     }
 }

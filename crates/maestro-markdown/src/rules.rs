@@ -118,36 +118,14 @@ pub(crate) static INLINE_EM_STRONG_R_DELIM_UND: LazyLock<Option<Regex>> = LazyLo
 pub(crate) static INLINE_ANY_PUNCTUATION: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::with_flags(r"\\([\p{P}\p{S}])", "u").ok());
 
-/// Direct links skipped as one operand by delimiter scans.
-const LINK_SKIP_PATTERN: &str = r"\[(?:[^\[\]`]|(?<a>`+)[^`]+\k<a>(?!`))*?\]\((?:\\[\s\S]|[^\\\(\)]|\((?:\\[\s\S]|[^\\\(\)])*\))*\)";
-
-/// Angle operands skipped before considering punctuation inside them.
-const TAG_SKIP_PATTERN: &str = r"<(?! )[^<>]*?>";
-
 /// Recognize inline blockSkip syntax without a mutable match cursor.
 pub(crate) static INLINE_BLOCK_SKIP: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(
-        &format!(r"{LINK_SKIP_PATTERN}|(?<!`)()(?<b>`+)[^`]+\k<b>(?!`)|{TAG_SKIP_PATTERN}"),
-        "",
-    )
-    .ok()
+    Regex::with_flags(r"\[(?:[^\[\]`]|(?<a>`+)[^`]+\k<a>(?!`))*?\]\((?:\\[\s\S]|[^\\\(\)]|\((?:\\[\s\S]|[^\\\(\)])*\))*\)|(?<!`)()(?<b>`+)[^`]+\k<b>(?!`)|<(?! )[^<>]*?>", "").ok()
 });
-
-/// Code-span syntax shared by prefix admission and delimiter masking.
-const CODE_PATTERN: &str = r"(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)";
 
 /// Recognize inline code syntax without a mutable match cursor.
 pub(crate) static INLINE_CODE: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::with_flags(&format!("^{CODE_PATTERN}"), "").ok());
-
-/// Locate code spans while consuming escapes and opaque operands first.
-pub(crate) static INLINE_CODE_SEARCH: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(
-        &format!(r"\\[\s\S]|{CODE_PATTERN}|{LINK_SKIP_PATTERN}|{TAG_SKIP_PATTERN}"),
-        "",
-    )
-    .ok()
-});
+    LazyLock::new(|| Regex::with_flags(r"^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)", "").ok());
 
 /// Recognize inline br syntax without a mutable match cursor.
 pub(crate) static INLINE_BR: LazyLock<Option<Regex>> =

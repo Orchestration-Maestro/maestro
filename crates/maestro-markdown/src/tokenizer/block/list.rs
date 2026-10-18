@@ -155,7 +155,7 @@ fn item_lines(
 ) -> (usize, ScopeSource) {
     let mut body = source.select(std::iter::once(marker.content..marker.line));
     let mut consumed = marker.line;
-    let mut previous = 0..body.text.len();
+    let mut previous = body.text.clone();
     let mut blank = body.text.trim_matches(is_whitespace_scalar).is_empty();
     for range in lines(&source.text[marker.line..]) {
         let range = marker.line + range.start..marker.line + range.end;
@@ -172,10 +172,7 @@ fn item_lines(
             .take_while(|byte| *byte == b' ')
             .count();
         let empty = aligned.text.trim_matches(is_whitespace_scalar).is_empty();
-        if spaces < marker.indent
-            && !empty
-            && (blank || ends_lazy(&body.text[previous.clone()], marker.indent))
-        {
+        if spaces < marker.indent && !empty && (blank || ends_lazy(&previous, marker.indent)) {
             break;
         }
         let strip = if spaces >= marker.indent {
@@ -186,8 +183,19 @@ fn item_lines(
         if strip == 0 && !empty {
             body.lazy_lines.push(body.text.len());
         }
-        previous = body.text.len()..body.text.len() + aligned.text.len() - strip;
-        body.append(aligned.select(std::iter::once(strip..aligned.text.len())));
+        previous = String::from_utf16_lossy(
+            &aligned
+                .text
+                .encode_utf16()
+                .skip(marker.indent)
+                .collect::<Vec<_>>(),
+        );
+        let emitted = if strip == 0 && !empty {
+            source.select(std::iter::once(range.clone()))
+        } else {
+            aligned.select(std::iter::once(strip..aligned.text.len()))
+        };
+        body.append(emitted);
         consumed = range.end;
         blank |= empty;
     }

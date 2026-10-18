@@ -613,3 +613,112 @@ fn deletion_barriers_keep_code_inside_recursive_link_labels() {
             .any(|node| matches!(&node.kind, Kind::Code(code) if code == "b~~"))
     );
 }
+
+/// Observe actual deletion and code leaves, including native link labels.
+fn deletion_leaves(nodes: &[Node]) -> (Vec<&str>, Vec<&str>) {
+    let mut strikes = Vec::new();
+    let mut codes = Vec::new();
+    for node in nodes {
+        if let Kind::Code(code) = &node.kind {
+            codes.push(code.as_str());
+        }
+        if let Kind::Strike(_) = &node.kind {
+            strikes.push(node.authored.as_str());
+        }
+        match &node.kind {
+            Kind::Paragraph(children)
+            | Kind::Strike(children)
+            | Kind::Link(children, ..)
+            | Kind::Strong(children)
+            | Kind::Emphasis(children) => {
+                let (nested_strikes, nested_codes) = deletion_leaves(children);
+                strikes.extend(nested_strikes);
+                codes.extend(nested_codes);
+            }
+            _ => {}
+        }
+    }
+    (strikes, codes)
+}
+
+#[test]
+fn deletion_index_uses_native_operand_admission() {
+    for options in [
+        MarkedOptions::Terminal,
+        MarkedOptions::Browser { escape_html: false },
+        MarkedOptions::Browser { escape_html: true },
+        MarkedOptions::Export,
+    ] {
+        for source in [
+            "a [[b]](/u \"`\") ~~a~~ `",
+            "[label][r`] ~~a~~ `\n\n[r`]: /u",
+            "a <https://x.y/`> ~~a~~ `",
+        ] {
+            let document = parse_with_options(source.into(), options);
+            assert_eq!(
+                deletion_leaves(&document.nodes).0,
+                ["~~a~~"],
+                "{options:?} {source:?}"
+            );
+        }
+        let source = "a <b title=\"> `\"> ~~a~~ `";
+        let document = parse_with_options(source.into(), options);
+        let expected = if matches!(
+            options,
+            MarkedOptions::Terminal | MarkedOptions::Browser { escape_html: false }
+        ) {
+            vec!["~~a~~"]
+        } else {
+            vec![]
+        };
+        assert_eq!(deletion_leaves(&document.nodes).0, expected, "{options:?}");
+    }
+}
+
+#[test]
+fn enclosing_deletion_keeps_native_label_code_and_raw_closers() {
+    for options in [
+        MarkedOptions::Terminal,
+        MarkedOptions::Browser { escape_html: false },
+        MarkedOptions::Browser { escape_html: true },
+        MarkedOptions::Export,
+    ] {
+        for source in [
+            "~~[a `b~~` c](/u)~~",
+            "~~a `b~~` c~~",
+            "[~~a `b~~` c~~](/u)",
+        ] {
+            let document = parse_with_options(source.into(), options);
+            let (strikes, codes) = deletion_leaves(&document.nodes);
+            assert_eq!(strikes.len(), 1, "{source:?}");
+            assert_eq!(codes, ["b~~"], "{options:?} {source:?}");
+        }
+        for (source, strike) in [
+            ("~~[label](u~~)", "~~[label](u~~"),
+            ("~~[label](u~~", "~~[label](u~~"),
+            ("~~[label](u_(v~~", "~~[label](u_(v~~"),
+            (r"~~a \`b~~ c` x~~", r"~~a \`b~~"),
+            ("~~[x](u~~ \"`\") ~~a~~ `", "~~[x](u~~"),
+        ] {
+            let document = parse_with_options(source.into(), options);
+            assert_eq!(
+                deletion_leaves(&document.nodes).0,
+                [strike],
+                "{options:?} {source:?}"
+            );
+        }
+        let document = parse_with_options("[label][r`] ~~a~~ `".into(), options);
+        assert!(deletion_leaves(&document.nodes).0.is_empty());
+    }
+    let source = "~~<span title=\"`x~~`\">tail~~";
+    for options in [
+        MarkedOptions::Browser { escape_html: true },
+        MarkedOptions::Export,
+    ] {
+        let document = parse_with_options(source.into(), options);
+        assert_eq!(
+            deletion_leaves(&document.nodes),
+            (vec![source], vec!["x~~"])
+        );
+    }
+}

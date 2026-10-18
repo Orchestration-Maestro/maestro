@@ -17,6 +17,10 @@ pub(crate) struct Work {
     pub(crate) operand_examinations: usize,
     /// Authored bytes copied when selecting mapped source.
     pub(crate) source_bytes: usize,
+    /// Calls to the native operand recognizers, including failed admission.
+    pub(crate) operand_admissions: usize,
+    /// Authored bytes traversed by invocation-local operand indexing.
+    pub(crate) operand_index_bytes: usize,
     /// Authored bytes supplied to actual inline mask construction.
     pub(crate) mask_bytes: usize,
     /// Unit comparisons in actual authored-to-source range searches.
@@ -27,6 +31,8 @@ pub(crate) struct Work {
 thread_local! {
     /// Instrument all complete-parse/index and local-parse entry points.
     pub(crate) static WORK: RefCell<Work> = RefCell::default();
+    /// Active invocation positions, independent of recursive source extents.
+    static ADMISSIONS: RefCell<Vec<std::collections::HashSet<usize>>> = RefCell::default();
 }
 
 /// Exercise original scopes and labels without walking the document per fragment.
@@ -226,14 +232,10 @@ impl crate::BlockTokenizer for NoBlockHint {
 }
 
 /// Compare actual shared-owner scan work through either public entry route.
-fn suffix_work(extension: bool) {
+fn suffix_work(extension: bool, paragraph: &str) {
     let counts = [32, 64].map(|count| {
         WORK.with_borrow_mut(|work| *work = Work::default());
-        let source = if extension {
-            "ordinary paragraph\n\n".repeat(count)
-        } else {
-            "~ ".repeat(count)
-        };
+        let source = paragraph.repeat(count);
         let options = crate::MarkedOptions::Browser { escape_html: true };
         let document = if extension {
             crate::parse_with_tokenizer(source, options, Some(&mut NoBlockHint)).unwrap()
@@ -241,18 +243,62 @@ fn suffix_work(extension: bool) {
             crate::parse_with_options(source, options)
         };
         assert!(!document.nodes.is_empty());
-        WORK.with_borrow(|work| work.mask_bytes)
+        WORK.with_borrow(|work| *work)
     });
-    eprintln!("extension={extension} N/2N mask bytes={counts:?}");
-    assert_eq!(counts[1], 2 * counts[0], "extension={extension}");
+    eprintln!("extension={extension} {paragraph:?} N/2N work={counts:?}");
+    assert!(counts[0].operand_admissions > 0);
+    assert!(counts[0].operand_index_bytes > 0);
+    assert_eq!(
+        counts[1].operand_admissions,
+        2 * counts[0].operand_admissions
+    );
+    assert_eq!(
+        counts[1].operand_index_bytes,
+        2 * counts[0].operand_index_bytes
+    );
+    assert_eq!(counts[1].mask_bytes, 2 * counts[0].mask_bytes);
 }
 
 #[test]
 fn deletion_candidates_reuse_code_barriers() {
-    suffix_work(false);
+    for paragraph in [
+        "~ ",
+        "~~[a `b~~` c](/u)~~\n\n",
+        "a [[b]](/u \"`\") ~~a~~ `\n\n",
+    ] {
+        suffix_work(false, paragraph);
+        suffix_work(true, paragraph);
+    }
 }
 
 #[test]
 fn absent_extension_hints_skip_barrier_scans() {
-    suffix_work(true);
+    suffix_work(true, "ordinary paragraph\n\n");
+}
+
+/// End the uniqueness observation with its inline invocation.
+pub(crate) struct InlineInvocation;
+impl Drop for InlineInvocation {
+    fn drop(&mut self) {
+        ADMISSIONS.with_borrow_mut(|invocations| {
+            invocations.pop().unwrap();
+        });
+    }
+}
+
+/// Observe each recursive invocation with independent admission positions.
+pub(crate) fn inline_invocation() -> InlineInvocation {
+    ADMISSIONS.with_borrow_mut(|invocations| invocations.push(std::collections::HashSet::new()));
+    InlineInvocation
+}
+
+/// Count actual recognizer calls and reject repeated positions in one invocation.
+pub(crate) fn admit_operand(position: usize) {
+    ADMISSIONS.with_borrow_mut(|invocations| {
+        assert!(
+            invocations.last_mut().unwrap().insert(position),
+            "operand admitted twice in one invocation"
+        );
+    });
+    WORK.with_borrow_mut(|work| work.operand_admissions += 1);
 }
