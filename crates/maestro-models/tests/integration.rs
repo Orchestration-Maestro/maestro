@@ -12,46 +12,22 @@ mod azure_cases;
 mod azure_endpoint;
 mod azure_endpoint_requests;
 mod azure_endpoint_streams;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
 #[path = "support/bedrock.rs"]
 mod bedrock;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
 #[path = "support/bedrock_cases.rs"]
 mod bedrock_cases;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
 #[path = "support/bedrock_routes.rs"]
 mod bedrock_routes;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
 #[path = "support/bedrock_rows.rs"]
 mod bedrock_rows;
 #[cfg(target_os = "linux")]
 #[path = "support/bedrock_tls_routes.rs"]
 mod bedrock_tls_routes;
 mod browser_build;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
 #[path = "support/bundled.rs"]
 mod bundled;
 mod bundled_dispatch;
 mod bundled_options;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
 #[path = "support/cache_overflow_images.rs"]
 mod cache_overflow_images;
 mod cache_preferences;
@@ -62,10 +38,6 @@ mod catalog_command;
 mod catalog_command_support;
 mod catalog_generation;
 mod catalog_route_smoke;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
 #[path = "support/chat.rs"]
 mod chat;
 mod chat_completion_events;
@@ -148,10 +120,6 @@ mod message_protocol_streams;
 #[path = "support/message_qualification.rs"]
 mod message_qualification;
 mod message_thinking_disabled;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
 #[path = "support/messages.rs"]
 mod messages;
 mod missing_tool_results;
@@ -197,10 +165,6 @@ mod response_endpoint_streams;
 mod response_identity;
 #[path = "support/response_output.rs"]
 mod response_output;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
 #[path = "support/response_qualification.rs"]
 mod response_qualification;
 mod response_reasoning_replay;
@@ -216,7 +180,7 @@ mod scripted_model_invocation;
 mod simple_model_options;
 #[allow(
     dead_code,
-    reason = "Shared helpers serve multiple integration targets."
+    reason = "The library's unit tests also compile this module and use other parts of it."
 )]
 #[path = "support/socks.rs"]
 mod socks;
@@ -226,10 +190,6 @@ mod subscription_accounts;
 mod tls;
 #[path = "tool_images.rs"]
 mod tool_images;
-#[allow(
-    dead_code,
-    reason = "Shared helpers serve multiple integration targets."
-)]
 #[path = "support/transport.rs"]
 mod transport;
 mod usage_after_abort;
