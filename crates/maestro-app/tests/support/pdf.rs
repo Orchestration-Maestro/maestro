@@ -313,6 +313,16 @@ enum TextShowInput {
 pub fn text_shows() -> Vec<TextShow> {
     serde_json::from_str(include_str!("../fixtures/pdf/text-shows.json")).unwrap()
 }
+/// Enumerate binary inputs consumed by the text-show corpus.
+pub fn text_show_files() -> Vec<String> {
+    text_shows()
+        .into_iter()
+        .filter_map(|row| match row.input {
+            TextShowInput::File { file } => Some(file),
+            TextShowInput::Content { .. } => None,
+        })
+        .collect()
+}
 /// Assert each selected row and return the attachments for extra pixel checks.
 pub fn check_text_shows(test: &str, count: usize) -> Vec<Attachment> {
     let rows: Vec<_> = text_shows()
