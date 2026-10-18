@@ -1,82 +1,101 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/dark/mark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/brand/light/mark.svg">
-  <img src="assets/brand/light/mark.svg" alt="Maestro mark" width="96" height="96">
-</picture>
+<h1 align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/readme/hero-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/readme/hero-light.svg">
+    <img src="assets/readme/hero-light.svg" width="100%" alt="Maestro. Conduct every model. An agent engine in Rust, built crate by crate.">
+  </picture>
+</h1>
 
-# Maestro
+<p align="center">
+  <a href="https://github.com/Orchestration-Maestro/maestro/actions?query=branch%3Amain"><img src="assets/readme/badges/checks.svg" height="24" alt="checks: view runs"></a>
+  <a href="rust-toolchain.toml"><img src="assets/readme/badges/rust.svg" height="24" alt="rust: 1.98.0"></a>
+  <a href=".github/ci.toml"><img src="assets/readme/badges/platforms.svg" height="24" alt="tested on: Linux"></a>
+  <a href="LICENSE"><img src="assets/readme/badges/license.svg" height="24" alt="licence: MIT"></a>
+  <a href="docs"><img src="assets/readme/badges/docs.svg" height="24" alt="docs: guides"></a>
+</p>
 
-Conduct every model.
+Maestro is an agent engine in Rust. It talks to 970 models through one interface,
+runs the tools they call, and keeps each session as a tree in a plain file. It is
+being built in the open, one crate at a time, and this is how far it has come.
 
-Maestro is an agent engine in Rust: the foundation the other Maestro parts
-build on. The implementation is being rebuilt crate by crate, with specs in
-`docs/specs/`.
+## The terminal, today
 
-## Build and test
+<p align="center">
+  <img src="assets/readme/chat-demo.svg" width="100%" alt="A terminal running the chat example: the slash-command menu opens, Tab completion lists crates/maestro-tui-crossterm and crates/maestro-tui, a message with a bold word is sent, a Thinking indicator spins and a reply appears.">
+</p>
 
-Install `mise` and `rustup`, then run from the repository root:
+<p align="center"><sub>The toolkit's <a href="docs/terminal/examples.md">chat example</a>, recorded on Linux from <code>main</code>. Replies are simulated locally, so it runs without an account.</sub></p>
+
+## Why Maestro
+
+### Every model, one interface
+
+In Maestro a provider is data in a compiled-in [catalog](docs/models/catalog.md)
+(970 models from 31 providers today), and each wire protocol is one adapter. All
+nine adapters sit behind the same request call, so moving to another model means
+passing another descriptor, not writing new code.
+
+### Rules that run
+
+`unsafe`, `unwrap`, `expect` and `panic!` are forbidden in production code, every
+item carries documentation, functions stop at 60 lines and five parameters, and
+files at 500 lines. Clippy and a [conventions test](docs/architecture.md#quality-checks)
+check all of it on every commit and every pull request.
+
+### History you keep
+
+A [session](docs/sessions/session_manager.md) is a JSONL file on your disk. Every
+entry points to its parent, so one file holds every branch you tried. Continue it,
+fork it or compact it; nothing is thrown away.
+
+## Built in layers
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/readme/crates-dark.svg">
+    <img src="assets/readme/crates-light.svg" width="100%" alt="Maestro's crates stacked by dependency layer, from the maestro binary at layer 6 down to foundation crates below layer 0. Solid crates are on main; outlined ones are specified but not built yet.">
+  </picture>
+</p>
+
+<p align="center"><sub>Every crate from the <a href="docs/specs/maestro-port.md#crates-and-delivery-order">crate graph</a>, without the <code>maestro-</code> prefix.<br>Solid: on <code>main</code> today. Outlined: specified, not built yet.</sub></p>
+
+Each crate has one job, and dependencies only point down. Front ends call one
+application crate and never each other. The conventions test reads `cargo metadata`
+and fails on any edge the graph does not allow.
+
+## Quick start
+
+On Linux, with Git and [rustup](https://rustup.rs):
 
 ```sh
-mise install
-just setup
+git clone https://github.com/Orchestration-Maestro/maestro.git
+cd maestro
+rustup toolchain install    # the Rust version pinned in rust-toolchain.toml
+cargo run --locked -p maestro-tui-crossterm --example chat_simple
 ```
 
-Enable mise in your shell (or prefix commands with `mise exec --`) so the
-pinned tools are on `PATH`. Rust comes from `rust-toolchain.toml` through
-rustup, not mise. `mise.lock` records the tool downloads and checksums.
+Type `/` for commands, press Tab to complete a path and Ctrl+C to quit.
+[Development](docs/development.md) explains the full setup with mise and the
+commit hooks.
 
-- `just setup`: install the pinned tools and git hooks.
-- `just check`: formatting, Clippy with warnings denied, strict public
-  documentation, and the workspace conventions on this checkout.
-- `just test`: the full workspace test suite.
-- `just ci`: checks and tests, matching shared Linux CI.
+## Status
 
-Before each commit, prek formats the code with `cargo fmt`, re-stages the
-staged files and runs `just check`, then the full conventions suite when a
-staged path is under `crates/maestro-test-conventions/`. It also rejects merge-conflict markers and
-invalid TOML or YAML. Commit messages require a conventional header and lines
-of at most 80 columns.
-
-## Documentation rules
-
-Every crate root has `//!` documentation and every public item has `///`
-documentation. The documentation build denies warnings and missing docs.
-Comments describe code behavior, never planning material: no numbered
-slices, specs, tasks or tickets; issue or pull-request references; planning
-vocabulary or identifiers. The conventions checker scans Rust comments in
-each workspace member and reports the file and line. Strings and attributes
-are not comments. There are no exemptions; reword false positives.
-
-Technical wording such as "the JSON-RPC specification", "an async task",
-"step 1 of the parse", "UTF-16" and "S3-compatible" remains valid.
-
-## Workspace crate rules
-
-`maestro-test-conventions` runs automatically with the workspace tests. Add
-new members to `workspace-crates.json` with a `core` or `dedicated` class.
-Only the conventions checker is currently implemented. Planned crate classes
-and dependency boundaries remain defined by the foundation specification.
-
-The checker rejects unlisted members, dependency cycles, core-to-dedicated
-normal/build edges and all internal domain dependencies of leaf crates.
-Normal, build, dev,
-optional and target-specific dependencies all count, subject to the declared
-foundation utility, native feature-unifier and internal development exceptions
-in the [foundation contract](docs/specs/maestro-port.md#crates-and-delivery-order).
-External dependencies are not workspace edges. A dependency with a workspace member's
-package name must use a path to that member, not a registry/git source or a
-different path; this prevents Cargo patches or overrides from hiding internal
-edges.
-The per-crate dependency allowlist applies whenever a crate exists.
-
-Names are `maestro` or `maestro-` followed by one or two lowercase ASCII
-alphanumeric segments, each starting with a letter. The checked-in crate
-list records the reviewed names; the checker does not invent a noun or role
-vocabulary.
+There is no release and no `maestro` command yet; the layers above show what is
+built. The libraries on `main` have tests that run on Linux in CI, and CI also
+compiles the workspace for macOS and Windows.
 
 ## Documentation
 
-- [Identity guide and brand pack](docs/identity.md)
-- [Foundation specification](docs/specs/maestro-port.md)
-- [Architecture checks](docs/architecture.md)
-- [Contributor workflow](docs/agents/issue-tracker.md)
+- [Agent loop](docs/loop.md), [tools](docs/tools.md), [sessions](docs/sessions/session_manager.md)
+- [Model catalog](docs/models/catalog.md), [terminal toolkit](docs/terminal/components.md)
+- [Architecture checks](docs/architecture.md), [foundation specification](docs/specs/maestro-port.md)
+- [Identity and brand](docs/identity.md)
+
+## Contributing
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) first. [AGENTS.md](AGENTS.md) lists the
+rules every change follows.
+
+## Licence
+
+[MIT](LICENSE).
