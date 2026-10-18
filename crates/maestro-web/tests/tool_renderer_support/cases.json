@@ -1,0 +1,1166 @@
+{
+  "headers": [
+    {
+      "state": "inprogress",
+      "rich": false,
+      "expected": {
+        "text": "caption",
+        "spinner": 1,
+        "richCount": 0,
+        "iconRoles": [
+          "text",
+          "text"
+        ]
+      }
+    },
+    {
+      "state": "inprogress",
+      "rich": true,
+      "expected": {
+        "text": "caption file.txt",
+        "spinner": 1,
+        "richCount": 1,
+        "iconRoles": [
+          "text",
+          "text"
+        ]
+      }
+    },
+    {
+      "state": "complete",
+      "rich": false,
+      "expected": {
+        "text": "caption",
+        "spinner": 0,
+        "richCount": 0,
+        "iconRoles": [
+          "success"
+        ]
+      }
+    },
+    {
+      "state": "complete",
+      "rich": true,
+      "expected": {
+        "text": "caption file.txt",
+        "spinner": 0,
+        "richCount": 1,
+        "iconRoles": [
+          "success"
+        ]
+      }
+    },
+    {
+      "state": "error",
+      "rich": false,
+      "expected": {
+        "text": "caption",
+        "spinner": 0,
+        "richCount": 0,
+        "iconRoles": [
+          "error"
+        ]
+      }
+    },
+    {
+      "state": "error",
+      "rich": true,
+      "expected": {
+        "text": "caption file.txt",
+        "spinner": 0,
+        "richCount": 1,
+        "iconRoles": [
+          "error"
+        ]
+      }
+    }
+  ],
+  "collapsible": [
+    {
+      "state": "inprogress",
+      "expanded": false,
+      "expected": {
+        "initial": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": true,
+          "downHidden": false,
+          "spinner": 1,
+          "iconRoles": [
+            "text",
+            "text",
+            "muted"
+          ],
+          "expanded": false
+        },
+        "toggled": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": false,
+          "downHidden": true,
+          "spinner": 1,
+          "iconRoles": [
+            "text",
+            "text",
+            "muted"
+          ],
+          "expanded": true
+        },
+        "restored": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": true,
+          "downHidden": false,
+          "spinner": 1,
+          "iconRoles": [
+            "text",
+            "text",
+            "muted"
+          ],
+          "expanded": false
+        }
+      }
+    },
+    {
+      "state": "inprogress",
+      "expanded": true,
+      "expected": {
+        "initial": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": false,
+          "downHidden": true,
+          "spinner": 1,
+          "iconRoles": [
+            "text",
+            "text",
+            "muted"
+          ],
+          "expanded": true
+        },
+        "toggled": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": true,
+          "downHidden": false,
+          "spinner": 1,
+          "iconRoles": [
+            "text",
+            "text",
+            "muted"
+          ],
+          "expanded": false
+        },
+        "restored": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": false,
+          "downHidden": true,
+          "spinner": 1,
+          "iconRoles": [
+            "text",
+            "text",
+            "muted"
+          ],
+          "expanded": true
+        }
+      }
+    },
+    {
+      "state": "complete",
+      "expanded": false,
+      "expected": {
+        "initial": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": true,
+          "downHidden": false,
+          "spinner": 0,
+          "iconRoles": [
+            "success",
+            "muted"
+          ],
+          "expanded": false
+        },
+        "toggled": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": false,
+          "downHidden": true,
+          "spinner": 0,
+          "iconRoles": [
+            "success",
+            "muted"
+          ],
+          "expanded": true
+        },
+        "restored": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": true,
+          "downHidden": false,
+          "spinner": 0,
+          "iconRoles": [
+            "success",
+            "muted"
+          ],
+          "expanded": false
+        }
+      }
+    },
+    {
+      "state": "complete",
+      "expanded": true,
+      "expected": {
+        "initial": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": false,
+          "downHidden": true,
+          "spinner": 0,
+          "iconRoles": [
+            "success",
+            "muted"
+          ],
+          "expanded": true
+        },
+        "toggled": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": true,
+          "downHidden": false,
+          "spinner": 0,
+          "iconRoles": [
+            "success",
+            "muted"
+          ],
+          "expanded": false
+        },
+        "restored": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": false,
+          "downHidden": true,
+          "spinner": 0,
+          "iconRoles": [
+            "success",
+            "muted"
+          ],
+          "expanded": true
+        }
+      }
+    },
+    {
+      "state": "error",
+      "expanded": false,
+      "expected": {
+        "initial": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": true,
+          "downHidden": false,
+          "spinner": 0,
+          "iconRoles": [
+            "error",
+            "muted"
+          ],
+          "expanded": false
+        },
+        "toggled": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": false,
+          "downHidden": true,
+          "spinner": 0,
+          "iconRoles": [
+            "error",
+            "muted"
+          ],
+          "expanded": true
+        },
+        "restored": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": true,
+          "downHidden": false,
+          "spinner": 0,
+          "iconRoles": [
+            "error",
+            "muted"
+          ],
+          "expanded": false
+        }
+      }
+    },
+    {
+      "state": "error",
+      "expanded": true,
+      "expected": {
+        "initial": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": false,
+          "downHidden": true,
+          "spinner": 0,
+          "iconRoles": [
+            "error",
+            "muted"
+          ],
+          "expanded": true
+        },
+        "toggled": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": true,
+          "downHidden": false,
+          "spinner": 0,
+          "iconRoles": [
+            "error",
+            "muted"
+          ],
+          "expanded": false
+        },
+        "restored": {
+          "caption": "caption",
+          "richCount": 1,
+          "upHidden": false,
+          "downHidden": true,
+          "spinner": 0,
+          "iconRoles": [
+            "error",
+            "muted"
+          ],
+          "expanded": true
+        }
+      }
+    }
+  ],
+  "console": [
+    {
+      "variant": "default",
+      "content": "",
+      "expected": {
+        "title": "Copy output",
+        "label": "console",
+        "pre": "",
+        "textRole": "text",
+        "copiedText": "Copied!"
+      }
+    },
+    {
+      "variant": "default",
+      "content": "line 1\n雪 <b>&</b>",
+      "expected": {
+        "title": "Copy output",
+        "label": "console",
+        "pre": "line 1\n雪 <b>&</b>",
+        "textRole": "text",
+        "copiedText": "Copied!"
+      }
+    },
+    {
+      "variant": "default",
+      "content": " \t\r\n\u0000",
+      "expected": {
+        "title": "Copy output",
+        "label": "console",
+        "pre": " \t\r\n\u0000",
+        "textRole": "text",
+        "copiedText": "Copied!"
+      }
+    },
+    {
+      "variant": "default",
+      "content": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "expected": {
+        "title": "Copy output",
+        "label": "console",
+        "pre": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "textRole": "text",
+        "copiedText": "Copied!"
+      }
+    },
+    {
+      "variant": "error",
+      "content": "",
+      "expected": {
+        "title": "Copy output",
+        "label": "console",
+        "pre": "",
+        "textRole": "error",
+        "copiedText": "Copied!"
+      }
+    },
+    {
+      "variant": "error",
+      "content": "line 1\n雪 <b>&</b>",
+      "expected": {
+        "title": "Copy output",
+        "label": "console",
+        "pre": "line 1\n雪 <b>&</b>",
+        "textRole": "error",
+        "copiedText": "Copied!"
+      }
+    }
+  ],
+  "forwarding": [
+    {
+      "input": {
+        "params": {
+          "kind": "missing",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ]
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "sameParams": true,
+        "sameResult": true,
+        "params": {
+          "kind": "missing",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ]
+        },
+        "isStreaming": false,
+        "isCustom": false
+      }
+    },
+    {
+      "input": {
+        "params": {
+          "kind": "missing",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ]
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "sameParams": true,
+        "sameResult": true,
+        "params": {
+          "kind": "missing",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ]
+        },
+        "isStreaming": true,
+        "isCustom": true
+      }
+    },
+    {
+      "input": {
+        "params": {
+          "kind": "null",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": null
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "sameParams": true,
+        "sameResult": true,
+        "params": {
+          "kind": "null",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": null
+        },
+        "isStreaming": false,
+        "isCustom": false
+      }
+    },
+    {
+      "input": {
+        "params": {
+          "kind": "null",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": null
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "sameParams": true,
+        "sameResult": true,
+        "params": {
+          "kind": "null",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": null
+        },
+        "isStreaming": true,
+        "isCustom": true
+      }
+    },
+    {
+      "input": {
+        "params": {
+          "kind": "string",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": "detail"
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "sameParams": true,
+        "sameResult": true,
+        "params": {
+          "kind": "string",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": "detail"
+        },
+        "isStreaming": false,
+        "isCustom": false
+      }
+    },
+    {
+      "input": {
+        "params": {
+          "kind": "string",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": "detail"
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "sameParams": true,
+        "sameResult": true,
+        "params": {
+          "kind": "string",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": "detail"
+        },
+        "isStreaming": true,
+        "isCustom": true
+      }
+    },
+    {
+      "input": {
+        "params": {
+          "kind": "number",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": 1.25
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "sameParams": true,
+        "sameResult": true,
+        "params": {
+          "kind": "number",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": 1.25
+        },
+        "isStreaming": false,
+        "isCustom": false
+      }
+    },
+    {
+      "input": {
+        "params": {
+          "kind": "number",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": 1.25
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "sameParams": true,
+        "sameResult": true,
+        "params": {
+          "kind": "number",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": 1.25
+        },
+        "isStreaming": true,
+        "isCustom": true
+      }
+    },
+    {
+      "input": {
+        "params": {
+          "kind": "boolean",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": false
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "sameParams": true,
+        "sameResult": true,
+        "params": {
+          "kind": "boolean",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": false
+        },
+        "isStreaming": false,
+        "isCustom": false
+      }
+    },
+    {
+      "input": {
+        "params": {
+          "kind": "boolean",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "sameParams": true,
+        "sameResult": true,
+        "params": {
+          "kind": "boolean",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": false
+        },
+        "isStreaming": true,
+        "isCustom": true
+      }
+    },
+    {
+      "input": {
+        "params": {
+          "kind": "object",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": {
+            "x": 1
+          }
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "sameParams": true,
+        "sameResult": true,
+        "params": {
+          "kind": "object",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": {
+            "x": 1
+          }
+        },
+        "isStreaming": false,
+        "isCustom": false
+      }
+    },
+    {
+      "input": {
+        "params": {
+          "kind": "object",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": {
+            "x": 1
+          }
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "sameParams": true,
+        "sameResult": true,
+        "params": {
+          "kind": "object",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": {
+            "x": 1
+          }
+        },
+        "isStreaming": true,
+        "isCustom": true
+      }
+    },
+    {
+      "input": {
+        "params": {
+          "kind": "array",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": [
+            1,
+            "x"
+          ]
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "sameParams": true,
+        "sameResult": true,
+        "params": {
+          "kind": "array",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": [
+            1,
+            "x"
+          ]
+        },
+        "isStreaming": false,
+        "isCustom": false
+      }
+    },
+    {
+      "input": {
+        "params": {
+          "kind": "array",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": [
+            1,
+            "x"
+          ]
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "sameParams": true,
+        "sameResult": true,
+        "params": {
+          "kind": "array",
+          "list": [
+            1,
+            "x"
+          ]
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "forward",
+          "timestamp": 7,
+          "isError": true,
+          "content": [
+            {
+              "type": "text",
+              "text": "literal"
+            }
+          ],
+          "details": [
+            1,
+            "x"
+          ]
+        },
+        "isStreaming": true,
+        "isCustom": true
+      }
+    }
+  ]
+}

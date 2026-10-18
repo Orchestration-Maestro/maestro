@@ -2,7 +2,8 @@
 use super::code_block::{self, CodeBlockView, Prepared as Code};
 use crate::{
     browser::attachment_content::{
-        AttachmentHost, AttachmentUiError, ReadingContent, reading::controlled::ControlledReading,
+        AttachmentHost, AttachmentUiError, ReadingContent,
+        reading::controlled::{ControlledReading, ReadingHeight},
     },
     components::copy_button::CopyButton,
 };
@@ -160,6 +161,7 @@ impl MarkdownBlock {
             )
         });
         let layout = ControlledReading {
+            height: ReadingHeight::Flow,
             host: self.host.as_ref(),
             id: self.id,
             content: style.as_ref().unwrap_or(&target.content),
@@ -177,7 +179,12 @@ impl MarkdownBlock {
             self.published = candidate;
         }
         if let Some(published) = self.published.as_mut() {
-            let responses = code_block::controls(ui, &layout, published.buttons.iter_mut(), view)?;
+            let responses = code_block::controls(
+                ui,
+                &layout,
+                published.buttons.iter_mut(),
+                (view.i18n, view.presentation),
+            )?;
             self.reveal_focused(&responses);
         }
         Ok(layout.response)

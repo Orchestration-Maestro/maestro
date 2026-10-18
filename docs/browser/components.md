@@ -98,3 +98,8 @@ Full-viewport dimming/blur is intentionally absent, owned by
 Close focus decoration is qualified through sampled raster pixels at multiple
 densities; other canvas paint is qualified through visible tessellated primitives.
 Broader canvas raster qualification follows [the canvas runner](https://github.com/Orchestration-Maestro/maestro/issues/822).
+
+## Tool content
+
+[Tool renderers](tool-renderers.md) provide named dispatch, retained tool headers,
+input/output listings and literal console output.

@@ -180,6 +180,8 @@ mod tests {
         pub native: BrowserAttachmentHost,
         /// Texts passed to the clipboard, in order.
         pub copies: RefCell<Vec<String>>,
+        /// Native surface releases observed at the original platform seam.
+        pub removed: RefCell<Vec<egui::Id>>,
         /// Native frame visibilities observed after each reading phase.
         pub phases: RefCell<Vec<(ReadingPhase, Vec<String>)>>,
         /// Liveness of every admitted timer, cleared when its owner revokes it.
@@ -194,7 +196,21 @@ mod tests {
         pub fail_measure: Cell<bool>,
     }
     impl AttachmentHost for Effects {
-        fn copy_to_clipboard(&self, text: &str) -> Pin<Box<dyn Future<Output = bool>>> {
+        fn enter_placement_scope(
+            &self,
+            scope: egui::Id,
+        ) -> maestro_web::browser::attachment_content::PlacementScope {
+            self.native.enter_placement_scope(scope)
+        }
+        fn hide_placement_scope(&self, scope: egui::Id) {
+            self.native.hide_placement_scope(scope);
+        }
+
+        fn copy_to_clipboard(
+            &self,
+            text: &str,
+            _: maestro_web::browser::attachment_content::ClipboardMode,
+        ) -> Pin<Box<dyn Future<Output = bool>>> {
             self.copies.borrow_mut().push(text.to_owned());
             Box::pin(std::future::ready(true))
         }
@@ -265,6 +281,7 @@ mod tests {
             self.native.hover_capable()
         }
         fn remove(&self, id: egui::Id) {
+            self.removed.borrow_mut().push(id);
             self.native.remove(id);
         }
         fn take_escape(&self) -> bool {
@@ -316,6 +333,8 @@ mod tests {
         pub context: egui::Context,
         /// Events delivered by the next frame.
         pub events: Vec<egui::Event>,
+        /// Optional controlled frame time for painted animation observations.
+        pub time: Option<f64>,
         /// Accessibility output of the last frame.
         pub output: Vec<egui::output::OutputEvent>,
         /// Available size of every frame drawn without an explicit one.
@@ -359,6 +378,7 @@ mod tests {
                 effects: Rc::new(Effects {
                     native: BrowserAttachmentHost::new(canvas).unwrap(),
                     copies: RefCell::default(),
+                    removed: RefCell::default(),
                     phases: RefCell::default(),
                     timers: RefCell::default(),
                     fail_next: RefCell::default(),
@@ -372,6 +392,7 @@ mod tests {
                 i18n: I18n::new(Rc::new(support::Host::default())).unwrap(),
                 context: egui::Context::default(),
                 events: vec![],
+                time: None,
                 output: vec![],
                 size: (800., 600.),
                 painted: vec![],
@@ -421,6 +442,7 @@ mod tests {
                         egui::vec2(size.0, size.1),
                     )),
                     events,
+                    time: self.time,
                     ..Default::default()
                 },
                 |ui| {

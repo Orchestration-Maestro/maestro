@@ -12,7 +12,16 @@ pub struct Canvas {
     pub rect: egui::Rect,
     pub paint: crate::canvas_paint::Paint,
 }
+impl Default for Canvas {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 impl Canvas {
+    /// Create an independent controlled copy surface.
+    /// # Panics
+    /// Panics if the supplied localization cannot initialize.
+    #[must_use]
     pub fn new() -> Self {
         let host = Rc::new(Host::default());
         let i18n: I18n = I18n::new(Rc::new(support::Host::default())).unwrap();
@@ -26,34 +35,20 @@ impl Canvas {
             paint: crate::canvas_paint::Paint::default(),
         }
     }
+    /// Draw a controlled frame.
+    /// # Panics
+    /// Panics if the component fails to render.
     pub fn frame(&mut self, events: Vec<egui::Event>) -> (egui::Response, egui::FullOutput) {
-        let pack = maestro_theme::load_brand_pack("brand.json", &Pack).unwrap();
-        let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
-        let i18n: I18n = I18n::new(Rc::new(support::Host::default())).unwrap();
-        let mut response = None;
-        let context = self.context.clone();
-        let mut output = context.run_ui(
-            egui::RawInput {
-                screen_rect: Some(egui::Rect::from_min_size(
-                    egui::Pos2::ZERO,
-                    egui::vec2(800., 600.),
-                )),
-                events,
-                ..Default::default()
-            },
-            |ui| {
-                ui.set_clip_rect(self.clip);
-                if !self.enabled {
-                    ui.disable();
-                }
-                let result = self.button.render(ui, &i18n, &presentation).unwrap();
-                self.rect = result.rect;
-                response = Some(result);
-            },
+        let button = &mut self.button;
+        let result = draw(
+            &self.context,
+            &mut self.paint,
+            events,
+            (self.clip, self.enabled),
+            |ui, i18n, presentation| button.render(ui, i18n, presentation).unwrap(),
         );
-        self.paint.update(&output);
-        output.textures_delta.clear();
-        (response.unwrap(), output)
+        self.rect = result.0.rect;
+        result
     }
     pub fn activate(&mut self) -> egui::FullOutput {
         self.frame(vec![]);
@@ -65,6 +60,7 @@ impl Canvas {
         self.host.run_work();
     }
 }
+#[must_use]
 pub fn pointer(pos: egui::Pos2, pressed: bool) -> Vec<egui::Event> {
     vec![
         egui::Event::PointerMoved(pos),
@@ -76,8 +72,47 @@ pub fn pointer(pos: egui::Pos2, pressed: bool) -> Vec<egui::Event> {
         },
     ]
 }
+#[must_use]
 pub fn copied(output: &egui::FullOutput, canvas: &Canvas) -> bool {
     canvas
         .paint
         .text_visible(&canvas.context, &output.shapes, "Copied!")
+}
+
+/// Draw a control recipe through the shared frame, presentation and final-clip paint route.
+/// # Panics
+/// Panics if the checked-in brand, localization or component cannot render.
+pub fn draw(
+    context: &egui::Context,
+    paint: &mut crate::canvas_paint::Paint,
+    events: Vec<egui::Event>,
+    policy: (egui::Rect, bool),
+    render: impl FnOnce(&mut egui::Ui, &I18n, &maestro_theme::BrandPresentation<'_>) -> egui::Response,
+) -> (egui::Response, egui::FullOutput) {
+    let mut render = Some(render);
+    let pack = maestro_theme::load_brand_pack("brand.json", &Pack).unwrap();
+    let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
+    let i18n: I18n = I18n::new(Rc::new(support::Host::default())).unwrap();
+    let mut response = None;
+    let context = context.clone();
+    let mut output = context.run_ui(
+        egui::RawInput {
+            screen_rect: Some(egui::Rect::from_min_size(
+                egui::Pos2::ZERO,
+                egui::vec2(800., 600.),
+            )),
+            events,
+            ..Default::default()
+        },
+        |ui| {
+            ui.set_clip_rect(policy.0);
+            if !policy.1 {
+                ui.disable();
+            }
+            response = Some(render.take().unwrap()(ui, &i18n, &presentation));
+        },
+    );
+    paint.update(&output);
+    output.textures_delta.clear();
+    (response.unwrap(), output)
 }

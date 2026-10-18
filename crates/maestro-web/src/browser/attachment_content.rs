@@ -10,6 +10,9 @@ use std::{cell::RefCell, fmt, io, rc::Rc};
 pub(crate) mod browser;
 #[cfg(target_arch = "wasm32")]
 pub use browser::BrowserAttachmentHost;
+mod placement_scope;
+pub use placement_scope::PlacementScope;
+
 /// Detected attachment presentation.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FileType {
@@ -153,13 +156,31 @@ impl From<io::Error> for AttachmentUiError {
 }
 /// Captured native focus restoration, retaining the original target.
 pub type FocusTarget = dyn Fn() -> Result<(), AttachmentUiError>;
+/// Native clipboard failure policy selected by the caller.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ClipboardMode {
+    /// Use only the native write API.
+    Direct,
+    /// Try temporary selection when native writing fails.
+    Fallback,
+}
 /// Replaceable browser content, download and clipboard effects.
 pub trait AttachmentHost {
+    /// Activate a row's placement lifetime, restoring nested activation on drop.
+    /// Hosts without retained native surfaces can keep the empty default.
+    fn enter_placement_scope(&self, _scope: egui::Id) -> PlacementScope {
+        PlacementScope::default()
+    }
+    /// Detach this scope's surfaces without releasing their retained owners.
+    /// Hosts without retained native surfaces need no revocation.
+    fn hide_placement_scope(&self, _scope: egui::Id) {}
+
     /// Begin copying literal text, owning native operands before returning local work.
-    /// The result reports native success after any fallback, without UI feedback.
+    /// The result reports success under the selected policy, without UI feedback.
     fn copy_to_clipboard(
         &self,
         text: &str,
+        mode: ClipboardMode,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>>;
 
     /// Capture the currently focused native target before modal admission.
@@ -301,19 +322,25 @@ pub(crate) fn glyph(
     let node = catalog
         .get(name)
         .ok_or_else(|| AttachmentUiError::Host(format!("Missing glyph: {name}")))?;
-    let image = icons::icon(node, IconSize::Md, tint, ui.ctx().pixels_per_point())
+    paint_icon(ui, rect, node, (IconSize::Md, tint, 0.))
+}
+/// Paint supplied geometry with a caller-selected size, tint and rotation.
+pub(crate) fn paint_icon(
+    ui: &egui::Ui,
+    rect: egui::Rect,
+    node: &icons::IconNode,
+    (size, tint, rotation): (IconSize, egui::Color32, f32),
+) -> Result<(), AttachmentUiError> {
+    let image = icons::icon(node, size, tint, ui.ctx().pixels_per_point())
         .map_err(AttachmentUiError::Icon)?;
     let texture = ui.ctx().load_texture(
-        format!("{name}:{tint:?}"),
+        format!("{node:?}:{size:?}:{tint:?}"),
         image,
         egui::TextureOptions::LINEAR,
     );
-    ui.painter().image(
-        texture.id(),
-        rect,
-        egui::Rect::from_min_max(egui::Pos2::ZERO, egui::pos2(1., 1.)),
-        egui::Color32::WHITE,
-    );
+    egui::Image::new((texture.id(), rect.size()))
+        .rotate(rotation, egui::vec2(0.5, 0.5))
+        .paint_at(ui, rect);
     Ok(())
 }
 
@@ -346,31 +373,46 @@ pub(crate) fn ghost_sized(
 ) -> Result<egui::Response, AttachmentUiError> {
     ghost_labeled(ui, p, (name, None), size)
 }
+/// Highlight treatment for the shared ghost-control painter.
+#[derive(Clone, Copy)]
+pub(crate) enum GhostHover {
+    /// Ordinary text on the existing ghost surface.
+    Text,
+    /// Accent foreground on an accent-filled surface.
+    Accent,
+}
 /// Draw the same ghost control with an optional adjacent label.
 pub(crate) fn ghost_labeled(
     ui: &mut egui::Ui,
     p: &BrandPresentation<'_>,
-    (name, label): (&str, Option<&str>),
+    content: (&str, Option<&str>),
     size: egui::Vec2,
 ) -> Result<egui::Response, AttachmentUiError> {
-    ghost_labeled_tinted(ui, p, (name, label), size, color(p, "text")?)
+    ghost_labeled_tinted(ui, p, content, size, (color(p, "text")?, GhostHover::Text))
 }
-/// Draw a shared ghost control with a caller-selected idle glyph tint.
+/// Draw a shared ghost control with caller-selected idle tint and highlight treatment.
 pub(crate) fn ghost_labeled_tinted(
     ui: &mut egui::Ui,
     p: &BrandPresentation<'_>,
     (name, label): (&str, Option<&str>),
     size: egui::Vec2,
-    tint: egui::Color32,
+    (tint, hover): (egui::Color32, GhostHover),
 ) -> Result<egui::Response, AttachmentUiError> {
     let response = ui
         .allocate_response(size, egui::Sense::click())
         .on_hover_cursor(egui::CursorIcon::PointingHand);
-    if response.hovered() || response.has_focus() {
+    let highlighted = response.hovered() || response.has_focus();
+    let accent = matches!(hover, GhostHover::Accent);
+    let foreground = if highlighted {
+        color(p, if accent { "on-accent" } else { "text" })?
+    } else {
+        tint
+    };
+    if highlighted {
         ui.painter().rect(
             response.rect,
             egui::CornerRadius::from(points(p.radii["control"])),
-            color(p, "panel")?,
+            color(p, if accent { "accent" } else { "panel" })?,
             egui::Stroke::new(
                 1.,
                 color(
@@ -395,11 +437,7 @@ pub(crate) fn ghost_labeled_tinted(
         ui,
         egui::Rect::from_center_size(center, egui::vec2(16., 16.)),
         name,
-        if response.hovered() || response.has_focus() {
-            color(p, "text")?
-        } else {
-            tint
-        },
+        foreground,
     )?;
     if let Some(label) = label {
         ui.painter().text(
@@ -407,7 +445,11 @@ pub(crate) fn ghost_labeled_tinted(
             egui::Align2::RIGHT_CENTER,
             label,
             egui::TextStyle::Button.resolve(ui.style()),
-            color(p, "text")?,
+            if accent {
+                foreground
+            } else {
+                color(p, "text")?
+            },
         );
     }
     Ok(response)

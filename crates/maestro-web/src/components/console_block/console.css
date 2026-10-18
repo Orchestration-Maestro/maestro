@@ -1,0 +1,41 @@
+.maestro-console {
+  box-sizing: border-box;
+  border: 1px solid var(--maestro-color-border);
+  border-radius: var(--maestro-radii-panel);
+  overflow: hidden;
+}
+.maestro-console-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.375rem 0.75rem;
+  background: var(--maestro-color-panel);
+  border-bottom: 1px solid var(--maestro-color-border);
+}
+.maestro-console-label {
+  color: var(--maestro-color-muted);
+  font-family: var(--maestro-type-mono-font);
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+.maestro-console .control-slot {
+  display: block;
+  flex-shrink: 0;
+}
+.maestro-console .console-scroll {
+  overflow: auto;
+  max-height: 16rem;
+}
+.maestro-console pre {
+  margin: 0;
+  padding: 0.75rem;
+  background: var(--maestro-color-background);
+  color: var(--maestro-color-text);
+  font-family: var(--maestro-type-mono-font);
+  font-size: 0.75rem;
+  line-height: 1rem;
+  white-space: pre-wrap;
+}
+.maestro-console pre.maestro-console-error {
+  color: var(--maestro-color-error);
+}

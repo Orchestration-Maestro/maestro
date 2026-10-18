@@ -3,7 +3,7 @@ use crate::{
     I18n,
     browser::attachment_content::{
         AttachmentHost, AttachmentUiError, ReadingContent,
-        reading::controlled::{ControlledLayout, ControlledReading},
+        reading::controlled::{ControlledLayout, ControlledReading, ReadingHeight},
     },
     components::copy_button::CopyButton,
 };
@@ -94,7 +94,7 @@ pub(crate) fn controls<'a, F: ?Sized>(
     ui: &mut egui::Ui,
     layout: &ControlledLayout,
     buttons: impl IntoIterator<Item = &'a mut CopyButton>,
-    view: CodeBlockView<'_, F>,
+    view: (&I18n<F>, &maestro_theme::BrandPresentation<'_>),
 ) -> Result<Vec<Option<egui::Response>>, AttachmentUiError> {
     let clip = layout.response.rect.intersect(ui.clip_rect());
     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(clip));
@@ -103,7 +103,7 @@ pub(crate) fn controls<'a, F: ?Sized>(
         .into_iter()
         .map(|button| {
             let full = layout.controls.iter().find(|(id, _)| *id == button.id);
-            full.map(|(_, full)| button.render_at(&mut child, *full, view.i18n, view.presentation))
+            full.map(|(_, full)| button.render_at(&mut child, *full, view.0, view.1))
                 .transpose()
         })
         .collect()
@@ -117,6 +117,8 @@ pub struct CodeBlock {
     pub language: String,
     /// Replaceable platform effects.
     host: Rc<dyn AttachmentHost>,
+    /// Whether input is already literal tool text.
+    literal: bool,
     /// Stable native surface identity.
     id: egui::Id,
     /// Current native content, read when a root is mounted.
@@ -136,6 +138,7 @@ impl CodeBlock {
             code: String::new(),
             language: String::new(),
             host,
+            literal: false,
             id: crate::browser::attachment_content::identity(),
             prepared: Rc::new(Prepared {
                 language: String::new(),
@@ -147,6 +150,12 @@ impl CodeBlock {
             copy: None,
         }
     }
+    /// Retain literal input without changing the public encoded-input route.
+    pub(crate) fn new_literal(host: Rc<dyn AttachmentHost>) -> Self {
+        let mut block = Self::new(host);
+        block.literal = true;
+        block
+    }
     /// Draw the listing and its copy control for this frame.
     /// # Errors
     /// Returns localization, highlighting, glyph, presentation or native placement failures.
@@ -155,7 +164,12 @@ impl CodeBlock {
         ui: &mut egui::Ui,
         view: CodeBlockView<'_, F>,
     ) -> Result<egui::Response, AttachmentUiError> {
-        let next = Prepared::new(view.highlighter, decode(&self.code), self.language.clone())?;
+        let text = if self.literal {
+            self.code.clone()
+        } else {
+            decode(&self.code)
+        };
+        let next = Prepared::new(view.highlighter, text, self.language.clone())?;
         let mut copy = match self.copy.take() {
             Some(copy) => copy,
             None => CopyButton::new(Rc::clone(&self.host), view.i18n)?,
@@ -167,7 +181,7 @@ impl CodeBlock {
         match result {
             Ok(layout) => {
                 copy.text.clone_from(&self.prepared.text);
-                let painted = controls(ui, &layout, [&mut copy], view);
+                let painted = controls(ui, &layout, [&mut copy], (view.i18n, view.presentation));
                 self.copy = Some(copy);
                 let gained = painted?.iter().flatten().any(egui::Response::gained_focus);
                 if let Some(mounted) = self.mounted.borrow().upgrade().filter(|_| gained) {
@@ -198,6 +212,7 @@ impl CodeBlock {
             .or(self.content.as_ref())
             .ok_or_else(|| AttachmentUiError::Host("Missing listing".into()))?;
         let layout = ControlledReading {
+            height: ReadingHeight::Flow,
             host: self.host.as_ref(),
             id: self.id,
             content,

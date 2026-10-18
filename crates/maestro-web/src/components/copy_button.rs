@@ -24,6 +24,10 @@ pub struct CopyButton {
     feedback: CopyFeedback,
     /// Primary gesture admitted in this control's visible slot.
     pressed: Option<()>,
+    /// Restoring interval for this retained control.
+    feedback_duration: i32,
+    /// Console controls use muted idle and accent hover roles.
+    pub(crate) hover: attachment_content::GhostHover,
 }
 impl CopyButton {
     /// Retain the host and initialize empty text with the localized copy title.
@@ -38,7 +42,17 @@ impl CopyButton {
             id: attachment_content::identity(),
             feedback: CopyFeedback::default(),
             pressed: None,
+            feedback_duration: 2000,
+            hover: attachment_content::GhostHover::Text,
         })
+    }
+    /// Select the restoring interval without adding another timer owner.
+    pub(crate) fn set_feedback_duration(&mut self, delay: i32) {
+        self.feedback_duration = delay;
+    }
+    /// Whether successful copy feedback is currently active.
+    pub(crate) fn copied(&self) -> bool {
+        self.feedback.copied()
     }
     /// Draw and activate the original-text control.
     /// # Errors
@@ -87,11 +101,21 @@ impl CopyButton {
         let label = (copied && self.show_text)
             .then(|| i18n.text("Copied!"))
             .transpose()?;
-        let response = attachment_content::ghost_labeled(
+        let response = attachment_content::ghost_labeled_tinted(
             &mut child,
             presentation,
             (if copied { "Check" } else { "Copy" }, label.as_deref()),
             rect.size(),
+            (
+                attachment_content::color(
+                    presentation,
+                    match self.hover {
+                        attachment_content::GhostHover::Text => "text",
+                        attachment_content::GhostHover::Accent => "muted",
+                    },
+                )?,
+                self.hover,
+            ),
         )?
         .on_hover_text(&self.title);
         response.widget_info(|| {
@@ -112,7 +136,12 @@ impl CopyButton {
         )
         .is_empty();
         if pointer || (response.clicked() && !response.clicked_by(egui::PointerButton::Primary)) {
-            self.feedback.copy(&self.host, &self.text, 2000, ui.ctx());
+            self.feedback.copy(
+                &self.host,
+                (&self.text, attachment_content::ClipboardMode::Direct),
+                self.feedback_duration,
+                ui.ctx(),
+            );
         }
         Ok(response)
     }

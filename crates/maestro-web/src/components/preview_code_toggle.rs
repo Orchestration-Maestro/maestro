@@ -87,7 +87,13 @@ impl PreviewCodeToggle {
                 presentation,
                 (glyph, None),
                 egui::vec2(32., 26.),
-                attachment_content::color(presentation, if selected { "text" } else { "muted" })?,
+                (
+                    attachment_content::color(
+                        presentation,
+                        if selected { "text" } else { "muted" },
+                    )?,
+                    attachment_content::GhostHover::Text,
+                ),
             )?
             .on_hover_text(&title);
             response.widget_info(|| {

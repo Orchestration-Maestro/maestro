@@ -49,11 +49,22 @@ impl Host {
     }
 }
 impl AttachmentHost for Host {
+    fn enter_placement_scope(
+        &self,
+        scope: egui::Id,
+    ) -> maestro_web::browser::attachment_content::PlacementScope {
+        self.native.enter_placement_scope(scope)
+    }
+    fn hide_placement_scope(&self, scope: egui::Id) {
+        self.native.hide_placement_scope(scope);
+    }
+
     fn copy_to_clipboard(
         &self,
         text: &str,
+        mode: maestro_web::browser::attachment_content::ClipboardMode,
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
-        self.native.copy_to_clipboard(text)
+        self.native.copy_to_clipboard(text, mode)
     }
     fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentUiError> {
         self.native.capture_focus()

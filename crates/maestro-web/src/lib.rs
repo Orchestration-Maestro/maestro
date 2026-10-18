@@ -74,3 +74,9 @@ pub use tools::artifacts::{image_artifact::ImageArtifact, text_artifact::TextArt
 
 /// Editable document artifact views.
 pub use tools::artifacts::{markdown_artifact::MarkdownArtifact, svg_artifact::SvgArtifact};
+pub use tools::renderer_registry::{render_collapsible_header, render_header};
+pub use tools::renderers::default_renderer::DefaultRenderer;
+pub use tools::types::{ToolRenderResult, ToolRenderer};
+pub use tools::{get_tool_renderer, register_tool_renderer, render_tool, set_show_json_mode};
+
+pub use components::console_block::ConsoleBlock;

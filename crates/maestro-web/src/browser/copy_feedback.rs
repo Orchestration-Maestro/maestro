@@ -15,16 +15,23 @@ impl CopyFeedback {
     pub(crate) fn copy(
         &self,
         host: &Rc<dyn AttachmentHost>,
-        text: &str,
+        input: (&str, super::attachment_content::ClipboardMode),
         delay: i32,
         context: &egui::Context,
     ) {
-        let work = host.copy_to_clipboard(text);
+        let work = host.copy_to_clipboard(input.0, input.1);
+        #[cfg(target_arch = "wasm32")]
+        let direct = input.1 == super::attachment_content::ClipboardMode::Direct;
         let feedback = Rc::downgrade(&self.0);
         let weak_host = Rc::downgrade(host);
         let context = context.clone();
         host.spawn_local(Box::pin(async move {
-            if !work.await {
+            let succeeded = work.await;
+            #[cfg(target_arch = "wasm32")]
+            if !succeeded && direct {
+                crate::utils::clipboard::report_copy_failure();
+            }
+            if !succeeded {
                 return;
             }
             let (Some(feedback), Some(host)) = (feedback.upgrade(), weak_host.upgrade()) else {

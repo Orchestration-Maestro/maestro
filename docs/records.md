@@ -323,6 +323,13 @@ ordered headers or denial string shared by the [native catalog](catalog.md#reque
 and [guest authoring library](extensions/guest.md). Both consumers re-export the
 same record; resolution policy remains with the producer.
 
+## Raw user-block text
+
+[`UserBlock::text_output`](../crates/maestro-request/src/types/messages.rs)
+joins text blocks in order with one newline, keeping empty blocks and repeated
+text while ignoring images. It leaves text unformatted; consuming renderers and
+protocol adapters own normalization, placeholders and presentation.
+
 ## Application message records
 
 `maestro-request::messages` owns `BashExecutionMessage`, generic

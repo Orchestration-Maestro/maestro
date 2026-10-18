@@ -6,8 +6,8 @@
 The default text is empty, the title is localized `Copy` and success text is off.
 An explicitly empty title stays empty.
 
-Activation starts the native copy immediately, capturing the current original
-text. Pending and rejected operations do not show a new success indication.
+Activation starts a direct native clipboard write immediately, capturing the current
+original text. It does not try a temporary-selection fallback. Pending and rejected operations do not show a new success indication.
 Success switches the copy glyph to a check and optionally shows localized
 `Copied!` for 2000 ms after completion. A later success replaces that control's
 restoring timer. A rejected timer registration clears feedback rather than
@@ -65,3 +65,6 @@ fractional scroll on both axes, including presentation-only changes. A replaceme
 engine is consumed even when Markdown content is unchanged. A control that gains keyboard
 focus is scrolled into view. Dropping the owner removes the native root and revokes
 pending feedback.
+
+Tool-renderer listings use the same listing pipeline with literal input; see
+[tool renderers](tool-renderers.md). Their text is not auto-decoded.

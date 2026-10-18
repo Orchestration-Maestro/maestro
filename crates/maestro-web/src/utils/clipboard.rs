@@ -32,19 +32,34 @@ fn fallback(document: &web_sys::Document, text: &str) -> bool {
             .as_bool()
             .unwrap_or(false))
     };
-    attempt().unwrap_or(false)
+    attempt().unwrap_or_else(|_| {
+        report_copy_failure();
+        false
+    })
 }
-/// Start the API call synchronously, returning only owned settlement work.
+/// Admit native writing synchronously while retaining its actual receiver.
+fn begin_write(document: &web_sys::Document, text: &str) -> Result<Promise, JsValue> {
+    let window = document.default_view().ok_or(JsValue::NULL)?;
+    let clipboard = Reflect::get(window.navigator().as_ref(), &"clipboard".into())?;
+    call(&clipboard, "writeText", &text.into())?.dyn_into()
+}
+/// Start the selected copy policy and return only owned settlement work.
 pub(crate) fn copy_to_clipboard(
     document: &web_sys::Document,
     text: &str,
+    mode: crate::browser::attachment_content::ClipboardMode,
 ) -> Pin<Box<dyn Future<Output = bool>>> {
-    let attempt = || -> Result<Promise, JsValue> {
-        let window = document.default_view().ok_or(JsValue::NULL)?;
-        let clipboard = Reflect::get(window.navigator().as_ref(), &"clipboard".into())?;
-        call(&clipboard, "writeText", &text.into())?.dyn_into()
-    };
-    if let Ok(promise) = attempt() {
+    use crate::browser::attachment_content::ClipboardMode;
+    let admitted = begin_write(document, text);
+    if mode == ClipboardMode::Direct {
+        return Box::pin(async move {
+            match admitted {
+                Ok(promise) => wasm_bindgen_futures::JsFuture::from(promise).await.is_ok(),
+                Err(_) => false,
+            }
+        });
+    }
+    if let Ok(promise) = admitted {
         let document = document.clone();
         let text = text.to_owned();
         Box::pin(async move {
@@ -55,4 +70,9 @@ pub(crate) fn copy_to_clipboard(
         let success = fallback(document, text);
         Box::pin(async move { success })
     }
+}
+
+/// Report the shared clipboard failure category without an error panel.
+pub(crate) fn report_copy_failure() {
+    web_sys::console::error_1(&"Failed to copy".into());
 }

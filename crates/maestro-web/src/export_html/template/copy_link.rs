@@ -34,7 +34,15 @@ impl CopyLinkState {
     }
     /// Begin the native effect before scheduling its owned completion.
     fn copy(&self, text: &str, context: &egui::Context) {
-        self.feedback.copy(&self.host, text, 1500, context);
+        self.feedback.copy(
+            &self.host,
+            (
+                text,
+                crate::browser::attachment_content::ClipboardMode::Fallback,
+            ),
+            1500,
+            context,
+        );
     }
 }
 /// Escapes query syntax while preserving healthy opaque-key punctuation.

@@ -1,0 +1,2698 @@
+{
+  "rows": [
+    {
+      "id": "missing-waiting",
+      "input": {
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Preparing tool...",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [],
+        "labels": []
+      }
+    },
+    {
+      "id": "missing-streaming",
+      "input": {
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Preparing tool...",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [],
+        "labels": []
+      }
+    },
+    {
+      "id": "null-waiting",
+      "input": {
+        "params": null,
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Preparing tool...",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [],
+        "labels": []
+      }
+    },
+    {
+      "id": "null-streaming",
+      "input": {
+        "params": null,
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Preparing tool...",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [],
+        "labels": []
+      }
+    },
+    {
+      "id": "false-waiting",
+      "input": {
+        "params": false,
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Preparing tool...",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [],
+        "labels": []
+      }
+    },
+    {
+      "id": "false-streaming",
+      "input": {
+        "params": false,
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Preparing tool...",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [],
+        "labels": []
+      }
+    },
+    {
+      "id": "zero-waiting",
+      "input": {
+        "params": 0,
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Preparing tool...",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [],
+        "labels": []
+      }
+    },
+    {
+      "id": "zero-streaming",
+      "input": {
+        "params": 0,
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Preparing tool...",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [],
+        "labels": []
+      }
+    },
+    {
+      "id": "negative-zero-waiting",
+      "input": {
+        "params": 0,
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Preparing tool...",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [],
+        "labels": []
+      }
+    },
+    {
+      "id": "negative-zero-streaming",
+      "input": {
+        "params": 0,
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Preparing tool...",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [],
+        "labels": []
+      }
+    },
+    {
+      "id": "empty-string-waiting",
+      "input": {
+        "params": "",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Preparing tool...",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [],
+        "labels": []
+      }
+    },
+    {
+      "id": "empty-string-streaming",
+      "input": {
+        "params": "",
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Preparing tool...",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [],
+        "labels": []
+      }
+    },
+    {
+      "id": "true-waiting",
+      "input": {
+        "params": true,
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "true",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "true-streaming",
+      "input": {
+        "params": true,
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "true",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "number-waiting",
+      "input": {
+        "params": 1.25,
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "1.25",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "number-streaming",
+      "input": {
+        "params": 1.25,
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "1.25",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "negative-number-waiting",
+      "input": {
+        "params": -1,
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "-1",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "negative-number-streaming",
+      "input": {
+        "params": -1,
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "-1",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "small-exponent-waiting",
+      "input": {
+        "params": 1e-07,
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "1e-7",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "small-exponent-streaming",
+      "input": {
+        "params": 1e-07,
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "1e-7",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "small-decimal-waiting",
+      "input": {
+        "params": 1e-06,
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "0.000001",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "small-decimal-streaming",
+      "input": {
+        "params": 1e-06,
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "0.000001",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "json-zero-waiting",
+      "input": {
+        "params": "0",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "0",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "json-zero-streaming",
+      "input": {
+        "params": "0",
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "0",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "json-whitespace-waiting",
+      "input": {
+        "params": " \t\r\n{\"a\":1} \t\r\n",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"a\": 1\n}",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "json-whitespace-streaming",
+      "input": {
+        "params": " \t\r\n{\"a\":1} \t\r\n",
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "{\n  \"a\": 1\n}",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "json-duplicate-waiting",
+      "input": {
+        "params": "{\"b\":0,\"a\":1,\"b\":2}",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"b\": 2,\n  \"a\": 1\n}",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "json-duplicate-streaming",
+      "input": {
+        "params": "{\"b\":0,\"a\":1,\"b\":2}",
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "{\n  \"b\": 2,\n  \"a\": 1\n}",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "empty-object-waiting",
+      "input": {
+        "params": {},
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{}",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "empty-object-streaming",
+      "input": {
+        "params": {},
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Preparing tool parameters...",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [],
+        "labels": []
+      }
+    },
+    {
+      "id": "object-waiting",
+      "input": {
+        "params": {
+          "2": 1e+21,
+          "10": 0,
+          "b": 1,
+          "a": "雪<&>"
+        },
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"2\": 1e+21,\n  \"10\": 0,\n  \"b\": 1,\n  \"a\": \"雪<&>\"\n}",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "object-streaming",
+      "input": {
+        "params": {
+          "2": 1e+21,
+          "10": 0,
+          "b": 1,
+          "a": "雪<&>"
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "{\n  \"2\": 1e+21,\n  \"10\": 0,\n  \"b\": 1,\n  \"a\": \"雪<&>\"\n}",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "empty-array-waiting",
+      "input": {
+        "params": [],
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "[]",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "empty-array-streaming",
+      "input": {
+        "params": [],
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "[]",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "array-waiting",
+      "input": {
+        "params": [
+          1,
+          2
+        ],
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "[\n  1,\n  2\n]",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "array-streaming",
+      "input": {
+        "params": [
+          1,
+          2
+        ],
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "[\n  1,\n  2\n]",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "single-array-waiting",
+      "input": {
+        "params": [
+          1
+        ],
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "[\n  1\n]",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "single-array-streaming",
+      "input": {
+        "params": [
+          1
+        ],
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "[\n  1\n]",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "invalid-text-waiting",
+      "input": {
+        "params": "raw text",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "\"raw text\"",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "invalid-text-streaming",
+      "input": {
+        "params": "raw text",
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "\"raw text\"",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "json-object-waiting",
+      "input": {
+        "params": "{\"b\":1,\"2\":2,\"1\":3}",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"1\": 3,\n  \"2\": 2,\n  \"b\": 1\n}",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "json-object-streaming",
+      "input": {
+        "params": "{\"b\":1,\"2\":2,\"1\":3}",
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "{\n  \"1\": 3,\n  \"2\": 2,\n  \"b\": 1\n}",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "json-null-waiting",
+      "input": {
+        "params": "null",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "null",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "json-null-streaming",
+      "input": {
+        "params": "null",
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Preparing tool parameters...",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [],
+        "labels": []
+      }
+    },
+    {
+      "id": "json-false-waiting",
+      "input": {
+        "params": "false",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "false",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "json-false-streaming",
+      "input": {
+        "params": "false",
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "false",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "json-empty-string-waiting",
+      "input": {
+        "params": "\"\"",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "\"\"",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "json-empty-string-streaming",
+      "input": {
+        "params": "\"\"",
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "\"\"",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "json-empty-object-waiting",
+      "input": {
+        "params": "{}",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{}",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "json-empty-object-streaming",
+      "input": {
+        "params": "{}",
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Preparing tool parameters...",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [],
+        "labels": []
+      }
+    },
+    {
+      "id": "json-array-waiting",
+      "input": {
+        "params": "[2,1]",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "[\n  2,\n  1\n]",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "json-array-streaming",
+      "input": {
+        "params": "[2,1]",
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "[\n  2,\n  1\n]",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "string-json-waiting",
+      "input": {
+        "params": "\"hello\"",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "\"hello\"",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "string-json-streaming",
+      "input": {
+        "params": "\"hello\"",
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "\"hello\"",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "bom-json-waiting",
+      "input": {
+        "params": "﻿{\"a\":1}",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "\"﻿{\\\"a\\\":1}\"",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "bom-json-streaming",
+      "input": {
+        "params": "﻿{\"a\":1}",
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "\"﻿{\\\"a\\\":1}\"",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "nel-json-waiting",
+      "input": {
+        "params": "{\"a\":1}",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "\"{\\\"a\\\":1}\"",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "nel-json-streaming",
+      "input": {
+        "params": "{\"a\":1}",
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "\"{\\\"a\\\":1}\"",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "nested-string-waiting",
+      "input": {
+        "params": "\"{\\\"a\\\":1}\"",
+        "isStreaming": false
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "\"{\\\"a\\\":1}\"",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "nested-string-streaming",
+      "input": {
+        "params": "\"{\\\"a\\\":1}\"",
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 1,
+        "iconClass": "inline-block text-foreground",
+        "blocks": [
+          {
+            "code": "\"{\\\"a\\\":1}\"",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input"
+        ]
+      }
+    },
+    {
+      "id": "result-empty-ok",
+      "input": {
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "(no output)",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-empty-error",
+      "input": {
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [],
+          "isError": true
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-destructive",
+        "blocks": [
+          {
+            "code": "(no output)",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-text-ok",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "hello"
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "hello",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-text-error",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "hello"
+            }
+          ],
+          "isError": true
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-destructive",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "hello",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-empty-text-ok",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "(no output)",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-empty-text-error",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            }
+          ],
+          "isError": true
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-destructive",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "(no output)",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-two-empty-ok",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "text",
+              "text": ""
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "\n",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-two-empty-error",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": ""
+            },
+            {
+              "type": "text",
+              "text": ""
+            }
+          ],
+          "isError": true
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-destructive",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "\n",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-mixed-ok",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "first"
+            },
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "last"
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-mixed-error",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "first"
+            },
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            },
+            {
+              "type": "text",
+              "text": "last"
+            }
+          ],
+          "isError": true
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-destructive",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "first\nlast",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-image-only-ok",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "(no output)",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-image-only-error",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "image",
+              "data": "AA==",
+              "mimeType": "image/png"
+            }
+          ],
+          "isError": true
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-destructive",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "(no output)",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-array-json-ok",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "[2,1]"
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "[\n  2,\n  1\n]",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-array-json-error",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "[2,1]"
+            }
+          ],
+          "isError": true
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-destructive",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "[\n  2,\n  1\n]",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-empty-object-json-ok",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "{}"
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "{}",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-empty-object-json-error",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "{}"
+            }
+          ],
+          "isError": true
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-destructive",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "{}",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-object-json-ok",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"b\":1,\"2\":2,\"1\":3}"
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "{\n  \"1\": 3,\n  \"2\": 2,\n  \"b\": 1\n}",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-object-json-error",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "{\"b\":1,\"2\":2,\"1\":3}"
+            }
+          ],
+          "isError": true
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-destructive",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "{\n  \"1\": 3,\n  \"2\": 2,\n  \"b\": 1\n}",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-scalar-json-ok",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "null"
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "null",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-scalar-json-error",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "null"
+            }
+          ],
+          "isError": true
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-destructive",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "null",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-false-json-ok",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "false"
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "false",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-false-json-error",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "false"
+            }
+          ],
+          "isError": true
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-destructive",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "false",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-number-json-ok",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "1e21"
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "1e+21",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-number-json-error",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "1e21"
+            }
+          ],
+          "isError": true
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-destructive",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "1e+21",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-quoted-json-ok",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "\"line\""
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "\"line\"",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-quoted-json-error",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "\"line\""
+            }
+          ],
+          "isError": true
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-destructive",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "\"line\"",
+            "language": "json"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-whitespace-ok",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "  \t\n"
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "  \t\n",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-whitespace-error",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "  \t\n"
+            }
+          ],
+          "isError": true
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-destructive",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "  \t\n",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-base64-looking-ok",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "YWJj"
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "YWJj",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-base64-looking-error",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "YWJj"
+            }
+          ],
+          "isError": true
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-destructive",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "YWJj",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-markup-ok",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "<script>0</script> & 雪"
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "<script>0</script> & 雪",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-markup-error",
+      "input": {
+        "params": {
+          "x": 1
+        },
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "<script>0</script> & 雪"
+            }
+          ],
+          "isError": true
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-destructive",
+        "blocks": [
+          {
+            "code": "{\n  \"x\": 1\n}",
+            "language": "json"
+          },
+          {
+            "code": "<script>0</script> & 雪",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-params-empty-object",
+      "input": {
+        "params": {},
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "completed"
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "{}",
+            "language": "json"
+          },
+          {
+            "code": "completed",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-params-json-null",
+      "input": {
+        "params": "null",
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "completed"
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "null",
+            "language": "json"
+          },
+          {
+            "code": "completed",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Input",
+          "Output"
+        ]
+      }
+    },
+    {
+      "id": "result-params-zero",
+      "input": {
+        "params": 0,
+        "result": {
+          "role": "toolResult",
+          "toolCallId": "c",
+          "toolName": "tool",
+          "timestamp": 0,
+          "content": [
+            {
+              "type": "text",
+              "text": "completed"
+            }
+          ],
+          "isError": false
+        },
+        "isStreaming": true
+      },
+      "expected": {
+        "isCustom": false,
+        "header": "Tool Call",
+        "spinner": 0,
+        "iconClass": "inline-block text-green-600 dark:text-green-500",
+        "blocks": [
+          {
+            "code": "completed",
+            "language": "text"
+          }
+        ],
+        "labels": [
+          "Output"
+        ]
+      }
+    }
+  ]
+}

@@ -25,6 +25,18 @@ pub struct ToolRenderResultLike<'a, D> {
     /// Error observation supplied by a rendering host.
     pub is_error: Option<bool>,
 }
+impl<D> ToolRenderResultLike<'_, D> {
+    /// Borrow the same content and flags with a selected details representation.
+    #[must_use]
+    pub fn with_details<'a, T>(&'a self, details: Option<&'a T>) -> ToolRenderResultLike<'a, T> {
+        ToolRenderResultLike {
+            content: self.content,
+            details,
+            terminate: self.terminate,
+            is_error: self.is_error,
+        }
+    }
+}
 impl<'a, D> From<&'a AgentToolResult<D>> for ToolRenderResultLike<'a, D> {
     fn from(result: &'a AgentToolResult<D>) -> Self {
         Self {

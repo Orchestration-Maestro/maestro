@@ -18,5 +18,7 @@ pub mod code_block;
 /// Native Markdown with highlighted code and math.
 pub mod markdown_block;
 
+/// Literal native console output with owned copy feedback.
+pub mod console_block;
 /// Retained preview/source selection.
 pub mod preview_code_toggle;

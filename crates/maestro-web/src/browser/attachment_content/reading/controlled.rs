@@ -5,8 +5,18 @@ use crate::browser::attachment_content::{
 };
 use std::rc::Rc;
 
+/// Height intent supplied by the native surface's owner.
+pub(crate) enum ReadingHeight {
+    /// Intrinsic content can grow a provisional horizontal row.
+    Flow,
+    /// A caller-selected viewport remains bounded under every parent layout.
+    Viewport,
+}
+
 /// Call-scoped operands for one native surface with canvas control slots.
 pub(crate) struct ControlledReading<'a> {
+    /// Native flow or explicitly bounded viewport.
+    pub height: ReadingHeight,
     /// Existing platform transaction owner.
     pub host: &'a dyn AttachmentHost,
     /// Retained surface identity.
@@ -57,7 +67,15 @@ impl ControlledReading<'_> {
     }
     /// Use one measured snapshot for allocation, publication and controls.
     pub(crate) fn draw(&self, ui: &mut egui::Ui) -> Result<ControlledLayout, AttachmentUiError> {
-        let available = ui.available_size().max(egui::Vec2::ZERO);
+        let mut available = ui.available_size_before_wrap().max(egui::Vec2::ZERO);
+        if matches!(self.height, ReadingHeight::Flow)
+            && ui
+                .stack()
+                .iter()
+                .any(|s| s.layout_direction.is_horizontal())
+        {
+            available.y = (ui.clip_rect().bottom() - ui.cursor().top()).max(0.);
+        }
         self.place(
             ui,
             egui::Rect::from_min_size(ui.next_widget_position(), available),
