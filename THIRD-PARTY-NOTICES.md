@@ -721,11 +721,16 @@ The daemon protocol records, schema and tests in `crates/maestro-protocol/` and
 `crates/maestro-ipc/`, and the topology in `crates/maestro-workspace/` derive from
 herdr v0.8.2 under Apache-2.0. The topology derives from layout, metadata tokens,
 pane state, terminal identity, workspace, tab and git label/status modules.
+Snapshot records and supplied-path storage derive from the persistence modules;
+the byte-replacement helper in `crates/maestro-lock/` derives from persistence
+and detection-manifest publication.
 Changes include Maestro naming, module placement, required documentation,
 lint-compatible representations, owned identity allocation and separation of
 native runtime effects. Socket changes include supplied paths and overrides,
 preservation of occupied non-socket entries, and input termination through reads
-rather than a consuming peer probe.
+rather than a consuming peer probe. Persistence changes include version-1-only
+loading, one shared durable byte replacement, exclusive temporary creation,
+postcommit sync advisories and rejection of unresolved symbolic-link chains.
 The original licence follows.
 
 ```text

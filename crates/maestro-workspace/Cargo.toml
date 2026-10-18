@@ -11,8 +11,9 @@ num-traits.workspace = true
 maestro-protocol = { path = "../maestro-protocol" }
 serde.workspace = true
 
-[dev-dependencies]
 serde_json.workspace = true
+maestro-lock = { path = "../maestro-lock" }
+tracing = { version = "=0.1.44", default-features = false, features = ["std"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true

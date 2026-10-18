@@ -9,3 +9,21 @@ Callers own opening, permissions, persistence and unlocking. Settings and creden
 delegate synchronous acquisition here; asynchronous credential acquisition remains
 with [credentials](credentials.md). Browser compilation does not provide browser
 file locking.
+
+## Atomic replacement
+
+`maestro_lock::replace` publishes supplied bytes through an exclusively created
+sibling file. It writes and syncs that file, closes it, renames it over the target,
+then opens and syncs the parent directory. Precommit failures return the native
+error and remove only a temporary file created by this call.
+
+`Replace::through_symlinks` chooses whether to follow final-component symbolic
+links. Relative links resolve against their parent; dangling targets are allowed.
+A chain still unresolved after 40 links fails before temporary-file creation.
+When following is disabled, publication replaces the supplied directory entry.
+
+After rename, publication has committed. Unexpected directory-open or sync errors
+are returned as `Committed::dir_sync`, not as failed writes. Unsupported,
+invalid-input and permission-denied directory sync errors are tolerated.
+Serialization, logging and save scheduling remain with callers. The operation
+provides neither a multi-file transaction nor locking between concurrent writers.

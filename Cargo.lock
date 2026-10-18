@@ -3402,6 +3402,7 @@ dependencies = [
  "syn 3.0.6",
  "tinystr",
  "tokio",
+ "tracing",
  "unicode-width",
  "uuid",
  "windows-sys 0.61.2",
@@ -3930,10 +3931,12 @@ name = "maestro-workspace"
 version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
+ "maestro-lock",
  "maestro-protocol",
  "num-traits",
  "serde",
  "serde_json",
+ "tracing",
 ]
 
 [[package]]
