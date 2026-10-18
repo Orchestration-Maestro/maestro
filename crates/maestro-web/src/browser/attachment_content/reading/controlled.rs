@@ -1,7 +1,7 @@
 //! Shared measure/readback/allocate/publish flow for mixed native reading content.
 use super::{ReadingContent, ReadingPhase, ReadingPlacement};
 use crate::browser::attachment_content::{
-    AttachmentContent, AttachmentHost, AttachmentSurface, AttachmentUiError,
+    AttachmentContent, AttachmentHost, AttachmentHostError, AttachmentSurface,
 };
 use std::rc::Rc;
 
@@ -45,7 +45,7 @@ impl ControlledReading<'_> {
         rect: egui::Rect,
         phase: ReadingPhase,
         holes: Vec<egui::Rect>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         self.host.present(
             AttachmentSurface {
                 id: self.id,
@@ -66,7 +66,7 @@ impl ControlledReading<'_> {
         )
     }
     /// Use one measured snapshot for allocation, publication and controls.
-    pub(crate) fn draw(&self, ui: &mut egui::Ui) -> Result<ControlledLayout, AttachmentUiError> {
+    pub(crate) fn draw(&self, ui: &mut egui::Ui) -> Result<ControlledLayout, AttachmentHostError> {
         let mut available = ui.available_size_before_wrap().max(egui::Vec2::ZERO);
         if matches!(self.height, ReadingHeight::Flow)
             && ui

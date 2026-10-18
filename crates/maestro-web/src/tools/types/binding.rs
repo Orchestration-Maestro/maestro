@@ -1,6 +1,6 @@
 //! Typed renderer handles using the existing row-state erasure owner.
 use super::{ToolRenderResult, ToolRenderer, ToolResultMessageView};
-use crate::browser::attachment_content::AttachmentUiError;
+use crate::tools::types::ToolUiError;
 use maestro_app::ToolRendererState;
 use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -64,17 +64,17 @@ impl<P: DeserializeOwned, D: DeserializeOwned> ToolRenderer<Value, Value>
         params: Option<&Value>,
         result: Option<ToolResultMessageView<'_, Value>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, AttachmentUiError> {
+    ) -> Result<ToolRenderResult, ToolUiError> {
         let params = params
             .map(P::deserialize)
             .transpose()
-            .map_err(|e| AttachmentUiError::Presentation(e.to_string()))?;
+            .map_err(|e| ToolUiError::Presentation(e.to_string()))?;
         let details = result
             .as_ref()
             .and_then(ToolResultMessageView::details)
             .map(D::deserialize)
             .transpose()
-            .map_err(|e| AttachmentUiError::Presentation(e.to_string()))?;
+            .map_err(|e| ToolUiError::Presentation(e.to_string()))?;
         let projected = result
             .as_ref()
             .map(|result| result.with_details(details.as_ref()));

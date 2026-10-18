@@ -1,15 +1,17 @@
 //! Dialog templates with retained native children and canvas controls.
+mod ui_error;
 use super::dialog_base::{DialogBase, DialogContext};
-use crate::browser::attachment_content::{AttachmentUiError, ReadingContent, ReadingLayout};
+use crate::browser::attachment_content::{ReadingContent, ReadingLayout};
 use maestro_theme::BrandPresentation;
 use std::rc::Rc;
+pub use ui_error::DialogUiError;
 /// Caller-owned controls painted against the complete native measurement.
 pub type RenderContent = dyn Fn(
     &mut egui::Ui,
     egui::Id,
     &ReadingLayout,
     &BrandPresentation<'_>,
-) -> Result<(), AttachmentUiError>;
+) -> Result<(), DialogUiError>;
 /// Owned native body with its canvas control painter.
 #[derive(Clone)]
 pub struct DialogBody {
@@ -56,10 +58,7 @@ impl DialogProps {
 /// Retain a standalone shell, eagerly admitting open props.
 /// # Errors
 /// Returns reached platform failures.
-pub fn dialog(
-    context: &DialogContext,
-    props: DialogProps,
-) -> Result<DialogBase, AttachmentUiError> {
+pub fn dialog(context: &DialogContext, props: DialogProps) -> Result<DialogBase, DialogUiError> {
     let owner = DialogBase::new(context.clone(), props.children.clone());
     owner.set_props(props)?;
     Ok(owner)
@@ -95,31 +94,35 @@ impl Placement<'_> {
         rect: egui::Rect,
         phase: crate::browser::attachment_content::ReadingPhase,
         occluders: Vec<egui::Rect>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), DialogUiError> {
         use crate::browser::attachment_content::{
             AttachmentContent, AttachmentSurface, ReadingPlacement,
         };
-        self.state.context.host().present(
-            AttachmentSurface {
-                id: self.state.id,
-                rect,
-                clip_rect: ui.clip_rect(),
-                pixels_per_point: ui.ctx().pixels_per_point(),
-                opacity: 1.,
-                occluders,
-                content: AttachmentContent::Reading(ReadingPlacement {
-                    content: self.reading(),
-                    phase,
-                    sizes: &self.props.children.control_sizes,
-                    modal: Some(self.state.id),
-                    context: ui.ctx(),
-                }),
-            },
-            self.presentation,
-        )
+        self.state
+            .context
+            .host()
+            .present(
+                AttachmentSurface {
+                    id: self.state.id,
+                    rect,
+                    clip_rect: ui.clip_rect(),
+                    pixels_per_point: ui.ctx().pixels_per_point(),
+                    opacity: 1.,
+                    occluders,
+                    content: AttachmentContent::Reading(ReadingPlacement {
+                        content: self.reading(),
+                        phase,
+                        sizes: &self.props.children.control_sizes,
+                        modal: Some(self.state.id),
+                        context: ui.ctx(),
+                    }),
+                },
+                self.presentation,
+            )
+            .map_err(DialogUiError::Host)
     }
     /// Measure first, then use the complete snapshot for native placement and controls.
-    fn render(&self, ui: &mut egui::Ui, close_name: &str) -> Result<bool, AttachmentUiError> {
+    fn render(&self, ui: &mut egui::Ui, close_name: &str) -> Result<bool, DialogUiError> {
         use crate::browser::attachment_content::{self as content, ReadingPhase};
         #[cfg(target_arch = "wasm32")]
         browser::configure(self.state, close_name, &self.props.class_name)?;
@@ -140,12 +143,14 @@ impl Placement<'_> {
         #[cfg(target_arch = "wasm32")]
         browser::commit(self.state);
         let radius = content::points(self.presentation.radii["panel"]);
-        let border = content::color(self.presentation, "border")?;
+        let border = content::color(self.presentation, "border")
+            .map_err(|error| DialogUiError::Presentation(error.to_string()))?;
         content::panel_shadow(ui, rect, radius, border);
         ui.painter().rect(
             rect,
             radius,
-            content::color(self.presentation, "background")?,
+            content::color(self.presentation, "background")
+                .map_err(|error| DialogUiError::Presentation(error.to_string()))?,
             egui::Stroke::new(1., border),
             egui::StrokeKind::Inside,
         );
@@ -163,7 +168,7 @@ impl Placement<'_> {
         ui: &mut egui::Ui,
         rect: egui::Rect,
         name: &str,
-    ) -> Result<bool, AttachmentUiError> {
+    ) -> Result<bool, DialogUiError> {
         use crate::browser::attachment_content::reading::controls::pointer_actions;
         let close = close_rect(rect);
         let response = ui
@@ -199,7 +204,7 @@ impl Placement<'_> {
         close: egui::Rect,
         response: &egui::Response,
         native_focus: bool,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), DialogUiError> {
         let operands = close::Operands::resolve(self.presentation, response, native_focus)?;
         let now = ui.input(|input| input.time);
         let paint = {
@@ -221,7 +226,7 @@ pub(super) fn draw<F: ?Sized>(
     state: &Rc<super::dialog_base::State>,
     i18n: &crate::I18n<F>,
     presentation: &BrandPresentation<'_>,
-) -> Result<(), AttachmentUiError> {
+) -> Result<(), DialogUiError> {
     let mount = state.mount.get();
     let props = state.props.borrow().clone();
     let name = i18n.text("Close")?;

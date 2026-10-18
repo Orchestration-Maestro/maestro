@@ -1,6 +1,6 @@
 //! Complete original-history JSONL download preparation.
 use super::{SessionDocument, document::invalid};
-use crate::browser::attachment_content::{AttachmentHost, AttachmentUiError};
+use crate::browser::attachment_content::AttachmentHost;
 use maestro_app::{BorrowedJson, compact_json, compact_members_with_default, is_truthy};
 use serde_json::Value;
 use std::io;
@@ -12,7 +12,7 @@ use std::io;
 pub fn download_session_json(
     document: &SessionDocument,
     host: &dyn AttachmentHost,
-) -> Result<(), AttachmentUiError> {
+) -> io::Result<()> {
     let header = document.data.get("header").filter(|value| is_truthy(value));
     let header = header
         .map(|value| value.as_object().ok_or_else(|| invalid("nonobject header")))
@@ -45,11 +45,12 @@ pub fn download_session_json(
     let name = match id {
         None => "session",
         Some(Value::String(value)) => value,
-        Some(_) => return Err(invalid("nonstring session identity").into()),
+        Some(_) => return Err(invalid("nonstring session identity")),
     };
     host.download_bytes(
         lines.join("\n").as_bytes(),
         &format!("{name}.jsonl"),
         "application/x-ndjson",
     )
+    .map_err(io::Error::other)
 }

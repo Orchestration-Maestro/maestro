@@ -1,8 +1,9 @@
 //! Transcript Markdown with highlighted code blocks, copy controls and math.
 use super::code_block::{self, CodeBlockView, Prepared as Code};
+use crate::components::code_block::ReadingUiError;
 use crate::{
     browser::attachment_content::{
-        AttachmentHost, AttachmentUiError, ReadingContent,
+        AttachmentHost, ReadingContent,
         reading::controlled::{ControlledReading, ReadingHeight},
     },
     components::copy_button::CopyButton,
@@ -91,14 +92,11 @@ impl MarkdownBlock {
         &self,
         visible: bool,
         modal: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), crate::browser::attachment_content::AttachmentHostError> {
         self.host.set_retained_visibility(self.id, visible, modal)
     }
     /// Prepare the current source, replacing the published document only on success.
-    fn prepare<F: ?Sized>(
-        &self,
-        view: CodeBlockView<'_, F>,
-    ) -> Result<Published, AttachmentUiError> {
+    fn prepare<F: ?Sized>(&self, view: CodeBlockView<'_, F>) -> Result<Published, ReadingUiError> {
         let prepared = render::prepare(&self.content, self.escape_html);
         let code = prepared
             .code
@@ -138,19 +136,23 @@ impl MarkdownBlock {
         &mut self,
         ui: &mut egui::Ui,
         view: CodeBlockView<'_, F>,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, ReadingUiError> {
         let current = match &self.published {
             Some(p) if p.key.0 == self.content && p.key.1 == self.escape_html => {
                 p.document.code.iter().try_fold(true, |current, code| {
                     let html = Code::highlight(view.highlighter, &code.text, &code.language)?;
-                    Ok::<_, AttachmentUiError>(current && html == code.html)
+                    Ok::<_, ReadingUiError>(current && html == code.html)
                 })?
             }
             _ => false,
         };
         let mut candidate = (!current).then(|| self.prepare(view)).transpose()?;
         let Some(target) = candidate.as_mut().or(self.published.as_mut()) else {
-            return Err(AttachmentUiError::Host("Missing document".into()));
+            return Err(ReadingUiError::Host(
+                crate::browser::attachment_content::AttachmentHostError::Host(
+                    "Missing document".into(),
+                ),
+            ));
         };
         let sizes = sync_controls(target, ui, view)?;
         let mounted = Rc::default();
@@ -212,7 +214,7 @@ fn sync_controls<F: ?Sized>(
     target: &mut Published,
     ui: &egui::Ui,
     view: CodeBlockView<'_, F>,
-) -> Result<Vec<(egui::Id, egui::Vec2)>, AttachmentUiError> {
+) -> Result<Vec<(egui::Id, egui::Vec2)>, ReadingUiError> {
     let title = view.i18n.text("Copy code")?;
     target
         .buttons

@@ -1,7 +1,8 @@
 //! Retained independent input and output listings for the default recipe.
 use super::{Listing, prepare};
+use crate::browser::attachment_content;
+use crate::tools::types::ToolUiError;
 use crate::{
-    browser::attachment_content::AttachmentUiError,
     components::code_block::{CodeBlock, CodeBlockView},
     tools::{
         renderer_registry::{
@@ -46,22 +47,24 @@ impl Section {
         view: ToolRenderView<'_>,
         label: &str,
         listing: &Listing,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), ToolUiError> {
         ui.scope_builder(egui::UiBuilder::new().id(self.label.id()), |ui| {
             ui.spacing_mut().item_spacing.y = 4.;
             self.label
                 .render(ui, (&view.i18n.text(label)?, TextKind::Label), view)?;
             self.listing.code.clone_from(&listing.code);
             listing.language.clone_into(&mut self.listing.language);
-            self.listing.render(
-                ui,
-                CodeBlockView {
-                    i18n: view.i18n,
-                    presentation: view.presentation,
-                    highlighter: view.highlighter,
-                    modal: view.modal,
-                },
-            )?;
+            self.listing
+                .render(
+                    ui,
+                    CodeBlockView {
+                        i18n: view.i18n,
+                        presentation: view.presentation,
+                        highlighter: view.highlighter,
+                        modal: view.modal,
+                    },
+                )
+                .map_err(ToolUiError::reading)?;
             Ok(())
         })
         .inner
@@ -83,7 +86,7 @@ impl ToolContent for DefaultContent {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         state: &ToolRendererState,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, ToolUiError> {
         let slot = state.state::<Retained>();
         let mut retained = std::mem::take(&mut *slot.borrow_mut());
         let result = self.draw(ui, view, &mut retained);
@@ -99,7 +102,7 @@ impl DefaultContent {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         retained: &mut Retained,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, ToolUiError> {
         let no_output = if self.output.as_deref() == Some("") {
             view.i18n.text("(no output)")?
         } else {
@@ -117,17 +120,20 @@ impl DefaultContent {
         if prepared.output.is_none() {
             retained.output = None;
         }
-        let catalog =
-            crate::icons::icons().map_err(|error| AttachmentUiError::Host(error.to_string()))?;
-        let icon = catalog
-            .get("Code")
-            .ok_or_else(|| AttachmentUiError::Host("Missing code glyph".into()))?;
+        let catalog = crate::icons::icons().map_err(|error| {
+            ToolUiError::Control(attachment_content::ControlError::Host(error.to_string()))
+        })?;
+        let icon = catalog.get("Code").ok_or_else(|| {
+            ToolUiError::Control(attachment_content::ControlError::Host(
+                "Missing code glyph".into(),
+            ))
+        })?;
         let header = render_header(
             self.state,
             icon.clone(),
             ToolHeaderText::Text(prepared.caption.into()),
         );
-        let body = ui.vertical(|ui| -> Result<(), AttachmentUiError> {
+        let body = ui.vertical(|ui| -> Result<(), ToolUiError> {
             ui.spacing_mut().item_spacing.y = 12.;
             header.render(ui, view, &retained.header)?;
             if let Some(input) = &prepared.input {

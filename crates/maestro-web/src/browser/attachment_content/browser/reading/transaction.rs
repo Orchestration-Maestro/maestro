@@ -1,5 +1,5 @@
 //! One restoration owner for bounded measurements and atomic publication.
-use super::{AttachmentUiError, ReadingPhase, attr, host_error};
+use super::{AttachmentHostError, ReadingPhase, attr, host_error};
 use js_sys::Reflect;
 use std::collections::HashMap;
 use wasm_bindgen::JsValue;
@@ -14,7 +14,7 @@ pub(super) struct Scroll {
 }
 impl Scroll {
     /// Observe both native axes before mutation.
-    pub(super) fn read(viewport: &Element) -> Result<Self, AttachmentUiError> {
+    pub(super) fn read(viewport: &Element) -> Result<Self, AttachmentHostError> {
         Ok(Self {
             left: offset(viewport, "scrollLeft")?,
             top: offset(viewport, "scrollTop")?,
@@ -25,7 +25,7 @@ impl Scroll {
         viewport.scroll_to_with_x_and_y(self.left, self.top);
     }
     /// Attempt both axes even when the first write fails.
-    pub(super) fn apply(&self, viewport: &Element) -> Result<(), AttachmentUiError> {
+    pub(super) fn apply(&self, viewport: &Element) -> Result<(), AttachmentHostError> {
         let left = Reflect::set(viewport, &"scrollLeft".into(), &JsValue::from(self.left))
             .map_err(|e| host_error(&e));
         let top = Reflect::set(viewport, &"scrollTop".into(), &JsValue::from(self.top))
@@ -34,17 +34,17 @@ impl Scroll {
     }
 }
 /// Read a fractional native offset before any publication mutation.
-fn offset(viewport: &Element, name: &str) -> Result<f64, AttachmentUiError> {
+fn offset(viewport: &Element, name: &str) -> Result<f64, AttachmentHostError> {
     Reflect::get(viewport, &name.into())
         .map_err(|e| host_error(&e))?
         .as_f64()
-        .ok_or_else(|| AttachmentUiError::Host("Invalid native scroll offset".into()))
+        .ok_or_else(|| AttachmentHostError::Host("Invalid native scroll offset".into()))
 }
 /// Size slots by identity, preserving native slot ownership.
 pub(super) fn size_slots(
     slots: &[(egui::Id, Element)],
     sizes: &[(egui::Id, egui::Vec2)],
-) -> Result<(), AttachmentUiError> {
+) -> Result<(), AttachmentHostError> {
     let sizes: HashMap<_, _> = sizes.iter().copied().collect();
     for (id, slot) in slots {
         if let Some(size) = sizes.get(id) {
@@ -54,7 +54,7 @@ pub(super) fn size_slots(
     Ok(())
 }
 /// Restore exact optional styles, including the absence of an attribute.
-fn restore(element: &Element, style: Option<&str>) -> Result<(), AttachmentUiError> {
+fn restore(element: &Element, style: Option<&str>) -> Result<(), AttachmentHostError> {
     match style {
         Some(style) => element.set_attribute("style", style),
         None => element.remove_attribute("style"),
@@ -66,8 +66,8 @@ pub(super) fn transaction<T>(
     nodes: (&Element, &Element),
     slots: &[(egui::Id, Element)],
     phase: ReadingPhase,
-    operation: impl FnOnce(&Scroll) -> Result<T, AttachmentUiError>,
-) -> Result<T, AttachmentUiError> {
+    operation: impl FnOnce(&Scroll) -> Result<T, AttachmentHostError>,
+) -> Result<T, AttachmentHostError> {
     let saved: Vec<_> = slots
         .iter()
         .map(|(_, e)| e)
@@ -86,7 +86,7 @@ pub(super) fn transaction<T>(
                 .0
                 .owner_document()
                 .and_then(|document| document.body())
-                .ok_or_else(|| AttachmentUiError::Host("Document has no body".into()))?
+                .ok_or_else(|| AttachmentHostError::Host("Document has no body".into()))?
                 .append_child(nodes.0)
                 .map_err(|error| host_error(&error))?;
         }

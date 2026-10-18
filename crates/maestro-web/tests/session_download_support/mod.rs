@@ -65,17 +65,17 @@ impl AttachmentHost for Host {
         &self,
     ) -> Result<
         Option<std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>>,
-        AttachmentUiError,
+        AttachmentHostError,
     > {
         unreachable!("no dialog focus in this adapter")
     }
     fn restore_focus(
         &self,
         _: std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
         unreachable!("no dialog focus in this adapter")
     }
-    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentUiError> {
+    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentHostError> {
         unreachable!("no dialog measurement in this adapter")
     }
     fn native_key(&self, _: &web_sys::KeyboardEvent, _: &egui::Context) {
@@ -87,26 +87,26 @@ impl AttachmentHost for Host {
         bytes: &[u8],
         name: &str,
         mime: &str,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         self.downloads.borrow_mut().push(Download {
             text: String::from_utf8(bytes.to_vec()).unwrap(),
             mime: mime.into(),
             file_name: name.into(),
         });
         if self.fail {
-            Err(AttachmentUiError::BorrowConflict)
+            Err(AttachmentHostError::BorrowConflict)
         } else {
             Ok(())
         }
     }
-    fn reading_layout(&self, _: egui::Id) -> Result<ReadingLayout, AttachmentUiError> {
+    fn reading_layout(&self, _: egui::Id) -> Result<ReadingLayout, AttachmentHostError> {
         unreachable!()
     }
     fn present(
         &self,
         _: AttachmentSurface<'_>,
         _: &maestro_theme::BrandPresentation<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         unreachable!()
     }
     fn set_retained_visibility(
@@ -114,13 +114,13 @@ impl AttachmentHost for Host {
         _: egui::Id,
         _: bool,
         _: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         Ok(())
     }
-    fn set_overlay(&self, _: egui::Id, _: bool) -> Result<(), AttachmentUiError> {
+    fn set_overlay(&self, _: egui::Id, _: bool) -> Result<(), AttachmentHostError> {
         unreachable!()
     }
-    fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
+    fn hover_capable(&self) -> Result<bool, AttachmentHostError> {
         unreachable!()
     }
     fn remove(&self, _: egui::Id) {
@@ -134,13 +134,13 @@ impl AttachmentHost for Host {
         _: i32,
         _: bool,
         _: Rc<dyn Fn()>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
         unreachable!()
     }
     fn spawn_local(&self, _: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
         unreachable!()
     }
-    fn download(&self, _: Rc<RefCell<maestro_web::Attachment>>) -> Result<(), AttachmentUiError> {
+    fn download(&self, _: Rc<RefCell<maestro_web::Attachment>>) -> Result<(), AttachmentHostError> {
         unreachable!()
     }
 }

@@ -1,5 +1,5 @@
 //! Owned artifact fields with independent header and body drawing.
-use crate::browser::attachment_content::AttachmentUiError;
+use crate::tools::artifacts::ArtifactUiError;
 /// Call-scoped localization and branding, never retained by a native factory.
 #[derive(Clone, Copy)]
 pub struct ArtifactView<'a> {
@@ -27,7 +27,7 @@ pub trait ArtifactElement {
         &mut self,
         visible: bool,
         modal: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError>;
+    ) -> Result<(), ArtifactUiError>;
     /// Draw independent header controls once per toolkit render pass.
     /// Layout may require multiple passes within one presentation.
     /// # Errors
@@ -36,25 +36,21 @@ pub trait ArtifactElement {
         &mut self,
         ui: &mut egui::Ui,
         view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError>;
+    ) -> Result<(), ArtifactUiError>;
     /// Draw the body into the supplied viewport.
     /// # Errors
     /// Returns localization or native placement failures.
-    fn render(
-        &mut self,
-        ui: &mut egui::Ui,
-        view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError>;
+    fn render(&mut self, ui: &mut egui::Ui, view: ArtifactView<'_>) -> Result<(), ArtifactUiError>;
     /// Attach native resources without changing visibility.
     /// # Errors
     /// Returns native resource creation failures.
-    fn connected_callback(&mut self) -> Result<(), AttachmentUiError> {
+    fn connected_callback(&mut self) -> Result<(), ArtifactUiError> {
         Ok(())
     }
     /// Release attachment-scoped resources, retaining authored fields.
     /// # Errors
     /// Returns native resource release failures.
-    fn disconnected_callback(&mut self) -> Result<(), AttachmentUiError> {
+    fn disconnected_callback(&mut self) -> Result<(), ArtifactUiError> {
         Ok(())
     }
 }

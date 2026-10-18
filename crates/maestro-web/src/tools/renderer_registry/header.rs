@@ -1,7 +1,8 @@
 //! Shared status icons, rich captions and collapsible header controls.
 use super::ToolHeaderState;
+use crate::tools::types::ToolUiError;
 use crate::{
-    browser::attachment_content::{self, AttachmentUiError},
+    browser::attachment_content::{self},
     icons::{IconNode, IconSize},
     tools::types::{ToolContent, ToolRenderState, ToolRenderView},
 };
@@ -75,7 +76,7 @@ impl ToolContent for Header {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         state: &ToolRendererState,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, ToolUiError> {
         let slot = state.state::<Retained>();
         let mut retained = std::mem::take(&mut *slot.borrow_mut());
         let time = ui.input(|input| input.time);
@@ -101,7 +102,7 @@ impl Header {
         view: ToolRenderView<'_>,
         retained: &mut Retained,
         angle: f32,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, ToolUiError> {
         let collapsible = self.expanded.is_some();
         let row = self.row(ui, view, retained, angle)?;
         let response = if collapsible {
@@ -152,7 +153,7 @@ impl Header {
         view: ToolRenderView<'_>,
         retained: &Retained,
         response: &egui::Response,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), ToolUiError> {
         #[cfg(not(target_arch = "wasm32"))]
         let _ = retained;
         #[cfg(target_arch = "wasm32")]
@@ -163,7 +164,11 @@ impl Header {
             ui.painter().rect_stroke(
                 response.rect,
                 0.,
-                egui::Stroke::new(1., attachment_content::color(view.presentation, "accent")?),
+                egui::Stroke::new(
+                    1.,
+                    attachment_content::color(view.presentation, "accent")
+                        .map_err(|error| ToolUiError::Presentation(error.to_string()))?,
+                ),
                 egui::StrokeKind::Inside,
             );
         }
@@ -176,8 +181,9 @@ impl Header {
         view: ToolRenderView<'_>,
         retained: &mut Retained,
         angle: f32,
-    ) -> Result<egui::Response, AttachmentUiError> {
-        attachment_content::style(ui, view.presentation)?;
+    ) -> Result<egui::Response, ToolUiError> {
+        attachment_content::style(ui, view.presentation)
+            .map_err(|error| ToolUiError::Presentation(error.to_string()))?;
         let collapsible = self.expanded.is_some();
         let pending = self.state == ToolHeaderState::Inprogress;
         let role = match self.state {
@@ -189,7 +195,7 @@ impl Header {
         let row = ui.allocate_ui_with_layout(
             egui::vec2(ui.available_width(), 16.),
             egui::Layout::left_to_right(egui::Align::Center),
-            |ui| -> Result<(), AttachmentUiError> {
+            |ui| -> Result<(), ToolUiError> {
                 let first = ui.ctx().graphics_mut(|g| g.entry(ui.layer_id()).next_idx());
                 ui.spacing_mut().item_spacing.x = 8.;
                 if pending && collapsible {
@@ -202,7 +208,8 @@ impl Header {
                     &self.tool_icon,
                     (
                         IconSize::Sm,
-                        attachment_content::color(view.presentation, role)?,
+                        attachment_content::color(view.presentation, role)
+                            .map_err(|error| ToolUiError::Presentation(error.to_string()))?,
                         0.,
                     ),
                 )?;
@@ -252,7 +259,7 @@ impl Header {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         retained: &mut Retained,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, ToolUiError> {
         match &self.text {
             ToolHeaderText::Text(text) => {
                 retained.rich = None;
@@ -277,12 +284,15 @@ fn catalog_icon(
     view: ToolRenderView<'_>,
     name: &str,
     angle: f32,
-) -> Result<(), AttachmentUiError> {
-    let catalog =
-        crate::icons::icons().map_err(|error| AttachmentUiError::Host(error.to_string()))?;
-    let node = catalog
-        .get(name)
-        .ok_or_else(|| AttachmentUiError::Host(format!("Missing glyph: {name}")))?;
+) -> Result<(), ToolUiError> {
+    let catalog = crate::icons::icons().map_err(|error| {
+        ToolUiError::Control(attachment_content::ControlError::Host(error.to_string()))
+    })?;
+    let node = catalog.get(name).ok_or_else(|| {
+        ToolUiError::Control(attachment_content::ControlError::Host(format!(
+            "Missing glyph: {name}"
+        )))
+    })?;
     let rect = ui.allocate_space(egui::vec2(16., 16.)).1;
     attachment_content::paint_icon(
         ui,
@@ -293,10 +303,12 @@ fn catalog_icon(
             attachment_content::color(
                 view.presentation,
                 if name == "Loader" { "text" } else { "muted" },
-            )?,
+            )
+            .map_err(|error| ToolUiError::Presentation(error.to_string()))?,
             angle,
         ),
     )
+    .map_err(ToolUiError::Control)
 }
 
 /// Centre the already painted leading glyphs without moving native content or its clip.

@@ -225,13 +225,13 @@ fn reading_content(
     class: &'static str,
 ) -> Rc<maestro_web::browser::attachment_content::ReadingContent> {
     use maestro_web::browser::attachment_content::{
-        AttachmentUiError, ReadingContent, ReadingRoot,
+        AttachmentHostError, ReadingContent, ReadingRoot,
     };
     Rc::new(ReadingContent {
         mount: Rc::new(move |document| {
             let element = document
                 .create_element("section")
-                .map_err(|_| AttachmentUiError::Host("create failed".into()))?;
+                .map_err(|_| AttachmentHostError::Host("create failed".into()))?;
             element.set_class_name(class);
             element.set_text_content(Some("retained native text"));
             Ok(ReadingRoot {
@@ -251,7 +251,7 @@ fn reading(
     content: &Rc<maestro_web::browser::attachment_content::ReadingContent>,
     phase: maestro_web::browser::attachment_content::ReadingPhase,
     modal: Option<egui::Id>,
-) -> Result<(), maestro_web::browser::attachment_content::AttachmentUiError> {
+) -> Result<(), maestro_web::browser::attachment_content::AttachmentHostError> {
     use maestro_web::browser::attachment_content::{
         AttachmentContent, AttachmentSurface, ReadingPlacement,
     };

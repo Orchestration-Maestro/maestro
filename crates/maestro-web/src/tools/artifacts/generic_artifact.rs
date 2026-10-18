@@ -1,7 +1,8 @@
 //! Download-only artifact with a retained literal native reading body.
 use super::artifact_element::{ArtifactElement, ArtifactView};
+use crate::tools::artifacts::ArtifactUiError;
 use crate::{
-    browser::attachment_content::{self, AttachmentHost, AttachmentUiError, ReadingContent},
+    browser::attachment_content::{self, AttachmentHost, ReadingContent},
     components::download_button,
 };
 use std::{cell::RefCell, rc::Rc};
@@ -52,8 +53,9 @@ impl GenericArtifact {
         }
     }
     /// Select complete original bytes, including folded data URL payloads.
-    fn bytes(&self) -> Result<Vec<u8>, AttachmentUiError> {
-        Ok(crate::utils::base64::original(&self.content)?)
+    fn bytes(&self) -> Result<Vec<u8>, ArtifactUiError> {
+        crate::utils::base64::original(&self.content)
+            .map_err(|error| ArtifactUiError::Presentation(error.to_string().into()))
     }
     /// Select the explicitly supported download media types.
     fn mime(&self) -> &'static str {
@@ -76,7 +78,7 @@ impl GenericArtifact {
         }
     }
     /// Update owned text operands and only the changed native nodes.
-    fn update_text(&self, view: ArtifactView<'_>) -> Result<(), AttachmentUiError> {
+    fn update_text(&self, view: ArtifactView<'_>) -> Result<(), crate::I18nError> {
         let values = [
             self.filename.clone(),
             view.i18n
@@ -112,8 +114,10 @@ impl ArtifactElement for GenericArtifact {
         &mut self,
         visible: bool,
         modal: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
-        self.host.set_retained_visibility(self.id, visible, modal)
+    ) -> Result<(), ArtifactUiError> {
+        self.host
+            .set_retained_visibility(self.id, visible, modal)
+            .map_err(ArtifactUiError::Host)
     }
     fn filename(&self) -> &str {
         &self.filename
@@ -133,7 +137,7 @@ impl ArtifactElement for GenericArtifact {
         &mut self,
         ui: &mut egui::Ui,
         view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), ArtifactUiError> {
         self.context = Some(ui.ctx().clone());
         let bytes = self.bytes()?;
         ui.scope(|ui| {
@@ -147,11 +151,7 @@ impl ArtifactElement for GenericArtifact {
         })
         .inner
     }
-    fn render(
-        &mut self,
-        ui: &mut egui::Ui,
-        view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    fn render(&mut self, ui: &mut egui::Ui, view: ArtifactView<'_>) -> Result<(), ArtifactUiError> {
         self.context = Some(ui.ctx().clone());
         self.update_text(view)?;
         let reading = self.reading();

@@ -225,8 +225,7 @@ mod tests {
             ui: &mut egui::Ui,
             view: ToolRenderView<'_>,
             state: &maestro_app::ToolRendererState,
-        ) -> Result<egui::Response, maestro_web::browser::attachment_content::AttachmentUiError>
-        {
+        ) -> Result<egui::Response, maestro_web::tools::types::ToolUiError> {
             let old = self.alias.replace(Some(state.clone()));
             drop(old);
             self.inner.render(ui, view, state)
@@ -239,8 +238,7 @@ mod tests {
             ui: &mut egui::Ui,
             _: ToolRenderView<'_>,
             _: &maestro_app::ToolRendererState,
-        ) -> Result<egui::Response, maestro_web::browser::attachment_content::AttachmentUiError>
-        {
+        ) -> Result<egui::Response, maestro_web::tools::types::ToolUiError> {
             Ok(ui.label("replacement"))
         }
     }
@@ -297,8 +295,7 @@ mod tests {
             ui: &mut egui::Ui,
             view: ToolRenderView<'_>,
             _: &maestro_app::ToolRendererState,
-        ) -> Result<egui::Response, maestro_web::browser::attachment_content::AttachmentUiError>
-        {
+        ) -> Result<egui::Response, maestro_web::tools::types::ToolUiError> {
             let mut row = self.row.take();
             let result = self.recipe.render(ui, view, &mut row);
             let old = self.row.replace(row);
@@ -405,8 +402,7 @@ mod tests {
             ui: &mut egui::Ui,
             view: ToolRenderView<'_>,
             state: &maestro_app::ToolRendererState,
-        ) -> Result<egui::Response, maestro_web::browser::attachment_content::AttachmentUiError>
-        {
+        ) -> Result<egui::Response, maestro_web::tools::types::ToolUiError> {
             self.0.render(ui, view, state)
         }
     }

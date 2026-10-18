@@ -66,20 +66,20 @@ impl AttachmentHost for Host {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
         self.native.copy_to_clipboard(text, mode)
     }
-    fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentUiError> {
+    fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentHostError> {
         self.native.capture_focus()
     }
     fn restore_focus(
         &self,
         target: Rc<FocusTarget>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
         self.native.restore_focus(target)
     }
     fn dialog_bounds(
         &self,
         id: egui::Id,
         dimensions: [&str; 2],
-    ) -> Result<egui::Rect, AttachmentUiError> {
+    ) -> Result<egui::Rect, AttachmentHostError> {
         self.native.dialog_bounds(id, dimensions)
     }
     fn native_key(&self, event: &web_sys::KeyboardEvent, context: &egui::Context) {
@@ -91,29 +91,29 @@ impl AttachmentHost for Host {
         id: egui::Id,
         visible: bool,
         modal: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         self.native.set_retained_visibility(id, visible, modal)
     }
     fn present(
         &self,
         s: AttachmentSurface<'_>,
         p: &maestro_theme::BrandPresentation<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         if let Some(message) = self.failure.borrow_mut().take() {
-            return Err(AttachmentUiError::Presentation(message));
+            return Err(AttachmentHostError::Presentation(message));
         }
         self.native.present(s, p)
     }
-    fn reading_layout(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentUiError> {
+    fn reading_layout(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentHostError> {
         self.native.reading_layout(id)
     }
     fn remove(&self, id: egui::Id) {
         self.native.remove(id);
     }
-    fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentUiError> {
+    fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentHostError> {
         self.native.set_overlay(id, visible)
     }
-    fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
+    fn hover_capable(&self) -> Result<bool, AttachmentHostError> {
         self.native.hover_capable()
     }
     fn take_escape(&self) -> bool {
@@ -124,20 +124,20 @@ impl AttachmentHost for Host {
         ms: i32,
         repeat: bool,
         callback: Rc<dyn Fn()>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
         self.native.timer(ms, repeat, callback)
     }
     fn spawn_local(&self, f: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
         self.native.spawn_local(f);
     }
-    fn download(&self, a: Rc<RefCell<maestro_web::Attachment>>) -> Result<(), AttachmentUiError> {
+    fn download(&self, a: Rc<RefCell<maestro_web::Attachment>>) -> Result<(), AttachmentHostError> {
         self.downloads.borrow_mut().push(a.clone());
         if self.fail_download.get() {
-            return Err(AttachmentUiError::Host("save failure".into()));
+            return Err(AttachmentHostError::Host("save failure".into()));
         }
         self.native.download(a)
     }
-    fn download_bytes(&self, b: &[u8], n: &str, m: &str) -> Result<(), AttachmentUiError> {
+    fn download_bytes(&self, b: &[u8], n: &str, m: &str) -> Result<(), AttachmentHostError> {
         self.native.download_bytes(b, n, m)
     }
 }
@@ -223,7 +223,7 @@ impl View {
         &self,
         overlay: &mut AttachmentOverlay,
         events: Vec<egui::Event>,
-    ) -> Result<bool, AttachmentUiError> {
+    ) -> Result<bool, maestro_web::dialogs::attachment_overlay::AttachmentUiError> {
         let mut input = egui::RawInput {
             screen_rect: Some(egui::Rect::from_min_size(
                 egui::Pos2::ZERO,

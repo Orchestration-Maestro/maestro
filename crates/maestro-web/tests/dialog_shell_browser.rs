@@ -316,7 +316,7 @@ pub fn dialog_retained_body_replacement_keeps_old_owner_until_publish() {
         "globalThis.oldDialogRoot=document.querySelector('.maestro-dialog-native');globalThis.oldDialogButton=oldDialogRoot.querySelector('button');getSelection().selectAllChildren(oldDialogRoot.querySelector('h2'))",
     );
     view.props.children.reading = Rc::new(ReadingContent {
-        mount: Rc::new(|_| Err(AttachmentUiError::Host("candidate failure".into()))),
+        mount: Rc::new(|_| Err(AttachmentHostError::Host("candidate failure".into()))),
     });
     view.owner.set_props(view.props.clone()).unwrap();
     view.context.begin_pass(egui::RawInput::default());
@@ -370,8 +370,16 @@ pub fn dialog_native_field_escape_reaches_every_open_owner() {
     let input = RefCell::new(input);
     let i18n: I18n = I18n::new(Rc::new(support::Host::default())).unwrap();
     let mut props = view.props.clone();
-    props.children.render_content =
-        Rc::new(move |ui, _, _, p| input.borrow_mut().render(ui, &i18n, p));
+    props.children.render_content = Rc::new(move |ui, _, _, p| {
+        input.borrow_mut().render(ui, &i18n, p).map_err(|error| {
+            use maestro_web::{components::input::InputUiError, dialogs::dialog::DialogUiError};
+            match error {
+                InputUiError::I18n(error) => DialogUiError::I18n(error),
+                InputUiError::Host(error) => DialogUiError::Host(error),
+                InputUiError::Presentation(error) => DialogUiError::Presentation(error),
+            }
+        })
+    });
     let _second = dialog(&view.dialogs, props).unwrap();
     view.draw();
     js("document.querySelector('input').focus()");

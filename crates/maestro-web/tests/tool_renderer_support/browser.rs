@@ -1,9 +1,10 @@
 //! Shared real-browser tool recipe drawing and final-clip observations.
 #![cfg(test)]
 use crate::markdown_support::Surface;
+use maestro_web::tools::types::ToolUiError;
 use maestro_web::{
     TranslationFunction,
-    browser::attachment_content::{AttachmentHost, AttachmentUiError},
+    browser::attachment_content::AttachmentHost,
     components::code_block::{CodeBlock, CodeBlockView},
     tools::{
         renderer_registry::ToolHeaderState,
@@ -109,7 +110,7 @@ impl ToolContent for ListingRecipe {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         state: &maestro_app::ToolRendererState,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, ToolUiError> {
         let slot = state.state::<ListingState>();
         let mut block = slot
             .borrow_mut()
@@ -129,7 +130,7 @@ impl ToolContent for ListingRecipe {
         );
         let old = slot.borrow_mut().block.replace(block);
         drop(old);
-        result
+        result.map_err(ToolUiError::Reading)
     }
 }
 

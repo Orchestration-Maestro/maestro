@@ -49,7 +49,7 @@ pub struct Host {
     /// Owned non-Send work.
     work: RefCell<Vec<Work>>,
     /// Next registration failure.
-    pub failure: RefCell<Option<AttachmentUiError>>,
+    pub failure: RefCell<Option<AttachmentHostError>>,
 }
 impl Host {
     /// Exhaust every due delivery, releasing the registry borrow before calling out.
@@ -119,17 +119,17 @@ impl AttachmentHost for Host {
         &self,
     ) -> Result<
         Option<std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>>,
-        AttachmentUiError,
+        AttachmentHostError,
     > {
         unreachable!("no dialog focus in this adapter")
     }
     fn restore_focus(
         &self,
         _: std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
         unreachable!("no dialog focus in this adapter")
     }
-    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentUiError> {
+    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentHostError> {
         unreachable!("no dialog measurement in this adapter")
     }
     fn native_key(&self, _: &web_sys::KeyboardEvent, _: &egui::Context) {
@@ -139,7 +139,7 @@ impl AttachmentHost for Host {
     fn reading_layout(
         &self,
         id: egui::Id,
-    ) -> Result<maestro_web::browser::attachment_content::ReadingLayout, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::attachment_content::ReadingLayout, AttachmentHostError> {
         Ok(ReadingLayout {
             height: 64.,
             controls: self.layouts.borrow().get(&id).cloned().unwrap(),
@@ -150,7 +150,7 @@ impl AttachmentHost for Host {
         delay: i32,
         repeat: bool,
         callback: Rc<dyn Fn()>,
-    ) -> Result<Timer, AttachmentUiError> {
+    ) -> Result<Timer, AttachmentHostError> {
         if let Some(error) = self.failure.take() {
             return Err(error);
         }
@@ -174,7 +174,7 @@ impl AttachmentHost for Host {
         &self,
         surface: AttachmentSurface<'_>,
         _: &BrandPresentation<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         self.failure.take().map_or(Ok(()), Err)?;
         if let AttachmentContent::Reading(reading) = surface.content {
             let controls: Vec<_> = reading
@@ -204,13 +204,13 @@ impl AttachmentHost for Host {
         _: egui::Id,
         _: bool,
         _: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         Ok(())
     }
-    fn set_overlay(&self, _: egui::Id, _: bool) -> Result<(), AttachmentUiError> {
+    fn set_overlay(&self, _: egui::Id, _: bool) -> Result<(), AttachmentHostError> {
         Ok(())
     }
-    fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
+    fn hover_capable(&self) -> Result<bool, AttachmentHostError> {
         Ok(false)
     }
     fn download_bytes(
@@ -218,13 +218,13 @@ impl AttachmentHost for Host {
         bytes: &[u8],
         name: &str,
         mime: &str,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         self.downloads
             .borrow_mut()
             .push((name.into(), mime.into(), bytes.to_vec()));
         Ok(())
     }
-    fn download(&self, _: Rc<RefCell<Attachment>>) -> Result<(), AttachmentUiError> {
+    fn download(&self, _: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
         unreachable!()
     }
 }

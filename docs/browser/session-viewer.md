@@ -53,7 +53,8 @@ The payload uses compact canonical JSON, LF separators and no final newline,
 with MIME type `application/x-ndjson`. A truthy string header ID becomes the
 literal `<id>.jsonl` filename; an absent or falsy ID uses `session.jsonl`.
 Reached unsupported metadata and serialization failures return
-`AttachmentUiError::Presentation`; supplied host failures propagate unchanged.
+`std::io::Error` with their original kind and message. Supplied host failures are
+wrapped by `io::Error::other` with an inspectable `AttachmentHostError` payload.
 
 The supplied `AttachmentHost::download_bytes` consumes the prepared bytes
 synchronously. The native adapter shares the
@@ -128,7 +129,9 @@ and target identities remain literal through URL encoding, including empty value
 a present empty injected base differs from no base. Current-location links retain
 the fragment and first nonreserved valueless query identity. Injected bases retain
 their spelling, with selection appended before their fragment. Invalid current
-locations return `AttachmentUiError::Presentation` on activation even with a base.
+locations return `std::io::Error` containing the URL parser cause on activation,
+even with a base. Color preparation retains its native I/O error; glyph drawing
+retains a typed `ControlError` payload.
 
 The containing native message positions a 28-by-28 slot eight points from its
 top/right edges and publishes the measured slot as a canvas hole. The control

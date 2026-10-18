@@ -77,3 +77,16 @@ and 2-point vertical padding. Ordinary copy controls keep their 32-point height.
 Both use direct native clipboard writing. Message links retain
 their separate fallback policy. Actual console updates scroll the local body to
 its bottom; unchanged frames and presentation-only changes do not reset scroll.
+
+## Operation errors
+
+Tool dispatch, recipes and headers return `tools::types::ToolUiError`.
+Localization, shared glyph controls and native effects retain their named leaf
+variants. Reading preparation keeps a typed `ReadingUiError`, including its
+highlighter or outer-style cause; JSON and operand preparation preserve their
+existing literal messages. `Error::source` exposes each typed cause.
+
+Console output shares `components::code_block::ReadingUiError`; its outer-style
+Presentation variant retains the original I/O error. Native console and header
+factories return `AttachmentHostError`. Rust callers must update return types
+and matches; dispatch, rendering, resource ownership and recovery are unchanged.

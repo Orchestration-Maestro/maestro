@@ -130,7 +130,7 @@ fn attachment_widgets_keep_the_public_embedding_paths() {
     let guard = record.borrow_mut();
     assert!(matches!(
         frame.tile(&mut tile, vec![]),
-        Err(maestro_web::browser::attachment_content::AttachmentUiError::BorrowConflict)
+        Err(maestro_web::dialogs::attachment_overlay::AttachmentUiError::BorrowConflict)
     ));
     assert!(host.surfaces.borrow().is_empty());
     drop(guard);
@@ -148,7 +148,7 @@ fn attachment_widgets_keep_the_public_embedding_paths() {
 
 #[test]
 fn attachment_color_errors_use_shared_presentation_route() {
-    use maestro_web::browser::attachment_content::AttachmentUiError;
+    use maestro_web::dialogs::attachment_overlay::AttachmentUiError;
     let host = Rc::new(Host::default());
     let record = attachment();
     record.borrow_mut().preview = Some("preview".into());

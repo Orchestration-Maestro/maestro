@@ -73,9 +73,9 @@ impl Transform {
         bounds: [f64; 4],
         physical: [u32; 2],
         pixels: f32,
-    ) -> Result<Self, super::AttachmentUiError> {
+    ) -> Result<Self, super::AttachmentHostError> {
         if physical.contains(&0) || bounds[2] <= 0. || bounds[3] <= 0. {
-            return Err(super::AttachmentUiError::Host(
+            return Err(super::AttachmentHostError::Host(
                 "Canvas has no drawable size".into(),
             ));
         }

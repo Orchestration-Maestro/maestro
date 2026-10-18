@@ -5,7 +5,7 @@ use super::super::{
 };
 use super::{append, element};
 use crate::browser::{
-    attachment_content::{AttachmentUiError, browser::host_error},
+    attachment_content::{AttachmentHostError, browser::host_error},
     event_subscription::EventSubscription,
 };
 use std::{cell::Cell, rc::Rc};
@@ -37,7 +37,7 @@ pub(super) fn mount(
     document: &Document,
     root: &Element,
     prepared: &Prepared,
-) -> Result<Option<Box<dyn std::any::Any>>, AttachmentUiError> {
+) -> Result<Option<Box<dyn std::any::Any>>, AttachmentHostError> {
     let mut state = Vec::new();
     if let Some(prompt) = &prepared.prompt {
         let node = prompt_node(document, prompt, &mut state)?;
@@ -84,7 +84,7 @@ fn prompt_node(
     document: &Document,
     prompt: &Prompt,
     state: &mut Vec<Disclosure>,
-) -> Result<Element, AttachmentUiError> {
+) -> Result<Element, AttachmentHostError> {
     let node = element(document, "div", "system-prompt", "")?;
     append(
         &node,
@@ -130,7 +130,7 @@ fn tool_node(
     document: &Document,
     tool: &Tool,
     state: &mut Vec<Disclosure>,
-) -> Result<Element, AttachmentUiError> {
+) -> Result<Element, AttachmentHostError> {
     let node = element(document, "div", "tool-item", "")?;
     append(
         &node,
@@ -187,7 +187,7 @@ fn toggle(disclosure: &Disclosure) -> Result<(), JsValue> {
 fn parameter_node(
     document: &Document,
     parameter: &Parameter,
-) -> Result<Element, AttachmentUiError> {
+) -> Result<Element, AttachmentHostError> {
     let row = element(document, "div", "tool-param", "")?;
     append(
         &row,

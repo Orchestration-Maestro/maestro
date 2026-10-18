@@ -26,7 +26,7 @@ impl ToolContent for Child {
         ui: &mut egui::Ui,
         _: ToolRenderView<'_>,
         _: &maestro_app::ToolRendererState,
-    ) -> Result<egui::Response, maestro_web::browser::attachment_content::AttachmentUiError> {
+    ) -> Result<egui::Response, maestro_web::tools::types::ToolUiError> {
         self.calls.set(self.calls.get() + 1);
         let response = ui
             .allocate_exact_size(egui::vec2(80., self.height), egui::Sense::click())

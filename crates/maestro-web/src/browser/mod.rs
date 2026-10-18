@@ -36,8 +36,8 @@ pub(crate) fn install_stylesheet(
     document: &web_sys::Document,
     id: &str,
     source: &str,
-) -> Result<(), attachment_content::AttachmentUiError> {
-    use attachment_content::{AttachmentUiError, browser::host_error};
+) -> Result<(), attachment_content::AttachmentHostError> {
+    use attachment_content::{AttachmentHostError, browser::host_error};
     if document.get_element_by_id(id).is_some() {
         return Ok(());
     }
@@ -48,7 +48,7 @@ pub(crate) fn install_stylesheet(
     style.set_text_content(Some(source));
     document
         .document_element()
-        .ok_or_else(|| AttachmentUiError::Host("Document has no root".into()))?
+        .ok_or_else(|| AttachmentHostError::Host("Document has no root".into()))?
         .append_child(&style)
         .map_err(|error| host_error(&error))?;
     Ok(())

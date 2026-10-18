@@ -6,7 +6,7 @@ use maestro_web::{
 };
 use num_traits::ToPrimitive as _;
 use std::{cell::RefCell, rc::Rc};
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::{JsCast as _, prelude::*};
 /// Evaluate document observations without shipping test bindings.
 fn js(code: &str) -> JsValue {
     js_sys::eval(code).unwrap()
@@ -522,7 +522,11 @@ fn assert_overlay_text_failure(
     *view.host.failure.borrow_mut() = Some("publication rejected".into());
     assert!(matches!(
         view.try_overlay(overlay, vec![]),
-        Err(AttachmentUiError::Presentation(_))
+        Err(
+            maestro_web::dialogs::attachment_overlay::AttachmentUiError::Host(
+                AttachmentHostError::Presentation(_)
+            )
+        )
     ));
     view.overlay(overlay, vec![]);
     assert_eq!(
@@ -566,7 +570,14 @@ fn assert_empty_error_and_save_failure(view: &View, record: &Rc<RefCell<maestro_
     view.toggle(&mut overlay, "Text");
     view.host.fail_download.set(true);
     let result = view.try_overlay(&mut overlay, click(egui::pos2(728., 24.)));
-    assert!(matches!(result, Err(AttachmentUiError::Host(_))));
+    assert!(matches!(
+        result,
+        Err(
+            maestro_web::dialogs::attachment_overlay::AttachmentUiError::Host(
+                AttachmentHostError::Host(_)
+            )
+        )
+    ));
     assert!(Rc::ptr_eq(
         view.host.downloads.borrow().last().unwrap(),
         &record
@@ -655,4 +666,140 @@ pub async fn reading_frame_neighbors_keep_existing_paint() {
     let mut overlay = AttachmentOverlay::open(record, None, view.host.clone());
     view.overlay(&mut overlay, vec![]);
     support::reading_paint::observe("neighbors-text").await;
+}
+
+/// Exercise the actual native content boundary, not a controlled outer host.
+/// # Panics
+/// Panics if an injected phase is not reached or changes its error category.
+/// # Errors
+/// Returns native fixture setup or restoration failures.
+#[wasm_bindgen]
+pub fn pptx_native_failures_retag_only_the_content_call() -> Result<(), JsValue> {
+    let host = reading_browser_support::Host::new();
+    let pack = maestro_theme::load_brand_pack("brand.json", &support::brand::Pack)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let presentation = pack
+        .presentation(maestro_theme::BrandMode::Dark)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    for retained in [false, true] {
+        for phase in [
+            "create",
+            "replacement",
+            "placement",
+            "content",
+            "append",
+            "visibility",
+        ] {
+            if phase != "replacement" || retained {
+                presentation_phase(&host.native, phase, retained, &presentation)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Fault one reached native phase, then retry the same retained host.
+fn presentation_phase(
+    host: &BrowserAttachmentHost,
+    phase: &str,
+    retained: bool,
+    p: &maestro_theme::BrandPresentation<'_>,
+) -> Result<(), JsValue> {
+    let id = egui::Id::new(("presentation-phase", retained, phase));
+    if retained {
+        if matches!(phase, "create" | "replacement") {
+            host.set_retained_visibility(id, true, None)
+                .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        } else {
+            native_text(host, id, TextView::Plain, p)
+                .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        }
+        if phase == "append" {
+            js("document.querySelector('pre').parentElement.remove()");
+        }
+    }
+    let install = js_sys::Function::new_with_args(
+        "phase",
+        include_str!("reading_browser_support/presentation_fault.js"),
+    );
+    let fault = install.call1(&JsValue::NULL, &phase.into())?;
+    let result = native_text(host, id, TextView::Presentation, p);
+    assert!(
+        stop_presentation_fault(&fault)?,
+        "phase not reached: {phase}"
+    );
+    let Err(error) = result else {
+        return Err("expected reached native failure".into());
+    };
+    assert_eq!(
+        matches!(error, AttachmentHostError::Presentation(_)),
+        phase == "content"
+    );
+    assert!(error.to_string().contains("native phase marker"));
+    let nested = maestro_web::dialogs::attachment_overlay::AttachmentUiError::from(error);
+    assert!(
+        std::error::Error::source(&nested)
+            .is_some_and(<dyn std::error::Error>::is::<AttachmentHostError>)
+    );
+    native_text(host, id, TextView::Presentation, p)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    host.remove(id);
+    if phase == "content" {
+        ordinary_content_neighbor(host, id, p)?;
+    }
+    Ok(())
+}
+
+/// Restore every patched browser method before inspecting the returned error.
+fn stop_presentation_fault(fault: &JsValue) -> Result<bool, JsValue> {
+    let stop = js_sys::Reflect::get(fault, &"stop".into())?.dyn_into::<js_sys::Function>()?;
+    stop.call0(fault)?
+        .as_bool()
+        .ok_or_else(|| JsValue::from_str("missing native fault observation"))
+}
+
+/// The adjacent plain-text branch must not inherit the presentation-only retag.
+fn ordinary_content_neighbor(
+    host: &BrowserAttachmentHost,
+    id: egui::Id,
+    p: &maestro_theme::BrandPresentation<'_>,
+) -> Result<(), JsValue> {
+    let install = js_sys::Function::new_with_args(
+        "phase",
+        include_str!("reading_browser_support/presentation_fault.js"),
+    );
+    let fault = install.call1(&JsValue::NULL, &"content".into())?;
+    let result = native_text(host, id, TextView::Plain, p);
+    assert!(stop_presentation_fault(&fault)?);
+    let Err(error) = result else {
+        return Err("expected ordinary-text native failure".into());
+    };
+    assert!(matches!(error, AttachmentHostError::Host(_)));
+    native_text(host, id, TextView::Plain, p).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    host.remove(id);
+    Ok(())
+}
+
+/// Present one explicit text branch through the default native host.
+fn native_text(
+    host: &BrowserAttachmentHost,
+    id: egui::Id,
+    view: TextView,
+    presentation: &maestro_theme::BrandPresentation<'_>,
+) -> Result<(), AttachmentHostError> {
+    host.present(
+        AttachmentSurface {
+            id,
+            rect: egui::Rect::from_min_size(egui::pos2(10., 10.), egui::vec2(100., 100.)),
+            clip_rect: egui::Rect::EVERYTHING,
+            pixels_per_point: 1.,
+            opacity: 1.,
+            occluders: vec![],
+            content: AttachmentContent::Text {
+                text: "literal phase text",
+                view,
+            },
+        },
+        presentation,
+    )
 }

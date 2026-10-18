@@ -1,6 +1,6 @@
 //! Frame-driven owned PDF pages shared by attachment and artifact views.
 use crate::browser::attachment_content::{
-    AttachmentHost, AttachmentUiError, ReadingContent, reading,
+    AttachmentHost, AttachmentHostError, ReadingContent, reading,
 };
 use maestro_app::browser::utils::attachment_utils::pdf::{PdfDocument, PdfPage};
 use std::{cell::RefCell, rc::Rc};
@@ -85,7 +85,7 @@ impl Pdf {
         ui: &egui::Ui,
         surface: (egui::Id, egui::Rect, Option<egui::Id>, bool),
         presentation: &maestro_theme::BrandPresentation<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         #[cfg(target_arch = "wasm32")]
         browser::sync(&self.pages.borrow())?;
         let content = self.reading(surface.3);
@@ -123,6 +123,6 @@ mod tests;
 pub(crate) fn detail<F: ?Sized>(
     message: &str,
     i: &crate::I18n<F>,
-) -> Result<String, AttachmentUiError> {
+) -> Result<String, crate::I18nError> {
     super::error::detail(message, i, "Failed to load PDF")
 }

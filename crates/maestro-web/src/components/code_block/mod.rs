@@ -1,8 +1,9 @@
 //! Highlighted code with a language label and an original-text copy control.
+mod ui_error;
 use crate::{
     I18n,
     browser::attachment_content::{
-        AttachmentHost, AttachmentUiError, ReadingContent,
+        AttachmentHost, ReadingContent,
         reading::controlled::{ControlledLayout, ControlledReading, ReadingHeight},
     },
     components::copy_button::CopyButton,
@@ -11,6 +12,7 @@ use std::{
     cell::RefCell,
     rc::{Rc, Weak},
 };
+pub use ui_error::ReadingUiError;
 
 pub(crate) mod browser;
 
@@ -48,7 +50,7 @@ impl Prepared {
         highlighter: &dyn maestro_theme::SyntaxHighlighter,
         text: String,
         language: String,
-    ) -> Result<Self, AttachmentUiError> {
+    ) -> Result<Self, ReadingUiError> {
         let html = Self::highlight(highlighter, &text, &language)?;
         Ok(Self {
             language,
@@ -61,14 +63,14 @@ impl Prepared {
         highlighter: &dyn maestro_theme::SyntaxHighlighter,
         text: &str,
         language: &str,
-    ) -> Result<String, AttachmentUiError> {
+    ) -> Result<String, ReadingUiError> {
         maestro_theme::highlight_auto(
             highlighter,
             text,
             Some(language).filter(|l| !l.is_empty()),
             maestro_theme::HighlightProfile::CodeBlock,
         )
-        .map_err(|error| AttachmentUiError::Presentation(error.to_string()))
+        .map_err(ReadingUiError::Highlight)
     }
     /// The displayed and class language.
     #[cfg(target_arch = "wasm32")]
@@ -95,7 +97,7 @@ pub(crate) fn controls<'a, F: ?Sized>(
     layout: &ControlledLayout,
     buttons: impl IntoIterator<Item = &'a mut CopyButton>,
     view: (&I18n<F>, &maestro_theme::BrandPresentation<'_>),
-) -> Result<Vec<Option<egui::Response>>, AttachmentUiError> {
+) -> Result<Vec<Option<egui::Response>>, ReadingUiError> {
     let clip = layout.response.rect.intersect(ui.clip_rect());
     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(clip));
     child.set_clip_rect(clip);
@@ -105,6 +107,7 @@ pub(crate) fn controls<'a, F: ?Sized>(
             let full = layout.controls.iter().find(|(id, _)| *id == button.id);
             full.map(|(_, full)| button.render_at(&mut child, *full, view.0, view.1))
                 .transpose()
+                .map_err(ReadingUiError::Control)
         })
         .collect()
 }
@@ -163,7 +166,7 @@ impl CodeBlock {
         &mut self,
         ui: &mut egui::Ui,
         view: CodeBlockView<'_, F>,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, ReadingUiError> {
         let text = if self.literal {
             self.code.clone()
         } else {
@@ -202,7 +205,7 @@ impl CodeBlock {
         next: Prepared,
         control: (egui::Id, egui::Vec2),
         view: CodeBlockView<'_, F>,
-    ) -> Result<ControlledLayout, AttachmentUiError> {
+    ) -> Result<ControlledLayout, ReadingUiError> {
         let changed = *self.prepared != next || self.content.is_none();
         let prepared = Rc::new(next);
         let mounted = Rc::default();
@@ -210,7 +213,13 @@ impl CodeBlock {
         let content = candidate
             .as_ref()
             .or(self.content.as_ref())
-            .ok_or_else(|| AttachmentUiError::Host("Missing listing".into()))?;
+            .ok_or_else(|| {
+                ReadingUiError::Host(
+                    crate::browser::attachment_content::AttachmentHostError::Host(
+                        "Missing listing".into(),
+                    ),
+                )
+            })?;
         let layout = ControlledReading {
             height: ReadingHeight::Flow,
             host: self.host.as_ref(),

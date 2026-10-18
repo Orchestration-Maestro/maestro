@@ -3,7 +3,7 @@
 use super::browser;
 use crate::surface;
 use maestro_web::{
-    browser::attachment_content::AttachmentUiError,
+    tools::types::ToolUiError,
     tools::types::{
         ToolContent, ToolRenderResult, ToolRenderState, ToolRenderView, ToolResultMessageView,
     },
@@ -29,7 +29,7 @@ impl ToolContent for Action {
         ui: &mut egui::Ui,
         _: ToolRenderView<'_>,
         state: &maestro_app::ToolRendererState,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, ToolUiError> {
         let slot = state.state::<Row>();
         let mut row = slot.take();
         row.original = Some(self.original.clone());
@@ -50,7 +50,7 @@ impl maestro_web::ToolRenderer<String, Rc<Cell<i32>>> for Renderer {
         params: Option<&String>,
         result: Option<ToolResultMessageView<'_, Rc<Cell<i32>>>>,
         _: bool,
-    ) -> Result<ToolRenderResult, AttachmentUiError> {
+    ) -> Result<ToolRenderResult, ToolUiError> {
         Ok(ToolRenderResult {
             content: Box::new(Action {
                 label: params.unwrap().clone(),

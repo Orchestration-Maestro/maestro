@@ -1,7 +1,7 @@
 //! Native code listing nodes and the empty canvas-control slot.
 use super::Prepared;
 #[cfg(target_arch = "wasm32")]
-use crate::browser::attachment_content::AttachmentUiError;
+use crate::browser::attachment_content::AttachmentHostError;
 use crate::browser::attachment_content::ReadingContent;
 use std::{
     cell::RefCell,
@@ -73,7 +73,10 @@ pub(crate) struct Built {
 }
 /// Build one listing: header outside the local scroller, body inside it.
 #[cfg(target_arch = "wasm32")]
-pub(crate) fn build(document: &Document, prepared: &Prepared) -> Result<Built, AttachmentUiError> {
+pub(crate) fn build(
+    document: &Document,
+    prepared: &Prepared,
+) -> Result<Built, AttachmentHostError> {
     let root = element(document, "div", "maestro-code")?;
     let header = element(document, "div", "maestro-code-header")?;
     let label = element(document, "span", "maestro-code-label")?;
@@ -107,10 +110,10 @@ pub(crate) fn build(document: &Document, prepared: &Prepared) -> Result<Built, A
 }
 /// Stylesheet shared by every listing owner.
 #[cfg(target_arch = "wasm32")]
-pub(crate) fn styles(document: &Document) -> Result<Element, AttachmentUiError> {
+pub(crate) fn styles(document: &Document) -> Result<Element, AttachmentHostError> {
     let style = element(document, "style", "")?;
     let syntax = maestro_theme::highlight_css()
-        .map_err(|e| AttachmentUiError::Presentation(e.to_string()))?;
+        .map_err(|e| AttachmentHostError::Presentation(e.to_string()))?;
     style.set_text_content(Some(&format!("{}{syntax}", include_str!("code.css"))));
     Ok(style)
 }
@@ -141,7 +144,7 @@ fn mount(
     prepared: &Rc<Prepared>,
     id: egui::Id,
     slot: &Rc<RefCell<Weak<Mounted>>>,
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     let flow = element(document, "div", "maestro-code-root")?;
     flow.set_attribute("style", "display:flow-root")
         .map_err(|e| host_error(&e))?;

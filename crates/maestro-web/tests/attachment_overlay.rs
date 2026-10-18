@@ -42,7 +42,8 @@ fn overlay_images_use_original_bytes_and_contain_fit() {
         assert!(c.expected.text.is_none());
     }
 }
-use maestro_web::browser::attachment_content::{AttachmentUiError, FileType, TextView};
+use maestro_web::browser::attachment_content::{FileType, TextView};
+use maestro_web::dialogs::attachment_overlay::AttachmentUiError;
 use serde::Deserialize;
 /// Ordered classification case.
 #[derive(Deserialize)]

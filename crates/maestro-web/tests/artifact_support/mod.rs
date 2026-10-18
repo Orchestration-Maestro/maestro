@@ -149,7 +149,7 @@ impl Frame {
         view: &mut dyn ArtifactElement,
         header: bool,
         events: Vec<egui::Event>,
-    ) -> Result<egui::FullOutput, maestro_web::browser::attachment_content::AttachmentUiError> {
+    ) -> Result<egui::FullOutput, maestro_web::tools::artifacts::ArtifactUiError> {
         let presentation = self.pack.presentation(self.mode).unwrap();
         let mut result = Ok(());
         let mut output = self.context.run_ui(
@@ -211,7 +211,7 @@ impl Frame {
     pub fn click(
         &self,
         view: &mut dyn ArtifactElement,
-    ) -> Result<(), maestro_web::browser::attachment_content::AttachmentUiError> {
+    ) -> Result<(), maestro_web::tools::artifacts::ArtifactUiError> {
         self.draw(view, true, vec![])?;
         let pos = egui::pos2(18., 16.);
         self.draw(
@@ -250,7 +250,7 @@ impl Frame {
         panel: &maestro_web::ArtifactsPanel,
         caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
         events: Vec<egui::Event>,
-    ) -> Result<egui::FullOutput, maestro_web::browser::attachment_content::AttachmentUiError> {
+    ) -> Result<egui::FullOutput, maestro_web::tools::artifacts::ArtifactUiError> {
         self.draw_panel_observing(panel, caller, events, |_| {})
     }
     /// Observe renderer uploads before the drawing harness releases them.
@@ -264,7 +264,7 @@ impl Frame {
         caller: &maestro_app::browser::tools::artifacts::LocalArtifactsPanel,
         events: Vec<egui::Event>,
         observe: impl FnOnce(&egui::FullOutput),
-    ) -> Result<egui::FullOutput, maestro_web::browser::attachment_content::AttachmentUiError> {
+    ) -> Result<egui::FullOutput, maestro_web::tools::artifacts::ArtifactUiError> {
         let presentation = self.pack.presentation(self.mode).unwrap();
         let mut result = Ok(());
         let mut output = self.context.run_ui(

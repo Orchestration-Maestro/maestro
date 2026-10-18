@@ -1,7 +1,7 @@
 //! Native Markdown nodes, code listing owners and their empty canvas-control slots.
 use super::Document;
 #[cfg(target_arch = "wasm32")]
-use crate::browser::attachment_content::AttachmentUiError;
+use crate::browser::attachment_content::AttachmentHostError;
 use crate::browser::attachment_content::ReadingContent;
 use std::{
     cell::RefCell,
@@ -95,7 +95,7 @@ fn mount(
     ids: &[egui::Id],
     (thinking, padded, owner): (bool, bool, &Rc<RefCell<Weak<Mounted>>>),
     update: Update,
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     crate::browser::math_assets::install(dom)?;
     let flow = element(
         dom,
@@ -124,7 +124,7 @@ fn mount(
         let placeholder = root
             .query_selector(&format!("[{}=\"{index}\"]", document.slot_attribute))
             .map_err(|e| host_error(&e))?
-            .ok_or_else(|| AttachmentUiError::Host("Missing code slot".into()))?;
+            .ok_or_else(|| AttachmentHostError::Host("Missing code slot".into()))?;
         placeholder
             .set_attribute("class", "maestro-code-wrap")
             .map_err(|e| host_error(&e))?;

@@ -11,7 +11,7 @@ mod tests {
         Attachment, I18n, TranslationFunction,
         browser::{
             attachment_content::{
-                AttachmentContent, AttachmentHost, AttachmentSurface, AttachmentUiError,
+                AttachmentContent, AttachmentHost, AttachmentHostError, AttachmentSurface,
                 BrowserAttachmentHost, FocusTarget, ReadingLayout, ReadingPhase,
             },
             timer::Timer,
@@ -214,25 +214,25 @@ mod tests {
             self.copies.borrow_mut().push(text.to_owned());
             Box::pin(std::future::ready(true))
         }
-        fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentUiError> {
+        fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentHostError> {
             self.native.capture_focus()
         }
-        fn restore_focus(&self, target: Rc<FocusTarget>) -> Result<Timer, AttachmentUiError> {
+        fn restore_focus(&self, target: Rc<FocusTarget>) -> Result<Timer, AttachmentHostError> {
             self.native.restore_focus(target)
         }
         fn dialog_bounds(
             &self,
             id: egui::Id,
             dimensions: [&str; 2],
-        ) -> Result<egui::Rect, AttachmentUiError> {
+        ) -> Result<egui::Rect, AttachmentHostError> {
             self.native.dialog_bounds(id, dimensions)
         }
         fn native_key(&self, event: &web_sys::KeyboardEvent, context: &egui::Context) {
             self.native.native_key(event, context);
         }
-        fn reading_layout(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentUiError> {
+        fn reading_layout(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentHostError> {
             if self.fail_measure.replace(false) {
-                return Err(AttachmentUiError::Host(
+                return Err(AttachmentHostError::Host(
                     "controlled measurement failure".into(),
                 ));
             }
@@ -244,9 +244,9 @@ mod tests {
             &self,
             surface: AttachmentSurface<'_>,
             presentation: &maestro_theme::BrandPresentation<'_>,
-        ) -> Result<(), AttachmentUiError> {
+        ) -> Result<(), AttachmentHostError> {
             if let Some(message) = self.fail_next.borrow_mut().take() {
-                return Err(AttachmentUiError::Presentation(message));
+                return Err(AttachmentHostError::Presentation(message));
             }
             let phase = match &surface.content {
                 AttachmentContent::Reading(reading) => Some(reading.phase),
@@ -254,7 +254,7 @@ mod tests {
             };
             if phase.is_some() && self.fail_phase.get() == phase {
                 self.fail_phase.set(None);
-                return Err(AttachmentUiError::Host("controlled phase failure".into()));
+                return Err(AttachmentHostError::Host("controlled phase failure".into()));
             }
             let result = self.native.present(surface, presentation);
             if let Some(phase) = phase {
@@ -271,13 +271,13 @@ mod tests {
             id: egui::Id,
             visible: bool,
             modal: Option<egui::Id>,
-        ) -> Result<(), AttachmentUiError> {
+        ) -> Result<(), AttachmentHostError> {
             self.native.set_retained_visibility(id, visible, modal)
         }
-        fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentUiError> {
+        fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentHostError> {
             self.native.set_overlay(id, visible)
         }
-        fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
+        fn hover_capable(&self) -> Result<bool, AttachmentHostError> {
             self.native.hover_capable()
         }
         fn remove(&self, id: egui::Id) {
@@ -292,7 +292,7 @@ mod tests {
             delay_ms: i32,
             repeat: bool,
             callback: Rc<dyn Fn()>,
-        ) -> Result<Timer, AttachmentUiError> {
+        ) -> Result<Timer, AttachmentHostError> {
             let inner = self.native.timer(delay_ms, repeat, callback)?;
             let live = Rc::new(Cell::new(true));
             self.timers.borrow_mut().push(Rc::clone(&live));
@@ -309,10 +309,10 @@ mod tests {
             bytes: &[u8],
             name: &str,
             mime: &str,
-        ) -> Result<(), AttachmentUiError> {
+        ) -> Result<(), AttachmentHostError> {
             self.native.download_bytes(bytes, name, mime)
         }
-        fn download(&self, attachment: Rc<RefCell<Attachment>>) -> Result<(), AttachmentUiError> {
+        fn download(&self, attachment: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
             self.native.download(attachment)
         }
     }

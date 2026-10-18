@@ -782,7 +782,7 @@ fn reading_candidate_setup_failures_keep_the_published_root() {
     slots.content = Rc::new(maestro_web::browser::attachment_content::ReadingContent {
         mount: Rc::new(|_| {
             Err(
-                maestro_web::browser::attachment_content::AttachmentUiError::Host(
+                maestro_web::browser::attachment_content::AttachmentHostError::Host(
                     "factory marker".into(),
                 ),
             )

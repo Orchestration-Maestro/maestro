@@ -1,7 +1,7 @@
 //! Shared custom renderer recipes for browser tool dispatch witnesses.
 #![cfg(test)]
 use maestro_web::{
-    browser::attachment_content::AttachmentUiError,
+    tools::types::ToolUiError,
     tools::{
         renderer_registry::TOOL_RENDERERS,
         types::{
@@ -15,7 +15,7 @@ pub type Callback<P, D> = dyn Fn(
     Option<&P>,
     Option<ToolResultMessageView<'_, D>>,
     bool,
-) -> Result<ToolRenderResult, AttachmentUiError>;
+) -> Result<ToolRenderResult, ToolUiError>;
 pub struct Renderer<P, D>(pub Rc<Callback<P, D>>);
 impl<P, D> ToolRenderer<P, D> for Renderer<P, D> {
     fn render(
@@ -23,7 +23,7 @@ impl<P, D> ToolRenderer<P, D> for Renderer<P, D> {
         params: Option<&P>,
         result: Option<ToolResultMessageView<'_, D>>,
         streaming: bool,
-    ) -> Result<ToolRenderResult, AttachmentUiError> {
+    ) -> Result<ToolRenderResult, ToolUiError> {
         (self.0)(params, result, streaming)
     }
 }
@@ -34,7 +34,7 @@ impl ToolContent for Caption {
         ui: &mut egui::Ui,
         _: ToolRenderView<'_>,
         _: &maestro_app::ToolRendererState,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, ToolUiError> {
         Ok(ui.label(&self.0))
     }
 }

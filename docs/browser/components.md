@@ -91,7 +91,9 @@ draw's Close paint, even when the callback immediately reopens the handle.
 Focus decoration retains fractional coverage in one reusable raster texture,
 compositing the two disjoint annuli before control opacity. Reading text remains native,
 selectable, findable and accessible; no second hidden text tree or focus trap is
-added. Platform failures remain `AttachmentUiError`.
+added. Dialog operations return `dialogs::dialog::DialogUiError`, retaining native
+failures inside `Host(AttachmentHostError)` and preserving leaf causes through
+`Error::source`.
 
 Full-viewport dimming/blur is intentionally absent, owned by
 [the shared backdrop work](https://github.com/Orchestration-Maestro/maestro/issues/1145).
@@ -103,3 +105,14 @@ Broader canvas raster qualification follows [the canvas runner](https://github.c
 
 [Tool renderers](tool-renderers.md) provide named dispatch, retained tool headers,
 input/output listings and literal console output.
+
+## Operation errors
+
+Input returns `components::input::InputUiError` for localization, native effects
+and presentation. Shared code, Markdown and console rendering return
+`components::code_block::ReadingUiError`; highlighting keeps the original theme
+error, and native publication keeps `AttachmentHostError`. Copy buttons and
+preview/source toggles return `components::copy_button::LocalizedControlError`
+for localization, shared control drawing and selected-color I/O errors.
+These Rust source interfaces keep failure kinds and causes with the operation
+that owns them, without changing rendering, callback timing or retained lifetimes.

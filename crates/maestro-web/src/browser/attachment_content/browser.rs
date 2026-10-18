@@ -1,6 +1,6 @@
 //! Retained native image and selectable text elements above a supplied canvas.
 use super::{
-    AttachmentContent, AttachmentHost, AttachmentSurface, AttachmentUiError, ImageFit, TextView,
+    AttachmentContent, AttachmentHost, AttachmentHostError, AttachmentSurface, ImageFit, TextView,
 };
 use crate::Attachment;
 use maestro_theme::BrandPresentation;
@@ -67,27 +67,27 @@ impl Drop for DomSurface {
     }
 }
 /// Preserve the browser exception's category at the effect boundary.
-pub(crate) fn host_error(error: &wasm_bindgen::JsValue) -> AttachmentUiError {
-    AttachmentUiError::Host(format!("{error:?}"))
+pub(crate) fn host_error(error: &wasm_bindgen::JsValue) -> AttachmentHostError {
+    AttachmentHostError::Host(format!("{error:?}"))
 }
 /// Create one feature-owned element with its class in the supplied document.
 pub(crate) fn element(
     document: &Document,
     tag: &str,
     class: &str,
-) -> Result<Element, AttachmentUiError> {
+) -> Result<Element, AttachmentHostError> {
     let node = document.create_element(tag).map_err(|e| host_error(&e))?;
     node.set_attribute("class", class)
         .map_err(|e| host_error(&e))?;
     Ok(node)
 }
 /// Append an owned node through the native effect boundary.
-pub(crate) fn append(parent: &Element, child: &Element) -> Result<(), AttachmentUiError> {
+pub(crate) fn append(parent: &Element, child: &Element) -> Result<(), AttachmentHostError> {
     parent.append_child(child).map_err(|e| host_error(&e))?;
     Ok(())
 }
 /// Read native geometry through a catchable operation so transactions can restore state.
-fn bounds(element: &Element) -> Result<web_sys::DomRect, AttachmentUiError> {
+fn bounds(element: &Element) -> Result<web_sys::DomRect, AttachmentHostError> {
     use wasm_bindgen::JsCast as _;
     js_sys::Reflect::get(element, &"getBoundingClientRect".into())
         .and_then(|method| method.unchecked_into::<js_sys::Function>().call0(element))
@@ -98,10 +98,10 @@ impl BrowserAttachmentHost {
     /// Retain the caller's canvas and its owning document.
     /// # Errors
     /// Returns an unavailable-document failure.
-    pub fn new(canvas: HtmlCanvasElement) -> Result<Self, AttachmentUiError> {
+    pub fn new(canvas: HtmlCanvasElement) -> Result<Self, AttachmentHostError> {
         let document = canvas
             .owner_document()
-            .ok_or_else(|| AttachmentUiError::Host("Canvas has no document".into()))?;
+            .ok_or_else(|| AttachmentHostError::Host("Canvas has no document".into()))?;
         Ok(Self {
             canvas,
             document,
@@ -112,7 +112,7 @@ impl BrowserAttachmentHost {
         })
     }
     /// Create a detached element owner, publishing it only after setup.
-    fn create(&self, tag: &'static str) -> Result<DomSurface, AttachmentUiError> {
+    fn create(&self, tag: &'static str) -> Result<DomSurface, AttachmentHostError> {
         let wrapper = self
             .document
             .create_element("div")
@@ -139,7 +139,7 @@ impl BrowserAttachmentHost {
     }
     /// Map canvas points to viewport CSS pixels without resizing for clipping.
     /// `bounds` is in CSS pixels, `r` in canvas points; `x`/`y` are CSS pixels per point.
-    fn placement(&self, s: &AttachmentSurface<'_>) -> Result<String, AttachmentUiError> {
+    fn placement(&self, s: &AttachmentSurface<'_>) -> Result<String, AttachmentHostError> {
         let transform = self.transform(s.pixels_per_point)?;
         let (x, y) = transform.scale;
         let [left, top] = transform.position(s.rect.min);
@@ -156,7 +156,7 @@ impl BrowserAttachmentHost {
         ))
     }
     /// Observe the current canvas coordinate frame.
-    fn transform(&self, pixels: f32) -> Result<super::placement::Transform, AttachmentUiError> {
+    fn transform(&self, pixels: f32) -> Result<super::placement::Transform, AttachmentHostError> {
         let b = bounds(&self.canvas)?;
         super::placement::Transform::new(
             [b.left(), b.top(), b.width(), b.height()],
@@ -169,7 +169,7 @@ impl BrowserAttachmentHost {
         &self,
         placed: Option<egui::Id>,
         previous: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         let top = self.overlays.borrow().last().copied();
         let updates: Vec<_> = {
             let surfaces = self.surfaces.borrow();
@@ -193,7 +193,7 @@ impl BrowserAttachmentHost {
         &self,
         surface: &mut DomSurface,
         content: &AttachmentContent<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         surface.modal = None;
         let element = &surface.child;
         let css=match content {
@@ -235,7 +235,7 @@ impl BrowserAttachmentHost {
         tag: &'static str,
         s: &AttachmentSurface<'_>,
         p: &BrandPresentation<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         let was_reading = surface.reading.take().is_some();
         drop(surface.pending.take());
         if was_reading {
@@ -273,15 +273,15 @@ impl BrowserAttachmentHost {
         );
         self.content(surface, &s.content)
             .map_err(|error| match error {
-                AttachmentUiError::Host(message) if presentation => {
-                    AttachmentUiError::Presentation(message)
+                AttachmentHostError::Host(message) if presentation => {
+                    AttachmentHostError::Presentation(message)
                 }
                 other => other,
             })?;
         let body = self
             .document
             .body()
-            .ok_or_else(|| AttachmentUiError::Host("Document has no body".into()))?;
+            .ok_or_else(|| AttachmentHostError::Host("Document has no body".into()))?;
         if !surface.wrapper.is_connected() {
             body.append_child(&surface.wrapper)
                 .map_err(|error| host_error(&error))?;
@@ -317,17 +317,17 @@ impl AttachmentHost for BrowserAttachmentHost {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
         crate::utils::clipboard::copy_to_clipboard(&self.document, text, mode)
     }
-    fn capture_focus(&self) -> Result<Option<Rc<super::FocusTarget>>, AttachmentUiError> {
+    fn capture_focus(&self) -> Result<Option<Rc<super::FocusTarget>>, AttachmentHostError> {
         self.capture_native_focus()
     }
     fn restore_focus(
         &self,
         target: Rc<super::FocusTarget>,
-    ) -> Result<crate::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<crate::browser::timer::Timer, AttachmentHostError> {
         let window = self
             .document
             .default_view()
-            .ok_or_else(|| AttachmentUiError::Host("Document has no window".into()))?;
+            .ok_or_else(|| AttachmentHostError::Host("Document has no window".into()))?;
         crate::browser::timer::frame(
             window,
             Rc::new(move || {
@@ -342,21 +342,21 @@ impl AttachmentHost for BrowserAttachmentHost {
         &self,
         id: egui::Id,
         dimensions: [&str; 2],
-    ) -> Result<egui::Rect, AttachmentUiError> {
+    ) -> Result<egui::Rect, AttachmentHostError> {
         self.measure_dialog(id, dimensions)
     }
     fn native_key(&self, event: &web_sys::KeyboardEvent, context: &egui::Context) {
         super::input::admit_escape(event, &self.escape, context);
     }
 
-    fn reading_layout(&self, id: egui::Id) -> Result<super::ReadingLayout, AttachmentUiError> {
+    fn reading_layout(&self, id: egui::Id) -> Result<super::ReadingLayout, AttachmentHostError> {
         self.measure_reading(id)
     }
     fn present(
         &self,
         s: AttachmentSurface<'_>,
         p: &BrandPresentation<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         let tag = match &s.content {
             AttachmentContent::Reading(_) => return self.present_reading(&s, p),
             AttachmentContent::Input { .. } => "input",
@@ -380,7 +380,7 @@ impl AttachmentHost for BrowserAttachmentHost {
         id: egui::Id,
         visible: bool,
         modal: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         if !self.surfaces.borrow().contains_key(&id) {
             let surface = self.create("div")?;
             let replaced = self.surfaces.borrow_mut().insert(id, surface);
@@ -391,7 +391,7 @@ impl AttachmentHost for BrowserAttachmentHost {
         }
         self.visibility(Some(id), self.overlays.borrow().last().copied())
     }
-    fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentUiError> {
+    fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentHostError> {
         let previous = self.overlays.borrow().last().copied();
         {
             let mut overlays = self.overlays.borrow_mut();
@@ -411,14 +411,14 @@ impl AttachmentHost for BrowserAttachmentHost {
         }
         self.visibility(None, previous)
     }
-    fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
+    fn hover_capable(&self) -> Result<bool, AttachmentHostError> {
         self.document
             .default_view()
-            .ok_or_else(|| AttachmentUiError::Host("Document has no window".into()))?
+            .ok_or_else(|| AttachmentHostError::Host("Document has no window".into()))?
             .match_media("(hover: hover)")
             .map_err(|error| host_error(&error))?
             .map(|m| m.matches())
-            .ok_or_else(|| AttachmentUiError::Host("Hover media query unavailable".into()))
+            .ok_or_else(|| AttachmentHostError::Host("Hover media query unavailable".into()))
     }
     fn remove(&self, id: egui::Id) {
         let removed = self.surfaces.borrow_mut().remove(&id);
@@ -432,11 +432,11 @@ impl AttachmentHost for BrowserAttachmentHost {
         delay_ms: i32,
         repeat: bool,
         callback: Rc<dyn Fn()>,
-    ) -> Result<crate::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<crate::browser::timer::Timer, AttachmentHostError> {
         let window = self
             .document
             .default_view()
-            .ok_or_else(|| AttachmentUiError::Host("Document has no window".into()))?;
+            .ok_or_else(|| AttachmentHostError::Host("Document has no window".into()))?;
         crate::browser::timer::native(window, delay_ms, repeat, callback)
             .map_err(|e| host_error(&e))
     }
@@ -448,10 +448,10 @@ impl AttachmentHost for BrowserAttachmentHost {
         bytes: &[u8],
         name: &str,
         mime: &str,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         crate::utils::download::download_bytes(&self.document, bytes, name, mime)
     }
-    fn download(&self, attachment: Rc<RefCell<Attachment>>) -> Result<(), AttachmentUiError> {
+    fn download(&self, attachment: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
         crate::utils::download::download(&self.document, &attachment)
     }
 }

@@ -191,7 +191,7 @@ fn pdf_download_preserves_name_mime_and_save_failures() {
     host.fail_download.set(true);
     assert!(matches!(
         frame.click(view.as_mut()),
-        Err(maestro_web::browser::attachment_content::AttachmentUiError::Host(_))
+        Err(maestro_web::tools::artifacts::ArtifactUiError::Host(_))
     ));
     host.fail_download.set(false);
     frame.click(view.as_mut()).unwrap();

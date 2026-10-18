@@ -949,7 +949,7 @@ fn artifact_panel_reentrant_view_access_returns_conflict() {
     *harness.host.on_visibility.borrow_mut() = Some(Rc::new(move || {
         assert!(matches!(
             panel.upgrade().unwrap().show_artifact("a.zip"),
-            Err(maestro_web::browser::attachment_content::AttachmentUiError::BorrowConflict)
+            Err(maestro_web::tools::artifacts::ArtifactUiError::BorrowConflict)
         ));
         observed.set(true);
     }));
