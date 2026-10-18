@@ -939,7 +939,7 @@ The original licence follows.
 
 ## Terminal emulator engine
 
-The terminal codepoint-width interface, page storage, image command parser,
+The terminal codepoint-width interface, page storage, character mappings, byte transition table, image command parser,
 image-media loader and their fixtures in `crates/maestro-terminal` derive from the
 Ghostty terminal engine. Changes: ported to safe Rust under Maestro names, with
 compiled Unicode properties, scalar-only text, packed records, owned style,

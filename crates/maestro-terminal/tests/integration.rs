@@ -89,3 +89,6 @@ mod graphics_commands;
 mod graphics_media;
 
 mod page_storage;
+
+mod character_sets;
+mod vt_sequences;

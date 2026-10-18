@@ -3723,6 +3723,8 @@ dependencies = [
  "maestro-dependencies",
  "png 0.17.16",
  "rustix",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

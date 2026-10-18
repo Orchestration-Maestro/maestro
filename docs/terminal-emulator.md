@@ -89,3 +89,13 @@ storage accounting bytes, not the native allocator's process memory usage.
 Selected rows can report the capacity needed for their unique styles and links,
 every linked cell and chunk-rounded suffix and string bytes. This accounting is
 the input to retained-history limits; the history owner applies those limits.
+
+## Character sets and byte transitions
+
+`charset_table` returns the 256-entry ASCII, British or DEC special graphics
+mapping. Unicode input has no byte table and returns `None`. `CharsetSlot` names
+the four stored sets; `CharsetActiveSlot` distinguishes the left and right sets.
+
+`parse_table::TABLE` is indexed by input byte and `parser::State`. Each entry
+contains the destination state and `parser::TransitionAction`. It describes byte
+transitions only; it does not execute commands or maintain a terminal screen.
