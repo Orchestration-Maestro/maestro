@@ -1074,23 +1074,6 @@
         "language": "en"
       },
       "output": {
-        "hidden": false,
-        "tabs": [
-          {
-            "filename": "z.zip",
-            "text": "z.zip",
-            "active": false
-          },
-          {
-            "filename": "a.zip",
-            "text": "a.zip",
-            "active": true
-          }
-        ],
-        "headerText": [
-          "Close artifacts"
-        ],
-        "headerRendered": true,
         "active": "a.zip",
         "visible": [
           "a.zip"
@@ -1098,16 +1081,8 @@
         "opened": 0,
         "closed": 0,
         "scrolls": [
-          {
-            "filename": "a.zip",
-            "options": {
-              "behavior": "smooth",
-              "block": "nearest",
-              "inline": "center"
-            }
-          }
-        ],
-        "inline_border": true
+          "a.zip"
+        ]
       }
     },
     {
@@ -1128,23 +1103,6 @@
         "language": "en"
       },
       "output": {
-        "hidden": false,
-        "tabs": [
-          {
-            "filename": "z.zip",
-            "text": "z.zip",
-            "active": false
-          },
-          {
-            "filename": "a.zip",
-            "text": "a.zip",
-            "active": true
-          }
-        ],
-        "headerText": [
-          "Close artifacts"
-        ],
-        "headerRendered": true,
         "active": "a.zip",
         "visible": [
           "a.zip"
@@ -1152,16 +1110,8 @@
         "opened": 1,
         "closed": 0,
         "scrolls": [
-          {
-            "filename": "a.zip",
-            "options": {
-              "behavior": "smooth",
-              "block": "nearest",
-              "inline": "center"
-            }
-          }
-        ],
-        "inline_border": true
+          "a.zip"
+        ]
       }
     },
     {
@@ -1182,31 +1132,13 @@
         "language": "en"
       },
       "output": {
-        "hidden": false,
-        "tabs": [
-          {
-            "filename": "z.zip",
-            "text": "z.zip",
-            "active": true
-          },
-          {
-            "filename": "a.zip",
-            "text": "a.zip",
-            "active": false
-          }
-        ],
-        "headerText": [
-          "Close artifacts"
-        ],
-        "headerRendered": true,
         "active": "z.zip",
         "visible": [
           "z.zip"
         ],
         "opened": 0,
         "closed": 0,
-        "scrolls": [],
-        "inline_border": true
+        "scrolls": []
       }
     },
     {
@@ -1227,31 +1159,13 @@
         "language": "en"
       },
       "output": {
-        "hidden": false,
-        "tabs": [
-          {
-            "filename": "z.zip",
-            "text": "z.zip",
-            "active": true
-          },
-          {
-            "filename": "a.zip",
-            "text": "a.zip",
-            "active": false
-          }
-        ],
-        "headerText": [
-          "Close artifacts"
-        ],
-        "headerRendered": true,
         "active": "z.zip",
         "visible": [
           "z.zip"
         ],
         "opened": 0,
         "closed": 1,
-        "scrolls": [],
-        "inline_border": true
+        "scrolls": []
       }
     },
     {
@@ -1272,31 +1186,13 @@
         "language": "en"
       },
       "output": {
-        "hidden": false,
-        "tabs": [
-          {
-            "filename": "z.zip",
-            "text": "z.zip",
-            "active": true
-          },
-          {
-            "filename": "a.zip",
-            "text": "a.zip",
-            "active": false
-          }
-        ],
-        "headerText": [
-          "Close artifacts"
-        ],
-        "headerRendered": true,
         "active": "z.zip",
         "visible": [
           "z.zip"
         ],
         "opened": 0,
         "closed": 0,
-        "scrolls": [],
-        "inline_border": true
+        "scrolls": []
       }
     }
   ],
@@ -1318,32 +1214,13 @@
         "language": "en"
       },
       "output": {
-        "hidden": false,
-        "tabs": [
-          {
-            "filename": "z.zip",
-            "text": "z.zip",
-            "active": true
-          },
-          {
-            "filename": "a.zip",
-            "text": "a.zip",
-            "active": false
-          }
-        ],
-        "headerText": [
-          "Close artifacts"
-        ],
-        "headerRendered": true,
         "active": "z.zip",
         "visible": [
           "z.zip"
         ],
         "opened": 0,
         "closed": 0,
-        "scrolls": [],
-        "sameRoots": true,
-        "inline_border": true
+        "sameRoots": true
       }
     },
     {
@@ -1363,32 +1240,13 @@
         "language": "en"
       },
       "output": {
-        "hidden": false,
-        "tabs": [
-          {
-            "filename": "z.zip",
-            "text": "z.zip",
-            "active": false
-          },
-          {
-            "filename": "a.zip",
-            "text": "a.zip",
-            "active": true
-          }
-        ],
-        "headerText": [
-          "Close artifacts"
-        ],
-        "headerRendered": true,
         "active": "a.zip",
         "visible": [
           "a.zip"
         ],
         "opened": 0,
         "closed": 0,
-        "scrolls": [],
-        "sameRoots": true,
-        "inline_border": true
+        "sameRoots": true
       }
     },
     {
@@ -1408,30 +1266,11 @@
         "language": "en"
       },
       "output": {
-        "hidden": false,
-        "tabs": [
-          {
-            "filename": "z.zip",
-            "text": "z.zip",
-            "active": false
-          },
-          {
-            "filename": "a.zip",
-            "text": "a.zip",
-            "active": false
-          }
-        ],
-        "headerText": [
-          "Close artifacts"
-        ],
-        "headerRendered": false,
         "active": "absent.zip",
         "visible": [],
         "opened": 0,
         "closed": 0,
-        "scrolls": [],
-        "sameRoots": true,
-        "inline_border": true
+        "sameRoots": true
       }
     },
     {
@@ -1451,32 +1290,13 @@
         "language": "en"
       },
       "output": {
-        "hidden": false,
-        "tabs": [
-          {
-            "filename": "z.zip",
-            "text": "z.zip",
-            "active": true
-          },
-          {
-            "filename": "a.zip",
-            "text": "a.zip",
-            "active": false
-          }
-        ],
-        "headerText": [
-          "Close artifacts"
-        ],
-        "headerRendered": true,
         "active": "z.zip",
         "visible": [
           "z.zip"
         ],
         "opened": 0,
         "closed": 0,
-        "scrolls": [],
-        "sameRoots": true,
-        "inline_border": true
+        "sameRoots": true
       }
     },
     {
@@ -1496,32 +1316,13 @@
         "language": "en"
       },
       "output": {
-        "hidden": false,
-        "tabs": [
-          {
-            "filename": "shown.zip",
-            "text": "shown.zip",
-            "active": false
-          },
-          {
-            "filename": "z.zip",
-            "text": "z.zip",
-            "active": false
-          }
-        ],
-        "headerText": [
-          "Close artifacts"
-        ],
-        "headerRendered": true,
         "active": "key.zip",
         "visible": [
           "key.zip"
         ],
         "opened": 0,
         "closed": 0,
-        "scrolls": [],
-        "sameRoots": true,
-        "inline_border": true
+        "sameRoots": true
       }
     }
   ],

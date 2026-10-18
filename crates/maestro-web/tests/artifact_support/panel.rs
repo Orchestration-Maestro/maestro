@@ -16,7 +16,7 @@ use std::{
 #[serde(deny_unknown_fields)]
 pub struct Corpus {
     /// Render-only cases.
-    pub render: Vec<Case>,
+    pub render: Vec<Case<RenderOutput>>,
     /// Selection and notification operations.
     pub operations: Vec<Case>,
     /// Reconnection cases.
@@ -59,10 +59,10 @@ pub struct Tab {
     /// Selected literal filename.
     pub active: bool,
 }
-/// Shell observations, with operation-only results kept optional.
+/// Painted shell observations.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct Output {
+pub struct RenderOutput {
     /// Whether the shell is hidden.
     pub hidden: bool,
     /// Ordered tab observations.
@@ -76,25 +76,33 @@ pub struct Output {
     #[serde(rename = "inline_border")]
     /// Whether the left border is included.
     pub inline_border: bool,
+}
+/// Operation and reconnection observations, with group-only results kept optional.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "camelCase")]
+pub struct Output {
+    /// Selected literal filename.
+    pub active: Option<String>,
     /// Visible native body identities by filename.
-    pub visible: Option<Vec<String>>,
+    pub visible: Vec<String>,
     /// Host-open notification count.
-    pub opened: Option<usize>,
+    pub opened: usize,
     /// Close notification count.
-    pub closed: Option<usize>,
-    /// Ordered scroll operations.
-    pub scrolls: Option<Vec<Scroll>>,
+    pub closed: usize,
+    /// Literal filenames of ordered scroll operations.
+    #[serde(default)]
+    pub scrolls: Vec<String>,
     /// Retained root identity observation.
     pub same_roots: Option<bool>,
 }
 /// Complete source shell case.
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Case {
+pub struct Case<O = Output> {
     /// Complete recorded input.
     pub input: Input,
     /// Recorded output.
-    pub output: Output,
+    pub output: O,
 }
 /// Literal scrolling operation.
 #[derive(Deserialize)]
