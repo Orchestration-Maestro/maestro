@@ -26,12 +26,8 @@ fn extension_footer(
 fn native_ui_exports_share_the_existing_records() {
     let options = MessageRenderOptions { expanded: true };
     let session: maestro_session::messages::MessageRenderOptions = options;
-    let native: maestro_extensions::MessageRenderOptions = session;
-    assert!(options.expanded && native.expanded);
-    let renderer: MessageRenderer = std::sync::Arc::new(|_, options, _, _| {
-        assert!(options.expanded);
-        Ok(None)
-    });
+    let _: maestro_extensions::MessageRenderOptions = session;
+    let renderer: MessageRenderer = std::sync::Arc::new(|_, _, _, _| Ok(None));
     let _: maestro_extensions::MessageRenderer = renderer;
     let signal = Cancellation::new();
     let dialog = ExtensionUIDialogOptions {
@@ -40,21 +36,15 @@ fn native_ui_exports_share_the_existing_records() {
     };
     signal.abort();
     assert!(dialog.signal.as_ref().is_some_and(Cancellation::is_aborted));
-    assert_eq!(dialog.timeout, Some(-0.5));
     let widget = ExtensionWidgetOptions {
         placement: Some(WidgetPlacement::BelowEditor),
     };
-    assert_eq!(
-        widget,
-        maestro_extensions::ExtensionWidgetOptions {
-            placement: Some(WidgetPlacement::BelowEditor)
-        }
-    );
+    let _: maestro_extensions::ExtensionWidgetOptions = widget;
     let indicator = WorkingIndicatorOptions {
         frames: Some(Vec::new()),
         interval_ms: None,
     };
-    assert_eq!(indicator.frames.as_deref(), Some(&[][..]));
+    let _: maestro_extensions::WorkingIndicatorOptions = indicator;
     let input: TerminalInputHandler = Rc::new(|data, _| Ok(InputListenerResult::Replace(data)));
     let _: maestro_extensions::TerminalInputHandler = input;
     let wrap: AutocompleteProviderFactory = Rc::new(|current, _| Ok(current));

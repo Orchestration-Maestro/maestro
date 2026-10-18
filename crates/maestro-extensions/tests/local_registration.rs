@@ -880,8 +880,8 @@ fn send<T: Send>(value: T) -> T {
 /// Compile-checks the default callback aliases and owner graphs.
 fn default_bounds() {
     use maestro_extensions::types::{
-        ArgumentCompletions, CommandHandler, ExtensionShortcut, RegisteredCommand, ResolvedCommand,
-        ShortcutHandler,
+        ArgumentCompletions, CommandHandler, ExtensionShortcut, MessageRenderer, RegisteredCommand,
+        ResolvedCommand, ShortcutHandler,
     };
     use maestro_extensions::{ErrorReporter, EventTail, Subscription, TailSpawner};
     send_sync::<CommandHandler>();
@@ -900,6 +900,8 @@ fn default_bounds() {
     send_sync::<ExtensionHandle>();
     send_sync::<ExtensionCollection>();
     send_sync::<ExtensionAPI>();
+    send_sync::<MessageRenderer>();
+    send_sync::<MessageRenderer<Vec<u8>>>();
     let _ = send::<EventTail>;
 }
 
