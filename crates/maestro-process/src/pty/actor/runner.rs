@@ -100,7 +100,7 @@ impl Runner {
     }
 
     /// Requests every active I/O direction in a single readiness wait.
-    fn interest(&self) -> Interest {
+    pub(in crate::pty::actor) fn interest(&self) -> Interest {
         match (self.running, self.writes.is_empty()) {
             (true, false) => Interest::READABLE | Interest::WRITABLE,
             (true, true) => Interest::READABLE,
@@ -109,7 +109,7 @@ impl Runner {
     }
 
     /// Services both ready directions before returning to control admission.
-    fn service_ready(&mut self, readiness: tokio::io::Ready) -> bool {
+    pub(in crate::pty::actor) fn service_ready(&mut self, readiness: tokio::io::Ready) -> bool {
         if readiness.is_readable() && self.running && !self.read_once() {
             return false;
         }
