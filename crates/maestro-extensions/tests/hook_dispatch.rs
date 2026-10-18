@@ -21,6 +21,13 @@ fn handler_presence_observes_live_known_and_open_registration_names() {
             .handlers
             .insert("empty".into(), vec![]);
         assert!(!runner.has_handlers("empty"));
+        runner
+            .bind_core(
+                maestro_models::Local::unbound_actions(),
+                ExtensionContextActions::default(),
+                types::ProviderActions::default(),
+            )
+            .unwrap();
         for name in ["agent_start", "", " unknown "] {
             loaded
                 .api

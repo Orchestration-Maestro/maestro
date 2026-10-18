@@ -10,9 +10,9 @@ use std::{cell::RefCell, rc::Rc};
 
 /// Accumulated messages and the last explicitly replaced system prompt.
 pub struct BeforeAgentStartCombinedResult {
-    /// Present when at least one callback supplied a custom message.
+    /// Custom messages contributed by callbacks.
     pub messages: Option<Vec<CustomMessageInput>>,
-    /// Present when a callback supplied a prompt, including an empty prompt.
+    /// Optional replacement prompt, including empty text.
     pub system_prompt: Option<String>,
 }
 impl<E: ExtensionExecution> ExtensionRunner<E> {
