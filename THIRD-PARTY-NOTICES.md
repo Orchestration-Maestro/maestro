@@ -714,12 +714,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-## herdr daemon protocol
+## herdr workspace daemon
 
 The daemon protocol records, schema and tests in `crates/maestro-protocol/` and
-`docs/daemon-protocol.schema.json` derive from herdr v0.8.2 under Apache-2.0.
+`docs/daemon-protocol.schema.json`, plus the socket transport and path selection in
+`crates/maestro-ipc/`, derive from herdr v0.8.2 under Apache-2.0.
 Changes include Maestro naming, module placement, required documentation,
 lint-compatible representations and separation of native runtime conversions.
+Socket changes include supplied paths and overrides, preservation of occupied
+non-socket entries, and input termination through reads rather than a consuming
+peer probe.
 The original licence follows.
 
 ```text

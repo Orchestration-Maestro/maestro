@@ -1,10 +1,10 @@
 # JSON boundary
 
 `maestro-json` is a core leaf below layer 0 with no workspace dependencies. It holds
-stateless decisions at the edge of JSON data; each caller keeps its own preprocessing,
+boundary decisions and synchronous JSONL framing; each caller keeps its own preprocessing,
 default values, selection policy and error wording. The [workspace daemon
 contract](specs/maestro-port.md#workspace-daemon) also assigns shared JSONL line
-framing to this leaf; that codec is not implemented yet.
+framing to this leaf.
 
 - **Truth.** `is_truthy` classifies a `serde_json::Value`; `is_raw_truthy` classifies
   valid raw JSON without reading a container. Null, `false`, zero of either sign and
@@ -34,3 +34,18 @@ framing to this leaf; that codec is not implemented yet.
 The optional-field helper that keeps null apart from absence is `present` in
 `maestro-request`; the JSON leaf does not depend on it. Dependencies are listed in
 [JSON libraries](libraries/json.md).
+
+## JSONL framing
+
+`jsonl::serialize_json_line` uses the compact writer above and appends one LF.
+U+2028 and U+2029 remain literal characters inside JSON strings.
+
+`jsonl::JsonlLineSplitter` accepts byte chunks and returns owned lines, splitting
+only on LF and removing one terminal CR. It retains incomplete bytes across
+chunks, including split UTF-8 scalars. Completed lines use lossy UTF-8 decoding;
+BOM characters remain intact. `finish` emits a nonempty pending byte tail once,
+including an empty string when that tail is just CR. A final LF does not create
+another empty record. Each push scans only its new bytes, not the retained prefix.
+
+The codec owns no stream, parser, runtime or size limit. Callers supply bytes and
+call `finish` at end of input. See [workspace sockets](workspace-daemon.md#sockets).
