@@ -26,8 +26,8 @@ table's source rows are shown instead; a table inside a list item also shows its
 `MarkdownOptions` supplies horizontal and vertical padding and an optional
 `DefaultTextStyle`. Callers set `clean_content` to filter decoded authored values with
 the [shared terminal cleaners](../text.md) before styling and hyperlink generation.
-Set it to `false` to preserve authored terminal escapes. The assistant message sets
-it to `true`; other transcript widgets leave it disabled.
+Assistant messages and branch and compaction summaries set it to `true`.
+User messages leave it disabled to preserve authored terminal styles.
 
 `DefaultTextStyle::decorations` selects `TextDecoration` values. They apply in
 bold, italic, strikethrough, underline order, ignoring duplicates. Foreground and
