@@ -131,6 +131,7 @@ pub fn component(case: &Case) -> maestro_tui::Markdown {
     Markdown::new(
         case.text.clone(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: case.padding_x,
             padding_y: case.padding_y,
             default_text_style: default_style(&case.profile),

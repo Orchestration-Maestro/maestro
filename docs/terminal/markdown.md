@@ -24,7 +24,12 @@ accepted but do not align text. When the width cannot give every column one cell
 table's source rows are shown instead; a table inside a list item also shows its source rows.
 
 `MarkdownOptions` supplies horizontal and vertical padding and an optional
-`DefaultTextStyle`. Its `decorations` select `TextDecoration` values; they apply in
+`DefaultTextStyle`. Callers set `clean_content` to filter decoded authored values with
+the [shared terminal cleaners](../text.md) before styling and hyperlink generation.
+Set it to `false` to preserve authored terminal escapes. The assistant message sets
+it to `true`; other transcript widgets leave it disabled.
+
+`DefaultTextStyle::decorations` selects `TextDecoration` values. They apply in
 bold, italic, strikethrough, underline order, ignoring duplicates. Foreground and
 decorations style content; background styles the final rows including margins.
 Empty or whitespace-only input renders nothing, even with padding. Requested
@@ -73,6 +78,7 @@ let theme = Rc::new(MarkdownTheme {
 let markdown = Markdown::new(
     "# Hello\n\n**World**".into(),
     MarkdownOptions {
+        clean_content: false,
         padding_x: 1,
         padding_y: 0,
         default_text_style: Some(DefaultTextStyle {

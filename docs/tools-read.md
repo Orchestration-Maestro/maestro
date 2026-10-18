@@ -196,7 +196,8 @@ the home directory as `~` for a path equal to it or below it and leaves a siblin
 name merely starts with the home path unchanged; it reads the home directory through
 [`expand_path`](../crates/maestro-tools/src/path_utils.rs) only for a present path.
 `replace_tabs` turns every TAB into three spaces and `normalize_display_text` removes every
-carriage return. `strip_ansi` removes what one cached expression matches (OSC strings up to
+carriage return. The tool paths forward to the [text leaf](text.md)'s terminal cleaners.
+`strip_ansi` removes what one cached expression matches (OSC strings up to
 their first terminator, and CSI-style introducers with parameters and a final byte; `a\u001b[2Qb` becomes `aQb`), and [`utils::shell::sanitize_binary_output`](../crates/maestro-tools/src/utils/shell.rs)
 drops C0 controls except TAB, LF and CR and U+FFF9 to U+FFFB. `get_text_output` joins the
 cleaned text blocks with LF and, when the terminal cannot show images or they are hidden,

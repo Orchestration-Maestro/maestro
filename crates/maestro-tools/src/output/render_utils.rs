@@ -10,9 +10,9 @@ use maestro_agent::AgentToolResult;
 use maestro_models::{DiagnosticErrorInfo, DiagnosticInput, UserBlock, extract_diagnostic_error};
 use maestro_theme::{Theme, ThemeColor, ThemeError};
 use maestro_tui::{TerminalImage, get_image_dimensions, image_fallback};
+#[cfg(not(target_arch = "wasm32"))]
 use regex::Regex;
 use serde_json::Value;
-use std::sync::LazyLock;
 
 /// A tool result as renderers see it.
 pub struct ToolRenderResultLike<'a, D> {
@@ -35,13 +35,6 @@ impl<'a, D> From<&'a AgentToolResult<D>> for ToolRenderResultLike<'a, D> {
         }
     }
 }
-
-/// Terminal escape sequences: OSC strings up to their first terminator, and CSI and related
-/// introducers with their parameters and a final byte from the listed set.
-const ANSI_PATTERN: &str = r"(?:\x{001B}\][\s\S]*?(?:\x{0007}|\x{001B}\\|\x{009C}))|[\x{001B}\x{009B}][\[\]()#;?]*(?:[0-9]{1,4}(?:[;:][0-9]{0,4})*)?[0-9A-PR-TZcf-nq-uy=><~]";
-
-/// The compiled escape expression, built once.
-static ANSI: LazyLock<Result<Regex, regex::Error>> = LazyLock::new(|| Regex::new(ANSI_PATTERN));
 
 /// Rows of a compact preview.
 #[cfg(not(target_arch = "wasm32"))]
@@ -137,7 +130,8 @@ pub fn normalize_display_text(text: &str) -> String {
 /// # Errors
 /// Returns the failure to compile the escape expression.
 pub fn strip_ansi(text: &str) -> Result<String, DiagnosticErrorInfo> {
-    Ok(ansi()?.replace_all(text, "").into_owned())
+    maestro_text::terminal::strip_ansi(text)
+        .map_err(|error| extract_diagnostic_error(DiagnosticInput::Text(&error.to_string())))
 }
 
 /// The text blocks of `result` cleaned for display and joined by LF, then, when the
@@ -199,8 +193,9 @@ pub fn invalid_arg_text(theme: &Theme) -> Result<String, ThemeError> {
 }
 
 /// Borrow the single compiled escape grammar.
+#[cfg(not(target_arch = "wasm32"))]
 fn ansi() -> Result<&'static Regex, DiagnosticErrorInfo> {
-    ANSI.as_ref()
+    maestro_text::terminal::ansi_regex()
         .map_err(|error| extract_diagnostic_error(DiagnosticInput::Text(&error.to_string())))
 }
 

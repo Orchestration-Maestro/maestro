@@ -15,7 +15,7 @@ impl Renderer<'_> {
                 Kind::Heading(level, children, _) => rows.push(self.heading(*level, children)),
                 Kind::CodeBlock(text, info) => rows.extend(self.code_block(text, info.as_deref())),
                 Kind::HtmlBlock(text) => rows.push(self.style(
-                    text.trim_matches(crate::text::utils::is_whitespace_scalar),
+                    &self.clean(text.trim_matches(crate::text::utils::is_whitespace_scalar)),
                     style,
                 )),
                 Kind::Quote(children, _) => rows.extend(self.quote(children, width)),
@@ -36,7 +36,10 @@ impl Renderer<'_> {
     }
     /// Formats code through the supplied highlighter or plain code callback.
     pub(super) fn code_block(&self, text: &str, info: Option<&str>) -> Vec<String> {
-        let text = text.strip_suffix('\n').unwrap_or(text);
+        let text = self.clean(text.strip_suffix('\n').unwrap_or(text));
+        let text = text.as_ref();
+        let info = info.map(|info| self.clean(info));
+        let info = info.as_deref();
         let indent = self.theme.code_block_indent.as_deref().unwrap_or("  ");
         let mut rows = vec![(self.theme.code_block_border)(&format!(
             "```{}",

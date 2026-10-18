@@ -89,6 +89,8 @@ pub struct MarkdownTheme {
 
 /// Padding and base style supplied to a Markdown component.
 pub struct MarkdownOptions {
+    /// Filters decoded authored values before terminal styling when enabled.
+    pub clean_content: bool,
     /// Requested margin on each side.
     pub padding_x: usize,
     /// Blank rows above and below nonempty content.
@@ -115,6 +117,8 @@ pub struct Markdown {
 
 /// Callback context for one layout; no retained component state is borrowed.
 struct Renderer<'a> {
+    /// Whether authored content is filtered before terminal styling.
+    clean_content: bool,
     /// Supplied styles.
     theme: &'a MarkdownTheme,
     /// Optional message styling.
@@ -160,6 +164,7 @@ impl Markdown {
             .as_ref()
             .and_then(|style| style.bg_color.as_deref());
         let renderer = Renderer {
+            clean_content: self.options.clean_content,
             theme: &self.theme,
             default_style: self.options.default_text_style.as_ref(),
             terminal_image: &self.terminal_image,
@@ -216,5 +221,18 @@ impl Component for Markdown {
     }
     fn invalidate(&self) {
         super::invalidate_cache(&self.generation, &self.cache);
+    }
+}
+
+impl Renderer<'_> {
+    /// Filters only authored values, never renderer-generated styles or hyperlinks.
+    fn clean<'a>(&self, text: &'a str) -> std::borrow::Cow<'a, str> {
+        if self.clean_content {
+            let plain =
+                maestro_text::terminal::strip_ansi(text).unwrap_or_else(|_| text.to_owned());
+            maestro_text::terminal::sanitize_binary_output(&plain).into()
+        } else {
+            text.into()
+        }
     }
 }

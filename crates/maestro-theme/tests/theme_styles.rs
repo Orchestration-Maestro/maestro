@@ -240,6 +240,7 @@ fn real_markdown_observes_callback_invalidation() {
     let width = usize::try_from(fixture["width"].as_u64().unwrap()).unwrap();
     let (state, live) = published(&theme(0));
     let options = MarkdownOptions {
+        clean_content: false,
         padding_x: 0,
         padding_y: 0,
         default_text_style: None,
@@ -317,6 +318,7 @@ fn retained_style_handles_release_after_last_owner() {
     let markdown = Rc::new(Markdown::new(
         String::new(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,

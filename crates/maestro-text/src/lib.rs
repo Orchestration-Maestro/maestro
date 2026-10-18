@@ -20,6 +20,7 @@ mod flags;
 mod lexical;
 pub mod markup;
 mod newlines;
+pub mod terminal;
 pub mod utf8;
 mod whitespace;
 pub use utf8::{Utf8Stream, decode_utf8};

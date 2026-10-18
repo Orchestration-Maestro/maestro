@@ -1,7 +1,6 @@
 //! Ordered assistant content with retained-message thinking controls.
 use maestro_app::{
     AssistantContent, AssistantMessage, SharedAssistantMessage, StopReason, is_whitespace_scalar,
-    sanitize_binary_output, strip_ansi,
 };
 use maestro_theme::{LiveTheme, Theme, ThemeColor};
 use maestro_tui::{Component, Container, MarkdownTheme, Spacer, TerminalImage, Text};
@@ -61,7 +60,10 @@ impl AssistantMessageComponent {
             content,
             message: RefCell::new(message),
             options: RefCell::new(options),
-            rendering: super::MessageRendering::new(theme, markdown_theme, terminal_image),
+            rendering: super::MessageRendering {
+                clean_content: true,
+                ..super::MessageRendering::new(theme, markdown_theme, terminal_image)
+            },
             has_tools: Cell::new(false),
         };
         result.rebuild();
@@ -154,8 +156,7 @@ enum Visible {
     HiddenThinking,
 }
 impl Visible {
-    /// Cleans like tool output, then trims with the shared scalar predicate before
-    /// testing visibility.
+    /// Trims authored content before testing visibility; Markdown cleans decoded content.
     fn from_content(content: &AssistantContent, hide: bool) -> Option<Self> {
         let (text, constructor): (&str, fn(String) -> Self) = match content {
             AssistantContent::Text(value) => (&value.text, Self::Text),
@@ -168,16 +169,9 @@ impl Visible {
             }
             AssistantContent::ToolCall(_) => return None,
         };
-        let text = displayable(text);
         let text = text.trim_matches(is_whitespace_scalar);
         (!text.is_empty()).then(|| constructor(text.to_owned()))
     }
-}
-/// Model text without escape sequences or C0 controls other than TAB, LF and CR, so it
-/// cannot act on the terminal; tool output is cleaned the same way.
-fn displayable(text: &str) -> String {
-    // The escape pattern is a constant; without it, dropping C0 controls still removes ESC.
-    sanitize_binary_output(&strip_ansi(text).unwrap_or_else(|_| text.to_owned()))
 }
 /// Selects a failure notice without changing whitespace-only custom errors.
 fn notice(message: &AssistantMessage) -> Option<String> {

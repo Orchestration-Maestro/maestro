@@ -60,6 +60,8 @@ pub mod compaction_summary_message;
 
 /// Shared constructor inputs and Markdown composition for transcript widgets.
 struct MessageRendering {
+    /// Filters decoded authored Markdown before applying terminal styles.
+    clean_content: bool,
     /// Styling slot sampled by foreground callbacks.
     theme: LiveTheme,
     /// Caller-supplied Markdown callbacks.
@@ -71,6 +73,7 @@ impl MessageRendering {
     /// Retains the caller's rendering inputs.
     fn new(theme: LiveTheme, markdown: Rc<MarkdownTheme>, terminal: TerminalImage) -> Self {
         Self {
+            clean_content: false,
             theme,
             markdown,
             terminal,
@@ -108,6 +111,7 @@ impl MessageRendering {
                 padding_x: padding,
                 padding_y: 0,
                 default_text_style: style,
+                clean_content: self.clean_content,
             },
             self.markdown.clone(),
             self.terminal.clone(),

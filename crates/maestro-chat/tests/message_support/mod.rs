@@ -138,6 +138,29 @@ pub fn releases_handles() {
     assert!(last.upgrade().is_none());
 }
 
+/// Literal and decoded attacks, with ordinary terminal styling as a control.
+const TERMINAL_CONTROL_CASES: &[(&str, &str)] = &[
+    ("clipboard", "\x1b]52;c;b3duZWQ=\x07"),
+    ("safe styles", "**bold** [safe](https://safe.example)"),
+    ("numeric entity", "&#27;]52;c;b3duZWQ=&#7;"),
+    (
+        "entity label",
+        "[&#27;&#93;52;c;b3duZWQ=&#7;](https://safe.example)",
+    ),
+    (
+        "entity destination",
+        "[label](https://safe.example/&#27;]52;c;b3duZWQ=&#7;)",
+    ),
+    ("split entity", "&\x01#27;]52;c;b3duZWQ=&#7;"),
+    ("code span", "`\x1b]52;c;b3duZWQ=\x07`"),
+    ("title", "\x1b]0;owned\x07"),
+    ("clear", "\x1b[2J"),
+    (
+        "link",
+        "\x1b]8;;https://attacker.example/\x07docs.example\x1b]8;;\x07",
+    ),
+];
+
 /// Text and thinking that carry terminal control sequences in prose and fenced code
 /// render without them, keeping the words around them.
 pub fn drops_terminal_controls() {
@@ -147,17 +170,8 @@ pub fn drops_terminal_controls() {
         Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
         true,
     ));
-    let controls = [
-        ("clipboard", "\x1b]52;c;b3duZWQ=\x07"),
-        ("title", "\x1b]0;owned\x07"),
-        ("clear", "\x1b[2J"),
-        (
-            "link",
-            "\x1b]8;;https://attacker.example/\x07docs.example\x1b]8;;\x07",
-        ),
-    ];
     let mut leaks = Vec::new();
-    for (name, control) in controls {
+    for &(name, control) in TERMINAL_CONTROL_CASES {
         let text = format!("before {control} after\n\n```\ncode {control} end\n```");
         let message = widget::message(None);
         message.write().unwrap().content = serde_json::from_value(serde_json::json!([
@@ -165,14 +179,26 @@ pub fn drops_terminal_controls() {
             {"type": "text", "text": text},
         ]))
         .unwrap();
+        let terminal = maestro_tui::TerminalImage::new(|_| None, || 1);
+        terminal.set_capabilities(maestro_tui::TerminalCapabilities {
+            hyperlinks: true,
+            ..Default::default()
+        });
         let component = maestro_chat::AssistantMessageComponent::new(
             Some(message),
             maestro_chat::AssistantMessageOptions::default(),
             live.clone(),
             markdown.clone(),
-            maestro_tui::TerminalImage::new(|_| None, || 1),
+            terminal,
         );
         let rendered = component.render(80).join("\n");
+        if name == "safe styles" {
+            assert!(rendered.contains("\x1b[1m"), "bold styling lost");
+            assert!(
+                rendered.contains("\x1b]8;;https://safe.example\x1b\\"),
+                "hyperlink lost"
+            );
+        }
         let markers = ["\x1b]52;", "\x1b]0;", "\x1b[2J", "attacker.example"];
         leaks.extend(
             markers

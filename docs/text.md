@@ -4,6 +4,11 @@
 shared text operations and a per-stream decoder; each caller keeps its own trimming, any-or-all semantics,
 stable sorting and comparator lifetime.
 
+- **Terminal controls.** `terminal::strip_ansi` removes matches of one cached terminal
+  escape expression; `terminal::sanitize_binary_output` drops C0 controls except TAB,
+  LF and CR, plus U+FFF9 to U+FFFB. Tools and opt-in Markdown content emission share
+  these functions. `terminal::ansi_regex` exposes the same compiled grammar for
+  streamed tool-output boundary detection.
 - **Streaming UTF-8.** `Utf8Stream` decodes complete scalars, replaces invalid prefixes
   and holds an incomplete suffix until `push` or `finish`. It retains BOMs;
   terminal input, tool output and message framing keep their own BOM policy.
