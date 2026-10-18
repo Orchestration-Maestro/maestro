@@ -1048,6 +1048,342 @@
       }
     },
     {
+      "name": "interleaved-replacements-keep-first-key-order",
+      "input": {
+        "data": {
+          "header": {
+            "id": "document",
+            "timestamp": "2026-10-15T00:00:00Z"
+          },
+          "entries": [
+            {
+              "id": "calls",
+              "parentId": null,
+              "timestamp": "2026-10-15T00:00:00Z",
+              "type": "message",
+              "message": {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "z",
+                    "name": "old",
+                    "arguments": {
+                      "x": 1
+                    }
+                  },
+                  {
+                    "type": "toolCall",
+                    "id": "a",
+                    "name": "kept",
+                    "arguments": {
+                      "x": 2
+                    }
+                  },
+                  {
+                    "type": "toolCall",
+                    "id": "z",
+                    "name": "new",
+                    "arguments": {
+                      "x": 3
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "id": "z",
+              "parentId": null,
+              "timestamp": "2026-10-15T00:00:00Z",
+              "type": "label",
+              "targetId": "z",
+              "label": "old"
+            },
+            {
+              "id": "a",
+              "parentId": null,
+              "timestamp": "2026-10-15T00:00:00Z",
+              "type": "label",
+              "targetId": "a",
+              "label": "kept"
+            },
+            {
+              "id": "z",
+              "parentId": null,
+              "timestamp": "2026-10-15T00:00:00Z",
+              "type": "label",
+              "targetId": "z",
+              "label": "new"
+            }
+          ],
+          "leafId": "default"
+        }
+      },
+      "branch": "success",
+      "output": {
+        "globalStats": {
+          "userMessages": 0,
+          "assistantMessages": 1,
+          "toolResults": 0,
+          "customMessages": 0,
+          "compactions": 0,
+          "branchSummaries": 0,
+          "toolCalls": 3,
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          },
+          "models": []
+        },
+        "data": {
+          "header": {
+            "id": "document",
+            "timestamp": "2026-10-15T00:00:00Z"
+          },
+          "entries": [
+            {
+              "id": "calls",
+              "parentId": null,
+              "timestamp": "2026-10-15T00:00:00Z",
+              "type": "message",
+              "message": {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "z",
+                    "name": "old",
+                    "arguments": {
+                      "x": 1
+                    }
+                  },
+                  {
+                    "type": "toolCall",
+                    "id": "a",
+                    "name": "kept",
+                    "arguments": {
+                      "x": 2
+                    }
+                  },
+                  {
+                    "type": "toolCall",
+                    "id": "z",
+                    "name": "new",
+                    "arguments": {
+                      "x": 3
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "id": "z",
+              "parentId": null,
+              "timestamp": "2026-10-15T00:00:00Z",
+              "type": "label",
+              "targetId": "z",
+              "label": "old"
+            },
+            {
+              "id": "a",
+              "parentId": null,
+              "timestamp": "2026-10-15T00:00:00Z",
+              "type": "label",
+              "targetId": "a",
+              "label": "kept"
+            },
+            {
+              "id": "z",
+              "parentId": null,
+              "timestamp": "2026-10-15T00:00:00Z",
+              "type": "label",
+              "targetId": "z",
+              "label": "new"
+            }
+          ],
+          "leafId": "default"
+        },
+        "leafId": "default",
+        "urlTargetId": null,
+        "byId": [
+          [
+            "calls",
+            {
+              "id": "calls",
+              "parentId": null,
+              "timestamp": "2026-10-15T00:00:00Z",
+              "type": "message",
+              "message": {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "z",
+                    "name": "old",
+                    "arguments": {
+                      "x": 1
+                    }
+                  },
+                  {
+                    "type": "toolCall",
+                    "id": "a",
+                    "name": "kept",
+                    "arguments": {
+                      "x": 2
+                    }
+                  },
+                  {
+                    "type": "toolCall",
+                    "id": "z",
+                    "name": "new",
+                    "arguments": {
+                      "x": 3
+                    }
+                  }
+                ]
+              }
+            }
+          ],
+          [
+            "z",
+            {
+              "id": "z",
+              "parentId": null,
+              "timestamp": "2026-10-15T00:00:00Z",
+              "type": "label",
+              "targetId": "z",
+              "label": "new"
+            }
+          ],
+          [
+            "a",
+            {
+              "id": "a",
+              "parentId": null,
+              "timestamp": "2026-10-15T00:00:00Z",
+              "type": "label",
+              "targetId": "a",
+              "label": "kept"
+            }
+          ]
+        ],
+        "toolCallMap": [
+          [
+            "z",
+            {
+              "name": "new",
+              "arguments": {
+                "x": 3
+              }
+            }
+          ],
+          [
+            "a",
+            {
+              "name": "kept",
+              "arguments": {
+                "x": 2
+              }
+            }
+          ]
+        ],
+        "labelMap": [
+          [
+            "z",
+            "new"
+          ],
+          [
+            "a",
+            "kept"
+          ]
+        ],
+        "tree": [
+          {
+            "entry": {
+              "id": "calls",
+              "parentId": null,
+              "timestamp": "2026-10-15T00:00:00Z",
+              "type": "message",
+              "message": {
+                "role": "assistant",
+                "content": [
+                  {
+                    "type": "toolCall",
+                    "id": "z",
+                    "name": "old",
+                    "arguments": {
+                      "x": 1
+                    }
+                  },
+                  {
+                    "type": "toolCall",
+                    "id": "a",
+                    "name": "kept",
+                    "arguments": {
+                      "x": 2
+                    }
+                  },
+                  {
+                    "type": "toolCall",
+                    "id": "z",
+                    "name": "new",
+                    "arguments": {
+                      "x": 3
+                    }
+                  }
+                ]
+              }
+            },
+            "children": []
+          },
+          {
+            "entry": {
+              "id": "z",
+              "parentId": null,
+              "timestamp": "2026-10-15T00:00:00Z",
+              "type": "label",
+              "targetId": "z",
+              "label": "new"
+            },
+            "children": [],
+            "label": "new"
+          },
+          {
+            "entry": {
+              "id": "a",
+              "parentId": null,
+              "timestamp": "2026-10-15T00:00:00Z",
+              "type": "label",
+              "targetId": "a",
+              "label": "kept"
+            },
+            "children": [],
+            "label": "kept"
+          },
+          {
+            "entry": {
+              "id": "z",
+              "parentId": null,
+              "timestamp": "2026-10-15T00:00:00Z",
+              "type": "label",
+              "targetId": "z",
+              "label": "new"
+            },
+            "children": [],
+            "label": "new"
+          }
+        ]
+      }
+    },
+    {
       "name": "viewer-label-falsy-does-not-clear",
       "input": {
         "data": {

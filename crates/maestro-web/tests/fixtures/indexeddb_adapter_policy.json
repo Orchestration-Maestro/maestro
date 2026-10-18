@@ -24,9 +24,7 @@
       },
       "expected": {
         "lower": "a",
-        "upper": "a￿",
-        "lowerOpen": false,
-        "upperOpen": false
+        "upper": "a￿"
       }
     },
     {
@@ -37,9 +35,7 @@
       },
       "expected": {
         "lower": "é😀",
-        "upper": "é😀￿",
-        "lowerOpen": false,
-        "upperOpen": false
+        "upper": "é😀￿"
       }
     },
     {
@@ -50,9 +46,7 @@
       },
       "expected": {
         "lower": "﻿ ",
-        "upper": "﻿ ￿",
-        "lowerOpen": false,
-        "upperOpen": false
+        "upper": "﻿ ￿"
       }
     },
     {
@@ -63,9 +57,7 @@
       },
       "expected": {
         "lower": "a￿",
-        "upper": "a￿￿",
-        "lowerOpen": false,
-        "upperOpen": false
+        "upper": "a￿￿"
       }
     },
     {

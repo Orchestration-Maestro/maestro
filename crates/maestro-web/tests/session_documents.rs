@@ -110,6 +110,7 @@ fn document_indexes_retain_latest_records_and_calls() {
         "decoded-equal-record-identities",
         "empty-string-call-and-entry-identities",
         "entry-last-wins-occurrences-survive",
+        "interleaved-replacements-keep-first-key-order",
         "tool-call-last-wins-all-branches",
     ]) {
         replay(&row);

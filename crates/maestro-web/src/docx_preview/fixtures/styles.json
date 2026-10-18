@@ -3637,6 +3637,72 @@
     }
   },
   {
+    "test": "inherited_substyles_fill_first_target_without_changing_modifiers",
+    "input": {
+      "op": "inheritance",
+      "xml": "<w:styles xmlns:w=\"http://schemas.openxmlformats.org/wordprocessingml/2006/main\"><w:style w:type=\"table\" w:styleId=\"B\"><w:tcPr><w:shd w:fill=\"00FF00\"/><w:vAlign w:val=\"top\"/></w:tcPr></w:style><w:style w:type=\"table\" w:styleId=\"C\"><w:basedOn w:val=\"B\"/><w:tblStylePr w:type=\"firstRow\"><w:tcPr><w:shd w:fill=\"0000FF\"/></w:tcPr></w:tblStylePr><w:tblPr><w:jc w:val=\"center\"/></w:tblPr><w:tcPr><w:vAlign w:val=\"bottom\"/></w:tcPr></w:style></w:styles>",
+      "ignoreWidth": false,
+      "lookups": []
+    },
+    "outcome": "success",
+    "expected": {
+      "styles": [
+        {
+          "id": "B",
+          "isDefault": null,
+          "name": null,
+          "target": "table",
+          "basedOn": null,
+          "styles": [
+            {
+              "target": "td",
+              "values": {
+                "background-color": "#00FF00",
+                "vertical-align": "top"
+              }
+            }
+          ],
+          "linked": null,
+          "cssName": "docx_b"
+        },
+        {
+          "id": "C",
+          "isDefault": null,
+          "name": null,
+          "target": "table",
+          "basedOn": "B",
+          "styles": [
+            {
+              "target": "tr.first-row td",
+              "mod": ".first-row",
+              "values": {
+                "background-color": "#0000FF"
+              }
+            },
+            {
+              "target": "td",
+              "values": {
+                "text-align": "center",
+                "background-color": "#00FF00",
+                "vertical-align": "top"
+              }
+            },
+            {
+              "target": "td",
+              "values": {
+                "vertical-align": "bottom"
+              }
+            }
+          ],
+          "linked": null,
+          "cssName": "docx_c"
+        }
+      ],
+      "css": "table.docx_b td {\n  background-color: #00FF00;\n  vertical-align: top;\n}\ntable.docx_c tr.first-row td {\n  background-color: #0000FF;\n}\ntable.docx_c td {\n  text-align: center;\n  background-color: #00FF00;\n  vertical-align: top;\n}\ntable.docx_c td {\n  vertical-align: bottom;\n}\n",
+      "lookup": {}
+    }
+  },
+  {
     "test": "linked_styles_emit_resolved_bases_but_do_not_merge_metadata",
     "input": {
       "op": "inheritance",
