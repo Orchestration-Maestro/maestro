@@ -38,7 +38,9 @@ Missing unpinned Git contents use the existing installation operation. Existing
 contents select an origin upstream or origin-HEAD fallback, fetch its targeted
 ref, and compare refreshed and local heads. Equal heads preserve dirty and
 untracked contents; different heads cause reset, clean and optional dependency
-installation. Completed effects are not rolled back on failure.
+installation. Failed preparation restores the previous revision when recovery
+succeeds, so the next update retries. See [Git preparation and recovery](package-sources.md#git-preparation-and-recovery)
+for failure reporting and in-place limitations.
 
 ## Native runtime
 

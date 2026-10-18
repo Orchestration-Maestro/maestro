@@ -260,6 +260,8 @@ fn hooks(
             Err(io::Error::other("probe failed"))
         } else if r.fail.as_deref() == Some("head") && args == ["rev-parse", "HEAD"] {
             Err(io::Error::other("head failed"))
+        } else if args == ["symbolic-ref", "--quiet", "HEAD"] {
+            Ok("refs/heads/main".into())
         } else if args.iter().any(|a| a == "--abbrev-ref") {
             Ok("origin/main\n".into())
         } else if args == ["rev-parse", "HEAD"] || r.changed != Some(true) {
@@ -308,7 +310,7 @@ fn run(
         package(
             cwd.unwrap(),
             r.post_version.as_deref().unwrap_or("1.0.0"),
-            "refreshed",
+            if args[2] == "old" { "old" } else { "refreshed" },
             false,
         );
     } else if let Some(index) = args.iter().position(|a| a == "install") {

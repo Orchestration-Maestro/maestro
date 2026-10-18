@@ -136,7 +136,8 @@ pub trait PackageManager {
         sources: &'a [String],
         scope: Option<SourceScope>,
     ) -> PackageFuture<'a, ResolvedPaths>;
-    /// Appends a source unless its identity exists in the selected scope; `None` means user.
+    /// Appends a source or replaces the first identity match when its parsed pin changes.
+    /// Other raw entry fields stay in place; `None` means user scope.
     /// # Errors
     /// Returns consumed settings, borrow or path failures.
     fn add_source_to_settings(
@@ -179,7 +180,7 @@ pub trait PackageManager {
         scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, ()>;
     /// Installs, then adds the source to settings; an existing entry is not an error.
-    /// Nothing is flushed or rolled back.
+    /// Nothing is flushed; a failed settings edit does not undo acquired contents.
     /// # Errors
     /// Returns installation failures or the settings edit's failure.
     fn install_and_persist<'a>(
@@ -203,7 +204,7 @@ pub trait PackageManager {
         scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, ()>;
     /// Removes the contents, then the settings entries; returns whether any entry was removed.
-    /// Nothing is flushed or rolled back.
+    /// Nothing is flushed; a failed settings edit does not undo acquired contents.
     /// # Errors
     /// Returns removal failures or the settings edit's failure.
     fn remove_and_persist<'a>(
@@ -258,7 +259,7 @@ impl<O: PackageOperations> PackageManager for DefaultPackageManager<O> {
         source: &'a str,
         scope: Option<InstalledSourceScope>,
     ) -> PackageFuture<'a, ()> {
-        Box::pin(self.acquire(source, scope))
+        Box::pin(async move { self.acquire(source, scope).await.map(drop) })
     }
     fn install_and_persist<'a>(
         &'a self,

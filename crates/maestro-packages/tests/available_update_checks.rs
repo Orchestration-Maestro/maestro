@@ -950,6 +950,12 @@ impl PackageOperations for RecordingNative {
     fn run_command_sync(&self, command: &str, args: &[String]) -> std::io::Result<CommandOutput> {
         self.inner.run_command_sync(command, args)
     }
+    fn create_temp_dir(&self, parent: &str) -> std::io::Result<String> {
+        self.inner.create_temp_dir(parent)
+    }
+    fn rename_path(&self, from: &str, to: &str) -> std::io::Result<()> {
+        self.inner.rename_path(from, to)
+    }
     fn create_dir_all(&self, path: &str) -> std::io::Result<()> {
         self.inner.create_dir_all(path)
     }

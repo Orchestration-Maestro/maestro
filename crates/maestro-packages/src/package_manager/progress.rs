@@ -71,16 +71,18 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     /// A failing start callback stops before the operation and reports nothing further;
     /// any later failure, including the completion callback's, is reported as an error
     /// event and returned unless the error callback itself fails.
-    pub(super) async fn with_progress(
+    pub(super) async fn with_progress<T>(
         &self,
         action: ProgressAction,
         source: &str,
         message: String,
-        operation: impl Future<Output = io::Result<()>>,
-    ) -> io::Result<()> {
+        operation: impl Future<Output = io::Result<T>>,
+    ) -> io::Result<T> {
         self.emit(ProgressEventType::Start, action, source, Some(message))?;
         let result = match operation.await {
-            Ok(()) => self.emit(ProgressEventType::Complete, action, source, None),
+            Ok(value) => self
+                .emit(ProgressEventType::Complete, action, source, None)
+                .map(|()| value),
             Err(error) => Err(error),
         };
         if let Err(error) = &result {

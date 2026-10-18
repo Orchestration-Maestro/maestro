@@ -29,6 +29,10 @@ pub struct Call {
 pub enum Op {
     /// `create_dir_all`.
     Create,
+    /// Exclusive staging creation.
+    Stage,
+    /// Prepared publication.
+    Rename,
     /// `write_file`.
     Write,
     /// `directory_is_empty`.
@@ -191,6 +195,14 @@ impl PackageOperations for Sandbox {
             stderr: String::new(),
         })
     }
+    fn create_temp_dir(&self, parent: &str) -> io::Result<String> {
+        self.check(Op::Stage, parent)?;
+        self.native.create_temp_dir(parent)
+    }
+    fn rename_path(&self, from: &str, to: &str) -> io::Result<()> {
+        self.check(Op::Rename, to)?;
+        self.native.rename_path(from, to)
+    }
     fn create_dir_all(&self, path: &str) -> io::Result<()> {
         self.check(Op::Create, path)?;
         self.native.create_dir_all(path)
@@ -262,6 +274,8 @@ pub struct Fixture {
     pub settings: Rc<RefCell<SettingsManager>>,
     /// Instructions and observations.
     pub script: Rc<Script>,
+    /// Caller-driven work owner, retained through every operation.
+    pub local: Rc<tokio::task::LocalSet>,
     /// Events received by the default recording callback.
     pub events: Events,
 }
@@ -282,13 +296,10 @@ impl Fixture {
         let root = scratch.0.to_string_lossy().into_owned();
         let settings = Rc::new(RefCell::new(settings));
         let script = Rc::new(Script::default());
+        let local = Rc::new(tokio::task::LocalSet::new());
         let operations = Sandbox {
             script: script.clone(),
-            native: NativePackageOperations::new(
-                |_| false,
-                Rc::new(|| false),
-                &std::rc::Rc::new(tokio::task::LocalSet::new()),
-            ),
+            native: NativePackageOperations::new(|_| false, Rc::new(|| false), &local),
             home: format!("{root}/home"),
         };
         let manager = Rc::new(DefaultPackageManager::new(
@@ -321,6 +332,7 @@ impl Fixture {
             manager,
             settings,
             script,
+            local,
             events,
         }
     }

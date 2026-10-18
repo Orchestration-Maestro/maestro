@@ -1,0 +1,1275 @@
+[
+  {
+    "input": {
+      "settings": {},
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:pkg@2"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": null
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:pkg@2"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": "text"
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": null,
+      "error": "InvalidData",
+      "packages": "text",
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": 7
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": null,
+      "error": "InvalidData",
+      "packages": 7,
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": false
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": null,
+      "error": "InvalidData",
+      "packages": false,
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": {}
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": null,
+      "error": "InvalidData",
+      "packages": {},
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": []
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:pkg@2"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          {}
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": null,
+      "error": "InvalidData",
+      "packages": [
+        {}
+      ],
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          null
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": null,
+      "error": "InvalidData",
+      "packages": [
+        null
+      ],
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "text"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "text",
+        "npm:pkg@2"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          7
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": null,
+      "error": "InvalidData",
+      "packages": [
+        7
+      ],
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          false
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": null,
+      "error": "InvalidData",
+      "packages": [
+        false
+      ],
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          []
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": null,
+      "error": "InvalidData",
+      "packages": [
+        []
+      ],
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          {
+            "source": null
+          }
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": null,
+      "error": "InvalidData",
+      "packages": [
+        {
+          "source": null
+        }
+      ],
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          {
+            "source": "text"
+          }
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        {
+          "source": "text"
+        },
+        "npm:pkg@2"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          {
+            "source": 7
+          }
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": null,
+      "error": "InvalidData",
+      "packages": [
+        {
+          "source": 7
+        }
+      ],
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          {
+            "source": false
+          }
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": null,
+      "error": "InvalidData",
+      "packages": [
+        {
+          "source": false
+        }
+      ],
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          {
+            "source": {}
+          }
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": null,
+      "error": "InvalidData",
+      "packages": [
+        {
+          "source": {}
+        }
+      ],
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          {
+            "source": []
+          }
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": null,
+      "error": "InvalidData",
+      "packages": [
+        {
+          "source": []
+        }
+      ],
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:before",
+          {
+            "source": "npm:pkg@1",
+            "unknown": {
+              "keep": true
+            }
+          },
+          "npm:after"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:before",
+        {
+          "source": "npm:pkg@2",
+          "unknown": {
+            "keep": true
+          }
+        },
+        "npm:after"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:before",
+          {
+            "source": "npm:pkg@1",
+            "skills": null,
+            "unknown": {
+              "keep": true
+            }
+          },
+          "npm:after"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:before",
+        {
+          "source": "npm:pkg@2",
+          "skills": null,
+          "unknown": {
+            "keep": true
+          }
+        },
+        "npm:after"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:before",
+          {
+            "source": "npm:pkg@1",
+            "skills": "text",
+            "unknown": {
+              "keep": true
+            }
+          },
+          "npm:after"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:before",
+        {
+          "source": "npm:pkg@2",
+          "skills": "text",
+          "unknown": {
+            "keep": true
+          }
+        },
+        "npm:after"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:before",
+          {
+            "source": "npm:pkg@1",
+            "skills": 7,
+            "unknown": {
+              "keep": true
+            }
+          },
+          "npm:after"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:before",
+        {
+          "source": "npm:pkg@2",
+          "skills": 7,
+          "unknown": {
+            "keep": true
+          }
+        },
+        "npm:after"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:before",
+          {
+            "source": "npm:pkg@1",
+            "skills": false,
+            "unknown": {
+              "keep": true
+            }
+          },
+          "npm:after"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:before",
+        {
+          "source": "npm:pkg@2",
+          "skills": false,
+          "unknown": {
+            "keep": true
+          }
+        },
+        "npm:after"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:before",
+          {
+            "source": "npm:pkg@1",
+            "skills": {},
+            "unknown": {
+              "keep": true
+            }
+          },
+          "npm:after"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:before",
+        {
+          "source": "npm:pkg@2",
+          "skills": {},
+          "unknown": {
+            "keep": true
+          }
+        },
+        "npm:after"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:before",
+          {
+            "source": "npm:pkg@1",
+            "skills": [],
+            "unknown": {
+              "keep": true
+            }
+          },
+          "npm:after"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:before",
+        {
+          "source": "npm:pkg@2",
+          "skills": [],
+          "unknown": {
+            "keep": true
+          }
+        },
+        "npm:after"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:before",
+          {
+            "source": "npm:pkg@1",
+            "unknown": {
+              "keep": true
+            }
+          },
+          "npm:after"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "project"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:before",
+        {
+          "source": "npm:pkg@2",
+          "unknown": {
+            "keep": true
+          }
+        },
+        "npm:after"
+      ],
+      "writes": [
+        "project"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:before",
+          {
+            "source": "npm:pkg@1",
+            "skills": null,
+            "unknown": {
+              "keep": true
+            }
+          },
+          "npm:after"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "project"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:before",
+        {
+          "source": "npm:pkg@2",
+          "skills": null,
+          "unknown": {
+            "keep": true
+          }
+        },
+        "npm:after"
+      ],
+      "writes": [
+        "project"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:before",
+          {
+            "source": "npm:pkg@1",
+            "skills": "text",
+            "unknown": {
+              "keep": true
+            }
+          },
+          "npm:after"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "project"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:before",
+        {
+          "source": "npm:pkg@2",
+          "skills": "text",
+          "unknown": {
+            "keep": true
+          }
+        },
+        "npm:after"
+      ],
+      "writes": [
+        "project"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:before",
+          {
+            "source": "npm:pkg@1",
+            "skills": 7,
+            "unknown": {
+              "keep": true
+            }
+          },
+          "npm:after"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "project"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:before",
+        {
+          "source": "npm:pkg@2",
+          "skills": 7,
+          "unknown": {
+            "keep": true
+          }
+        },
+        "npm:after"
+      ],
+      "writes": [
+        "project"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:before",
+          {
+            "source": "npm:pkg@1",
+            "skills": false,
+            "unknown": {
+              "keep": true
+            }
+          },
+          "npm:after"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "project"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:before",
+        {
+          "source": "npm:pkg@2",
+          "skills": false,
+          "unknown": {
+            "keep": true
+          }
+        },
+        "npm:after"
+      ],
+      "writes": [
+        "project"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:before",
+          {
+            "source": "npm:pkg@1",
+            "skills": {},
+            "unknown": {
+              "keep": true
+            }
+          },
+          "npm:after"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "project"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:before",
+        {
+          "source": "npm:pkg@2",
+          "skills": {},
+          "unknown": {
+            "keep": true
+          }
+        },
+        "npm:after"
+      ],
+      "writes": [
+        "project"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:before",
+          {
+            "source": "npm:pkg@1",
+            "skills": [],
+            "unknown": {
+              "keep": true
+            }
+          },
+          "npm:after"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "project"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:before",
+        {
+          "source": "npm:pkg@2",
+          "skills": [],
+          "unknown": {
+            "keep": true
+          }
+        },
+        "npm:after"
+      ],
+      "writes": [
+        "project"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:pkg@2"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": false,
+      "error": null,
+      "packages": [
+        "npm:pkg@2"
+      ],
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:pkg@1"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:pkg@2"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:pkg@old"
+        ]
+      },
+      "source": "npm:pkg@latest",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:pkg@latest"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:pkg@^1"
+        ]
+      },
+      "source": "npm:pkg@^2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:pkg@^2"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:@scope/pkg@1"
+        ]
+      },
+      "source": "npm:@scope/pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:@scope/pkg@2"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:pkg@1"
+        ]
+      },
+      "source": "npm:pkg",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:pkg"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "git:github.com/a/b@v1"
+        ]
+      },
+      "source": "git:github.com/a/b@v2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "git:github.com/a/b@v2"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "git:github.com/a/b@v1"
+        ]
+      },
+      "source": "git:github.com/a/b",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "git:github.com/a/b"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "git:github.com/a/b@v1"
+        ]
+      },
+      "source": "https://github.com/a/b@v1",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": false,
+      "error": null,
+      "packages": [
+        "git:github.com/a/b@v1"
+      ],
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "../project/pkg"
+        ]
+      },
+      "source": "./pkg",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": false,
+      "error": null,
+      "packages": [
+        "../project/pkg"
+      ],
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:﻿pkg@1﻿"
+        ]
+      },
+      "source": "npm:pkg@1",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": false,
+      "error": null,
+      "packages": [
+        "npm:﻿pkg@1﻿"
+      ],
+      "writes": []
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:pkg@1"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:pkg@1",
+        "npm:pkg@2"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:before",
+          {
+            "source": "npm:pkg@1",
+            "unknown": true
+          },
+          "npm:pkg@1",
+          "npm:after"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:before",
+        {
+          "source": "npm:pkg@2",
+          "unknown": true
+        },
+        "npm:pkg@1",
+        "npm:after"
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:before",
+          {
+            "source": "npm:pkg@1",
+            "unknown": true
+          },
+          "npm:pkg@1",
+          "npm:after"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "project"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:before",
+        {
+          "source": "npm:pkg@2",
+          "unknown": true
+        },
+        "npm:pkg@1",
+        "npm:after"
+      ],
+      "writes": [
+        "project"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          {
+            "source": "npm:pkg@1",
+            "unknown": {
+              "zero": 0
+            }
+          }
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        {
+          "source": "npm:pkg@2",
+          "unknown": {
+            "zero": 0
+          }
+        }
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          "npm:pkg@1",
+          {}
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": true,
+      "error": null,
+      "packages": [
+        "npm:pkg@2",
+        {}
+      ],
+      "writes": [
+        "user"
+      ]
+    }
+  },
+  {
+    "input": {
+      "settings": {
+        "packages": [
+          {},
+          "npm:pkg@1"
+        ]
+      },
+      "source": "npm:pkg@2",
+      "scope": "user"
+    },
+    "expected": {
+      "changed": null,
+      "error": "InvalidData",
+      "packages": [
+        {},
+        "npm:pkg@1"
+      ],
+      "writes": []
+    }
+  }
+]

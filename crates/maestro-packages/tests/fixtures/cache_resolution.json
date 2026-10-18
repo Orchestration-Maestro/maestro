@@ -154,7 +154,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/user/git/github.com/team/repo"
+            "$ROOT/user/git/github.com/team/.controlled-stage-0"
           ]
         },
         {
@@ -164,7 +164,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/user/git/github.com/team/repo"
+          "cwd": "$ROOT/user/git/github.com/team/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -588,7 +588,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/.maestro/git/github.com/team/repo"
+            "$ROOT/.maestro/git/github.com/team/.controlled-stage-0"
           ]
         },
         {
@@ -598,7 +598,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/.maestro/git/github.com/team/repo"
+          "cwd": "$ROOT/.maestro/git/github.com/team/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -999,7 +999,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
           ]
         },
         {
@@ -1009,7 +1009,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -4004,7 +4004,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
           ]
         },
         {
@@ -4014,7 +4014,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -4180,7 +4180,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
           ]
         },
         {
@@ -4190,7 +4190,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -4356,7 +4356,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
           ]
         },
         {
@@ -4366,7 +4366,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -4532,7 +4532,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
           ]
         },
         {
@@ -4542,7 +4542,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -4708,7 +4708,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
           ]
         },
         {
@@ -4718,7 +4718,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -4884,7 +4884,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
           ]
         },
         {
@@ -4894,7 +4894,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -5060,7 +5060,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
           ]
         },
         {
@@ -5070,7 +5070,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -5624,7 +5624,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
           ]
         },
         {
@@ -5634,7 +5634,7 @@
             "checkout",
             "main"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
         },
         {
           "mode": "run",
@@ -5643,7 +5643,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -5724,7 +5724,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
           ]
         },
         {
@@ -5734,7 +5734,7 @@
             "checkout",
             "feature/branch"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
         },
         {
           "mode": "run",
@@ -5743,7 +5743,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -6090,6 +6090,27 @@
           "args": [
             "rev-parse",
             "@{upstream}"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
+          "timeoutMs": 10000
+        },
+        {
+          "mode": "capture",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
+          "timeoutMs": 10000
+        },
+        {
+          "mode": "capture",
+          "command": "git",
+          "args": [
+            "symbolic-ref",
+            "--quiet",
+            "HEAD"
           ],
           "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
           "timeoutMs": 10000
@@ -6778,12 +6799,53 @@
           "timeoutMs": 10000
         },
         {
+          "mode": "capture",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
+          "timeoutMs": 10000
+        },
+        {
+          "mode": "capture",
+          "command": "git",
+          "args": [
+            "symbolic-ref",
+            "--quiet",
+            "HEAD"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
+          "timeoutMs": 10000
+        },
+        {
           "mode": "run",
           "command": "git",
           "args": [
             "reset",
             "--hard",
             "@{upstream}"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+        },
+        {
+          "mode": "run",
+          "command": "git",
+          "args": [
+            "symbolic-ref",
+            "HEAD",
+            "refs/heads/main"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+        },
+        {
+          "mode": "run",
+          "command": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "old"
           ],
           "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
         }
@@ -6799,7 +6861,7 @@
           "type": "error",
           "action": "pull",
           "source": "https://github.com/team/repo",
-          "message": "reset failed"
+          "message": "reset failed; recovery failed: reset failed"
         }
       ],
       "files": {
@@ -6930,6 +6992,27 @@
           "timeoutMs": 10000
         },
         {
+          "mode": "capture",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
+          "timeoutMs": 10000
+        },
+        {
+          "mode": "capture",
+          "command": "git",
+          "args": [
+            "symbolic-ref",
+            "--quiet",
+            "HEAD"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
+          "timeoutMs": 10000
+        },
+        {
           "mode": "run",
           "command": "git",
           "args": [
@@ -6945,6 +7028,26 @@
           "args": [
             "clean",
             "-fdx"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+        },
+        {
+          "mode": "run",
+          "command": "git",
+          "args": [
+            "symbolic-ref",
+            "HEAD",
+            "refs/heads/main"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+        },
+        {
+          "mode": "run",
+          "command": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "old"
           ],
           "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
         }
@@ -6964,11 +7067,11 @@
         }
       ],
       "files": {
-        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/entry.ts": "refreshed",
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/entry.ts": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/package.json": "{\"version\":\"1.0.0\",\"maestro\":{\"extensions\":[\"entry.ts\"],\"skills\":[\"skill.md\"],\"prompts\":[\"prompt.md\"],\"themes\":[\"theme.json\"]}}",
-        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "refreshed",
-        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "refreshed",
-        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "refreshed"
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
       },
       "temporaryPathObserved": true
     },
@@ -7091,6 +7194,27 @@
           "timeoutMs": 10000
         },
         {
+          "mode": "capture",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
+          "timeoutMs": 10000
+        },
+        {
+          "mode": "capture",
+          "command": "git",
+          "args": [
+            "symbolic-ref",
+            "--quiet",
+            "HEAD"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
+          "timeoutMs": 10000
+        },
+        {
           "mode": "run",
           "command": "git",
           "args": [
@@ -7117,6 +7241,26 @@
             "--omit=dev"
           ],
           "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+        },
+        {
+          "mode": "run",
+          "command": "git",
+          "args": [
+            "symbolic-ref",
+            "HEAD",
+            "refs/heads/main"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+        },
+        {
+          "mode": "run",
+          "command": "git",
+          "args": [
+            "reset",
+            "--hard",
+            "old"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
         }
       ],
       "events": [
@@ -7134,11 +7278,11 @@
         }
       ],
       "files": {
-        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/entry.ts": "refreshed",
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/entry.ts": "old",
         "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/package.json": "{\"version\":\"1.0.0\",\"maestro\":{\"extensions\":[\"entry.ts\"],\"skills\":[\"skill.md\"],\"prompts\":[\"prompt.md\"],\"themes\":[\"theme.json\"]}}",
-        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "refreshed",
-        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "refreshed",
-        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "refreshed"
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/prompt.md": "old",
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/skill.md": "old",
+        "temp/maestro-extensions/git-github.com/5e61f3f8/team/repo/theme.json": "old"
       },
       "temporaryPathObserved": true
     },
@@ -7338,6 +7482,27 @@
           "args": [
             "rev-parse",
             "@{upstream}"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
+          "timeoutMs": 10000
+        },
+        {
+          "mode": "capture",
+          "command": "git",
+          "args": [
+            "rev-parse",
+            "HEAD"
+          ],
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
+          "timeoutMs": 10000
+        },
+        {
+          "mode": "capture",
+          "command": "git",
+          "args": [
+            "symbolic-ref",
+            "--quiet",
+            "HEAD"
           ],
           "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo",
           "timeoutMs": 10000
@@ -7743,7 +7908,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
           ]
         }
       ],
@@ -7911,7 +8076,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
           ]
         },
         {
@@ -7921,7 +8086,7 @@
             "--flag",
             "install"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -8087,7 +8252,7 @@
           "args": [
             "clone",
             "https://example.org/team/repo",
-            "$ROOT/temp/maestro-extensions/git-example.org/80e1216f/team/repo"
+            "$ROOT/temp/maestro-extensions/git-example.org/80e1216f/team/.controlled-stage-0"
           ]
         },
         {
@@ -8097,7 +8262,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-example.org/80e1216f/team/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-example.org/80e1216f/team/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -8178,7 +8343,7 @@
           "args": [
             "clone",
             "https://github.com/other/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/7f1a3252/other/repo"
+            "$ROOT/temp/maestro-extensions/git-github.com/7f1a3252/other/.controlled-stage-0"
           ]
         },
         {
@@ -8188,7 +8353,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/7f1a3252/other/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/7f1a3252/other/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -8269,7 +8434,7 @@
           "args": [
             "clone",
             "https://github.com/é/😀",
-            "$ROOT/temp/maestro-extensions/git-github.com/da744c9f/é/😀"
+            "$ROOT/temp/maestro-extensions/git-github.com/da744c9f/é/.controlled-stage-0"
           ]
         },
         {
@@ -8279,7 +8444,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/da744c9f/é/😀"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/da744c9f/é/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -8360,7 +8525,7 @@
           "args": [
             "clone",
             "https://github.com/a//b",
-            "$ROOT/temp/maestro-extensions/git-github.com/ab07d3bb/a/b"
+            "$ROOT/temp/maestro-extensions/git-github.com/ab07d3bb/a/.controlled-stage-0"
           ]
         },
         {
@@ -8370,7 +8535,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/ab07d3bb/a/b"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/ab07d3bb/a/.controlled-stage-0"
         }
       ],
       "events": [],
@@ -8465,7 +8630,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
           ]
         }
       ],
@@ -9238,7 +9403,7 @@
           "args": [
             "clone",
             "https://github.com/team/repo",
-            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+            "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
           ]
         },
         {
@@ -9248,7 +9413,7 @@
             "checkout",
             "v1.0.0"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
         },
         {
           "mode": "run",
@@ -9257,7 +9422,7 @@
             "install",
             "--omit=dev"
           ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/repo"
+          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/5e61f3f8/team/.controlled-stage-0"
         }
       ],
       "events": [],

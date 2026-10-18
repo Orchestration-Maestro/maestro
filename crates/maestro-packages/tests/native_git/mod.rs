@@ -129,3 +129,6 @@ impl Repository {
         );
     }
 }
+
+/// Retry-safe native acquisition fixture.
+pub mod retry;

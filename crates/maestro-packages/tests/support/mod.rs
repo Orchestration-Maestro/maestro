@@ -49,6 +49,10 @@ pub struct Effects {
     pub fail_write: std::cell::Cell<bool>,
     /// Authored file writes at the filesystem boundary.
     pub writes: RefCell<Vec<(String, String)>>,
+    /// Distinguishes native stages in the controlled filesystem.
+    pub stage_allocations: std::cell::Cell<usize>,
+    /// Owned staged directories in the controlled filesystem.
+    pub stages: RefCell<std::collections::HashSet<String>>,
     /// Paths checked for existing contents.
     pub paths: RefCell<Vec<String>>,
     /// Responses consumed by commands.
@@ -214,6 +218,27 @@ impl PackageOperations for Controlled {
     fn drive_directory(&self, _drive: char) -> Option<String> {
         None
     }
+    fn create_temp_dir(&self, parent: &str) -> io::Result<String> {
+        if self.0.native_exists {
+            let index = self.0.stage_allocations.get();
+            let path = format!("{parent}/.controlled-stage-{index}");
+            std::fs::create_dir(&path)?;
+            self.0.stage_allocations.set(index + 1);
+            return Ok(path);
+        }
+        let path = format!("{parent}/.controlled-stage");
+        assert!(self.0.stages.borrow_mut().insert(path.clone()));
+        Ok(path)
+    }
+    fn rename_path(&self, from: &str, to: &str) -> io::Result<()> {
+        if self.0.native_exists {
+            return native_operations().rename_path(from, to);
+        }
+        if !self.0.stages.borrow_mut().remove(from) {
+            return Err(io::Error::new(io::ErrorKind::NotFound, "missing stage"));
+        }
+        Ok(())
+    }
     fn create_dir_all(&self, path: &str) -> io::Result<()> {
         if self.0.native_exists {
             return std::fs::create_dir_all(path);
@@ -238,7 +263,11 @@ impl PackageOperations for Controlled {
     fn directory_is_empty(&self, _path: &str) -> io::Result<bool> {
         Ok(true)
     }
-    fn remove_path(&self, _path: &str) -> io::Result<()> {
+    fn remove_path(&self, path: &str) -> io::Result<()> {
+        if self.0.native_exists {
+            return native_operations().remove_path(path);
+        }
+        self.0.stages.borrow_mut().remove(path);
         Ok(())
     }
     fn run_command<'a>(
@@ -313,4 +342,13 @@ pub fn manager(
         Controlled(effects.clone()),
     );
     (manager, settings, effects)
+}
+
+/// Native filesystem adapter for the native observation mode.
+fn native_operations() -> maestro_packages::NativePackageOperations {
+    maestro_packages::NativePackageOperations::new(
+        |_| false,
+        Rc::new(|| false),
+        &Rc::new(tokio::task::LocalSet::new()),
+    )
 }

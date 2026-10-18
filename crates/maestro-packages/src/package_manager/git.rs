@@ -1,4 +1,5 @@
 //! Git clone, checkout and dependency install, and removal with bounded parent cleanup.
+use super::acquisition::SourceAcquisition;
 use super::{DefaultPackageManager, InstalledSourceScope, PackageOperations, npm::GITIGNORE};
 use crate::GitSource;
 use maestro_path::{Cwd, SEP, dirname, is_absolute, join, relative};
@@ -17,22 +18,45 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         (root, target)
     }
     /// Clones a missing checkout, then selects its ref and installs dependencies.
-    pub(super) async fn install_git(&self, git: &GitSource, scope: SourceScope) -> io::Result<()> {
+    pub(super) async fn install_git(
+        &self,
+        git: &GitSource,
+        scope: SourceScope,
+    ) -> io::Result<SourceAcquisition> {
         let (root, target) = self.git_locations(git, scope);
         if self.operations.exists(&target) {
-            return Ok(());
+            return self.repin_git(git, &target).await;
         }
         if let Some(root) = &root {
             self.ensure_file(root, ".gitignore", GITIGNORE)?;
         }
-        self.operations.create_dir_all(&dirname(&target))?;
-        let clone = ["clone".to_owned(), git.repo.clone(), target.clone()];
-        self.run_command("git", &clone, None).await?;
-        if let Some(reference) = &git.r#ref {
-            let checkout = ["checkout".to_owned(), reference.clone()];
-            self.run_command("git", &checkout, Some(&target)).await?;
+        self.install_missing_git(git, &target).await?;
+        Ok(SourceAcquisition::Prepared)
+    }
+    /// Prepares a fresh checkout before publishing it at the installed path.
+    async fn install_missing_git(&self, git: &GitSource, target: &str) -> io::Result<()> {
+        self.operations.create_dir_all(&dirname(target))?;
+        let mut stage = GitStaging::new(&self.operations, &dirname(target))?;
+        let result = async {
+            let clone = [
+                "clone".to_owned(),
+                git.repo.clone(),
+                stage.path().to_owned(),
+            ];
+            self.run_command("git", &clone, None).await?;
+            if let Some(reference) = &git.r#ref {
+                let checkout = ["checkout".to_owned(), reference.clone()];
+                self.run_command("git", &checkout, Some(stage.path()))
+                    .await?;
+            }
+            self.install_git_dependencies(stage.path()).await?;
+            stage.publish(target)
         }
-        self.install_git_dependencies(&target).await
+        .await;
+        match result {
+            Ok(()) => Ok(()),
+            Err(error) => Err(with_recovery(error, stage.discard())),
+        }
     }
     /// Best-effort refresh, with collection left outside the progress catch.
     pub(super) async fn refresh_temporary_git(&self, git: &GitSource, source: &str) {
@@ -167,7 +191,7 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
     pub(super) async fn update_git(&self, git: &GitSource, scope: SourceScope) -> io::Result<()> {
         let (_, path) = self.git_locations(git, scope);
         if !self.operations.exists(&path) {
-            return self.install_git(git, scope).await;
+            return self.install_git(git, scope).await.map(drop);
         }
         let target = self.get_local_git_update_target(&path).await?;
         let args = ["fetch", "--prune", "--no-tags", "origin", &target.refspec].map(str::to_owned);
@@ -179,14 +203,181 @@ impl<O: PackageOperations> DefaultPackageManager<O> {
         if crate::trim(&local) == crate::trim(&refreshed) {
             return Ok(());
         }
+        self.change_git_revision(
+            &path,
+            &["reset", "--hard", target.reference].map(str::to_owned),
+        )
+        .await
+    }
+}
+
+/// Original commit and attached/detached selection, retained across preparation.
+struct GitHead {
+    /// The previously selected commit.
+    oid: String,
+    /// Original symbolic HEAD, absent for detached checkouts.
+    symbolic: Option<String>,
+}
+impl<O: PackageOperations> DefaultPackageManager<O> {
+    /// Captures selection before any checkout mutation.
+    async fn get_git_head(&self, path: &str) -> io::Result<GitHead> {
+        let oid = self.git_capture(path, &["rev-parse", "HEAD"], &[]).await?;
+        let symbolic = self
+            .git_capture(path, &["symbolic-ref", "--quiet", "HEAD"], &[])
+            .await
+            .ok();
+        Ok(GitHead {
+            oid: crate::trim(&oid).to_owned(),
+            symbolic: symbolic.map(|text| crate::trim(&text).to_owned()),
+        })
+    }
+    /// Restores selection first, without rewinding a different requested branch.
+    async fn restore_git_head(&self, path: &str, previous: &GitHead) -> io::Result<()> {
+        let selection = previous.symbolic.as_ref().map_or_else(
+            || {
+                vec![
+                    "checkout".into(),
+                    "--detach".into(),
+                    "--force".into(),
+                    previous.oid.clone(),
+                ]
+            },
+            |symbolic| vec!["symbolic-ref".into(), "HEAD".into(), symbolic.clone()],
+        );
+        self.run_command("git", &selection, Some(path)).await?;
         self.run_command(
             "git",
-            &["reset", "--hard", target.reference].map(str::to_owned),
-            Some(&path),
+            &["reset", "--hard", &previous.oid].map(str::to_owned),
+            Some(path),
         )
-        .await?;
-        self.run_command("git", &["clean", "-fdx"].map(str::to_owned), Some(&path))
+        .await
+    }
+    /// Resolves native revision syntax, then an origin tracking branch.
+    async fn resolve_git_ref(&self, path: &str, reference: &str) -> Option<String> {
+        for candidate in [
+            format!("{reference}^{{commit}}"),
+            format!("refs/remotes/origin/{reference}^{{commit}}"),
+        ] {
+            if let Ok(oid) = self
+                .git_capture(
+                    path,
+                    &["rev-parse", "--verify", crate::trim(&candidate)],
+                    &[],
+                )
+                .await
+            {
+                return Some(crate::trim(&oid).to_owned());
+            }
+        }
+        None
+    }
+    /// Applies an explicit changed ref in the original checkout and configuration.
+    async fn repin_git(&self, git: &GitSource, path: &str) -> io::Result<SourceAcquisition> {
+        let Some(reference) = &git.r#ref else {
+            return Ok(SourceAcquisition::CurrentGit);
+        };
+        let current = self.git_capture(path, &["rev-parse", "HEAD"], &[]).await?;
+        let mut desired = self.resolve_git_ref(path, reference).await;
+        if desired.is_none() {
+            self.run_command("git", &["fetch", "origin"].map(str::to_owned), Some(path))
+                .await?;
+            desired = self.resolve_git_ref(path, reference).await;
+        }
+        let desired = desired.ok_or_else(|| {
+            io::Error::new(io::ErrorKind::NotFound, "Requested Git ref not found")
+        })?;
+        if desired == crate::trim(&current) {
+            return Ok(SourceAcquisition::CurrentGit);
+        }
+        self.change_git_revision(path, &["checkout", reference].map(str::to_owned))
             .await?;
-        self.install_git_dependencies(&path).await
+        Ok(SourceAcquisition::Prepared)
+    }
+    /// Changes revision and prepares dependencies, recovering HEAD after any mutation failure.
+    async fn change_git_revision(&self, path: &str, args: &[String]) -> io::Result<()> {
+        let previous = self.get_git_head(path).await?;
+        let result = async {
+            self.run_command("git", args, Some(path)).await?;
+            self.run_command("git", &["clean", "-fdx"].map(str::to_owned), Some(path))
+                .await?;
+            self.install_git_dependencies(path).await
+        }
+        .await;
+        match result {
+            Ok(()) => Ok(()),
+            Err(error) => Err(with_recovery(
+                error,
+                self.restore_git_head(path, &previous).await,
+            )),
+        }
+    }
+}
+
+/// A staging directory removed unless successfully published.
+struct GitStaging<'a, O: PackageOperations> {
+    /// Retained filesystem effect owner.
+    operations: &'a O,
+    /// Exclusively allocated path.
+    path: String,
+    /// Whether cleanup still belongs to this guard.
+    owned: bool,
+}
+impl<'a, O: PackageOperations> GitStaging<'a, O> {
+    /// Allocates before a clone can write into the directory.
+    fn new(operations: &'a O, parent: &str) -> io::Result<Self> {
+        Ok(Self {
+            operations,
+            path: operations.create_temp_dir(parent)?,
+            owned: true,
+        })
+    }
+    /// Borrows the owned path while preparation is running.
+    fn path(&self) -> &str {
+        &self.path
+    }
+    /// Publishes the prepared path, disarming deletion only on success.
+    fn publish(&mut self, target: &str) -> io::Result<()> {
+        self.operations.rename_path(&self.path, target)?;
+        self.owned = false;
+        Ok(())
+    }
+    /// Reports cleanup errors without deleting any path not owned here.
+    fn discard(&mut self) -> io::Result<()> {
+        if self.owned {
+            self.operations.remove_path(&self.path)?;
+            self.owned = false;
+        }
+        Ok(())
+    }
+}
+impl<O: PackageOperations> Drop for GitStaging<'_, O> {
+    fn drop(&mut self) {
+        let _ = self.discard();
+    }
+}
+
+/// The initiating failure with an unsuccessful cleanup or recovery attached.
+#[derive(Debug)]
+struct GitRecoveryError {
+    /// The original error, retained as the cause.
+    original: io::Error,
+    /// The recovery operation's error.
+    recovery: io::Error,
+}
+impl std::fmt::Display for GitRecoveryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}; recovery failed: {}", self.original, self.recovery)
+    }
+}
+impl std::error::Error for GitRecoveryError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.original)
+    }
+}
+/// Retains the initiating error unchanged unless recovery also failed.
+fn with_recovery(original: io::Error, recovery: io::Result<()>) -> io::Error {
+    match recovery {
+        Ok(()) => original,
+        Err(recovery) => io::Error::new(original.kind(), GitRecoveryError { original, recovery }),
     }
 }

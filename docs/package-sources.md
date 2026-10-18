@@ -32,8 +32,11 @@ persistence belongs to `maestro-settings`.
 Listing returns user rows before project rows, preserving order, duplicates and
 object-entry flags. Existing-content lookup returns a path only when the supplied
 existence operation succeeds. Consumed malformed source fields fail; ignored
-filter fields remain untouched. A duplicate add or absent remove does not call a
-settings setter.
+filter fields remain untouched. Adding a changed npm pin or Git ref replaces only
+the first identity match, in place, preserving other object members and their
+order. Same parsed pins and local aliases, or an absent removal, do not call a
+settings setter. Install-and-persist also keeps an existing Git spelling when
+acquisition found no commit change; an absent registration is still appended.
 
 User npm lookup runs the configured command with its leading arguments and
 reuses only a nonempty root from the same complete command vector. Only exact
@@ -63,3 +66,29 @@ assert!(!packages.add_source_to_settings("ssh://git@github.com/user/repository",
 assert!(packages.remove_source_from_settings("https://github.com/user/repository", None)?);
 # Ok::<(), std::io::Error>(())
 ```
+
+## Git preparation and recovery
+
+Missing checkouts are cloned, checked out and prepared in an exclusively owned
+sibling directory, then renamed to the installed path. Preparation or publication
+failure removes only that owned stage when cleanup succeeds; cleanup failure is
+reported. Dropping the staging guard attempts cleanup, not child cancellation.
+
+Existing checkouts with a changed explicit ref, and changed upstream updates,
+are prepared in place using their effective Git configuration. Before mutation,
+the manager records HEAD and its attached/detached selection. Failed checkout,
+reset, clean or dependency preparation restores the original selection before
+resetting its original commit, so another requested branch is not rewound and a
+retry still prepares dependencies. Failed recovery is reported and cannot
+promise restoration. Fetch and branch metadata are not transactional.
+
+Live files change during dependency preparation; reset/clean discard dirty and
+untracked contents; failed dependencies may leave the previous revision's
+dependency directory partly changed after rollback. These operations do not
+provide crash recovery or concurrent-writer isolation.
+
+Corrected package defects:
+
+- Failed fresh acquisition no longer leaves partial contents that a retry skips.
+- Explicit version changes no longer leave an old checkout or stale settings pin.
+- Failed changed updates restore their previous revision so the next attempt retries.

@@ -98,6 +98,12 @@ impl PackageOperations for Local {
     fn run_command_sync(&self, _: &str, _: &[String]) -> io::Result<CommandOutput> {
         panic!("unexpected command")
     }
+    fn create_temp_dir(&self, _: &str) -> io::Result<String> {
+        panic!("unexpected staging")
+    }
+    fn rename_path(&self, _: &str, _: &str) -> io::Result<()> {
+        panic!("unexpected rename")
+    }
     fn create_dir_all(&self, _: &str) -> io::Result<()> {
         panic!("unexpected create")
     }
