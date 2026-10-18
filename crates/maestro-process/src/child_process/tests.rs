@@ -67,22 +67,7 @@ async fn drain(mut pipe: Option<impl AsyncRead + Unpin>, keep: bool) -> io::Resu
     Ok(buf)
 }
 
-/// A single-threaded runtime with I/O and timers.
-fn runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-}
-
-/// A single-threaded runtime whose clock starts paused.
-fn paused_runtime() -> tokio::runtime::Runtime {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap()
-}
+use crate::tests::runtime::{paused_runtime, runtime};
 
 #[test]
 fn native_kill_rejects_nonpositive_and_unrepresentable_process_ids() {
@@ -938,5 +923,45 @@ fn release_exited_holder(socket: &mut std::net::TcpStream, exited: bool) {
     use std::io::Write;
     if exited {
         socket.write_all(b"!").unwrap();
+    }
+}
+
+#[test]
+#[cfg(unix)]
+fn signal_lists_share_native_signal_validation() {
+    use super::{Signal, process_exists, signal_processes};
+    use std::{
+        io::{BufRead, BufReader},
+        os::unix::process::ExitStatusExt,
+        process::{Command, Stdio},
+    };
+    if maestro_test_process::run_alone("signal_lists_share_native_signal_validation").unwrap() {
+        return;
+    }
+    assert!(!process_exists(0));
+    assert!(!process_exists(u32::MAX));
+    assert!(process_exists(std::process::id()));
+    assert!(super::native::exists_from_probe(Err(
+        rustix::io::Errno::PERM
+    )));
+    assert!(!super::native::exists_from_probe(Err(
+        rustix::io::Errno::SRCH
+    )));
+    for (signal, number) in [
+        (Signal::Hangup, 1),
+        (Signal::Terminate, 15),
+        (Signal::Kill, 9),
+    ] {
+        let mut child=Command::new("/usr/bin/python3").args(["-c","import signal,sys; signal.signal(signal.SIGHUP,signal.SIG_DFL); signal.signal(signal.SIGTERM,signal.SIG_DFL); print('ready',flush=True); sys.stdin.read()"])
+            .stdin(Stdio::piped()).stdout(Stdio::piped()).spawn().unwrap();
+        let mut marker = String::new();
+        BufReader::new(child.stdout.take().unwrap())
+            .read_line(&mut marker)
+            .unwrap();
+        assert_eq!(marker, "ready\n");
+        assert!(process_exists(child.id()));
+        signal_processes(&[0, u32::MAX, i32::MAX.unsigned_abs(), child.id()], signal);
+        assert_eq!(child.wait().unwrap().signal(), Some(number));
+        assert!(!process_exists(child.id()));
     }
 }

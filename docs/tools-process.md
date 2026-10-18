@@ -242,3 +242,26 @@ native operation implementations share one driver. The process leaf's
 `wait_for_child_process_with_sink` accepts a mandatory borrowed sink without
 `Send`, sharing capture, descriptor delivery and termination with the existing
 `wait_for_child_process` interface. Its default `None` calls remain inferable.
+
+## PTY children
+
+On Linux, `maestro_process::pty::spawn` returns separate terminal-master and child
+owners. Its caller supplies a setup-entry adapter that preserves native arguments,
+working directory and explicit inherited or replacement environment policy.
+`setup_and_exec` resets terminal signals, creates a session, acquires the controlling
+terminal and replaces the setup process with the target. Setup failures retain their
+original error text; the parent keeps one close-on-exec master after startup.
+
+`PtyIoActor` runs on the current Tokio runtime. It delivers terminal bytes to an owned
+callback, queues ordered replies and applies resizes before their attached replies.
+User input has bounded capacity; geometry and handoff controls use an independent
+route. Handoff drains accepted input before pausing reads and rejecting new input.
+Rollback reopens admission; successful committed release stops I/O and joins the worker.
+The optional reader-exit hook returns an owned future. The actor awaits it before
+releasing its master. Graceful shutdown keeps the runtime and notification consumers
+alive until pending hooks finish; destroying the runtime cancels them and closes
+their masters.
+
+The `pty::foreground` module reads live process groups, arguments, native working
+directories, raw environment values and session membership. Detection mode and the
+environment-variable name come from the caller. See [pane processes](workspace-daemon.md#pane-processes).

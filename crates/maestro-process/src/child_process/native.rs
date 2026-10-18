@@ -4,10 +4,7 @@ use std::io;
 /// Sends a signal to a valid positive native PID or its group.
 #[cfg(unix)]
 pub(super) fn signal(pid: u32, signal: rustix::process::Signal, group: bool) -> io::Result<()> {
-    let pid = i32::try_from(pid)
-        .ok()
-        .and_then(rustix::process::Pid::from_raw)
-        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "invalid process ID"))?;
+    let pid = native_pid(pid)?;
     if group {
         rustix::process::kill_process_group(pid, signal)
     } else {
@@ -58,4 +55,51 @@ pub fn request_tree_kill(pid: u32) -> io::Result<()> {
         .creation_flags(0x0000_0008)
         .spawn()
         .map(|_| ())
+}
+
+/// Native signal selected by a process-list caller.
+#[cfg(unix)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Signal {
+    /// Hang up a terminal process.
+    Hangup,
+    /// Request ordinary termination.
+    Terminate,
+    /// Force immediate termination.
+    Kill,
+}
+
+/// Sends one signal to valid positive PIDs, continuing after per-process failures.
+#[cfg(unix)]
+pub fn signal_processes(pids: &[u32], selected: Signal) {
+    let selected = match selected {
+        Signal::Hangup => rustix::process::Signal::HUP,
+        Signal::Terminate => rustix::process::Signal::TERM,
+        Signal::Kill => rustix::process::Signal::KILL,
+    };
+    for &pid in pids {
+        let _ = signal(pid, selected, false);
+    }
+}
+
+/// Treats permission denial as positive evidence of a live process.
+#[cfg(unix)]
+pub(super) fn exists_from_probe(result: rustix::io::Result<()>) -> bool {
+    matches!(result, Ok(()) | Err(rustix::io::Errno::PERM))
+}
+
+/// Checks a valid positive native PID without sending a signal.
+#[cfg(unix)]
+#[must_use]
+pub fn process_exists(pid: u32) -> bool {
+    native_pid(pid).is_ok_and(|pid| exists_from_probe(rustix::process::test_kill_process(pid)))
+}
+
+/// Validates the positive PID domain shared by delivery and liveness probes.
+#[cfg(unix)]
+fn native_pid(pid: u32) -> io::Result<rustix::process::Pid> {
+    i32::try_from(pid)
+        .ok()
+        .and_then(rustix::process::Pid::from_raw)
+        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "invalid process ID"))
 }

@@ -1,6 +1,7 @@
 # maestro-process
 
-Native captured child-process lifecycles: spawn, raw pipe collection, exit and
+Native child-process lifecycles, including [Linux pane terminals](../../docs/tools-process.md#pty-children).
+Captured operations cover spawn, raw pipe collection, exit and
 EOF observation, termination and reaping. A wait takes `WaitOptions`: the capture-only stderr policy and an optional
 post-exit grace ending collection. Retained bytes are returned; streamed bytes
 have already been delivered.
@@ -17,6 +18,10 @@ when absent); names with explicit extensions are checked without appending one.
 The standard library handles batch file argument quoting. For a verbatim Windows shell launch, only the final
 command-text argument bypasses quoting; interpreter flags remain ordinary arguments.
 Callers retain environment, creation flags and capture policy.
+
+`shell_quote` serializes POSIX operands. `quote_powershell_arg` may leave safe
+PowerShell operands unquoted; `quote_powershell_literal` always quotes and is used
+for expression-mode values such as clipboard paths.
 
 ## Synchronous capture
 

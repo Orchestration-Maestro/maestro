@@ -722,6 +722,13 @@ pane state, terminal identity, workspace, tab and git label/status modules.
 Snapshot records and supplied-path storage derive from the persistence modules;
 the byte-replacement helper in `crates/maestro-lock/` derives from persistence
 and detection-manifest publication.
+
+
+The pane terminal, shell and foreground process code in `crates/maestro-process/`
+also derives from herdr v0.8.2 under Apache-2.0. Its process sources include the
+noninteractive process builder, Linux platform operations, shared Unix quoting
+and PTY backend, descriptor and actor modules.
+
 Changes include Maestro naming, module placement, required documentation,
 lint-compatible representations, owned identity allocation and separation of
 native runtime effects. Socket changes include supplied paths and overrides,

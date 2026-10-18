@@ -115,3 +115,8 @@ fn command_buffer_failure_uses_fallback() {
 fn native_image_future_finishes_before_return() {
     controlled::run("native_image_future_finishes_before_return");
 }
+
+#[test]
+fn powershell_safe_paths_remain_expression_literals() {
+    controlled::safe_powershell_literal();
+}
