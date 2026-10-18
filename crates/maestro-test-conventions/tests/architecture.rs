@@ -1129,6 +1129,9 @@ fn metadata_queries_leave_compiler_wrappers_to_builds() {
 #[test]
 fn metadata_graph_failures_cross_the_public_interface() {
     if let Some(root) = std::env::var_os("MAESTRO_CONVENTIONS_PROBE_ROOT") {
+        if let Some(matrix) = std::env::var_os("MAESTRO_CONVENTIONS_POLICY_MATRIX") {
+            return policy_edge_cases(std::path::Path::new(&root), matrix == "dev");
+        }
         let result = check_workspace(std::path::Path::new(&root));
         let expected = std::env::var("MAESTRO_CONVENTIONS_EXPECT").unwrap();
         if expected == "ok" {
@@ -1498,11 +1501,18 @@ fn forbidden_policy_matrix() {
 
 #[cfg(unix)]
 fn policy_edge_matrix(dev: bool) {
-    use serde_json::json;
     let workspace = Workspace::new();
     let names: Vec<_> = support::policy::POLICY.iter().map(|row| row.0).collect();
     workspace.foundation(&names);
-    let valid = workspace.metadata();
+    workspace.policy_probe(&workspace.metadata(), dev);
+}
+
+/// Reject each unpermitted policy edge, in the probe child serving the valid metadata.
+#[cfg(unix)]
+fn policy_edge_cases(root: &std::path::Path, dev: bool) {
+    use serde_json::json;
+    let valid: serde_json::Value =
+        serde_json::from_slice(&std::fs::read(root.join("resolved.json")).unwrap()).unwrap();
     let template = valid["packages"]
         .as_array()
         .unwrap()
@@ -1535,7 +1545,7 @@ fn policy_edge_matrix(dev: bool) {
             let mut dependency = template.clone();
             dependency["name"] = json!(to);
             dependency["rename"] = json!("alias");
-            dependency["path"] = json!(workspace.root.join("crates").join(to));
+            dependency["path"] = json!(root.join("crates").join(to));
             dependency["kind"] = if dev { json!("dev") } else { json!(null) };
             package["dependencies"] = json!([dependency]);
             let expected = if targets.is_empty() {
@@ -1549,11 +1559,25 @@ fn policy_edge_matrix(dev: bool) {
             } else {
                 format!("forbidden production dependency: {from} -> {to}")
             };
-            workspace.metadata_probe(&declared, &valid, &expected);
-            workspace.metadata_probe(&valid, &valid, "ok");
+            let result = check_declared(root, &declared);
+            assert!(
+                matches!(&result, Err(error) if error.contains(&expected)),
+                "{from} -> {to}: {result:?}"
+            );
         }
     }
-    workspace.metadata_probe(&valid, &valid, "ok");
+    assert_eq!(check_declared(root, &valid), Ok(()));
+}
+
+/// Serve `declared` to the probe's declared pass, then check the probe workspace.
+#[cfg(unix)]
+fn check_declared(root: &std::path::Path, declared: &serde_json::Value) -> Result<(), String> {
+    std::fs::write(
+        root.join("declared.json"),
+        serde_json::to_vec(declared).unwrap(),
+    )
+    .unwrap();
+    check_workspace(root)
 }
 
 #[cfg(unix)]
