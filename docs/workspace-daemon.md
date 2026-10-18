@@ -102,3 +102,26 @@ legacy reader or conversion. Topology classifies its raw header before decoding
 workspaces, while history decodes its complete record before checking its version.
 Unknown record members are ignored. Capture, restore and default-path selection
 are separate operations, not part of these supplied-path functions.
+
+## Pane processes
+
+The Linux process layer provides owned terminals through `maestro_process::pty`.
+A pane's caller supplies its executable, literal arguments, working directory,
+environment policy and setup entry. The child becomes its terminal's session leader;
+the master supports foreground-group queries and window-size changes.
+
+The I/O actor owns the master. Input waits for capacity, while terminal replies and
+geometry updates remain independent of that queue. During handoff, accepted input
+drains before reads pause. Only a quiesced actor can duplicate its master. Rollback
+resumes it; successful committed release closes the old owner without closing an
+owned duplicate. An optional asynchronous exit hook finishes before the old master
+is released. Graceful shutdown must keep draining critical notifications until
+pending hooks finish, before destroying the runtime. The
+[daemon loop delivery](https://github.com/Orchestration-Maestro/maestro/issues/1445)
+owns that integration; destroying the runtime cancels outstanding hooks and releases
+their terminal resources.
+
+Shell builders retain login-shell custom commands, plain pane commands and
+shell-evaluated scrollback editor selection. Foreground observations contain process
+facts rather than application classifications. Application wiring is described by the
+[workspace daemon contract](specs/workspace-daemon.md).

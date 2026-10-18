@@ -3629,11 +3629,13 @@ name = "maestro-process"
 version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
+ "maestro-test-process",
  "process-wrap",
  "rustix",
  "serde",
  "serde_json",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

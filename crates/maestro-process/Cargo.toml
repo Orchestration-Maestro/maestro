@@ -14,7 +14,14 @@ process-wrap = { version = "=10.0.1", default-features = false, features = ["tok
 rustix = { version = "=1.1.5", default-features = false, features = ["std", "process"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-process.workspace = true
 tokio = { version = "=1.53.2", default-features = false, features = ["net", "sync", "test-util"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+process-wrap = { version = "=10.0.1", default-features = false, features = ["reset-sigmask"] }
+rustix = { version = "=1.1.5", default-features = false, features = ["pty", "termios"] }
+tokio = { version = "=1.53.2", default-features = false, features = ["net", "signal"] }
+tracing = "=0.1.44"
 
 [dev-dependencies]
 serde.workspace = true

@@ -1,4 +1,4 @@
-//! Windows command-interpreter launch normalization.
+//! Native shell command construction and literal operand quoting.
 
 /// Executable with arguments; verbatim arguments are used only by Windows cmd.
 #[derive(Debug, PartialEq, Eq)]
@@ -101,6 +101,175 @@ fn native_windows_executable(command: &str) -> Option<std::path::PathBuf> {
         .collect();
     let extensions = std::env::var("PATHEXT").unwrap_or_else(|_| ".EXE;.COM;.BAT;.CMD".into());
     resolve_windows_executable(command, &directories, &extensions, std::path::Path::is_file)
+}
+
+/// Serializes one literal POSIX shell operand.
+#[must_use]
+pub fn shell_quote(value: &str) -> String {
+    if !value.is_empty()
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || b"@%_+=:,./-".contains(&byte))
+    {
+        value.to_owned()
+    } else {
+        format!("'{}'", value.replace('\'', "'\\''"))
+    }
+}
+
+/// Serializes one literal PowerShell operand.
+#[must_use]
+pub fn quote_powershell_arg(value: &str) -> String {
+    if !value.is_empty()
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || b"_-/.:+=".contains(&byte))
+    {
+        value.to_owned()
+    } else {
+        quote_powershell_literal(value)
+    }
+}
+
+/// Serializes a single-quoted PowerShell string literal, including safe-set words.
+#[must_use]
+pub fn quote_powershell_literal(value: &str) -> String {
+    format!("'{}'", value.replace('\'', "''"))
+}
+
+/// Normalizes a process basename in shell recognition order.
+fn normalized_process_name(name: &str) -> String {
+    name.rsplit(['/', '\\'])
+        .next()
+        .unwrap_or(name)
+        .trim_start_matches('-')
+        .trim_end_matches(".exe")
+        .to_ascii_lowercase()
+}
+
+/// Quotes an argument vector for the selected shell; empty vectors have no command.
+#[must_use]
+pub fn interactive_shell_command(argv: &[String], shell_name: &str) -> Option<String> {
+    let quote = if matches!(
+        normalized_process_name(shell_name).as_str(),
+        "pwsh" | "powershell"
+    ) {
+        quote_powershell_arg
+    } else {
+        shell_quote
+    };
+    (!argv.is_empty()).then(|| {
+        argv.iter()
+            .map(|arg| quote(arg))
+            .collect::<Vec<_>>()
+            .join(" ")
+    })
+}
+
+/// Recognizes shell basenames without treating replacement programs as shells.
+#[must_use]
+pub fn is_pane_shell_process_name(name: &str) -> bool {
+    matches!(
+        normalized_process_name(name).as_str(),
+        "sh" | "bash"
+            | "dash"
+            | "zsh"
+            | "fish"
+            | "ksh"
+            | "mksh"
+            | "csh"
+            | "tcsh"
+            | "elvish"
+            | "xonsh"
+            | "nu"
+            | "pwsh"
+            | "powershell"
+            | "cmd"
+    )
+}
+
+/// Builds a command without opening a Windows console.
+pub fn command(program: impl AsRef<std::ffi::OsStr>) -> std::process::Command {
+    let mut command = std::process::Command::new(program);
+    configure_background_command(&mut command);
+    command
+}
+
+/// Applies the native background-launch flag without changing operands.
+pub(crate) fn configure_background_command(command: &mut std::process::Command) {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(0x0800_0000);
+    }
+    #[cfg(not(windows))]
+    let _ = command;
+}
+
+/// Builds a custom command using a login POSIX shell.
+#[cfg(unix)]
+#[must_use]
+pub fn detached_custom_command_process(text: &str) -> std::process::Command {
+    let mut process = command("/bin/sh");
+    process.args(["-lc", text]);
+    process
+}
+
+/// Builds editor shell text that removes the scrollback file and retains editor status.
+///
+/// # Errors
+/// This Linux builder does not currently return an error.
+#[cfg(target_os = "linux")]
+pub fn scrollback_editor_argv(path: &std::path::Path) -> std::io::Result<Vec<String>> {
+    let path = shell_quote(&path.display().to_string());
+    Ok(vec![
+        "/bin/sh".into(),
+        "-c".into(),
+        format!(
+            r#"scrollback_file={path}; eval "${{EDITOR:-vi}} \"\$scrollback_file\""; status=$?; rm -f "$scrollback_file"; exit $status"#
+        ),
+    ])
+}
+
+/// Builds a custom pane command without interpreting its command text.
+#[cfg(target_os = "linux")]
+#[must_use]
+pub fn pane_custom_command_pty_builder(text: &str) -> crate::pty::PtyCommand {
+    crate::pty::PtyCommand {
+        program: "/bin/sh".into(),
+        args: vec!["-c".into(), text.into()],
+        cwd: None,
+        environment: crate::pty::PtyEnvironment::Inherit(Vec::new()),
+    }
+}
+
+/// Returns the sole pane shell, rejecting another foreground group or replacement program.
+#[cfg(target_os = "linux")]
+#[must_use]
+pub fn available_pane_shell(
+    child_pid: u32,
+    mode: crate::pty::foreground::ProcessDetectionMode,
+) -> Option<String> {
+    available_pane_shell_from_job(
+        child_pid,
+        crate::pty::foreground::foreground_job(child_pid, mode)?,
+    )
+}
+
+/// Checks shell eligibility without losing the original process name.
+#[cfg(target_os = "linux")]
+pub(crate) fn available_pane_shell_from_job(
+    child: u32,
+    job: crate::pty::foreground::ForegroundJob,
+) -> Option<String> {
+    if job.process_group_id != child || job.processes.iter().any(|process| process.pid != child) {
+        return None;
+    }
+    job.processes
+        .into_iter()
+        .find(|process| process.pid == child)
+        .map(|process| process.name)
+        .filter(|name| is_pane_shell_process_name(name))
 }
 
 #[cfg(test)]

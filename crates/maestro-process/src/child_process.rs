@@ -17,7 +17,7 @@ mod wait;
 #[cfg(windows)]
 pub use native::request_tree_kill;
 #[cfg(unix)]
-pub use native::{kill_process, kill_process_group};
+pub use native::{Signal, kill_process, kill_process_group, process_exists, signal_processes};
 use wait::wait;
 
 /// Default post-exit pipe grace for local shells, in milliseconds.
@@ -395,10 +395,15 @@ pub enum SpawnSyncOptions<'a> {
 }
 
 /// Constructs the current-thread runtime shared by blocking launch bridges.
-fn runtime() -> io::Result<tokio::runtime::Runtime> {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
+pub(crate) fn runtime() -> io::Result<tokio::runtime::Runtime> {
+    runtime_builder().build()
+}
+
+/// Configures the single current-thread runtime owner before construction.
+pub(crate) fn runtime_builder() -> tokio::runtime::Builder {
+    let mut builder = tokio::runtime::Builder::new_current_thread();
+    builder.enable_all();
+    builder
 }
 
 /// Writes supplied bytes and closes the owned pipe, including on failure.

@@ -425,3 +425,30 @@ fn compare_pixels(actual: &[u8], expected: &[u8]) {
             .all(|(a, b)| a.abs_diff(*b) <= 3)
     );
 }
+
+/// Checks that an expression-mode path stays quoted even when it is a safe argument.
+pub fn safe_powershell_literal() {
+    let mut case = corpus()
+        .cases
+        .into_iter()
+        .find(|case| case.id == "powershell-image")
+        .unwrap();
+    let command = case
+        .input
+        .commands
+        .iter_mut()
+        .find(|command| command.program == "wslpath")
+        .unwrap();
+    command.response.as_mut().unwrap().data = "safe.png\n".into();
+    let invocation = case
+        .expected
+        .trace
+        .iter_mut()
+        .find(|row| row[0] == "command" && row[1] == "powershell.exe")
+        .unwrap();
+    let script = invocation[2][2].as_str().unwrap();
+    let original = r"$path = 'C:\Users\O''Hare\clip.png';";
+    assert!(script.contains(original));
+    invocation[2][2] = script.replace(original, "$path = 'safe.png';").into();
+    replay(&case);
+}
