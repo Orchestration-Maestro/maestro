@@ -6,6 +6,9 @@ for the user scope or, with `Some(InstalledSourceScope::Project)`, the project s
 local path rules and settings storage belong to [configured package
 sources](package-sources.md), `maestro-path` and `maestro-settings`.
 
+The content-only [development skill package](packages/maestro-skills.md) uses the
+same local-source resolution and conventional discovery.
+
 ## Sources
 
 - **npm** (`npm:` prefix): the user scope runs `install -g <spec>` or
