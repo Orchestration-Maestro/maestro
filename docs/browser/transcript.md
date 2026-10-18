@@ -35,7 +35,10 @@ One document-scoped context retains resolved operands and original label scopes;
 formula atoms precede ordinary inline grammar without resolving rewritten labels.
 Link labels use inline-only grammar, keeping list, heading and quote punctuation literal.
 Tag-like text outside code and angle autolinks is
-shown literally when escaping is on. Formulas written with `$…$`, `\(…\)`,
+shown literally when escaping is on, including a tag start that never closes.
+Each code span, code block and autolink keeps its text while it remains native after
+escaping. A span that loses that status has its tags shown literally; later spans
+that remain native keep their text. Formulas written with `$…$`, `\(…\)`,
 `$$…$$` and `\[…\]` render through the math library as HTML with errors shown
 inline; display delimiters open a block in paragraphs, quotes and loose items,
 and a tight item only when it starts with one, while headings and table cells

@@ -75,17 +75,16 @@ fn escape(text: &str, out: &mut String) {
 /// Prepare `content` as transcript HTML.
 pub(super) fn prepare(content: &str, escape_html: bool) -> Prepared {
     let source = normalize_to_lf(content);
-    let source = if escape_html {
+    let mut document = if escape_html {
         escape_tags(source)
     } else {
-        source
+        markdown::parse(source)
     };
-    let lower = source.to_ascii_lowercase();
+    let lower = document.source.to_ascii_lowercase();
     let mut slot_attribute = "data-maestro-listing".to_owned();
     while lower.contains(&slot_attribute) {
         slot_attribute.push('x');
     }
-    let mut document = markdown::parse(source);
     markdown::autolinks(&mut document);
     let inline = InlineContext::new(&document);
     let mut writer = Writer {
