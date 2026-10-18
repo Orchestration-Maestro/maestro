@@ -1,11 +1,8 @@
 //! Native credential acquisition through the shared HTTP effect.
 
-use super::super::{
-    base_external_client::{BaseExternalAccountClient, Effects},
-    compute_client::Compute,
-};
+use super::super::base_external_client::Effects;
 use base64::Engine as _;
-use google_cloud_auth::credentials::{CacheableResource, Credentials};
+use google_cloud_auth::credentials::CacheableResource;
 use std::sync::{
     Arc,
     atomic::{AtomicUsize, Ordering},
@@ -24,9 +21,8 @@ fn native_metadata_acquires_and_refreshes_controlled_tokens() {
             response.headers.insert("metadata-flavor".into(),"Google".into());
             Box::pin(std::future::ready(Ok(response)))
         });
-        let metadata = super::metadata::metadata(Some("assume-present"),false,(None,Some("controlled.invalid")),0);
         let effects = Effects {fetch,clock:Arc::new(||1000.0), ..Effects::default()};
-        let credentials = Credentials::from(BaseExternalAccountClient::new(Compute::new(metadata),effects,None,None));
+        let credentials = super::metadata::compute("controlled.invalid", effects, false);
         for _ in 0..2 {
             let CacheableResource::New {data,..} = credentials.headers(hyper::http::Extensions::new()).await.unwrap() else {panic!("expected generated headers")};
             assert!(data.get("authorization").is_some_and(|value| value == "Bearer controlled-access"));
@@ -108,7 +104,8 @@ fn adc_errors_never_include_credential_material() {
             Effects::default(),
         )
         .unwrap();
-        for credentials in [native, owned] {
+        let metadata = super::metadata::compute(&server.url, Effects::default(), false);
+        for credentials in [native, owned, metadata] {
             let client = super::client(credentials, indexmap::IndexMap::new());
             let projected = super::super::super::project_content_request(
                 serde_json::json!({"model":"model","contents":"hello"}),
@@ -130,6 +127,58 @@ fn adc_errors_never_include_credential_material() {
             }
         }
     });
+    server.finish().unwrap();
+}
+
+#[test]
+fn adc_without_files_falls_through_to_metadata() {
+    use crate::tests::child_process;
+    const TEST: &str = "adc_without_files_falls_through_to_metadata";
+    if let Some(case) = child_process::child_case() {
+        let result = super::run(super::super::NodeAuth::default().headers());
+        if case == "metadata" {
+            assert_eq!(result.unwrap()["authorization"], "Bearer metadata-access");
+        } else {
+            assert_eq!(result.err().unwrap().message, super::super::NO_CREDENTIALS);
+        }
+        return;
+    }
+    let requests = Arc::new(std::sync::Mutex::new(Vec::new()));
+    let record = requests.clone();
+    let server = crate::tests::loopback::serve_routed(move |request| {
+        record.lock().unwrap().push(request.request_line.clone());
+        crate::tests::loopback::Reply {
+            status: 200,
+            content_type: "application/json",
+            headers: &[("metadata-flavor", "Google")],
+            body: br#"{"access_token":"metadata-access","expires_in":3600}"#.to_vec(),
+            close: false,
+        }
+    })
+    .unwrap();
+    let files = super::Files::new();
+    let home = files.path("home");
+    for (case, detection, expected) in [("disabled", "none", 0), ("metadata", "assume-present", 1)]
+    {
+        child_process::rerun(
+            TEST,
+            case,
+            &[
+                ("GOOGLE_APPLICATION_CREDENTIALS", ""),
+                ("google_application_credentials", ""),
+                ("HOME", home.as_str()),
+                ("METADATA_SERVER_DETECTION", detection),
+                ("GCE_METADATA_IP", ""),
+                ("GCE_METADATA_HOST", server.url.as_str()),
+            ],
+        )
+        .unwrap();
+        let requests = requests.lock().unwrap();
+        assert_eq!(requests.len(), expected);
+        assert!(requests.iter().all(|line| {
+            line.starts_with("GET /computeMetadata/v1/instance/service-accounts/default/token?")
+        }));
+    }
     server.finish().unwrap();
 }
 

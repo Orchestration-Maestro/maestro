@@ -24,20 +24,6 @@ impl Files {
     pub(crate) fn path(&self, name: &str) -> String {
         self.0.join(name).to_str().unwrap().to_owned()
     }
-
-    /// Write one new fixture file, preserving any pre-existing file.
-    pub(crate) fn write(&self, name: &str, bytes: &[u8]) -> String {
-        use std::io::Write;
-        let path = self.path(name);
-        std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&path)
-            .unwrap()
-            .write_all(bytes)
-            .unwrap();
-        path
-    }
 }
 
 impl Drop for Files {
