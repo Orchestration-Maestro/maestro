@@ -1,0 +1,25 @@
+[package]
+name = "maestro-workspace"
+version = "0.1.0"
+edition.workspace = true
+license = "Apache-2.0"
+repository.workspace = true
+autotests = false
+
+[dependencies]
+num-traits.workspace = true
+maestro-protocol = { path = "../maestro-protocol" }
+serde.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-dependencies.workspace = true
+
+[[test]]
+name = "integration"
+path = "tests/integration.rs"
+
+[lints]
+workspace = true
