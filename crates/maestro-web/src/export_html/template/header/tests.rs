@@ -147,6 +147,7 @@ fn header_categories_keep_order_and_omit_only_zero() {
     for row in cases().iter().filter(|r| {
         r.name.starts_with("counter-")
             || [
+                "populated",
                 "all-categories",
                 "no-models",
                 "empty-model-name",
