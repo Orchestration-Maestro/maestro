@@ -330,6 +330,91 @@ executor.block_on(async {
 # }
 ```
 
+See [extension context lifecycle](lifecycle.md) for retained handles, replacement
+callbacks and the application/runtime boundaries. These functions illustrate
+local command handlers; their bodies compile here but need application-bound
+operations to perform replacement or reload.
+
+### Continue with the fresh context
+
+Capture plain data and send through the context supplied to `with_session`.
+
+```rust
+use maestro_extensions::{EventError, ExtensionCommandContext};
+use maestro_extensions::types::NewSessionCommandOptions;
+use maestro_models::UserContent;
+use std::rc::Rc;
+
+pub async fn safe_handoff(ctx: ExtensionCommandContext) -> Result<(), EventError> {
+    let kickoff = String::from("Continue from the replacement session");
+    ctx.new_session(Some(NewSessionCommandOptions {
+        with_session: Some(Rc::new(move |fresh| {
+            let kickoff = kickoff.clone();
+            Box::pin(async move {
+                fresh.send_user_message(UserContent::Text(kickoff), None).await
+            })
+        })),
+        ..Default::default()
+    })).await?;
+    Ok(())
+}
+# fn main() {}
+```
+
+### Avoid captured contexts
+
+This example is deliberately incorrect after successful replacement: the old
+context returns the stale error. A cancelled replacement leaves it active.
+
+```rust
+use maestro_extensions::{EventError, ExtensionCommandContext};
+
+pub async fn captured_context_is_not_fresh(ctx: ExtensionCommandContext) -> Result<(), EventError> {
+    let old = ctx.clone();
+    let result = ctx.new_session(None).await?;
+    if !result.cancelled {
+        old.cwd()?;
+    }
+    Ok(())
+}
+# fn main() {}
+```
+
+### Write history during setup
+
+The application operation invokes setup with writable session history.
+
+```rust
+use maestro_extensions::{EventError, ExtensionCommandContext};
+use maestro_extensions::types::NewSessionCommandOptions;
+use std::rc::Rc;
+
+pub async fn setup_history(ctx: ExtensionCommandContext) -> Result<(), EventError> {
+    ctx.new_session(Some(NewSessionCommandOptions {
+        setup: Some(Rc::new(|history| Box::pin(async move {
+            history.borrow_mut().append_session_info("handoff")?;
+            Ok(())
+        }))),
+        ..Default::default()
+    })).await?;
+    Ok(())
+}
+# fn main() {}
+```
+
+### Reload and return
+
+Do not use the old context after awaiting reload.
+
+```rust
+use maestro_extensions::{EventError, ExtensionCommandContext};
+
+pub async fn reload_and_return(ctx: ExtensionCommandContext) -> Result<(), EventError> {
+    ctx.reload().await
+}
+# fn main() {}
+```
+
 ## Actions and provider binding
 
 Create one `create_extension_runtime::<Local>()` or
