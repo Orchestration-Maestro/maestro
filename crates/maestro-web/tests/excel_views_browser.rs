@@ -6,7 +6,7 @@ mod presentation;
 mod reading_browser_support;
 pub mod support;
 use maestro_web::AttachmentOverlay;
-use reading_browser_support::{View, click, js};
+use reading_browser_support::{View, check, click, js, run};
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
 /// Qualified original modern workbook bytes.
@@ -61,13 +61,6 @@ fn bytes(name: &str) -> &'static [u8] {
 fn encoded(name: &str) -> String {
     use base64::Engine as _;
     base64::engine::general_purpose::STANDARD.encode(bytes(name))
-}
-/// Evaluate the actual mounted DOM, not prepared layout operands.
-fn check(code: &str) {
-    assert!(
-        js(code).as_bool().unwrap(),
-        "native observation failed: {code}"
-    );
 }
 /// Original alias shared with the live overlay.
 fn record() -> Rc<RefCell<maestro_web::Attachment>> {
@@ -190,7 +183,7 @@ pub fn excel_sheet_tabs_switch_without_losing_sheet_scroll() {
     check(
         "document.querySelectorAll('.maestro-excel-tab').length===2 && getComputedStyle(document.querySelectorAll('.maestro-excel-sheet')[0]).display!=='none' && getComputedStyle(document.querySelectorAll('.maestro-excel-sheet')[1]).display==='none'",
     );
-    js(
+    run(
         "globalThis.first=document.querySelectorAll('.maestro-excel-sheet')[0];first.scrollTop=350;first.scrollLeft=150;globalThis.offsets=[first.scrollTop,first.scrollLeft];",
     );
     check(
@@ -200,7 +193,7 @@ pub fn excel_sheet_tabs_switch_without_losing_sheet_scroll() {
     check(
         "getComputedStyle(first).display==='none'&&getComputedStyle(document.querySelectorAll('.maestro-excel-sheet')[1]).display!=='none'",
     );
-    js(
+    run(
         "globalThis.second=document.querySelectorAll('.maestro-excel-sheet')[1];second.scrollTop=100;second.scrollLeft=50;globalThis.secondOffsets=[second.scrollTop,second.scrollLeft];",
     );
     tab(&mut view, 0);
@@ -316,7 +309,7 @@ pub fn excel_native_states_follow_live_brand_and_localization() {
     );
     view.element.set_content(encoded("one"));
     view.density = 1.25;
-    js(
+    run(
         "document.getElementById('canvas').style.width='640px';document.getElementById('canvas').style.height='360px';",
     );
     view.draw(false, vec![]);
@@ -333,7 +326,7 @@ pub fn excel_native_states_follow_live_brand_and_localization() {
 pub fn excel_native_lifetimes_keep_selection_and_cancel_old_roots() {
     let mut view = View::new("a.xlsx", &encoded("two"));
     view.draw(false, vec![]);
-    js(
+    run(
         "globalThis.table=document.querySelector('.maestro-excel table');const r=document.createRange();r.selectNodeContents(table.querySelector('td'));getSelection().removeAllRanges();getSelection().addRange(r);globalThis.selected=getSelection().toString();",
     );
     view.element.set_content(encoded("two"));
@@ -345,7 +338,7 @@ pub fn excel_native_lifetimes_keep_selection_and_cancel_old_roots() {
     let mut overlay = AttachmentOverlay::open(record.clone(), None, view.host.clone());
     view.overlay(&mut overlay, vec![]);
     view.overlay(&mut overlay, vec![]);
-    js("globalThis.old=document.querySelector('.maestro-excel:not(.maestro-excel-artifact)');");
+    run("globalThis.old=document.querySelector('.maestro-excel:not(.maestro-excel-artifact)');");
     view.toggle(&mut overlay, "Text");
     check("!old.isConnected");
     view.toggle(&mut overlay, "Spreadsheet");
@@ -357,7 +350,7 @@ pub fn excel_native_lifetimes_keep_selection_and_cancel_old_roots() {
     let panel = panel_browser_support::Panel::new();
     panel.create("a.xlsx", &encoded("scroll"));
     panel.draw(click(tab_position(1)));
-    js(
+    run(
         "globalThis.panelRoot=document.querySelector('.maestro-excel');globalThis.panelSheet=panelRoot.querySelectorAll('.maestro-excel-sheet')[1];panelSheet.scrollTop=350;panelSheet.scrollLeft=150;globalThis.panelOffsets=[panelSheet.scrollTop,panelSheet.scrollLeft];globalThis.panelHeight=panelRoot.getBoundingClientRect().height;",
     );
     check("panelOffsets[0]>0&&panelOffsets[1]>0");

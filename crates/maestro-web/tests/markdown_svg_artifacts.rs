@@ -141,32 +141,43 @@ fn preview_toggle_reports_only_real_changes() {
 /// Both independent actions receive every original byte and localized title.
 #[test]
 fn specialized_headers_keep_literal_bytes_and_titles() {
-    for case in corpus().content {
-        let host = Rc::new(effects_support::Host::default());
-        let frame = Frame::default();
-        locale(&frame.i18n, &case.language);
-        let mut view = maestro_web::tools::artifacts::create_artifact_element(
-            &case.filename,
-            &case.content,
-            host.clone(),
-        )
-        .unwrap();
-        for index in [2, 3] {
-            let output = frame.activate_header(view.as_mut(), index, 4);
-            assert!(output.platform_output.events.iter().any(|event| matches!(event, egui::output::OutputEvent::Clicked(info) if info.label.as_ref() == Some(&case.titles[index - 2]))));
+    let corpus = corpus();
+    for header in &corpus.headers {
+        for case in corpus
+            .content
+            .iter()
+            .filter(|case| case.kind == header.kind)
+        {
+            header_actions(header, case);
         }
-        assert_eq!(host.copies.borrow().as_slice(), &[case.content]);
-        for result in host.results.borrow().iter() {
-            result.set(Some(true));
-        }
-        host.run_work();
-        host.advance(2000);
-        assert_eq!(host.live(), 0);
-        assert_eq!(
-            host.downloads.borrow().as_slice(),
-            &[(case.filename, case.mime, case.bytes)]
-        );
     }
+}
+/// Copy and download one case through its header under the header's locale.
+fn header_actions(header: &markdown_svg_support::Header, case: &markdown_svg_support::Case) {
+    let host = Rc::new(effects_support::Host::default());
+    let frame = Frame::default();
+    locale(&frame.i18n, &header.language);
+    let mut view = maestro_web::tools::artifacts::create_artifact_element(
+        &case.filename,
+        &case.content,
+        host.clone(),
+    )
+    .unwrap();
+    for index in [2, 3] {
+        let output = frame.activate_header(view.as_mut(), index, 4);
+        assert!(output.platform_output.events.iter().any(|event| matches!(event, egui::output::OutputEvent::Clicked(info) if info.label.as_ref() == Some(&header.titles[index - 2]))));
+    }
+    assert_eq!(host.copies.borrow().as_slice(), [case.content.as_str()]);
+    for result in host.results.borrow().iter() {
+        result.set(Some(true));
+    }
+    host.run_work();
+    host.advance(2000);
+    assert_eq!(host.live(), 0);
+    assert_eq!(
+        host.downloads.borrow().as_slice(),
+        &[(case.filename.clone(), case.mime.clone(), case.bytes.clone())]
+    );
 }
 /// Source selection belongs to its view and persists across every kind of edit.
 #[test]
