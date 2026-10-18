@@ -255,3 +255,12 @@ their callers. The collection returns removed ownership for release outside guar
   aliases; adapter capabilities and stream snapshots remain adapter-owned.
 
 - **Atomic replacement:** `maestro-lock` publishes bytes through an exclusively created temporary sibling, file sync, close and rename, followed by parent-directory sync. A postcommit sync error is advisory, not a failed write. Workspace owns snapshot serialization and chooses link following. See [locking](docs/locking.md#atomic-replacement).
+
+## Packages
+
+From `docs/specs/packages.md`.
+
+- **Skill pack:** a content-only package of skills and the shared reference files they read; Maestro's own is
+  `maestro-skills`.
+- **Type-only skill:** a skill marked `disable-model-invocation: true`; it stays out of the model's skill list and
+  runs only when typed as `/skill:<name>` or through an alias command.

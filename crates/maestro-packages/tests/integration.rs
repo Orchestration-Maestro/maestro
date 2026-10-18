@@ -41,6 +41,7 @@ mod resource_output;
 mod resource_resolution_checks;
 mod sandbox;
 mod scratch;
+mod skill_pack_checks;
 mod support;
 #[cfg(unix)]
 mod update_corpus;

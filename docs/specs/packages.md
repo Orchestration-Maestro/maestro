@@ -18,8 +18,10 @@ like any reference:
 - every capability is kept, and nothing is added without a reference line or an owner decision.
 
 The packages are the subagents, MCP gateway, web-access, question, todo, usage, CLI-bridge provider, code-insight,
-context-saving, lean-mode, focus-mode and plan-review packages. Five skill packs need no build: they already load
-as package content, with per-package skill filters.
+context-saving, lean-mode, focus-mode and plan-review packages. Three skill packs need no build, because they load as package content with
+per-package skill filters: Maestro's own skill pack ([P14](#p14-maestro-skill-pack)) and two third-party
+packs. The porting rules above apply to code packages; the skill pack merges source skill packs as P14
+describes.
 
 ## Problem statement
 
@@ -74,6 +76,9 @@ Without a port, every capability they give a user is lost. A direct port runs in
 11. As a maintainer, I want no `unsafe`, no patched fork, no copy of a host algorithm in a guest and no duplicate
     logic.
 
+12. As a user, I want one skill pack covering design, specs, tickets, test-first building, debugging, review and
+    shipping, with one router skill that names every skill and when to use it.
+
 ## Capabilities kept
 
 | Package | Kept capabilities | Deliveries |
@@ -89,6 +94,7 @@ Without a port, every capability they give a user is lost. A direct port runs in
 | Context saving | execution tools, routing, the content index and search, continuity and commands | 40–42 |
 | Instruction modes | lean and focus levels, commands, rulesets and persisted settings | 4, 5 |
 | Plan review (optional) | plan mode, browser plan review, code review and annotation, tools, inbox and event API | 53–58 |
+| Skill pack | one router; interviews, ideas, option pages and prototypes; domain language and design vocabulary; specs, tickets, wayfinding and triage; test-first implementation and orchestration; debugging, verification and doubt; two-axis review and receiving review; git, pull requests, quality gates and shipping; security, performance, frontend and observability; documentation and the prose pass; writing for agents, research, retros, wizards, questionnaires and teaching | 62–64 |
 | Serving tools | every tool of a headless session over MCP | 60 |
 
 Not kept, because no capability is lost: features that need a later host release (each has a route below), other
@@ -176,6 +182,9 @@ Focus levels are:
 Lean injects instructions through `before_agent_start`; focus uses hidden custom messages, reinjected after
 compaction or a level change. Both persist their settings (deliveries 4–5).
 
+Lean's review and audit skills are type-only. They stay out of the model's skill list and run through their
+alias commands.
+
 ### P5: Usage
 
 `maestro-usage` reads credentials through the catalog getters and routes fast requests through the awaited request
@@ -219,12 +228,62 @@ data. Its `checklist` module is shared with the plan-mode example target (delive
 The frontend crate `maestro-mcp-server` (layer 5) serves every tool registered in a headless session over stdio MCP
 as `maestro mcp`. No package carries server code (delivery 60).
 
+### P14: Maestro skill pack
+
+The skill pack merges three MIT-licensed skill packs and one MIT-licensed prose-pass skill into one skill per
+job (deliveries 62–64). It holds no code, and the skill loader and package discovery read it unchanged.
+
+- **Package.** `packages/maestro-skills/` is a content-only package. It holds `package.json` without a `maestro`
+  member, `skills/<name>/SKILL.md` with supporting files, `references/` beside `skills/`, `LICENSE` and
+  `THIRD-PARTY-NOTICES.md`. Conventional discovery loads `skills/`. `references/` is not a skill directory, and
+  `skills/` holds no loose Markdown file.
+- **Names.** Every skill is named `maestro-<job>`, and the router is `maestro-ask`. A user or project skill with
+  the same name still overrides the pack's.
+- **Invocation.** 23 skills are model-invoked. 14 are type-only (`disable-model-invocation: true`) and run as
+  `/skill:<name>`, the router among them. Descriptions name triggers ("Use when…") and never summarize the
+  workflow.
+- **Router.** `maestro-ask` names every skill in the pack and when to use it: the main flow, the on-ramps, the
+  specialist skills, and the lean and focus modes that hold standing behaviour. It reads a skill before
+  describing it.
+- **Main flow.** `maestro-grilling` → `maestro-to-spec` → `maestro-to-tickets` → `maestro-implement`, built
+  with `maestro-tdd`, `maestro-code-review` and `maestro-verify`, then `maestro-pr` and `maestro-retro`. The user
+  approves the spec and the tickets before work starts.
+- **Shared references.** Type-only skills cannot call each other, so the text several skills share lives in
+  seven plain files under `references/`: subagent briefs, severity, definition of done, untrusted input, report
+  statuses, phase boundaries and issue trackers.
+- **Issue trackers.** No setup step runs, because the pack ships built in. A skill that publishes or reads
+  issues first uses the repository's own tracker file. Otherwise it uses the tracker behind `git remote`
+  (GitHub through `gh`, GitLab through `glab`), and otherwise local Markdown under `.scratch/`. Five triage
+  roles default to labels with the same names.
+- **Host mechanics.** Skills name Maestro's tools and commands: `ask_user_question`, `todo`, `subagent`,
+  `/skill:`, `/new`, `/compact`, `/fork` and `/tree`, with `AGENTS.md` as the rules file. `CLAUDE.md` stays an
+  accepted context file name.
+- **Option pages.** `maestro-show-options` writes one self-contained HTML page and opens it with the platform's
+  opener. When no browser can reach the file, it prints the path and asks in the terminal.
+- **Overlaps.** Simplification findings come from lean's type-only review and audit skills, and
+  `maestro-receive-review` applies them. Full security audits belong to the third-party security-audit pack;
+  `maestro-security` covers writing secure code.
+- **Content rule.** Each section of a skill traces to a source line or to a host-mechanic translation. The pack
+  carries none of the workspace rules of Maestro's own maintainers.
+- **Notices.** The package's notice file keeps each source author's copyright line and the MIT permission text.
+  Third-party text that has an unclear or share-alike licence is rewritten in our own words.
+- **Qualification.** One `maestro-packages` integration test resolves the pack as a package source and loads its
+  skills. It checks the diagnostics, the names, the `/skill:` pointers, router coverage and relative links.
+- **Growth.** A delivery points only at skills already delivered; later deliveries add their pointers and
+  router arms.
+
+Not copied, each listed once: other hosts' hook, plugin, command and tool-map files; the always-on router
+injection; Node and shell helper scripts, except one shell template; styling and diagram scripts loaded from a
+CDN; external agent command lines; the option-page server's live reload, click log and reach from another
+machine; the source packs' unfinished, language-specific and host-specific skills; the one-time repository
+setup skill; a vendor best-practices page; and a picture menu whose licence is unclear, which is rewritten.
+
 ### Base packages
 
 Every package except plan review is a base package. Plan review is the only optional package and is off by default. Each release publishes the base packages' components as package
 sources. The application lists those sources as the lowest default `packages` source. The reference's
 missing-source install installs them on first run, and a user's object-form filter entry turns one off
-(delivery 61).
+(delivery 61). The skill pack has no component. Its package directory is published as content.
 
 ### Libraries
 
@@ -347,6 +406,9 @@ Results match the reference. These mechanisms are replaced, each listed once:
 | 54–58 | Plan review (optional): plan mode, plan review, code review, annotation, tools | 53, 26, 33 and as listed |
 | 59 | Connect components to local sockets | 25 |
 | 60 | Serve Maestro tools to other agents over MCP | — |
+| 62 | Ship the skill pack's core development flow | — |
+| 63 | Add orchestration, sessions, trackers and documentation to the skill pack | 62 |
+| 64 | Add the specialist skills to the skill pack | 63 |
 | 61 | Install the base packages by default | every base-package delivery |
 
 ## Glossary
@@ -362,6 +424,11 @@ Results match the reference. These mechanisms are replaced, each listed once:
 - **Clean-room rebuild:** a package rebuilt from documented and observed behaviour because its reference may not be
   copied.
 - **MCP server frontend:** the frontend that serves a headless session's tools over MCP.
+
+- **Skill pack:** a content-only package of skills and the shared reference files they read; Maestro's own is
+  `maestro-skills`.
+- **Type-only skill:** a skill marked `disable-model-invocation: true`; it stays out of the model's skill list and
+  runs only when typed as `/skill:<name>` or through an alias command.
 
 ## Amendment to the foundation specification
 
