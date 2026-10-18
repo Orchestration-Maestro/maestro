@@ -119,11 +119,11 @@ mod tests {
             );
         }
     }
-    /// Edits preserve root identity and scroll; dropping disconnects the native body.
+    /// Edits preserve root and scroll, renames preserve selection, and dropping disconnects.
     #[wasm_bindgen]
     pub fn text_body_root_survives_edits() {
         let mut view = text_view(
-            "a.txt",
+            "notes.txt",
             &"line......................................................\n".repeat(100),
         );
         view.draw(false, vec![]);
@@ -138,6 +138,21 @@ mod tests {
         check(
             "savedRoot===document.querySelector('.maestro-text-artifact') && viewport.scrollTop===savedScroll",
         );
+        let mut selections = Vec::new();
+        for (before, after) in [("notes.txt", "renamed.txt"), ("a.js", "b.js")] {
+            view.element.set_filename(before.into());
+            view.element
+                .set_content("const message = \"hello & goodbye\";".into());
+            view.draw(false, vec![]);
+            js(
+                "const code=savedRoot.querySelector('code');const range=document.createRange();range.selectNodeContents(code);getSelection().removeAllRanges();getSelection().addRange(range)",
+            );
+            check("getSelection().toString()==='const message = \"hello & goodbye\";'");
+            view.element.set_filename(after.into());
+            view.draw(false, vec![]);
+            selections.push(js("getSelection().toString()").as_string().unwrap());
+        }
+        assert_eq!(selections, ["const message = \"hello & goodbye\";"; 2]);
         view.element.set_filename("a.js".into());
         view.draw(false, vec![]);
         check(
@@ -145,7 +160,9 @@ mod tests {
         );
         view.element.set_filename("a.txt".into());
         view.draw(false, vec![]);
-        check("savedRoot.querySelector('code').className===''");
+        check(
+            "savedRoot.querySelector('code').className==='' && !savedRoot.querySelector('code span')",
+        );
         drop(view);
         check("!savedRoot.isConnected");
     }

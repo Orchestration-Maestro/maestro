@@ -153,7 +153,8 @@ highlighting; unsupported languages and engine failures still show the complete
 literal source. Other extensions render plain text. Markup remains literal unless
 it is escaped output from the shared highlighter. Long lines scroll rather than
 wrap. Only filename/content edits prepare the body again; unchanged redraws keep
-its nodes and scroll position.
+its nodes and scroll position. Filename-only edits that leave the rendered body
+unchanged also preserve native text selection.
 
 The header retains one copy control with two-second success feedback, followed by
 the original-byte download control. Copy and download both consume the original

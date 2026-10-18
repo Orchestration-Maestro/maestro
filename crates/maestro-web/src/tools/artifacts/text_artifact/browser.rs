@@ -2,11 +2,11 @@
 use super::Body;
 use crate::browser::attachment_content::{
     AttachmentUiError, ReadingRoot,
-    browser::{append, element},
+    browser::{append, element, set_text_if_changed},
 };
 use std::{cell::RefCell, rc::Rc};
 /// Synchronize only after an authored edit, retaining the root and viewport.
-pub(super) fn sync(body: &Body) {
+pub(super) fn sync(body: &Body, html_changed: bool) {
     if let Some(code) = &body.code {
         code.set_class_name(
             &body
@@ -14,9 +14,13 @@ pub(super) fn sync(body: &Body) {
                 .map_or_else(String::new, |label| format!("hljs language-{label}")),
         );
         if let Some(html) = &body.html {
-            code.set_inner_html(html);
-        } else {
+            if html_changed {
+                code.set_inner_html(html);
+            }
+        } else if html_changed {
             code.set_text_content(Some(&body.text));
+        } else {
+            set_text_if_changed(code, &body.text);
         }
     }
 }
@@ -37,7 +41,7 @@ pub(super) fn mount(
     let code = element(document, "code", "")?;
     append(&root, &code)?;
     body.borrow_mut().code = Some(code);
-    sync(&body.borrow());
+    sync(&body.borrow(), true);
     Ok(ReadingRoot {
         element: root,
         slots: vec![],

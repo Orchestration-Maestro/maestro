@@ -131,9 +131,11 @@ impl TextArtifact {
         let mut body = self.body.borrow_mut();
         body.language = language;
         body.text.clone_from(&self.content);
+        #[cfg(target_arch = "wasm32")]
+        let html_changed = body.html != html;
         body.html = html;
         #[cfg(target_arch = "wasm32")]
-        browser::sync(&body);
+        browser::sync(&body, html_changed);
         self.changed = false;
     }
     /// Create the factory once, retaining owned state only.
