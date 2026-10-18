@@ -263,7 +263,7 @@ Duplicate assertions are a review judgement.
 
 The root manifest must forbid every protected quality lint; member manifests
 are parsed as TOML and must set the boolean `lints.workspace` to `true`,
-except for the two named binding manifests below.
+except for the guest-authoring manifest below.
 The compiler rejects protected-lint allowances, including attributes emitted by
 macros and conditional attributes. Lint-group allowances fail because the
 workspace also forbids `forbidden_lint_groups`, which ignores warnings denial.
