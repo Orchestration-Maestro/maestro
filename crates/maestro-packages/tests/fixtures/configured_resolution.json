@@ -3450,6 +3450,72 @@
     }
   },
   {
+    "case": "filter-22",
+    "recipe": {
+      "global": {
+        "packages": [
+          {
+            "source": "../pkg",
+            "skills": [
+              "!*",
+              "+skills/alpha",
+              "+skills/gamma"
+            ]
+          }
+        ]
+      },
+      "files": {
+        "pkg/skills/alpha/SKILL.md": "",
+        "pkg/skills/beta/SKILL.md": "",
+        "pkg/skills/gamma/SKILL.md": ""
+      }
+    },
+    "expected": {
+      "result": {
+        "extensions": [],
+        "skills": [
+          {
+            "path": "$BASE/pkg/skills/alpha/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/beta/SKILL.md",
+            "enabled": false,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          },
+          {
+            "path": "$BASE/pkg/skills/gamma/SKILL.md",
+            "enabled": true,
+            "metadata": {
+              "source": "../pkg",
+              "scope": "user",
+              "origin": "package",
+              "baseDir": "$BASE/pkg"
+            }
+          }
+        ],
+        "prompts": [],
+        "themes": []
+      },
+      "error": null,
+      "calls": [],
+      "events": [],
+      "callbacks": [],
+      "second": null
+    }
+  },
+  {
     "case": "manifest-order-true",
     "recipe": {
       "global": {

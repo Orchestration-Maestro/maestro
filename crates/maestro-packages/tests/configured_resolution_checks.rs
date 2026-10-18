@@ -101,6 +101,7 @@ fn package_filters_select_then_override_without_reordering() {
         "filter-19",
         "filter-20",
         "filter-21",
+        "filter-22",
     ]);
 }
 

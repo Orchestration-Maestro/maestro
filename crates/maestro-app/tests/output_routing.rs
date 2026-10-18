@@ -214,23 +214,7 @@ fn pipe_case(name: &str, case: PipeCase) {
 /// Unterminated raw bytes are visible after flush, before the child exits.
 #[test]
 fn raw_stdout_preserves_unterminated_text_and_flushes() {
-    if let Ok(mode) = std::env::var("MAESTRO_OUTPUT_PROBE") {
-        pipe_probe(PipeCase {
-            operation: PipeOperation::Flush,
-            taken: mode.starts_with("true"),
-            failed: false,
-        });
-    }
-    for taken in [false, true] {
-        pipe_case(
-            "raw_stdout_preserves_unterminated_text_and_flushes",
-            PipeCase {
-                operation: PipeOperation::Flush,
-                taken,
-                failed: false,
-            },
-        );
-    }
+    flush_cases("raw_stdout_preserves_unterminated_text_and_flushes", false);
 }
 /// Actual pipe closure propagates the native flush failure in both ownership states.
 #[test]
@@ -238,7 +222,11 @@ fn raw_stdout_reports_flush_failure() {
     if run_alone("raw_stdout_reports_flush_failure").unwrap() {
         return;
     }
-    let cases = fixtures::cases::<FlushInput, FlushExpected>("flush-");
+    flush_cases("raw_stdout_reports_flush_failure", true);
+}
+/// Runs each recorded flush combination with the given failure state once, in both ownership
+/// states.
+fn flush_cases(name: &str, failed: bool) {
     if let Ok(mode) = std::env::var("MAESTRO_OUTPUT_PROBE") {
         pipe_probe(PipeCase {
             operation: PipeOperation::Flush,
@@ -246,21 +234,23 @@ fn raw_stdout_reports_flush_failure() {
             failed: mode.ends_with("true"),
         });
     }
+    let cases: Vec<_> = fixtures::cases::<FlushInput, FlushExpected>("flush-")
+        .into_iter()
+        .filter(|case| case.input.failed == failed)
+        .collect();
+    assert_eq!(cases.len(), 2);
     for case in cases {
         assert_eq!(
             case.id,
             format!("flush-{}-{}", case.input.taken, case.input.failed)
         );
-        assert_eq!(
-            case.expected.branch,
-            if case.input.failed { "error" } else { "ok" }
-        );
+        assert_eq!(case.expected.branch, if failed { "error" } else { "ok" });
         pipe_case(
-            "raw_stdout_reports_flush_failure",
+            name,
             PipeCase {
                 operation: PipeOperation::Flush,
                 taken: case.input.taken,
-                failed: case.input.failed,
+                failed,
             },
         );
     }
