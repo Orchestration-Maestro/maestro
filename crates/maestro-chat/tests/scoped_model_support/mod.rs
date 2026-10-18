@@ -1,7 +1,8 @@
 //! Strict scope recordings with ordered callback and host observations.
 use crate::{
+    bindings::{self, Binding},
     manual_runtime::ManualRuntime,
-    model_selector_support::{Descriptor, Keys},
+    model_selector_support::Descriptor,
     published,
 };
 use maestro_chat::components::{ModelsCallbacks, ModelsConfig, ScopedModelsSelectorComponent};
@@ -40,7 +41,7 @@ pub struct Query {
     pub asynchronous: Option<String>,
     /// Initial overrides.
     #[serde(default)]
-    pub bindings: BTreeMap<String, Keys>,
+    pub bindings: BTreeMap<String, Binding>,
     /// Observe both independent focus flags.
     #[serde(default)]
     pub focus: bool,
@@ -87,7 +88,7 @@ pub enum Action {
     /// Live palette replacement.
     Theme(u8),
     /// Live binding replacement.
-    Bindings(BTreeMap<String, Keys>),
+    Bindings(BTreeMap<String, Binding>),
     /// Edit the original supplied descriptor.
     MutateModel(Mutation),
     /// Clear inherited children.
@@ -134,25 +135,6 @@ struct Case {
     input: Query,
     /// Observations.
     expected: Expected,
-}
-/// Publishes application bindings, not only toolkit defaults.
-pub fn bindings(keys: BTreeMap<String, Keys>) {
-    let overrides = keys
-        .into_iter()
-        .map(|(name, keys)| {
-            (
-                name,
-                Some(match keys {
-                    Keys::One(key) => maestro_tui::KeybindingKeys::Single(key),
-                    Keys::Many(keys) => maestro_tui::KeybindingKeys::Multiple(keys),
-                }),
-            )
-        })
-        .collect();
-    maestro_tui::set_keybindings(maestro_tui::KeybindingsManager::new(
-        maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
-        overrides,
-    ));
 }
 /// Exact role palette supplied by the recording host.
 fn colors(shift: u8) -> Rc<Theme> {
@@ -245,7 +227,7 @@ pub struct Fixture {
 impl Fixture {
     /// Builds a controlled public component with no external registry effects.
     pub fn new(mut query: Query) -> Self {
-        bindings(std::mem::take(&mut query.bindings));
+        bindings::replace(&query.bindings);
         let models: Vec<_> = query.models.iter().map(Descriptor::handle).collect();
         let config = ModelsConfig {
             all_models: models.clone(),
@@ -307,7 +289,7 @@ impl Fixture {
                     self.selector.get_search_input().focus_flag().set(value);
                 }
                 Action::Theme(shift) => self.theme.set_theme_instance(colors(shift)).unwrap(),
-                Action::Bindings(keys) => bindings(keys),
+                Action::Bindings(keys) => bindings::replace(&keys),
                 Action::ClearChildren(value) => {
                     assert!(value);
                     self.selector.clear();

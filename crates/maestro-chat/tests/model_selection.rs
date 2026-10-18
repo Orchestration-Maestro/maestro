@@ -1,5 +1,6 @@
 //! Model selection through real catalog, settings and toolkit owners.
 #![cfg(test)]
+use crate::bindings;
 use crate::manual_runtime;
 use crate::model_selector_support;
 use crate::published;
@@ -162,7 +163,7 @@ impl Fixture {
     /// Builds the public picker through real controlled owners.
     fn new(query: &mut Query) -> Self {
         assert!(!query.current_shared || !query.scoped.is_empty());
-        bindings(std::mem::take(&mut query.bindings));
+        bindings::replace_toolkit(&query.bindings);
         let (theme, live) = published::published(&colors(0));
         let (registry, reads) = registry(query);
         let runtime = manual_runtime::ManualRuntime::new();
@@ -329,7 +330,7 @@ fn action_run(
     models: &[Arc<RwLock<Model>>],
 ) {
     match action {
-        Action::Bindings(keys) => bindings(keys),
+        Action::Bindings(keys) => bindings::replace_toolkit(&keys),
         Action::Theme(shift) => theme.set_theme_instance(colors(shift)).unwrap(),
         Action::Focus(value) => selector.focus_flag().set(value),
         Action::InputFocus(value) => selector.get_search_input().focus_flag().set(value),
@@ -625,7 +626,7 @@ fn failed_picker_clears_all_and_scoped_views_but_keeps_original_help() {
         return;
     }
     for case in selector_failure_support::cases(name) {
-        bindings(std::collections::BTreeMap::default());
+        bindings::replace_toolkit(&std::collections::BTreeMap::default());
         let mut input = case.input;
         let (registry, reached) = failing_registry(&mut input);
         let runtime = runtime_spy::Spy::default();

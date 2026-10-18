@@ -1,4 +1,5 @@
 //! Strict constructor, operation and observation records.
+use crate::bindings::Binding;
 use maestro_app::{ApiKeyCredential, AuthCredential, AuthSource, AuthStatus, OAuthCredential};
 use maestro_chat::{AuthSelectorProvider, AuthType};
 
@@ -134,7 +135,7 @@ pub enum Operation {
         query: String,
     },
     Bindings {
-        bindings: BTreeMap<String, Keys>,
+        bindings: BTreeMap<String, Binding>,
     },
     #[serde(rename_all = "camelCase")]
     ChildSubmit {
@@ -199,7 +200,7 @@ pub struct Query {
     /// Width.
     pub width: Option<usize>,
     /// Bindings.
-    pub bindings: BTreeMap<String, Keys>,
+    pub bindings: BTreeMap<String, Binding>,
     /// Reenter.
     pub reenter: bool,
     #[serde(rename = "reenterCancel")]
@@ -229,20 +230,4 @@ pub struct Expected {
     pub stored_unchanged: Option<bool>,
     /// Runtime unchanged.
     pub runtime_unchanged: Option<Vec<(String, String)>>,
-}
-
-/// A single key or an explicitly empty/multiple key list.
-#[derive(Deserialize)]
-#[serde(untagged)]
-pub enum Keys {
-    Single(String),
-    Multiple(Vec<String>),
-}
-impl From<Keys> for maestro_tui::KeybindingKeys {
-    fn from(value: Keys) -> Self {
-        match value {
-            Keys::Single(key) => Self::Single(key),
-            Keys::Multiple(keys) => Self::Multiple(keys),
-        }
-    }
 }

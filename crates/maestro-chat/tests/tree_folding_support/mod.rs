@@ -8,7 +8,7 @@ use crate::published;
 use crate::recorded_registry;
 use crate::registry;
 use crate::tree;
-use bindings::{Binding, bindings};
+use bindings::Binding;
 use filter_mode::mode;
 use maestro_app::{compact_json, presentation_data::keybindings::KEYBINDINGS};
 use maestro_chat::TreeList;
@@ -121,10 +121,7 @@ fn frame(list: &TreeList, input: &Input, expected: &Frame, events: &RefCell<Vec<
 }
 /// Replays all frames after construction and every subsequent operation.
 fn replay(case: &Case) {
-    set_keybindings(KeybindingsManager::new(
-        KEYBINDINGS.clone(),
-        bindings(&case.input.bindings),
-    ));
+    bindings::replace(&case.input.bindings);
     let input = &case.input;
     let supplied = tree(&input.nodes, &input.roots);
     let list = TreeList::new(

@@ -1,6 +1,7 @@
 //! Multiline dialog behavior through public construction, input and child handles.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+use crate::bindings;
 use crate::input_support;
 use crate::published;
 use crate::recording_terminal;
@@ -368,32 +369,8 @@ fn editor_dialog_initializes_only_nonempty_prefill() {
         snapshot(&host, &expected);
     }
 }
-/// Scalar or list binding overrides accepted by the registry.
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum Binding {
-    /// One key.
-    One(String),
-    /// Ordered alternatives.
-    Many(Vec<String>),
-}
 /// Named caller overrides.
-type Bindings = std::collections::BTreeMap<String, Binding>;
-/// Converts retained input spelling to the public binding API.
-fn overrides(values: &Bindings) -> maestro_tui::KeybindingsConfig {
-    values
-        .iter()
-        .map(|(name, keys)| {
-            (
-                name.clone(),
-                Some(match keys {
-                    Binding::One(key) => maestro_tui::KeybindingKeys::Single(key.clone()),
-                    Binding::Many(keys) => maestro_tui::KeybindingKeys::Multiple(keys.clone()),
-                }),
-            )
-        })
-        .collect()
-}
+type Bindings = std::collections::BTreeMap<String, bindings::Binding>;
 /// An ordinary key event or an independently mutable owner.
 #[derive(Deserialize)]
 #[serde(untagged)]
@@ -486,11 +463,10 @@ fn operation(host: &Host, operation: &Operation) {
                     .set_environment(key, value.environment.get(key).map_or("", String::as_str));
             }
         }
-        Operation::App(value) => host.manager.set_user_bindings(overrides(&value.values)),
-        Operation::Global(value) => maestro_tui::set_keybindings(KeybindingsManager::new(
-            maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
-            overrides(&value.values),
-        )),
+        Operation::App(value) => host
+            .manager
+            .set_user_bindings(bindings::bindings(&value.values)),
+        Operation::Global(value) => bindings::replace(&value.values),
         Operation::Theme(value) => {
             host.theme.set_theme_instance(colors(value.theme)).unwrap();
         }
@@ -514,13 +490,10 @@ fn input_group(name: &str) {
     #[cfg(unix)]
     install_editor("vi", b"edited\n", 0);
     for (input, expected) in cases::<OpsInput, Frames>(name) {
-        maestro_tui::set_keybindings(KeybindingsManager::new(
-            maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
-            overrides(&input.global),
-        ));
+        bindings::replace(&input.global);
         let application = KeybindingsManager::new(
             maestro_app::presentation_data::keybindings::KEYBINDINGS.clone(),
-            overrides(&input.app),
+            bindings::bindings(&input.app),
         );
         let host = configured_dialog(
             &RenderInput {
