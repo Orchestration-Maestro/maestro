@@ -115,7 +115,7 @@ mod startup_conversions;
 mod startup_timings;
 /// Strict recorded observations shared by several test modules.
 mod support {
-    /// Drive one operation on a current-thread runtime, without background tasks or network.
+    /// Drive one operation on a current-thread runtime with I/O and time drivers disabled.
     pub fn run<T>(future: impl std::future::Future<Output = T>) -> T {
         tokio::runtime::Builder::new_current_thread()
             .build()
