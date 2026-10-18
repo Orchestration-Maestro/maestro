@@ -31,8 +31,9 @@ and every part of the engine is a crate with one job.
   ls.
 - [`maestro-session`](docs/sessions/session_manager.md) keeps history as an
   append-only JSONL tree that you can continue, fork, branch and compact.
-- [`maestro-tui`](docs/terminal/rendering.md) draws the terminal. It rewrites only
-  the rows that changed, keeps your scrollback and ships an editor with completion.
+- [`maestro-tui`](docs/terminal/rendering.md) draws the terminal. It writes only
+  what changed since the last frame, keeps your scrollback and ships an editor
+  with completion.
 
 The [crate graph](docs/specs/maestro-port.md#crates-and-delivery-order) lists the
 rest. Dependencies point one way, down towards small leaf crates, and a
