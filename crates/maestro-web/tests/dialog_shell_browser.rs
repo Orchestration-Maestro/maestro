@@ -859,45 +859,26 @@ pub async fn dialog_native_focus_transition_retargets_and_resets() {
 
 /// Collect only the Close shadow annuli from the actual submitted paint.
 fn native_rings(view: &View) -> Vec<f32> {
-    use num_traits::ToPrimitive as _;
-    let close = native_close(view);
-    let top = close.top().floor().to_i32().unwrap();
-    (top - 6..=top)
-        .map(|y| {
-            view.paint.borrow().alpha(
-                &view.context,
-                &view.shapes.borrow(),
-                egui::pos2(close.center().x, y.to_f32().unwrap() + 0.5),
-            )
-        })
-        .filter(|a| *a > 0.)
-        .collect()
+    view.paint
+        .borrow()
+        .top_rows(&view.context, &view.shapes.borrow(), native_close(view))
 }
 
 /// Read the actual canvas glyph extent, independent of the native body's natural height.
 fn native_close(view: &View) -> egui::Rect {
-    view.shapes
-        .borrow()
-        .iter()
-        .find_map(|shape| match &shape.shape {
-            egui::Shape::Mesh(mesh) if (mesh.calc_bounds().width() - 16.).abs() < 0.001 => {
-                Some(mesh.calc_bounds())
-            }
-            _ => None,
-        })
+    attachment_support::dialog_paint::glyphs(&view.shapes.borrow())
+        .next()
         .unwrap()
+        .calc_bounds()
 }
 
 /// Compare actual keyboard-focus pixel coverage with the recorded fractional spread.
 fn assert_native_spread(view: &View, spread: f32) {
-    let actual =
+    attachment_support::dialog_paint::assert_spread(
         view.paint
             .borrow()
-            .top_alpha(&view.context, &view.shapes.borrow(), native_close(view));
-    let progress = spread / 2.;
-    let expected = spread * 0.7 * 255. * progress * (3. - progress);
-    assert!(
-        (actual - expected).abs() < 3.,
-        "painted coverage {actual}, expected {expected}"
+            .top_alpha(&view.context, &view.shapes.borrow(), native_close(view)),
+        spread,
+        0.7,
     );
 }

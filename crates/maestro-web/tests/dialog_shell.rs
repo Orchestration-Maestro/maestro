@@ -13,6 +13,9 @@ use maestro_web::{
 use num_traits::ToPrimitive as _;
 use std::{cell::Cell, rc::Rc};
 
+/// The canvas Close control of the default dialog frame.
+const CLOSE: egui::Rect = egui::Rect::from_min_max(egui::pos2(467., 117.), egui::pos2(483., 133.));
+
 #[test]
 fn dialog_closed_owner_renders_nothing() {
     let visits = Rc::new(Cell::new(0));
@@ -469,16 +472,15 @@ fn geometry(filename: &str, mode: maestro_theme::BrandMode) {
     });
     let _owner = dialog(&dialogs, DialogProps::new(true, children)).unwrap();
     frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
-    let close = egui::Rect::from_min_size(egui::pos2(467., 117.), egui::vec2(16., 16.));
     assert!(
         frame.shapes.iter().any(
-            |shape| matches!(&shape.shape, egui::Shape::Mesh(mesh) if mesh.calc_bounds()==close)
+            |shape| matches!(&shape.shape, egui::Shape::Mesh(mesh) if mesh.calc_bounds()==CLOSE)
         )
     );
     let resting_images = control_paint(&frame);
     frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
     frame.run(
-        vec![egui::Event::PointerMoved(close.center())],
+        vec![egui::Event::PointerMoved(CLOSE.center())],
         |_, i, p| dialogs.render(i, p).unwrap(),
     );
     for _ in 0..12 {
@@ -636,12 +638,7 @@ fn focus_fade(frame: &mut attachment_support::Frame, dialogs: &DialogContext, id
     frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
     frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
     assert_eq!(
-        frame
-            .paint
-            .alpha(&frame.ctx, &frame.shapes, egui::pos2(475.5, 114.5))
-            .round()
-            .to_u8()
-            .unwrap(),
+        outer_alpha(frame),
         247,
         "outer shadow fades through the same curve"
     );
@@ -713,15 +710,8 @@ fn glyph_tint(frame: &attachment_support::Frame) -> [u8; 3] {
 
 /// Observe the submitted glyph mesh's group opacity.
 fn glyph_alpha(frame: &attachment_support::Frame) -> u8 {
-    frame
-        .shapes
-        .iter()
-        .filter_map(|s| match &s.shape {
-            egui::Shape::Mesh(mesh) if (mesh.calc_bounds().width() - 16.).abs() < 0.001 => {
-                mesh.vertices.iter().map(|v| v.color.a()).max()
-            }
-            _ => None,
-        })
+    attachment_support::dialog_paint::glyphs(&frame.shapes)
+        .filter_map(|mesh| mesh.vertices.iter().map(|v| v.color.a()).max())
         .max()
         .unwrap()
 }
@@ -764,15 +754,7 @@ fn dialog_interrupted_focus_paint_is_continuous() {
                 170,
                 "overlap composited before group opacity"
             );
-            assert_eq!(
-                frame
-                    .paint
-                    .alpha(&frame.ctx, &frame.shapes, egui::pos2(475.5, 114.5))
-                    .round()
-                    .to_u8()
-                    .unwrap(),
-                138
-            );
+            assert_eq!(outer_alpha(&frame), 138);
         }
         let origin = 1. + milliseconds / 1000.;
         for (elapsed, expected) in [(1. / 60., next), (duration / 2., half)] {
@@ -786,29 +768,25 @@ fn dialog_interrupted_focus_paint_is_continuous() {
 
 /// Read the two painted annuli, excluding the panel border.
 fn ring_paint(frame: &attachment_support::Frame) -> Vec<f32> {
-    let density = frame.ctx.pixels_per_point();
-    let top = (117. * density).floor().to_i32().unwrap();
-    (top - 10..=top)
-        .map(|y| {
-            frame.paint.alpha(
-                &frame.ctx,
-                &frame.shapes,
-                egui::pos2(475.5, (y.to_f32().unwrap() + 0.5) / density),
-            )
-        })
-        .filter(|a| *a > 0.)
-        .collect()
+    frame.paint.top_rows(&frame.ctx, &frame.shapes, CLOSE)
 }
 
-/// Compare integrated pixel opacity to independent fractional shadow coverage.
+/// Read one outer-annulus pixel above the Close control.
+fn outer_alpha(frame: &attachment_support::Frame) -> u8 {
+    frame
+        .paint
+        .alpha(&frame.ctx, &frame.shapes, egui::pos2(475.5, 114.5))
+        .round()
+        .to_u8()
+        .unwrap()
+}
+
+/// Compare the Close ring's painted coverage with its fractional spread.
 fn assert_ring_spread(frame: &attachment_support::Frame, spread: f32, opacity: f32) {
-    let progress = spread / 2.;
-    let expected = spread * opacity * 255. * progress * (3. - progress);
-    let close = egui::Rect::from_min_size(egui::pos2(467., 117.), egui::vec2(16., 16.));
-    let actual = frame.paint.top_alpha(&frame.ctx, &frame.shapes, close);
-    assert!(
-        (actual - expected).abs() < 3.,
-        "painted coverage {actual}, expected {expected} for spread {spread}"
+    attachment_support::dialog_paint::assert_spread(
+        frame.paint.top_alpha(&frame.ctx, &frame.shapes, CLOSE),
+        spread,
+        opacity,
     );
 }
 
@@ -895,21 +873,13 @@ fn dialog_repeated_reversal_keeps_painted_progress() {
         frame.time = Some(time);
         frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
         let before = if focused {
-            frame.paint.top_alpha(
-                &frame.ctx,
-                &frame.shapes,
-                egui::Rect::from_min_size(egui::pos2(467., 117.), egui::vec2(16., 16.)),
-            )
+            frame.paint.top_alpha(&frame.ctx, &frame.shapes, CLOSE)
         } else {
             f32::from(glyph_alpha(&frame))
         };
         transition_input(&mut frame, &dialogs, id.get(), [focused, true], time);
         let after = if focused {
-            frame.paint.top_alpha(
-                &frame.ctx,
-                &frame.shapes,
-                egui::Rect::from_min_size(egui::pos2(467., 117.), egui::vec2(16., 16.)),
-            )
+            frame.paint.top_alpha(&frame.ctx, &frame.shapes, CLOSE)
         } else {
             f32::from(glyph_alpha(&frame))
         };

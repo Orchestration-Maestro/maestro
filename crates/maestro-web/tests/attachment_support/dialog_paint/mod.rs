@@ -30,16 +30,16 @@ impl Paint {
     ) -> [f32; 4] {
         self.0.pixel(ctx, &decoration(shapes), point)
     }
-    /// Integrate physical-pixel samples above the close control.
+    /// Read the painted physical-pixel samples above the close control.
     /// # Panics
     /// Panics if controlled coordinates cannot be represented.
     #[must_use]
-    pub fn top_alpha(
+    pub fn top_rows(
         &self,
         ctx: &egui::Context,
         shapes: &[egui::epaint::ClippedShape],
         close: egui::Rect,
-    ) -> f32 {
+    ) -> Vec<f32> {
         let density = ctx.pixels_per_point();
         let top = (close.top() * density).floor().to_i32().unwrap();
         (top - 10..=top)
@@ -50,20 +50,47 @@ impl Paint {
                     egui::pos2(close.center().x, (y.to_f32().unwrap() + 0.5) / density),
                 )
             })
-            .sum::<f32>()
-            / density
+            .filter(|a| *a > 0.)
+            .collect()
+    }
+    /// Integrate physical-pixel samples above the close control.
+    #[must_use]
+    pub fn top_alpha(
+        &self,
+        ctx: &egui::Context,
+        shapes: &[egui::epaint::ClippedShape],
+        close: egui::Rect,
+    ) -> f32 {
+        self.top_rows(ctx, shapes, close).into_iter().sum::<f32>() / ctx.pixels_per_point()
     }
 }
-/// Exclude the panel and sixteen-point glyph, retaining old stroke or raster decoration.
+/// Compare integrated pixel opacity to independent fractional shadow coverage.
+/// # Panics
+/// Panics if the painted coverage differs from the spread's coverage.
+pub fn assert_spread(actual: f32, spread: f32, opacity: f32) {
+    let progress = spread / 2.;
+    let expected = spread * opacity * 255. * progress * (3. - progress);
+    assert!(
+        (actual - expected).abs() < 3.,
+        "painted coverage {actual}, expected {expected} for spread {spread}"
+    );
+}
+/// Select the sixteen-point Close glyph meshes.
+pub fn glyphs(shapes: &[egui::epaint::ClippedShape]) -> impl Iterator<Item = &egui::epaint::Mesh> {
+    shapes.iter().filter_map(|s| match &s.shape {
+        egui::Shape::Mesh(mesh) if (mesh.calc_bounds().width() - 16.).abs() < 0.001 => {
+            Some(&**mesh)
+        }
+        _ => None,
+    })
+}
+/// Exclude the panel and sixteen-point glyph, retaining the raster ring decoration.
 fn decoration(shapes: &[egui::epaint::ClippedShape]) -> Vec<egui::epaint::ClippedShape> {
     shapes
         .iter()
-        .filter(|s| match &s.shape {
-            egui::Shape::Rect(rect) => rect.rect.width() < 40.,
-            egui::Shape::Mesh(mesh) => {
-                mesh.calc_bounds().width() > 16. && mesh.calc_bounds().width() < 40.
-            }
-            _ => false,
+        .filter(|s| {
+            matches!(&s.shape, egui::Shape::Mesh(mesh)
+                if mesh.calc_bounds().width() > 16. && mesh.calc_bounds().width() < 40.)
         })
         .cloned()
         .collect()

@@ -148,7 +148,7 @@ impl Paint {
         Ok(())
     }
 }
-/// Encode premultiplied sRGB after whole-control opacity.
+/// Scale premultiplied sRGB by whole-control opacity, alpha onto the channel range.
 fn shadow_color(value: &[f32], opacity: f32) -> [f32; 4] {
     [
         value[0] * opacity,
