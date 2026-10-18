@@ -60,11 +60,12 @@ as the native thread-safe examples below require a running task facility. See
 
 A run uses the hooks captured when it was admitted; replacing `on_payload` or
 `on_response` affects later runs only. The registered provider calls `on_payload`
-with its request body: the returned record's `payload` member is the body it sends.
-`on_response` observes the response status and headers at the provider's usual point
-and cannot replace them. Each provider invokes both hooks and handles their rejections
-under its own error and retry policy, so a rejection does not always end the run: a
-failed response-session setup can be retried successfully. When a run does end with an
+with its request body: the returned record's `payload` member is input to the
+provider's request preparation. `on_response` observes the response status and headers
+at the provider's usual point and cannot replace them. Each provider controls whether
+it invokes the hooks and handles rejections under its own error and retry policy,
+so a rejection does not always end the run: a failed response-session setup can be
+retried successfully. When a run does end with an
 error assistant message, the agent retains that message's `error_message`, not its
 text content, as its error. In the default agent, hook closures need no type
 annotations:
