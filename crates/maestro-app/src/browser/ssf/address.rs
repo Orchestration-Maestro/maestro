@@ -16,6 +16,12 @@ pub struct Range {
     /// Ending cell.
     pub e: CellAddress,
 }
+impl Range {
+    /// Test inclusive membership without changing rectangle order or coordinates.
+    pub(super) fn contains(self, cell: CellAddress) -> bool {
+        self.s.r <= cell.r && cell.r <= self.e.r && self.s.c <= cell.c && cell.c <= self.e.c
+    }
+}
 /// Render a zero-based row.
 #[must_use]
 pub fn encode_row(row: u32) -> String {

@@ -167,7 +167,12 @@ Spreadsheet formatting data, workbook reading, projection and style policy are d
 SheetJS 0.20.3. Copyright (C) 2012-present SheetJS LLC. Maestro implements
 the policy in Rust and corrects carried seconds, invalid numeric dates and
 host-timezone calendar discontinuities, per-sheet range inheritance and declared
-legacy code-page decoding. The source is distributed under the
+legacy code-page decoding and string-cached shared-formula ownership.
+The legacy shared-formula control fixture originates from Apache POI's
+[`shared_formulas.xls`](https://github.com/apache/poi/blob/dc577a8cbcdec22ae5547615502d63b2051f35a6/test-data/spreadsheet/shared_formulas.xls).
+The `metadata-writer-shared-text.xls` and `metadata-writer-array-text.xls`
+fixtures were produced with Apache POI 5.4.1; Apache POI is licensed under
+Apache-2.0 and is not a runtime or build dependency. The source is distributed under the
 following license:
 
 ```text

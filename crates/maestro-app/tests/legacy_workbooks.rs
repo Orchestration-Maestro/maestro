@@ -241,3 +241,308 @@ fn legacy_boolean_and_error_records_keep_exact_flags() {
 fn legacy_sheets_without_dimensions_start_unbounded() {
     legacy_workbook_support::run_binary(&["legacy-range-per-sheet.xls"]);
 }
+
+#[test]
+fn legacy_formulas_keep_each_cached_result_kind() {
+    legacy_workbook_support::metadata::run("legacy_formulas_keep_each_cached_result_kind");
+}
+
+#[test]
+fn legacy_formula_operators_keep_expression_order() {
+    legacy_workbook_support::metadata::run("legacy_formula_operators_keep_expression_order");
+}
+
+#[test]
+fn legacy_formula_unary_tokens_keep_delimiters() {
+    legacy_workbook_support::metadata::run("legacy_formula_unary_tokens_keep_delimiters");
+}
+
+#[test]
+fn legacy_formula_function_tokens_keep_argument_order() {
+    legacy_workbook_support::metadata::run("legacy_formula_function_tokens_keep_argument_order");
+}
+
+#[test]
+fn legacy_formula_literals_keep_numeric_and_string_spelling() {
+    legacy_workbook_support::metadata::run(
+        "legacy_formula_literals_keep_numeric_and_string_spelling",
+    );
+}
+
+#[test]
+fn legacy_formula_empty_expression_keeps_its_cache() {
+    legacy_workbook_support::metadata::run("legacy_formula_empty_expression_keeps_its_cache");
+}
+
+#[test]
+fn legacy_formula_coordinates_keep_absolute_axes() {
+    legacy_workbook_support::metadata::run("legacy_formula_coordinates_keep_absolute_axes");
+}
+
+#[test]
+fn legacy_formula_error_literals_keep_each_code() {
+    legacy_workbook_support::metadata::run("legacy_formula_error_literals_keep_each_code");
+}
+
+#[test]
+fn legacy_formula_number_boundaries_use_shared_spelling() {
+    legacy_workbook_support::metadata::run("legacy_formula_number_boundaries_use_shared_spelling");
+}
+
+#[test]
+fn legacy_formula_function_ids_keep_published_spellings() {
+    legacy_workbook_support::metadata::run("legacy_formula_function_ids_keep_published_spellings");
+}
+
+#[test]
+fn legacy_formula_fixed_functions_keep_each_argument_count() {
+    legacy_workbook_support::metadata::run(
+        "legacy_formula_fixed_functions_keep_each_argument_count",
+    );
+}
+
+#[test]
+fn legacy_writer_without_cache_retains_empty_text_result() {
+    legacy_workbook_support::metadata::run("legacy_writer_without_cache_retains_empty_text_result");
+}
+
+#[test]
+fn legacy_rich_strings_keep_plain_text_and_safe_preview() {
+    legacy_workbook_support::metadata::run("legacy_rich_strings_keep_plain_text_and_safe_preview");
+}
+
+#[test]
+fn legacy_formula_areas_keep_axes_and_error_references() {
+    legacy_workbook_support::metadata::run("legacy_formula_areas_keep_axes_and_error_references");
+}
+
+#[test]
+fn legacy_formula_control_and_memory_tokens_do_not_change_text() {
+    legacy_workbook_support::metadata::run(
+        "legacy_formula_control_and_memory_tokens_do_not_change_text",
+    );
+}
+
+#[test]
+fn legacy_formula_spacing_keeps_spaces_and_carriage_returns() {
+    legacy_workbook_support::metadata::run(
+        "legacy_formula_spacing_keeps_spaces_and_carriage_returns",
+    );
+}
+
+#[test]
+fn legacy_formula_array_constants_keep_rows_types_and_quotes() {
+    legacy_workbook_support::metadata::run(
+        "legacy_formula_array_constants_keep_rows_types_and_quotes",
+    );
+}
+
+#[test]
+fn legacy_formula_names_keep_identity_and_prefix_rules() {
+    legacy_workbook_support::metadata::run("legacy_formula_names_keep_identity_and_prefix_rules");
+}
+
+#[test]
+fn legacy_formula_sheet_references_quote_and_select_sheet_ranges() {
+    legacy_workbook_support::metadata::run(
+        "legacy_formula_sheet_references_quote_and_select_sheet_ranges",
+    );
+}
+
+#[test]
+fn legacy_formula_external_names_keep_book_selection() {
+    legacy_workbook_support::metadata::run("legacy_formula_external_names_keep_book_selection");
+}
+
+#[test]
+fn legacy_shared_formulas_expand_per_sheet_without_changing_caches() {
+    legacy_workbook_support::metadata::run(
+        "legacy_shared_formulas_expand_per_sheet_without_changing_caches",
+    );
+}
+
+#[test]
+fn legacy_array_formulas_keep_anchor_range_followers_and_cached_values() {
+    legacy_workbook_support::metadata::run(
+        "legacy_array_formulas_keep_anchor_range_followers_and_cached_values",
+    );
+}
+
+#[test]
+fn legacy_shared_formula_strings_keep_record_phase() {
+    legacy_workbook_support::metadata::run("legacy_shared_formula_strings_keep_record_phase");
+}
+
+#[test]
+fn legacy_array_formula_strings_keep_record_phase() {
+    legacy_workbook_support::metadata::run("legacy_array_formula_strings_keep_record_phase");
+}
+
+#[test]
+fn legacy_writer_shared_strings_keep_first_populated_anchor() {
+    legacy_workbook_support::metadata::run(
+        "legacy_writer_shared_strings_keep_first_populated_anchor",
+    );
+}
+
+#[test]
+fn legacy_writer_string_arrays_keep_cached_text_and_members() {
+    legacy_workbook_support::metadata::run(
+        "legacy_writer_string_arrays_keep_cached_text_and_members",
+    );
+}
+
+#[test]
+fn legacy_templates_keep_all_cache_kinds_and_unaffected_neighbors() {
+    legacy_workbook_support::metadata::run(
+        "legacy_templates_keep_all_cache_kinds_and_unaffected_neighbors",
+    );
+}
+
+#[test]
+fn legacy_array_membership_resets_per_sheet_and_checks_each_axis() {
+    legacy_workbook_support::metadata::run(
+        "legacy_array_membership_resets_per_sheet_and_checks_each_axis",
+    );
+}
+
+#[test]
+fn legacy_templates_keep_registration_order_and_cell_replacements() {
+    legacy_workbook_support::metadata::run(
+        "legacy_templates_keep_registration_order_and_cell_replacements",
+    );
+}
+
+#[test]
+fn legacy_formula_classes_keep_reference_results() {
+    legacy_workbook_support::metadata::run("legacy_formula_classes_keep_reference_results");
+}
+
+#[test]
+fn legacy_formula_relative_tokens_wrap_within_binary_grid() {
+    legacy_workbook_support::metadata::run(
+        "legacy_formula_relative_tokens_wrap_within_binary_grid",
+    );
+}
+
+#[test]
+fn legacy_biff5_formulas_use_their_own_layout() {
+    legacy_workbook_support::metadata::run("legacy_biff5_formulas_use_their_own_layout");
+}
+
+#[test]
+fn legacy_formula_defined_names_keep_scope_and_fallback() {
+    legacy_workbook_support::metadata::run("legacy_formula_defined_names_keep_scope_and_fallback");
+}
+
+#[test]
+fn legacy_defined_names_keep_all_builtin_spellings() {
+    legacy_workbook_support::metadata::run("legacy_defined_names_keep_all_builtin_spellings");
+}
+
+#[test]
+fn legacy_formula_external_sheets_keep_areas_and_deleted_ranges() {
+    legacy_workbook_support::metadata::run(
+        "legacy_formula_external_sheets_keep_areas_and_deleted_ranges",
+    );
+}
+
+#[test]
+fn legacy_formula_sheet_quoting_keeps_non_ascii_boundaries() {
+    legacy_workbook_support::metadata::run(
+        "legacy_formula_sheet_quoting_keeps_non_ascii_boundaries",
+    );
+}
+
+#[test]
+fn legacy_formula_extra_blocks_keep_token_order() {
+    legacy_workbook_support::metadata::run("legacy_formula_extra_blocks_keep_token_order");
+}
+
+#[test]
+fn legacy_formula_missing_arguments_and_optimized_sum_keep_shape() {
+    legacy_workbook_support::metadata::run(
+        "legacy_formula_missing_arguments_and_optimized_sum_keep_shape",
+    );
+}
+
+#[test]
+fn legacy_formula_ignored_tails_keep_completed_expressions() {
+    legacy_workbook_support::metadata::run(
+        "legacy_formula_ignored_tails_keep_completed_expressions",
+    );
+}
+
+#[test]
+fn legacy_formula_range_operators_keep_sheet_qualifiers() {
+    legacy_workbook_support::metadata::run("legacy_formula_range_operators_keep_sheet_qualifiers");
+}
+
+#[test]
+fn legacy_formula_typed_operands_keep_all_class_encodings() {
+    legacy_workbook_support::metadata::run(
+        "legacy_formula_typed_operands_keep_all_class_encodings",
+    );
+}
+
+#[test]
+fn legacy_formula_spacing_and_literals_keep_context() {
+    legacy_workbook_support::metadata::run("legacy_formula_spacing_and_literals_keep_context");
+}
+
+#[test]
+fn legacy_formula_unsupported_grammar_keeps_reader_failure() {
+    legacy_workbook_support::metadata::run(
+        "legacy_formula_unsupported_grammar_keeps_reader_failure",
+    );
+}
+
+#[test]
+fn legacy_older_operands_keep_name_area_and_sheet_layouts() {
+    legacy_workbook_support::metadata::run(
+        "legacy_older_operands_keep_name_area_and_sheet_layouts",
+    );
+}
+
+#[test]
+fn legacy_hyperlink_targets_keep_formatted_cells() {
+    legacy_workbook_support::metadata::run("legacy_hyperlink_targets_keep_formatted_cells");
+}
+
+#[test]
+fn legacy_hyperlink_ranges_affect_only_existing_cells() {
+    legacy_workbook_support::metadata::run("legacy_hyperlink_ranges_affect_only_existing_cells");
+}
+
+#[test]
+fn legacy_hyperlink_binary_branches_keep_target_selection() {
+    legacy_workbook_support::metadata::run(
+        "legacy_hyperlink_binary_branches_keep_target_selection",
+    );
+}
+
+#[test]
+fn legacy_hyperlink_record_order_keeps_replacement_semantics() {
+    legacy_workbook_support::metadata::run(
+        "legacy_hyperlink_record_order_keeps_replacement_semantics",
+    );
+}
+
+#[test]
+fn legacy_hyperlink_failures_keep_reader_context() {
+    legacy_workbook_support::metadata::run("legacy_hyperlink_failures_keep_reader_context");
+}
+
+#[test]
+fn legacy_hyperlink_optional_fields_keep_exact_target_identity() {
+    legacy_workbook_support::metadata::run(
+        "legacy_hyperlink_optional_fields_keep_exact_target_identity",
+    );
+}
+
+#[test]
+fn legacy_hyperlink_invalid_file_monikers_keep_reader_errors() {
+    legacy_workbook_support::metadata::run(
+        "legacy_hyperlink_invalid_file_monikers_keep_reader_errors",
+    );
+}

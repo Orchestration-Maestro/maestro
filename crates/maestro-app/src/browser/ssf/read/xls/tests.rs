@@ -172,3 +172,115 @@ fn empty_strings_consume_only_their_encoding_flag() {
         assert_eq!(payload.remaining(), 0);
     }
 }
+
+thread_local! {
+    /// Binary token decodes in the current workbook read.
+    pub(super) static TOKEN_WORK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Direct template anchor lookups in the current workbook read.
+    pub(super) static ANCHOR_WORK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Ordered array-adoption comparisons in the current workbook read.
+    pub(super) static ARRAY_WORK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Positions visited in hyperlink rectangles.
+    pub(super) static LINK_WORK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[test]
+fn legacy_metadata_work_tracks_tokens_templates_and_link_cells() {
+    for size in [32, 64] {
+        for kind in ["tokens", "shared", "arrays", "arrayAnchors", "links"] {
+            TOKEN_WORK.set(0);
+            ANCHOR_WORK.set(0);
+            ARRAY_WORK.set(0);
+            LINK_WORK.set(0);
+            let file = format!("metadata-work-{kind}-{size}.xls");
+            let bytes = std::fs::read(
+                std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("tests/fixtures/workbooks")
+                    .join(&file),
+            )
+            .unwrap();
+            let book = super::read(&bytes, &file, &super::Ssf::default()).unwrap();
+            let sheet = &book.sheets["Data"];
+            let work = [
+                TOKEN_WORK.get(),
+                ANCHOR_WORK.get(),
+                ARRAY_WORK.get(),
+                LINK_WORK.get(),
+            ];
+            println!("kind={kind} size={size} work={work:?}");
+            check_metadata_work(kind, size, sheet, work);
+        }
+    }
+}
+
+/// Compare work bounds with the corresponding retained workbook result.
+fn check_metadata_work(kind: &str, size: usize, sheet: &super::WorkSheet, work: [usize; 4]) {
+    match kind {
+        "tokens" => {
+            assert_eq!(
+                sheet.cells["A1"].f.as_deref(),
+                Some(format!("1{}", "+2".repeat(size)).as_str())
+            );
+            assert_eq!(work[0], 1 + 2 * size);
+        }
+        "shared" => {
+            assert_eq!(sheet.cells.len(), size);
+            assert!(
+                sheet
+                    .cells
+                    .values()
+                    .all(|cell| cell.f.as_deref() == Some("7"))
+            );
+            assert!(work[1] <= size + 1);
+            assert_eq!(work[2], 0);
+        }
+        "arrayAnchors" => {
+            assert_eq!(sheet.cells.len(), 2 * size);
+            assert_eq!(work[2], 0);
+            assert!(work[1] <= 3 * size);
+            check_array_anchors(sheet, size);
+        }
+        "arrays" => {
+            check_materialized_arrays(sheet, size, work[2]);
+        }
+        "links" => {
+            assert_eq!(sheet.cells.len(), size);
+            assert_eq!(work[3], 2 * size);
+            assert!(
+                sheet
+                    .cells
+                    .values()
+                    .all(|cell| cell.l.as_ref().is_some_and(|link| link.target == "x"))
+            );
+        }
+        _ => unreachable!(),
+    }
+}
+
+/// Observe both array metadata owners for every direct anchor lookup.
+fn check_array_anchors(sheet: &super::WorkSheet, size: usize) {
+    for row in 1..=size {
+        assert_eq!(
+            sheet.cells[&format!("A{row}")].f.as_deref(),
+            Some((row - 1).to_string().as_str())
+        );
+        assert_eq!(
+            sheet.cells[&format!("B{row}")].array_formula.as_deref(),
+            Some(format!("A{row}:B{row}").as_str())
+        );
+        assert!(sheet.cells[&format!("B{row}")].f.is_none());
+    }
+}
+
+/// Preserve ordered array adoption only on materialized-expression paths.
+fn check_materialized_arrays(sheet: &super::WorkSheet, size: usize, work: usize) {
+    assert_eq!(sheet.cells.len(), 2 * size);
+    assert_eq!(work, size * (size + 1));
+    assert!(
+        sheet
+            .cells
+            .values()
+            .filter(|cell| cell.array_formula.is_some())
+            .all(|cell| cell.v == super::CellValue::Text("v".into()))
+    );
+}

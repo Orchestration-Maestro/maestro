@@ -1,0 +1,14 @@
+[
+  {
+    "file": "shared-sheet-local.xls",
+    "expected": "<excel filename=\"shared-sheet-local.xls\">\n<sheet name=\"First\" index=\"1\">\n,\n,10\n,20\n,30\n</sheet>\n<sheet name=\"Second\" index=\"2\">\n,\n,40\n,50\n</sheet>\n</excel>"
+  },
+  {
+    "file": "rich-shared-and-inline.xls",
+    "expected": "<excel filename=\"rich-shared-and-inline.xls\">\n<sheet name=\"Data\" index=\"1\">\na<雪>b,\" x\n&y \",a<雪>b,\"_x0041_\r\n雪\"\na<雪>b,,,\n</sheet>\n</excel>"
+  },
+  {
+    "file": "link-external.xls",
+    "expected": "<excel filename=\"link-external.xls\">\n<sheet name=\"Data\" index=\"1\">\n1234.50,second\n</sheet>\n</excel>"
+  }
+]

@@ -80,9 +80,9 @@ raw-value attributes reuse this spelling. Standard error
 codes use their labels; an unknown numeric error stays numeric. Unknown XLSX error labels
 are kept, and formulas are not evaluated.
 Cells retain owned `f` formula text and optional `array_formula` range metadata.
-Formula text decodes spreadsheet escapes once, normalizes CRLF to LF and removes
+XLSX formula text decodes spreadsheet escapes once, normalizes CRLF to LF and removes
 function prefixes. Shared formulas expand within their own sheet using the
-[operand rules](#shared-formula-operands). Uncached numeric formulas retain missing raw values
+[operand rules](#shared-formula-operands). Uncached XLSX numeric formulas retain missing raw values
 rather than fabricated zeroes; explicit string cells without a value retain empty strings.
 Malformed archives, required missing parts, XML, reader and address failures have
 distinct `WorkbookError` variants. Missing style declarations are optional, while
@@ -125,8 +125,18 @@ strings without text retain an empty string. Plain shared and inline strings
 select direct text before direct rich runs, skip phonetic runs and decode workbook
 escapes once. Invalid shared-string indices fail with workbook and sheet context.
 
-Binary formula expressions, arrays, rich text and hyperlinks remain tracked in
-[legacy workbook metadata](https://github.com/Orchestration-Maestro/maestro/issues/1175).
+Binary expressions retain their token order, independent absolute axes and
+version-specific reference layouts. Shared expressions expand per consuming cell;
+array anchors retain their expression and range while followers retain only the
+range. Template ownership survives a following STRING cache, including a shared
+anchor that is the first populated cell. Number, Boolean, error and text caches
+remain unchanged; a writer-omitted binary cache is empty text, not a missing value.
+Binary strings retain CRLF and literal escape-looking text. Rich strings retain
+decoded plain text without generated run markup. Hyperlink records retain their
+selected target on existing cells in record order; unused tooltip and run metadata
+are not stored. The existing HTML writer owns escaping and link safety. Each
+sheet's observed bounds are independent when no dimension is declared. Unsupported
+binary formula grammar returns a contextual reader failure; formulas are not evaluated.
 
 `encode_row`, `encode_col`, `encode_cell` and `encode_range` render zero-based
 positions as A1 addresses; decoders accept absolute `$` markers.

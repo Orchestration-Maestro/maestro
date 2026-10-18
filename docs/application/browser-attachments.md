@@ -84,9 +84,11 @@ Spreadsheet recognition uses exact XLSX/Excel MIME strings or case-insensitive
 are retained; other matches use the canonical XLSX MIME. Reading follows the
 bytes: XLSX and binary XLS are supported, including XLSX bytes with an `.xls`
 name. The binary reader uses each cell's number format and declared sheet bounds
-through the [shared workbook reader](document-formats.md). Binary formula
-expressions, arrays, rich text and hyperlinks remain in
-[legacy workbook metadata](https://github.com/Orchestration-Maestro/maestro/issues/1175).
+through the [shared workbook reader](document-formats.md). Binary formula and array
+metadata, decoded rich-string text and hyperlink targets use the same retained
+cells and writers. Binary empty-text caches remain empty in extraction rather
+than falling back to formula text; previews reuse the existing escaping and safe
+link policy without adding rich-run styling or tooltip storage.
 
 Spreadsheet documents retain original bytes/name/size and have no preview.
 The literal `<excel filename="NAME">` wrapper contains workbook-ordered sheets,

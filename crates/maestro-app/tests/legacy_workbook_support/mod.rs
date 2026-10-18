@@ -93,13 +93,20 @@ struct Cell {
 #[derive(Deserialize)]
 #[serde(untagged, deny_unknown_fields)]
 enum Scalar {
-    Number { number: String },
+    Number {
+        #[serde(alias = "$number")]
+        number: String,
+    },
+    Numeric(f64),
     Text(String),
     Boolean(bool),
 }
 impl Scalar {
     fn check(&self, value: &CellValue) {
         match (self, value) {
+            (Self::Numeric(number), CellValue::Number(actual)) => {
+                assert_eq!(number.to_bits(), actual.to_bits());
+            }
             (Self::Number { number }, CellValue::Number(actual)) => {
                 assert_eq!(actual.to_bits(), number.parse::<f64>().unwrap().to_bits());
             }
@@ -268,3 +275,5 @@ fn check_sequence(
         Some(expected.general_text.as_str())
     );
 }
+
+pub mod metadata;
