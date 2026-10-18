@@ -559,7 +559,7 @@ fn local_bash_progress_uses_existing_throttle_and_decoder() {
             send.send(input.chunks[2].clone()).unwrap();assert!(future.as_mut().now_or_never().is_none());
             send.send(input.chunks[3].clone()).unwrap();drop(send);
             let result=future.await.unwrap();
-            assert_eq!(json!({"atStart":at_start,"before":before,"atBoundary":at_boundary,"updates":*updates.borrow(),"result":result_value(result),"pendingTimers":0}),case.expected);
+            assert_eq!(json!({"atStart":at_start,"before":before,"atBoundary":at_boundary,"updates":*updates.borrow(),"result":result_value(result)}),case.expected);
             let weak=Rc::downgrade(&updates);drop(updates);assert!(weak.upgrade().is_none());
         });
     }
