@@ -231,3 +231,28 @@ fn inline_scopes_map_container_prefixes_escaped_labels_and_table_pipes() {
         "https://example.test/a|b/$x$"
     );
 }
+
+#[test]
+fn interpreted_runs_lower_formula_atoms_inside_tables() {
+    use maestro_markdown::InlineContext;
+    // A list item's lazy lines stay one paragraph, but interpreted on their own they form a table.
+    let document = parse("- | a |\n|---|\n$x$".into());
+    let context = InlineContext::new(&document);
+    let Kind::List(_, c) = &document.nodes[0].kind else {
+        panic!("list")
+    };
+    let Kind::Item(c) = &c[0].kind else {
+        panic!("item")
+    };
+    let scope = context.scope(&c[0].range, false).unwrap();
+    assert_eq!(scope.text(), "| a |\n|---|\n$x$");
+    let run = scope.interpret(0..15, std::slice::from_ref(&(12..15)));
+    let Kind::Table(table) = &run.nodes[0].kind else {
+        panic!("table")
+    };
+    let kinds: Vec<_> = table.rows[0][0].children.iter().map(|n| &n.kind).collect();
+    assert!(
+        matches!(kinds[..], [Kind::Atom(0)]),
+        "cell keeps the formula atom"
+    );
+}
