@@ -2,7 +2,7 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use maestro_tui::{Component, Loader, LoaderIndicatorOptions, TUI, TerminalImage};
+use maestro_tui::{Component, Loader, LoaderIndicatorOptions, TUI};
 use serde::Deserialize;
 
 #[allow(
@@ -13,10 +13,10 @@ mod support {
     pub mod checks;
     pub mod manual_runtime;
     pub mod recording_terminal;
+    pub mod writer;
 }
 use support::checks::{parse, succeeds};
-use support::manual_runtime::ManualRuntime;
-use support::recording_terminal::RecordingTerminal;
+use support::writer::writer;
 
 /// One distinct rendering query and its complete observations.
 #[derive(Deserialize)]
@@ -82,14 +82,7 @@ fn cases(name: &str, count: usize) {
     let mut consumed = 0;
     for case in corpus.into_iter().filter(|case| case.test == name) {
         consumed += 1;
-        let runtime = ManualRuntime::new();
-        let terminal = RecordingTerminal::new(16, 24);
-        let tui = TUI::new(
-            terminal.handle(),
-            runtime.handle(),
-            TerminalImage::default(),
-            None,
-        );
+        let (tui, _terminal, runtime) = writer();
         succeeds(tui.stop());
         let calls = Rc::new(RefCell::new(Vec::<[String; 2]>::new()));
         let width = case.input.width.unwrap_or(16);

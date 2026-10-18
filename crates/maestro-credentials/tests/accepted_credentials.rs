@@ -6,23 +6,16 @@ mod support;
 #[cfg(test)]
 mod tests {
 
-    use super::support::{TempDir, is_child, run_child};
+    use super::support::{TempDir, api_key, is_child, memory_text, run_child};
     use indexmap::IndexMap;
     use maestro_credentials::{
-        ApiKeyCredential, AsyncLockUpdate, AuthCredential, AuthSource, AuthStatus, AuthStorage,
-        AuthStorageBackend, AuthStorageData, AuthStorageError, AuthStorageFuture,
-        InMemoryAuthStorageBackend, LockUpdate, OAuthCredential,
+        AsyncLockUpdate, AuthCredential, AuthSource, AuthStatus, AuthStorage, AuthStorageBackend,
+        AuthStorageData, AuthStorageError, AuthStorageFuture, InMemoryAuthStorageBackend,
+        LockUpdate, OAuthCredential,
     };
     use serde_json::{Value, json};
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::{Arc, Mutex};
-
-    /// Stored API key credential.
-    fn api_key(key: &str) -> AuthCredential {
-        AuthCredential::ApiKey(ApiKeyCredential {
-            key: key.to_owned(),
-        })
-    }
 
     /// OAuth credential with an enterprise URL.
     fn oauth(refresh: &str) -> AuthCredential {
@@ -83,18 +76,6 @@ mod tests {
             Some(_) => Err("write refused".into()),
             None => Ok(None),
         }
-    }
-
-    /// Current text of a memory backend.
-    fn memory_text(backend: &InMemoryAuthStorageBackend) -> Option<String> {
-        let mut text = None;
-        backend
-            .with_lock(&mut |current| {
-                text = current.map(str::to_owned);
-                Ok(None)
-            })
-            .unwrap();
-        text
     }
 
     #[test]

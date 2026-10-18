@@ -1,5 +1,9 @@
-//! Temporary directories and isolated child test processes shared by the storage tests.
+//! Temporary directories, isolated child test processes and stored credential fixtures
+//! shared by the storage tests.
 #![allow(dead_code)] // each test binary uses a different part of these helpers
+use maestro_credentials::{
+    ApiKeyCredential, AuthCredential, AuthStorageBackend, InMemoryAuthStorageBackend,
+};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::{RwLock, RwLockReadGuard};
@@ -78,6 +82,25 @@ pub fn run_child(test: &str, cwd: &Path, envs: &[(&str, &str)]) {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
+}
+
+/// Stored API key credential.
+pub fn api_key(key: &str) -> AuthCredential {
+    AuthCredential::ApiKey(ApiKeyCredential {
+        key: key.to_owned(),
+    })
+}
+
+/// Text held by a memory backend.
+pub fn memory_text(backend: &InMemoryAuthStorageBackend) -> Option<String> {
+    let mut text = None;
+    backend
+        .with_lock(&mut |current| {
+            text = current.map(str::to_owned);
+            Ok(None)
+        })
+        .unwrap();
+    text
 }
 
 /// Run `future` to completion on a fresh current-thread runtime.
