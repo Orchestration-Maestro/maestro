@@ -12,6 +12,7 @@ collation = ["dep:icu_collator", "dep:icu_locale_core"]
 number-format = ["dep:icu_decimal", "dep:fixed_decimal", "dep:icu_locale_core"]
 
 [dependencies]
+regex = "=1.13.1"
 icu_decimal = { version = "=2.3.0", features = ["alloc", "ryu"], optional = true }
 fixed_decimal = { version = "=0.7.2", default-features = false, optional = true }
 icu_collator = { version = "=2.3.1", optional = true }

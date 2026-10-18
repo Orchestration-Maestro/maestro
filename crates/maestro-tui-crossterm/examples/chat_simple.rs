@@ -153,6 +153,7 @@ mod unix {
             Rc::new(Markdown::new(
                 text,
                 MarkdownOptions {
+                    clean_content: false,
                     padding_x: 1,
                     padding_y: 1,
                     default_text_style: None,

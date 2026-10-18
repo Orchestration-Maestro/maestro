@@ -348,7 +348,12 @@ policy and exist. `maestro-tool` owns `ToolExecutionMode`, `AgentToolResult`,
 public paths specialize these declarations with their existing field types. Read-input
 admission remains separately owned by the native tools and guest authoring libraries.
 The shared omission predicate `Omittable` belongs to `maestro-request::presence`.
-No `common`, `utils`, `shared-types` or background-runtime crate is added. `maestro-tools` may depend directly on `maestro-text`, the
+No `common`, `utils`, `shared-types` or background-runtime crate is added. Terminal escape stripping and binary-output control filtering belong to `maestro-text`,
+shared by tools and opt-in terminal Markdown content emission. Tools retain their existing
+public display-helper paths. Markdown cleaning runs after decoding, before styling or
+hyperlink generation; assistant text and thinking enable it.
+
+`maestro-tools` may depend directly on `maestro-text`, the
 single owner of newline normalization shared by the edit tool, frontmatter and the editor.
 Tool renderer field selection reuses `maestro-json` for JSON truth.
 

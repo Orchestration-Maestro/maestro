@@ -60,7 +60,10 @@ impl AssistantMessageComponent {
             content,
             message: RefCell::new(message),
             options: RefCell::new(options),
-            rendering: super::MessageRendering::new(theme, markdown_theme, terminal_image),
+            rendering: super::MessageRendering {
+                clean_content: true,
+                ..super::MessageRendering::new(theme, markdown_theme, terminal_image)
+            },
             has_tools: Cell::new(false),
         };
         result.rebuild();
@@ -153,7 +156,7 @@ enum Visible {
     HiddenThinking,
 }
 impl Visible {
-    /// Trims with the shared scalar predicate before testing visibility.
+    /// Trims authored content before testing visibility; Markdown cleans decoded content.
     fn from_content(content: &AssistantContent, hide: bool) -> Option<Self> {
         let (text, constructor): (&str, fn(String) -> Self) = match content {
             AssistantContent::Text(value) => (&value.text, Self::Text),

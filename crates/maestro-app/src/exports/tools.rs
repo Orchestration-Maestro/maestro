@@ -30,6 +30,8 @@ pub use maestro_tools::{VisualTruncateResult, truncate_to_visual_lines};
 
 pub use maestro_tools::output::render_utils::strip_ansi;
 
+pub use maestro_tools::utils::shell::sanitize_binary_output;
+
 pub use maestro_tools::{TruncationOptions, TruncationResult, truncate_tail};
 
 pub use maestro_tools::keybinding_hints::plain_key_hint;

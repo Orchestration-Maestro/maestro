@@ -51,7 +51,7 @@ impl Renderer<'_> {
         for node in nodes {
             let (text, restore) = match &node.kind {
                 Kind::Text(text) => (
-                    text.decoded
+                    self.clean(&text.decoded)
                         .split('\n')
                         .map(|part| self.style(part, style))
                         .collect::<Vec<_>>()
@@ -64,13 +64,14 @@ impl Renderer<'_> {
                 | Kind::Heading(_, _, text)
                 | Kind::Quote(_, text)
                 | Kind::Table(super::nodes::Table { authored: text, .. }) => (
-                    text.split('\n')
+                    self.clean(text)
+                        .split('\n')
                         .map(|part| self.style(part, style))
                         .collect::<Vec<_>>()
                         .join("\n"),
                     false,
                 ),
-                Kind::Code(text) => ((self.theme.code)(text), true),
+                Kind::Code(text) => ((self.theme.code)(&self.clean(text)), true),
                 Kind::Emphasis(children) => (
                     (self.theme.italic)(&self.inline_with_prefix(children, style, prefix)),
                     true,
@@ -108,6 +109,9 @@ impl Renderer<'_> {
     }
     /// Selects clickable transport or the printed destination suffix.
     fn link(&self, content: &str, label: &str, href: &str) -> String {
+        let label = self.clean(label);
+        let href = self.clean(href);
+        let href = href.as_ref();
         let styled = (self.theme.link)(&(self.theme.underline)(content));
         if self.terminal_image.get_capabilities().hyperlinks {
             crate::hyperlink(&styled, href)

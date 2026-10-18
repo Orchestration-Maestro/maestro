@@ -10,6 +10,7 @@ fn markdown_empty_and_whitespace_use_ecmascript_set() {
         let component = Markdown::new(
             text.to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 2,
                 padding_y: 1,
                 default_text_style: Some(DefaultTextStyle::default()),
@@ -22,6 +23,7 @@ fn markdown_empty_and_whitespace_use_ecmascript_set() {
     let component = Markdown::new(
         "\u{85}".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 2,
             padding_y: 1,
             default_text_style: None,
@@ -43,6 +45,7 @@ fn markdown_padding_and_tabs_preserve_content() {
         let component = Markdown::new(
             row["text"].as_str().unwrap().to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: row["padding_x"].as_u64().unwrap().try_into().unwrap(),
                 padding_y: row["padding_y"].as_u64().unwrap().try_into().unwrap(),
                 default_text_style: None,
@@ -150,6 +153,7 @@ fn markdown_nested_list_indentation_is_theme_independent() {
         let widget = Rc::new(Markdown::new(
             "- parent\n  - child\n    - grandchild".to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 0,
                 padding_y: 0,
                 default_text_style: None,
@@ -193,6 +197,7 @@ fn markdown_narrow_lists_preserve_wrapped_rows() {
         let widget = Rc::new(Markdown::new(
             "- xyzz".to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 0,
                 padding_y: 0,
                 default_text_style: None,
@@ -407,6 +412,7 @@ fn markdown_quotes_keep_explicit_gap_before_lists() {
     let component = Markdown::new(
         "> paragraph\n>\n> - item".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,
@@ -444,6 +450,7 @@ fn markdown_http_prefixed_email_locals_use_mailto_hyperlinks() {
     let widget = Markdown::new(
         "httpuser@example.com https@example.com".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,
@@ -477,6 +484,7 @@ fn markdown_authored_labels_exclude_container_markers_and_keep_escapes() {
         Markdown::new(
             text.to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 0,
                 padding_y: 0,
                 default_text_style: None,
@@ -517,6 +525,7 @@ fn markdown_list_html_retains_literal_text_and_parent_style() {
         Markdown::new(
             text.to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 0,
                 padding_y: 0,
                 default_text_style: Some(DefaultTextStyle {
@@ -553,6 +562,7 @@ fn markdown_www_requires_a_period_after_the_prefix() {
     let component = Markdown::new(
         "www.a www.com www.a.com www.com.org http://www.a".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,
@@ -578,6 +588,7 @@ fn markdown_quote_continuation_autolinks_exclude_container_prefix() {
     let component = Markdown::new(
         "> intro\n>https://example.com".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,
@@ -603,6 +614,7 @@ fn markdown_list_heading_fallback_retains_authored_bracket_escapes() {
         let component = Markdown::new(
             text.to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 0,
                 padding_y: 0,
                 default_text_style: None,
@@ -623,6 +635,7 @@ fn markdown_consumed_definitions_do_not_create_blank_rows() {
         let component = Markdown::new(
             text.to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 0,
                 padding_y: 0,
                 default_text_style: None,
@@ -657,6 +670,7 @@ fn markdown_rejected_web_candidates_leave_emails_eligible() {
         let component = Markdown::new(
             input.to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 0,
                 padding_y: 0,
                 default_text_style: None,
@@ -681,6 +695,7 @@ fn markdown_autolink_suffix_rules_repeat_until_stable() {
         let component = Markdown::new(
             input.to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 0,
                 padding_y: 0,
                 default_text_style: None,
@@ -704,6 +719,7 @@ fn markdown_duplicate_definitions_are_consumed_without_gaps() {
     let component = Markdown::new(
         "[u]: /a\n[u]: /b\n[u]".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,
@@ -723,6 +739,7 @@ fn markdown_mixed_escape_units_preserve_email_boundaries() {
     let component = Markdown::new(
         r"\*foo@example.com tail".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,
@@ -769,6 +786,7 @@ fn assert_mixed_escape_link(input: &str, expected: &str) {
     let component = Markdown::new(
         input.to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,

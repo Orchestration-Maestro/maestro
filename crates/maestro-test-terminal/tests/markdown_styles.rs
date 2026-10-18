@@ -19,6 +19,7 @@ fn markdown_image_escape_rows_skip_wrap_padding_and_background() {
         let component = Markdown::new(
             escape.to_owned(),
             MarkdownOptions {
+                clean_content: false,
                 padding_x: 2,
                 padding_y: 1,
                 default_text_style: Some(DefaultTextStyle {
@@ -49,6 +50,7 @@ fn component(text: &str, theme: MarkdownTheme, style: Option<DefaultTextStyle>) 
     Markdown::new(
         text.to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: style,
@@ -236,6 +238,7 @@ fn markdown_capabilities_are_observed_on_cache_miss() {
     let component = Markdown::new(
         "[x](u)".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,
@@ -442,6 +445,7 @@ fn maestro_markdown_not_leak_styles_into_following_lines_when_rendered_in_tui() 
     let markdown = Markdown::new(
         "This is thinking with `inline code`".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 1,
             padding_y: 0,
             default_text_style: Some(DefaultTextStyle {
@@ -480,6 +484,7 @@ fn markdown_background_runs_after_code_and_content_layout() {
     let widget = Markdown::new(
         "```\nx\n```".to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 2,
             default_text_style: Some(DefaultTextStyle {
@@ -638,4 +643,40 @@ fn markdown_quoted_html_suppresses_message_foreground() {
     let rows = component("> <div>x</div>", theme, Some(style)).render(14);
     assert_eq!(rows, ["│ \x1b[36m<div>x</div>\x1b[39m"]);
     assert!(!rows[0].contains("\x1b[35m"));
+}
+
+#[test]
+fn markdown_content_cleaning_covers_authored_emission_sites() {
+    let control = "\x1b]52;c;b3duZWQ=\x07";
+    for source in [
+        format!("body {control} end"),
+        format!("`{control}`"),
+        format!("```\n{control}\n```"),
+        format!("```{control}\nbody\n```"),
+        format!("<div>{control}</div>"),
+        format!("- <i>{control}</i>"),
+        format!("| a | b |\n|---|---|\n| {control} | end |"),
+        format!("- | a | b |\n  |---|---|\n  | {control} | end |"),
+    ] {
+        for clean_content in [false, true] {
+            let view = Markdown::new(
+                source.clone(),
+                MarkdownOptions {
+                    clean_content,
+                    padding_x: 0,
+                    padding_y: 0,
+                    default_text_style: None,
+                },
+                Rc::new(markdown::plain()),
+                TerminalImage::new(|_| None, || 1),
+            );
+            for width in [5, 80] {
+                assert_eq!(
+                    view.render(width).join("\n").contains("\x1b]52;"),
+                    !clean_content,
+                    "source {source:?}, width {width}"
+                );
+            }
+        }
+    }
 }

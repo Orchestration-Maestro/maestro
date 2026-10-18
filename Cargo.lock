@@ -3770,6 +3770,7 @@ dependencies = [
  "icu_decimal",
  "icu_locale_core",
  "maestro-dependencies",
+ "regex",
  "serde",
  "serde_json",
 ]

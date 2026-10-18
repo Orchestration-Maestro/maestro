@@ -212,6 +212,7 @@ fn render(
     Markdown::new(
         text.to_owned(),
         MarkdownOptions {
+            clean_content: false,
             padding_x: 0,
             padding_y: 0,
             default_text_style: None,
