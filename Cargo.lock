@@ -3684,6 +3684,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-terminal"
+version = "0.1.0"
+dependencies = [
+ "icu_properties",
+ "maestro-dependencies",
+]
+
+[[package]]
 name = "maestro-test-conventions"
 version = "0.1.0"
 dependencies = [
