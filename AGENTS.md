@@ -407,6 +407,9 @@ Approved libraries live in [docs/libraries/](docs/libraries/), one file per area
 A ticket that adds a library adds or edits only its area's file.
 
 Tests wait for completion signals; shared CI bounds the job, not each test.
+A test child that must answer a signal blocks it and takes it with `sigwait`:
+a handler can miss a signal that arrives just before a blocking call, and the
+test then waits forever.
 Conventions reject recognized test-owned timer calls (Tokio `timeout`/`timeout_at`,
 standard timed receives, condition-variable waits and thread parking), including
 file-level import aliases. Production deadlines remain allowed. The scan does not

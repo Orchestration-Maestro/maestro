@@ -40,12 +40,16 @@ os.write(1, b'bye')
 ";
 
 /// Reports `READY` and exits on any byte; each termination signal it receives prints
-/// `bye`, is answered with `T` and is otherwise ignored.
+/// `bye`, is answered with `T` and is otherwise ignored. A helper thread takes the
+/// blocked signal with `sigwait`: a handler would not run if the signal arrived just
+/// before `recv` blocks.
 const STUBBORN: &str = r"
-import os, signal, socket, sys
+import os, signal, socket, sys, threading
 s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
-def term(*_): os.write(1, b'bye'); s.sendall(b'T')
-signal.signal(signal.SIGTERM, term)
+signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
+def term():
+    while signal.sigwait({signal.SIGTERM}): os.write(1, b'bye'); s.sendall(b'T')
+threading.Thread(target=term, daemon=True).start()
 s.sendall(b'READY\n')
 s.recv(1)
 ";

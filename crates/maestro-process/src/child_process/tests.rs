@@ -499,11 +499,15 @@ fn streamed_failure_preserves_prior_bytes_without_replay() {
 }
 
 /// A child that reports `READY`, answers each termination signal with `T` while
-/// ignoring it, and exits on any byte.
+/// ignoring it, and exits on any byte. A helper thread takes the blocked signal with
+/// `sigwait`: a handler would not run if the signal arrived just before `recv` blocks.
 const STUBBORN: &str = r"
-import signal, socket, sys
+import signal, socket, sys, threading
 s = socket.create_connection(('127.0.0.1', int(sys.argv[1])))
-signal.signal(signal.SIGTERM, lambda *_: s.sendall(b'T'))
+signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
+def answer():
+    while signal.sigwait({signal.SIGTERM}): s.sendall(b'T')
+threading.Thread(target=answer, daemon=True).start()
 s.sendall(b'READY')
 s.recv(1)
 ";
