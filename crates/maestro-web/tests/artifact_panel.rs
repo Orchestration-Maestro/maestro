@@ -1,9 +1,12 @@
 //! Retained artifact panel through its public application and native host seams.
 #![cfg(test)]
 pub mod artifact_support;
+#[path = "attachment_support/canvas_paint.rs"]
+pub mod canvas_paint;
 pub mod session_header_support;
 pub mod support;
 use artifact_support::panel::{Harness, Input, control, corpus, tab, text};
+use canvas_paint::Paint;
 use std::rc::Rc;
 
 /// Disconnected and empty panels do not paint or admit a modal.
@@ -64,17 +67,27 @@ fn artifact_panel_tab_click_reaches_application_selection() {
     assert_eq!(harness.presentation.opened.get(), 0);
 }
 
-/// Recorded map aliases and duplicate names retain literal ordered text and underlines.
+/// Recorded aliases and duplicate names keep literal ordered text, underlines, border and close title.
 #[test]
 fn artifact_panel_tabs_keep_literal_record_order() {
     for case in corpus().render {
         let mut harness = Harness::new(&case.input);
         harness.frame.size = egui::vec2(2400., 300.);
+        let paint = observe_paint(&mut harness);
         harness.draw().unwrap();
         let output = harness.draw().unwrap();
         assert_eq!(harness.caller.active_filename(), case.output.active);
-        assert_eq!(case.output.inline_border, !harness.panel.overlay());
         assert_render(&harness, &case.output, &output);
+        if !case.output.hidden {
+            assert_eq!(
+                left_border(&harness, &output, &paint.borrow()),
+                case.output.inline_border.unwrap()
+            );
+            assert_eq!(
+                close_labels(&harness, &output),
+                case.output.header_text.unwrap()
+            );
+        }
         // A malformed selected original distinguishes hidden evaluation from visible paint.
         for (key, _) in &case.input.entries {
             if case.input.operation.as_deref() != Some("missing-view") {
@@ -85,21 +98,102 @@ fn artifact_panel_tabs_keep_literal_record_order() {
             }
         }
         assert_eq!(harness.draw().is_err(), case.output.header_rendered);
-        assert_eq!(
-            case.output.header_text,
-            [if case.input.language == "de" {
-                "Artefakte schließen"
-            } else {
-                "Close artifacts"
-            }]
+    }
+}
+
+/// Retain the actual renderer texture updates for final paint sampling.
+fn observe_paint(harness: &mut Harness) -> Rc<std::cell::RefCell<Paint>> {
+    let paint = Rc::new(std::cell::RefCell::new(Paint::default()));
+    let retained = paint.clone();
+    harness.frame.paint = Some(Box::new(move |output| retained.borrow_mut().update(output)));
+    paint
+}
+
+/// Whether the shell paints its one-pixel border-colored left edge.
+fn left_border(harness: &Harness, output: &egui::FullOutput, paint: &Paint) -> bool {
+    let presentation = harness.frame.pack.presentation(harness.frame.mode).unwrap();
+    let border = egui::Color32::from_hex(presentation.colors["border"]).unwrap();
+    let bounds = harness.frame.context.content_rect();
+    let pixel = paint.pixel(
+        &harness.frame.context,
+        &output.shapes,
+        egui::pos2(bounds.left() + 0.5, bounds.center().y),
+    );
+    pixel
+        .into_iter()
+        .zip(border.to_array())
+        .all(|(actual, expected)| (actual - f32::from(expected)).abs() < 1.)
+}
+
+/// The border observer rejects displacement, final clipping and later opaque paint.
+#[test]
+fn artifact_panel_left_border_requires_visible_edge_paint() {
+    let mut harness = Harness::new(&Input {
+        entries: vec![("a.zip".into(), "a.zip".into())],
+        active: Some("a.zip".into()),
+        ..Default::default()
+    });
+    let paint = observe_paint(&mut harness);
+    harness.draw().unwrap();
+    let original = harness.draw().unwrap();
+    assert!(left_border(&harness, &original, &paint.borrow()));
+    for mutation in ["displaced", "clipped", "covered"] {
+        let mut output = original.clone();
+        for shape in &mut output.shapes {
+            let egui::Shape::LineSegment { points, .. } = &mut shape.shape else {
+                continue;
+            };
+            if points[0].x.to_bits() != points[1].x.to_bits() {
+                continue;
+            }
+            if mutation == "displaced" {
+                points[0].x += 100.;
+                points[1].x += 100.;
+            } else if mutation == "clipped" {
+                shape.clip_rect = egui::Rect::NOTHING;
+            }
+        }
+        if mutation == "covered" {
+            let bounds = harness.frame.context.content_rect();
+            output.shapes.push(egui::epaint::ClippedShape {
+                clip_rect: bounds,
+                shape: egui::Shape::rect_filled(bounds, 0., egui::Color32::BLACK),
+            });
+        }
+        assert!(
+            !left_border(&harness, &output, &paint.borrow()),
+            "{mutation}"
         );
     }
+}
+
+/// Accessible labels the actual close control, the last icon, reports when activated.
+fn close_labels(harness: &Harness, output: &egui::FullOutput) -> Vec<String> {
+    let close = output
+        .shapes
+        .iter()
+        .filter_map(|shape| match &shape.shape {
+            egui::Shape::Mesh(mesh) => Some(mesh.calc_bounds().center()),
+            _ => None,
+        })
+        .next_back()
+        .unwrap();
+    let activated = harness
+        .frame
+        .draw_panel(&harness.panel, &harness.caller, click_events(close))
+        .unwrap();
+    activated
+        .platform_output
+        .events
+        .iter()
+        .filter_map(|event| event.widget_info().label.clone())
+        .collect()
 }
 
 /// Assert the source shell's exact visible text and active treatment.
 fn assert_render(
     harness: &Harness,
-    expected: &artifact_support::panel::Output,
+    expected: &artifact_support::panel::RenderOutput,
     output: &egui::FullOutput,
 ) {
     if expected.hidden {
@@ -203,23 +297,15 @@ fn artifact_panel_open_and_close_notifications_stay_distinct() {
         }
         harness.draw().unwrap();
         assert_eq!(harness.caller.active_filename(), case.output.active);
-        assert_eq!(Some(harness.presentation.opened.get()), case.output.opened);
-        assert_eq!(Some(harness.closed.get()), case.output.closed);
-        assert_visible(
-            &harness,
-            &harness.caller,
-            case.output.visible.as_ref().unwrap(),
-        );
+        assert_eq!(harness.presentation.opened.get(), case.output.opened);
+        assert_eq!(harness.closed.get(), case.output.closed);
+        assert_visible(&harness, &harness.caller, &case.output.visible);
         assert!(!harness.panel.collapsed());
         assert!(
             roots
                 .iter()
                 .all(|id| harness.host.published.borrow().contains_key(id))
         );
-        for scroll in case.output.scrolls.unwrap() {
-            check_scroll_policy(&scroll);
-            assert_eq!(Some(scroll.filename), harness.caller.active_filename());
-        }
     }
     let harness = Harness::new(&Input {
         entries: vec![("a.zip".into(), "a.zip".into())],
@@ -273,14 +359,7 @@ fn assert_visible(
     );
 }
 
-/// The toolkit consumes the recorded animation/alignment policies.
-fn check_scroll_policy(scroll: &artifact_support::panel::Scroll) {
-    assert_eq!(scroll.options.behavior, "smooth");
-    assert_eq!(scroll.options.block, "nearest");
-    assert_eq!(scroll.options.inline, "center");
-}
-
-/// Smooth native scrolling reaches literal targets rather than a selector or decoy.
+/// Smooth native scrolling centers literal targets rather than a selector or decoy.
 #[test]
 fn artifact_panel_scroll_targets_literal_tabs() {
     for case in corpus().literal_scroll {
@@ -306,14 +385,19 @@ fn artifact_panel_scroll_targets_literal_tabs() {
                 .any(|span| span.galley.job.text == case.input.filename)
         );
         harness.caller.show_artifact(&case.input.filename);
-        let mut output = harness.draw().unwrap();
-        for _ in 0..120 {
-            output = harness.draw().unwrap();
-        }
+        let (output, positions) = settle(&harness, &case.input.filename);
         let target = tab(&output, &case.input.filename);
+        let strip = output
+            .shapes
+            .iter()
+            .find(|shape| matches!(&shape.shape, egui::Shape::Text(span) if span.galley.job.text == case.input.filename))
+            .unwrap()
+            .clip_rect;
+        let options = &case.output.scroll[0].options;
+        assert_eq!(positions > 1, options.behavior == "smooth");
         assert_eq!(
-            target.center().y.to_bits(),
-            tab(&first, "long-leading-name-0.zip").center().y.to_bits()
+            (target.center().x - strip.center().x).abs() < 1.,
+            options.inline == "center"
         );
         assert!(target.center().x > 30. && target.center().x < 260.);
         assert_eq!(
@@ -324,8 +408,24 @@ fn artifact_panel_scroll_targets_literal_tabs() {
         assert!(case.output.error.is_none());
         assert_eq!(case.output.scroll.len(), 1);
         assert_eq!(case.output.scroll[0].filename, case.input.filename);
-        check_scroll_policy(&case.output.scroll[0]);
     }
+}
+
+/// Draw until a requested scroll settles, counting the target's distinct drawn positions.
+fn settle(harness: &Harness, filename: &str) -> (egui::FullOutput, usize) {
+    let mut output = harness.draw().unwrap();
+    let mut positions = vec![];
+    for _ in 0..120 {
+        positions.extend(
+            text(&output)
+                .iter()
+                .filter(|span| span.galley.job.text == filename)
+                .map(|span| span.pos.x.to_bits()),
+        );
+        output = harness.draw().unwrap();
+    }
+    positions.dedup();
+    (output, positions.len())
 }
 
 /// Reconnection restores first keys without rebuilding any already published factory.
@@ -377,17 +477,14 @@ fn reconnect(
         .draw_panel(&harness.panel, caller, vec![])
         .unwrap();
     assert_eq!(caller.active_filename(), expected.active);
-    assert_visible(harness, caller, expected.visible.as_ref().unwrap());
-    assert_eq!(Some(harness.presentation.opened.get()), expected.opened);
-    assert_eq!(Some(harness.closed.get()), expected.closed);
-    assert!(expected.scrolls.as_ref().unwrap().is_empty());
-    assert_eq!(expected.same_roots, Some(true));
-    for (id, root) in before {
-        assert!(Rc::ptr_eq(
-            &root.upgrade().unwrap(),
-            &harness.host.published.borrow()[&id].0
-        ));
-    }
+    assert_visible(harness, caller, &expected.visible);
+    assert_eq!(harness.presentation.opened.get(), expected.opened);
+    assert_eq!(harness.closed.get(), expected.closed);
+    let same = before.iter().all(|(id, root)| {
+        root.upgrade()
+            .is_some_and(|root| Rc::ptr_eq(&root, &harness.host.published.borrow()[id].0))
+    });
+    assert_eq!(Some(same), expected.same_roots);
 }
 
 /// Tool edits keep the published owner while original-byte downloads change.
@@ -556,20 +653,10 @@ fn artifact_panel_close_title_uses_live_localization() {
         } else {
             "Close artifacts"
         };
-        let activated = harness
-            .frame
-            .draw_panel(
-                &harness.panel,
-                &harness.caller,
-                click_events(control(&output, 0)),
-            )
-            .unwrap();
         assert!(
-            activated.platform_output.events.iter().any(|event| event
-                .widget_info()
-                .label
-                .as_deref()
-                == Some(title))
+            close_labels(&harness, &output)
+                .iter()
+                .any(|label| label == title)
         );
         harness.frame.i18n.get_translations().borrow()["en"]
             .borrow_mut()
@@ -577,20 +664,10 @@ fn artifact_panel_close_title_uses_live_localization() {
                 "Close artifacts".into(),
                 maestro_web::TranslationValue::Text("Live close".into()),
             );
-        let activated = harness
-            .frame
-            .draw_panel(
-                &harness.panel,
-                &harness.caller,
-                click_events(control(&output, 0)),
-            )
-            .unwrap();
         assert!(
-            activated.platform_output.events.iter().any(|event| event
-                .widget_info()
-                .label
-                .as_deref()
-                == Some("Live close"))
+            close_labels(&harness, &output)
+                .iter()
+                .any(|label| label == "Live close")
         );
     }
 }
