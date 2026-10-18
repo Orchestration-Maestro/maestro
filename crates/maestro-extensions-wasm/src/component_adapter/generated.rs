@@ -43,7 +43,7 @@ impl Imports for Generated {
         append_entry(custom_type: &str, data: Option<&str>) -> ExtensionResult<()> => host::append_entry;
     } }
     forward_resources! {
-        compact(context: &Self::Context, instructions: Option<&str>, complete: Option<&Self::Callback>, error: Option<&Self::Callback>) -> ExtensionResult<()> => compact(instructions, complete, error);
+        compact(context: &Self::Context, instructions: Option<&host::CompactionData>, complete: Option<&Self::Callback>, error: Option<&Self::Callback>) -> ExtensionResult<()> => compact(instructions, complete, error);
         unsubscribe(subscription: &Self::Subscription) -> ExtensionResult<()> => unsubscribe();
         registry_get_all(resource: &Self::Registry) -> ExtensionResult<String> => get_all();
         bash_output(output: &Self::BashOutput, bytes: &[u8]) -> ExtensionResult<()> => on_data(bytes);
@@ -67,7 +67,7 @@ impl Imports for Generated {
         writer_reset_leaf(resource: &Self::Writer) -> ExtensionResult<()> => reset_leaf();
         writer_branch_with_summary(resource: &Self::Writer, from_id: Option<&str>, summary: &str, metadata: (Option<&str>, Option<bool>)) -> ExtensionResult<String> => branch_with_summary(from_id, summary, metadata);
         writer_create_branched_session(resource: &Self::Writer, leaf_id: &str) -> ExtensionResult<Option<String>> => create_branched_session(leaf_id);
-        command_compact(context: &Self::CommandContext, instructions: Option<&str>, complete: Option<&Self::Callback>, error: Option<&Self::Callback>) -> ExtensionResult<()> => compact(instructions, complete, error);
+        command_compact(context: &Self::CommandContext, instructions: Option<&host::CompactionData>, complete: Option<&Self::Callback>, error: Option<&Self::Callback>) -> ExtensionResult<()> => compact(instructions, complete, error);
         registry_get_available(resource: &Self::Registry) -> ExtensionResult<String> => get_available();
         registry_find(resource: &Self::Registry, provider: &str, model_id: &str) -> ExtensionResult<Option<String>> => find(provider, model_id);
         ui(context: &Self::Context) -> ExtensionResult<Self::Ui> => ui();
@@ -136,9 +136,13 @@ impl Imports for Generated {
         &'a self,
         context: &'a Self::CommandContext,
         path: &'a str,
+        options: Option<()>,
         with_session: Option<&'a Self::Callback>,
     ) -> ExtensionFuture<'a, SessionChangeResult> {
-        Box::pin(context.switch_session(path.to_owned(), with_session))
+        Box::pin(context.switch_session(
+            path.to_owned(),
+            options.map(|()| host::SwitchSessionOptions { with_session }),
+        ))
     }
     fn reload<'a>(&'a self, context: &'a Self::CommandContext) -> ExtensionFuture<'a, ()> {
         Box::pin(context.reload())
@@ -216,7 +220,7 @@ impl Imports for Generated {
     fn new_session<'a>(
         &'a self,
         context: &'a host::CommandContext,
-        session_data: NewSessionCommandData,
+        session_data: Option<NewSessionCommandData>,
         setup: Option<&'a host::Callback>,
         with_session: Option<&'a host::Callback>,
     ) -> ExtensionFuture<'a, SessionChangeResult> {

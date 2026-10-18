@@ -1,5 +1,6 @@
 //! The host side of the extension world as the adapter logic sees it.
 
+use crate::bindings::maestro::extension::host::CompactionData;
 use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
 use crate::types::{ExtensionFuture, ExtensionResult};
 use crate::{FlagOptions, FlagValue};
@@ -29,6 +30,7 @@ pub trait Imports: Clone + 'static {
         &'a self,
         context: &'a Self::CommandContext,
         path: &'a str,
+        options: Option<()>,
         with_session: Option<&'a Self::Callback>,
     ) -> ExtensionFuture<'a, SessionChangeResult>;
     /// Forwards reload through the owned host capability.
@@ -169,7 +171,7 @@ pub trait Imports: Clone + 'static {
     fn compact(
         &self,
         context: &Self::Context,
-        instructions: Option<&str>,
+        instructions: Option<&CompactionData>,
         complete: Option<&Self::Callback>,
         error: Option<&Self::Callback>,
     ) -> ExtensionResult<()>;
@@ -177,7 +179,7 @@ pub trait Imports: Clone + 'static {
     fn command_compact(
         &self,
         context: &Self::CommandContext,
-        instructions: Option<&str>,
+        instructions: Option<&CompactionData>,
         complete: Option<&Self::Callback>,
         error: Option<&Self::Callback>,
     ) -> ExtensionResult<()>;
@@ -314,7 +316,7 @@ pub trait Imports: Clone + 'static {
     fn new_session<'a>(
         &'a self,
         context: &'a Self::CommandContext,
-        data: NewSessionCommandData,
+        data: Option<NewSessionCommandData>,
         setup: Option<&'a Self::Callback>,
         with_session: Option<&'a Self::Callback>,
     ) -> ExtensionFuture<'a, SessionChangeResult>;

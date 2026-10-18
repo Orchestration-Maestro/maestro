@@ -343,7 +343,8 @@ selection).
 `ExtensionContext::compact` is inherited by command and replacement command views.
 It returns admission before its optional completion or error notification.
 [`CompactOptions`](../../crates/maestro-extensions-wasm/src/types/context.rs) carries
-optional literal instructions, `on_complete` and `on_error`. Completion receives
+optional literal instructions, `on_complete` and `on_error`. Absent options remain
+distinct from present options with every field empty. Completion receives
 `CompactionResult`; error receives the supplied message. A callback failure returns
 to the host, which decides whether to invoke the error callback.
 
@@ -454,8 +455,9 @@ an `ExtensionCommandContext`, which adds `wait_for_idle`, `new_session`, `fork`,
 methods, which the rustdoc examples check at compile time.
 
 `new_session` accepts optional `setup` and `with_session` callbacks; `fork` and
-`switch_session` accept an optional `with_session`. Tree navigation and reload have
-no replacement continuation. Setup receives a
+`switch_session` accept an optional `with_session`. Absent options remain distinct
+from present empty options, even when no callback is supplied. Tree navigation and
+reload have no replacement continuation. Setup receives a
 writable [`SessionManager`](../../crates/maestro-extensions-wasm/src/session_manager.rs);
 ordinary contexts still expose a reader. When the host invokes the continuation, it
 supplies a `ReplacedSessionContext` while the operation is pending. The

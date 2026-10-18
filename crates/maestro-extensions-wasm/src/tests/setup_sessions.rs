@@ -675,7 +675,7 @@ async fn command_options(driver: &mut impl Driver) -> Result<(), String> {
             );
             assert!(lines.contains(&format!(
                 "setup-options {}",
-                json!({"parent":parent,"setup":setup,"continuation":continuation})
+                json!({"present":true,"parent":parent,"setup":setup,"continuation":continuation})
             )));
         }
     }

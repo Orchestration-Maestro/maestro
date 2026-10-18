@@ -9,6 +9,7 @@ use super::{
     callbacks::{self, Identity},
     event_bus::Emitter,
 };
+use crate::bindings::maestro::extension::host::CompactionData;
 use crate::{
     CallbackEmitter, CompactOptions, CompactionComplete, CompactionError, ExtensionResult,
 };
@@ -16,17 +17,26 @@ use crate::{
 pub(super) fn compact<I: Imports>(
     imports: &I,
     options: Option<CompactOptions>,
-    send: impl FnOnce(Option<&str>, Option<&I::Callback>, Option<&I::Callback>) -> ExtensionResult<()>,
+    send: impl FnOnce(
+        Option<&CompactionData>,
+        Option<&I::Callback>,
+        Option<&I::Callback>,
+    ) -> ExtensionResult<()>,
 ) -> ExtensionResult<()> {
-    let CompactOptions {
-        custom_instructions,
-        on_complete,
-        on_error,
-    } = options.unwrap_or_default();
+    let (custom_instructions, on_complete, on_error) =
+        options.map_or((None, None, None), |options| {
+            (
+                Some(CompactionData {
+                    custom_instructions: options.custom_instructions,
+                }),
+                options.on_complete,
+                options.on_error,
+            )
+        });
     let complete = on_complete.map(|f| (Identity::new(imports), f));
     let error = on_error.map(|f| (Identity::new(imports), f));
     send(
-        custom_instructions.as_deref(),
+        custom_instructions.as_ref(),
         complete.as_ref().map(|(id, _)| &id.handle),
         error.as_ref().map(|(id, _)| &id.handle),
     )?;

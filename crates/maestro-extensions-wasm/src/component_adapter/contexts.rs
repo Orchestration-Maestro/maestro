@@ -16,7 +16,7 @@ struct Ui<I: Imports> {
     _resource: I::Ui,
 }
 impl<I: Imports> ExtensionUIContextPort for Ui<I> {}
-use crate::bindings::maestro::extension::session::{NewSessionCommandData, SessionChangeResult};
+use crate::bindings::maestro::extension::session::SessionChangeResult;
 use crate::types::{
     AbortSignal, CommandContextPort, ContextPort, ExtensionCommandContext, ExtensionContext,
     ExtensionFuture, ExtensionResult, NewSessionCommandOptions, ReplacedSessionContext,
@@ -240,14 +240,16 @@ impl<I: Imports> CommandContextPort for Command<I> {
         options: Option<crate::SwitchSessionOptions>,
     ) -> ExtensionFuture<'a, SessionChangeResult> {
         Box::pin(async move {
-            let continuation = options
-                .and_then(|o| o.with_session)
-                .map(|f| Scoped::new(&self.imports, f));
+            let continuation =
+                options.map(|options| options.with_session.map(|f| Scoped::new(&self.imports, f)));
             self.imports
                 .switch_session(
                     &self.context,
                     path,
-                    continuation.as_ref().map(|c| &c.handle),
+                    continuation.as_ref().map(|_| ()),
+                    continuation
+                        .as_ref()
+                        .and_then(|c| c.as_ref().map(|c| &c.handle)),
                 )
                 .await
         })
@@ -265,17 +267,14 @@ impl<I: Imports> CommandContextPort for Command<I> {
         options: Option<NewSessionCommandOptions>,
     ) -> ExtensionFuture<'_, SessionChangeResult> {
         Box::pin(async move {
-            let NewSessionCommandOptions {
-                data,
-                setup,
-                with_session,
-            } = options.unwrap_or_else(|| NewSessionCommandOptions {
-                data: NewSessionCommandData {
-                    parent_session: None,
-                },
-                setup: None,
-                with_session: None,
-            });
+            let (data, setup, with_session) = options.map_or(
+                (None, None, None),
+                |NewSessionCommandOptions {
+                     data,
+                     setup,
+                     with_session,
+                 }| { (Some(data), setup, with_session) },
+            );
             let setup = setup.map(|closure| Scoped::new(&self.imports, closure));
             let with_session = with_session.map(|closure| Scoped::new(&self.imports, closure));
             self.imports

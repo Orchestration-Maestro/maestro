@@ -112,6 +112,9 @@ interface host {
         get-api-key-and-headers: async func(model: string) -> result<resolved-request-auth, string>;
     }
 
+    /// Plain compaction options, separate from their retained callbacks.
+    record compaction-data { custom-instructions: option<string> }
+
     /// Live capabilities available to every callback.
     resource context {
         ui: func() -> result<extension-ui-context, string>;
@@ -125,11 +128,14 @@ interface host {
         shutdown: func() -> result<_, string>;
         get-context-usage: func() -> result<option<context-usage>, string>;
         get-system-prompt: func() -> result<string, string>;
-        compact: func(custom-instructions: option<string>, on-complete: option<borrow<callback>>, on-error: option<borrow<callback>>) -> result<_, string>;
+        compact: func(options: option<compaction-data>, on-complete: option<borrow<callback>>, on-error: option<borrow<callback>>) -> result<_, string>;
 
         cwd: func() -> result<string, string>;
         session-manager: func() -> result<readonly-session-manager, string>;
     }
+
+    /// Optional continuation of a session switch.
+    record switch-session-options { with-session: option<borrow<callback>> }
 
     /// Context with the session-replacing operations; only commands receive it.
     resource command-context {
@@ -145,17 +151,17 @@ interface host {
         shutdown: func() -> result<_, string>;
         get-context-usage: func() -> result<option<context-usage>, string>;
         get-system-prompt: func() -> result<string, string>;
-        compact: func(custom-instructions: option<string>, on-complete: option<borrow<callback>>, on-error: option<borrow<callback>>) -> result<_, string>;
+        compact: func(options: option<compaction-data>, on-complete: option<borrow<callback>>, on-error: option<borrow<callback>>) -> result<_, string>;
 
         cwd: func() -> result<string, string>;
         session-manager: func() -> result<readonly-session-manager, string>;
         wait-for-idle: async func() -> result<_, string>;
         new-session: async func(
-            data: new-session-command-data, setup: option<borrow<callback>>, with-session: option<borrow<callback>>,
+            data: option<new-session-command-data>, setup: option<borrow<callback>>, with-session: option<borrow<callback>>,
         ) -> result<session-change-result, string>;
         fork: async func(entry-id: string, data: option<string>, with-session: option<borrow<callback>>) -> result<session-change-result, string>;
         navigate-tree: async func(target-id: string, options: option<string>) -> result<session-change-result, string>;
-        switch-session: async func(path: string, with-session: option<borrow<callback>>) -> result<session-change-result, string>;
+        switch-session: async func(path: string, options: option<switch-session-options>) -> result<session-change-result, string>;
         reload: async func() -> result<_, string>;
     }
 

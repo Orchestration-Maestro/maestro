@@ -688,7 +688,7 @@ fn expected_action_signatures() -> [Signature; 7] {
         (
             vec![
                 "self: borrow<context>",
-                "custom-instructions: option<string>",
+                "options: option<record {custom-instructions: option<string>}>",
                 "on-complete: option<borrow<callback>>",
                 "on-error: option<borrow<callback>>",
             ],
@@ -697,7 +697,7 @@ fn expected_action_signatures() -> [Signature; 7] {
         (
             vec![
                 "self: borrow<command-context>",
-                "custom-instructions: option<string>",
+                "options: option<record {custom-instructions: option<string>}>",
                 "on-complete: option<borrow<callback>>",
                 "on-error: option<borrow<callback>>",
             ],
@@ -765,7 +765,7 @@ fn assert_setup_contract(contract: &Contract) {
         (
             vec![
                 "self: borrow<command-context>",
-                "data: record {parent-session: option<string>}",
+                "data: option<record {parent-session: option<string>}>",
                 "setup: option<borrow<callback>>",
                 "with-session: option<borrow<callback>>",
             ],
@@ -822,7 +822,7 @@ fn assert_replacement_contract(contract: &Contract) {
         vec![
             "self: borrow<command-context>",
             "path: string",
-            "with-session: option<borrow<callback>>",
+            "options: option<record {with-session: option<borrow<callback>>}>",
         ],
         vec!["self: borrow<command-context>"],
         vec![

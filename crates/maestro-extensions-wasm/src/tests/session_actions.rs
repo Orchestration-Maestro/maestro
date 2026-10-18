@@ -273,6 +273,42 @@ async fn compact(driver: &mut impl Driver, input: Value) -> Result<Value, String
     )
     .map_err(|e| e.to_string())
 }
+/// Optional compaction records keep their presence through every context view.
+async fn compaction_presence(driver: &mut impl Driver) -> Result<(), String> {
+    driver
+        .run_plain_command("capture", r#"compact {"view":"register"}"#)
+        .await?;
+    for view in ["ordinary", "command", "replacement"] {
+        let mut observations = Vec::new();
+        for absent in [true, false] {
+            let start = driver.transcript().len();
+            assert_eq!(
+                compact(driver, json!({"view":view,"absent":absent})).await?,
+                json!({"ok":null})
+            );
+            let admissions: Vec<_> = driver.transcript()[start..]
+                .iter()
+                .filter(|line| line.starts_with("compact admission "))
+                .cloned()
+                .collect();
+            assert_eq!(admissions.len(), 1);
+            observations.push(admissions);
+        }
+        assert_ne!(
+            observations[0], observations[1],
+            "compaction import erased options in {view}"
+        );
+    }
+    driver.release_all().await;
+    assert_eq!(driver.live(), 0);
+    Ok(())
+}
+
+#[test]
+fn compaction_options_preserve_presence() -> Result<(), String> {
+    on_both_adapters!(compaction_presence)
+}
+
 /// Notification delivery stays closed until the synchronous admission has returned.
 async fn compaction_returns(driver: &mut impl Driver) -> Result<(), String> {
     driver
@@ -782,11 +818,12 @@ async fn forward_view(driver: &mut impl Driver, case: &Case, view: &str) -> Resu
                 .unwrap(),
         )
         .unwrap();
-        let expected = if case.group == "compactAbsent" {
+        let mut expected = if case.group == "compactAbsent" {
             json!({"instructions":{"present":false},"complete":false,"error":false})
         } else {
             case.expected.clone()
         };
+        expected["present"] = json!(case.group != "compactAbsent");
         assert_eq!(observed, expected);
     }
 

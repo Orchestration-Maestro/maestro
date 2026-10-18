@@ -284,7 +284,7 @@ macro_rules! context_methods {
         fn compact(
             &mut self,
             this: Resource<$kind>,
-            instructions: Option<String>,
+            instructions: Option<host::CompactionData>,
             complete: Option<Resource<Identity>>,
             error: Option<Resource<Identity>>,
         ) -> wasmtime::Result<Result<(), String>> {
@@ -298,9 +298,12 @@ macro_rules! context_methods {
             self.observed.log(format!("compact binding {cwd}"));
             Ok(super::action_host::compact(
                 &mut self.observed,
-                instructions.as_deref(),
+                instructions
+                    .as_ref()
+                    .and_then(|data| data.custom_instructions.as_deref()),
                 complete.map(|c| c.rep()),
                 error.map(|c| c.rep()),
+                instructions.is_some(),
             ))
         }
         fn cwd(&mut self, this: Resource<$kind>) -> wasmtime::Result<Result<String, String>> {
@@ -720,10 +723,17 @@ impl host::HostCommandContextWithStore<State> for Imports {
         accessor: &Accessor<State, Self>,
         this: Resource<Command>,
         id: String,
-        callback: Option<Resource<Identity>>,
+        options: Option<host::SwitchSessionOptions>,
     ) -> wasmtime::Result<Result<SessionChangeResult, String>> {
         super::replacement_host::binding(accessor, &this)?;
-        super::replacement_host::command(accessor, "switchSession", &id, None, callback).await
+        super::replacement_host::command(
+            accessor,
+            "switchSession",
+            &id,
+            options.as_ref().map(|_| "{}"),
+            options.and_then(|options| options.with_session),
+        )
+        .await
     }
     async fn reload(
         accessor: &Accessor<State, Self>,
@@ -754,16 +764,21 @@ impl host::HostCommandContextWithStore<State> for Imports {
     async fn new_session(
         accessor: &Accessor<State, Self>,
         this: Resource<Command>,
-        data: NewSessionCommandData,
+        data: Option<NewSessionCommandData>,
         setup: Option<Resource<Identity>>,
         with_session: Option<Resource<Identity>>,
     ) -> wasmtime::Result<Result<SessionChangeResult, String>> {
-        let parent = data.parent_session.as_deref().unwrap_or("none");
+        let parent = data
+            .as_ref()
+            .and_then(|data| data.parent_session.as_deref())
+            .unwrap_or("none");
         let hold = accessor.with(|mut a| {
             super::setup_host::command_start(
                 &mut a.get().observed,
-                data.parent_session.as_deref(),
+                data.as_ref()
+                    .and_then(|data| data.parent_session.as_deref()),
                 (setup.is_some(), with_session.is_some()),
+                data.is_some(),
             )
         });
         pause(hold).await;
