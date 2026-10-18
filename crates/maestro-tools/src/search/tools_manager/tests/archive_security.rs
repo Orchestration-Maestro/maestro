@@ -37,6 +37,10 @@ fn zip_extraction_confines_symlink_targets() {
         if fixture == "inside-link.zip" {
             result.unwrap();
             assert_eq!(fs::read(destination.join("link")).unwrap(), b"ordinary");
+            assert_eq!(
+                fs::read_link(destination.join("link")).unwrap(),
+                Path::new("ordinary")
+            );
             assert_eq!(mode(&destination.join("ordinary")), 0o640);
         } else {
             assert!(result.is_err(), "{fixture}");
