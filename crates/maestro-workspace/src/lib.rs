@@ -14,3 +14,6 @@ pub mod tab;
 pub mod terminal_id;
 /// Workspace records and the topology owner.
 pub mod workspace;
+
+/// Supplied-path topology and screen-history persistence.
+pub mod persist;

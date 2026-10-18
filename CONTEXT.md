@@ -110,7 +110,7 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **InstallMethod:** The package-manager classification selected from supplied installation layout and path evidence, without executing a manager.
 - **SelfUpdateCommand:** An owned self-update command description with literal installation arguments, a display and optional ordered removal/installation steps; selection does not execute an update.
 - **Session directory:** A caller-selected or default directory used for native session files.
-- **File-write lock:** Native OS file locking on a stable sidecar file for mutual exclusion. The [shared effect contract](docs/specs/maestro-port.md#crates-and-delivery-order) assigns bounded synchronous acquisition of a caller-opened file to `maestro-lock`; settings and credentials retain opening, permissions, persistence, unlocking and asynchronous acquisition policy. The [lock documentation](docs/locking.md) gives synchronous acquisition policy; the [credentials documentation](docs/credentials.md) gives the asynchronous schedule.
+- **File-write lock:** Native OS file locking on a stable sidecar file for mutual exclusion. The [shared effect contract](docs/specs/maestro-port.md#crates-and-delivery-order) assigns bounded synchronous acquisition of a caller-opened file to `maestro-lock`; settings and credentials retain opening, permissions, in-place persistence, unlocking and asynchronous acquisition policy. The [lock documentation](docs/locking.md) gives synchronous acquisition policy; the [credentials documentation](docs/credentials.md) gives the asynchronous schedule.
 - **Credential:** Provider-owned authentication data, not permission to execute a tool.
 - **Stored credential:** Local provider authentication data, distinct from already-resolved runtime request input.
 - **Secret helper:** An explicitly requested program whose output supplies a configured secret lazily.
@@ -253,3 +253,5 @@ their callers. The collection returns removed ownership for release outside guar
 - **Shared extension events:** Generic event/result schemas and assembled prompt
   records owned by request, re-exported by models and specialized by native/guest
   aliases; adapter capabilities and stream snapshots remain adapter-owned.
+
+- **Atomic replacement:** `maestro-lock` publishes bytes through an exclusively created temporary sibling, file sync, close and rename, followed by parent-directory sync. A postcommit sync error is advisory, not a failed write. Workspace owns snapshot serialization and chooses link following. See [locking](docs/locking.md#atomic-replacement).

@@ -81,3 +81,24 @@ not expire them.
 
 The topology API starts no terminal, background task or daemon listener. See the
 [daemon design](specs/workspace-daemon.md) for the remaining runtime boundaries.
+
+## Snapshot
+
+[`maestro_workspace::persist`](../crates/maestro-workspace/src/persist/mod.rs)
+loads and saves version-1 topology at supplied paths. Owned records retain
+workspace/tab/pane names, public numbers, selection, working directories, split
+axes and resume provenance. Screen history is stored separately and can be
+removed by saving without history.
+
+Saving writes pretty JSON without a trailing newline through the shared
+[atomic replacement](locking.md#atomic-replacement) operation, following symbolic
+links. Topology commits before history is saved or removed; failure on the second
+file does not undo the first. Snapshot saves ignore postcommit directory-sync
+advisories.
+
+Missing files load silently as absent. Read, parse and unsupported-version failures
+produce warnings and return no snapshot. Only version 1 is accepted; there is no
+legacy reader or conversion. Topology classifies its raw header before decoding
+workspaces, while history decodes its complete record before checking its version.
+Unknown record members are ignored. Capture, restore and default-path selection
+are separate operations, not part of these supplied-path functions.

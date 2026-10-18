@@ -68,3 +68,5 @@ pub fn assert_invariants(workspace: &maestro_workspace::workspace::Workspace) {
 }
 
 pub type Topology = WorkspaceTopology<fn() -> u128>;
+
+pub mod snapshot;

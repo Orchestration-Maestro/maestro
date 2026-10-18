@@ -109,10 +109,11 @@ The [shared filesystem effect contract](specs/maestro-port.md#crates-and-deliver
 declares `maestro-watch` and `maestro-lock` as core leaves below layer 0, including
 when their implementations are absent. Neither may depend on a workspace crate,
 including `maestro-path`. Only theme/application may consume watch; only
-settings/credentials may consume lock. Watch creation/close, injected watch/timer
+settings/credentials/workspace may consume lock. Watch creation/close, injected watch/timer
 interfaces and native notifications belong to watch; bounded synchronous
-contention acquisition of caller-opened files belongs to lock. Feature owners
-retain reload, refresh, retry, polling, file creation, permissions, persistence,
+contention acquisition of caller-opened files and atomic byte replacement belong
+to lock. Workspace owns snapshot serialization and link-following policy. Feature owners
+retain reload, refresh, retry, polling, lock-file creation, permissions, in-place persistence,
 unlocking and asynchronous credential acquisition policy. This changes ownership,
 not public capabilities or feature-specific timing, process, subscription and
 teardown semantics; it introduces no generic executor or scheduling policy.

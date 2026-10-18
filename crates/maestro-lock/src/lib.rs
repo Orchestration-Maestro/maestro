@@ -1,4 +1,7 @@
-//! Bounded synchronous acquisition of caller-opened files.
+//! File-write exclusion and durable byte publication.
+
+mod replace;
+pub use replace::{Committed, Replace, replace};
 
 use std::fs::{File, TryLockError};
 use std::time::Duration;
