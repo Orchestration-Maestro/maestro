@@ -225,7 +225,8 @@ impl<'a> InlineScope<'a> {
         document.nodes
     }
 }
-/// Decode only generated spans, never authored marker-looking HTML.
+/// Decode only generated spans, never authored marker-looking HTML, in blocks, table cells
+/// and inline formatting.
 fn lower(nodes: &mut Vec<Node>, slots: &[Range<usize>]) {
     nodes.retain_mut(|node| {
         match &mut node.kind {
@@ -238,6 +239,14 @@ fn lower(nodes: &mut Vec<Node>, slots: &[Range<usize>]) {
             | Kind::Strong(c)
             | Kind::Strike(c)
             | Kind::Emphasis(c) => lower(c, slots),
+            Kind::Table(table) => {
+                for cell in std::iter::once(&mut table.header)
+                    .chain(&mut table.rows)
+                    .flatten()
+                {
+                    lower(&mut cell.children, slots);
+                }
+            }
             Kind::Html(_) => return lower_atom(node, slots),
             _ => {}
         }
