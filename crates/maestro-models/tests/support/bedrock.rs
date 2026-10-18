@@ -174,9 +174,7 @@ pub fn credential_scope(authorization: &str) -> Option<(&str, &str)> {
 }
 
 use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
-use maestro_models::{
-    AssistantMessage, AssistantMessageEvent, SharedAssistantMessage, StreamOptions,
-};
+use maestro_models::{AssistantMessage, StreamOptions};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -275,24 +273,6 @@ pub fn options(scripted: &transport::Transport) -> BedrockOptions {
         },
         bearer_token: Some("fixture-token".into()),
         ..BedrockOptions::default()
-    }
-}
-
-fn handle(event: &AssistantMessageEvent) -> &SharedAssistantMessage {
-    use AssistantMessageEvent as E;
-    match event {
-        E::Start { partial }
-        | E::TextStart { partial, .. }
-        | E::TextDelta { partial, .. }
-        | E::TextEnd { partial, .. }
-        | E::ThinkingStart { partial, .. }
-        | E::ThinkingDelta { partial, .. }
-        | E::ThinkingEnd { partial, .. }
-        | E::ToolcallStart { partial, .. }
-        | E::ToolcallDelta { partial, .. }
-        | E::ToolcallEnd { partial, .. } => partial,
-        E::Done { message, .. } => message,
-        E::Error { error, .. } => error,
     }
 }
 
@@ -437,7 +417,7 @@ async fn check_stream(
     let mut events = Vec::new();
     let mut handles = Vec::new();
     while let Some(event) = stream.next().await {
-        handles.push(Arc::clone(handle(&event)));
+        handles.push(Arc::clone(crate::response_output::handle(&event)));
         let record = json::event_record(&event)?;
         if record["type"].as_str() == case.abort_on.as_deref() {
             signal.abort();

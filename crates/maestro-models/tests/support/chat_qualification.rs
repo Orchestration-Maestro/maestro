@@ -6,9 +6,8 @@ use crate::{
 };
 use chat::TestResult;
 use maestro_models::{
-    AssistantMessageEvent, Context, Model, OnPayload, ProviderStreamOptions,
-    SharedAssistantMessage, SimpleStreamOptions, StreamOptions, ThinkingLevel, ToolChoice,
-    complete, complete_simple, get_model, stream, stream_simple,
+    Context, Model, OnPayload, ProviderStreamOptions, SimpleStreamOptions, StreamOptions,
+    ThinkingLevel, ToolChoice, complete, complete_simple, get_model, stream, stream_simple,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -475,7 +474,7 @@ async fn invoke(wire: &Wire, id: &str) -> TestResult<Value> {
             let result = started.result().await;
             let same = events
                 .iter()
-                .all(|event| Arc::ptr_eq(handle(event), &result));
+                .all(|event| Arc::ptr_eq(crate::response_output::handle(event), &result));
             let recorded: Vec<_> = events.iter().map(event_record).collect::<TestResult<_>>()?;
             (result, Some(recorded), Some(same))
         }
@@ -496,24 +495,6 @@ async fn invoke(wire: &Wire, id: &str) -> TestResult<Value> {
         output["sameHandle"] = json!(same);
     }
     Ok(output)
-}
-
-/// The shared message handle carried by each event variant.
-fn handle(event: &AssistantMessageEvent) -> &SharedAssistantMessage {
-    match event {
-        AssistantMessageEvent::Start { partial }
-        | AssistantMessageEvent::TextStart { partial, .. }
-        | AssistantMessageEvent::TextDelta { partial, .. }
-        | AssistantMessageEvent::TextEnd { partial, .. }
-        | AssistantMessageEvent::ThinkingStart { partial, .. }
-        | AssistantMessageEvent::ThinkingDelta { partial, .. }
-        | AssistantMessageEvent::ThinkingEnd { partial, .. }
-        | AssistantMessageEvent::ToolcallStart { partial, .. }
-        | AssistantMessageEvent::ToolcallDelta { partial, .. }
-        | AssistantMessageEvent::ToolcallEnd { partial, .. } => partial,
-        AssistantMessageEvent::Done { message, .. } => message,
-        AssistantMessageEvent::Error { error, .. } => error,
-    }
 }
 
 /// Transport request fields owned by the corpus, excluding SDK/runtime headers.
