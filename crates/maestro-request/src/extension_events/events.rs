@@ -160,12 +160,12 @@ pub struct SessionBeforeForkResult {
 /// A provider request is about to be sent.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BeforeProviderRequestEvent<P> {
-    /// The request body as opaque JSON text.
+    /// The request body in the caller's opaque payload representation.
     pub payload: P,
 }
 
-/// A replacement request body as opaque JSON text; the text `null` replaces the payload with
-/// null and differs from returning no result.
+/// A replacement request body in the caller's payload representation.
+/// A supplied null payload differs from returning no result.
 pub type BeforeProviderRequestEventResult<P> = P;
 
 /// A provider answered.
@@ -173,7 +173,8 @@ pub type BeforeProviderRequestEventResult<P> = P;
 pub struct AfterProviderResponseEvent<H> {
     /// The response status is an editable number, not a validated HTTP status.
     pub status: f64,
-    /// Header names and values in the order the host listed them, uninterpreted.
+    /// Uninterpreted header names and values in the supplied collection.
+    /// Native maps order by name; guest pairs retain host order.
     pub headers: H,
 }
 

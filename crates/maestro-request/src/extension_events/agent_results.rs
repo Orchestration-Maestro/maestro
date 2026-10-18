@@ -20,7 +20,7 @@ pub struct MessageEndEventResult<M> {
     pub message: Presence<M>,
 }
 
-/// Custom message content returned before the agent starts; details stay opaque JSON text.
+/// Custom message content returned before the agent starts; details keep the supplied representation.
 pub type BeforeAgentStartMessage<D> = CustomMessageInput<D>;
 
 /// Custom message and system prompt replacements before the agent starts.

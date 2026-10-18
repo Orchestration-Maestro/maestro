@@ -311,7 +311,9 @@ fn raw_registration_keeps_serialize_only_details() {
         loaded
             .api
             .register_tool(RegisteredToolInput::from_raw(
-                maestro_tools::tool_definition_wrapper::ToolDefinitionInput::Retained(handle),
+                maestro_tools::tool_definition_wrapper::ToolDefinitionInput::Retained(
+                    handle.clone(),
+                ),
             ))
             .unwrap();
         assert!(
@@ -319,6 +321,7 @@ fn raw_registration_keeps_serialize_only_details() {
                 .get_tool_definition::<Value, SerializeOnly, RawState>("no-renderer")
                 .is_some()
         );
+        check_deferred_raw_binding(&loaded, &runner, handle).await;
     });
 }
 
@@ -337,28 +340,12 @@ fn registered_factories_await_initialization_and_preserve_provenance() {
 #[test]
 fn retained_wrappers_observe_execute_mutation_at_the_correct_phase() {
     support::local(async {
+        let bus = support::LocalBus::new();
+        let loaded = support::loaded("factory-reentry", bus.controller.for_extension());
+        let api = loaded.api.clone();
+        let owner = Rc::downgrade(&loaded.owner);
         let selected = Rc::new(std::cell::RefCell::new(Vec::new()));
-        let raw = Rc::new(RwLock::new(maestro_tools::types::local::ToolDefinition::<
-            (),
-            Value,
-            Value,
-            (),
-        > {
-            definition: Tool {
-                name: "lower".into(),
-                description: String::new(),
-                parameters: json!({}),
-            },
-            label: "lower".into(),
-            prompt_snippet: None,
-            prompt_guidelines: None,
-            render_shell: None,
-            prepare_arguments: None,
-            execution_mode: None,
-            execute: Rc::new(|_, _, _, _, _| ready_details(None)),
-            render_call: None,
-            render_result: None,
-        }));
+        let raw = mutable_lower_definition();
         let weak_raw = Rc::downgrade(&raw);
         let trace = selected.clone();
         let first = selected.clone();
@@ -376,6 +363,9 @@ fn retained_wrappers_observe_execute_mutation_at_the_correct_phase() {
                 Local,
             >::Retained(raw.clone()),
             Some(Rc::new(move || {
+                assert!(owner.upgrade().unwrap().try_write().is_ok());
+                api.register_tool(definition("factory-entry", "factory-entry"))
+                    .unwrap();
                 let trace = trace.clone();
                 weak_raw.upgrade().unwrap().write().unwrap().execute =
                     Rc::new(move |_, _, _, _, _| {
@@ -391,6 +381,14 @@ fn retained_wrappers_observe_execute_mutation_at_the_correct_phase() {
                 .unwrap();
         }
         assert_eq!(*selected.borrow(), ["A", "B"]);
+        assert!(
+            loaded
+                .owner
+                .read()
+                .unwrap()
+                .tools
+                .contains_key("factory-entry")
+        );
     });
 }
 
@@ -612,24 +610,16 @@ async fn check_factory_paths(bus: &support::LocalBus) {
 /// Controlled ready and suspended factory success/error paths.
 async fn check_factory_initialization(bus: &support::LocalBus, suspended: bool) {
     let trace = support::Trace::default();
-    let observed = trace.clone();
-    let factory: maestro_extensions::ExtensionFactory<Local> =
-        Rc::new(move |api: maestro_extensions::ExtensionAPI<Local>| {
-            api.register_tool(definition("factory", "factory")).unwrap();
-            support::mark(&observed, "registered");
-            let trace = observed.clone();
-            Box::pin(async move {
-                if suspended {
-                    tokio::task::yield_now().await;
-                    support::mark(&trace, "awaited");
-                }
-                Ok(())
-            })
-                as <Local as maestro_models::Execution>::Future<
-                    'static,
-                    Result<(), maestro_extensions::EventError>,
-                >
-        });
+    let received = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let output = received.clone();
+    let subscription = bus.controller.on(
+        "factory-ready",
+        Rc::new(move |data, _| {
+            output.borrow_mut().push((*data).clone());
+            Ok(None)
+        }),
+    );
+    let factory = initializing_factory(&trace, suspended);
     let owner = maestro_extensions::load_extension_from_factory::<Local>(
         factory,
         "/factory".into(),
@@ -658,6 +648,8 @@ async fn check_factory_initialization(bus: &support::LocalBus, suspended: bool) 
             vec!["registered"]
         }
     );
+    assert_eq!(*received.borrow(), [json!({"suspended":suspended})]);
+    subscription.unsubscribe();
     check_factory_failure(bus, suspended).await;
 }
 
@@ -965,4 +957,238 @@ async fn check_raw_execute_replacement(
         Some(json!({"value":11}))
     );
     first
+}
+
+/// Callback retirement must leave the registration owner available for re-entry.
+struct RetireRegistration {
+    /// Weak registration owner whose guard must be released before retirement.
+    owner: std::rc::Weak<RwLock<maestro_extensions::Extension<Local>>>,
+    /// Weak facade used for a real registration from the destructor.
+    api: maestro_extensions::ExtensionAPI<Local>,
+    /// Observable destruction completion.
+    retired: Rc<std::cell::Cell<bool>>,
+}
+impl Drop for RetireRegistration {
+    fn drop(&mut self) {
+        assert!(self.owner.upgrade().unwrap().try_write().is_ok());
+        self.api
+            .register_tool(definition("retired", "retired"))
+            .unwrap();
+        self.retired.set(true);
+    }
+}
+
+#[test]
+fn registered_callbacks_reenter_and_retire_without_registry_guards() {
+    support::local(async {
+        let bus = support::LocalBus::new();
+        let loaded = support::loaded("reentry", bus.controller.for_extension());
+        let retired = Rc::new(std::cell::Cell::new(false));
+        let tool = reentrant_definition(&loaded, &retired);
+        loaded
+            .api
+            .register_tool(
+                maestro_tools::tool_definition_wrapper::ToolDefinitionInput::Retained(tool),
+            )
+            .unwrap();
+        let runner = Rc::new(support::runner(&loaded.owners));
+        let registered = runner.get_all_registered_tools().remove(0);
+        let typed = runner
+            .get_tool_definition::<Value, Value, ()>("old")
+            .unwrap();
+        let binding = registered.definition.renderer_binding().unwrap();
+        let wrapped = maestro_extensions::wrap_registered_tool(&registered, runner.clone());
+        loaded.api.register_tool(definition("old", "new")).unwrap();
+        assert!(!retired.get());
+        assert_eq!(
+            (wrapped.execute)("id".into(), json!({}), None, None)
+                .await
+                .unwrap()
+                .details,
+            Some(json!("old"))
+        );
+        let env = display_support::Env::new(0);
+        let args = json!({});
+        let setup =
+            display_support::Setup::from(&json!({"readme":"/opt/maestro/README.md","bindings":[]}));
+        let row = display_support::context::<ToolRendererState>(&args, &setup, &env, None);
+        assert_eq!(
+            binding.render_call.as_ref().unwrap()(Some(&args), &env.theme, &row)
+                .unwrap()
+                .render(12),
+            ["old renderer"]
+        );
+        for key in ["execute-entry", "render-entry"] {
+            assert!(
+                loaded.owner.read().unwrap().tools.contains_key(key),
+                "{key}"
+            );
+        }
+        assert!(typed.try_write().is_ok());
+        drop((registered, typed, wrapped));
+        assert!(!retired.get());
+        drop(binding);
+        assert!(retired.get());
+        assert!(loaded.owner.read().unwrap().tools.contains_key("retired"));
+        check_unretained_retirement(&loaded, &retired);
+    });
+}
+
+/// Registration and execution succeed before raw binding rejects a typed slot.
+async fn check_deferred_raw_binding(
+    loaded: &support::Loaded,
+    runner: &Rc<maestro_extensions::ExtensionRunner<Local>>,
+    handle: Rc<RwLock<LocalDefinition<Value, SerializeOnly, RawState>>>,
+) {
+    handle.write().unwrap().definition.name = "typed-on-raw".into();
+    handle.write().unwrap().render_result =
+        Some(ToolRenderResult::<SerializeOnly, RawState, Local>::Typed(
+            Rc::new(|_, _, _, _| panic!("a raw route must not invoke the typed callback")),
+        ));
+    loaded
+        .api
+        .register_tool(RegisteredToolInput::from_raw(
+            maestro_tools::tool_definition_wrapper::ToolDefinitionInput::Retained(handle),
+        ))
+        .unwrap();
+    let typed_on_raw = runner
+        .get_all_registered_tools()
+        .into_iter()
+        .find(|tool| tool.definition.name() == "typed-on-raw")
+        .unwrap();
+    let executable = maestro_extensions::wrap_registered_tool(&typed_on_raw, runner.clone());
+    assert_eq!(
+        (executable.execute)("typed-on-raw".into(), json!({}), None, None)
+            .await
+            .unwrap()
+            .details,
+        Some(json!({"value":9}))
+    );
+    assert_eq!(
+        typed_on_raw
+            .definition
+            .renderer_binding()
+            .err()
+            .unwrap()
+            .message,
+        "Typed result callback requires ToolRendererBinding::from_definition"
+    );
+}
+
+/// Standalone local definition used to distinguish execute-selection phases.
+fn mutable_lower_definition()
+-> Rc<RwLock<maestro_tools::types::local::ToolDefinition<(), Value, Value, ()>>> {
+    Rc::new(RwLock::new(maestro_tools::types::local::ToolDefinition::<
+        (),
+        Value,
+        Value,
+        (),
+    > {
+        definition: Tool {
+            name: "lower".into(),
+            description: String::new(),
+            parameters: json!({}),
+        },
+        label: "lower".into(),
+        prompt_snippet: None,
+        prompt_guidelines: None,
+        render_shell: None,
+        prepare_arguments: None,
+        execution_mode: None,
+        execute: Rc::new(|_, _, _, _, _| ready_details(None)),
+        render_call: None,
+        render_result: None,
+    }))
+}
+
+/// Ready or suspended initialization emits through the facade's supplied bus.
+fn initializing_factory(
+    trace: &support::Trace,
+    suspended: bool,
+) -> maestro_extensions::ExtensionFactory<Local> {
+    let observed = trace.clone();
+    Rc::new(move |api: maestro_extensions::ExtensionAPI<Local>| {
+        api.register_tool(definition("factory", "factory")).unwrap();
+        support::mark(&observed, "registered");
+        let trace = observed.clone();
+        Box::pin(async move {
+            if suspended {
+                tokio::task::yield_now().await;
+                support::mark(&trace, "awaited");
+            }
+            api.events
+                .emit("factory-ready", json!({"suspended":suspended}))
+                .await;
+            Ok(())
+        })
+            as <Local as maestro_models::Execution>::Future<
+                'static,
+                Result<(), maestro_extensions::EventError>,
+            >
+    })
+}
+
+/// Execute and render callbacks enter the live registry without retained guards.
+fn reentrant_definition(
+    loaded: &support::Loaded,
+    retired: &Rc<std::cell::Cell<bool>>,
+) -> Rc<RwLock<LocalDefinition>> {
+    let capture = Rc::new(RetireRegistration {
+        owner: Rc::downgrade(&loaded.owner),
+        api: loaded.api.clone(),
+        retired: retired.clone(),
+    });
+    let tool = Rc::new(RwLock::new(definition("old", "old")));
+    let weak_definition = Rc::downgrade(&tool);
+    let (api, owner, held) = (
+        loaded.api.clone(),
+        Rc::downgrade(&loaded.owner),
+        capture.clone(),
+    );
+    tool.write().unwrap().execute = Rc::new(move |_, _, _, _, _| {
+        let _ = &held;
+        assert!(weak_definition.upgrade().unwrap().try_write().is_ok());
+        assert!(owner.upgrade().unwrap().try_write().is_ok());
+        api.register_tool(definition("execute-entry", "execute-entry"))
+            .unwrap();
+        ready_details(Some(json!("old")))
+    });
+    let (api, owner) = (loaded.api.clone(), Rc::downgrade(&loaded.owner));
+    let weak_definition = Rc::downgrade(&tool);
+    tool.write().unwrap().render_call = Some(Rc::new(move |_, _, _| {
+        let _ = &capture;
+        assert!(weak_definition.upgrade().unwrap().try_write().is_ok());
+        assert!(owner.upgrade().unwrap().try_write().is_ok());
+        api.register_tool(definition("render-entry", "render-entry"))
+            .unwrap();
+        Ok(Rc::new(maestro_tui::Text::new(
+            "old renderer".into(),
+            0,
+            0,
+            None,
+        )))
+    }));
+    tool
+}
+
+/// Replacing the sole registration releases its callback outside the map guard.
+fn check_unretained_retirement(loaded: &support::Loaded, retired: &Rc<std::cell::Cell<bool>>) {
+    retired.set(false);
+    let cleanup = RetireRegistration {
+        owner: Rc::downgrade(&loaded.owner),
+        api: loaded.api.clone(),
+        retired: retired.clone(),
+    };
+    let mut unretained = definition("unretained", "unretained");
+    unretained.execute = Rc::new(move |_, _, _, _, _| {
+        let _ = &cleanup;
+        ready_details(None)
+    });
+    loaded.api.register_tool(unretained).unwrap();
+    assert!(!retired.get());
+    loaded
+        .api
+        .register_tool(definition("unretained", "replacement"))
+        .unwrap();
+    assert!(retired.get());
 }

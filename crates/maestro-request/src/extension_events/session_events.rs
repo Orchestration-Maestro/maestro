@@ -57,7 +57,7 @@ pub struct SessionTreeEvent<B> {
 pub struct SessionBeforeTreeSummary<D> {
     /// Supplied summary content.
     pub summary: String,
-    /// Opaque JSON text, carried without parsing or reformatting.
+    /// Opaque details in the caller's representation.
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     pub details: Presence<D>,
 }

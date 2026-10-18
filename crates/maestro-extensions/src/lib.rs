@@ -63,7 +63,7 @@ pub mod runner;
 pub use runner::ExtensionRunner;
 
 pub use loader::runtime::create_extension_runtime;
-pub use maestro_models::ToolInfo;
+pub use maestro_models::{ToolInfo, system_prompt::BuildSystemPromptOptions};
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{ExecOptions, ExecResult};
 pub use types::{

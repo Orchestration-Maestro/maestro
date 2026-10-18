@@ -447,5 +447,6 @@ assert!(owner.read().map_err(|error| error.to_string())?.tools.contains_key("ech
 unknown and empty names; repeated callback registrations remain separate entries.
 It does not dispatch hooks. Event/result schemas and assembled prompt records
 belong to the shared request owner, re-exported by models and specialized with
-native domain handles or the guest's existing carriers. The guest adapter alone
+native domain handles or the guest's existing carriers. `BuildSystemPromptOptions`
+is also exported at the extension root for constructing prompt operands. The guest adapter alone
 snapshots stream observations and encodes capability resources.

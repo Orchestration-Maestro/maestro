@@ -25,7 +25,8 @@ use std::{
 ///
 /// [`Local`] callbacks and their futures use `Rc` and may capture single-thread
 /// values such as terminal components. [`Threaded`], the default, keeps callbacks
-/// `Send + Sync` and their futures `Send` on native targets, so a default listener
+/// `Send + Sync` on native targets. Channel futures are `Send`, while registered
+/// handler invocation futures are local and may retain a local context. A default listener
 /// cannot capture a local value:
 ///
 /// ```compile_fail,E0277

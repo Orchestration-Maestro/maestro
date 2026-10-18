@@ -985,3 +985,341 @@ fn stream_tool_call() -> maestro_models::ToolCall {
         thought_signature: None,
     }
 }
+
+/// The author-facing root exposes the shared prompt record itself.
+#[test]
+fn prompt_options_are_exported_from_the_extension_root() {
+    let options = check::<maestro_extensions::BuildSystemPromptOptions>(json!({"cwd":"/export"}));
+    let shared: maestro_models::system_prompt::BuildSystemPromptOptions = options;
+    assert_eq!(shared.cwd, "/export");
+}
+
+/// Native built-in aliases retain concrete inputs and supplied result operands.
+#[test]
+fn builtin_event_aliases_keep_native_operands() {
+    check_bash_event_operands();
+    check_read_event_operands();
+    check_edit_event_operands();
+    check_write_event_operands();
+    check_grep_event_operands();
+    check_find_event_operands();
+    check_ls_event_operands();
+}
+
+/// Common invocation and result operands for each concrete native alias.
+macro_rules! builtin {
+    ($call:ty, $result:ty, $name:literal, $input:expr, $details:expr, $expected:expr, |$arg:ident| $assertions:block) => {{
+        let call: $call = serde_json::from_value(json!({"toolCallId":"call-id","toolName":$name,"input":$input})).unwrap();
+        assert_eq!(call.tool_call_id, "call-id");
+        assert_eq!(call.tool_name, $name);
+        let $arg = &call.input;
+        $assertions
+        let result: $result = shared::ToolResultEvent {
+            tool_call_id: "result-id".into(), tool_name: $name.into(),
+            input: json!({"unvalidated":false}),
+            content: vec![maestro_models::UserBlock::Text(maestro_models::TextContent { text: "output".into(), text_signature: None })],
+            is_error: true, details: Presence::Present($details),
+        };
+        assert_eq!(result.tool_call_id, "result-id");
+        assert_eq!(result.tool_name, $name);
+        assert_eq!(result.input, json!({"unvalidated":false}));
+        assert_eq!(serde_json::to_value(&result.content).unwrap(), json!([{"type":"text","text":"output"}]));
+        assert!(result.is_error);
+        let Presence::Present(details) = result.details else { panic!("details") };
+        assert_eq!(serde_json::to_value(details).unwrap(), $expected);
+    }};
+}
+
+/// Concrete bash input fields and result details.
+fn check_bash_event_operands() {
+    builtin!(
+        BashToolCallEvent,
+        BashToolResultEvent,
+        "bash",
+        json!({"command":" echo ","timeout":2.5}),
+        maestro_tools::BashToolDetails {
+            truncation: None,
+            full_output_path: Some("artifact".into())
+        },
+        json!({"fullOutputPath":"artifact"}),
+        |arg| {
+            assert_eq!(arg.command, " echo ");
+            assert_eq!(arg.timeout, Some(2.5));
+        }
+    );
+}
+
+/// Concrete read input fields and result details.
+fn check_read_event_operands() {
+    builtin!(
+        ReadToolCallEvent,
+        ReadToolResultEvent,
+        "read",
+        json!({"path":"file","offset":2.5,"limit":3.5}),
+        maestro_tools::ReadToolDetails { truncation: None },
+        json!({}),
+        |arg| {
+            assert_eq!(arg.path, "file");
+            assert_eq!(arg.offset, Some(2.5));
+            assert_eq!(arg.limit, Some(3.5));
+        }
+    );
+}
+
+/// Concrete edit input fields and result details.
+fn check_edit_event_operands() {
+    builtin!(
+        EditToolCallEvent,
+        EditToolResultEvent,
+        "edit",
+        json!({"path":"edit","edits":[{"oldText":"old","newText":"new"}]}),
+        maestro_tools::EditToolDetails {
+            diff: "diff".into(),
+            first_changed_line: Some(2)
+        },
+        json!({"diff":"diff","firstChangedLine":2}),
+        |arg| {
+            assert_eq!(arg.path, "edit");
+            assert_eq!(arg.edits[0].old_text, "old");
+            assert_eq!(arg.edits[0].new_text, "new");
+        }
+    );
+}
+
+/// Concrete write input fields and result details.
+fn check_write_event_operands() {
+    builtin!(
+        WriteToolCallEvent,
+        WriteToolResultEvent,
+        "write",
+        json!({"path":"write","content":"content"}),
+        (),
+        Value::Null,
+        |arg| {
+            assert_eq!(arg.path, "write");
+            assert_eq!(arg.content, "content");
+        }
+    );
+}
+
+/// Concrete grep input fields and result details.
+fn check_grep_event_operands() {
+    builtin!(
+        GrepToolCallEvent,
+        GrepToolResultEvent,
+        "grep",
+        json!({"pattern":"pattern","path":"root","glob":"*.rs","ignoreCase":false,"literal":true,"context":2.5,"limit":3.5}),
+        maestro_tools::GrepToolDetails {
+            truncation: None,
+            match_limit_reached: Some(3.5),
+            lines_truncated: Some(false)
+        },
+        json!({"matchLimitReached":3.5,"linesTruncated":false}),
+        |arg| {
+            assert_eq!(arg.pattern, "pattern");
+            assert_eq!(arg.path.as_deref(), Some("root"));
+            assert_eq!(arg.glob.as_deref(), Some("*.rs"));
+            assert_eq!((arg.ignore_case, arg.literal), (Some(false), Some(true)));
+            assert_eq!(arg.context, Some(2.5));
+            assert_eq!(arg.limit, Some(3.5));
+        }
+    );
+}
+
+/// Concrete find input fields and result details.
+fn check_find_event_operands() {
+    builtin!(
+        FindToolCallEvent,
+        FindToolResultEvent,
+        "find",
+        json!({"pattern":"*.rs","path":"find","limit":4.5}),
+        maestro_tools::FindToolDetails {
+            truncation: None,
+            result_limit_reached: Some(4.5)
+        },
+        json!({"resultLimitReached":4.5}),
+        |arg| {
+            assert_eq!(arg.pattern, "*.rs");
+            assert_eq!(arg.path.as_deref(), Some("find"));
+            assert_eq!(arg.limit, Some(4.5));
+        }
+    );
+}
+
+/// Concrete ls input fields and result details.
+fn check_ls_event_operands() {
+    builtin!(
+        LsToolCallEvent,
+        LsToolResultEvent,
+        "ls",
+        json!({"path":"ls","limit":5.5}),
+        maestro_tools::LsToolDetails {
+            truncation: None,
+            entry_limit_reached: Some(5.5)
+        },
+        json!({"entryLimitReached":5.5}),
+        |arg| {
+            assert_eq!(arg.path.as_deref(), Some("ls"));
+            assert_eq!(arg.limit, Some(5.5));
+        }
+    );
+}
+
+/// JSON equality alone cannot distinguish reordered keys or signed zero.
+#[test]
+fn opaque_native_payloads_keep_key_order_and_zero_bits() {
+    let input: Value = serde_json::from_str(r#"{"z":-0.0,"a":0.0}"#).unwrap();
+    let request = check::<BeforeProviderRequestEvent>(json!({"payload":input}));
+    let call =
+        check::<ToolCallEvent>(json!({"toolCallId":"call","toolName":"custom","input":input}));
+    let start = check::<ToolExecutionStartEvent>(
+        json!({"toolCallId":"start","toolName":"custom","args":input}),
+    );
+    let update = check::<ToolExecutionUpdateEvent>(
+        json!({"toolCallId":"update","toolName":"custom","args":input,"partialResult":input}),
+    );
+    let end = check::<ToolExecutionEndEvent>(
+        json!({"toolCallId":"end","toolName":"custom","result":input,"isError":false}),
+    );
+    let result = check::<ToolResultEvent>(
+        json!({"toolCallId":"result","toolName":"custom","input":input,"content":[],"isError":false,"details":input}),
+    );
+    let replacement = check::<ToolResultEventResult>(json!({"details":input}));
+    let provider = check::<BeforeProviderRequestEventResult>(input);
+    let Presence::Present(details) = &result.details else {
+        panic!("details")
+    };
+    let Presence::Present(replacement) = &replacement.details else {
+        panic!("replacement")
+    };
+    for value in [
+        &request.payload,
+        &call.input,
+        &start.args,
+        &update.args,
+        &update.partial_result,
+        &end.result,
+        &result.input,
+        details,
+        replacement,
+        &provider,
+    ] {
+        assert_eq!(
+            value
+                .as_object()
+                .unwrap()
+                .keys()
+                .map(String::as_str)
+                .collect::<Vec<_>>(),
+            ["z", "a"]
+        );
+        assert_eq!(value["z"].as_f64().unwrap().to_bits(), (-0.0_f64).to_bits());
+        assert_eq!(value["a"].as_f64().unwrap().to_bits(), 0.0_f64.to_bits());
+    }
+}
+
+/// Default command storage can carry a facade to a native registration worker.
+#[test]
+fn default_command_registers_a_tool_off_thread() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    let bus = maestro_extensions::create_event_bus(Arc::new(|_| {}), Arc::new(|_| {}));
+    let owner = runtime
+        .block_on(maestro_extensions::load_extension_from_factory::<
+            maestro_models::Threaded,
+        >(
+            Arc::new(|api| install_worker_command(&api)),
+            "/factory".into(),
+            bus.for_extension(),
+            maestro_extensions::create_extension_runtime::<maestro_models::Threaded>(),
+            None,
+        ))
+        .unwrap();
+    let runner = maestro_extensions::ExtensionRunner::<maestro_models::Threaded>::new(
+        Arc::new(std::sync::RwLock::new(vec![owner])),
+        maestro_extensions::create_extension_runtime::<maestro_models::Threaded>(),
+        support::session::runner_session("/work").0,
+        Arc::new(|_| {}),
+        maestro_theme::LiveTheme::default(),
+    );
+    let call = (runner.get_command("install").unwrap().handler)(
+        "off-thread".into(),
+        runner.create_command_context(),
+    );
+    assert!(runner.get_all_registered_tools().is_empty());
+    std::thread::spawn(move || {
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap()
+            .block_on(call)
+            .unwrap();
+    })
+    .join()
+    .unwrap();
+    let tools = runner.get_all_registered_tools();
+    assert_eq!(tools.len(), 1);
+    assert_eq!(tools[0].definition.name(), "off-thread");
+    assert!(
+        runner
+            .get_tool_definition::<Value, Value, ()>("off-thread")
+            .is_some()
+    );
+}
+
+/// Register a default command whose future installs through the captured facade.
+fn install_worker_command(
+    api: &maestro_extensions::ExtensionAPI,
+) -> maestro_models::BoxFuture<Result<(), maestro_extensions::EventError>> {
+    let facade = api.clone();
+    api.register_command(
+        "install".into(),
+        RegisteredCommandOptions {
+            description: None,
+            get_argument_completions: None,
+            handler: Arc::new(move |name, _| {
+                let facade = facade.clone();
+                Box::pin(async move { facade.register_tool(threaded_definition(name)) })
+            }),
+        },
+    )
+    .unwrap();
+    Box::pin(async { Ok(()) })
+}
+
+/// Thread-safe capture storage with local registered invocation.
+fn threaded_definition(
+    name: String,
+) -> maestro_tools::ToolDefinitionRecord<
+    ExtensionContext,
+    Value,
+    Value,
+    (),
+    maestro_models::Threaded,
+    Local,
+> {
+    maestro_tools::ToolDefinitionRecord {
+        definition: maestro_models::Tool {
+            name,
+            description: "worker".into(),
+            parameters: json!({}),
+        },
+        label: "worker".into(),
+        prompt_snippet: None,
+        prompt_guidelines: None,
+        render_shell: None,
+        prepare_arguments: None,
+        execution_mode: None,
+        execute: Arc::new(|_, args, _, _, _| {
+            Box::pin(async move {
+                Ok(maestro_agent::AgentToolResult {
+                    content: vec![],
+                    details: Some(args),
+                    terminate: None,
+                })
+            })
+        }),
+        render_call: None,
+        render_result: None,
+    }
+}

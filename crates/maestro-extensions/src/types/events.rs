@@ -193,11 +193,9 @@ pub type InputTransform = maestro_models::extension_events::events::InputTransfo
 pub type InputEventResult = maestro_models::extension_events::events::InputEventResult;
 /// Built-in input view.
 #[cfg(not(target_arch = "wasm32"))]
-#[cfg(not(target_arch = "wasm32"))]
 pub type BashToolCallEvent =
     maestro_models::extension_events::tool_events::ToolCallEvent<maestro_tools::BashToolInput>;
 /// Built-in details view.
-#[cfg(not(target_arch = "wasm32"))]
 #[cfg(not(target_arch = "wasm32"))]
 pub type BashToolResultEvent = maestro_models::extension_events::tool_events::ToolResultEvent<
     maestro_tools::BashToolDetails,
@@ -205,11 +203,9 @@ pub type BashToolResultEvent = maestro_models::extension_events::tool_events::To
 >;
 /// Built-in input view.
 #[cfg(not(target_arch = "wasm32"))]
-#[cfg(not(target_arch = "wasm32"))]
 pub type ReadToolCallEvent =
     maestro_models::extension_events::tool_events::ToolCallEvent<maestro_tools::ReadToolInput>;
 /// Built-in details view.
-#[cfg(not(target_arch = "wasm32"))]
 #[cfg(not(target_arch = "wasm32"))]
 pub type ReadToolResultEvent = maestro_models::extension_events::tool_events::ToolResultEvent<
     maestro_tools::ReadToolDetails,
@@ -217,11 +213,9 @@ pub type ReadToolResultEvent = maestro_models::extension_events::tool_events::To
 >;
 /// Built-in input view.
 #[cfg(not(target_arch = "wasm32"))]
-#[cfg(not(target_arch = "wasm32"))]
 pub type EditToolCallEvent =
     maestro_models::extension_events::tool_events::ToolCallEvent<maestro_tools::EditToolInput>;
 /// Built-in details view.
-#[cfg(not(target_arch = "wasm32"))]
 #[cfg(not(target_arch = "wasm32"))]
 pub type EditToolResultEvent = maestro_models::extension_events::tool_events::ToolResultEvent<
     maestro_tools::EditToolDetails,
@@ -229,21 +223,17 @@ pub type EditToolResultEvent = maestro_models::extension_events::tool_events::To
 >;
 /// Built-in input view.
 #[cfg(not(target_arch = "wasm32"))]
-#[cfg(not(target_arch = "wasm32"))]
 pub type WriteToolCallEvent =
     maestro_models::extension_events::tool_events::ToolCallEvent<maestro_tools::WriteToolInput>;
 /// Built-in details view.
-#[cfg(not(target_arch = "wasm32"))]
 #[cfg(not(target_arch = "wasm32"))]
 pub type WriteToolResultEvent =
     maestro_models::extension_events::tool_events::ToolResultEvent<(), Payload>;
 /// Built-in input view.
 #[cfg(not(target_arch = "wasm32"))]
-#[cfg(not(target_arch = "wasm32"))]
 pub type GrepToolCallEvent =
     maestro_models::extension_events::tool_events::ToolCallEvent<maestro_tools::GrepToolInput>;
 /// Built-in details view.
-#[cfg(not(target_arch = "wasm32"))]
 #[cfg(not(target_arch = "wasm32"))]
 pub type GrepToolResultEvent = maestro_models::extension_events::tool_events::ToolResultEvent<
     maestro_tools::GrepToolDetails,
@@ -251,11 +241,9 @@ pub type GrepToolResultEvent = maestro_models::extension_events::tool_events::To
 >;
 /// Built-in input view.
 #[cfg(not(target_arch = "wasm32"))]
-#[cfg(not(target_arch = "wasm32"))]
 pub type FindToolCallEvent =
     maestro_models::extension_events::tool_events::ToolCallEvent<maestro_tools::FindToolInput>;
 /// Built-in details view.
-#[cfg(not(target_arch = "wasm32"))]
 #[cfg(not(target_arch = "wasm32"))]
 pub type FindToolResultEvent = maestro_models::extension_events::tool_events::ToolResultEvent<
     maestro_tools::FindToolDetails,
@@ -263,11 +251,9 @@ pub type FindToolResultEvent = maestro_models::extension_events::tool_events::To
 >;
 /// Built-in input view.
 #[cfg(not(target_arch = "wasm32"))]
-#[cfg(not(target_arch = "wasm32"))]
 pub type LsToolCallEvent =
     maestro_models::extension_events::tool_events::ToolCallEvent<maestro_tools::LsToolInput>;
 /// Built-in details view.
-#[cfg(not(target_arch = "wasm32"))]
 #[cfg(not(target_arch = "wasm32"))]
 pub type LsToolResultEvent = maestro_models::extension_events::tool_events::ToolResultEvent<
     maestro_tools::LsToolDetails,

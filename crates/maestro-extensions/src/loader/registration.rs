@@ -198,7 +198,7 @@ impl<E: ExtensionExecution> ExtensionAPI<E> {
 impl<E: ExtensionExecution> ExtensionAPI<E> {
     /// Append even duplicate handlers; no event dispatch is introduced.
     /// # Errors
-    /// Returns the existing stale-owner or callback error.
+    /// Returns the existing stale-owner error.
     pub fn on<V: 'static, R: 'static>(
         &self,
         event: String,

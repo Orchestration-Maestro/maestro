@@ -1,6 +1,6 @@
 //! Records read from JSON objects only, by the readers of [`maestro_json::object`].
 //!
-//! Only the optional list is adapted here, to the guest's `Presence`.
+//! Only the optional list is adapted here, to the shared `Presence` record.
 
 use serde::de::{Deserialize, Deserializer};
 

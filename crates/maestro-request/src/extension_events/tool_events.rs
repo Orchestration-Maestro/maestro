@@ -9,7 +9,7 @@ pub struct ToolExecutionStartEvent<A> {
     pub tool_call_id: String,
     /// Tool name.
     pub tool_name: String,
-    /// Opaque arguments text.
+    /// Opaque arguments.
     pub args: A,
 }
 
@@ -21,9 +21,9 @@ pub struct ToolExecutionUpdateEvent<A, R> {
     pub tool_call_id: String,
     /// Tool name.
     pub tool_name: String,
-    /// Opaque arguments text.
+    /// Opaque arguments.
     pub args: A,
-    /// Opaque partial result text.
+    /// Opaque partial result.
     pub partial_result: R,
 }
 
@@ -35,7 +35,7 @@ pub struct ToolExecutionEndEvent<R> {
     pub tool_call_id: String,
     /// Tool name.
     pub tool_name: String,
-    /// Opaque result text.
+    /// Opaque result.
     pub result: R,
     /// Whether execution failed.
     pub is_error: bool,
