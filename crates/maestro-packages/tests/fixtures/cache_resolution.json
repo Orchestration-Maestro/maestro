@@ -8393,86 +8393,17 @@
     },
     "expected": {
       "result": {
-        "extensions": [
-          {
-            "path": "$ROOT/temp/maestro-extensions/git-github.com/ebb8966c/b/entry.ts",
-            "enabled": true,
-            "metadata": {
-              "source": "git:github.com/a/../b",
-              "scope": "temporary",
-              "origin": "package",
-              "baseDir": "$ROOT/temp/maestro-extensions/git-github.com/ebb8966c/b"
-            }
-          }
-        ],
-        "skills": [
-          {
-            "path": "$ROOT/temp/maestro-extensions/git-github.com/ebb8966c/b/skill.md",
-            "enabled": true,
-            "metadata": {
-              "source": "git:github.com/a/../b",
-              "scope": "temporary",
-              "origin": "package",
-              "baseDir": "$ROOT/temp/maestro-extensions/git-github.com/ebb8966c/b"
-            }
-          }
-        ],
-        "prompts": [
-          {
-            "path": "$ROOT/temp/maestro-extensions/git-github.com/ebb8966c/b/prompt.md",
-            "enabled": true,
-            "metadata": {
-              "source": "git:github.com/a/../b",
-              "scope": "temporary",
-              "origin": "package",
-              "baseDir": "$ROOT/temp/maestro-extensions/git-github.com/ebb8966c/b"
-            }
-          }
-        ],
-        "themes": [
-          {
-            "path": "$ROOT/temp/maestro-extensions/git-github.com/ebb8966c/b/theme.json",
-            "enabled": true,
-            "metadata": {
-              "source": "git:github.com/a/../b",
-              "scope": "temporary",
-              "origin": "package",
-              "baseDir": "$ROOT/temp/maestro-extensions/git-github.com/ebb8966c/b"
-            }
-          }
-        ]
+        "extensions": [],
+        "skills": [],
+        "prompts": [],
+        "themes": []
       },
       "error": null,
       "secondResult": null,
-      "commands": [
-        {
-          "mode": "run",
-          "command": "git",
-          "args": [
-            "clone",
-            "https://github.com/a/../b",
-            "$ROOT/temp/maestro-extensions/git-github.com/ebb8966c/b"
-          ]
-        },
-        {
-          "mode": "run",
-          "command": "npm",
-          "args": [
-            "install",
-            "--omit=dev"
-          ],
-          "cwd": "$ROOT/temp/maestro-extensions/git-github.com/ebb8966c/b"
-        }
-      ],
+      "commands": [],
       "events": [],
-      "files": {
-        "temp/maestro-extensions/git-github.com/ebb8966c/b/entry.ts": "new",
-        "temp/maestro-extensions/git-github.com/ebb8966c/b/package.json": "{\"version\":\"1.0.0\",\"maestro\":{\"extensions\":[\"entry.ts\"],\"skills\":[\"skill.md\"],\"prompts\":[\"prompt.md\"],\"themes\":[\"theme.json\"]}}",
-        "temp/maestro-extensions/git-github.com/ebb8966c/b/prompt.md": "new",
-        "temp/maestro-extensions/git-github.com/ebb8966c/b/skill.md": "new",
-        "temp/maestro-extensions/git-github.com/ebb8966c/b/theme.json": "new"
-      },
-      "temporaryPathObserved": true
+      "files": {},
+      "temporaryPathObserved": false
     }
   },
   {

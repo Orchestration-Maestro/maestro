@@ -19,8 +19,21 @@ pub struct GitSource {
 }
 
 /// Parses an admitted repository source, returning `None` for rejected forms.
+///
+/// A host or path segment equal to `.` or `..`, including one that percent-decodes
+/// to it, is rejected, so no checkout directory resolves outside its git directory.
+/// Empty segments, such as a trailing slash, stay accepted.
 #[must_use]
 pub fn parse_git_url(source: &str) -> Option<GitSource> {
+    select(source).filter(|git| {
+        !std::iter::once(git.host.as_str())
+            .chain(git.path.split('/'))
+            .any(|segment| matches!(segment, "." | ".."))
+    })
+}
+
+/// Selects the hosted or generic identity of an admitted source.
+fn select(source: &str) -> Option<GitSource> {
     let trimmed = crate::trim(source);
     let prefix = trimmed
         .strip_prefix("git:")

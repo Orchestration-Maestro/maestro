@@ -13,7 +13,10 @@ host/path identity and optional ref. The manager checks the literal `npm:` prefi
 first, then the resource owner's local-path classification, then Git parsing.
 Git identity ignores transport and ref; npm identity uses the package name.
 Hosted shortcuts select their identity from the URL path, excluding the query;
-a fragment can select the ref.
+a fragment can select the ref. A host or path segment equal to `.` or `..`,
+including one that percent-decodes to it, is rejected, so the source resolves as
+a local path and no checkout directory lies outside its git directory; empty
+segments, such as a trailing slash, stay accepted.
 
 Ordinary local paths use the supplied working directory as their input base;
 stored locals use their scope's base. Local storage uses `maestro-path` relative-path calculation from the
