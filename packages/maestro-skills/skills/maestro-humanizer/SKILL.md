@@ -77,7 +77,7 @@ If the source explains what the person said and where, keep that useful citation
 **Words to watch:** boasts a, vibrant, rich (figurative), profound, enhancing its, showcasing, exemplifies, commitment to, natural beauty, nestled, in the heart of, groundbreaking (figurative), renowned, breathtaking, must-visit, stunning
 **Problem:** AI writing often sounds like an advertisement, especially when it describes places, culture, products, or organizations.
 **Before:**
-> Our breathtaking workspace boasts a revolutionary dashboard for effortless team success.
+> Our breathtaking workspace boasts a revolutionary dashboard showing team assignments for effortless team success.
 **After:**
 > The workspace has a dashboard showing team assignments.
 
@@ -128,7 +128,7 @@ Add details such as dates or public actions only when they come from the source 
 
 It also adds clipped endings such as "no guessing" instead of writing a clear clause.
 **Before:**
-> The example alert is not just a message; it is a promise of awareness, not merely a notification but a transformation.
+> The example alert tells the operator that a job failed. It is not just a message; it is a promise of awareness, not merely a notification but a transformation.
 **After:**
 > The example alert tells the operator that a job failed.
 **Before (tailing negation):**
@@ -161,14 +161,14 @@ Do not ban the repeated word. Fix the repeated sentence pattern. The remaining s
 ### 12. False from X to Y ranges
 **Problem:** AI writing often uses "from X to Y" when X and Y do not form a real range.
 **Before:**
-> This guide takes us from source files to limitless creativity.
+> This guide covers source files and gives examples of using them, taking us from source files to limitless creativity.
 **After:**
 > This guide covers source files and gives examples of using them.
 
 ### 13. Passive voice and missing subjects
 **Problem:** AI writing often hides who acts or drops the subject. Use active voice when it makes the actor and action clearer.
 **Before:**
-> No password needed. The entry is saved automatically.
+> No password needed. The entry is saved automatically by the example application.
 **After:**
 > You do not need a password. The example application saves the entry automatically.
 
@@ -242,11 +242,11 @@ Before returning the rewrite, search for `—` and `–`. Remove each one unless
 **Words to watch:** my training ended, sources are sparse, apparently lived, perhaps attended, probably began. Check whether an admission of missing evidence is followed by an unsupported biography or other guess.
 **Problem:** Older models may mention the date when their knowledge ends. A model may also explain that it could not find a source, then fill the gap with a plausible guess. State what the source does not show, or remove the sentence. Do not present a guess as a fact.
 **Before (cutoff disclaimer):**
-> As of my last update, the example group may have formed around the time the workshop opened.
+> As of my last update, the supplied notes do not give the example group's founding date.
 **After:**
 > The supplied notes do not give the example group's founding date.
 **Before (speculative gap-fill):**
-> The example author shares little about childhood, perhaps because she values privacy and grew up far from a city.
+> The supplied notes contain no account of the example author's childhood, perhaps because she values privacy and grew up far from a city.
 **After:**
 > The supplied notes contain no account of the example author's childhood.
 
@@ -308,7 +308,7 @@ Before returning the rewrite, search for `—` and `–`. Remove each one unless
 **Phrases to watch:** Let's dive in, let's explore, let's break this down, here's what you need to know, now let's look at, without further ado, heads up, quick note, before I forget
 **Problem:** AI writing often announces the next point instead of stating it. A casual phrase such as "one thing that bit me" can have the same problem. Remove the announcement, not just its formal tone.
 **Before:**
-> Let us explore what you need to know about the example reader.
+> Let us explore what you need to know about the example reader: it accepts a path and returns ordered records.
 **After:**
 > The example reader accepts a path and returns ordered records.
 **Before (casual register):**
@@ -334,14 +334,14 @@ Before returning the rewrite, search for `—` and `–`. Remove each one unless
 ### 30. Writing about the previous version
 **Problem:** Documentation and comments should describe the current behavior. Mention the previous version only in change logs, release notes, migration guides, and other documents about change.
 **Before:**
-> This lookup replaced the old loop and was added to improve the previous implementation.
+> This lookup replaced the old loop and was added to improve the previous implementation by using an index to avoid scanning every record.
 **After:**
 > The lookup uses an index to avoid scanning every record.
 
 ### 31. Forced punchlines and dramatic fragments
 **Problem:** AI writing often turns each sentence into a dramatic closing line. One short sentence can add emphasis. A row of short fragments usually feels forced.
 **Before:**
-> Then the import ran. No pauses. No hesitation. No looking back. The old world was gone.
+> Then the import completed. No pauses for manual approval. No hesitation. No looking back. The old world was gone.
 **After:**
 > The import completed without pausing for manual approval.
 
@@ -350,7 +350,7 @@ Before returning the rewrite, search for `—` and `–`. Remove each one unless
 **Words to watch:** X is the Y of Z, X becomes a trap, X is not a tool but a mirror, the language of, the currency of, the architecture of
 **Problem:** AI writing often turns an ordinary claim into a saying that sounds deep but adds no detail. Replace the saying with the specific claim.
 **Before:**
-> Simplicity is the currency of confidence. The form is a mirror, not a tool.
+> Simplicity is the currency of confidence. The form is a mirror, not a tool. It has fewer fields, so the reviewer has less to check.
 **After:**
 > The form has fewer fields, so the reviewer has less to check.
 

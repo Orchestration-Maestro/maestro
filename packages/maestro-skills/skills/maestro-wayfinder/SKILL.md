@@ -34,8 +34,9 @@ phrased, not merely that its answer is unknown. Excluded work never graduates fr
 
 ## Ticket types
 
-- `wayfinder:research` is AFK: a background subagent uses `/skill:maestro-research`
-  to gather external facts. Link its artifacts from the ticket. Where research
+- `wayfinder:research` is AFK: the controller uses `/skill:maestro-research` to
+  dispatch one background researcher. The worker reads sources and returns its cited
+  file without invoking dispatching skills. Link its artifacts from the ticket. Where research
   uses a throwaway branch, retain it as `research/<name>` without merging or opening
   a request; pushing still follows the user's permission rules.
 - `wayfinder:prototype` is HITL: use `/skill:maestro-prototype` so the human can react
