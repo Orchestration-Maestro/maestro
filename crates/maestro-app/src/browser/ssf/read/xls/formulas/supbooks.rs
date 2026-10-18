@@ -48,6 +48,8 @@ struct Book {
 }
 /// A declared external-sheet selection.
 enum Xti {
+    /// Older payload admitted in a newer workbook without a usable sheet selection.
+    Unusable,
     /// Older layout directly stores the sheet name.
     Name(String),
     /// Newer layout selects a book and inclusive sheet pair.
@@ -151,7 +153,7 @@ impl SupBooks {
         });
         Ok(())
     }
-    /// Read the workbook's external-sheet index table in its declared layout.
+    /// Select the external-sheet layout from both workbook version and payload framing.
     pub(in super::super) fn external_sheets(
         &mut self,
         payload: &mut Payload<'_, '_>,
@@ -159,7 +161,15 @@ impl SupBooks {
     ) -> Result<()> {
         self.implicit();
         if encoding == Encoding::Unicode {
-            for _ in 0..payload.u16()? {
+            let length = payload.remaining();
+            let first = payload.u8()?;
+            let second = payload.u8()?;
+            if length == usize::from(first) + usize::from(second == 3) + 1 {
+                payload.skip(payload.remaining())?;
+                self.xti.push(Xti::Unusable);
+                return Ok(());
+            }
+            for _ in 0..u16::from_le_bytes([first, second]) {
                 self.xti.push(Xti::Range {
                     book: payload.u16()?,
                     first: i16::from_le_bytes(payload.u16()?.to_le_bytes()),

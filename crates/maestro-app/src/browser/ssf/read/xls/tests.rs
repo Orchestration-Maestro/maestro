@@ -274,13 +274,148 @@ fn check_array_anchors(sheet: &super::WorkSheet, size: usize) {
 
 /// Preserve ordered array adoption only on materialized-expression paths.
 fn check_materialized_arrays(sheet: &super::WorkSheet, size: usize, work: usize) {
-    assert_eq!(sheet.cells.len(), 2 * size);
-    assert_eq!(work, size * (size + 1));
-    assert!(
-        sheet
-            .cells
-            .values()
-            .filter(|cell| cell.array_formula.is_some())
-            .all(|cell| cell.v == super::CellValue::Text("v".into()))
+    assert_eq!(sheet.cells.len(), 3 * size);
+    assert_eq!(work, 3 * size * (size + 1) / 2);
+    for row in 1..=size {
+        let range = format!("A{row}:B{row}");
+        let anchor = &sheet.cells[&format!("A{row}")];
+        assert_eq!(anchor.array_formula.as_deref(), Some(range.as_str()));
+        assert_eq!(anchor.f.as_deref(), Some((row - 1).to_string().as_str()));
+        assert_eq!(anchor.v, super::CellValue::Text("v".into()));
+        let follower = &sheet.cells[&format!("B{row}")];
+        assert_eq!(follower.array_formula.as_deref(), Some(range.as_str()));
+        assert!(follower.f.is_none());
+        assert_eq!(follower.v, super::CellValue::Number(7.0));
+        let neighbour = &sheet.cells[&format!("C{row}")];
+        assert!(neighbour.array_formula.is_none());
+        assert_eq!(neighbour.f.as_deref(), Some("1"));
+        assert_eq!(neighbour.v, super::CellValue::Number(7.0));
+    }
+}
+
+thread_local! {
+    /// Bytes written while assembling owned expression fragments and final text.
+    pub(super) static ASSEMBLY_WORK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[test]
+fn formula_assembly_writes_linear_bytes_for_every_composition() {
+    for kind in ["tokens", "sum", "unary", "function", "space"] {
+        let mut previous = 0;
+        for size in [32, 64] {
+            let file = format!("metadata-work-{kind}-{size}.xls");
+            let bytes = std::fs::read(
+                std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("tests/fixtures/workbooks")
+                    .join(&file),
+            )
+            .unwrap();
+            ASSEMBLY_WORK.set(0);
+            let book = super::read(&bytes, &file, &super::Ssf::default()).unwrap();
+            let expression = book.sheets["Data"].cells["A1"].f.as_deref().unwrap();
+            let expected = match kind {
+                "tokens" => format!("1{}", "+2".repeat(size)),
+                "sum" => format!("{}1{}", "SUM(".repeat(size), ")".repeat(size)),
+                "unary" => format!("{}1{}", "(".repeat(size), ")".repeat(size)),
+                "function" => format!("{}1{}", "ABS(".repeat(size), ")".repeat(size)),
+                "space" => format!("{}1{}", " (".repeat(size), ")".repeat(size)),
+                _ => unreachable!(),
+            };
+            assert_eq!(expression, expected);
+            let work = ASSEMBLY_WORK.get();
+            println!(
+                "assembly kind={kind} size={size} output={} bytes_written={work}",
+                expression.len()
+            );
+            assert!(
+                work <= 2 * expression.len(),
+                "repeated accumulated expression copying"
+            );
+            if previous != 0 {
+                assert!(work <= 2 * previous);
+            }
+            previous = work;
+        }
+    }
+}
+
+/// Exercise coordinate emission directly after the existing binary token decoder.
+fn formula_expression(
+    file: &str,
+    encoding: Encoding,
+    kind: u16,
+    position: super::CellAddress,
+) -> String {
+    let stream = stream(file);
+    let mut records = Records::new(&stream);
+    while let Some(record) = records.next().unwrap() {
+        if record.kind == kind {
+            let mut payload = record.payload();
+            payload.skip(if kind == 6 { 20 } else { 8 }).unwrap();
+            let tokens = super::formulas::parse(&mut payload, encoding).unwrap();
+            return super::formulas::stringify(
+                &tokens,
+                position,
+                &super::formulas::SupBooks::default(),
+                encoding,
+            )
+            .unwrap();
+        }
+    }
+    unreachable!()
+}
+
+#[test]
+fn formula_coordinate_assembly_keeps_version_and_range_context() {
+    assert_eq!(
+        formula_expression(
+            "metadata-fix-biff5-negative.xls",
+            Encoding::CodePage(1252),
+            6,
+            super::CellAddress { r: 0, c: 0 }
+        ),
+        "$A16384"
     );
+    for class in [45, 77, 109] {
+        assert_eq!(
+            formula_expression(
+                &format!("metadata-fix-shifted-area-{class}.xls"),
+                Encoding::Unicode,
+                6,
+                super::CellAddress { r: 2, c: 2 }
+            ),
+            "3:4"
+        );
+        assert_eq!(
+            formula_expression(
+                &format!("metadata-fix-shared-area-{class}.xls"),
+                Encoding::Unicode,
+                0x4bc,
+                super::CellAddress { r: 0, c: 0 }
+            ),
+            "SUM($1:$2)"
+        );
+    }
+}
+
+#[test]
+fn external_sheet_layout_selection_accepts_both_payload_forms() {
+    for payload in [
+        vec![4, 0x44, 0x61, 0x74, 0x61],
+        vec![4, 3, 0x44, 0x61, 0x74, 0x61],
+        vec![1, 0, 0, 0, 0, 0, 0, 0],
+    ] {
+        let mut stream = vec![0x17, 0];
+        stream.extend(u16::try_from(payload.len()).unwrap().to_le_bytes());
+        stream.extend(payload);
+        let record = Records::new(&stream).next().unwrap().unwrap();
+        let mut payload = record.payload();
+        let mut books = super::formulas::SupBooks::default();
+        assert!(
+            books
+                .external_sheets(&mut payload, Encoding::Unicode)
+                .is_ok()
+        );
+        assert_eq!(payload.remaining(), 0);
+    }
 }

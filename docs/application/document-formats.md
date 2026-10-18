@@ -126,7 +126,12 @@ select direct text before direct rich runs, skip phonetic runs and decode workbo
 escapes once. Invalid shared-string indices fail with workbook and sheet context.
 
 Binary expressions retain their token order, independent absolute axes and
-version-specific reference layouts. Shared expressions expand per consuming cell;
+version-specific reference layouts. Relative rows use the version's negative-offset
+wrap rule; displaced areas retain whole-row and whole-column spelling. Expression
+composition retains operand handles until final text emission.
+Counted older external-sheet records inside BIFF8 do not prevent ordinary cells
+from reading, but provide no usable sheet selection.
+Shared expressions expand per consuming cell;
 array anchors retain their expression and range while followers retain only the
 range. Template ownership survives a following STRING cache, including a shared
 anchor that is the first populated cell. Number, Boolean, error and text caches

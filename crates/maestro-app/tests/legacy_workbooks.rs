@@ -546,3 +546,72 @@ fn legacy_hyperlink_invalid_file_monikers_keep_reader_errors() {
         "legacy_hyperlink_invalid_file_monikers_keep_reader_errors",
     );
 }
+
+#[test]
+fn legacy_biff5_negative_relative_rows_keep_version_grid() {
+    use maestro_app::browser::ssf::{self, CellValue, Ssf};
+    let file = "metadata-fix-biff5-negative.xls";
+    let book = ssf::read(
+        &legacy_workbook_support::bytes(file),
+        file,
+        &mut Ssf::default(),
+    )
+    .unwrap();
+    let cell = &book.sheets.values().next().unwrap().cells["A1"];
+    assert_eq!(cell.f.as_deref(), Some("$A16384"));
+    assert_eq!(cell.v, CellValue::Number(7.0));
+}
+
+#[test]
+fn legacy_shifted_areas_keep_whole_rows_in_each_operand_class() {
+    use maestro_app::browser::ssf::{self, CellValue, Ssf};
+    for class in [45, 77, 109] {
+        let file = format!("metadata-fix-shifted-area-{class}.xls");
+        let book = ssf::read(
+            &legacy_workbook_support::bytes(&file),
+            &file,
+            &mut Ssf::default(),
+        )
+        .unwrap();
+        let cell = &book.sheets["Data"].cells["C3"];
+        assert_eq!(cell.f.as_deref(), Some("3:4"));
+        assert_eq!(cell.v, CellValue::Number(7.0));
+    }
+}
+
+#[test]
+fn legacy_shared_areas_keep_whole_rows_in_each_operand_class() {
+    use maestro_app::browser::ssf::{self, CellValue, Ssf};
+    for class in [45, 77, 109] {
+        let file = format!("metadata-fix-shared-area-{class}.xls");
+        let book = ssf::read(
+            &legacy_workbook_support::bytes(&file),
+            &file,
+            &mut Ssf::default(),
+        )
+        .unwrap();
+        for address in ["A1", "A2"] {
+            let cell = &book.sheets["Data"].cells[address];
+            assert_eq!(cell.f.as_deref(), Some("SUM($1:$2)"));
+            assert_eq!(cell.v, CellValue::Number(7.0));
+        }
+    }
+}
+
+#[test]
+fn legacy_unused_external_sheet_layouts_keep_ordinary_cells_readable() {
+    use maestro_app::browser::ssf::{self, CellValue, Ssf};
+    for layout in ["old", "marker", "new", "control"] {
+        let file = format!("metadata-fix-extern-{layout}.xls");
+        let book = ssf::read(
+            &legacy_workbook_support::bytes(&file),
+            &file,
+            &mut Ssf::default(),
+        )
+        .unwrap();
+        assert_eq!(book.sheets["Data"].cells.len(), 1);
+        let cell = &book.sheets["Data"].cells["A1"];
+        assert_eq!(cell.v, CellValue::Number(23.0));
+        assert!(cell.f.is_none());
+    }
+}

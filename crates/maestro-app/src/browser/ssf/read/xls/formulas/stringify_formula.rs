@@ -7,6 +7,111 @@ use super::types::{
 use crate::browser::ssf::{
     CellAddress, CellValue, encode_col, format_cell::error_label, write_num::spelling,
 };
+/// A suffix of one expression node, with byte offsets on character boundaries.
+#[derive(Clone, Copy)]
+struct Expression {
+    /// Index into the flat assembly owner.
+    node: usize,
+    /// Retained byte count.
+    length: usize,
+}
+/// One text allocation or an ordered concatenation of expression handles.
+enum Fragment {
+    /// Newly emitted text.
+    Text(String),
+    /// Already-owned operands and delimiters, never copied into parent nodes.
+    Join(Vec<Expression>),
+}
+/// Flat ownership keeps concatenation and destruction independent of expression depth.
+#[derive(Default)]
+struct Assembly(Vec<Fragment>);
+impl Assembly {
+    /// Introduce newly emitted text exactly once.
+    fn text(&mut self, text: String) -> Expression {
+        #[cfg(test)]
+        super::super::tests::ASSEMBLY_WORK.with(|work| work.set(work.get() + text.len()));
+        let expression = Expression {
+            node: self.0.len(),
+            length: text.len(),
+        };
+        self.0.push(Fragment::Text(text));
+        expression
+    }
+    /// Combine handles without copying accumulated operand text.
+    fn join(&mut self, parts: Vec<Expression>) -> Expression {
+        let length = parts.iter().map(|part| part.length).sum();
+        let expression = Expression {
+            node: self.0.len(),
+            length,
+        };
+        self.0.push(Fragment::Join(parts));
+        expression
+    }
+    /// Surround an operand through the same concatenation owner.
+    fn surround(&mut self, operand: Expression, before: String, after: String) -> Expression {
+        let before = self.text(before);
+        let after = self.text(after);
+        self.join(vec![before, operand, after])
+    }
+    /// Traverse retained text iteratively, including suffixes selected by range operators.
+    fn fragments(&self, expression: Expression) -> impl Iterator<Item = &str> {
+        let mut pending = vec![expression];
+        std::iter::from_fn(move || self.next_fragment(&mut pending))
+    }
+    /// Resolve the next leaf without recursive calls into nested expressions.
+    fn next_fragment(&self, pending: &mut Vec<Expression>) -> Option<&str> {
+        while let Some(expression) = pending.pop() {
+            match &self.0[expression.node] {
+                Fragment::Text(text) => return Some(&text[text.len() - expression.length..]),
+                Fragment::Join(parts) => Self::expand(parts, expression.length, pending),
+            }
+        }
+        None
+    }
+    /// Schedule the retained suffix of a concatenation in reverse traversal order.
+    fn expand(parts: &[Expression], mut remaining: usize, pending: &mut Vec<Expression>) {
+        for part in parts.iter().rev() {
+            let length = remaining.min(part.length);
+            if length != 0 {
+                pending.push(Expression {
+                    node: part.node,
+                    length,
+                });
+                remaining -= length;
+            }
+        }
+    }
+    /// Visit visible characters without materializing an intermediate expression.
+    fn chars(&self, expression: Expression) -> impl Iterator<Item = char> {
+        self.fragments(expression).flat_map(str::chars)
+    }
+    /// Locate the last sheet separator in character coordinates.
+    fn qualifier(&self, expression: Expression) -> Option<usize> {
+        self.chars(expression)
+            .enumerate()
+            .filter_map(|(i, c)| (c == '!').then_some(i))
+            .last()
+    }
+    /// Remove a sheet qualifier by advancing the expression's visible suffix.
+    fn trim_start(&self, expression: &mut Expression, count: usize) {
+        let bytes: usize = self
+            .chars(*expression)
+            .take(count)
+            .map(char::len_utf8)
+            .sum();
+        expression.length -= bytes;
+    }
+    /// Write the completed expression once, without recursive traversal or destruction.
+    fn finish(&self, expression: Expression) -> String {
+        let mut result = String::with_capacity(expression.length);
+        for fragment in self.fragments(expression) {
+            #[cfg(test)]
+            super::super::tests::ASSEMBLY_WORK.with(|work| work.set(work.get() + fragment.len()));
+            result.push_str(fragment);
+        }
+        result
+    }
+}
 /// Assemble an expression without its leading equals sign.
 pub(super) fn stringify(
     tokens: &[Ptg],
@@ -14,6 +119,7 @@ pub(super) fn stringify(
     books: &super::SupBooks,
     encoding: super::super::strings::Encoding,
 ) -> Result<String> {
+    let mut assembly = Assembly::default();
     let mut stack = Vec::new();
     let mut space = None;
     for token in tokens {
@@ -23,27 +129,32 @@ pub(super) fn stringify(
                 continue;
             }
             Ptg::Control(PtgControl::Goto) => continue,
-            Ptg::Control(PtgControl::Sum) => format!("SUM({})", pop(&mut stack)?),
+            Ptg::Control(PtgControl::Sum) => {
+                assembly.surround(pop(&mut stack)?, "SUM(".into(), ")".into())
+            }
             Ptg::Control(_) => {
-                apply_space(&mut stack, space.take())?;
+                apply_space(&mut stack, space.take(), &mut assembly)?;
                 continue;
             }
             Ptg::Binary(op) => {
-                binary(&mut stack, *op, &mut space)?;
-                apply_space(&mut stack, space.take())?;
+                binary(&mut stack, *op, &mut space, &mut assembly)?;
+                apply_space(&mut stack, space.take(), &mut assembly)?;
                 continue;
             }
             Ptg::Unary(op) => {
                 let operand = pop(&mut stack)?;
-                unary(op, &operand, &mut space)
+                unary(op, operand, &mut space, &mut assembly)
             }
-            Ptg::Func(id, count) => function(&mut stack, *id, *count)?,
-            _ => literal(token, position, books, encoding)?,
+            Ptg::Func(id, count) => function(&mut stack, *id, *count, &mut assembly)?,
+            _ => assembly.text(literal(token, position, books, encoding)?),
         };
         stack.push(text);
-        apply_space(&mut stack, space.take())?;
+        apply_space(&mut stack, space.take(), &mut assembly)?;
     }
-    let result = stack.into_iter().next().unwrap_or_default();
+    let result = stack
+        .into_iter()
+        .next()
+        .map_or_else(String::new, |expression| assembly.finish(expression));
     Ok(match result.as_str() {
         "TRUE" => "true".to_owned(),
         "FALSE" => "false".to_owned(),
@@ -51,25 +162,39 @@ pub(super) fn stringify(
     })
 }
 /// Remove one operand while retaining typed failures for malformed stacks.
-fn pop(stack: &mut Vec<String>) -> Result<String> {
+fn pop(stack: &mut Vec<Expression>) -> Result<Expression> {
     stack.pop().ok_or(ParseError::Invalid("formula stack"))
 }
 /// Combine two operands in their source order.
-fn binary(stack: &mut Vec<String>, op: PtgBinOp, space: &mut Option<PtgAttrSpace>) -> Result<()> {
+fn binary(
+    stack: &mut Vec<Expression>,
+    op: PtgBinOp,
+    space: &mut Option<PtgAttrSpace>,
+    assembly: &mut Assembly,
+) -> Result<()> {
     let mut right = pop(stack)?;
     let mut left = pop(stack)?;
     if matches!(op, PtgBinOp::Scalar(_))
         && let Some(space) = space.take()
         && matches!(space.kind, SpaceType::BeforeSpace | SpaceType::BeforeReturn)
     {
-        left.push_str(&whitespace(space));
+        let text = assembly.text(whitespace(space));
+        left = assembly.join(vec![left, text]);
     }
     if matches!(op, PtgBinOp::Range)
-        && let (Some((first, _)), Some((last, _))) = (left.rsplit_once('!'), right.rsplit_once('!'))
-        && first.to_lowercase() == last.to_lowercase()
+        && let (Some(first), Some(last)) = (assembly.qualifier(left), assembly.qualifier(right))
+        && assembly
+            .chars(left)
+            .take(first)
+            .collect::<String>()
+            .to_lowercase()
+            == assembly
+                .chars(right)
+                .take(last)
+                .collect::<String>()
+                .to_lowercase()
     {
-        let start = right.rfind('!').map_or(0, |i| i + 1);
-        right.drain(..start);
+        assembly.trim_start(&mut right, last + 1);
     }
     let separator = match op {
         PtgBinOp::Scalar(s) => s,
@@ -77,7 +202,8 @@ fn binary(stack: &mut Vec<String>, op: PtgBinOp, space: &mut Option<PtgAttrSpace
         PtgBinOp::Union => ",",
         PtgBinOp::Range => ":",
     };
-    stack.push(format!("{left}{separator}{right}"));
+    let separator = assembly.text(separator.into());
+    stack.push(assembly.join(vec![left, separator, right]));
     Ok(())
 }
 /// Render independent absolute-axis markers.
@@ -95,7 +221,18 @@ fn axis(axis: Axis) -> (u32, &'static str) {
 }
 
 /// Render whole-row ranges without redundant column endpoints.
-fn area_text(area: &RgceArea) -> String {
+fn area_text(area: &RgceArea, encoding: super::super::strings::Encoding) -> String {
+    if matches!(area.s.r, Axis::Absolute(0))
+        && matches!(area.e.r, Axis::Absolute(row) if row == row_wrap(encoding))
+    {
+        let (first, fixed) = axis(area.s.c);
+        let (last, end_fixed) = axis(area.e.c);
+        return format!(
+            "{fixed}{}:{end_fixed}{}",
+            encode_col(first),
+            encode_col(last)
+        );
+    }
     if matches!(area.s.c, Axis::Absolute(0)) && matches!(area.e.c, Axis::Absolute(255)) {
         let (first, fixed) = axis(area.s.r);
         let (last, end_fixed) = axis(area.e.r);
@@ -104,22 +241,34 @@ fn area_text(area: &RgceArea) -> String {
     format!("{}:{}", reference(&area.s), reference(&area.e))
 }
 
-/// Apply a consuming cell only to relative axes, then wrap to the binary grid.
-fn shifted_reference(loc: &RgceLoc, position: CellAddress) -> String {
-    let shifted = RgceLoc {
-        r: shifted_axis(loc.r, position.r, 65536),
-        c: shifted_axis(loc.c, position.c, 256),
-    };
-    reference(&shifted)
+/// Negative row offsets wrap at the version's row count; positive shifts use 65,536.
+fn row_wrap(encoding: super::super::strings::Encoding) -> u32 {
+    if encoding == super::super::strings::Encoding::Unicode {
+        65536
+    } else {
+        16384
+    }
 }
-/// Resolve one signed displacement into its finite grid.
-fn shifted_axis(axis: Axis, origin: u32, modulus: i64) -> Axis {
+/// Apply a consuming cell only to relative axes before rendering cells or ranges.
+fn shifted_location(
+    loc: &RgceLoc,
+    position: CellAddress,
+    encoding: super::super::strings::Encoding,
+) -> RgceLoc {
+    RgceLoc {
+        r: shifted_axis(loc.r, position.r, (i64::from(row_wrap(encoding)), 65536)),
+        c: shifted_axis(loc.c, position.c, (256, 256)),
+    }
+}
+/// Resolve a signed displacement with the format's negative and positive wrap rules.
+fn shifted_axis(axis: Axis, origin: u32, wrapping: (i64, i64)) -> Axis {
     match axis {
         Axis::Absolute(n) => Axis::Absolute(n),
-        Axis::Relative(n) => Axis::Relative(
-            i32::try_from((i64::from(n) + i64::from(origin)).rem_euclid(modulus))
-                .unwrap_or_default(),
-        ),
+        Axis::Relative(n) => {
+            let value = i64::from(n) + i64::from(origin);
+            let modulus = if value < 0 { wrapping.0 } else { wrapping.1 };
+            Axis::Relative(i32::try_from(value.rem_euclid(modulus)).unwrap_or_default())
+        }
     }
 }
 
@@ -133,13 +282,20 @@ fn whitespace(space: PtgAttrSpace) -> String {
     .repeat(usize::from(space.count))
 }
 /// Consume deferred whitespace at the next ordinary display boundary.
-fn apply_space(stack: &mut Vec<String>, space: Option<PtgAttrSpace>) -> Result<()> {
+fn apply_space(
+    stack: &mut Vec<Expression>,
+    space: Option<PtgAttrSpace>,
+    assembly: &mut Assembly,
+) -> Result<()> {
     if let Some(space) = space {
         let operand = pop(stack)?;
-        let text = whitespace(space);
         let text = match space.kind {
-            SpaceType::AfterSpace | SpaceType::AfterReturn => format!("{operand}{text}"),
-            SpaceType::BeforeSpace | SpaceType::BeforeReturn => format!("{text}{operand}"),
+            SpaceType::AfterSpace | SpaceType::AfterReturn => {
+                assembly.surround(operand, String::new(), whitespace(space))
+            }
+            SpaceType::BeforeSpace | SpaceType::BeforeReturn => {
+                assembly.surround(operand, whitespace(space), String::new())
+            }
             _ => operand,
         };
         stack.push(text);
@@ -147,11 +303,16 @@ fn apply_space(stack: &mut Vec<String>, space: Option<PtgAttrSpace>) -> Result<(
     Ok(())
 }
 /// Parentheses consume their own four explicit whitespace placements.
-fn unary(op: &PtgUnary, operand: &str, space: &mut Option<PtgAttrSpace>) -> String {
+fn unary(
+    op: &PtgUnary,
+    operand: Expression,
+    space: &mut Option<PtgAttrSpace>,
+    assembly: &mut Assembly,
+) -> Expression {
     match op {
-        PtgUnary::Uplus => format!("+{operand}"),
-        PtgUnary::Uminus => format!("-{operand}"),
-        PtgUnary::Percent => format!("{operand}%"),
+        PtgUnary::Uplus => assembly.surround(operand, "+".into(), String::new()),
+        PtgUnary::Uminus => assembly.surround(operand, "-".into(), String::new()),
+        PtgUnary::Percent => assembly.surround(operand, String::new(), "%".into()),
         PtgUnary::Paren => {
             let (mut left, mut right) = (String::new(), String::new());
             if let Some(space) = space.take() {
@@ -163,7 +324,7 @@ fn unary(op: &PtgUnary, operand: &str, space: &mut Option<PtgAttrSpace>) -> Stri
                     _ => {}
                 }
             }
-            format!("{left}({operand}{right})")
+            assembly.surround(operand, format!("{left}("), format!("{right})"))
         }
     }
 }
@@ -205,17 +366,23 @@ fn literal(
             format!("{}!{}", books.sheet(*index, encoding)?, reference(loc))
         }
         Ptg::Area3d(index, area) => {
-            format!("{}!{}", books.sheet(*index, encoding)?, area_text(area))
+            format!(
+                "{}!{}",
+                books.sheet(*index, encoding)?,
+                area_text(area, encoding)
+            )
         }
         Ptg::Name(index) => books.name(*index),
         Ptg::Array(rows) => array_text(rows),
-        Ptg::RefN(loc) => shifted_reference(loc, position),
-        Ptg::AreaN(area) => format!(
-            "{}:{}",
-            shifted_reference(&area.s, position),
-            shifted_reference(&area.e, position)
+        Ptg::RefN(loc) => reference(&shifted_location(loc, position, encoding)),
+        Ptg::AreaN(area) => area_text(
+            &RgceArea {
+                s: shifted_location(&area.s, position, encoding),
+                e: shifted_location(&area.e, position, encoding),
+            },
+            encoding,
         ),
-        Ptg::Area(area) => area_text(area),
+        Ptg::Area(area) => area_text(area, encoding),
         Ptg::RefErr => "#REF!".to_owned(),
         Ptg::Ref(loc) => reference(loc),
         Ptg::Int(n) => n.to_string(),
@@ -229,7 +396,12 @@ fn literal(
     })
 }
 /// Remove a function's arguments from the stack in their original order.
-fn function(stack: &mut Vec<String>, id: FunctionId, count: u8) -> Result<String> {
+fn function(
+    stack: &mut Vec<Expression>,
+    id: FunctionId,
+    count: u8,
+    assembly: &mut Assembly,
+) -> Result<Expression> {
     let (name, _) = super::functions::function(id).ok_or(ParseError::Invalid("function"))?;
     let start = stack
         .len()
@@ -239,7 +411,15 @@ fn function(stack: &mut Vec<String>, id: FunctionId, count: u8) -> Result<String
     let name = if name == "User" && !args.is_empty() {
         args.remove(0)
     } else {
-        name.to_owned()
+        assembly.text(name.to_owned())
     };
-    Ok(format!("{name}({})", args.join(",")))
+    let mut parts = vec![name, assembly.text("(".into())];
+    for (index, argument) in args.into_iter().enumerate() {
+        if index != 0 {
+            parts.push(assembly.text(",".into()));
+        }
+        parts.push(argument);
+    }
+    parts.push(assembly.text(")".into()));
+    Ok(assembly.join(parts))
 }
