@@ -5,7 +5,7 @@ mod session_header_support;
 mod support;
 use base64::Engine as _;
 use maestro_theme::BrandMode;
-use maestro_web::browser::attachment_content::AttachmentUiError;
+use maestro_web::browser::attachment_content::AttachmentHostError;
 use maestro_web::export_html::template::HeaderState;
 use session_header_support::{Canvas, Event, Failure, Host, document, draw, pack, pointer};
 use std::rc::Rc;
@@ -460,8 +460,11 @@ fn check_native_failures(
         .0
         .unwrap_err();
         assert!(matches!(
-            error.get_ref().unwrap().downcast_ref::<AttachmentUiError>(),
-            Some(AttachmentUiError::BorrowConflict)
+            error
+                .get_ref()
+                .unwrap()
+                .downcast_ref::<AttachmentHostError>(),
+            Some(AttachmentHostError::BorrowConflict)
         ));
         let expected = match phase {
             Failure::Measure => vec![Event::Measure(id)],

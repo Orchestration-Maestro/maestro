@@ -109,7 +109,7 @@ fn generic_download_rejects_invalid_payload_without_saving() {
         let mut view = create_artifact_element("a.zip", &case.input.content, host.clone()).unwrap();
         assert!(matches!(
             frame.click(view.as_mut()),
-            Err(maestro_web::browser::attachment_content::AttachmentUiError::Presentation(_))
+            Err(maestro_web::tools::artifacts::ArtifactUiError::Presentation(_))
         ));
         assert!(host.downloads.borrow().is_empty());
         frame.draw(view.as_mut(), false, vec![]).unwrap();
@@ -127,7 +127,7 @@ fn generic_download_failure_keeps_the_native_body() {
     host.fail_download.set(true);
     assert!(matches!(
         frame.click(view.as_mut()),
-        Err(maestro_web::browser::attachment_content::AttachmentUiError::Host(_))
+        Err(maestro_web::tools::artifacts::ArtifactUiError::Host(_))
     ));
     assert_eq!(view.content(), "AAEC//79");
     host.fail_download.set(false);

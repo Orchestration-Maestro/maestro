@@ -1,4 +1,5 @@
 //! Browser tool views.
+use crate::tools::types::ToolUiError;
 pub mod artifacts;
 /// Browser-local hidden JavaScript execution registration.
 #[cfg(target_arch = "wasm32")]
@@ -12,7 +13,6 @@ pub mod types;
 /// Browser tool renderer implementations.
 pub mod renderers;
 
-use crate::browser::attachment_content::AttachmentUiError;
 pub use renderer_registry::{get_tool_renderer, register_tool_renderer};
 use renderers::default_renderer::{DefaultRenderer, status};
 use std::cell::Cell;
@@ -33,13 +33,13 @@ pub fn render_tool<P: 'static, D: 'static>(
     params: Option<ToolParams<'_, P>>,
     result: Option<&maestro_app::ToolResultMessage<D>>,
     is_streaming: bool,
-) -> Result<ToolRenderResult, AttachmentUiError> {
+) -> Result<ToolRenderResult, ToolUiError> {
     if !SHOW_JSON_MODE.get() {
         let binding =
             renderer_registry::TOOL_RENDERERS.with(|all| all.borrow().get(tool_name).cloned());
         if let Some(binding) = binding {
             let renderer = binding.renderer::<P, D>().ok_or_else(|| {
-                AttachmentUiError::Presentation("Renderer operand types do not match".into())
+                ToolUiError::Presentation("Renderer operand types do not match".into())
             })?;
             return renderer.render(
                 params.as_ref().map(|p| p.value),

@@ -1,10 +1,10 @@
 //! Default browser tool input and output preparation.
+use crate::tools::types::ToolUiError;
 mod content;
 use super::super::{
     renderer_registry::{ToolHeaderState, get_text_output},
     types::ToolResultMessageView,
 };
-use crate::browser::attachment_content::AttachmentUiError;
 use crate::tools::types::{ToolRenderResult, ToolRenderer};
 use content::DefaultContent;
 use serde_json::Value;
@@ -21,7 +21,7 @@ pub(crate) fn status<D>(
     }
 }
 /// Format a truthy input, parsing a string once and preserving array structure.
-pub(crate) fn format_params(value: &Value) -> Result<Option<String>, AttachmentUiError> {
+pub(crate) fn format_params(value: &Value) -> Result<Option<String>, ToolUiError> {
     if !maestro_app::is_truthy(value) {
         return Ok(None);
     }
@@ -31,9 +31,8 @@ pub(crate) fn format_params(value: &Value) -> Result<Option<String>, AttachmentU
     pretty(parsed.as_ref().unwrap_or(value)).map(Some)
 }
 /// Use the shared canonical JSON writer.
-fn pretty(value: &Value) -> Result<String, AttachmentUiError> {
-    maestro_app::pretty_json(value)
-        .map_err(|error| AttachmentUiError::Presentation(error.to_string()))
+fn pretty(value: &Value) -> Result<String, ToolUiError> {
+    maestro_app::pretty_json(value).map_err(|error| ToolUiError::Presentation(error.to_string()))
 }
 /// One literal listing and its selected language.
 struct Listing {
@@ -57,7 +56,7 @@ fn prepare(
     output: Option<&str>,
     state: ToolHeaderState,
     no_output: &str,
-) -> Result<Prepared, AttachmentUiError> {
+) -> Result<Prepared, ToolUiError> {
     let caption = if output.is_some() {
         "Tool Call"
     } else if params.is_none() {
@@ -106,7 +105,7 @@ impl<D> ToolRenderer<Value, D> for DefaultRenderer {
         params: Option<&Value>,
         result: Option<ToolResultMessageView<'_, D>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, AttachmentUiError> {
+    ) -> Result<ToolRenderResult, ToolUiError> {
         let state = status(result.as_ref(), is_streaming);
         let params = params.map(format_params).transpose()?.flatten();
         let output = result.as_ref().map(|result| get_text_output(Some(result)));

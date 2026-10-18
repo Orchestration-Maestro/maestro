@@ -240,6 +240,39 @@ only after complete placement succeeds. Failed readback or publication retains
 the old root, selection, scroll and placement without remounting it. An explicit
 phase distinguishes measurement from a valid zero-sized final viewport.
 
+Browser errors follow the existing operation interfaces. `AttachmentHostError`
+contains native Host, Presentation and BorrowConflict failures. Shared glyph and
+control drawing uses `ControlError` (Icon, Host and Presentation). Attachment,
+artifact and generic-dialog operations own `AttachmentUiError`, `ArtifactUiError`
+and `DialogUiError`; each composes localization, control, host, presentation and
+local borrow failures. Input owns `InputUiError` for localization, host and
+presentation failures. Leaf conversions wrap only the named operation variant;
+there is no generic I/O conversion or cross-feature conversion.
+
+Code, Markdown and console rendering share `ReadingUiError`, owned by the
+code-block interface, for highlighting, localization, localized-control, native
+and outer-style presentation failures. Reading presentation keeps its I/O cause.
+Copy and preview/source controls share `LocalizedControlError`, owned by the
+copy-button interface, for localization, shared-control and color failures.
+These owners add no crate edges. Highlighting retains the theme interface's
+boxed error; color failures retain their original I/O error. Artifact presentation
+uses a closed `PresentationCause` with Message, Reading and Control cases so
+preparation failures keep their typed causes. Display delegates without prefixes;
+source traversal retains the original localization, icon and native errors.
+
+The tool-rendering interface owns `tools::types::ToolUiError` for localization,
+shared controls, native effects, reading preparation and literal presentation
+failures. Its explicit boundary mappings retain native and leaf variants; only
+reading preparation enters Reading. Console and tool native factories remain
+host-owned, and every typed cause remains reachable through `Error::source`.
+
+Viewer header, history-download and copy-link operations use `io::Result`, wrapping
+control and host failures with their actual typed payloads. Native reading helpers
+remain host-owned. The attachment overlay catches host Presentation at the body
+boundary before wrapping other host failures. Existing recovery, messages, native
+lifetimes and download bytes are unchanged. These return types intentionally
+change Rust source interfaces; there is no compatibility alias.
+
 ## Crates and delivery order
 
 The table declares the enforced domain graph. Its rows and the dependency

@@ -1,7 +1,8 @@
 //! Retained selection between a document preview and its original source.
+use crate::components::copy_button::LocalizedControlError;
 use crate::{
     I18n,
-    browser::attachment_content::{self, AttachmentUiError},
+    browser::attachment_content::{self},
 };
 /// The two supported artifact presentations.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -41,14 +42,21 @@ impl PreviewCodeToggle {
         ui: &mut egui::Ui,
         i18n: &I18n<F>,
         presentation: &maestro_theme::BrandPresentation<'_>,
-    ) -> Result<Option<ViewMode>, AttachmentUiError> {
+    ) -> Result<Option<ViewMode>, LocalizedControlError> {
         use attachment_content::{color, points};
-        attachment_content::style(ui, presentation)?;
+        attachment_content::style(ui, presentation).map_err(LocalizedControlError::Presentation)?;
         let radius = egui::CornerRadius::from(points(presentation.radii["control"]));
         ui.push_id(self.id, |ui| {
             egui::Frame::new()
-                .fill(color(presentation, "panel")?.gamma_multiply(0.6))
-                .stroke(egui::Stroke::new(1., color(presentation, "border")?))
+                .fill(
+                    color(presentation, "panel")
+                        .map_err(LocalizedControlError::Presentation)?
+                        .gamma_multiply(0.6),
+                )
+                .stroke(egui::Stroke::new(
+                    1.,
+                    color(presentation, "border").map_err(LocalizedControlError::Presentation)?,
+                ))
                 .corner_radius(radius)
                 .show(ui, |ui| {
                     ui.spacing_mut().item_spacing.x = 0.;
@@ -65,7 +73,7 @@ impl PreviewCodeToggle {
         ui: &mut egui::Ui,
         i18n: &I18n<F>,
         presentation: &maestro_theme::BrandPresentation<'_>,
-    ) -> Result<Option<ViewMode>, AttachmentUiError> {
+    ) -> Result<Option<ViewMode>, LocalizedControlError> {
         let mut transition = None;
         for (mode, title, glyph) in [
             (ViewMode::Preview, "Preview", "Eye"),
@@ -78,7 +86,8 @@ impl PreviewCodeToggle {
                     egui::CornerRadius::from(attachment_content::points(
                         presentation.radii["control"],
                     )),
-                    attachment_content::color(presentation, "background")?,
+                    attachment_content::color(presentation, "background")
+                        .map_err(LocalizedControlError::Presentation)?,
                 );
             }
             let title = i18n.text(title)?;
@@ -92,7 +101,8 @@ impl PreviewCodeToggle {
                     attachment_content::color(
                         presentation,
                         if selected { "text" } else { "muted" },
-                    )?,
+                    )
+                    .map_err(LocalizedControlError::Presentation)?,
                     attachment_content::GhostHover::Text,
                 ),
             )?

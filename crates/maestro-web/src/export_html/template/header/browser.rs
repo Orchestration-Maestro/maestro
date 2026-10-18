@@ -1,7 +1,7 @@
 //! Native literal header composition and locale binding.
 use super::{HELP, LABELS, Prepared};
 use crate::browser::attachment_content::{
-    AttachmentUiError, ReadingRoot,
+    AttachmentHostError, ReadingRoot,
     browser::{append, element as create, host_error},
 };
 use std::io;
@@ -13,7 +13,7 @@ fn element(
     tag: &str,
     class: &str,
     text: &str,
-) -> Result<Element, AttachmentUiError> {
+) -> Result<Element, AttachmentHostError> {
     let e = create(document, tag, class)?;
     e.set_text_content(Some(text));
     Ok(e)
@@ -23,7 +23,7 @@ pub(super) fn mount(
     document: &Document,
     prepared: &Prepared,
     ids: [egui::Id; 3],
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     let root = element(document, "section", "maestro-session-header", "")?;
     let style = element(document, "style", "", include_str!("../header.css"))?;
     append(&root, &style)?;

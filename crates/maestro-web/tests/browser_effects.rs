@@ -84,12 +84,12 @@ fn browser_effects_keep_local_futures_and_host_failures() {
         seen.set(true);
     }));
     assert!(!completed.get());
-    *host.failure.borrow_mut() = Some(AttachmentUiError::BorrowConflict);
+    *host.failure.borrow_mut() = Some(AttachmentHostError::BorrowConflict);
     assert!(matches!(
         host.timer(500, false, Rc::new(|| {})),
-        Err(AttachmentUiError::BorrowConflict)
+        Err(AttachmentHostError::BorrowConflict)
     ));
-    *host.failure.borrow_mut() = Some(AttachmentUiError::Presentation("rejected".into()));
+    *host.failure.borrow_mut() = Some(AttachmentHostError::Presentation("rejected".into()));
     let mut input = Input::new(InputProps::default(), host.clone());
     let mut frame = attachment_support::Frame::default();
     frame.run(vec![], |ctx, i, p| {
@@ -100,7 +100,9 @@ fn browser_effects_keep_local_futures_and_host_failures() {
         );
         assert!(matches!(
             input.render(&mut ui, i, p),
-            Err(AttachmentUiError::Presentation(_))
+            Err(maestro_web::components::input::InputUiError::Host(
+                AttachmentHostError::Presentation(_)
+            ))
         ));
     });
     drop(input);

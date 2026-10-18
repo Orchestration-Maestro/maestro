@@ -103,10 +103,7 @@ impl Canvas {
     pub fn frame(
         &mut self,
         events: Vec<egui::Event>,
-    ) -> (
-        Result<egui::Response, maestro_web::browser::attachment_content::AttachmentUiError>,
-        egui::FullOutput,
-    ) {
+    ) -> (Result<egui::Response, std::io::Error>, egui::FullOutput) {
         self.pack_frame(events, "brand.json", BrandMode::Dark)
     }
     /// Draw one frame using the selected pack.
@@ -117,10 +114,7 @@ impl Canvas {
         events: Vec<egui::Event>,
         name: &str,
         mode: BrandMode,
-    ) -> (
-        Result<egui::Response, maestro_web::browser::attachment_content::AttachmentUiError>,
-        egui::FullOutput,
-    ) {
+    ) -> (Result<egui::Response, std::io::Error>, egui::FullOutput) {
         let pack = maestro_theme::load_brand_pack(name, &Pack).unwrap();
         let presentation = pack.presentation(mode).unwrap();
         let mut result = None;
@@ -157,7 +151,7 @@ impl Canvas {
         &mut self,
         ui: &mut egui::Ui,
         presentation: &maestro_theme::BrandPresentation<'_>,
-    ) -> Result<egui::Response, maestro_web::browser::attachment_content::AttachmentUiError> {
+    ) -> Result<egui::Response, std::io::Error> {
         let mut parent = ui.new_child(
             egui::UiBuilder::new()
                 .layout(self.layout)
@@ -193,9 +187,7 @@ impl Canvas {
     /// Deliver a complete primary gesture.
     /// # Errors
     /// Returns an error from the reached control draw.
-    pub fn activate(
-        &mut self,
-    ) -> Result<egui::Response, maestro_web::browser::attachment_content::AttachmentUiError> {
+    pub fn activate(&mut self) -> Result<egui::Response, std::io::Error> {
         self.frame(vec![]).0?;
         self.frame(pointer(self.rect.center(), true)).0?;
         self.frame(pointer(self.rect.center(), false)).0
@@ -230,10 +222,7 @@ pub fn check_urls(names: &[&str]) {
         assert!(canvas.host.copies.borrow().is_empty());
         let result = canvas.activate();
         if case.expected.outcome == "invalid-location" {
-            assert!(matches!(
-                result,
-                Err(maestro_web::browser::attachment_content::AttachmentUiError::Presentation(_))
-            ));
+            assert!(result.is_err());
             assert!(case.expected.url.is_none());
             assert!(canvas.host.copies.borrow().is_empty());
             assert_eq!(canvas.host.admissions.get(), 0);

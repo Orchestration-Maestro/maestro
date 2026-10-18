@@ -1,6 +1,6 @@
 //! One retained workbook projection for attachment and artifact consumers.
 use super::error::Text;
-use crate::browser::attachment_content::{AttachmentHost, AttachmentUiError, ReadingContent};
+use crate::browser::attachment_content::{AttachmentHost, AttachmentHostError, ReadingContent};
 use maestro_app::browser::ssf::{Ssf, read, sheet_to_html};
 use std::{cell::RefCell, rc::Rc};
 /// Prepared content for one successfully decoded or failed worksheet.
@@ -81,7 +81,7 @@ impl Excel {
         ui: &mut egui::Ui,
         surface: (egui::Id, egui::Rect, Option<egui::Id>, bool),
         operands: (&maestro_theme::BrandPresentation<'_>, &str),
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         for (_, content) in &self.sheets.values {
             if let Err(text) = content {
                 operands.1.clone_into(&mut text.borrow_mut().values[0]);

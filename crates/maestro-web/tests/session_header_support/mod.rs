@@ -75,17 +75,17 @@ impl AttachmentHost for Host {
         &self,
     ) -> Result<
         Option<std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>>,
-        AttachmentUiError,
+        AttachmentHostError,
     > {
         unreachable!("no dialog focus in this adapter")
     }
     fn restore_focus(
         &self,
         _: std::rc::Rc<maestro_web::browser::attachment_content::FocusTarget>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
         unreachable!("no dialog focus in this adapter")
     }
-    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentUiError> {
+    fn dialog_bounds(&self, _: egui::Id, _: [&str; 2]) -> Result<egui::Rect, AttachmentHostError> {
         unreachable!("no dialog measurement in this adapter")
     }
     fn native_key(&self, _: &web_sys::KeyboardEvent, _: &egui::Context) {
@@ -97,12 +97,12 @@ impl AttachmentHost for Host {
         bytes: &[u8],
         name: &str,
         mime: &str,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         self.downloads
             .borrow_mut()
             .push((name.into(), mime.into(), bytes.to_vec()));
         if self.fail_download.get() {
-            Err(AttachmentUiError::Host("save failed".into()))
+            Err(AttachmentHostError::Host("save failed".into()))
         } else {
             Ok(())
         }
@@ -112,7 +112,7 @@ impl AttachmentHost for Host {
         &self,
         s: AttachmentSurface<'_>,
         p: &maestro_theme::BrandPresentation<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         let AttachmentContent::Reading(reading) = s.content else {
             panic!("expected reading content")
         };
@@ -128,7 +128,7 @@ impl AttachmentHost for Host {
                     .borrow_mut()
                     .push(Rc::clone(&reading.content));
                 if self.failure.get() == Some(Failure::Measure) {
-                    return Err(AttachmentUiError::BorrowConflict);
+                    return Err(AttachmentHostError::BorrowConflict);
                 }
                 self.pending.borrow_mut().insert(s.id, reading.content);
             }
@@ -136,7 +136,7 @@ impl AttachmentHost for Host {
                 self.events.borrow_mut().push(Event::Publish(s.id));
                 *self.holes.borrow_mut() = s.occluders;
                 if self.failure.get() == Some(Failure::Publish) {
-                    return Err(AttachmentUiError::BorrowConflict);
+                    return Err(AttachmentHostError::BorrowConflict);
                 }
                 let candidate = self.pending.borrow_mut().remove(&s.id).unwrap();
                 assert!(Rc::ptr_eq(&candidate, &reading.content));
@@ -150,10 +150,10 @@ impl AttachmentHost for Host {
         }
         Ok(())
     }
-    fn reading_layout(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentUiError> {
+    fn reading_layout(&self, id: egui::Id) -> Result<ReadingLayout, AttachmentHostError> {
         self.events.borrow_mut().push(Event::Read(id));
         if self.failure.get() == Some(Failure::Read) {
-            return Err(AttachmentUiError::BorrowConflict);
+            return Err(AttachmentHostError::BorrowConflict);
         }
         Ok(ReadingLayout {
             height: self.height.get(),
@@ -190,19 +190,19 @@ impl AttachmentHost for Host {
         id: egui::Id,
         visible: bool,
         modal: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         self.retained.borrow_mut().insert(id, (visible, modal));
         let callback = self.on_visibility.borrow().clone();
         if let Some(callback) = callback {
             callback();
         }
         if self.fail_visibility.get() {
-            Err(AttachmentUiError::BorrowConflict)
+            Err(AttachmentHostError::BorrowConflict)
         } else {
             Ok(())
         }
     }
-    fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentUiError> {
+    fn set_overlay(&self, id: egui::Id, visible: bool) -> Result<(), AttachmentHostError> {
         let mut overlays = self.overlays.borrow_mut();
         if !visible {
             overlays.retain(|i| *i != id);
@@ -211,7 +211,7 @@ impl AttachmentHost for Host {
         }
         Ok(())
     }
-    fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
+    fn hover_capable(&self) -> Result<bool, AttachmentHostError> {
         unreachable!()
     }
     fn take_escape(&self) -> bool {
@@ -222,13 +222,13 @@ impl AttachmentHost for Host {
         _: i32,
         _: bool,
         _: Rc<dyn Fn()>,
-    ) -> Result<maestro_web::browser::timer::Timer, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::timer::Timer, AttachmentHostError> {
         unreachable!()
     }
     fn spawn_local(&self, _: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {
         unreachable!()
     }
-    fn download(&self, _: Rc<RefCell<maestro_web::Attachment>>) -> Result<(), AttachmentUiError> {
+    fn download(&self, _: Rc<RefCell<maestro_web::Attachment>>) -> Result<(), AttachmentHostError> {
         unreachable!()
     }
 }

@@ -1,6 +1,6 @@
 //! Browser tool dispatch through retained typed registrations.
 #![cfg(test)]
-use maestro_web::browser::attachment_content::AttachmentUiError;
+use maestro_web::tools::types::ToolUiError;
 use maestro_web::tools::{
     renderer_registry::{TOOL_RENDERERS, get_tool_renderer, register_tool_renderer},
     types::{ToolRenderResult, ToolRenderer, ToolRendererBinding, ToolResultMessageView},
@@ -15,8 +15,10 @@ impl ToolRenderer for Renderer {
         _: Option<&Value>,
         _: Option<ToolResultMessageView<'_>>,
         _: bool,
-    ) -> Result<ToolRenderResult, AttachmentUiError> {
-        Err(AttachmentUiError::Host(self.0.into()))
+    ) -> Result<ToolRenderResult, ToolUiError> {
+        Err(ToolUiError::Host(
+            maestro_web::browser::attachment_content::AttachmentHostError::Host(self.0.into()),
+        ))
     }
 }
 
@@ -69,7 +71,7 @@ fn tool_dispatch_forwards_complete_arguments_and_custom_wrapper_choice() {
         ToolRendererBinding::from_raw::<Value, Value>(Rc::new(Renderer("controlled"))),
     );
     assert!(
-        matches!(render_tool::<Value,Value>("failure",None,None,false),Err(AttachmentUiError::Host(message)) if message == "controlled")
+        matches!(render_tool::<Value,Value>("failure",None,None,false),Err(ToolUiError::Host(maestro_web::browser::attachment_content::AttachmentHostError::Host(message))) if message == "controlled")
     );
 }
 
@@ -77,11 +79,11 @@ struct Native {
     value: Rc<Cell<u32>>,
     formatted: Rc<Cell<usize>>,
 }
-fn format_native(input: &Native) -> Result<Option<String>, AttachmentUiError> {
+fn format_native(input: &Native) -> Result<Option<String>, ToolUiError> {
     input.formatted.set(input.formatted.get() + 1);
     maestro_app::pretty_json(&serde_json::json!(input.value.get()))
         .map(Some)
-        .map_err(|error| AttachmentUiError::Presentation(error.to_string()))
+        .map_err(|error| ToolUiError::Presentation(error.to_string()))
 }
 struct Details(Rc<Cell<u32>>);
 #[test]

@@ -1102,3 +1102,49 @@ fn expected_pixel_alpha(origin: egui::Pos2, density: f32, spread: f32) -> f32 {
     }
     alpha / 4096. * 0.7 * 255.
 }
+
+#[test]
+fn dialog_errors_preserve_sources_and_retained_owners() {
+    use maestro_web::{
+        I18nError, browser::attachment_content::AttachmentHostError, dialogs::dialog::DialogUiError,
+    };
+    use std::error::Error as _;
+    let host = input_support::Host::new(|_, _| {});
+    let mut frame = attachment_support::Frame::default();
+    let context = DialogContext::new(frame.ctx.clone(), host.clone());
+    let fail = Rc::new(Cell::new(true));
+    let body_fail = fail.clone();
+    let body = DialogBody {
+        reading: Rc::new(ReadingContent {
+            #[cfg(target_arch = "wasm32")]
+            mount: Rc::new(|_| unreachable!()),
+        }),
+        control_sizes: vec![],
+        render_content: Rc::new(move |_, _, _, _| {
+            if body_fail.get() {
+                Err(DialogUiError::I18n(I18nError::NotText("body".into())))
+            } else {
+                Ok(())
+            }
+        }),
+    };
+    let owner = dialog(&context, DialogProps::new(true, body)).unwrap();
+    *host.failure.borrow_mut() = Some("bounds");
+    frame.run(vec![], |_, i, p| {
+        let error = context.render(i, p).unwrap_err();
+        assert_eq!(error.to_string(), "bounds");
+        assert!(matches!(error, DialogUiError::Host(_)));
+        assert!(error.source().unwrap().is::<AttachmentHostError>());
+    });
+    assert!(host.removed.borrow().is_empty());
+    frame.run(vec![], |_, i, p| {
+        let error = context.render(i, p).unwrap_err();
+        assert_eq!(error.to_string(), "Translation is not text: body");
+        assert!(error.source().unwrap().is::<I18nError>());
+    });
+    fail.set(false);
+    frame.run(vec![], |_, i, p| context.render(i, p).unwrap());
+    assert!(host.removed.borrow().is_empty());
+    owner.close().unwrap();
+    assert_eq!(host.removed.borrow().len(), 1);
+}

@@ -1,6 +1,6 @@
 //! One literal native error owner for attachment and artifact bodies.
 use crate::browser::attachment_content::{
-    AttachmentHost, AttachmentUiError, ReadingContent, reading,
+    AttachmentHost, AttachmentHostError, ReadingContent, reading,
 };
 use std::{cell::RefCell, rc::Rc};
 /// Current literal text and its stable native nodes.
@@ -28,7 +28,7 @@ impl Error {
         ui: &egui::Ui,
         surface: (egui::Id, Option<egui::Id>, bool),
         operands: ([String; 2], &maestro_theme::BrandPresentation<'_>),
-    ) -> Result<egui::Rect, AttachmentUiError> {
+    ) -> Result<egui::Rect, AttachmentHostError> {
         self.text.borrow_mut().values = operands.0;
         #[cfg(target_arch = "wasm32")]
         browser::sync(&self.text.borrow());
@@ -65,6 +65,6 @@ pub(crate) fn detail<F: ?Sized>(
     message: &str,
     i: &crate::I18n<F>,
     fallback: &str,
-) -> Result<String, AttachmentUiError> {
+) -> Result<String, crate::I18nError> {
     Ok(failure_detail(Some(message), i.text(fallback)?))
 }

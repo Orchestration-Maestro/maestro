@@ -1,9 +1,9 @@
 //! Native literal content and root-owned dialog semantics.
 use super::{DialogContentProps, DialogHeaderProps};
-use crate::browser::attachment_content::{AttachmentUiError, ReadingRoot, browser::host_error};
+use crate::browser::attachment_content::{AttachmentHostError, ReadingRoot, browser::host_error};
 use web_sys::{Document, Element};
 /// Set literal classes without parsing caller text as markup.
-fn root(document: &Document, kind: &str, classes: &str) -> Result<Element, AttachmentUiError> {
+fn root(document: &Document, kind: &str, classes: &str) -> Result<Element, AttachmentHostError> {
     let element = document.create_element("div").map_err(|e| host_error(&e))?;
     element
         .set_attribute("class", &format!("{kind} {classes}"))
@@ -19,7 +19,7 @@ fn root(document: &Document, kind: &str, classes: &str) -> Result<Element, Attac
 pub(super) fn header(
     document: &Document,
     props: &DialogHeaderProps,
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     let element = root(document, "maestro-dialog-header", &props.class_name)?;
     let title = document.create_element("h2").map_err(|e| host_error(&e))?;
     title.set_text_content(Some(&props.title));
@@ -43,7 +43,7 @@ pub(super) fn header(
 pub(super) fn content(
     document: &Document,
     props: &DialogContentProps,
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     let element = root(document, "maestro-dialog-content", &props.class_name)?;
     let mut slots = Vec::new();
     let mut owners = Vec::new();
@@ -132,7 +132,7 @@ fn mount(
     document: &Document,
     source: &ReadingContent,
     state: &Weak<State>,
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     let child = (source.mount)(document)?;
     let element = root(document, "maestro-dialog-native", "")?;
     element
@@ -191,7 +191,7 @@ fn mount(
 fn escape_listener(
     document: &Document,
     owner: &Weak<State>,
-) -> Result<SemanticSubscription, AttachmentUiError> {
+) -> Result<SemanticSubscription, AttachmentHostError> {
     let owner = owner.clone();
     let handler = Closure::wrap(Box::new(move |event: web_sys::Event| {
         if let Some(owner) = owner.upgrade()
@@ -206,7 +206,7 @@ fn escape_listener(
     }) as Box<dyn FnMut(web_sys::Event)>);
     let window = document
         .default_view()
-        .ok_or_else(|| AttachmentUiError::Host("dialog document has no window".into()))?;
+        .ok_or_else(|| AttachmentHostError::Host("dialog document has no window".into()))?;
     EventSubscription::new(window.into(), "keydown", handler).map_err(|e| host_error(&e))
 }
 /// Forward native activation and focus through weak existing owners.
@@ -247,7 +247,11 @@ fn target(state: &State) -> Option<Rc<Semantic>> {
         .or_else(|| native.committed.upgrade())
 }
 /// Update only literal caller classes and the live localized accessible name.
-pub(super) fn configure(state: &State, name: &str, classes: &str) -> Result<(), AttachmentUiError> {
+pub(super) fn configure(
+    state: &State,
+    name: &str,
+    classes: &str,
+) -> Result<(), AttachmentHostError> {
     state.native.borrow_mut().close_name = name.into();
     if let Some(target) = target(state) {
         update(&target, name, classes)?;
@@ -267,7 +271,7 @@ pub(super) fn focused(state: &State) -> bool {
 }
 
 /// Keep initial and live native attributes on one forwarding path.
-fn update(target: &Semantic, name: &str, classes: &str) -> Result<(), AttachmentUiError> {
+fn update(target: &Semantic, name: &str, classes: &str) -> Result<(), AttachmentHostError> {
     target
         .root
         .set_attribute("class", &format!("maestro-dialog-native {classes}"))

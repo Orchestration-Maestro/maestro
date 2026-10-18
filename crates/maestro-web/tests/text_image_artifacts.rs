@@ -255,7 +255,7 @@ fn image_download_rejects_invalid_base64() {
         let frame = Frame::default();
         assert!(matches!(
             frame.draw(&mut view, true, vec![]),
-            Err(maestro_web::browser::attachment_content::AttachmentUiError::Presentation(_))
+            Err(maestro_web::tools::artifacts::ArtifactUiError::Presentation(_))
         ));
         assert!(host.downloads.borrow().is_empty());
         frame.draw(&mut view, false, vec![]).unwrap();

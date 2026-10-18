@@ -1,9 +1,10 @@
 //! Attachment classification and content operands.
 use super::AttachmentOverlay;
+use crate::dialogs::attachment_overlay::AttachmentUiError;
 use crate::{
     Attachment, I18n,
     browser::attachment_content::{
-        AttachmentContent, AttachmentSurface, AttachmentUiError, FileType, ImageFit, TextView,
+        AttachmentContent, AttachmentSurface, FileType, ImageFit, TextView,
     },
 };
 use maestro_app::browser::utils::attachment_utils::AttachmentType;
@@ -41,12 +42,12 @@ impl AttachmentOverlay {
         p: &BrandPresentation<'_>,
     ) -> Result<egui::Rect, AttachmentUiError> {
         if let Some(error) = self.error.as_ref().filter(|s| !s.is_empty()) {
-            return self.error_view.present(
+            return Ok(self.error_view.present(
                 self.host.as_ref(),
                 ui,
                 (self.id, Some(self.id), false),
                 ([i.text("Error loading file")?, error.clone()], p),
-            );
+            )?);
         }
         let (kind, name, source, text, reload) = self.content_data()?;
         self.changed = false;
@@ -183,7 +184,7 @@ impl AttachmentOverlay {
             (self.id, rect, Some(self.id), false),
             p,
         ) {
-            Err(AttachmentUiError::Presentation(message)) => {
+            Err(crate::browser::attachment_content::AttachmentHostError::Presentation(message)) => {
                 if !message.is_empty() {
                     self.pdf.reset(false);
                 }
@@ -191,7 +192,7 @@ impl AttachmentOverlay {
                 ui.ctx().request_repaint();
                 Ok(rect)
             }
-            other => other.map(|()| rect),
+            other => other.map(|()| rect).map_err(AttachmentUiError::Host),
         }
     }
     /// Prepare raw attachment bytes once and retain all native sheet bodies.
@@ -228,7 +229,7 @@ impl AttachmentOverlay {
             (self.id, rect, Some(self.id), false),
             (p, &i.text("Error loading spreadsheet")?),
         ) {
-            Err(AttachmentUiError::Presentation(message)) => {
+            Err(crate::browser::attachment_content::AttachmentHostError::Presentation(message)) => {
                 if !message.is_empty() {
                     self.excel.reset(false);
                 }
@@ -236,7 +237,7 @@ impl AttachmentOverlay {
                 ui.ctx().request_repaint();
                 Ok(rect)
             }
-            other => other.map(|()| rect),
+            other => other.map(|()| rect).map_err(AttachmentUiError::Host),
         }
     }
     /// Place selected content in its bounded viewport container.
@@ -269,12 +270,12 @@ impl AttachmentOverlay {
             },
             p,
         ) {
-            Err(AttachmentUiError::Presentation(message)) => {
+            Err(crate::browser::attachment_content::AttachmentHostError::Presentation(message)) => {
                 self.error = Some(message);
                 ui.ctx().request_repaint();
                 Ok(rect)
             }
-            other => other.map(|()| rect),
+            other => other.map(|()| rect).map_err(AttachmentUiError::Host),
         }
     }
 }

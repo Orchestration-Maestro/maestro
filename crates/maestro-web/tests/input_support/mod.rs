@@ -27,11 +27,11 @@ pub struct Host {
 }
 impl Host {
     /// Inject a reached failure without replacing the caller's operation.
-    fn effect(&self, name: &'static str) -> Result<(), AttachmentUiError> {
+    fn effect(&self, name: &'static str) -> Result<(), AttachmentHostError> {
         self.effects.borrow_mut().push(name);
         if self.failure.borrow().as_ref() == Some(&name) {
             self.failure.take();
-            return Err(AttachmentUiError::Host(name.into()));
+            return Err(AttachmentHostError::Host(name.into()));
         }
         Ok(())
     }
@@ -58,7 +58,7 @@ impl AttachmentHost for Host {
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = bool>>> {
         unreachable!("unexpected clipboard operation")
     }
-    fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentUiError> {
+    fn capture_focus(&self) -> Result<Option<Rc<FocusTarget>>, AttachmentHostError> {
         self.effect("capture")?;
         let effects = self.effects.clone();
         Ok(Some(Rc::new(move || {
@@ -66,7 +66,7 @@ impl AttachmentHost for Host {
             Ok(())
         })))
     }
-    fn restore_focus(&self, target: Rc<FocusTarget>) -> Result<Timer, AttachmentUiError> {
+    fn restore_focus(&self, target: Rc<FocusTarget>) -> Result<Timer, AttachmentHostError> {
         self.effect("schedule")?;
         *self.frame.borrow_mut() = Some(target);
         Ok(Timer::new(|| {}))
@@ -75,7 +75,7 @@ impl AttachmentHost for Host {
         &self,
         _: egui::Id,
         dimensions: [&str; 2],
-    ) -> Result<egui::Rect, AttachmentUiError> {
+    ) -> Result<egui::Rect, AttachmentHostError> {
         self.effect("bounds")?;
         self.dimensions
             .borrow_mut()
@@ -92,7 +92,7 @@ impl AttachmentHost for Host {
     fn reading_layout(
         &self,
         _: egui::Id,
-    ) -> Result<maestro_web::browser::attachment_content::ReadingLayout, AttachmentUiError> {
+    ) -> Result<maestro_web::browser::attachment_content::ReadingLayout, AttachmentHostError> {
         Ok(ReadingLayout {
             height: 300.,
             controls: vec![],
@@ -102,7 +102,7 @@ impl AttachmentHost for Host {
         &self,
         s: AttachmentSurface<'_>,
         p: &BrandPresentation<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         if let AttachmentContent::Reading(placement) = &s.content {
             self.effect(if placement.phase == ReadingPhase::Publish {
                 "publish"
@@ -122,25 +122,25 @@ impl AttachmentHost for Host {
         _: egui::Id,
         _: bool,
         _: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         Ok(())
     }
-    fn set_overlay(&self, _: egui::Id, open: bool) -> Result<(), AttachmentUiError> {
+    fn set_overlay(&self, _: egui::Id, open: bool) -> Result<(), AttachmentHostError> {
         self.effect(if open { "admit" } else { "release" })
     }
-    fn hover_capable(&self) -> Result<bool, AttachmentUiError> {
+    fn hover_capable(&self) -> Result<bool, AttachmentHostError> {
         Ok(false)
     }
-    fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentUiError> {
+    fn download_bytes(&self, _: &[u8], _: &str, _: &str) -> Result<(), AttachmentHostError> {
         unreachable!("unexpected byte download")
     }
-    fn download(&self, _: Rc<RefCell<Attachment>>) -> Result<(), AttachmentUiError> {
+    fn download(&self, _: Rc<RefCell<Attachment>>) -> Result<(), AttachmentHostError> {
         unreachable!()
     }
     fn take_escape(&self) -> bool {
         self.escape.replace(false)
     }
-    fn timer(&self, _: i32, _: bool, _: Rc<dyn Fn()>) -> Result<Timer, AttachmentUiError> {
+    fn timer(&self, _: i32, _: bool, _: Rc<dyn Fn()>) -> Result<Timer, AttachmentHostError> {
         unreachable!()
     }
     fn spawn_local(&self, _: std::pin::Pin<Box<dyn std::future::Future<Output = ()>>>) {

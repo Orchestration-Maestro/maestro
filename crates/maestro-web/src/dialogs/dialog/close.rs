@@ -1,8 +1,9 @@
 //! Mounted Close properties and non-overlapping focus-shadow paint.
 use crate::browser::{
-    attachment_content::{self as content, AttachmentUiError, channel},
+    attachment_content::{self as content, channel},
     transition::{Transition, TransitionStyle},
 };
+use crate::dialogs::dialog::DialogUiError;
 use maestro_theme::BrandPresentation;
 
 /// Resolved CSS property endpoints, before quantization.
@@ -20,12 +21,15 @@ impl Operands {
         p: &BrandPresentation<'_>,
         response: &egui::Response,
         native_focus: bool,
-    ) -> Result<Self, AttachmentUiError> {
+    ) -> Result<Self, DialogUiError> {
         let hover = response.hovered();
         let focus = response.has_focus() || native_focus;
-        let color = content::color(p, if hover { "text" } else { "muted" })?;
-        let background = content::color(p, "background")?;
-        let ring = content::color(p, "accent")?;
+        let color = content::color(p, if hover { "text" } else { "muted" })
+            .map_err(|error| DialogUiError::Presentation(error.to_string()))?;
+        let background = content::color(p, "background")
+            .map_err(|error| DialogUiError::Presentation(error.to_string()))?;
+        let ring = content::color(p, "accent")
+            .map_err(|error| DialogUiError::Presentation(error.to_string()))?;
         let shadow = if focus {
             [
                 f32::from(background.r()),
@@ -107,7 +111,7 @@ impl Paint {
         close: egui::Rect,
         p: &BrandPresentation<'_>,
         painter: &mut super::ring::Painter,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), DialogUiError> {
         if self.active {
             ui.ctx().request_repaint();
         }

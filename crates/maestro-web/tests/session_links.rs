@@ -245,10 +245,10 @@ fn copy_link_drop_revokes_pending_feedback() {
 
 #[test]
 fn copy_link_timer_failure_does_not_stick() {
-    use maestro_web::browser::attachment_content::AttachmentUiError;
+    use maestro_web::browser::attachment_content::AttachmentHostError;
     let mut canvas = Canvas::new();
     canvas.activate().unwrap();
-    *canvas.host.failure.borrow_mut() = Some(AttachmentUiError::Host("timer refused".into()));
+    *canvas.host.failure.borrow_mut() = Some(AttachmentHostError::Host("timer refused".into()));
     settle(&canvas, 0, true);
     assert_eq!(canvas.host.live(), 0);
     assert!(!check(&canvas.frame(vec![]).1));
@@ -256,7 +256,7 @@ fn copy_link_timer_failure_does_not_stick() {
     settle(&canvas, 1, true);
     assert!(check(&canvas.frame(vec![]).1));
     canvas.activate().unwrap();
-    *canvas.host.failure.borrow_mut() = Some(AttachmentUiError::Host("timer refused".into()));
+    *canvas.host.failure.borrow_mut() = Some(AttachmentHostError::Host("timer refused".into()));
     settle(&canvas, 2, true);
     assert_eq!(canvas.host.live(), 0);
     assert!(!check(&canvas.frame(vec![]).1));
@@ -739,4 +739,41 @@ fn paired_feedback_deadlines(button_first: bool) {
         &button
     ));
     assert_eq!(button.host.live(), 0);
+}
+
+#[test]
+fn copy_link_preparation_failures_keep_io_errors() {
+    use maestro_web::export_html::template::{CopyLinkView, render_copy_link_button};
+    let mut canvas = Canvas::new();
+    canvas.input.href = "not an absolute URL".into();
+    let error = canvas.activate().unwrap_err();
+    assert!(error.get_ref().unwrap().is::<url::ParseError>());
+    assert!(canvas.host.copies.borrow().is_empty());
+    assert_eq!(canvas.host.admissions.get(), 0);
+    let pack = maestro_theme::load_brand_pack("brand.json", &brand::Pack).unwrap();
+    let mut presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
+    presentation.colors.insert("background", "not-a-color");
+    let context = canvas.context.clone();
+    context
+        .run_ui(egui::RawInput::default(), |ui| {
+            let error = render_copy_link_button(
+                ui,
+                "entry",
+                &mut canvas.state,
+                CopyLinkView {
+                    presentation: &presentation,
+                    current_leaf_id: "leaf",
+                    location_href: "https://example.test/",
+                    share_base_url: None,
+                    rect: canvas.rect,
+                    message_hovered: true,
+                },
+            )
+            .unwrap_err();
+            assert_eq!(error.kind(), std::io::ErrorKind::InvalidData);
+        })
+        .textures_delta
+        .clear();
+    assert!(canvas.host.copies.borrow().is_empty());
+    assert_eq!(canvas.host.admissions.get(), 0);
 }

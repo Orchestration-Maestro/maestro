@@ -1,7 +1,8 @@
 //! Owned browser tool content and call-scoped native operands.
+mod ui_error;
 use crate::{
     I18n,
-    browser::attachment_content::{AttachmentHost, AttachmentUiError, PlacementScope},
+    browser::attachment_content::{AttachmentHost, PlacementScope},
 };
 use maestro_app::ToolRendererState;
 use serde_json::Value;
@@ -9,6 +10,7 @@ use std::{
     any::{Any, TypeId},
     rc::Rc,
 };
+pub use ui_error::ToolUiError;
 mod binding;
 mod result_view;
 pub use binding::ToolRendererBinding;
@@ -24,7 +26,7 @@ pub trait ToolContent: Any {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         state: &ToolRendererState,
-    ) -> Result<egui::Response, AttachmentUiError>;
+    ) -> Result<egui::Response, ToolUiError>;
 }
 /// Borrowed presentation inputs for one frame.
 #[derive(Clone, Copy)]
@@ -66,7 +68,7 @@ impl ToolRenderResult {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         retained: &mut ToolRenderState,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, ToolUiError> {
         retained.draw(self.content.as_ref(), ui, view)
     }
 }
@@ -77,7 +79,7 @@ impl ToolRenderState {
         content: &dyn ToolContent,
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, ToolUiError> {
         let active = content.type_id();
         if self.active != Some(active) {
             self.scope = None;
@@ -99,14 +101,14 @@ pub trait ToolRenderer<P = Value, D = Value> {
         params: Option<&P>,
         result: Option<ToolResultMessageView<'_, D>>,
         is_streaming: bool,
-    ) -> Result<ToolRenderResult, AttachmentUiError>;
+    ) -> Result<ToolRenderResult, ToolUiError>;
 }
 /// Borrowed parameters with a deferred default-rendering projection.
 pub struct ToolParams<'a, P = Value> {
     /// Original caller operand.
     pub(crate) value: &'a P,
     /// Invoked only after default rendering is selected.
-    pub(crate) format: fn(&P) -> Result<Option<String>, AttachmentUiError>,
+    pub(crate) format: fn(&P) -> Result<Option<String>, ToolUiError>,
 }
 impl<'a> ToolParams<'a, Value> {
     /// Borrow ordinary JSON using the default formatter.
@@ -118,10 +120,7 @@ impl<'a> ToolParams<'a, Value> {
 impl<'a, P> ToolParams<'a, P> {
     /// Borrow a native value with its optional literal input projection.
     #[must_use]
-    pub fn typed(
-        value: &'a P,
-        format: fn(&P) -> Result<Option<String>, AttachmentUiError>,
-    ) -> Self {
+    pub fn typed(value: &'a P, format: fn(&P) -> Result<Option<String>, ToolUiError>) -> Self {
         Self { value, format }
     }
 }

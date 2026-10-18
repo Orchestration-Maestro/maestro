@@ -1,7 +1,7 @@
 //! Native original-byte downloads with scoped URL and anchor ownership.
 use crate::{
     Attachment,
-    browser::attachment_content::{AttachmentUiError, browser::host_error},
+    browser::attachment_content::{AttachmentHostError, browser::host_error},
 };
 use std::cell::RefCell;
 use wasm_bindgen::JsCast as _;
@@ -24,22 +24,22 @@ impl Drop for Download {
 pub(crate) fn download(
     document: &Document,
     attachment: &RefCell<Attachment>,
-) -> Result<(), AttachmentUiError> {
+) -> Result<(), AttachmentHostError> {
     let (content, name, mime) = {
         let a = attachment
             .try_borrow()
-            .map_err(|_| AttachmentUiError::BorrowConflict)?;
+            .map_err(|_| AttachmentHostError::BorrowConflict)?;
         (a.content.clone(), a.file_name.clone(), a.mime_type.clone())
     };
     let bytes = document
         .default_view()
-        .ok_or_else(|| AttachmentUiError::Host("Document has no window".into()))?
+        .ok_or_else(|| AttachmentHostError::Host("Document has no window".into()))?
         .atob(&content)
         .map_err(|error| host_error(&error))?
         .chars()
         .map(|c| u8::try_from(u32::from(c)))
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| AttachmentUiError::Host(e.to_string()))?;
+        .map_err(|e| AttachmentHostError::Host(e.to_string()))?;
     download_bytes(document, &bytes, &name, &mime)
 }
 /// Use the single scoped Blob/anchor owner for caller-supplied bytes.
@@ -48,7 +48,7 @@ pub(crate) fn download_bytes(
     bytes: &[u8],
     name: &str,
     mime: &str,
-) -> Result<(), AttachmentUiError> {
+) -> Result<(), AttachmentHostError> {
     let mut owner = Download {
         url: ObjectUrl::new(bytes, mime)?,
         anchor: None,
@@ -63,7 +63,7 @@ pub(crate) fn download_bytes(
     owner.anchor = Some(anchor.clone());
     document
         .body()
-        .ok_or_else(|| AttachmentUiError::Host("Document has no body".into()))?
+        .ok_or_else(|| AttachmentHostError::Host("Document has no body".into()))?
         .append_child(&anchor)
         .map_err(|error| host_error(&error))?;
     anchor.click();
@@ -74,7 +74,7 @@ pub(crate) fn download_bytes(
 pub(crate) struct ObjectUrl(String);
 impl ObjectUrl {
     /// Allocate a URL containing the supplied original bytes.
-    pub(crate) fn new(bytes: &[u8], mime: &str) -> Result<Self, AttachmentUiError> {
+    pub(crate) fn new(bytes: &[u8], mime: &str) -> Result<Self, AttachmentHostError> {
         let options = web_sys::BlobPropertyBag::new();
         options.set_type(mime);
         let data = js_sys::Array::of1(&js_sys::Uint8Array::from(bytes));

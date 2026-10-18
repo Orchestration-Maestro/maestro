@@ -1,13 +1,13 @@
 //! Native dialog focus effects on the existing document owner.
 use super::{BrowserAttachmentHost, host_error};
-use crate::browser::attachment_content::{AttachmentUiError, FocusTarget};
+use crate::browser::attachment_content::{AttachmentHostError, FocusTarget};
 use std::rc::Rc;
 use wasm_bindgen::JsCast as _;
 impl BrowserAttachmentHost {
     /// Retain the native focus capability, including focusable non-HTML elements.
     pub(super) fn capture_native_focus(
         &self,
-    ) -> Result<Option<Rc<FocusTarget>>, AttachmentUiError> {
+    ) -> Result<Option<Rc<FocusTarget>>, AttachmentHostError> {
         let Some(target) = self.document.active_element() else {
             return Ok(None);
         };

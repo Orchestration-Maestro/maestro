@@ -89,7 +89,8 @@ fonts and do not qualify installed brand faces. See
 [browser libraries](../libraries/browser-frontend.md) for features and licences.
 
 Invalid caller-supplied colors propagate as `AttachmentUiError::Presentation`
-through both tile and overlay drawing. Platform failures remain `Host` errors;
+from `dialogs::attachment_overlay` through both tile and overlay drawing.
+Platform failures use `AttachmentUiError::Host(AttachmentHostError)`;
 color admission uses the existing shared style owner, before content placement.
 
 ## Owned reading content
@@ -154,3 +155,15 @@ ancestor scope detaches its currently placed descendants; retained widget aliase
 keep resources alive but do not keep an inactive row visible. Explicit retained
 artifact visibility remains independent. A failed re-entry leaves a detached root
 detached; measurement connects it only while hidden and restores its detachment.
+
+
+## Error ownership
+
+`browser::attachment_content::AttachmentHostError` describes native effects,
+presentation and reference-borrow admission. Shared glyph drawing uses
+`ControlError`. Attachment operations compose these errors with localization and
+local record-borrow failures. Localization and icon causes remain inspectable
+through `std::error::Error::source`. The overlay catches native Presentation only
+at its body boundary; downloads and outer drawing failures do not select a file
+error view. Rust callers must use the operation's error path and nested Host
+payload; these source-interface changes preserve existing messages and recovery.

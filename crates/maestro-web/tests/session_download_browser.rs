@@ -2,7 +2,7 @@
 #![cfg(all(test, target_arch = "wasm32"))]
 use base64::Engine as _;
 use maestro_web::browser::attachment_content::{
-    AttachmentHost, AttachmentUiError, BrowserAttachmentHost,
+    AttachmentHost, AttachmentHostError, BrowserAttachmentHost,
 };
 use maestro_web::export_html::template::{download_session_json, load_document};
 use std::{cell::RefCell, rc::Rc};
@@ -105,7 +105,10 @@ pub async fn session_and_attachment_downloads_share_native_cleanup() {
         if success {
             result.unwrap();
         } else {
-            assert!(matches!(result, Err(AttachmentUiError::Host(_))));
+            assert!(result.is_err_and(|error| matches!(
+                error.get_ref().and_then(|cause| cause.downcast_ref::<AttachmentHostError>()),
+                Some(AttachmentHostError::Host(_))
+            )));
         }
         wasm_bindgen_futures::JsFuture::from(finish(
             expected.as_bytes(),

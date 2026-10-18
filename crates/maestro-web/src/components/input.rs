@@ -1,14 +1,53 @@
 //! Retained single-line browser input.
+use crate::I18nError;
+use crate::browser::attachment_content::AttachmentHostError;
 use crate::{
     I18n,
     browser::attachment_content::{
-        AttachmentContent, AttachmentHost, AttachmentSurface, AttachmentUiError as UiError,
-        identity, style,
+        AttachmentContent, AttachmentHost, AttachmentSurface, identity, style,
     },
 };
 use maestro_theme::BrandPresentation;
 use std::{cell::RefCell, rc::Rc};
 use web_sys::{Event, HtmlInputElement, KeyboardEvent};
+/// Failure from the retained input operation.
+#[derive(Debug)]
+pub enum InputUiError {
+    /// Localization failed.
+    I18n(I18nError),
+    /// Native operation failed.
+    Host(AttachmentHostError),
+    /// Selected presentation could not be prepared.
+    Presentation(String),
+}
+impl std::fmt::Display for InputUiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::I18n(error) => std::fmt::Display::fmt(error, f),
+            Self::Host(error) => std::fmt::Display::fmt(error, f),
+            Self::Presentation(error) => std::fmt::Display::fmt(error, f),
+        }
+    }
+}
+impl std::error::Error for InputUiError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::I18n(error) => Some(error),
+            Self::Host(error) => Some(error),
+            Self::Presentation(_) => None,
+        }
+    }
+}
+impl From<I18nError> for InputUiError {
+    fn from(error: I18nError) -> Self {
+        Self::I18n(error)
+    }
+}
+impl From<AttachmentHostError> for InputUiError {
+    fn from(error: AttachmentHostError) -> Self {
+        Self::Host(error)
+    }
+}
 /// Accepted native input modes.
 #[derive(Clone, Copy, Default)]
 pub enum InputType {
@@ -121,8 +160,8 @@ impl Input {
         ui: &mut egui::Ui,
         i18n: &I18n<F>,
         presentation: &BrandPresentation<'_>,
-    ) -> Result<(), UiError> {
-        style(ui, presentation)?;
+    ) -> Result<(), InputUiError> {
+        style(ui, presentation).map_err(|error| InputUiError::Presentation(error.to_string()))?;
         ui.scope_builder(
             egui::UiBuilder::new().layout(egui::Layout::top_down(egui::Align::Min)),
             |ui| self.render_contents(ui, i18n, presentation),
@@ -135,17 +174,18 @@ impl Input {
         ui: &mut egui::Ui,
         i18n: &I18n<F>,
         presentation: &BrandPresentation<'_>,
-    ) -> Result<(), UiError> {
+    ) -> Result<(), InputUiError> {
         ui.spacing_mut().item_spacing.y = 6.;
         let mut accessible_label = self.props.label.clone();
-        let label = |ui: &mut egui::Ui| -> Result<(), UiError> {
+        let label = |ui: &mut egui::Ui| -> Result<(), InputUiError> {
             ui.label(&self.props.label);
             if self.props.required {
                 let marker = i18n.text("*")?;
                 accessible_label.push(' ');
                 accessible_label.push_str(&marker);
                 ui.colored_label(
-                    crate::browser::attachment_content::color(presentation, "error")?,
+                    crate::browser::attachment_content::color(presentation, "error")
+                        .map_err(|error| InputUiError::Presentation(error.to_string()))?,
                     marker,
                 );
             }
@@ -182,7 +222,8 @@ impl Input {
         self.previous_value = Some(self.props.value.clone());
         if !self.props.error.is_empty() {
             ui.colored_label(
-                crate::browser::attachment_content::color(presentation, "error")?,
+                crate::browser::attachment_content::color(presentation, "error")
+                    .map_err(|error| InputUiError::Presentation(error.to_string()))?,
                 &self.props.error,
             );
         }

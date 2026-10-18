@@ -1,7 +1,8 @@
 //! Owned spreadsheet artifact with native tables and original downloads.
 use super::artifact_element::{ArtifactElement, ArtifactView};
+use crate::tools::artifacts::ArtifactUiError;
 use crate::{
-    browser::attachment_content::{self, AttachmentHost, AttachmentUiError},
+    browser::attachment_content::{self, AttachmentHost},
     components::download_button,
     dialogs::attachment_overlay::{error, excel},
 };
@@ -76,7 +77,7 @@ impl ArtifactElement for ExcelArtifact {
         &mut self,
         visible: bool,
         modal: Option<egui::Id>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), ArtifactUiError> {
         self.host.set_retained_visibility(self.id, visible, modal)?;
         self.visible = visible;
         Ok(())
@@ -106,9 +107,10 @@ impl ArtifactElement for ExcelArtifact {
         &mut self,
         ui: &mut egui::Ui,
         view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), ArtifactUiError> {
         self.context = Some(ui.ctx().clone());
-        let bytes = crate::utils::base64::original(&self.content)?;
+        let bytes = crate::utils::base64::original(&self.content)
+            .map_err(|error| ArtifactUiError::Presentation(error.to_string().into()))?;
         download_button::draw(
             ui,
             view,
@@ -124,11 +126,7 @@ impl ArtifactElement for ExcelArtifact {
             ),
         )
     }
-    fn render(
-        &mut self,
-        ui: &mut egui::Ui,
-        view: ArtifactView<'_>,
-    ) -> Result<(), AttachmentUiError> {
+    fn render(&mut self, ui: &mut egui::Ui, view: ArtifactView<'_>) -> Result<(), ArtifactUiError> {
         self.context = Some(ui.ctx().clone());
         if !self.visible {
             return Ok(());

@@ -1,7 +1,7 @@
 //! Full-slot canvas interaction and selected-pack decoration.
 use super::{CopyLinkState, build_share_url};
 use crate::browser::{
-    attachment_content::{self, AttachmentUiError, channel, color},
+    attachment_content::{self, channel, color},
     transition::{Transition, TransitionStyle},
 };
 use maestro_theme::BrandPresentation;
@@ -29,7 +29,7 @@ pub fn render_copy_link_button(
     entry_id: &str,
     state: &mut CopyLinkState,
     view: CopyLinkView<'_>,
-) -> Result<egui::Response, AttachmentUiError> {
+) -> Result<egui::Response, std::io::Error> {
     let response = ui
         .interact(view.rect, state.id, egui::Sense::click())
         .on_hover_text("Copy link to this message")
@@ -67,7 +67,7 @@ fn paint(
     state: &mut CopyLinkState,
     view: &CopyLinkView<'_>,
     response: &egui::Response,
-) -> Result<(), AttachmentUiError> {
+) -> Result<(), std::io::Error> {
     let copied = state.feedback.copied();
     let hovered = response.hovered() || response.has_focus();
     let operands = Operands::resolve(view, response, copied)?;
@@ -123,7 +123,8 @@ fn paint(
             egui::Rect::from_center_size(view.rect.center(), egui::vec2(14., 14.)),
             "Link",
             foreground,
-        )?;
+        )
+        .map_err(std::io::Error::other)?;
     }
     Ok(())
 }
@@ -143,7 +144,7 @@ impl Operands {
         view: &CopyLinkView<'_>,
         response: &egui::Response,
         copied: bool,
-    ) -> Result<Self, AttachmentUiError> {
+    ) -> Result<Self, std::io::Error> {
         let hovered = response.hovered() || response.has_focus();
         let background = color(
             view.presentation,

@@ -127,7 +127,7 @@ impl Slots {
         phase: ReadingPhase,
         size: egui::Vec2,
         sizes: &[(egui::Id, egui::Vec2)],
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), AttachmentHostError> {
         self.host.present(
             AttachmentSurface {
                 id: self.id,
@@ -150,7 +150,7 @@ impl Slots {
     /// Read the current native slot layout.
     /// # Errors
     /// Returns missing-registration or native readback failures.
-    pub fn layout(&self) -> Result<ReadingLayout, AttachmentUiError> {
+    pub fn layout(&self) -> Result<ReadingLayout, AttachmentHostError> {
         self.host.reading_layout(self.id)
     }
     /// Measure and publish one bounded native viewport.

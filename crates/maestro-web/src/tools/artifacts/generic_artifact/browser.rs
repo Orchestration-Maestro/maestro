@@ -1,7 +1,7 @@
 //! Literal native artifact text with stable nodes.
 use super::Text;
 use crate::browser::attachment_content::{
-    AttachmentUiError, ReadingRoot,
+    AttachmentHostError, ReadingRoot,
     browser::{host_error, set_text_if_changed},
 };
 use std::{cell::RefCell, rc::Rc};
@@ -17,7 +17,7 @@ pub(super) fn sync(text: &Text) {
 pub(super) fn mount(
     document: &web_sys::Document,
     text: &Rc<RefCell<Text>>,
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     let create = |tag| document.create_element(tag).map_err(|e| host_error(&e));
     let root = create("section")?;
     root.set_attribute("class", "maestro-generic-artifact")
@@ -56,7 +56,7 @@ pub(super) fn mount(
 }
 
 /// Create the literal document mark without changing the mounted body.
-fn icon(document: &web_sys::Document) -> Result<web_sys::Element, AttachmentUiError> {
+fn icon(document: &web_sys::Document) -> Result<web_sys::Element, AttachmentHostError> {
     let icon = document
         .create_element_ns(Some("http://www.w3.org/2000/svg"), "svg")
         .map_err(|e| host_error(&e))?;

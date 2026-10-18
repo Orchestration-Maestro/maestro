@@ -1,7 +1,8 @@
 //! Retained native captions and subsection labels.
+use crate::tools::types::ToolUiError;
 use crate::{
     browser::attachment_content::{
-        self, AttachmentHost, AttachmentUiError, ReadingContent,
+        self, AttachmentHost, AttachmentHostError, ReadingContent,
         reading::controlled::{ControlledReading, ReadingHeight},
     },
     tools::types::ToolRenderView,
@@ -44,7 +45,7 @@ impl NativeText {
     }
     /// Apply interaction color only to this literal caption, never rich descendants.
     #[cfg(target_arch = "wasm32")]
-    pub(crate) fn set_hovered(&self, hovered: bool) -> Result<(), AttachmentUiError> {
+    pub(crate) fn set_hovered(&self, hovered: bool) -> Result<(), AttachmentHostError> {
         if let Some(node) = self.node.borrow().as_ref() {
             use wasm_bindgen::JsCast as _;
             node.unchecked_ref::<web_sys::HtmlElement>()
@@ -71,7 +72,7 @@ impl NativeText {
         ui: &mut egui::Ui,
         text: (&str, TextKind),
         view: ToolRenderView<'_>,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, ToolUiError> {
         let changed = self
             .shown
             .as_ref()
@@ -80,7 +81,9 @@ impl NativeText {
         let content = candidate
             .as_ref()
             .or(self.content.as_ref())
-            .ok_or_else(|| AttachmentUiError::Host("Missing tool text".into()))?;
+            .ok_or_else(|| {
+                ToolUiError::Host(AttachmentHostError::Host("Missing tool text".into()))
+            })?;
         let layout = ControlledReading {
             height: ReadingHeight::Flow,
             host: self.host.as_ref(),
@@ -126,7 +129,7 @@ fn mount(
     text: &str,
     kind: TextKind,
     target: &std::rc::Weak<std::cell::RefCell<Option<web_sys::Element>>>,
-) -> Result<attachment_content::ReadingRoot, AttachmentUiError> {
+) -> Result<attachment_content::ReadingRoot, AttachmentHostError> {
     use attachment_content::browser::{append, element, host_error, set_text_if_changed};
     let root = element(document, "div", "maestro-tool-text")?;
     let (class, metrics) = match kind {

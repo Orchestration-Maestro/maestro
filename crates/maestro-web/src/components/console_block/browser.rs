@@ -3,7 +3,7 @@ use super::Prepared;
 use crate::browser::attachment_content::ReadingContent;
 #[cfg(target_arch = "wasm32")]
 use crate::browser::attachment_content::{
-    AttachmentUiError, ReadingRoot,
+    AttachmentHostError, ReadingRoot,
     browser::{append, element},
 };
 use std::{
@@ -86,7 +86,7 @@ fn mount(
     prepared: &Rc<Prepared>,
     target: &Rc<RefCell<Weak<Mounted>>>,
     id: egui::Id,
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     let root = element(document, "div", "maestro-console")?;
     let style = element(document, "style", "")?;
     style.set_text_content(Some(include_str!("console.css")));

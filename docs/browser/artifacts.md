@@ -219,3 +219,16 @@ rebuilds it from retained text, even when code remains selected. Final owner rel
 removes its native surfaces and URL without affecting another view. These attachment
 callbacks are distinct from retained visibility; the other views inherit no-op
 callbacks.
+
+## Error ownership
+
+`tools::artifacts::ArtifactUiError` composes localization, shared controls, native
+host effects, presentation preparation and local view-borrow failures. Native
+reading factories return `browser::attachment_content::AttachmentHostError`.
+Header/save failures remain independent of body-load diagnostics.
+
+The Presentation variant carries `PresentationCause`: a literal Message or a typed
+Reading or Control preparation error. `Error::source` retains the original cause
+for code/Markdown rendering and localized copy or preview/source controls. Rust
+callers must update error paths and nested Host/Presentation matches; messages,
+retained views and recovery remain unchanged.

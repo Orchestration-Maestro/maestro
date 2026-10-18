@@ -1,5 +1,6 @@
 //! Fractional focus-shadow coverage rasterized before whole-control composition.
-use crate::browser::attachment_content::{AttachmentUiError, channel};
+use crate::browser::attachment_content::channel;
+use crate::dialogs::dialog::DialogUiError;
 use num_traits::ToPrimitive as _;
 use resvg::tiny_skia::{FillRule, Mask, PathBuilder, Transform};
 
@@ -31,7 +32,7 @@ pub(crate) struct Painter {
 }
 impl Painter {
     /// Rasterize changed operands only, then submit the same retained texture.
-    pub(super) fn draw(&mut self, ui: &egui::Ui, ring: Ring) -> Result<(), AttachmentUiError> {
+    pub(super) fn draw(&mut self, ui: &egui::Ui, ring: Ring) -> Result<(), DialogUiError> {
         if self.cached.as_ref().is_none_or(|(old, _)| *old != ring) {
             let bounds = ring.rect.expand(ring.spreads[1]);
             let pixels = egui::Rect::from_min_max(
@@ -62,7 +63,7 @@ impl Painter {
     }
 }
 /// Rasterize shared boundaries once and subtract coverage before colour composition.
-fn raster(ring: &Ring, pixels: egui::Rect) -> Result<egui::ColorImage, AttachmentUiError> {
+fn raster(ring: &Ring, pixels: egui::Rect) -> Result<egui::ColorImage, DialogUiError> {
     let base = mask(ring, pixels, 0.)?;
     let inner = mask(ring, pixels, ring.spreads[0])?;
     let outer = mask(ring, pixels, ring.spreads[1])?;
@@ -84,7 +85,7 @@ fn raster(ring: &Ring, pixels: egui::Rect) -> Result<egui::ColorImage, Attachmen
     ))
 }
 /// Rounded-rectangle union filled in one pass, retaining fractional coordinates and radii.
-fn mask(ring: &Ring, pixels: egui::Rect, spread: f32) -> Result<Vec<f32>, AttachmentUiError> {
+fn mask(ring: &Ring, pixels: egui::Rect, spread: f32) -> Result<Vec<f32>, DialogUiError> {
     let rect = (ring.rect.expand(spread) * ring.density).translate(-pixels.min.to_vec2()) * SCALE_F;
     let radius = (ring.radius + spread) * ring.density * SCALE_F;
     let mut path = PathBuilder::new();
@@ -132,8 +133,12 @@ fn mask(ring: &Ring, pixels: egui::Rect, spread: f32) -> Result<Vec<f32>, Attach
     Ok(downsample(&mask))
 }
 /// Unrepresentable raster geometry is reported through the existing host failure seam.
-fn unavailable() -> AttachmentUiError {
-    AttachmentUiError::Host("Unable to rasterize Close focus decoration".into())
+fn unavailable() -> DialogUiError {
+    DialogUiError::Host(
+        crate::browser::attachment_content::AttachmentHostError::Host(
+            "Unable to rasterize Close focus decoration".into(),
+        ),
+    )
 }
 
 /// Resolve tiny-skia's four-subpixel scan grid at 1/20 pixel before final colour encoding.

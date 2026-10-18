@@ -1,8 +1,9 @@
 //! Literal console output with retained native scrolling and owned copy feedback.
+use crate::components::code_block::ReadingUiError;
 use crate::{
     I18n,
     browser::attachment_content::{
-        self, AttachmentHost, AttachmentUiError, ReadingContent,
+        self, AttachmentHost, ReadingContent,
         reading::controlled::{ControlledReading, ReadingHeight},
     },
     components::{code_block, copy_button::CopyButton},
@@ -77,7 +78,7 @@ impl ConsoleBlock {
         i18n: &I18n,
         presentation: &maestro_theme::BrandPresentation<'_>,
         modal: Option<egui::Id>,
-    ) -> Result<egui::Response, AttachmentUiError> {
+    ) -> Result<egui::Response, ReadingUiError> {
         let mut copy = match self.copy.take() {
             Some(copy) => copy,
             None => CopyButton::new(Rc::clone(&self.host), i18n)?,
@@ -96,8 +97,8 @@ impl ConsoleBlock {
             &maestro_theme::BrandPresentation<'_>,
             Option<egui::Id>,
         ),
-    ) -> Result<egui::Response, AttachmentUiError> {
-        attachment_content::style(ui, presentation)?;
+    ) -> Result<egui::Response, ReadingUiError> {
+        attachment_content::style(ui, presentation).map_err(ReadingUiError::Presentation)?;
         copy.compact = true;
         copy.set_feedback_duration(1500);
         copy.hover = attachment_content::GhostHover::Accent;
@@ -126,14 +127,20 @@ impl ConsoleBlock {
         next: Rc<Prepared>,
         control: (egui::Id, egui::Vec2),
         (presentation, modal): (&maestro_theme::BrandPresentation<'_>, Option<egui::Id>),
-    ) -> Result<attachment_content::reading::controlled::ControlledLayout, AttachmentUiError> {
+    ) -> Result<attachment_content::reading::controlled::ControlledLayout, ReadingUiError> {
         let changed = self.prepared.as_ref().is_none_or(|old| **old != *next);
         let mounted = Rc::default();
         let candidate = changed.then(|| browser::content(&next, &mounted, control.0));
         let reading = candidate
             .as_ref()
             .or(self.reading.as_ref())
-            .ok_or_else(|| AttachmentUiError::Host("Missing console".into()))?;
+            .ok_or_else(|| {
+                ReadingUiError::Host(
+                    crate::browser::attachment_content::AttachmentHostError::Host(
+                        "Missing console".into(),
+                    ),
+                )
+            })?;
         let result = ControlledReading {
             height: ReadingHeight::Flow,
             host: self.host.as_ref(),

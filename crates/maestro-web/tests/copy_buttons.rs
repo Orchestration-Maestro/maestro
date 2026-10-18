@@ -97,7 +97,7 @@ fn copy_button_failure_preserves_prior_feedback() {
     assert!(copied(&canvas.frame(vec![]).1, &canvas));
     canvas.activate();
     *canvas.host.failure.borrow_mut() =
-        Some(maestro_web::browser::attachment_content::AttachmentUiError::Host("refused".into()));
+        Some(maestro_web::browser::attachment_content::AttachmentHostError::Host("refused".into()));
     canvas.settle(3, true);
     assert!(!copied(&canvas.frame(vec![]).1, &canvas));
     assert_eq!(canvas.host.live(), 0);

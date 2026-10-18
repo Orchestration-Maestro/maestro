@@ -1,6 +1,6 @@
 //! Owned feature-created native reading admission.
 #[cfg(target_arch = "wasm32")]
-use super::AttachmentUiError;
+use super::AttachmentHostError;
 use std::rc::Rc;
 /// Native factory with no borrowed render operands.
 pub struct ReadingContent {
@@ -38,7 +38,7 @@ pub struct ReadingLayout {
 }
 /// Feature factory returning the whole retained native owner.
 #[cfg(target_arch = "wasm32")]
-pub type ReadingMount = dyn Fn(&web_sys::Document) -> Result<ReadingRoot, AttachmentUiError>;
+pub type ReadingMount = dyn Fn(&web_sys::Document) -> Result<ReadingRoot, AttachmentHostError>;
 /// Feature-owned native reading root.
 #[cfg(target_arch = "wasm32")]
 pub struct ReadingRoot {
@@ -65,7 +65,7 @@ pub(crate) fn present(
     surface: (egui::Id, egui::Rect, Option<egui::Id>),
     reading: &Rc<ReadingContent>,
     presentation: &maestro_theme::BrandPresentation<'_>,
-) -> Result<(), super::AttachmentUiError> {
+) -> Result<(), super::AttachmentHostError> {
     for phase in [ReadingPhase::Measure, ReadingPhase::Publish] {
         host.present(
             super::AttachmentSurface {

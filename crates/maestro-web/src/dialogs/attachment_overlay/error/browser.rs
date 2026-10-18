@@ -1,7 +1,7 @@
 //! Selectable literal error text with one styling owner.
 use super::Text;
 use crate::browser::attachment_content::{
-    AttachmentUiError, ReadingRoot,
+    AttachmentHostError, ReadingRoot,
     browser::{host_error, set_text_if_changed},
 };
 use std::{cell::RefCell, rc::Rc};
@@ -18,7 +18,7 @@ pub(in crate::dialogs::attachment_overlay) fn mount(
     document: &web_sys::Document,
     text: &Rc<RefCell<Text>>,
     padded: bool,
-) -> Result<ReadingRoot, AttachmentUiError> {
+) -> Result<ReadingRoot, AttachmentHostError> {
     let create = |tag| document.create_element(tag).map_err(|e| host_error(&e));
     let root = create("section")?;
     root.set_attribute(
