@@ -43,5 +43,12 @@ yaml-rust2 = { path = "vendor/yaml-rust2" }
 [profile.dev]
 debug = "line-tables-only"
 
+# Tests compile extension components; an unoptimised code generator makes each compile about five times slower.
+[profile.dev.package.cranelift-codegen]
+opt-level = 3
+
+[profile.dev.package.regalloc2]
+opt-level = 3
+
 [profile.test]
 debug = "line-tables-only"
