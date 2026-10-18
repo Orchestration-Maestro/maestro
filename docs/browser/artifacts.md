@@ -139,9 +139,10 @@ but empty content after failure shows an empty body. Filename edits only update
 metadata. Errors use the shared selectable native panel with the localized
 `Error loading spreadsheet` heading and literal diagnostic or localized fallback.
 Legacy XLS cells use the [shared workbook reader](../application/document-formats.md)
-for formatted text and declared bounds. Binary formula, array, rich-text and
-hyperlink metadata remain in
-[legacy workbook metadata](https://github.com/Orchestration-Maestro/maestro/issues/1175).
+for formatted text, declared bounds, formula and array metadata, decoded rich-string
+plain text and selected hyperlink targets. Tables retain their owned content after
+parsing; sheet switches reuse those tables. The shared writer escapes binary text
+without inventing run styling and applies the existing hyperlink safety policy.
 
 ## Text artifacts
 

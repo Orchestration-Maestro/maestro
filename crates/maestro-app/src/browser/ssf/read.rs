@@ -15,6 +15,8 @@ use indexmap::IndexMap;
 use std::collections::BTreeMap;
 /// Read supplied XLSX or compound-file XLS bytes into owned sheets with formatted cell text.
 /// Legacy sheets include declared blank bounds and load repaired formats into the live table.
+/// Both formats retain formulas, array ranges and hyperlink targets beside cached values.
+/// Binary rich strings retain decoded plain text without generated run markup.
 ///
 /// # Errors
 /// Returns contextual archive, missing-part, XML, container, record or address failures.

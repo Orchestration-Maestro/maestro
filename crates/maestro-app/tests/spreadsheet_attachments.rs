@@ -379,3 +379,58 @@ fn workbook_shared_unicode_defined_name_prefix_keeps_identity() {
 fn workbook_shared_unicode_defined_name_suffix_keeps_identity() {
     unicode_shared_formula("Suffix", "A1é+A1", "A1é+A2");
 }
+
+#[test]
+fn legacy_spreadsheet_metadata_uses_existing_extraction_writer() {
+    use base64::Engine as _;
+    use maestro_app::browser::utils::attachment_utils::{AttachmentSource, load_attachment};
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct Case {
+        file: String,
+        expected: String,
+    }
+    let cases: Vec<Case> = serde_json::from_str(include_str!(
+        "fixtures/ssf/legacy_metadata_attachments.json"
+    ))
+    .unwrap();
+    let fetch: maestro_models::Fetch = std::sync::Arc::new(|_| panic!("file needs no fetch"));
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    for case in cases {
+        let bytes = crate::workbook_fixture::bytes(&format!("metadata-{}", case.file));
+        let attachment = runtime
+            .block_on(load_attachment(
+                AttachmentSource::File {
+                    bytes: &bytes,
+                    name: &case.file,
+                    mime_type: "application/vnd.ms-excel",
+                },
+                None,
+                &fetch,
+            ))
+            .unwrap();
+        assert_eq!(attachment.file_name, case.file);
+        assert_eq!(attachment.size, bytes.len());
+        assert_eq!(
+            base64::engine::general_purpose::STANDARD
+                .decode(&attachment.content)
+                .unwrap(),
+            bytes
+        );
+        assert_eq!(
+            attachment.extracted_text.as_deref(),
+            Some(case.expected.as_str())
+        );
+        // The complete wrapper preserves both cache text and sheet ordering.
+        let mut ssf = Ssf::default();
+        let mut book = ssf::read(&bytes, &case.file, &mut ssf).unwrap();
+        for sheet in book.sheets.values_mut() {
+            let before = sheet.cells.clone();
+            let csv = ssf::sheet_to_csv(sheet, &ssf);
+            assert!(case.expected.contains(&csv));
+            assert_eq!(sheet.cells, before);
+        }
+    }
+}

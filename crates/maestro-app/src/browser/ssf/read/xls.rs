@@ -1,4 +1,6 @@
 //! Legacy binary workbook reading into the shared workbook records.
+mod formulas;
+mod hyperlink;
 mod records;
 mod strings;
 use super::{
@@ -42,6 +44,8 @@ struct Sheet {
     cells: IndexMap<String, CellObject>,
     /// Declared or observed bounds with exclusive ends.
     bounds: Option<Bounds>,
+    /// Per-sheet retained templates and current formula identity.
+    formulas: formulas::FormulaState,
     /// Merged rectangles in record order.
     merges: Vec<Range>,
 }
@@ -59,15 +63,15 @@ struct Reader<'s> {
     /// Shared-string table.
     strings: Vec<String>,
     /// Sheet names by substream position.
-    directory: BTreeMap<u32, String>,
+    directory: BTreeMap<u32, usize>,
     /// Substream nesting depth.
     depth: u32,
     /// Current top-level substream.
     sheet: Sheet,
     /// Finished substreams by offset.
     finished: HashMap<usize, Sheet>,
-    /// Formula position awaiting its string result.
-    formula: Option<CellHeader>,
+    /// Canonical workbook name context.
+    books: formulas::SupBooks,
 }
 
 /// Read a compound-file workbook into owned sheets, loading its formats into `ssf`.
@@ -92,7 +96,7 @@ fn workbook(data: &[u8], ssf: &Ssf) -> Result<WorkBook> {
         depth: 0,
         sheet: Sheet::default(),
         finished: HashMap::new(),
-        formula: None,
+        books: formulas::SupBooks::default(),
     };
     let mut records = Records::new(&stream);
     while let Some(record) = records.next()? {
@@ -103,6 +107,7 @@ fn workbook(data: &[u8], ssf: &Ssf) -> Result<WorkBook> {
     }
     let mut sheets = IndexMap::new();
     for (position, name) in std::mem::take(&mut reader.directory) {
+        let name = std::mem::take(&mut reader.books.sheet_names[name]);
         let sheet = reader
             .finished
             .remove(&index(position)?)
@@ -162,6 +167,19 @@ impl Reader<'_> {
                 payload.u16()?;
                 self.xfs.push(payload.u16()?);
             }
+            0x01b8 => hyperlink::apply(&mut payload, &mut self.sheet.cells)?,
+            0x0021 | 0x0221 => {
+                self.sheet.formulas.array(&mut payload, self.encoding())?;
+                self.expression()?;
+            }
+            0x04bc => {
+                self.sheet.formulas.shared(&mut payload, self.encoding())?;
+                self.expression()?;
+            }
+            0x0023 | 0x0223 => self.books.external_name(&mut payload, self.encoding())?,
+            0x01ae => self.books.book(&mut payload)?,
+            0x0017 => self.books.external_sheets(&mut payload, self.encoding())?,
+            0x0018 | 0x0218 => self.books.label(&mut payload, self.encoding())?,
             0x0085 => self.bound_sheet(&mut payload)?,
             0x041e => {
                 let id = payload.u16()?;
@@ -239,7 +257,9 @@ impl Reader<'_> {
         } else {
             name
         };
-        self.directory.insert(position, name);
+        self.directory
+            .insert(position, self.books.sheet_names.len());
+        self.books.sheet_names.push(name);
         Ok(())
     }
     /// Decode cell records into values.
@@ -273,14 +293,7 @@ impl Reader<'_> {
                 self.add(header, value, false);
             }
             0x0006 => self.formula(payload)?,
-            0x0207 => {
-                let header = self
-                    .formula
-                    .take()
-                    .ok_or(ParseError::Invalid("string record"))?;
-                let text = strings::unicode_string(payload, encoding)?;
-                self.add(header, Value::Text(text), false);
-            }
+            0x0207 => self.string(payload)?,
             0x00fd => {
                 let header = CellHeader::parse(payload)?;
                 let text = self.strings.get(index(payload.u32()?)?);
@@ -303,11 +316,33 @@ impl Reader<'_> {
         }
         Ok(())
     }
+    /// Materialize a pending formula's string cache without losing its template.
+    fn string(&mut self, payload: &mut Payload<'_, '_>) -> Result<()> {
+        let last = self
+            .sheet
+            .formulas
+            .last
+            .as_ref()
+            .filter(|last| last.pending)
+            .ok_or(ParseError::Invalid("string record"))?;
+        let header = last.header;
+        let text = strings::unicode_string(payload, self.encoding())?;
+        self.add(header, Value::Text(text), false);
+        self.expression()?;
+        self.sheet.formulas.last = None;
+        Ok(())
+    }
     /// Add a cached formula result, or wait for the string record that carries it.
     fn formula(&mut self, payload: &mut Payload<'_, '_>) -> Result<()> {
         let header = CellHeader::parse(payload)?;
         let cached = FormulaValue::parse(payload)?;
-        self.formula = matches!(cached, FormulaValue::PendingString).then_some(header);
+        payload.skip(6)?;
+        let tokens = formulas::parse(payload, self.encoding())?;
+        let pending = matches!(cached, FormulaValue::PendingString);
+        self.sheet.formulas.formula(header, tokens, pending);
+        if pending {
+            return Ok(());
+        }
         let value = match cached {
             FormulaValue::Number(n) => Value::Number(n),
             FormulaValue::Boolean(b) => Value::Boolean(b),
@@ -316,6 +351,17 @@ impl Reader<'_> {
             FormulaValue::PendingString | FormulaValue::Unknown => return Ok(()),
         };
         self.add(header, value, false);
+        self.expression()
+    }
+    /// Attach a decoded expression to its materialized cache.
+    fn expression(&mut self) -> Result<()> {
+        let Some(last) = &self.sheet.formulas.last else {
+            return Ok(());
+        };
+        let encoding = self.encoding();
+        if let Some(cell) = self.sheet.cells.get_mut(&address(last.header)) {
+            self.sheet.formulas.apply(cell, &self.books, encoding)?;
+        }
         Ok(())
     }
     /// Format and place one top-level cell, growing the sheet bounds.

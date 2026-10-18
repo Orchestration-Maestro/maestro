@@ -12,6 +12,15 @@ use wasm_bindgen::prelude::*;
 /// Qualified original modern workbook bytes.
 fn bytes(name: &str) -> &'static [u8] {
     match name {
+        "legacy-links" => {
+            include_bytes!("../../maestro-app/tests/fixtures/workbooks/metadata-link-external.xls")
+        }
+        "legacy-rich" => include_bytes!(
+            "../../maestro-app/tests/fixtures/workbooks/metadata-rich-shared-and-inline.xls"
+        ),
+        "legacy-shared" => include_bytes!(
+            "../../maestro-app/tests/fixtures/workbooks/metadata-shared-sheet-local.xls"
+        ),
         "zero" => {
             include_bytes!("../../maestro-app/tests/fixtures/spreadsheet_html/zero-sheets.xlsx")
         }
@@ -465,3 +474,40 @@ pub fn excel_keyboard_reveals_offscreen_sheet_tabs() {
 }
 
 pub mod highlighter_support;
+
+/// Retained binary cells reach mounted tables through the existing reader owner.
+#[wasm_bindgen]
+pub fn excel_legacy_metadata_reaches_retained_tables() {
+    let mut view = View::new("legacy.xls", &encoded("legacy-links"));
+    view.draw(false, vec![]);
+    check(
+        "document.querySelector('.maestro-excel td').textContent==='1234.50'&&document.querySelector('.maestro-excel td a').getAttribute('href')==='https://example.test/a?x=1&y=\"q\"'",
+    );
+    view.element.set_content(encoded("legacy-rich"));
+    view.draw(false, vec![]);
+    check(
+        "document.querySelector('.maestro-excel td').textContent==='a<雪>b'&&!document.querySelector('.maestro-excel td b, .maestro-excel td span, .maestro-excel td img')",
+    );
+    view.element.set_content(encoded("legacy-shared"));
+    view.draw(false, vec![]);
+    check(
+        "[...document.querySelectorAll('#sheet-First td')].map(c=>c.textContent).join('|')==='|||10||20||30'",
+    );
+    js("globalThis.legacyFirst=document.querySelector('#sheet-First')");
+    tab(&mut view, 1);
+    view.draw(false, vec![]);
+    check(
+        "[...document.querySelectorAll('#sheet-Second td')].map(c=>c.textContent).join('|')==='|||40||50'",
+    );
+    check(
+        "getComputedStyle(document.querySelector('#sheet-Second').parentElement).display!=='none'",
+    );
+    tab(&mut view, 0);
+    view.draw(false, vec![]);
+    check(
+        "[...document.querySelectorAll('#sheet-First td')].map(c=>c.textContent).join('|')==='|||10||20||30'",
+    );
+    check(
+        "legacyFirst===document.querySelector('#sheet-First')&&getComputedStyle(legacyFirst.parentElement).display!=='none'",
+    );
+}

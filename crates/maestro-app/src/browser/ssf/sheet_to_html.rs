@@ -1,6 +1,6 @@
 //! Shared worksheet table projection with literal attribute boundaries.
 use super::{
-    CellAddress, CellFormatOptions, CellObject, CellValue, ExcelDataType, NumberFormat, Range, Ssf,
+    CellAddress, CellFormatOptions, CellObject, CellValue, ExcelDataType, NumberFormat, Ssf,
     WorkSheet, encode_cell, format_cell,
 };
 use maestro_text::markup::{EscapeMode, escape};
@@ -33,7 +33,7 @@ fn table_cell(
     out: &mut String,
 ) {
     let (id, ssf) = context;
-    let merge = worksheet.merges.iter().find(|m| contains(m, position));
+    let merge = worksheet.merges.iter().find(|m| m.contains(position));
     if merge.is_some_and(|m| m.s != position) {
         return;
     }
@@ -65,10 +65,6 @@ fn table_cell(
     out.push('>');
     out.push_str(&body);
     out.push_str("</td>");
-}
-/// Test membership without changing first-match merge order.
-fn contains(range: &Range, p: CellAddress) -> bool {
-    range.s.r <= p.r && p.r <= range.e.r && range.s.c <= p.c && p.c <= range.e.c
 }
 /// Serialize a literal attribute through the common attribute escaper.
 fn attribute(out: &mut String, key: &str, value: &str) {

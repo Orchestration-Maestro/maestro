@@ -172,3 +172,327 @@ fn empty_strings_consume_only_their_encoding_flag() {
         assert_eq!(payload.remaining(), 0);
     }
 }
+
+thread_local! {
+    /// Binary token decodes in the current workbook read.
+    pub(super) static TOKEN_WORK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Direct template anchor lookups in the current workbook read.
+    pub(super) static ANCHOR_WORK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Ordered array-adoption comparisons in the current workbook read.
+    pub(super) static ARRAY_WORK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Positions visited in hyperlink rectangles.
+    pub(super) static LINK_WORK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[test]
+fn legacy_metadata_work_tracks_tokens_templates_and_link_cells() {
+    for size in [32, 64] {
+        for kind in ["tokens", "shared", "arrays", "arrayAnchors", "links"] {
+            TOKEN_WORK.set(0);
+            ANCHOR_WORK.set(0);
+            ARRAY_WORK.set(0);
+            LINK_WORK.set(0);
+            let file = format!("metadata-work-{kind}-{size}.xls");
+            let bytes = std::fs::read(
+                std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("tests/fixtures/workbooks")
+                    .join(&file),
+            )
+            .unwrap();
+            let book = super::read(&bytes, &file, &super::Ssf::default()).unwrap();
+            let sheet = &book.sheets["Data"];
+            let work = [
+                TOKEN_WORK.get(),
+                ANCHOR_WORK.get(),
+                ARRAY_WORK.get(),
+                LINK_WORK.get(),
+            ];
+            println!("kind={kind} size={size} work={work:?}");
+            check_metadata_work(kind, size, sheet, work);
+        }
+    }
+}
+
+/// Compare work bounds with the corresponding retained workbook result.
+fn check_metadata_work(kind: &str, size: usize, sheet: &super::WorkSheet, work: [usize; 4]) {
+    match kind {
+        "tokens" => {
+            assert_eq!(
+                sheet.cells["A1"].f.as_deref(),
+                Some(format!("1{}", "+2".repeat(size)).as_str())
+            );
+            assert_eq!(work[0], 1 + 2 * size);
+        }
+        "shared" => {
+            assert_eq!(sheet.cells.len(), size);
+            assert!(
+                sheet
+                    .cells
+                    .values()
+                    .all(|cell| cell.f.as_deref() == Some("7"))
+            );
+            assert!(work[1] <= size + 1);
+            assert_eq!(work[2], 0);
+        }
+        "arrayAnchors" => {
+            assert_eq!(sheet.cells.len(), 2 * size);
+            assert_eq!(work[2], 0);
+            assert!(work[1] <= 3 * size);
+            check_array_anchors(sheet, size);
+        }
+        "arrays" => {
+            check_materialized_arrays(sheet, size, work[2]);
+        }
+        "links" => {
+            assert_eq!(sheet.cells.len(), size);
+            assert_eq!(work[3], 2 * size);
+            assert!(
+                sheet
+                    .cells
+                    .values()
+                    .all(|cell| cell.l.as_ref().is_some_and(|link| link.target == "x"))
+            );
+        }
+        _ => unreachable!(),
+    }
+}
+
+/// Observe both array metadata owners for every direct anchor lookup.
+fn check_array_anchors(sheet: &super::WorkSheet, size: usize) {
+    for row in 1..=size {
+        assert_eq!(
+            sheet.cells[&format!("A{row}")].f.as_deref(),
+            Some((row - 1).to_string().as_str())
+        );
+        assert_eq!(
+            sheet.cells[&format!("B{row}")].array_formula.as_deref(),
+            Some(format!("A{row}:B{row}").as_str())
+        );
+        assert!(sheet.cells[&format!("B{row}")].f.is_none());
+    }
+}
+
+/// Preserve ordered array adoption only on materialized-expression paths.
+fn check_materialized_arrays(sheet: &super::WorkSheet, size: usize, work: usize) {
+    assert_eq!(sheet.cells.len(), 3 * size);
+    assert_eq!(work, 3 * size * (size + 1) / 2);
+    for row in 1..=size {
+        let range = format!("A{row}:B{row}");
+        let anchor = &sheet.cells[&format!("A{row}")];
+        assert_eq!(anchor.array_formula.as_deref(), Some(range.as_str()));
+        assert_eq!(anchor.f.as_deref(), Some((row - 1).to_string().as_str()));
+        assert_eq!(anchor.v, super::CellValue::Text("v".into()));
+        let follower = &sheet.cells[&format!("B{row}")];
+        assert_eq!(follower.array_formula.as_deref(), Some(range.as_str()));
+        assert!(follower.f.is_none());
+        assert_eq!(follower.v, super::CellValue::Number(7.0));
+        let neighbour = &sheet.cells[&format!("C{row}")];
+        assert!(neighbour.array_formula.is_none());
+        assert_eq!(neighbour.f.as_deref(), Some("1"));
+        assert_eq!(neighbour.v, super::CellValue::Number(7.0));
+    }
+}
+
+thread_local! {
+    /// Bytes written while assembling owned expression fragments and final text.
+    pub(super) static ASSEMBLY_SCAN: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+    /// Bytes written by expression assembly, including normalization temporaries.
+    pub(super) static ASSEMBLY_WORK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[test]
+fn formula_assembly_writes_linear_bytes_for_every_composition() {
+    for kind in ["tokens", "sum", "unary", "function", "space"] {
+        let mut previous = 0;
+        for size in [32, 64] {
+            let file = format!("metadata-work-{kind}-{size}.xls");
+            let bytes = std::fs::read(
+                std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join("tests/fixtures/workbooks")
+                    .join(&file),
+            )
+            .unwrap();
+            ASSEMBLY_WORK.set(0);
+            let book = super::read(&bytes, &file, &super::Ssf::default()).unwrap();
+            let expression = book.sheets["Data"].cells["A1"].f.as_deref().unwrap();
+            let expected = match kind {
+                "tokens" => format!("1{}", "+2".repeat(size)),
+                "sum" => format!("{}1{}", "SUM(".repeat(size), ")".repeat(size)),
+                "unary" => format!("{}1{}", "(".repeat(size), ")".repeat(size)),
+                "function" => format!("{}1{}", "ABS(".repeat(size), ")".repeat(size)),
+                "space" => format!("{}1{}", " (".repeat(size), ")".repeat(size)),
+                _ => unreachable!(),
+            };
+            assert_eq!(expression, expected);
+            let work = ASSEMBLY_WORK.get();
+            println!(
+                "assembly kind={kind} size={size} output={} bytes_written={work}",
+                expression.len()
+            );
+            assert!(
+                work <= 2 * expression.len(),
+                "repeated accumulated expression copying"
+            );
+            if previous != 0 {
+                assert!(work <= 2 * previous);
+            }
+            previous = work;
+        }
+    }
+}
+
+/// Exercise coordinate emission directly after the existing binary token decoder.
+fn formula_expression(
+    file: &str,
+    encoding: Encoding,
+    kind: u16,
+    position: super::CellAddress,
+) -> String {
+    let stream = stream(file);
+    let mut records = Records::new(&stream);
+    while let Some(record) = records.next().unwrap() {
+        if record.kind == kind {
+            let mut payload = record.payload();
+            payload.skip(if kind == 6 { 20 } else { 8 }).unwrap();
+            let tokens = super::formulas::parse(&mut payload, encoding).unwrap();
+            return super::formulas::stringify(
+                &tokens,
+                position,
+                &super::formulas::SupBooks::default(),
+                encoding,
+            )
+            .unwrap();
+        }
+    }
+    unreachable!()
+}
+
+#[test]
+fn formula_coordinate_assembly_keeps_version_and_range_context() {
+    assert_eq!(
+        formula_expression(
+            "metadata-fix-biff5-negative.xls",
+            Encoding::CodePage(1252),
+            6,
+            super::CellAddress { r: 0, c: 0 }
+        ),
+        "$A16384"
+    );
+    for class in [45, 77, 109] {
+        assert_eq!(
+            formula_expression(
+                &format!("metadata-fix-shifted-area-{class}.xls"),
+                Encoding::Unicode,
+                6,
+                super::CellAddress { r: 2, c: 2 }
+            ),
+            "3:4"
+        );
+        assert_eq!(
+            formula_expression(
+                &format!("metadata-fix-shared-area-{class}.xls"),
+                Encoding::Unicode,
+                0x4bc,
+                super::CellAddress { r: 0, c: 0 }
+            ),
+            "SUM($1:$2)"
+        );
+    }
+}
+
+#[test]
+fn external_sheet_layout_selection_accepts_both_payload_forms() {
+    for payload in [
+        vec![4, 0x44, 0x61, 0x74, 0x61],
+        vec![4, 3, 0x44, 0x61, 0x74, 0x61],
+        vec![1, 0, 0, 0, 0, 0, 0, 0],
+    ] {
+        let mut stream = vec![0x17, 0];
+        stream.extend(u16::try_from(payload.len()).unwrap().to_le_bytes());
+        stream.extend(payload);
+        let record = Records::new(&stream).next().unwrap().unwrap();
+        let mut payload = record.payload();
+        let mut books = super::formulas::SupBooks::default();
+        assert!(
+            books
+                .external_sheets(&mut payload, Encoding::Unicode)
+                .is_ok()
+        );
+        assert_eq!(payload.remaining(), 0);
+    }
+}
+
+#[test]
+fn formula_range_assembly_keeps_linear_normalization_work() {
+    for kind in ["range-paren", "range-index", "zero-spacing"] {
+        let mut previous = (0, 0);
+        for size in [32, 64] {
+            let expression = measured_range_formula(kind, size);
+            let written = ASSEMBLY_WORK.get();
+            let scanned = ASSEMBLY_SCAN.get();
+            println!(
+                "range kind={kind} size={size} output={} written={written} scanned={scanned}",
+                expression.len()
+            );
+            assert!(
+                scanned < 20 * expression.len(),
+                "repeated prefix normalization: {scanned}"
+            );
+            if previous.0 != 0 {
+                assert!(written <= 2 * previous.0 + 128);
+                assert!(scanned <= 2 * previous.1 + 128);
+            }
+            previous = (written, scanned);
+        }
+    }
+}
+
+#[test]
+fn formula_range_assembly_keeps_format_bound_outputs() {
+    for (kind, size) in [("bound-index", 4368), ("bound-paren", 7280)] {
+        let expression = measured_range_formula(kind, size);
+        println!(
+            "bound kind={kind} size={size} output={} written={} scanned={}",
+            expression.len(),
+            ASSEMBLY_WORK.get(),
+            ASSEMBLY_SCAN.get()
+        );
+        assert!(
+            ASSEMBLY_SCAN.get() < 20 * expression.len(),
+            "repeated bound prefix normalization"
+        );
+    }
+}
+
+/// Decode a complete workbook and compare the retained result with its source expression.
+fn measured_range_formula(kind: &str, size: usize) -> String {
+    let file = format!("metadata-{kind}-{size}.xls");
+    let bytes = std::fs::read(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/workbooks")
+            .join(&file),
+    )
+    .unwrap();
+    ASSEMBLY_WORK.set(0);
+    ASSEMBLY_SCAN.set(0);
+    let book = super::read(&bytes, &file, &super::Ssf::default()).unwrap();
+    let actual = book.sheets["Data"].cells["A1"].f.clone().unwrap();
+    let expected = if kind.ends_with("index") {
+        format!(
+            "{}Data!$A$1{}",
+            "Data!$A$1:INDEX(".repeat(size),
+            ",1)".repeat(size)
+        )
+    } else if kind == "zero-spacing" {
+        format!("Data!$A$1{}", ":$A$2".repeat(size))
+    } else {
+        use std::fmt::Write;
+        let mut suffix = String::new();
+        for row in 3..=size + 1 {
+            write!(suffix, ":Data!A{row})").unwrap();
+        }
+        format!("SUM({}Data!A1:A2){suffix})", "(".repeat(size))
+    };
+    assert_eq!(actual, expected, "{file}");
+    actual
+}

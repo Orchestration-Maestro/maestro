@@ -39,6 +39,8 @@ Unmapped pages preserve each byte as the same Unicode scalar. Compressed BIFF8
 strings decode as UTF-16 units independently of the declared code page.
 
 Legacy cells use the shared formatter, live format table and detached snapshots.
-Declared blank bounds do not allocate blank cells. Binary formula expressions,
-arrays, rich text and hyperlinks remain tracked in
-[legacy workbook metadata](https://github.com/Orchestration-Maestro/maestro/issues/1175).
+Declared blank bounds do not allocate blank cells. The owned binary reader also
+decodes formula operands, workbook names, shared and array templates, rich-string
+plain text and hyperlink targets into the existing cell records. Immutable
+function descriptors share one lookup; templates retain their identity separately
+from cached values. No additional parser or runtime dependency is used.
