@@ -1,0 +1,14 @@
+.tool-output { margin-top: 1lh; color: var(--maestro-color-muted); overflow-wrap: break-word; word-break: break-word; font-family: inherit; overflow-x: auto; }
+.tool-output > div, .output-preview > div, .output-full > div { margin: 0; padding: 0; line-height: inherit; }
+.tool-output > div:not(.output-preview):not(.output-full):not(.ansi-line),
+.tool-output .output-preview > div:not(.expand-hint):not(.ansi-line),
+.tool-output .output-full > div:not(.expand-hint):not(.ansi-line) { white-space: pre-wrap; min-height: 1lh; }
+.tool-output pre { margin: 0; padding: 0; font-family: inherit; color: inherit; white-space: pre-wrap; overflow-wrap: break-word; }
+.tool-output code { padding: 0; background: none; color: var(--maestro-color-text); }
+.tool-output.expandable { cursor: pointer; }
+.tool-output.expandable:hover { opacity: 0.9; }
+.tool-output.expandable .output-full { display: none; }
+.tool-output.expandable.expanded .output-preview { display: none; }
+.tool-output.expandable.expanded .output-full { display: block; }
+.tool-output .ansi-line { white-space: pre; }
+.tool-output .expand-hint { color: var(--maestro-color-muted); }

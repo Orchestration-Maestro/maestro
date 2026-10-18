@@ -9,6 +9,8 @@ use maestro_app::{
 use percent_encoding::{AsciiSet, NON_ALPHANUMERIC, utf8_percent_encode};
 use std::{fmt::Write as _, ops::Range};
 
+pub(super) mod export;
+
 /// Characters the browser's URL encoder leaves untouched, plus the percent sign.
 const URL_SAFE: &AsciiSet = &NON_ALPHANUMERIC
     .remove(b';')
@@ -63,7 +65,9 @@ enum Flow {
     Paragraph,
     /// A tight item, which opens block math only when it starts with it.
     Item,
-    /// A heading or table cell, which is inline only.
+    /// A table cell whose delimiter padding is not display content.
+    Cell,
+    /// A heading, which is inline only.
     Inline,
 }
 
@@ -96,8 +100,9 @@ pub(super) fn prepare(content: &str, escape_html: bool) -> Prepared {
     };
     markdown::autolinks(&mut document);
     let inline = InlineContext::new(&document);
+    let math = katex::KatexContext::default();
     let mut writer = Writer {
-        context: katex::KatexContext::default(),
+        policy: Policy::Transcript(&math),
         inline: &inline,
         prepared: Prepared {
             slot_attribute,
@@ -111,14 +116,35 @@ pub(super) fn prepare(content: &str, escape_html: bool) -> Prepared {
 }
 
 /// Local atom operands paired with their caller-admitted formulas.
-type Atoms<'a, 'b> = Option<(&'b [InlineAtom<'a>], &'b [Formula])>;
+type Atoms<'a, 'b> = Option<Operands<'a, 'b>>;
+
+/// Borrowed operands of one locally interpreted run.
+#[derive(Clone, Copy)]
+enum Operands<'a, 'b> {
+    /// Resolved native nodes and admitted formulas.
+    Math(&'b [InlineAtom<'a>], &'b [Formula]),
+    /// Resolved nodes and strict deletion extents in their original scope.
+    Export(
+        &'b [InlineAtom<'a>],
+        &'b [Range<usize>],
+        &'b InlineScope<'a>,
+    ),
+}
+
+/// Rendering behavior selected by the containing surface.
+enum Policy<'a> {
+    /// Retained chat controls and formulas.
+    Transcript(&'a katex::KatexContext),
+    /// Standalone selectable session markup.
+    Export(&'a dyn maestro_theme::SyntaxHighlighter),
+}
 
 /// Document walker with the math renderer and generated-slot table.
 struct Writer<'a, 'd> {
+    /// Surface-specific admission and presentation.
+    policy: Policy<'a>,
     /// One resolved context with original container and label scopes.
     inline: &'a InlineContext<'d>,
-    /// Reused font and macro tables.
-    context: katex::KatexContext,
     /// Output under construction.
     prepared: Prepared,
 }
@@ -166,7 +192,10 @@ impl Writer<'_, '_> {
                 self.blocks(c, atoms, out);
                 out.push_str("</blockquote>\n");
             }
-            Kind::HtmlBlock(html) => out.push_str(html),
+            Kind::HtmlBlock(html) => match self.policy {
+                Policy::Transcript(_) => out.push_str(html),
+                Policy::Export(_) => escape(html, out),
+            },
             Kind::Rule => out.push_str("<hr>\n"),
             Kind::CodeBlock(code, info) => self.code(code, info.as_deref(), out),
             Kind::Table(table) => self.table(table, atoms, out),
@@ -176,6 +205,10 @@ impl Writer<'_, '_> {
     }
     /// Reserve a listing slot for a code block.
     fn code(&mut self, code: &str, info: Option<&str>, out: &mut String) {
+        if let Policy::Export(highlighter) = self.policy {
+            export::code(code, info, highlighter, out);
+            return;
+        }
         let language = info
             .and_then(|info| info.split(is_whitespace_scalar).next())
             .filter(|word| !word.is_empty())
@@ -197,13 +230,19 @@ impl Writer<'_, '_> {
     }
     /// Write a table inside its own horizontal scroller.
     fn table(&mut self, table: &Table, atoms: Atoms<'_, '_>, out: &mut String) {
-        out.push_str("<div class=\"maestro-table-scroll\"><table>\n<thead>\n");
+        if matches!(self.policy, Policy::Transcript(_)) {
+            out.push_str("<div class=\"maestro-table-scroll\">");
+        }
+        out.push_str("<table>\n<thead>\n");
         self.row(&table.header, (&table.alignments, "th"), atoms, out);
         out.push_str("</thead>\n<tbody>");
         for row in &table.rows {
             self.row(row, (&table.alignments, "td"), atoms, out);
         }
-        out.push_str("</tbody></table>\n</div>");
+        out.push_str("</tbody></table>\n");
+        if matches!(self.policy, Policy::Transcript(_)) {
+            out.push_str("</div>");
+        }
     }
     /// Write one table row.
     fn row(
@@ -222,7 +261,7 @@ impl Writer<'_, '_> {
                 Alignment::None => "",
             };
             let _ = write!(out, "<{tag}{align}>");
-            self.flow(&cell.children, (&cell.range, Flow::Inline), atoms, out);
+            self.flow(&cell.children, (&cell.range, Flow::Cell), atoms, out);
             let _ = writeln!(out, "</{tag}>");
         }
         out.push_str("</tr>\n");
@@ -236,6 +275,10 @@ impl Writer<'_, '_> {
         atoms: Atoms<'_, '_>,
         out: &mut String,
     ) {
+        if matches!(self.policy, Policy::Export(_)) {
+            self.export_flow(children, (range, flow), atoms, out);
+            return;
+        }
         if atoms.is_some() {
             let mut body = String::new();
             self.inline(children, atoms, &mut body);
@@ -308,8 +351,10 @@ impl Writer<'_, '_> {
         let mut body = String::new();
         for node in &run.nodes {
             match &node.kind {
-                Kind::Paragraph(c) => self.inline(c, Some((&run.atoms, formulas)), &mut body),
-                _ => self.block(node, Some((&run.atoms, formulas)), &mut body),
+                Kind::Paragraph(c) => {
+                    self.inline(c, Some(Operands::Math(&run.atoms, formulas)), &mut body);
+                }
+                _ => self.block(node, Some(Operands::Math(&run.atoms, formulas)), &mut body),
             }
         }
         wrapped(&body, wrap && inline, out);
@@ -318,24 +363,46 @@ impl Writer<'_, '_> {
     /// Write inline nodes.
     fn inline(&mut self, nodes: &[Node], atoms: Atoms<'_, '_>, out: &mut String) {
         for node in nodes {
-            match &node.kind {
-                Kind::Text(text) => escape(&text.decoded, out),
-                Kind::Code(code) => {
-                    out.push_str("<code>");
-                    escape(code, out);
-                    out.push_str("</code>");
+            self.inline_node(node, atoms, out);
+        }
+    }
+    /// Write one inline node under the selected surface policy.
+    fn inline_node(&mut self, node: &Node, atoms: Atoms<'_, '_>, out: &mut String) {
+        match &node.kind {
+            Kind::Text(text) => {
+                if matches!(self.policy, Policy::Export(_)) && text.authored == "\n" {
+                    out.push_str("<br>");
+                } else {
+                    escape(&text.decoded, out);
                 }
-                Kind::Break => out.push_str("<br>"),
-                Kind::Strong(c) => self.tagged("strong", c, atoms, out),
-                Kind::Strike(c) => self.tagged("del", c, atoms, out),
-                Kind::Emphasis(c) => self.tagged("em", c, atoms, out),
-                Kind::Link(..) => self.link(node, out),
-                Kind::Image(_, meta) => image(meta, out),
-                Kind::TaskListMarker(checked) => task(*checked, out),
-                Kind::Html(html) => out.push_str(html),
-                Kind::Atom(index) => self.atom(*index, atoms, out),
-                _ => {}
             }
+            Kind::Code(code) => {
+                out.push_str("<code>");
+                escape(code, out);
+                out.push_str("</code>");
+            }
+            Kind::Break => out.push_str("<br>"),
+            Kind::Strong(c) => self.tagged("strong", c, atoms, out),
+            Kind::Strike(c) => {
+                if matches!(self.policy, Policy::Export(_)) {
+                    export::literal_strike(node, out, |out| self.inline(c, atoms, out));
+                } else {
+                    self.tagged("del", c, atoms, out);
+                }
+            }
+            Kind::Emphasis(c) => self.tagged("em", c, atoms, out),
+            Kind::Link(..) => self.link(node, out),
+            Kind::Image(alt, meta) => match self.policy {
+                Policy::Transcript(_) => image(meta, out),
+                Policy::Export(_) => export::image(alt, meta, out),
+            },
+            Kind::TaskListMarker(checked) => task(*checked, out),
+            Kind::Html(html) => match self.policy {
+                Policy::Transcript(_) => out.push_str(html),
+                Policy::Export(_) => escape(html, out),
+            },
+            Kind::Atom(index) => self.atom(*index, atoms, out),
+            _ => {}
         }
     }
     /// Write an anchor that opens separately with the safe relation.
@@ -343,6 +410,21 @@ impl Writer<'_, '_> {
         let Kind::Link(children, _, href, meta) = &node.kind else {
             return;
         };
+        if matches!(self.policy, Policy::Export(_)) {
+            let href = href.trim_matches(is_whitespace_scalar);
+            if export::blocked(href) {
+                self.export_label(node, children, out);
+            } else {
+                out.push_str("<a href=\"");
+                escape(href, out);
+                out.push('"');
+                title(&meta.title, out);
+                out.push('>');
+                self.export_label(node, children, out);
+                out.push_str("</a>");
+            }
+            return;
+        }
         out.push_str("<a target=\"_blank\" rel=\"noopener noreferrer\" href=\"");
         escape(&utf8_percent_encode(href, URL_SAFE).to_string(), out);
         out.push('"');
@@ -369,18 +451,28 @@ impl Writer<'_, '_> {
     }
     /// Emit a typed local atom, preserving resolved operands without lookup by display text.
     fn atom(&mut self, index: usize, atoms: Atoms<'_, '_>, out: &mut String) {
-        let Some((atoms, formulas)) = atoms else {
+        let Some(operands) = atoms else {
             return;
         };
+        let atoms = match operands {
+            Operands::Math(atoms, _) | Operands::Export(atoms, ..) => atoms,
+        };
         match atoms.get(index) {
-            Some(InlineAtom::Opaque(id)) => {
-                if let Some(formula) = formulas.get(*id) {
-                    out.push_str(&self.math(formula));
+            Some(InlineAtom::Opaque(id)) => match operands {
+                Operands::Math(_, formulas) => {
+                    if let Some(formula) = formulas.get(*id) {
+                        out.push_str(&self.math(formula));
+                    }
                 }
-            }
-            Some(InlineAtom::Resolved(node)) => {
-                self.inline(std::slice::from_ref(node), None, out);
-            }
+                Operands::Export(_, spans, scope) => {
+                    if let Some(span) = spans.get(*id) {
+                        out.push_str("<del>");
+                        self.export_range(scope, span.start + 2..span.end - 2, out);
+                        out.push_str("</del>");
+                    }
+                }
+            },
+            Some(InlineAtom::Resolved(node)) => self.inline(std::slice::from_ref(node), None, out),
             None => {}
         }
     }
@@ -394,7 +486,10 @@ impl Writer<'_, '_> {
             .throw_on_error(false)
             .error_color(ERROR_COLOR.to_owned())
             .build();
-        let rendered = katex::render_to_string(&self.context, &formula.tex, &settings);
+        let Policy::Transcript(context) = &self.policy else {
+            return String::new();
+        };
+        let rendered = katex::render_to_string(context, &formula.tex, &settings);
         match (rendered, display) {
             (Ok(html), true) => format!("<div class=\"maestro-math-block\">{html}</div>"),
             (Ok(html), false) => html,

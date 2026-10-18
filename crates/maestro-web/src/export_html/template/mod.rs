@@ -15,3 +15,15 @@ pub use download::download_session_json;
 
 mod copy_link;
 pub use copy_link::{CopyLinkState, CopyLinkView, render_copy_link_button};
+
+mod markdown;
+pub use markdown::safe_marked_parse;
+mod output;
+pub use output::format_expandable_output;
+
+#[cfg(test)]
+mod tests;
+mod values;
+
+#[cfg(target_arch = "wasm32")]
+pub use output::bind_expandable_output;

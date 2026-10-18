@@ -171,3 +171,27 @@ Message rendering and final composition remain
 Permission-dependent OS clipboard and broad browser/device qualification remain
 [#1084](https://github.com/Orchestration-Maestro/maestro/issues/1084) and
 [#825](https://github.com/Orchestration-Maestro/maestro/issues/825).
+
+## Markdown and output
+
+[`safe_marked_parse`](../../crates/maestro-web/src/export_html/template/markdown.rs)
+prepares selectable export HTML through the shared Markdown walker. Authored tags
+are literal, source line breaks display as hard breaks, and deletion requires
+double tildes with non-whitespace edges. Rejected script, VBScript and data URLs
+retain their label or literal image alternative. Attribute escaping prevents
+quoted content from creating attributes. Export code uses the supplied viewer
+highlighter without chat-only formulas, copy controls or language labels.
+
+[`format_expandable_output`](../../crates/maestro-web/src/export_html/template/output.rs)
+replaces tabs with three spaces, preserves LF-split rows and prepares independent
+full and preview bodies. A nonempty language requests explicit highlighting;
+each failed body falls back to escaped text. Remaining rows produce an exact
+`... (N more lines)` hint.
+
+In the browser, call `bind_expandable_output(&root)` after mounting the containing
+parent. Keep the returned guard in that parent's `ReadingRoot.owner`, not in its
+factory. It includes an expandable root itself and expandable descendants,
+installs scoped viewer presentation, and removes listeners on release. Native
+selection in the element's owning window prevents a toggle; otherwise the live
+expanded class is toggled without replacing unrelated classes. The containing
+viewer supplies its base typography and selected brand properties.

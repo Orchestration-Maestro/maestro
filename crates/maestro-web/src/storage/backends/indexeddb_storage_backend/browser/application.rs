@@ -4,6 +4,7 @@
 //! domain are errors. Raw callers retain unrestricted structured-clone values
 //! and never enter this conversion.
 use super::{IndexedDBStorageBackend, IndexedDBStorageTransaction, browser_error};
+use crate::browser::json::encode_json;
 use maestro_app::browser::storage::{IndexDirection, QuotaInfo, StorageOperation, TransactionMode};
 use serde_json::Value;
 use std::{future::Future, io, pin::Pin};
@@ -67,12 +68,6 @@ fn decode_container(value: &JsValue, ancestors: &mut Vec<JsValue>) -> io::Result
         .collect::<io::Result<serde_json::Map<_, _>>>()
         .map(Value::Object)
 }
-/// Parse an application JSON value without a handwritten native-value codec.
-fn encode_json(value: &Value) -> io::Result<JsValue> {
-    let text = serde_json::to_string(value)
-        .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
-    js_sys::JSON::parse(&text).map_err(|error| browser_error(&error))
-}
 impl maestro_app::StorageBackend for IndexedDBStorageBackend {
     fn get<'a>(&'a self, store_name: &'a str, key: &'a str) -> StorageFuture<'a, Option<Value>> {
         Box::pin(async move {
@@ -85,7 +80,8 @@ impl maestro_app::StorageBackend for IndexedDBStorageBackend {
     }
     fn set<'a>(&'a self, store_name: &'a str, key: &'a str, value: Value) -> StorageFuture<'a, ()> {
         Box::pin(async move {
-            IndexedDBStorageBackend::set(self, store_name, key, encode_json(&value)?).await
+            IndexedDBStorageBackend::set(self, store_name, key, encode_json(&value, browser_error)?)
+                .await
         })
     }
     fn delete<'a>(&'a self, store_name: &'a str, key: &'a str) -> StorageFuture<'a, ()> {
@@ -150,7 +146,13 @@ impl maestro_app::StorageTransaction for IndexedDBStorageTransaction {
     }
     fn set<'a>(&'a self, store_name: &'a str, key: &'a str, value: Value) -> StorageFuture<'a, ()> {
         Box::pin(async move {
-            IndexedDBStorageTransaction::set(self, store_name, key, encode_json(&value)?).await
+            IndexedDBStorageTransaction::set(
+                self,
+                store_name,
+                key,
+                encode_json(&value, browser_error)?,
+            )
+            .await
         })
     }
     fn delete<'a>(&'a self, store_name: &'a str, key: &'a str) -> StorageFuture<'a, ()> {

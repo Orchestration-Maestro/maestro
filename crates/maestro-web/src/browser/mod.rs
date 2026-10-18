@@ -87,3 +87,22 @@ pub(crate) mod copy_feedback;
 /// Math stylesheet and fonts.
 #[cfg(target_arch = "wasm32")]
 pub(crate) mod math_assets;
+
+/// Mounted native disclosure bindings.
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod disclosure;
+
+#[cfg(target_arch = "wasm32")]
+/// Invoke an owning native object's zero-argument operation without coercion.
+pub(crate) fn invoke0(
+    value: &wasm_bindgen::JsValue,
+    name: &str,
+) -> Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue> {
+    js_sys::Reflect::get(value, &name.into())
+        .and_then(wasm_bindgen::JsCast::dyn_into::<js_sys::Function>)
+        .and_then(|f| f.call0(value))
+}
+
+/// JSON-to-native conversion.
+#[cfg(target_arch = "wasm32")]
+pub(crate) mod json;
