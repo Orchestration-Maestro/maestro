@@ -189,15 +189,7 @@ fn chunk(block: &UserBlock) -> Chunk<'_> {
 
 /// Join tool text before trimming and append the projected images.
 fn tool_message(tool: &crate::ToolResultMessage) -> ChatMessage<'_> {
-    let joined = tool
-        .content
-        .iter()
-        .filter_map(|block| match block {
-            UserBlock::Text(text) => Some(text.text.as_str()),
-            UserBlock::Image(_) => None,
-        })
-        .collect::<Vec<_>>()
-        .join("\n");
+    let joined = UserBlock::text_output(&tool.content);
     let text = trim(&joined);
     let has_images = tool
         .content
