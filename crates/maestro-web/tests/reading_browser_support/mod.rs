@@ -175,6 +175,24 @@ impl View {
     }
     /// Drive one public body or header input frame.
     pub fn draw(&mut self, header: bool, events: Vec<egui::Event>) -> egui::FullOutput {
+        self.frame(events, |ui, element, v| {
+            if header {
+                ui.horizontal(|ui| element.get_header_buttons(ui, v))
+                    .inner
+                    .unwrap();
+            } else {
+                element.render(ui, v).unwrap();
+            }
+        })
+    }
+    /// Drive one input frame in which the caller places the artifact inside the root.
+    /// # Panics
+    /// Panics when the pack has no presentation for the selected mode.
+    pub fn frame(
+        &mut self,
+        events: Vec<egui::Event>,
+        mut place: impl FnMut(&mut egui::Ui, &mut dyn ArtifactElement, ArtifactView<'_>),
+    ) -> egui::FullOutput {
         let p = self.pack.presentation(self.mode).unwrap();
         let mut input = egui::RawInput {
             screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, self.size)),
@@ -192,13 +210,7 @@ impl View {
                 i18n: &self.i18n,
                 presentation: &p,
             };
-            if header {
-                ui.horizontal(|ui| self.element.get_header_buttons(ui, v))
-                    .inner
-                    .unwrap();
-            } else {
-                self.element.render(ui, v).unwrap();
-            }
+            place(ui, self.element.as_mut(), v);
         });
         output.textures_delta.clear();
         output

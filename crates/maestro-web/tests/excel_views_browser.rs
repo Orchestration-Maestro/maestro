@@ -5,7 +5,9 @@ mod panel_browser_support;
 mod presentation;
 mod reading_browser_support;
 pub mod support;
-use maestro_web::AttachmentOverlay;
+use maestro_web::{
+    ArtifactElement, AttachmentOverlay, tools::artifacts::artifact_element::ArtifactView,
+};
 use reading_browser_support::{View, click, js};
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
@@ -67,16 +69,63 @@ fn record() -> Rc<RefCell<maestro_web::Attachment>> {
         preview: None,
     }))
 }
+/// An actual measured slot in canvas coordinates.
+fn tab_rect(index: usize) -> egui::Rect {
+    let rect = js(&format!(
+        "(()=>{{const r=document.querySelectorAll('.maestro-excel-tab')[{index}].getBoundingClientRect();return [r.left,r.top,r.right,r.bottom]}})()"
+    ));
+    let a = js_sys::Array::from(&rect);
+    let at = |i| num_traits::cast(a.get(i).as_f64().unwrap()).unwrap();
+    egui::Rect::from_min_max(egui::pos2(at(0), at(1)), egui::pos2(at(2), at(3)))
+}
 /// Activate the center of an actual measured slot in canvas coordinates.
 fn tab_position(index: usize) -> egui::Pos2 {
-    let point = js(&format!(
-        "(()=>{{const r=document.querySelectorAll('.maestro-excel-tab')[{index}].getBoundingClientRect();return [r.x+r.width/2,r.y+r.height/2]}})()"
-    ));
-    let a = js_sys::Array::from(&point);
-    egui::pos2(
-        num_traits::cast(a.get(0).as_f64().unwrap()).unwrap(),
-        num_traits::cast(a.get(1).as_f64().unwrap()).unwrap(),
-    )
+    tab_rect(index).center()
+}
+/// One unmodified key transition.
+fn key(key: egui::Key, pressed: bool) -> egui::Event {
+    egui::Event::Key {
+        key,
+        physical_key: None,
+        pressed,
+        repeat: false,
+        modifiers: egui::Modifiers::NONE,
+    }
+}
+/// Each painted tab label's colour and the colour of the underline across its slot.
+fn tab_paint(paint: &egui::FullOutput) -> Vec<(egui::Color32, Option<egui::Color32>)> {
+    let lines: Vec<_> = paint
+        .shapes
+        .iter()
+        .filter_map(|s| match s.shape {
+            egui::Shape::LineSegment { points, stroke } => Some((points[0].x, stroke.color)),
+            _ => None,
+        })
+        .collect();
+    paint
+        .shapes
+        .iter()
+        .filter_map(|s| match &s.shape {
+            egui::Shape::Text(t) => Some(t.fallback_color),
+            _ => None,
+        })
+        .enumerate()
+        .map(|(index, ink)| {
+            let left = tab_rect(index).left();
+            let line = lines.iter().find(|(x, _)| (x - left).abs() < 0.5);
+            (ink, line.map(|(_, color)| *color))
+        })
+        .collect()
+}
+/// Both packs in both modes.
+fn brands() -> impl Iterator<Item = (&'static str, maestro_theme::BrandMode)> {
+    ["brand.json", "signal.json"].into_iter().flat_map(|pack| {
+        [
+            maestro_theme::BrandMode::Dark,
+            maestro_theme::BrandMode::Light,
+        ]
+        .map(|mode| (pack, mode))
+    })
 }
 /// Activate a measured tab through the caller's actual input frame.
 fn tab(view: &mut View, index: usize) {
@@ -197,36 +246,12 @@ pub fn excel_sheet_tabs_switch_without_losing_sheet_scroll() {
             false,
             vec![
                 egui::Event::PointerMoved(egui::pos2(900., 700.)),
-                egui::Event::Key {
-                    key: egui::Key::Tab,
-                    physical_key: None,
-                    pressed: true,
-                    repeat: false,
-                    modifiers: egui::Modifiers::NONE,
-                },
+                key(egui::Key::Tab, true),
             ],
         );
-        view.draw(
-            false,
-            vec![egui::Event::Key {
-                key: egui::Key::Tab,
-                physical_key: None,
-                pressed: false,
-                repeat: false,
-                modifiers: egui::Modifiers::NONE,
-            }],
-        );
+        view.draw(false, vec![key(egui::Key::Tab, false)]);
     }
-    view.draw(
-        false,
-        vec![egui::Event::Key {
-            key: egui::Key::Enter,
-            physical_key: None,
-            pressed: true,
-            repeat: false,
-            modifiers: egui::Modifiers::NONE,
-        }],
-    );
+    view.draw(false, vec![key(egui::Key::Enter, true)]);
     check(
         "getComputedStyle(second).display!=='none'&&second.scrollTop===secondOffsets[0]&&second.scrollLeft===secondOffsets[1]",
     );
@@ -240,30 +265,25 @@ pub fn excel_sheet_tabs_switch_without_losing_sheet_scroll() {
 #[wasm_bindgen]
 pub fn excel_native_states_follow_live_brand_and_localization() {
     let mut view = View::new("a.xlsx", &encoded("two"));
-    for pack in ["brand.json", "signal.json"] {
+    for (pack, mode) in brands() {
         view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
-        for mode in [
-            maestro_theme::BrandMode::Dark,
-            maestro_theme::BrandMode::Light,
-        ] {
-            view.mode = mode;
-            view.draw(false, vec![]);
-            let p = view.pack.presentation(mode).unwrap();
-            let color = egui::Color32::from_hex(p.colors["text"]).unwrap();
-            let panel = egui::Color32::from_hex(p.colors["panel"]).unwrap();
-            check(&format!(
-                "getComputedStyle(document.querySelector('td')).color==='rgb({}, {}, {})'&&getComputedStyle(document.querySelector('td')).backgroundColor==='rgb({}, {}, {})'",
-                color.r(),
-                color.g(),
-                color.b(),
-                panel.r(),
-                panel.g(),
-                panel.b()
-            ));
-            check(
-                "getComputedStyle(document.querySelector('td')).position==='sticky'&&getComputedStyle(document.querySelector('td')).fontWeight==='600'&&getComputedStyle(document.querySelector('td')).paddingLeft==='12px'",
-            );
-        }
+        view.mode = mode;
+        view.draw(false, vec![]);
+        let p = view.pack.presentation(mode).unwrap();
+        let color = egui::Color32::from_hex(p.colors["text"]).unwrap();
+        let panel = egui::Color32::from_hex(p.colors["panel"]).unwrap();
+        check(&format!(
+            "getComputedStyle(document.querySelector('td')).color==='rgb({}, {}, {})'&&getComputedStyle(document.querySelector('td')).backgroundColor==='rgb({}, {}, {})'",
+            color.r(),
+            color.g(),
+            color.b(),
+            panel.r(),
+            panel.g(),
+            panel.b()
+        ));
+        check(
+            "getComputedStyle(document.querySelector('td')).position==='sticky'&&getComputedStyle(document.querySelector('td')).fontWeight==='600'&&getComputedStyle(document.querySelector('td')).paddingLeft==='12px'",
+        );
     }
     view.element.set_content("hello!".into());
     view.draw(false, vec![]);
@@ -414,23 +434,18 @@ pub fn excel_native_host_failures_preserve_error_controls_and_download() {
 #[wasm_bindgen]
 pub fn excel_links_follow_live_accent() {
     let mut view = View::new("a.xlsx", &encoded("links"));
-    for pack in ["brand.json", "signal.json"] {
+    for (pack, mode) in brands() {
         view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
-        for mode in [
-            maestro_theme::BrandMode::Dark,
-            maestro_theme::BrandMode::Light,
-        ] {
-            view.mode = mode;
-            view.draw(false, vec![]);
-            let p = view.pack.presentation(mode).unwrap();
-            let accent = egui::Color32::from_hex(p.colors["accent"]).unwrap();
-            check(&format!(
-                "document.querySelectorAll('.maestro-excel a').length===2&&[...document.querySelectorAll('.maestro-excel a')].every(a=>getComputedStyle(a).color==='rgb({}, {}, {})')",
-                accent.r(),
-                accent.g(),
-                accent.b()
-            ));
-        }
+        view.mode = mode;
+        view.draw(false, vec![]);
+        let p = view.pack.presentation(mode).unwrap();
+        let accent = egui::Color32::from_hex(p.colors["accent"]).unwrap();
+        check(&format!(
+            "document.querySelectorAll('.maestro-excel a').length===2&&[...document.querySelectorAll('.maestro-excel a')].every(a=>getComputedStyle(a).color==='rgb({}, {}, {})')",
+            accent.r(),
+            accent.g(),
+            accent.b()
+        ));
     }
 }
 
@@ -454,13 +469,7 @@ pub fn excel_keyboard_reveals_offscreen_sheet_tabs() {
                 false,
                 vec![
                     egui::Event::PointerMoved(egui::pos2(900., 700.)),
-                    egui::Event::Key {
-                        key: egui::Key::Tab,
-                        physical_key: None,
-                        pressed,
-                        repeat: false,
-                        modifiers: egui::Modifiers::NONE,
-                    },
+                    key(egui::Key::Tab, pressed),
                 ],
             );
         }
@@ -469,16 +478,7 @@ pub fn excel_keyboard_reveals_offscreen_sheet_tabs() {
     check(
         "(()=>{const t=document.querySelectorAll('.maestro-excel-tab')[1].getBoundingClientRect();const r=document.querySelector('.maestro-excel').parentElement;const b=r.getBoundingClientRect();return r.scrollLeft>0&&t.left<b.right&&t.left>=b.left-1})()",
     );
-    view.draw(
-        false,
-        vec![egui::Event::Key {
-            key: egui::Key::Enter,
-            physical_key: None,
-            pressed: true,
-            repeat: false,
-            modifiers: egui::Modifiers::NONE,
-        }],
-    );
+    view.draw(false, vec![key(egui::Key::Enter, true)]);
     check(
         "getComputedStyle(document.querySelectorAll('.maestro-excel-sheet')[1]).display!=='none'&&document.querySelectorAll('.maestro-excel-sheet')[1].querySelector('td').textContent==='1000'",
     );
@@ -521,4 +521,141 @@ pub fn excel_legacy_metadata_reaches_retained_tables() {
     check(
         "legacyFirst===document.querySelector('#sheet-First')&&getComputedStyle(legacyFirst.parentElement).display!=='none'",
     );
+}
+
+/// Tab labels and underlines follow selection, hover and focus in either pack and mode.
+/// # Panics
+/// Panics when a painted label or underline differs from its brand role.
+#[wasm_bindgen]
+pub fn excel_tab_paint_follows_selection_hover_and_focus() {
+    let away = egui::Event::PointerMoved(egui::pos2(900., 700.));
+    for (pack, mode) in brands() {
+        let mut view = View::new("a.xlsx", &encoded("scroll"));
+        view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
+        view.mode = mode;
+        let p = view.pack.presentation(mode).unwrap();
+        let role = |name: &str| egui::Color32::from_hex(p.colors[name]).unwrap();
+        let [accent, muted, text, border] = ["accent", "muted", "text", "border"].map(role);
+        view.draw(false, vec![]);
+        let rest = view.draw(false, vec![away.clone()]);
+        assert_eq!(tab_paint(&rest), [(accent, Some(accent)), (muted, None)]);
+        view.draw(false, vec![egui::Event::PointerMoved(tab_position(1))]);
+        let hover = view.draw(false, vec![]);
+        assert_eq!(
+            tab_paint(&hover),
+            [(accent, Some(accent)), (text, Some(border))]
+        );
+        for _ in 0..2 {
+            view.draw(false, vec![away.clone(), key(egui::Key::Tab, true)]);
+            view.draw(false, vec![key(egui::Key::Tab, false)]);
+        }
+        let focus = view.draw(false, vec![]);
+        assert_eq!(
+            tab_paint(&focus),
+            [(accent, Some(accent)), (text, Some(border))]
+        );
+    }
+}
+
+/// Striped rows, cell borders and each owner's tab strip follow the live brand.
+/// # Panics
+/// Panics when a computed row, border or strip colour differs from its brand role.
+#[wasm_bindgen]
+pub fn excel_tables_and_strips_follow_live_brand() {
+    let mut view = View::new("a.xlsx", &encoded("scroll"));
+    let mut overlay = AttachmentOverlay::open(record(), None, view.host.clone());
+    for (pack, mode) in brands() {
+        view.pack = maestro_theme::load_brand_pack(pack, &support::brand::Pack).unwrap();
+        view.mode = mode;
+        let p = view.pack.presentation(mode).unwrap();
+        let [panel, background, border] =
+            ["panel", "background", "border"].map(|r| p.colors[r].to_owned());
+        view.draw(false, vec![]);
+        view.overlay(&mut overlay, vec![]);
+        view.overlay(&mut overlay, vec![]);
+        check(&format!(
+            "(()=>{{const p=document.createElement('i');document.body.append(p);const css=v=>{{p.style.background=v;return getComputedStyle(p).backgroundColor}};const stripe=css('color-mix(in srgb, {panel} 30%, transparent)'),panel=css('{panel}'),background=css('{background}');p.style.border='1px solid {border}';const l=getComputedStyle(p),edge=[l.borderTopWidth,l.borderTopStyle,l.borderTopColor].join();p.remove();const bg=e=>getComputedStyle(e).backgroundColor;const a=document.querySelector('.maestro-excel-artifact'),o=document.querySelector('.maestro-excel:not(.maestro-excel-artifact)');const rows=a.querySelectorAll('.maestro-excel-sheet tbody tr'),c=getComputedStyle(rows[1].querySelector('td'));return bg(rows[1])===stripe&&bg(rows[2])==='rgba(0, 0, 0, 0)'&&['Top','Right','Bottom','Left'].every(s=>[c['border'+s+'Width'],c['border'+s+'Style'],c['border'+s+'Color']].join()===edge)&&bg(a.querySelector('.maestro-excel-tabs'))===background&&bg(o.querySelector('.maestro-excel-tabs'))===panel}})()"
+        ));
+    }
+}
+
+/// Primary tab gestures act only when pressed and released on one visible, enabled, topmost slot.
+/// # Panics
+/// Panics when a rejected gesture changes the sheet or the admitted one does not.
+#[wasm_bindgen]
+pub fn excel_tab_gestures_need_one_visible_enabled_topmost_slot() {
+    let mut view = View::new("a.xlsx", &encoded("scroll"));
+    view.draw(false, vec![]);
+    view.draw(false, vec![]);
+    let (first, second) = (tab_rect(0), tab_rect(1));
+    let shown = |index: usize| {
+        check(&format!(
+            "getComputedStyle(document.querySelectorAll('.maestro-excel-sheet')[{index}]).display!=='none'"
+        ));
+    };
+    let button = |pos, pressed| egui::Event::PointerButton {
+        pos,
+        button: egui::PointerButton::Primary,
+        pressed,
+        modifiers: egui::Modifiers::NONE,
+    };
+    view.draw(
+        false,
+        vec![
+            egui::Event::PointerMoved(first.center()),
+            button(first.center(), true),
+        ],
+    );
+    view.draw(
+        false,
+        vec![
+            egui::Event::PointerMoved(second.center()),
+            button(second.center(), false),
+        ],
+    );
+    shown(0);
+    view.element.set_visibility(false, None).unwrap();
+    view.draw(false, click(second.center()));
+    view.element.set_visibility(true, None).unwrap();
+    view.draw(false, vec![]);
+    shown(0);
+    view.frame(click(second.center()), |ui, element, v| {
+        ui.disable();
+        element.render(ui, v).unwrap();
+    });
+    shown(0);
+    let clip = egui::Rect::from_min_max(
+        egui::Pos2::ZERO,
+        egui::pos2(second.left() + 4., view.size.y),
+    );
+    let clipped = |ui: &mut egui::Ui, element: &mut dyn ArtifactElement, v: ArtifactView<'_>| {
+        ui.set_clip_rect(clip);
+        element.render(ui, v).unwrap();
+    };
+    view.frame(
+        click(egui::pos2(second.left() + 8., second.center().y)),
+        clipped,
+    );
+    shown(0);
+    let covered = |ui: &mut egui::Ui, element: &mut dyn ArtifactElement, v: ArtifactView<'_>| {
+        element.render(ui, v).unwrap();
+        egui::Area::new(egui::Id::new("cover"))
+            .order(egui::Order::Foreground)
+            .fixed_pos(second.min)
+            .show(ui.ctx(), |ui| {
+                ui.allocate_exact_size(second.size(), egui::Sense::click())
+            });
+    };
+    // A new area is hit-tested only after its first, invisible sizing frame.
+    view.frame(vec![], covered);
+    view.frame(vec![], covered);
+    view.frame(click(second.center()), covered);
+    shown(0);
+    // The cover's layer stays hit-testable until one frame without it.
+    view.frame(vec![], clipped);
+    view.frame(
+        click(egui::pos2(second.left() + 2., second.center().y)),
+        clipped,
+    );
+    shown(1);
 }
