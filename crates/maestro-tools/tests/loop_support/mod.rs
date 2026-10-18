@@ -1,7 +1,6 @@
 //! A deterministic agent loop that runs tools for the wrapped-tool tests.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#![allow(dead_code)] // each test binary uses a different part of these helpers
 
 use crate::read_support::model;
 use maestro_agent::{

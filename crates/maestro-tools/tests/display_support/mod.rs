@@ -1,7 +1,10 @@
 //! Recorded display cases, a controlled theme and keybinding registry, and the call and result drivers.
 #![cfg(test)]
-#![allow(dead_code)] // each test binary uses a different part of these helpers
 
+#[allow(
+    dead_code,
+    reason = "This program uses part of the shared terminal runtime."
+)]
 #[path = "../../../maestro-test-terminal/tests/support/manual_runtime.rs"]
 pub mod manual_runtime;
 

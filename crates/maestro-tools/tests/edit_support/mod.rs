@@ -1,6 +1,5 @@
 //! Recorded edit inputs and expectations.
 #![cfg(test)]
-#![allow(dead_code)] // each test binary uses a different part of these helpers
 pub use crate::write_support::Row;
 use serde::Deserialize;
 use std::collections::BTreeMap;

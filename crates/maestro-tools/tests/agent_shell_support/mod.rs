@@ -1,6 +1,5 @@
 //! Recorded shell inputs driven through the public operation seam.
 #![cfg(test)]
-#![allow(dead_code)]
 
 use maestro_agent::{AgentToolResult, AgentToolUpdateCallback};
 use maestro_models::{

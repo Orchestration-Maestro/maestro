@@ -1,7 +1,6 @@
 //! Recorded write cases, manual future polling and ordered journals for the write and queue tests.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#![allow(dead_code)] // each test binary uses a different part of these helpers
 
 use maestro_models::{BoxFuture, Cancellation, DiagnosticCode, DiagnosticErrorInfo};
 use maestro_tools::{WriteOperations, WriteToolInput};
