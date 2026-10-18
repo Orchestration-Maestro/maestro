@@ -68,11 +68,16 @@ fn setup_entry() {
         command.arg(std::env::var_os(&key).unwrap()).env_remove(key);
     }
     if std::env::var_os("MAESTRO_PTY_DUP_FAILURE").is_some() {
-        let mut limit = rustix::process::getrlimit(rustix::process::Resource::Nofile);
+        let original = rustix::process::getrlimit(rustix::process::Resource::Nofile);
+        let mut limit = original;
         limit.current = Some(3);
         rustix::process::setrlimit(rustix::process::Resource::Nofile, limit).unwrap();
+        let error = pty::setup_and_exec(command);
+        rustix::process::setrlimit(rustix::process::Resource::Nofile, original).unwrap();
+        assert_eq!(error.raw_os_error(), Some(22));
+    } else {
+        let _ = pty::setup_and_exec(command);
     }
-    let _ = pty::setup_and_exec(command);
     std::process::exit(1);
 }
 
@@ -319,7 +324,7 @@ fn assert_launch_policies() {
             environment,
         };
         let output = checked_target(command, size(), |_| Ok(()));
-        assert!(output.status.success());
+        assert!(output.status.success(), "{mode}: {output:?}");
         assert!(
             String::from_utf8(output.stdout)
                 .unwrap()
@@ -392,11 +397,15 @@ fn assert_environment(mode: &str) {
             assert_eq!(std::env::var("MAESTRO_PTY_VALUE").unwrap(), "supplied");
         }
         "signals" => {
-            let text = std::fs::read_to_string("/proc/self/status").unwrap();
             let mask = [1, 2, 3, 14, 15, 17]
                 .into_iter()
                 .fold(0u64, |mask, number| mask | (1 << (number - 1)));
-            for field in ["SigIgn:", "SigBlk:"] {
+            for (field, path) in [
+                ("SigIgn:", "/proc/self/status"),
+                // The harness leader can temporarily block signals while creating a thread.
+                ("SigBlk:", "/proc/thread-self/status"),
+            ] {
+                let text = std::fs::read_to_string(path).unwrap();
                 let value = text
                     .lines()
                     .find_map(|line| line.strip_prefix(field))
@@ -405,7 +414,7 @@ fn assert_environment(mode: &str) {
                 assert_eq!(
                     u64::from_str_radix(value, 16).unwrap() & mask,
                     0,
-                    "signal state survived setup"
+                    "{field} signal state survived setup"
                 );
             }
         }
