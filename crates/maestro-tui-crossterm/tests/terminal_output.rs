@@ -428,6 +428,7 @@ fn native_output_backlog_keeps_input_responsive() {
             terminal.write(&data).unwrap();
             input.send(b"a");
             received.await.unwrap();
+            assert!(terminal.pending_output_bytes() > 0);
             let _reader = rustix::io::dup(&output.0).unwrap();
             let collector = collect(output, data.len());
             while !collector.is_finished() {

@@ -12,6 +12,7 @@ mod support {
     pub mod components;
     pub mod manual_runtime;
     pub mod recording_terminal;
+    pub mod writer;
 }
 use support::components::Probe;
 use support::manual_runtime::{ManualRuntime, ms};
@@ -19,14 +20,7 @@ use support::recording_terminal::RecordingTerminal;
 
 /// A controlled output port with one observable component.
 fn writer() -> (TUI, RecordingTerminal, ManualRuntime, Rc<Probe>) {
-    let terminal = RecordingTerminal::new(20, 3);
-    let runtime = ManualRuntime::new();
-    let tui = TUI::new(
-        terminal.handle(),
-        runtime.handle(),
-        TerminalImage::new(|_| None, || 1),
-        None,
-    );
+    let (tui, terminal, runtime) = support::writer::writer();
     let probe = Probe::shared(&["frame-A"]);
     tui.add_child(probe.clone());
     (tui, terminal, runtime, probe)

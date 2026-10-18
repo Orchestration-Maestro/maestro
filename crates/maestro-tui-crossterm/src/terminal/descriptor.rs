@@ -16,7 +16,7 @@ pub(super) struct Source {
     flags: Cell<Option<OFlags>>,
 }
 
-/// Where the bytes of standard input come from.
+/// How readiness is obtained for the duplicated descriptor.
 enum Kind {
     /// A descriptor the reactor can wait on: a terminal, pipe or socket.
     Reactor(AsyncFd<OwnedFd>),
