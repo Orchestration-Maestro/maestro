@@ -34,9 +34,9 @@ whichever protocol its provider speaks.
 - [Sessions](docs/sessions/session_manager.md) stored as JSONL, one entry per line,
   each pointing to its parent. Open, continue, fork or branch, and the other
   branches stay in the file.
-- A [terminal toolkit](docs/terminal/rendering.md) that rewrites only the rows that
-  changed and never takes over your scrollback, with an editor, completion,
-  Markdown and inline images.
+- A [terminal toolkit](docs/terminal/rendering.md) that writes only what changed
+  since the last frame and never takes over your scrollback, with an editor,
+  completion, Markdown and inline images.
 - Lints set to `forbid`: no `unsafe`, no `unwrap`, no panics in production code,
   and documentation on every item, private ones included.
 
