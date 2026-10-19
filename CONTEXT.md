@@ -232,6 +232,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Tab:** An ordered split layout of panes within a workspace.
 - **Pane:** One leaf of a tab's layout, showing one pane terminal.
 - **Terminal emulator:** The pure-Rust engine in `maestro-terminal` that parses a pane terminal's output, keeps its screens and byte-bounded scrollback, and encodes its keyboard, mouse and focus input; see the [terminal emulator specification](docs/specs/terminal-emulator.md).
+- **Scrollback limit:** The bytes of page storage a pane terminal keeps beyond its active screen; zero disables history.
 - **Pane terminal:** A PTY child with its terminal emulator, scrollback and metadata.
 - **Pane agent:** A coding agent recognized in, or reporting from, a pane, with status idle, working, blocked, done or unknown; distinct from **Agent**, the conversation runner.
 - **Detection catalog:** The downloaded, version-checked cache of detection manifests, used ahead of the bundled set when newer.

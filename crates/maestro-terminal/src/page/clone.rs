@@ -87,22 +87,7 @@ impl Page {
         );
         for x in columns.clone() {
             let src = CellPosition { x, y: src_row };
-            let cell = other.cells[other.cell_index(src)];
-            let data = CellCopy {
-                cell,
-                suffix: other
-                    .lookup_grapheme(src)
-                    .filter(|_| cell.has_grapheme())
-                    .map(Cow::Borrowed),
-                style: cell
-                    .has_styling()
-                    .then(|| StyleCopy::Foreign(*other.styles.get(cell.style_id()))),
-                link: other
-                    .lookup_hyperlink(src)
-                    .filter(|_| cell.hyperlink())
-                    .map(|id| LinkCopy::Foreign(other.hyperlink_set.get(id))),
-            };
-            self.copy_cell(data, CellPosition { x, y: dst_row })?;
+            self.clone_cell_from(other, CellPosition { x, y: dst_row }, src)?;
         }
         if self.size.cols > other.size.cols && columns.end == other.size.cols && !columns.is_empty()
         {
@@ -112,6 +97,31 @@ impl Page {
             }
         }
         Ok(())
+    }
+
+    /// Copy one cell through the shared managed-value ownership path.
+    pub(crate) fn clone_cell_from(
+        &mut self,
+        other: &Self,
+        dst: CellPosition,
+        src: CellPosition,
+    ) -> Result<(), StorageError> {
+        let cell = other.cells[other.cell_index(src)];
+        let data = CellCopy {
+            cell,
+            suffix: other
+                .lookup_grapheme(src)
+                .filter(|_| cell.has_grapheme())
+                .map(Cow::Borrowed),
+            style: cell
+                .has_styling()
+                .then(|| StyleCopy::Foreign(*other.styles.get(cell.style_id()))),
+            link: other
+                .lookup_hyperlink(src)
+                .filter(|_| cell.hyperlink())
+                .map(|id| LinkCopy::Foreign(other.hyperlink_set.get(id))),
+        };
+        self.copy_cell(data, dst)
     }
 
     /// Copy selected data once before editing another row of the same page.

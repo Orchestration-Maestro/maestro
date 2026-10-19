@@ -88,6 +88,7 @@ fn character_widths_match_screen_cells() {
 mod graphics_commands;
 mod graphics_media;
 
+mod history;
 mod page_storage;
 
 mod character_sets;
