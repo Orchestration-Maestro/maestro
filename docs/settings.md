@@ -98,6 +98,10 @@ to the file in the meantime survive and enter the manager only on `reload`. A
 successful save acknowledges only the revisions it wrote, so an edit made after the
 save was captured stays pending.
 
+`set_global_key(field, key, value)` edits one member of a global object through
+this same queue. It preserves other members read from storage when the save runs;
+it does not replace the object with the manager's earlier snapshot.
+
 Unsetting `shellPath`, `shellCommandPrefix`, `npmCommand` or `enabledModels`
 removes the key. A setter on a nested key such as `compaction.enabled` replaces a
 parent value of another type with an object that holds the edit. A number setter
@@ -279,3 +283,28 @@ An extension path never implies a package.
   "packages": ["npm:example", { "source": "git:example", "skills": ["search"], "extensions": [] }]
 }
 ```
+
+## Workspace preference records
+
+`maestro_daemon::settings::model` provides owned records for pane shells,
+restoration, updates, headless dimensions, scrollback, worktree directories,
+notifications and optional client behavior. These records decode camelCase JSON
+members without modifying the input. Paths keep their authored spelling.
+
+Pane shells default to an empty executable, `auto` startup mode and `follow`
+directory policy. Restoration resumes agents by default. Headless dimensions
+are 120 by 40; either zero dimension diagnoses the pair and selects both default
+dimensions. Scrollback defaults to 10,000,000 bytes. Worktrees default to
+`~/.maestro/worktrees`. Optional client behavior and history persistence are off.
+Update checks and detection catalog checks default on. The update channel is
+`preview` only for Windows preview builds; other builds default to `stable`.
+
+Toast delivery defaults to `off` with a one-second delay. Delays from 0 through
+3,600 seconds are accepted. Workspace placement defaults to bottom-right;
+clipboard notifications default on at bottom-center.
+
+The sibling `theme`, `sound` and `tab_bar` modules retain theme aliases and
+custom color strings, per-agent sound overrides and ordered tab entries. Sound
+paths resolve against a supplied agent directory. `NotificationShowSound::None`
+never selects a file. Tab commands default to a five-second refresh interval
+and a two-second execution deadline; these records do not execute commands.

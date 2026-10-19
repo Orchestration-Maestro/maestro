@@ -3359,6 +3359,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tracing",
+ "time",
 ]
 
 [[package]]
@@ -3372,6 +3373,7 @@ dependencies = [
  "cargo_metadata",
  "chrono",
  "crc32fast",
+ "deranged",
  "digest 0.11.3",
  "errno",
  "fastrand",
@@ -3422,6 +3424,7 @@ dependencies = [
  "stable_deref_trait",
  "syn 2.0.119",
  "syn 3.0.6",
+ "time",
  "tinystr",
  "tokio",
  "tracing",

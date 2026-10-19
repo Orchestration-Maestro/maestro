@@ -17,7 +17,7 @@ shared [JSONL codec](json.md#jsonl-framing); socket code defines no command set.
 2. The client path derived from the supplied API socket override
    (`MAESTRO_SOCKET_PATH` at the application boundary).
 3. The supplied client override (`MAESTRO_CLIENT_SOCKET_PATH`), even when empty.
-4. `maestro-client.sock` inside the supplied daemon folder.
+4. `daemon-client.sock` inside the supplied daemon folder.
 
 Derivation uses the API path's native file stem and parent: `api.sock` becomes
 `api-client.sock`, `a.tar.gz` becomes `a.tar-client.sock`, and a path with no usable
@@ -46,6 +46,19 @@ not consumed by a disconnect probe.
 Windows transport is tracked in [Windows sockets](https://github.com/Orchestration-Maestro/maestro/issues/1473),
 and other Unix qualification in [Unix qualification](https://github.com/Orchestration-Maestro/maestro/issues/1472).
 See [socket libraries](libraries/workspace-daemon.md) for dependency features and licences.
+
+## Window-title templates
+
+`maestro_daemon::settings::window_title` parses the default
+`{hostname}: {workspace}` format and the `hostname`, `workspace`, `tab`, `pane`
+and `terminal_title` tokens. Doubled braces are literal braces; whitespace inside
+a token is ignored. Empty formats disable titles. Unknown tokens and unbalanced
+braces return diagnostics rather than a partial template.
+
+Title sanitation removes control characters, keeps the first 200 Unicode scalar
+values, then trims surrounding whitespace. An empty result is absent. The library
+provides parsing and sanitation; applying titles to the outer terminal remains a
+runtime responsibility.
 
 ## Topology
 

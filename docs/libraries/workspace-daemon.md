@@ -71,3 +71,20 @@ and test support retain their own closures.
 | unicode-ident | 1.0.24 | (MIT OR Apache-2.0) AND Unicode-3.0 |
 | winnow | 1.0.4 | MIT |
 | zmij | 1.0.23 | MIT |
+
+## Workspace preference validation
+
+`maestro-daemon` uses the already-locked `time =0.3.55` with default features and
+`formatting` to parse strftime formats and check that a date/time value can render
+them. It does not start a clock or schedule commands.
+
+Its host-resolved external closure reuses these locked packages:
+
+| Package | Version | Licence |
+|---|---|---|
+| deranged | 0.5.8 | MIT OR Apache-2.0 |
+| num-conv | 0.2.2 | MIT OR Apache-2.0 |
+| powerfmt | 0.2.0 | MIT OR Apache-2.0 |
+| serde_core | 1.0.229 | MIT OR Apache-2.0 |
+| time | 0.3.55 | MIT OR Apache-2.0 |
+| time-core | 0.1.9 | MIT OR Apache-2.0 |

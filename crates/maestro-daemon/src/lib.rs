@@ -6,6 +6,9 @@ pub mod agent_resume;
 /// Owned terminal input and supplied host geometry.
 pub mod input;
 
+/// Workspace preference values and validation.
+pub mod settings;
+
 /// Pane state and presentation operations.
 pub mod terminal;
 

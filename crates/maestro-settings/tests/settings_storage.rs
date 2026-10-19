@@ -267,6 +267,46 @@ mod tests {
     }
 
     #[test]
+    fn global_key_edit_merges_fresh_global_scope() {
+        let root = TempDir::new();
+        let agent = root.path().join("agent");
+        fs::create_dir_all(&agent).unwrap();
+        let file = agent.join("settings.json");
+        let seed = json!({"multiplexer": {"onboarding": true}, "theme": "chat"});
+        fs::write(&file, serde_json::to_string_pretty(&seed).unwrap()).unwrap();
+        let mut first = create_manager(root.path());
+        let mut second = create_manager(root.path());
+        let fresh = json!({
+            "multiplexer": {"onboarding": true, "mouseCapture": false},
+            "theme": "chat",
+            "external": ["kept"]
+        });
+        fs::write(&file, serde_json::to_string_pretty(&fresh).unwrap()).unwrap();
+
+        first.set_global_key("multiplexer", "onboarding", false);
+        block_on(first.flush());
+        second.set_global_key("multiplexer", "copyOnSelect", false);
+        block_on(second.flush());
+
+        let saved: serde_json::Value =
+            serde_json::from_str(&fs::read_to_string(&file).unwrap()).unwrap();
+        assert_eq!(
+            saved,
+            json!({
+                "multiplexer": {
+                    "onboarding": false,
+                    "mouseCapture": false,
+                    "copyOnSelect": false
+                },
+                "theme": "chat",
+                "external": ["kept"]
+            })
+        );
+        assert!(first.drain_errors().is_empty());
+        assert!(second.drain_errors().is_empty());
+    }
+
+    #[test]
     fn missing_read_creates_nothing() {
         let root = TempDir::new();
         fs::create_dir_all(root.path().join("work")).unwrap();

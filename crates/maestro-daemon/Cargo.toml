@@ -8,6 +8,7 @@ repository.workspace = true
 [dependencies]
 serde.workspace = true
 tracing = { version = "=0.1.44", default-features = false, features = ["std"] }
+time = { version = "=0.3.55", features = ["formatting"] }
 maestro-detection = { path = "../maestro-detection" }
 maestro-protocol = { path = "../maestro-protocol" }
 maestro-workspace = { path = "../maestro-workspace" }
