@@ -2441,3 +2441,17 @@ fn detection_text_test_edge_is_native() {
     );
     assert_eq!(check_workspace(&workspace.root), Err("maestro-detection: maestro-text test support must be a native, non-optional development dependency".into()));
 }
+
+#[test]
+fn detection_catalog_uses_atomic_replacement() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-lock"]);
+    workspace.member(
+        "maestro-detection",
+        "maestro-detection",
+        r#"[dependencies]
+maestro-lock = { path = "../maestro-lock" }"#,
+    );
+    workspace.list(&[("maestro-lock", "core"), ("maestro-detection", "core")]);
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
