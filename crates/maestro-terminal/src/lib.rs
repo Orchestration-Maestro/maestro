@@ -72,3 +72,5 @@ pub mod size_report;
 pub mod stream;
 
 pub mod stream_terminal;
+
+pub mod selection;

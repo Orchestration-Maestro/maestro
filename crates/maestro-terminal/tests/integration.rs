@@ -188,3 +188,5 @@ mod mouse_positions;
 mod input_terminal;
 
 mod mouse_events;
+
+mod selection;
