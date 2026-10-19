@@ -403,6 +403,8 @@ failure or other encoded part is retained. Numeric-looking text remains text.
 The request body of `before_provider_request`, its replacement, tool-execution arguments
 and results, tool-result input, tool schemas and arbitrary `details` use `JsonText`.
 It exposes compact JSON text to Rust while serializing the semantic JSON value on the wire.
+Tool schemas are values inside metadata, not quoted JSON documents. Thinking levels
+cross the component interface as JSON string literals in both directions.
 Object key order and numbers are preserved; whitespace and duplicate keys are not retained.
 Construct authored values from valid JSON text with `.into()`. A replacement `null` differs
 from returning no result. Optional details retain missing and null as distinct states.

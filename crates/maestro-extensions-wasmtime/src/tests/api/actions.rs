@@ -40,8 +40,8 @@ fn scalar_actions_keep_values_order_and_catchable_errors() {
             endpoint.read(|reply| Request::SetActiveTools(vec![" z ".into(), "a".into(), "a".into()], reply)).unwrap();
             assert_eq!(serde_json::from_str::<serde_json::Value>(&endpoint.read(Request::AllTools).unwrap()).unwrap(), serde_json::json!([{"name":" tool ","description":"","parameters":{"type":"object"},"sourceInfo":{"path":"p","source":"custom","scope":"project","origin":"package","baseDir":"base"}}]));
             assert_eq!(serde_json::from_str::<serde_json::Value>(&endpoint.read(Request::Commands).unwrap()).unwrap(), serde_json::json!([{"name":" command ","description":"","source":"custom-source","sourceInfo":{"path":"p","source":"custom","scope":"project","origin":"package","baseDir":"base"}}]));
-            assert_eq!(endpoint.read(Request::Thinking).unwrap(), "high");
-            assert_eq!(endpoint.read(|reply| Request::SetThinking("off".into(), reply)).unwrap_err(), "selected failure");
+            assert_eq!(endpoint.read(Request::Thinking).unwrap(), "\"high\"");
+            assert_eq!(endpoint.read(|reply| Request::SetThinking("\"off\"".into(), reply)).unwrap_err(), "selected failure");
             assert!(endpoint.read(|reply| Request::SetThinking("invalid".into(), reply)).is_err());
         });
         drop(admission);
@@ -95,5 +95,52 @@ fn admitted_model_selection_survives_rebind_and_retirement() {
             drop(admission);
             pump.serve().await;
             worker.join().unwrap();
+        });
+}
+
+#[test]
+fn thinking_levels_use_canonical_json_in_both_directions() {
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(async {
+            let runtime = create_extension_runtime::<Local>();
+            let (_owner, api) = api(runtime.clone());
+            let state = Rc::new(RefCell::new(maestro_extensions::ModelThinkingLevel::Off));
+            let get = state.clone();
+            runtime.actions.write().unwrap().get_thinking_level =
+                Rc::new(move || Ok(get.borrow().clone()));
+            let set = state.clone();
+            runtime.actions.write().unwrap().set_thinking_level = Rc::new(move |level| {
+                *set.borrow_mut() = level;
+                Ok(())
+            });
+            let (pump, admission) = Pump::new(crate::tests::support::credential_operations());
+            let endpoint = pump.registry().api(api).unwrap();
+            let worker = std::thread::spawn(move || {
+                assert_eq!(endpoint.read(Request::Thinking).unwrap(), "\"off\"");
+                for level in ["off", "minimal", "low", "medium", "high", "xhigh"] {
+                    let wire = serde_json::to_string(level).unwrap();
+                    endpoint
+                        .read(|reply| Request::SetThinking(wire.clone(), reply))
+                        .unwrap();
+                    assert_eq!(endpoint.read(Request::Thinking).unwrap(), wire);
+                }
+                for invalid in ["high", "null", "{}", "\"invalid\""] {
+                    assert!(
+                        endpoint
+                            .read(|reply| Request::SetThinking(invalid.into(), reply))
+                            .is_err()
+                    );
+                }
+                assert_eq!(endpoint.read(Request::Thinking).unwrap(), "\"xhigh\"");
+            });
+            drop(admission);
+            pump.serve().await;
+            worker.join().unwrap();
+            assert_eq!(
+                *state.borrow(),
+                maestro_extensions::ModelThinkingLevel::Xhigh
+            );
         });
 }

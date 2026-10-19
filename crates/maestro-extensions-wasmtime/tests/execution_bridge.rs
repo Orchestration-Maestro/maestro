@@ -138,8 +138,10 @@ fn canonical_imports_reach_real_domain_owners() {
 /// Runs both canonical context identities against populated native owners.
 async fn canonical_reads() {
     use serde_json::json;
+    let tails = Rc::new(RefCell::new(Vec::new()));
+    let queued = tails.clone();
     let bus = create_event_bus_for::<Local>(
-        Rc::new(|_| panic!("no tails")),
+        Rc::new(move |tail| queued.borrow_mut().push(tail)),
         Rc::new(|_| panic!("no reports")),
     );
     let compactions = Rc::new(RefCell::new(Vec::new()));
@@ -151,18 +153,18 @@ async fn canonical_reads() {
             Ok(None)
         }),
     );
-    let (registration, _, _) = super::retained_components::loaded_on(bus.for_extension()).await;
     let (session, history) = session::runner_session("/canonical-reads");
     let root = seed_history(&mut history.borrow_mut());
     let model = super::model_support::model("literal model");
     *session.model_registry.get_all().write().unwrap() = vec![model.clone()];
-    let runner = ExtensionRunner::<Local>::new(
-        Rc::new(RwLock::new(vec![registration])),
-        create_extension_runtime::<Local>(),
+    let credential_calls = Rc::new(RefCell::new(Vec::new()));
+    let (owner, runner, events) = super::retained_components::loaded_in(
+        bus.for_extension(),
         session,
-        Rc::new(|_| {}),
-        maestro_theme::LiveTheme::default(),
-    );
+        Rc::new(super::canonical_api::Credentials(credential_calls.clone())),
+    )
+    .await;
+    let runner = Rc::new(runner);
     let effects = Rc::new(RefCell::new(Vec::new()));
     let compact = bind_reads(&runner, model.clone(), &effects);
     let descriptor = model.read().unwrap().clone();
@@ -176,6 +178,8 @@ async fn canonical_reads() {
     observe_reads(&runner, &expected).await;
     complete_compactions(&compact, &compactions);
     super::canonical_commands::observe(&runner).await;
+    super::canonical_api::observe(&owner, &runner, &events, &history, &tails).await;
+    assert_eq!(*credential_calls.borrow(), ["CANONICAL_API_KEY"]);
     assert_eq!(
         *effects.borrow(),
         ["abort", "shutdown", "abort", "shutdown"]
