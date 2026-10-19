@@ -1,5 +1,6 @@
 //! Registered native messages through the retained rich-text consumer.
 #![cfg(all(test, target_arch = "wasm32"))]
+use crate::support::tool_output::TextOnlyOutput as _;
 use crate::{markdown_support, message_renderer_support, renderer_recipes, support};
 
 #[cfg(test)]
@@ -95,6 +96,7 @@ mod tests {
         surface.draw(|ui, frame| {
             recipe
                 .render(ui, support::reading_view::view(&host, frame), row)
+                .assert_no_overlays()
                 .unwrap()
         });
     }

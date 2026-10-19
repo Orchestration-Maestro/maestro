@@ -52,7 +52,7 @@ A custom message can carry a native handle without JSON conversion:
 use std::sync::{Arc, atomic::{AtomicU32, Ordering}};
 use maestro_app::{AgentMessage, CustomAgentMessages, ToolRendererState};
 use maestro_web::{MessageRenderer, register_message_renderer};
-use maestro_web::tools::types::{ToolContent, ToolRenderView, ToolUiError};
+use maestro_web::tools::types::{ToolContent, ToolContentOutput, ToolRenderView, ToolUiError};
 
 struct NativeMessage {
     role: String,
@@ -65,8 +65,8 @@ struct Label(String);
 impl ToolContent for Label {
     fn render(
         &self, ui: &mut egui::Ui, _: ToolRenderView<'_>, _: &ToolRendererState,
-    ) -> Result<egui::Response, ToolUiError> {
-        Ok(ui.label(&self.0))
+    ) -> ToolContentOutput {
+        ToolContentOutput { response: Ok(ui.label(&self.0)), overlays: Vec::new() }
     }
 }
 struct CounterRenderer;

@@ -34,8 +34,12 @@ impl ToolContent for Caption {
         ui: &mut egui::Ui,
         _: ToolRenderView<'_>,
         _: &maestro_app::ToolRendererState,
-    ) -> Result<egui::Response, ToolUiError> {
-        Ok(ui.label(&self.0))
+    ) -> maestro_web::tools::types::ToolContentOutput {
+        let response = Ok(ui.label(&self.0));
+        maestro_web::tools::types::ToolContentOutput {
+            response,
+            overlays: Vec::new(),
+        }
     }
 }
 #[must_use]
@@ -80,24 +84,31 @@ impl ToolContent for RichText {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         state: &maestro_app::ToolRendererState,
-    ) -> Result<egui::Response, ToolUiError> {
-        let owner = state.state::<Option<maestro_web::components::markdown_block::MarkdownBlock>>();
-        let mut block = owner.borrow_mut().take().unwrap_or_else(|| {
-            maestro_web::components::markdown_block::MarkdownBlock::new(Rc::clone(view.host))
-        });
-        block.content.clone_from(&self.0);
-        let result = block
-            .render(
-                ui,
-                maestro_web::components::code_block::CodeBlockView {
-                    i18n: view.i18n,
-                    presentation: view.presentation,
-                    highlighter: view.highlighter,
-                    modal: view.modal,
-                },
-            )
-            .map_err(ToolUiError::Reading);
-        *owner.borrow_mut() = Some(block);
-        result
+    ) -> maestro_web::tools::types::ToolContentOutput {
+        let response = {
+            let owner =
+                state.state::<Option<maestro_web::components::markdown_block::MarkdownBlock>>();
+            let mut block = owner.borrow_mut().take().unwrap_or_else(|| {
+                maestro_web::components::markdown_block::MarkdownBlock::new(Rc::clone(view.host))
+            });
+            block.content.clone_from(&self.0);
+            let result = block
+                .render(
+                    ui,
+                    maestro_web::components::code_block::CodeBlockView {
+                        i18n: view.i18n,
+                        presentation: view.presentation,
+                        highlighter: view.highlighter,
+                        modal: view.modal,
+                    },
+                )
+                .map_err(ToolUiError::Reading);
+            *owner.borrow_mut() = Some(block);
+            result
+        };
+        maestro_web::tools::types::ToolContentOutput {
+            response,
+            overlays: Vec::new(),
+        }
     }
 }

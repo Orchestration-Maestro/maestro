@@ -7,7 +7,7 @@ use crate::{
         native_text::{NativeText, TextKind},
         thinking_block::ThinkingBlock,
     },
-    tools::types::{ToolRenderView, ToolUiError},
+    tools::types::{ToolContentOutput, ToolRenderView, ToolUiError},
 };
 use maestro_app::{AssistantContent, StopReason, ToolResultMessage};
 use std::{
@@ -109,11 +109,23 @@ impl AssistantMessage {
         message: &maestro_app::AssistantMessage,
         props: AssistantMessageProps<'_, D>,
         view: ToolRenderView<'_>,
+    ) -> ToolContentOutput {
+        let mut overlays = Vec::new();
+        let response = self.render_body(ui, message, props, (view, &mut overlays));
+        ToolContentOutput { response, overlays }
+    }
+    /// Draw the row while transferring opened owners before any later error.
+    fn render_body<D: 'static>(
+        &mut self,
+        ui: &mut egui::Ui,
+        message: &maestro_app::AssistantMessage,
+        props: AssistantMessageProps<'_, D>,
+        (view, overlays): (ToolRenderView<'_>, &mut Vec<crate::AttachmentOverlay>),
     ) -> Result<egui::Response, ToolUiError> {
         let row = ui.vertical(|ui| -> Result<(), ToolUiError> {
             egui::Frame::new()
                 .inner_margin(egui::Margin::symmetric(16, 0))
-                .show(ui, |ui| self.content(ui, message, &props, view))
+                .show(ui, |ui| self.content(ui, message, &props, (view, overlays)))
                 .inner?;
             self.outcome(ui, message, props, view)
         });
@@ -126,7 +138,7 @@ impl AssistantMessage {
         ui: &mut egui::Ui,
         message: &maestro_app::AssistantMessage,
         props: &AssistantMessageProps<'_, D>,
-        view: ToolRenderView<'_>,
+        (view, overlays): (ToolRenderView<'_>, &mut Vec<crate::AttachmentOverlay>),
     ) -> Result<(), ToolUiError> {
         let mut emitted = 0;
         ui.spacing_mut().item_spacing.y = 12.;
@@ -144,7 +156,13 @@ impl AssistantMessage {
             } else {
                 &mut self.children[emitted]
             };
-            draw(child, chunk, (&message.stop_reason, props), ui, view)?;
+            draw(
+                child,
+                chunk,
+                (&message.stop_reason, props),
+                ui,
+                (view, overlays),
+            )?;
             if let Some(child) = candidate {
                 self.publish_child(emitted, child);
             }
@@ -244,7 +262,7 @@ fn draw<D: 'static>(
     chunk: &AssistantContent,
     policy: (&StopReason, &AssistantMessageProps<'_, D>),
     ui: &mut egui::Ui,
-    view: ToolRenderView<'_>,
+    (view, overlays): (ToolRenderView<'_>, &mut Vec<crate::AttachmentOverlay>),
 ) -> Result<(), ToolUiError> {
     let (stop, props) = policy;
     match (child, chunk) {
@@ -263,23 +281,25 @@ fn draw<D: 'static>(
             let result = props
                 .tool_results_by_id
                 .and_then(|results| results.get(&call.id));
-            block.render(
-                ui,
-                ToolMessageProps {
-                    tool_call: call,
-                    tool: props
-                        .tools
-                        .and_then(|tools| tools.iter().find(|tool| *tool == &call.name))
-                        .map(String::as_str),
-                    result,
-                    pending: props
-                        .pending_tool_calls
-                        .is_some_and(|pending| pending.contains(&call.id)),
-                    aborted: stop == &StopReason::Aborted && result.is_none(),
-                    is_streaming: props.is_streaming,
-                },
-                view,
-            )?;
+            block
+                .render(
+                    ui,
+                    ToolMessageProps {
+                        tool_call: call,
+                        tool: props
+                            .tools
+                            .and_then(|tools| tools.iter().find(|tool| *tool == &call.name))
+                            .map(String::as_str),
+                        result,
+                        pending: props
+                            .pending_tool_calls
+                            .is_some_and(|pending| pending.contains(&call.id)),
+                        aborted: stop == &StopReason::Aborted && result.is_none(),
+                        is_streaming: props.is_streaming,
+                    },
+                    view,
+                )
+                .collect(overlays)?;
         }
         _ => {
             return Err(ToolUiError::Presentation(

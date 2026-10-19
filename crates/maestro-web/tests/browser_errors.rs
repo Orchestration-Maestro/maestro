@@ -1,6 +1,7 @@
 //! Typed operation failures through their public owners.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
+use crate::support::tool_output::TextOnlyOutput as _;
 use maestro_web::{
     I18nError,
     browser::attachment_content::{AttachmentHostError, ControlError},
@@ -360,6 +361,7 @@ fn tool_rendering_failures_keep_the_original_reading_cause() {
                 },
                 &mut state,
             )
+            .assert_no_overlays()
             .unwrap_err();
         assert!(matches!(error, ToolUiError::Reading(_)));
         let reading = error

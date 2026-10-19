@@ -29,18 +29,24 @@ impl ToolContent for Action {
         ui: &mut egui::Ui,
         _: ToolRenderView<'_>,
         state: &maestro_app::ToolRendererState,
-    ) -> Result<egui::Response, ToolUiError> {
-        let slot = state.state::<Row>();
-        let mut row = slot.take();
-        row.original = Some(self.original.clone());
-        let response = ui.button(format!("{} {}", self.label, row.clicks));
-        if response.clicked() {
-            row.clicks += 1;
-            self.original.set(self.original.get() + 1);
+    ) -> maestro_web::tools::types::ToolContentOutput {
+        let response = {
+            let slot = state.state::<Row>();
+            let mut row = slot.take();
+            row.original = Some(self.original.clone());
+            let response = ui.button(format!("{} {}", self.label, row.clicks));
+            if response.clicked() {
+                row.clicks += 1;
+                self.original.set(self.original.get() + 1);
+            }
+            let old = slot.replace(row);
+            drop(old);
+            Ok(response)
+        };
+        maestro_web::tools::types::ToolContentOutput {
+            response,
+            overlays: Vec::new(),
         }
-        let old = slot.replace(row);
-        drop(old);
-        Ok(response)
     }
 }
 struct Renderer;

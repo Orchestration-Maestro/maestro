@@ -16,6 +16,24 @@ mod result_view;
 pub use binding::ToolRendererBinding;
 pub use result_view::ToolResultMessageView;
 
+/// One frame's drawing outcome plus independently owned opened overlays.
+#[must_use]
+pub struct ToolContentOutput {
+    /// Drawing result, independent of already-opened overlays.
+    pub response: Result<egui::Response, ToolUiError>,
+    /// Opened owners the caller retains even when the response failed.
+    pub overlays: Vec<crate::AttachmentOverlay>,
+}
+impl ToolContentOutput {
+    /// Transfer all opened owners before observing drawing failure.
+    pub(crate) fn collect(
+        self,
+        overlays: &mut Vec<crate::AttachmentOverlay>,
+    ) -> Result<egui::Response, ToolUiError> {
+        overlays.extend(self.overlays);
+        self.response
+    }
+}
 /// Owned drawing recipe; mutable widgets belong to the caller's retained row.
 pub trait ToolContent: Any {
     /// Draw this recipe using the row's typed state.
@@ -26,7 +44,7 @@ pub trait ToolContent: Any {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         state: &ToolRendererState,
-    ) -> Result<egui::Response, ToolUiError>;
+    ) -> ToolContentOutput;
 }
 /// Borrowed presentation inputs for one frame.
 #[derive(Clone, Copy)]
@@ -68,7 +86,7 @@ impl ToolRenderResult {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         retained: &mut ToolRenderState,
-    ) -> Result<egui::Response, ToolUiError> {
+    ) -> ToolContentOutput {
         retained.draw(self.content.as_ref(), ui, view)
     }
 }
@@ -79,7 +97,7 @@ impl ToolRenderState {
         content: &dyn ToolContent,
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
-    ) -> Result<egui::Response, ToolUiError> {
+    ) -> ToolContentOutput {
         let active = content.type_id();
         if self.active != Some(active) {
             self.scope = None;
@@ -137,7 +155,7 @@ impl<'a, P> ToolParams<'a, P> {
 }
 
 /// Separate a row's placement revocation from its cloneable widget ownership.
-fn placement_scope(host: &Rc<dyn AttachmentHost>) -> (egui::Id, PlacementScope) {
+pub(crate) fn placement_scope(host: &Rc<dyn AttachmentHost>) -> (egui::Id, PlacementScope) {
     let id = crate::browser::attachment_content::identity();
     let host = Rc::downgrade(host);
     let lease = PlacementScope::new(move || {

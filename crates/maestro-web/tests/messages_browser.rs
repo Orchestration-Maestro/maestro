@@ -1,5 +1,6 @@
 //! Composed transcript rows through the real browser reading host.
 #![cfg(all(test, target_arch = "wasm32"))]
+use crate::support::tool_output::TextOnlyOutput as _;
 use crate::{markdown_support, renderer_recipes, support};
 
 use maestro_web::{UserMessage, UserMessageInput};
@@ -112,8 +113,10 @@ mod tests {
     ) -> Vec<maestro_web::AttachmentOverlay> {
         let host = surface.host();
         surface.draw(|ui, frame| {
-            row.render(ui, input, support::reading_view::view(&host, frame))
-                .unwrap()
+            let output = row.render(ui, input, support::reading_view::view(&host, frame));
+            let overlays = output.overlays;
+            output.response.unwrap();
+            overlays
         })
     }
     /// Draw ordinary settled assistant policy without hiding default detail selection.
@@ -178,6 +181,7 @@ mod tests {
                 props,
                 support::reading_view::view(&host, frame),
             )
+            .assert_no_overlays()
             .unwrap()
         });
     }
@@ -439,10 +443,9 @@ mod tests {
         let host = surface.host();
         let mut opened = Vec::new();
         surface.click(at, |ui, frame| {
-            opened.extend(
-                row.render(ui, input, support::reading_view::view(&host, frame))
-                    .unwrap(),
-            );
+            let output = row.render(ui, input, support::reading_view::view(&host, frame));
+            opened.extend(output.overlays);
+            output.response.unwrap();
         });
         opened
     }
@@ -564,6 +567,7 @@ mod tests {
         let host = surface.host();
         surface.draw(|ui, frame| {
             row.render(ui, props, support::reading_view::view(&host, frame))
+                .assert_no_overlays()
                 .unwrap()
         });
     }
@@ -740,6 +744,7 @@ mod tests {
                 },
                 support::reading_view::view(&host, frame),
             )
+            .assert_no_overlays()
             .unwrap()
         });
         assert_eq!(
@@ -775,6 +780,7 @@ mod tests {
         let rect = surface
             .draw(|ui, frame| {
                 row.render(ui, props, support::reading_view::view(&host, frame))
+                    .assert_no_overlays()
                     .unwrap()
             })
             .rect;

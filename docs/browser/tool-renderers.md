@@ -31,7 +31,8 @@ custom renderers can retain their own shared data in the returned recipe.
 ## Drawing a retained row
 
 Keep one `ToolRenderState` per row outside the frame loop. Given the caller's
-`ui`, `host`, `i18n`, `presentation`, `highlighter` and retained `row`:
+`ui`, `host`, `i18n`, `presentation`, `highlighter`, retained `row` and containing
+`overlays` receiver:
 
 ```rust,ignore
 use maestro_web::{DefaultRenderer, ToolRenderer, register_tool_renderer, render_tool};
@@ -44,9 +45,11 @@ let params = serde_json::json!({"path": "src"});
 let recipe = render_tool::<serde_json::Value, serde_json::Value>(
     "inspect", Some(ToolParams::json(&params)), None, false,
 )?;
-recipe.render(ui, ToolRenderView {
+let output = recipe.render(ui, ToolRenderView {
     host, i18n, presentation, highlighter, modal: None,
-}, row)?;
+}, row);
+overlays.extend(output.overlays);
+output.response?;
 ```
 
 The recipe owns its content. `is_custom` tells the embedding caller whether to
@@ -83,9 +86,36 @@ Both use direct native clipboard writing. Message links retain
 their separate fallback policy. Actual console updates scroll the local body to
 its bottom; unchanged frames and presentation-only changes do not reset scroll.
 
+## Opened attachments
+
+User, tool and assistant rows, rich headers and expandable children return
+`ToolContentOutput`. Move its `overlays` into the containing receiver before
+checking `response`: an attachment opened earlier in a frame must survive a later
+drawing error. Keep that receiver outside row lifetimes so removing a row does not
+close its previews. Preparation still returns `Result<ToolRenderResult, ToolUiError>`.
+
+## Document tool cards
+
+The `javascript_repl` and `extract_document` renderers register once. Replacement,
+removal and JSON mode follow the same policy as the command card. Both accept
+model objects, explicit JSON objects and their application-owned native records.
+
+JavaScript cards keep literal code and console output in a collapsed body;
+returned files remain accessible outside it. Document cards show the URL and
+extraction metadata, literal extracted text on success and a console on failure.
+Their bodies retain native children while collapsed. The JavaScript card's
+preparing and executing fallbacks are localized. Authored titles and all
+document-extraction captions, metadata and the URL label remain literal.
+
+Selected non-string fields use readable JSON. Code and extracted text use literal
+code blocks, without encoded-input detection. Returned text files decode UTF-8
+for preview while downloads preserve the original base64; malformed base64 keeps
+the download without extracted text.
+
 ## Operation errors
 
-Tool dispatch, recipes and headers return `tools::types::ToolUiError`.
+Preparation returns `tools::types::ToolUiError`; drawing carries it in
+`ToolContentOutput.response`.
 Localization, shared glyph controls and native effects retain their named leaf
 variants. Reading preparation keeps a typed `ReadingUiError`, including its
 highlighter or outer-style cause; JSON and operand preparation preserve their
@@ -94,7 +124,7 @@ existing literal messages. `Error::source` exposes each typed cause.
 Console output shares `components::code_block::ReadingUiError`; its outer-style
 Presentation variant retains the original I/O error. Native console and header
 factories return `AttachmentHostError`. Rust callers must update return types
-and matches; dispatch, rendering, resource ownership and recovery are unchanged.
+and matches when adopting the output record. The named leaf causes are preserved.
 
 ## Command, calculation and time cards
 
@@ -133,10 +163,14 @@ use maestro_web::ExpandableSection;
 let mut section = ExpandableSection::new(host.clone(), children);
 section.summary = "Details".into();
 section.default_expanded = true;
-section.render(ui, view)?;
+let output = section.render(ui, view);
+overlays.extend(output.overlays);
+output.response?;
 // Reattach the same section with its original children.
 section.connected_callback();
-section.render(ui, view)?;
+let output = section.render(ui, view);
+overlays.extend(output.overlays);
+output.response?;
 ```
 
 The literal summary has a leading right/down chevron, an 8-point icon gap and

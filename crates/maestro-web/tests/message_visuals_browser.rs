@@ -1,5 +1,6 @@
 //! Selected presentation observed in native glyphs and final-clip card paint.
 #![cfg(all(test, target_arch = "wasm32"))]
+use crate::support::tool_output::TextOnlyOutput as _;
 use crate::{markdown_support, renderer_recipes, support};
 
 #[cfg(test)]
@@ -80,6 +81,7 @@ mod tests {
                 },
                 view,
             )
+            .assert_no_overlays()
             .unwrap()
         });
         support::reading_paint::observe("message-action-transition").await;
@@ -128,6 +130,7 @@ mod tests {
                     },
                     view,
                 )
+                .assert_no_overlays()
                 .unwrap()
             });
             check(
@@ -171,6 +174,7 @@ mod tests {
                     },
                     view,
                 )
+                .assert_no_overlays()
                 .unwrap()
             });
             observe(".maestro-markdown strong", "text").await;
@@ -187,6 +191,7 @@ mod tests {
                     AssistantMessageProps::<serde_json::Value>::default(),
                     view,
                 )
+                .assert_no_overlays()
                 .unwrap()
             });
             if stop == "error" {
@@ -297,6 +302,7 @@ mod tests {
                     },
                     view,
                 )
+                .assert_no_overlays()
                 .unwrap()
             })
             .rect;

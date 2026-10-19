@@ -4,7 +4,7 @@ use crate::tools::types::ToolUiError;
 use crate::{
     browser::attachment_content::{self},
     icons::{IconNode, IconSize},
-    tools::types::{ToolContent, ToolRenderState, ToolRenderView},
+    tools::types::{ToolContent, ToolContentOutput, ToolRenderState, ToolRenderView},
 };
 use maestro_app::ToolRendererState;
 use std::{cell::Cell, rc::Rc};
@@ -61,6 +61,8 @@ struct Header {
 /// State of one continuously mounted header.
 #[derive(Default)]
 struct Retained {
+    /// Stable button identity for this retained header state.
+    button_id: Option<egui::Id>,
     /// Start of the current pending interval.
     pending_since: Option<f64>,
     /// Literal-caption native lifetime.
@@ -76,7 +78,7 @@ impl ToolContent for Header {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         state: &ToolRendererState,
-    ) -> Result<egui::Response, ToolUiError> {
+    ) -> ToolContentOutput {
         let slot = state.state::<Retained>();
         let mut retained = std::mem::take(&mut *slot.borrow_mut());
         let time = ui.input(|input| input.time);
@@ -88,10 +90,14 @@ impl ToolContent for Header {
             retained.pending_since = None;
             0.
         };
-        let result = self.draw(ui, view, &mut retained, angle);
+        let mut overlays = Vec::new();
+        let result = self.draw(ui, view, &mut retained, (angle, &mut overlays));
         let old = slot.replace(retained);
         drop(old);
-        result
+        ToolContentOutput {
+            response: result,
+            overlays,
+        }
     }
 }
 impl Header {
@@ -101,12 +107,15 @@ impl Header {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         retained: &mut Retained,
-        angle: f32,
+        (angle, overlays): (f32, &mut Vec<crate::AttachmentOverlay>),
     ) -> Result<egui::Response, ToolUiError> {
         let collapsible = self.expanded.is_some();
-        let row = self.row(ui, view, retained, angle)?;
+        let row = self.row(ui, view, retained, (angle, overlays))?;
         let response = if collapsible {
-            ui.interact(row.rect, row.id.with("toggle"), egui::Sense::click())
+            let id = *retained
+                .button_id
+                .get_or_insert_with(attachment_content::identity);
+            ui.interact(row.rect, id, egui::Sense::click())
         } else {
             row
         };
@@ -127,7 +136,14 @@ impl Header {
             .is_empty();
             if pointer || (response.clicked() && !response.clicked_by(egui::PointerButton::Primary))
             {
-                expanded.set(!expanded.get());
+                crate::components::expandable_section::activate_toggle(
+                    &response, visible, expanded,
+                );
+            }
+            if let Some(caption) = &mut retained.caption {
+                caption.set_action(Some(crate::components::expandable_section::toggle_action(
+                    &response, visible, expanded,
+                )));
             }
             response.widget_info(|| {
                 egui::WidgetInfo::labeled(
@@ -171,7 +187,7 @@ impl Header {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         retained: &mut Retained,
-        angle: f32,
+        (angle, overlays): (f32, &mut Vec<crate::AttachmentOverlay>),
     ) -> Result<egui::Response, ToolUiError> {
         attachment_content::style(ui, view.presentation)
             .map_err(|error| ToolUiError::Presentation(error.to_string()))?;
@@ -213,7 +229,7 @@ impl Header {
                     egui::Layout::left_to_right(egui::Align::Center),
                     |ui| {
                         ui.set_min_height(16.);
-                        self.caption(ui, view, retained)
+                        self.caption(ui, view, retained, overlays)
                     },
                 )
                 .inner?;
@@ -250,14 +266,21 @@ impl Header {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         retained: &mut Retained,
+        overlays: &mut Vec<crate::AttachmentOverlay>,
     ) -> Result<egui::Response, ToolUiError> {
         match &self.text {
             ToolHeaderText::Text(text) => {
                 retained.rich = None;
-                retained
+                let caption = retained
                     .caption
-                    .get_or_insert_with(|| NativeText::new(Rc::clone(view.host)))
-                    .render(ui, (text, TextKind::Caption), view)
+                    .get_or_insert_with(|| NativeText::new(Rc::clone(view.host)));
+                let kind = if self.expanded.is_some() {
+                    TextKind::Summary
+                } else {
+                    caption.set_action(None);
+                    TextKind::Caption
+                };
+                caption.render(ui, (text, kind), view)
             }
             ToolHeaderText::Content(content) => {
                 retained.caption = None;
@@ -265,6 +288,7 @@ impl Header {
                     .rich
                     .get_or_insert_default()
                     .draw(content.as_ref(), ui, view)
+                    .collect(overlays)
             }
         }
     }

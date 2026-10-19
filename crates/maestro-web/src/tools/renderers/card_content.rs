@@ -2,13 +2,16 @@
 use crate::components::native_text::{NativeText, TextKind};
 use crate::tools::{
     renderer_registry::{ToolHeaderState, ToolHeaderText, render_header},
-    types::{ToolContent, ToolRenderResult, ToolRenderView, ToolResultMessageView, ToolUiError},
+    types::{
+        ToolContent, ToolContentOutput, ToolRenderResult, ToolRenderView, ToolResultMessageView,
+        ToolUiError,
+    },
 };
 use crate::{I18n, browser};
 use maestro_app::{JsonObject, ToolRendererState, display_truthy};
 use std::{borrow::Cow, rc::Rc};
 /// Private localized or authored caption representation.
-pub(super) enum Caption {
+pub(in crate::tools) enum Caption {
     /// Caller-authored text.
     Literal(String),
     /// Translated key followed by a literal suffix.
@@ -16,7 +19,7 @@ pub(super) enum Caption {
 }
 impl Caption {
     /// Translate only the fixed key.
-    fn resolve(&self, i18n: &I18n) -> Result<String, ToolUiError> {
+    pub(super) fn resolve(&self, i18n: &I18n) -> Result<String, ToolUiError> {
         match self {
             Self::Literal(text) => Ok(text.clone()),
             Self::Localized(key, suffix) => Ok(format!("{}{suffix}", i18n.text(key)?)),
@@ -59,13 +62,17 @@ impl ToolContent for CardContent {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         state: &ToolRendererState,
-    ) -> Result<egui::Response, ToolUiError> {
+    ) -> ToolContentOutput {
         let slot = state.state::<Retained>();
         let mut retained = std::mem::take(&mut *slot.borrow_mut());
-        let result = self.draw(ui, view, &mut retained);
+        let mut overlays = Vec::new();
+        let result = self.draw(ui, view, &mut retained, &mut overlays);
         let old = slot.replace(retained);
         drop(old);
-        result
+        ToolContentOutput {
+            response: result,
+            overlays,
+        }
     }
 }
 impl CardContent {
@@ -75,6 +82,7 @@ impl CardContent {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         retained: &mut Retained,
+        overlays: &mut Vec<crate::AttachmentOverlay>,
     ) -> Result<egui::Response, ToolUiError> {
         let glyph =
             browser::attachment_content::glyph_node(self.glyph).map_err(ToolUiError::Control)?;
@@ -91,7 +99,9 @@ impl CardContent {
         }
         let row = ui.vertical(|ui| -> Result<(), ToolUiError> {
             ui.spacing_mut().item_spacing.y = 12.;
-            header.render(ui, view, &retained.header)?;
+            header
+                .render(ui, view, &retained.header)
+                .collect(overlays)?;
             match &self.body {
                 Body::Empty => {}
                 Body::Console(content, variant) => {
@@ -133,7 +143,7 @@ pub(super) fn state<D>(result: Option<&ToolResultMessageView<'_, D>>) -> ToolHea
     }
 }
 /// One fallible projection shared by all selected-field reads.
-pub(super) fn field<'a>(
+pub(in crate::tools) fn field<'a>(
     params: Option<&'a JsonObject>,
     key: &str,
 ) -> Result<Option<Cow<'a, str>>, ToolUiError> {

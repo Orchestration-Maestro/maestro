@@ -1,9 +1,9 @@
-.maestro-tool-caption, .maestro-tool-label, .maestro-tool-detail, .maestro-message-usage, .maestro-thinking-header, .maestro-message-abort, .maestro-message-error {
+.maestro-tool-caption, .maestro-tool-label, .maestro-tool-detail, .maestro-tool-url, .maestro-message-usage, .maestro-thinking-header, .maestro-message-abort, .maestro-message-error {
   display: block;
   color: var(--maestro-color-muted);
   font-family: var(--maestro-type-body-font);
 }
-.maestro-tool-caption, .maestro-thinking-header, .maestro-message-abort, .maestro-message-error { font-size: 0.875rem; line-height: 1.25rem; }
+.maestro-tool-caption, .maestro-tool-url, .maestro-thinking-header, .maestro-message-abort, .maestro-message-error { font-size: 0.875rem; line-height: 1.25rem; }
 .maestro-tool-label, .maestro-tool-detail, .maestro-message-usage { font-size: 0.75rem; line-height: 1rem; }
 .maestro-tool-label { font-weight: 500; }
 .maestro-message-abort, .maestro-message-error { color: var(--maestro-color-error); }

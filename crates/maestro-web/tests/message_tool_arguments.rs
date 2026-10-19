@@ -1,5 +1,6 @@
 //! Model object admission through the public browser tool dispatch.
 #![cfg(test)]
+use crate::support::tool_output::TextOnlyOutput as _;
 use crate::{brand, effects_support, recording_highlighter, support, tool_renderer_support};
 
 use maestro_web::tools::types::{
@@ -266,6 +267,7 @@ fn default_object_input_keeps_canonical_json_spelling() {
                     },
                     &mut row,
                 )
+                .assert_no_overlays()
                 .unwrap();
         },
     );

@@ -26,18 +26,24 @@ impl ToolContent for Child {
         ui: &mut egui::Ui,
         _: ToolRenderView<'_>,
         _: &maestro_app::ToolRendererState,
-    ) -> Result<egui::Response, maestro_web::tools::types::ToolUiError> {
-        self.calls.set(self.calls.get() + 1);
-        let response = ui
-            .allocate_exact_size(egui::vec2(80., self.height), egui::Sense::click())
-            .1;
-        self.rect.set(response.rect);
-        ui.painter()
-            .rect_filled(response.rect, 0., egui::Color32::RED);
-        if response.clicked() {
-            self.actions.set(self.actions.get() + 1);
+    ) -> maestro_web::tools::types::ToolContentOutput {
+        let response = {
+            self.calls.set(self.calls.get() + 1);
+            let response = ui
+                .allocate_exact_size(egui::vec2(80., self.height), egui::Sense::click())
+                .1;
+            self.rect.set(response.rect);
+            ui.painter()
+                .rect_filled(response.rect, 0., egui::Color32::RED);
+            if response.clicked() {
+                self.actions.set(self.actions.get() + 1);
+            }
+            Ok(response)
+        };
+        maestro_web::tools::types::ToolContentOutput {
+            response,
+            overlays: Vec::new(),
         }
-        Ok(response)
     }
 }
 #[wasm_bindgen]

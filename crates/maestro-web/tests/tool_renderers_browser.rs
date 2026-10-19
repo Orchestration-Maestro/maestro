@@ -1,6 +1,7 @@
 //! Real-browser tool recipes using the retained native reading host.
 #![cfg(all(test, target_arch = "wasm32"))]
 use crate::markdown_support;
+use crate::support::tool_output::TextOnlyOutput as _;
 use crate::tool_renderer_support;
 
 pub(crate) use tests::{Aliased, surface};
@@ -221,7 +222,7 @@ mod tests {
             ui: &mut egui::Ui,
             view: ToolRenderView<'_>,
             state: &maestro_app::ToolRendererState,
-        ) -> Result<egui::Response, maestro_web::tools::types::ToolUiError> {
+        ) -> maestro_web::tools::types::ToolContentOutput {
             let old = self.alias.replace(Some(state.clone()));
             drop(old);
             self.inner.render(ui, view, state)
@@ -234,8 +235,12 @@ mod tests {
             ui: &mut egui::Ui,
             _: ToolRenderView<'_>,
             _: &maestro_app::ToolRendererState,
-        ) -> Result<egui::Response, maestro_web::tools::types::ToolUiError> {
-            Ok(ui.label("replacement"))
+        ) -> maestro_web::tools::types::ToolContentOutput {
+            let response = (|| Ok(ui.label("replacement")))();
+            maestro_web::tools::types::ToolContentOutput {
+                response,
+                overlays: Vec::new(),
+            }
         }
     }
 
@@ -291,7 +296,7 @@ mod tests {
             ui: &mut egui::Ui,
             view: ToolRenderView<'_>,
             _: &maestro_app::ToolRendererState,
-        ) -> Result<egui::Response, maestro_web::tools::types::ToolUiError> {
+        ) -> maestro_web::tools::types::ToolContentOutput {
             let mut row = self.row.take();
             let result = self.recipe.render(ui, view, &mut row);
             let old = self.row.replace(row);
@@ -381,7 +386,10 @@ mod tests {
                 &mut row,
             )
         });
-        assert!(result.is_err(), "zero-width canvas rejects placement");
+        assert!(
+            result.assert_no_overlays().is_err(),
+            "zero-width canvas rejects placement"
+        );
         check("!detachedFrame.isConnected");
         check("!detachedRoot.isConnected");
         let _ = js("document.getElementById('canvas').width=800");
@@ -398,7 +406,7 @@ mod tests {
             ui: &mut egui::Ui,
             view: ToolRenderView<'_>,
             state: &maestro_app::ToolRendererState,
-        ) -> Result<egui::Response, maestro_web::tools::types::ToolUiError> {
+        ) -> maestro_web::tools::types::ToolContentOutput {
             self.0.render(ui, view, state)
         }
     }

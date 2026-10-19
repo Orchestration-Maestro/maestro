@@ -1,5 +1,6 @@
 //! Composed messages retain the shared native placement and failure policy.
 #![cfg(all(test, target_arch = "wasm32"))]
+use crate::support::tool_output::TextOnlyOutput as _;
 use crate::{markdown_support, renderer_recipes, support};
 
 #[cfg(test)]
@@ -37,6 +38,7 @@ mod tests {
                 props,
                 support::reading_view::view(&host, frame),
             )
+            .assert_no_overlays()
         })
     }
     /// Draw a settled assistant using the ordinary optional-collection defaults.
@@ -114,6 +116,7 @@ mod tests {
                 },
                 support::reading_view::view(&host, frame),
             )
+            .assert_no_overlays()
             .unwrap()
         });
     }
@@ -259,6 +262,7 @@ mod tests {
                 },
                 support::reading_view::view(&host, frame),
             )
+            .assert_no_overlays()
             .unwrap()
         });
         let r = js(
@@ -268,17 +272,16 @@ mod tests {
         let at = egui::pos2(points.get_index(0), points.get_index(1));
         let mut opened = Vec::new();
         surface.click(at, |ui, frame| {
-            opened.extend(
-                row.render(
-                    ui,
-                    maestro_web::UserMessageInput::WithAttachments {
-                        content: &content,
-                        attachments: Some(&attachments),
-                    },
-                    support::reading_view::view(&host, frame),
-                )
-                .unwrap(),
+            let output = row.render(
+                ui,
+                maestro_web::UserMessageInput::WithAttachments {
+                    content: &content,
+                    attachments: Some(&attachments),
+                },
+                support::reading_view::view(&host, frame),
             );
+            opened.extend(output.overlays);
+            output.response.unwrap();
         });
         assert_eq!(opened.len(), 1);
         draw_user(surface, &mut row, &content);

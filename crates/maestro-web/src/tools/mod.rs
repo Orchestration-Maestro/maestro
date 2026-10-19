@@ -1,8 +1,9 @@
 //! Browser tool views.
 use crate::tools::types::ToolUiError;
 pub mod artifacts;
-/// Browser-local hidden JavaScript execution registration.
-#[cfg(target_arch = "wasm32")]
+/// Document-extraction cards.
+pub mod extract_document;
+/// JavaScript execution cards and browser-local hidden tool registration.
 pub mod javascript_repl;
 
 /// Named browser renderer registrations.

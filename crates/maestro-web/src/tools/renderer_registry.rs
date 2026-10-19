@@ -1,13 +1,33 @@
 //! Insertion-ordered renderer registration and shared tool headers.
 use super::types::{ToolRenderer, ToolRendererBinding, ToolResultMessageView};
+use maestro_app::{
+    JsonObject,
+    browser::tools::{
+        extract_document::{ExtractDocumentParams, ExtractDocumentResult},
+        javascript_repl::{JavaScriptReplParams, JavaScriptReplToolResult},
+    },
+};
+use serde_json::Value;
 use std::{cell::RefCell, rc::Rc};
 thread_local! {
     /// Browser-thread registrations, exposed for ordered enumeration and removal.
     pub static TOOL_RENDERERS: RefCell<indexmap::IndexMap<String, ToolRendererBinding>> = RefCell::new(default_renderers());
 }
-/// Install the command callback once; explicit replacement and removal stay effective.
+/// Install the built-in callbacks once; explicit replacement and removal stay effective.
 fn default_renderers() -> indexmap::IndexMap<String, ToolRendererBinding> {
     let mut renderers = indexmap::IndexMap::new();
+    let repl = Rc::new(super::javascript_repl::JAVASCRIPT_REPL_RENDERER);
+    let extract = Rc::new(super::extract_document::EXTRACT_DOCUMENT_RENDERER);
+    renderers.insert(
+        "javascript_repl".into(),
+        ToolRendererBinding::from_typed::<JsonObject, Value>(repl.clone())
+            .with_raw::<JavaScriptReplParams, JavaScriptReplToolResult>(repl),
+    );
+    renderers.insert(
+        "extract_document".into(),
+        ToolRendererBinding::from_typed::<JsonObject, Value>(extract.clone())
+            .with_raw::<ExtractDocumentParams, ExtractDocumentResult>(extract),
+    );
     renderers.insert(
         "bash".into(),
         ToolRendererBinding::from_details_agnostic(Rc::new(

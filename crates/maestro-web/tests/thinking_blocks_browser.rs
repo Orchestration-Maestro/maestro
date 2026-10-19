@@ -1,5 +1,6 @@
 //! Reasoning disclosure through the actual native reading consumer.
 #![cfg(all(test, target_arch = "wasm32"))]
+use crate::support::tool_output::TextOnlyOutput as _;
 use crate::{canvas_paint, markdown_support, support};
 
 use maestro_web::ThinkingBlock;
@@ -206,6 +207,7 @@ mod tests {
                 maestro_web::AssistantMessageProps::<serde_json::Value>::default(),
                 support::reading_view::view(&host, frame),
             )
+            .assert_no_overlays()
             .unwrap()
         });
     }

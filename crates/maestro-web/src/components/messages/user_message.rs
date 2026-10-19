@@ -7,7 +7,7 @@ use crate::{
         ReadingPlacement,
     },
     components::markdown_block::MarkdownBlock,
-    tools::types::{ToolRenderView, ToolUiError},
+    tools::types::{ToolContentOutput, ToolRenderView, ToolUiError},
 };
 use maestro_app::{UserBlock, UserContent};
 use std::{cell::RefCell, rc::Rc};
@@ -58,7 +58,19 @@ impl UserMessage {
         ui: &mut egui::Ui,
         message: UserMessageInput<'_>,
         view: ToolRenderView<'_>,
-    ) -> Result<Vec<AttachmentOverlay>, ToolUiError> {
+    ) -> ToolContentOutput {
+        let mut overlays = Vec::new();
+        let response = self.render_body(ui, message, view, &mut overlays);
+        ToolContentOutput { response, overlays }
+    }
+    /// Draw the row while transferring opened owners before any later error.
+    fn render_body(
+        &mut self,
+        ui: &mut egui::Ui,
+        message: UserMessageInput<'_>,
+        view: ToolRenderView<'_>,
+        overlays: &mut Vec<AttachmentOverlay>,
+    ) -> Result<egui::Response, ToolUiError> {
         let (content, attachments) = match message {
             UserMessageInput::User(message) => (&message.content, &[][..]),
             UserMessageInput::WithAttachments {
@@ -80,14 +92,7 @@ impl UserMessage {
         self.text.content.push_str(source);
         self.tiles.truncate(attachments.len());
         for (index, attachment) in attachments.iter().enumerate() {
-            if let Some(tile) = self.tiles.get_mut(index) {
-                tile.attachment = Rc::clone(attachment);
-            } else {
-                self.tiles.push(AttachmentTile::new(
-                    Rc::clone(attachment),
-                    Rc::clone(&self.host),
-                ));
-            }
+            AttachmentTile::retain_at(&mut self.tiles, index, Rc::clone(attachment), &self.host);
         }
         self.place(
             ui,
@@ -103,7 +108,7 @@ impl UserMessage {
         let mut content = frame.content_ui.new_child(
             egui::UiBuilder::new().max_rect(frame.content_ui.available_rect_before_wrap() - border),
         );
-        let overlays = self.draw(&mut content, view)?;
+        self.draw(&mut content, view, overlays)?;
         frame
             .content_ui
             .allocate_rect(content.min_rect() + border, egui::Sense::hover());
@@ -114,7 +119,7 @@ impl UserMessage {
             ReadingPhase::Publish,
             view,
         )?;
-        Ok(overlays)
+        Ok(response)
     }
     /// Measure before children, then publish the same candidate so paint stays behind text.
     fn place(
@@ -150,24 +155,24 @@ impl UserMessage {
         &mut self,
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
-    ) -> Result<Vec<AttachmentOverlay>, ToolUiError> {
+        overlays: &mut Vec<AttachmentOverlay>,
+    ) -> Result<(), ToolUiError> {
         self.text
             .render(ui, reading_view(view))
             .map_err(ToolUiError::reading)?;
         if self.tiles.is_empty() {
-            return Ok(Vec::new());
+            return Ok(());
         }
         ui.add_space(12.);
-        ui.horizontal_wrapped(|ui| -> Result<Vec<AttachmentOverlay>, ToolUiError> {
+        ui.horizontal_wrapped(|ui| -> Result<(), ToolUiError> {
             ui.spacing_mut().item_spacing = egui::vec2(8., 8.);
-            let mut overlays = Vec::new();
             for tile in &mut self.tiles {
                 overlays.extend(
                     tile.render(ui, view.i18n, view.presentation)
                         .map_err(ToolUiError::Attachment)?,
                 );
             }
-            Ok(overlays)
+            Ok(())
         })
         .inner
     }
