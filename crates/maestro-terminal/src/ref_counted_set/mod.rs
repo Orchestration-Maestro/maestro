@@ -6,8 +6,9 @@ use std::{collections::HashMap, hash::Hash, sync::Arc};
 /// A value index with opaque nonzero IDs and reusable released slots.
 #[derive(Clone)]
 pub(crate) struct RefCountedSet<T> {
-    /// Values addressed by the IDs stored in cells.
-    values: HashMap<u16, Item<T>>,
+    /// Values addressed by the IDs stored in cells, at index `id - 1`; a slot without
+    /// references is free and keeps its last value until reused.
+    items: Vec<Item<T>>,
     /// One identity index for deduplication.
     ids: HashMap<Arc<T>, u16>,
     /// Released IDs available for another value.
@@ -31,7 +32,7 @@ impl<T: Eq + Hash> RefCountedSet<T> {
     /// Reserve logical capacity using the set's 13/16 load factor.
     pub(crate) fn init(capacity: usize) -> Self {
         Self {
-            values: HashMap::new(),
+            items: Vec::new(),
             ids: HashMap::new(),
             free: Vec::new(),
             capacity: usize::try_from(layout(capacity as u64, 0, 1).cap)
@@ -56,57 +57,70 @@ impl<T: Eq + Hash> RefCountedSet<T> {
             self.use_multiple(id, 1);
             return Ok(id);
         }
-        if self.values.len() >= self.capacity {
+        if self.ids.len() >= self.capacity {
             return Err(StorageError::OutOfMemory);
         }
+        let value = Arc::new(value);
+        let item = Item {
+            value: Arc::clone(&value),
+            refs: 1,
+        };
         let id = if let Some(id) = self.free.pop() {
+            self.items[usize::from(id) - 1] = item;
             id
         } else {
+            self.items.push(item);
             let id = self.next_id;
             self.next_id += 1;
             id
         };
-        let value = Arc::new(value);
-        self.ids.insert(Arc::clone(&value), id);
-        self.values.insert(id, Item { value, refs: 1 });
+        self.ids.insert(value, id);
         Ok(id)
     }
 
     /// Retain additional owners of a resident ID.
     pub(crate) fn use_multiple(&mut self, id: u16, count: u16) {
-        if let Some(item) = self.values.get_mut(&id) {
+        if let Some(item) = self.resident(id) {
             item.refs += count;
         }
     }
 
     /// Read a resident value; the caller must retain its ID.
     pub(crate) fn get(&self, id: u16) -> &T {
-        &self.values[&id].value
+        let item = &self.items[usize::from(id) - 1];
+        debug_assert!(item.refs > 0, "released ID {id}");
+        &item.value
     }
 
     /// Release owners, returning the value when the final owner is removed.
     pub(crate) fn release_multiple(&mut self, id: u16, count: u16) -> Option<Arc<T>> {
-        let item = self.values.get_mut(&id)?;
+        let item = self.resident(id)?;
         item.refs -= count;
         if item.refs != 0 {
             return None;
         }
-        let item = self.values.remove(&id)?;
-        self.ids.remove(&item.value);
+        let value = Arc::clone(&item.value);
+        self.ids.remove(&value);
         self.free.push(id);
-        Some(item.value)
+        Some(value)
+    }
+
+    /// The item of an ID that still has owners.
+    fn resident(&mut self, id: u16) -> Option<&mut Item<T>> {
+        let slot = usize::from(id).checked_sub(1)?;
+        self.items.get_mut(slot).filter(|item| item.refs > 0)
     }
 
     /// Return the page-local reference count of a resident ID.
     #[cfg(test)]
     pub(crate) fn ref_count(&self, id: u16) -> u16 {
-        self.values[&id].refs
+        self.items[usize::from(id) - 1].refs
     }
 
     /// Count living distinct values.
     #[cfg(test)]
     pub(crate) fn count(&self) -> usize {
-        self.values.len()
+        self.ids.len()
     }
 
     /// Find an ID by complete value identity.
