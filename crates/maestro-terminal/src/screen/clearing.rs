@@ -182,7 +182,7 @@ impl Screen {
         }
     }
 
-    /// Clear a trailing spacer using its own page's stored width.
+    /// Clear a trailing spacer using its own page's stored width and dirty its row.
     fn clear_spacer_head(&mut self, pin: crate::page_list::Pin) {
         let Some(page) = self.pages.page(pin.node) else {
             return;
@@ -190,6 +190,9 @@ impl Screen {
         let last = page.size.cols - 1;
         if page.get_cells(pin.y)[usize::from(last)].wide() == Wide::SpacerHead {
             self.clear_cells(pin.node, pin.y, last..last + 1);
+            if let Some(page) = self.pages.page_mut(pin.node) {
+                page.get_row_mut(pin.y).set_dirty(true);
+            }
         }
     }
 }

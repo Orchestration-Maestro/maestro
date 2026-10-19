@@ -257,3 +257,98 @@ fn erase_chars_clears_unprotected_wide_boundaries() {
         }
     }
 }
+
+#[test]
+fn erase_chars_dirties_changed_previous_row() {
+    let mut t = Terminal::new(4, 3, 0).unwrap();
+    t.screens
+        .active_mut()
+        .set_attribute(Attribute::Palette256Bg(1))
+        .unwrap();
+    t.print_string("...中").unwrap();
+    t.set_protected_mode(ProtectedMode::Iso);
+    t.set_protected_mode(ProtectedMode::Off);
+    t.screens
+        .active_mut()
+        .set_attribute(Attribute::Palette256Bg(2))
+        .unwrap();
+    t.set_cursor_pos(2, 1);
+    clear_dirty(&mut t);
+    let before = cell(&t, 3, 0);
+    t.erase_chars(1);
+    assert_ne!(cell(&t, 3, 0), before);
+    assert_eq!(cell(&t, 3, 0), t.screens.active().blank_cell());
+    assert!(dirty(&t, 0), "changed preceding row must be dirty");
+    assert!(dirty(&t, 1));
+    assert!(!dirty(&t, 2));
+}
+
+#[test]
+fn widening_keeps_original_glyph_protection() {
+    for protected in [false, true] {
+        for wrapped in [false, true] {
+            let mut t = Terminal::new(5, 3, 0).unwrap();
+            if wrapped {
+                t.print_string("....").unwrap();
+            }
+            t.set_protected_mode(if protected {
+                ProtectedMode::Iso
+            } else {
+                ProtectedMode::Off
+            });
+            t.print('\u{2764}').unwrap();
+            t.set_protected_mode(if protected {
+                ProtectedMode::Off
+            } else {
+                ProtectedMode::Iso
+            });
+            t.print('\u{fe0f}').unwrap();
+            let y = u32::from(wrapped);
+            assert_eq!(cell(&t, 0, y).protected(), protected, "head protection");
+            assert_eq!(cell(&t, 1, y).protected(), protected, "tail protection");
+            if wrapped {
+                assert_eq!(
+                    cell(&t, 4, 0).protected(),
+                    protected,
+                    "wrap spacer protection"
+                );
+            }
+            assert_eq!(t.screens.active().cursor.protected, !protected);
+            if !protected {
+                t.set_cursor_pos(1 + usize::from(wrapped), 2);
+                t.erase_chars(1);
+                assert!(cell(&t, 0, y).is_zero());
+                assert!(cell(&t, 1, y).is_zero());
+            }
+        }
+    }
+}
+
+#[test]
+fn erase_chars_keeps_widened_protected_glyph() {
+    for wrapped in [false, true] {
+        let mut t = Terminal::new(5, 3, 0).unwrap();
+        if wrapped {
+            t.print_string("....").unwrap();
+        }
+        t.set_protected_mode(ProtectedMode::Iso);
+        t.print('\u{2764}').unwrap();
+        t.set_protected_mode(ProtectedMode::Off);
+        t.print('\u{fe0f}').unwrap();
+        let y = u32::from(wrapped);
+        let head = cell(&t, 0, y);
+        let tail = cell(&t, 1, y);
+        t.set_cursor_pos(if wrapped { 2 } else { 1 }, 2);
+        t.erase_chars(1);
+        assert_eq!(cell(&t, 0, y), head);
+        assert_eq!(cell(&t, 1, y), tail, "protected glyph tail must survive");
+        assert_text(
+            &t,
+            if wrapped {
+                "....\n❤\u{fe0f}"
+            } else {
+                "❤\u{fe0f}"
+            },
+        );
+    }
+}

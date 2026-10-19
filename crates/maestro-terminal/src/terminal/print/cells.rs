@@ -9,7 +9,12 @@ use crate::{
 
 impl Terminal {
     /// Write one mapped scalar while preserving page-local managed ownership.
-    pub(super) fn print_cell(&mut self, cp: char, wide: Wide) -> Result<(), Error> {
+    pub(super) fn print_cell(
+        &mut self,
+        cp: char,
+        wide: Wide,
+        protected: bool,
+    ) -> Result<(), Error> {
         let cp = self.map_charset(cp);
         self.clear_overwritten_wide(wide)?;
         let screen = self.screens.active_mut();
@@ -39,7 +44,7 @@ impl Terminal {
         let mut cell = Cell::init(cp);
         cell.set_wide(wide);
         cell.set_style_id(screen.cursor.style_id);
-        cell.set_protected(screen.cursor.protected);
+        cell.set_protected(protected);
         cell.set_semantic_content(screen.cursor.semantic_content);
         page.get_cells_mut(pin.y)[usize::from(pin.x)] = cell;
         if cell.has_styling() {

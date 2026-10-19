@@ -210,7 +210,8 @@ applying background-only blanks. `clear_rows` uses inclusive endpoints and each
 page's stored width; selective clearing retains protected cells and row metadata.
 `cursor_reset_wrap` clears pending wrap. When the current row wraps, it also
 clears the next row's continuation and a trailing spacer head. `split_cell_boundary` removes disconnected wide-cell halves without
-changing wrap metadata.
+changing wrap metadata. Clearing a trailing spacer marks its row dirty, including
+when the spacer is on the preceding page.
 
 `cursor_down_scroll` scrolls at the active bottom. With history disabled it rotates
 active rows, or clears a single-row screen. Otherwise it grows retained storage,
@@ -289,7 +290,9 @@ cursor colour does not fall back to the foreground.
 charset translation, pending wrap, insert mode and cluster-width effects.
 `print_string` treats newline as carriage return followed by linefeed. Selecting
 `StatusDisplay::StatusLine` suppresses scalar text, but not that newline handling.
-Rows containing image placeholders are marked for renderer lookup.
+Rows containing image placeholders are marked for renderer lookup. Widening a
+cluster retains the original cell's protection on both halves and any wrap spacer,
+even if cursor protection changed between scalars.
 
 Cursor moves clamp to the current margins or screen edge. `set_cursor_pos`
 uses one-based coordinates and applies scrolling offsets in origin mode.

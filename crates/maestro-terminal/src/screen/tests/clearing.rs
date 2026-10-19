@@ -442,3 +442,39 @@ fn selective_clear_retains_full_and_partial_placeholder_metadata() {
         );
     }
 }
+
+#[test]
+fn boundary_cleanup_dirties_changed_spacer_row() {
+    for cross_page in [false, true] {
+        let mut s = screen(4, 3);
+        let p = pin(&s);
+        {
+            let page = s.pages.page_mut(p.node).unwrap();
+            page.get_row_mut(0).set_wrap(true);
+            page.get_cells_mut(0)[3].set_wide(Wide::SpacerHead);
+            page.get_row_mut(1).set_wrap_continuation(true);
+            page.get_cells_mut(1)[0] = Cell::init('中');
+            page.get_cells_mut(1)[0].set_wide(Wide::Wide);
+            page.get_cells_mut(1)[1].set_wide(Wide::SpacerTail);
+        }
+        if cross_page {
+            super::split_rows(&mut s, 1);
+        }
+        s.cursor_absolute(0, 1);
+        s.set_attribute(Attribute::Palette256Bg(2)).unwrap();
+        let current = pin(&s);
+        assert_eq!(current.node != p.node, cross_page);
+        s.pages
+            .page_mut(p.node)
+            .unwrap()
+            .get_row_mut(0)
+            .set_dirty(false);
+        s.clear_unprotected_cells(current.node, current.y, 0..1);
+        let previous = s.pages.page(p.node).unwrap();
+        assert_eq!(previous.get_cells(0)[3], s.blank_cell());
+        assert!(
+            previous.get_row(0).dirty(),
+            "changed spacer row must be dirty"
+        );
+    }
+}
