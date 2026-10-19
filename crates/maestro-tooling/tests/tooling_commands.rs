@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use maestro_test_process::TestProcess;
 use maestro_tooling as tooling;
 
 /// Exercise Rustup selection with an incomplete default and an installed pin.
@@ -17,20 +18,16 @@ fn child_toolchain_uses_declared_pin() {
         let home = owner.root.join("rustup");
         let sysroot = prepare_incomplete_toolchain(&home);
         for selector in [None, Some("incomplete")] {
-            let mut command = Command::new(std::env::current_exe().unwrap());
-            command
-                .args([
-                    "--exact",
-                    "tooling_commands::child_toolchain_uses_declared_pin",
-                    "--nocapture",
-                ])
+            let mut command = TestProcess::current("child_toolchain_uses_declared_pin")
+                .unwrap()
+                .nocapture()
                 .env("MAESTRO_TOOLCHAIN_CONTROL", "1")
                 .env("MAESTRO_EXPECTED_SYSROOT", &sysroot)
                 .env("RUSTUP_HOME", &home)
                 .env_remove("RUSTUP_TOOLCHAIN")
                 .env("RUSTUP_AUTO_INSTALL", "0");
             if let Some(selector) = selector {
-                command.env("RUSTUP_TOOLCHAIN", selector);
+                command = command.env("RUSTUP_TOOLCHAIN", selector);
             }
             let output = command.output().unwrap();
             assert!(
@@ -42,7 +39,7 @@ fn child_toolchain_uses_declared_pin() {
             assert!(
                 String::from_utf8_lossy(&output.stdout).contains("parent environment unchanged")
             );
-            print!("{}", String::from_utf8_lossy(&output.stdout));
+            std::io::Write::write_all(&mut std::io::stdout(), &output.stdout).unwrap();
         }
         return;
     }
@@ -214,13 +211,10 @@ fn child_toolchain_preserves_parent_profile_destination() {
         );
         return;
     }
-    let output = Command::new(std::env::current_exe().unwrap())
+    let output = TestProcess::current("child_toolchain_preserves_parent_profile_destination")
+        .unwrap()
+        .nocapture()
         .current_dir(std::env::temp_dir())
-        .args([
-            "--exact",
-            "tooling_commands::child_toolchain_preserves_parent_profile_destination",
-            "--nocapture",
-        ])
         .env(PROBE, "1")
         .env("LLVM_PROFILE_FILE", "parent-%p.profraw")
         .env("RUSTFLAGS", "-C instrument-coverage")
@@ -404,20 +398,16 @@ fn main() {
         Self { root, child }
     }
 
-    fn invoke(&self, test: &str, operation: &str, args: &[&str]) -> Command {
-        let mut command = Command::new(std::env::current_exe().unwrap());
-        command
+    fn invoke(&self, test: &str, operation: &str, args: &[&str]) -> TestProcess {
+        let mut command = TestProcess::named(format!("tooling_commands::{test}"))
+            .unwrap()
+            .nocapture()
             .env_clear()
             .envs(
                 ["SYSTEMROOT", "WINDIR", "LLVM_PROFILE_FILE"]
                     .into_iter()
                     .filter_map(|name| std::env::var_os(name).map(|value| (name, value))),
             )
-            .args([
-                "--exact",
-                &format!("tooling_commands::{test}"),
-                "--nocapture",
-            ])
             .env("MAESTRO_DRIVER", operation)
             .env("MAESTRO_FIXTURE_CARGO", &self.child)
             .env("MAESTRO_FIXTURE_ROOT", &self.root)
@@ -426,10 +416,10 @@ fn main() {
             .env("PATH", &self.root)
             .current_dir(&self.root);
         if let Some(channel) = toolchain_support::channel() {
-            command.env("RUSTUP_TOOLCHAIN", channel);
+            command = command.env("RUSTUP_TOOLCHAIN", channel);
         }
         for (index, arg) in args.iter().enumerate() {
-            command.env(format!("MAESTRO_ARG_{index}"), arg);
+            command = command.env(format!("MAESTRO_ARG_{index}"), arg);
         }
         command
     }
@@ -466,6 +456,19 @@ impl Drop for Fixture {
     fn drop(&mut self) {
         fs::remove_dir_all(&self.root).unwrap();
     }
+}
+
+/// Reject a stale fixture identity before a zero-test child can report success.
+#[test]
+fn checked_fixture_rejects_missing_identity() {
+    let fixture = Fixture::new();
+    assert!(
+        fixture
+            .invoke("missing_fixture_identity", "test-offline", &[])
+            .output()
+            .is_err(),
+        "stale fixture identity returned successful zero-test output"
+    );
 }
 
 fn drive() {
@@ -570,7 +573,7 @@ fn maestro_offline_removes_only_listed_credentials() {
             &[],
         );
         for key in OFFLINE_KEYS {
-            command.env(key, value);
+            command = command.env(key, value);
         }
         for key in [
             "AZURE_OPENAI_API_KEY",
@@ -579,7 +582,7 @@ fn maestro_offline_removes_only_listed_credentials() {
             "XDG_CONFIG_HOME",
             "MAESTRO_AGENT_DIR",
         ] {
-            command.env(key, "kept");
+            command = command.env(key, "kept");
         }
         let output = command.output().unwrap();
         assert!(
@@ -877,16 +880,16 @@ fn maestro_source_launchers_clear_the_same_credentials() {
                 &["--no-env"],
             );
             for key in OFFLINE_KEYS {
-                command.env(key, value);
+                command = command.env(key, value);
             }
             for key in [
                 "AZURE_OPENAI_API_KEY",
                 "AZURE_OPENAI_BASE_URL",
                 "AZURE_OPENAI_RESOURCE_NAME",
             ] {
-                command.env(key, value);
+                command = command.env(key, value);
             }
-            command
+            command = command
                 .env("MAESTRO_NO_LOCAL_LLM", "kept")
                 .env("MAESTRO_CANARY", "kept");
             let output = command.output().unwrap();
@@ -1012,9 +1015,9 @@ fn maestro_source_without_switch_preserves_environment() {
         &["literal"],
     );
     for key in OFFLINE_KEYS {
-        command.env(key, "kept");
+        command = command.env(key, "kept");
     }
-    command.env("MAESTRO_NO_LOCAL_LLM", "kept");
+    command = command.env("MAESTRO_NO_LOCAL_LLM", "kept");
     let output = command.output().unwrap();
     assert!(output.status.success());
     for key in OFFLINE_KEYS {
