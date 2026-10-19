@@ -102,8 +102,10 @@ pub(super) fn prepare(content: &str, escape_html: bool) -> Prepared {
     let inline = InlineContext::new(&document);
     let math = katex::KatexContext::default();
     let mut writer = Writer {
-        policy: Policy::Transcript(&math),
-        inline: &inline,
+        policy: Policy::Transcript {
+            math: &math,
+            inline: &inline,
+        },
         prepared: Prepared {
             slot_attribute,
             ..Prepared::default()
@@ -119,9 +121,14 @@ pub(super) fn prepare(content: &str, escape_html: bool) -> Prepared {
 type Atoms<'a, 'b> = Option<(&'b [InlineAtom<'a>], &'b [Formula])>;
 
 /// Rendering behavior selected by the containing surface.
-enum Policy<'a> {
+enum Policy<'a, 'd> {
     /// Retained chat controls and formulas.
-    Transcript(&'a katex::KatexContext),
+    Transcript {
+        /// Formula renderer for retained chat.
+        math: &'a katex::KatexContext,
+        /// Original container and label scopes, used only by chat.
+        inline: &'a InlineContext<'d>,
+    },
     /// Standalone selectable session markup.
     Export(&'a dyn maestro_theme::SyntaxHighlighter),
 }
@@ -129,9 +136,7 @@ enum Policy<'a> {
 /// Document walker with the math renderer and generated-slot table.
 struct Writer<'a, 'd> {
     /// Surface-specific admission and presentation.
-    policy: Policy<'a>,
-    /// One resolved context with original container and label scopes.
-    inline: &'a InlineContext<'d>,
+    policy: Policy<'a, 'd>,
     /// Output under construction.
     prepared: Prepared,
 }
@@ -180,7 +185,7 @@ impl Writer<'_, '_> {
                 out.push_str("</blockquote>\n");
             }
             Kind::HtmlBlock(html) => match self.policy {
-                Policy::Transcript(_) => out.push_str(html),
+                Policy::Transcript { .. } => out.push_str(html),
                 Policy::Export(_) => escape(html, out),
             },
             Kind::Rule => out.push_str("<hr>\n"),
@@ -217,7 +222,7 @@ impl Writer<'_, '_> {
     }
     /// Write a table inside its own horizontal scroller.
     fn table(&mut self, table: &Table, atoms: Atoms<'_, '_>, out: &mut String) {
-        if matches!(self.policy, Policy::Transcript(_)) {
+        if matches!(self.policy, Policy::Transcript { .. }) {
             out.push_str("<div class=\"maestro-table-scroll\">");
         }
         out.push_str("<table>\n<thead>\n");
@@ -227,7 +232,7 @@ impl Writer<'_, '_> {
             self.row(row, (&table.alignments, "td"), atoms, out);
         }
         out.push_str("</tbody></table>\n");
-        if matches!(self.policy, Policy::Transcript(_)) {
+        if matches!(self.policy, Policy::Transcript { .. }) {
             out.push_str("</div>");
         }
     }
@@ -274,7 +279,10 @@ impl Writer<'_, '_> {
             wrapped(&body, flow == Flow::Paragraph, out);
             return;
         }
-        let Some(scope) = self.inline.scope(range, false) else {
+        let Policy::Transcript { inline, .. } = self.policy else {
+            return;
+        };
+        let Some(scope) = inline.scope(range, false) else {
             self.inline(children, None, out);
             return;
         };
@@ -376,12 +384,12 @@ impl Writer<'_, '_> {
             Kind::Emphasis(c) => self.tagged("em", c, atoms, out),
             Kind::Link(..) => self.link(node, out),
             Kind::Image(alt, meta) => match self.policy {
-                Policy::Transcript(_) => image(meta, out),
+                Policy::Transcript { .. } => image(meta, out),
                 Policy::Export(_) => export::image(alt, meta, out),
             },
             Kind::TaskListMarker(checked) => task(*checked, out),
             Kind::Html(html) => match self.policy {
-                Policy::Transcript(_) => out.push_str(html),
+                Policy::Transcript { .. } => out.push_str(html),
                 Policy::Export(_) => escape(html, out),
             },
             Kind::Atom(index) => self.atom(*index, atoms, out),
@@ -413,7 +421,10 @@ impl Writer<'_, '_> {
         out.push('"');
         title(&meta.title, out);
         out.push('>');
-        if let Some(scope) = self.inline.scope(&node.range, true) {
+        let Policy::Transcript { inline, .. } = self.policy else {
+            return;
+        };
+        if let Some(scope) = inline.scope(&node.range, true) {
             let content = scope.content_range();
             let formulas = scan(scope, content.clone(), false);
             if formulas.is_empty() {
@@ -459,10 +470,10 @@ impl Writer<'_, '_> {
             .throw_on_error(false)
             .error_color(ERROR_COLOR.to_owned())
             .build();
-        let Policy::Transcript(context) = &self.policy else {
+        let Policy::Transcript { math, .. } = &self.policy else {
             return String::new();
         };
-        let rendered = katex::render_to_string(context, &formula.tex, &settings);
+        let rendered = katex::render_to_string(math, &formula.tex, &settings);
         match (rendered, display) {
             (Ok(html), true) => format!("<div class=\"maestro-math-block\">{html}</div>"),
             (Ok(html), false) => html,

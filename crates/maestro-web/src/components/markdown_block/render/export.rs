@@ -8,10 +8,8 @@ pub(crate) fn prepare_export(text: &str, highlighter: &dyn SyntaxHighlighter) ->
     let mut document =
         markdown::parse_with_options(normalize_to_lf(text), markdown::MarkedOptions::Export);
     markdown::autolinks(&mut document);
-    let inline = markdown::InlineContext::new(&document);
     let mut writer = Writer {
         policy: Policy::Export(highlighter),
-        inline: &inline,
         prepared: Prepared::default(),
     };
     let mut html = String::new();
@@ -59,3 +57,6 @@ pub(super) fn code(
     out.push_str(&html);
     out.push_str("</code></pre>");
 }
+
+#[cfg(test)]
+mod tests;
