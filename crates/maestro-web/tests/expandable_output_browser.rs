@@ -1,12 +1,5 @@
 //! Mounted output disclosure behavior in native browser documents.
 #![cfg(all(test, target_arch = "wasm32"))]
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-#[path = "export_support/browser.rs"]
-mod export_mount;
-pub mod markdown_support;
-pub mod reading_slots_support;
-mod support;
 #[cfg(test)]
 mod tests {
     use crate::{export_mount, markdown_support, reading_slots_support, support};

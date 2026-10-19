@@ -18,6 +18,8 @@ mod dialog_shell;
 mod dialog_shell_browser;
 mod excel_views;
 mod excel_views_browser;
+mod expandable_output_browser;
+mod export_markdown;
 mod icon_rendering;
 mod input_native;
 mod input_widget;
@@ -59,6 +61,10 @@ pub mod artifact_support;
 pub mod attachment_support;
 pub mod copy_button_support;
 pub mod effects_support;
+#[cfg(target_arch = "wasm32")]
+#[path = "export_support/browser.rs"]
+mod export_mount;
+mod export_support;
 pub mod highlighter_support;
 pub mod input_support;
 pub mod markdown_support;
