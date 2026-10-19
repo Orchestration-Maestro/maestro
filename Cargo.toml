@@ -62,5 +62,12 @@ opt-level = 3
 [profile.dev.package.proc-macro2]
 opt-level = 3
 
+# Image and archive tests deflate and encode hundreds of megabytes; unoptimised codecs make them about eleven times slower.
+[profile.dev.package.png]
+opt-level = 3
+
+[profile.dev.package.zlib-rs]
+opt-level = 3
+
 [profile.test]
 debug = "line-tables-only"
