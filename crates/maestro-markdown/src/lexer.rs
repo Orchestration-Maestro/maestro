@@ -281,15 +281,15 @@ impl<'a, E> Lexer<'a, E> {
             );
 
         let node = source.node(0..end, kind);
-        let inline_range = if matches!(node.kind, Kind::Paragraph(_)) {
-            range.start..end
+        let inline = if !matches!(node.kind, Kind::Paragraph(_)) {
+            source.select(std::iter::once(range))
+        } else if self.context == BlockContext::ListItem {
+            source.select(tokenizer::block::item_text(source.text, range.start..end))
         } else {
-            range
+            source.select(std::iter::once(range.start..end))
         };
-        self.scopes.insert(
-            (node.range.start, node.range.end, false),
-            source.select(std::iter::once(inline_range)),
-        );
+        self.scopes
+            .insert((node.range.start, node.range.end, false), inline);
         Some((end, node))
     }
 

@@ -147,7 +147,7 @@ fn line_breaks_distinguish_authored_and_decoded_newlines() {
 
 #[test]
 fn lists_keep_marker_indent_looseness_and_task_state() {
-    observations::check("list", 17);
+    observations::check("list", 21);
     let document = parse("-\n- b".into());
     let Kind::List(None, items) = &document.nodes[0].kind else {
         panic!("list")

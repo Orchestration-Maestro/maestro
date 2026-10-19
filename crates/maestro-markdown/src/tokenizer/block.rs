@@ -2,6 +2,7 @@
 use super::{Block, capture};
 use crate::{Kind, MarkedOptions, helpers::rtrim, rules, source::Source};
 use maestro_text::is_whitespace_scalar;
+use std::ops::Range;
 
 /// Admit a non-container block in grammar order.
 pub(crate) fn leaf(source: &Source<'_>, options: MarkedOptions) -> Option<Block> {
@@ -47,6 +48,22 @@ pub(crate) fn continuation(source: &Source<'_>, options: MarkedOptions) -> Optio
         inline: Some(source.select(pieces)),
     };
     Some((block, content == consumed))
+}
+
+/// Inline pieces of list item paragraph text: a continuation line shaped like indented code
+/// loses one indentation unit, as when item text continues with code line by line.
+pub(crate) fn item_text(text: &str, range: Range<usize>) -> Vec<Range<usize>> {
+    crate::lexer::lines(&text[range.clone()])
+        .enumerate()
+        .map(|(index, line)| {
+            let line = range.start + line.start..range.start + line.end;
+            let code = index > 0
+                && rules::BLOCK_CODE
+                    .as_ref()
+                    .is_some_and(|rule| rule.find(&text[line.clone()]).is_some());
+            line.start + if code { indent(&text[line.clone()]) } else { 0 }..line.end
+        })
+        .collect()
 }
 
 /// Bytes of one indentation unit: up to four spaces, or fewer spaces and a tab.
