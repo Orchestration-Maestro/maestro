@@ -534,7 +534,9 @@ pub fn settings(name: &str, group: Group) {
         let home = scratch.join("home");
         std::fs::create_dir(&home).unwrap();
         let output = child::probe(
-            &crate::child_process::selector(name).unwrap(),
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .name(),
             &scratch.0,
             &[
                 ("HOME", &home),

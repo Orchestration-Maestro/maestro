@@ -12,7 +12,6 @@ use serde_json::{Map, Value, json};
 use tokio::sync::{mpsc, oneshot};
 
 use crate::chat::TestResult;
-use crate::child_process::{child_case, rerun};
 use crate::json::canonical;
 
 /// Ends a message stream and nothing else.
@@ -415,8 +414,15 @@ pub fn rows_of(fixture: &str, test: &str) -> TestResult<Vec<Row>> {
 /// with one runs alone in a child holding exactly those variables.
 pub async fn assert_rows(fixture: &str, test: &str) -> TestResult {
     let owned = rows_of(fixture, test)?;
-    let Some(selected) = child_case() else {
-        rerun(test, "*", &[])?;
+    let Ok(selected) = std::env::var("MAESTRO_CHILD_CASE") else {
+        {
+            let output = maestro_test_process::TestProcess::current(test)?
+                .nocapture()
+                .env_clear()
+                .env("MAESTRO_CHILD_CASE", "*")
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
         for row in owned.iter().filter(|row| row.case.env.is_some()) {
             let variables: Vec<(&str, &str)> = row
                 .case
@@ -425,7 +431,15 @@ pub async fn assert_rows(fixture: &str, test: &str) -> TestResult {
                 .flatten()
                 .map(|(name, value)| (name.as_str(), value.as_str()))
                 .collect();
-            rerun(test, &row.id, &variables)?;
+            {
+                let output = maestro_test_process::TestProcess::current(test)?
+                    .nocapture()
+                    .env_clear()
+                    .envs(variables.iter().copied())
+                    .env("MAESTRO_CHILD_CASE", &row.id)
+                    .output()?;
+                assert!(output.status.success(), "{output:?}");
+            };
         }
         return Ok(());
     };

@@ -16,14 +16,21 @@ fn directory(name: &str, content: &str) -> PathBuf {
 #[test]
 fn footer_native_effects_keep_admission_directory_after_cwd_change() {
     const CASE: &str = "footer-cwd-identity";
-    if crate::child_process::child_case().as_deref() != Some(CASE) {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() != Some(CASE) {
         let path = std::env::var("PATH").unwrap();
-        crate::child_process::rerun(
-            "footer_native_effects_keep_admission_directory_after_cwd_change",
-            CASE,
-            &[("PATH", &path)],
-        )
-        .unwrap();
+        {
+            let output = maestro_test_process::TestProcess::current(
+                "footer_native_effects_keep_admission_directory_after_cwd_change",
+            )
+            .unwrap()
+            .nocapture()
+            .env_clear()
+            .envs([("PATH", &path)].iter().copied())
+            .env("MAESTRO_CHILD_CASE", CASE)
+            .output()
+            .unwrap();
+            assert!(output.status.success(), "{output:?}");
+        };
         return;
     }
     let first = directory("first", "seven77");

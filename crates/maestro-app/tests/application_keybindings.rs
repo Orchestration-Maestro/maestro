@@ -378,7 +378,9 @@ fn isolated(name: &str, run: impl FnOnce(&std::path::Path)) {
     } else {
         let dir = child::Scratch::new();
         child::probe(
-            &crate::child_process::selector(name).unwrap(),
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .name(),
             &dir.0,
             &[
                 ("MAESTRO_KEYS_CHILD", name),

@@ -10,7 +10,7 @@ use serde::Deserialize;
 use crate::TestResult;
 use crate::profile_credentials::{Input, On, Toggle};
 use crate::profile_files::Workdir;
-use crate::{bedrock, chat, child_process, loopback, profile_services, transport};
+use crate::{bedrock, chat, loopback, profile_services, transport};
 
 /// One service call, retaining order, route and authentication identity.
 #[derive(Debug, Deserialize, PartialEq)]
@@ -287,18 +287,25 @@ fn outside(row: &Row, supplied: bool) -> TestResult {
     } else {
         &row.test
     };
-    let variables: Vec<_> = vars
-        .iter()
-        .map(|(name, value)| (name.as_str(), value.as_str()))
-        .collect();
-    let result = child_process::rerun(test, &row.id, &variables);
+    let result = maestro_test_process::TestProcess::current(test).and_then(|process| {
+        process
+            .nocapture()
+            .env_clear()
+            .envs(
+                vars.iter()
+                    .map(|(name, value)| (name.as_str(), value.as_str())),
+            )
+            .env("MAESTRO_CHILD_CASE", &row.id)
+            .output()
+    });
     origin.finish()?;
     conversation.finish()?;
     proxy.finish()?;
     if let Some(tls) = tls {
         tls.finish()?;
     }
-    result?;
+    let output = result?;
+    assert!(output.status.success(), "{output:?}");
     compare_peers(
         row,
         supplied,
@@ -491,7 +498,7 @@ pub fn check(test: &str) -> TestResult {
         })
         .collect();
     assert!(!owned.is_empty(), "test owns no credential route rows");
-    if let Some(case) = child_process::child_case() {
+    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
         let row = owned
             .into_iter()
             .find(|row| row.id == case)

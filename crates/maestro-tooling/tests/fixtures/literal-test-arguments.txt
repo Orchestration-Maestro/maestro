@@ -1,0 +1,10 @@
+
+a space
+'quoted'
+"double quoted"
+selected_behavior
+--
+--ignored
+--exact
+wrapped_ignored
+--nocapture

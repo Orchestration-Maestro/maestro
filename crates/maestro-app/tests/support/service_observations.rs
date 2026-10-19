@@ -183,7 +183,9 @@ pub fn isolated(name: &str) -> bool {
         return false;
     }
     child::probe(
-        &crate::child_process::selector(name).unwrap(),
+        maestro_test_process::TestProcess::current(name)
+            .unwrap()
+            .name(),
         &std::env::current_dir().unwrap(),
         &[("MAESTRO_SERVICE_PROBE", name)],
         FLAGS,
@@ -216,7 +218,9 @@ pub fn environment_cases(name: &str, group: &str, indices: &[usize]) -> Option<C
             }
         }
         child::probe(
-            &crate::child_process::selector(name).unwrap(),
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .name(),
             &std::env::current_dir().unwrap(),
             &envs,
             FLAGS,
@@ -231,7 +235,9 @@ pub fn environment_cases(name: &str, group: &str, indices: &[usize]) -> Option<C
 /// Panics when fixture data or controlled observations violate the test contract.
 pub fn native_probe(name: &str, envs: &[(&str, &str)], removed: &[&str]) {
     child::probe(
-        &crate::child_process::selector(name).unwrap(),
+        maestro_test_process::TestProcess::current(name)
+            .unwrap()
+            .name(),
         &std::env::current_dir().unwrap(),
         envs,
         removed,

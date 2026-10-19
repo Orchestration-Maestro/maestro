@@ -98,7 +98,7 @@ mod tests {
     fn assert_retained_timestamp<K: maestro_models::StreamOptionsFamily>(
         callback: &maestro_models::StreamFunction<K>,
         expected: f64,
-    ) -> crate::child_process::TestResult {
+    ) -> crate::chat::TestResult {
         let stream = callback.call(
             model("separate"),
             context(),
@@ -108,7 +108,7 @@ mod tests {
         Ok(())
     }
 
-    fn assert_cloud_selection() -> crate::child_process::TestResult {
+    fn assert_cloud_selection() -> crate::chat::TestResult {
         for (call, expected) in [
             (
                 maestro_models::stream(model("bedrock-converse-stream"), context(), None)?,
@@ -125,13 +125,21 @@ mod tests {
     }
 
     #[test]
-    fn maestro_platform_stores_keep_distinct_owners() -> crate::child_process::TestResult {
+    fn maestro_platform_stores_keep_distinct_owners() -> crate::chat::TestResult {
         use maestro_models::records::api_registry::*;
         use maestro_models::{BedrockProviderModule, get_oauth_provider, reset_oauth_providers};
         let _serial = crate::bundled::registry();
-        if crate::child_process::child_case().is_none() {
+        if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
             let name = "maestro_platform_stores_keep_distinct_owners";
-            return crate::child_process::rerun(name, "owners", &[]);
+            return {
+                let output = maestro_test_process::TestProcess::current(name)?
+                    .nocapture()
+                    .env_clear()
+                    .env("MAESTRO_CHILD_CASE", "owners")
+                    .output()?;
+                assert!(output.status.success(), "{output:?}");
+                Ok(())
+            };
         }
         let visits = Arc::new(Mutex::new(Vec::new()));
         let recorded = Arc::clone(&visits);

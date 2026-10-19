@@ -137,7 +137,9 @@ fn session_selector_default_file_manager_and_supplied_manager_are_distinct() {
         )
         .unwrap();
         keybinding_child::probe(
-            &crate::child_process::selector(NAME).unwrap(),
+            maestro_test_process::TestProcess::current(NAME)
+                .unwrap()
+                .name(),
             &dir.0,
             &[
                 ("MAESTRO_SELECTOR_KEYS_CHILD", "yes"),

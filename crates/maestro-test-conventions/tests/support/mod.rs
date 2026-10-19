@@ -229,28 +229,25 @@ impl Workspace {
         &self,
         cargo: &std::path::Path,
         rustc: &std::path::Path,
-    ) -> std::process::Command {
+    ) -> maestro_test_process::TestProcess {
         let launcher =
             PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/metadata-command.sh");
-        let mut command = std::process::Command::new(std::env::current_exe().unwrap());
-        command
-            .args([
-                "--exact",
-                "architecture::metadata_graph_failures_cross_the_public_interface",
-                "--nocapture",
-            ])
-            .env("MAESTRO_CONVENTIONS_PROBE_ROOT", &self.root)
-            .env("CARGO", if cargo.is_file() { &launcher } else { cargo })
-            .env("RUSTC", if rustc.is_file() { &launcher } else { rustc })
-            .env("MAESTRO_FAKE_CARGO_SCENARIO", cargo)
-            .env("MAESTRO_FAKE_RUSTC_SCENARIO", rustc);
-        command
+        maestro_test_process::TestProcess::named(
+            "architecture::metadata_graph_failures_cross_the_public_interface",
+        )
+        .unwrap()
+        .nocapture()
+        .env("MAESTRO_CONVENTIONS_PROBE_ROOT", &self.root)
+        .env("CARGO", if cargo.is_file() { &launcher } else { cargo })
+        .env("RUSTC", if rustc.is_file() { &launcher } else { rustc })
+        .env("MAESTRO_FAKE_CARGO_SCENARIO", cargo)
+        .env("MAESTRO_FAKE_RUSTC_SCENARIO", rustc)
     }
 }
 
 /// Run a probe child and require that it ran its one probe test successfully.
 #[cfg(unix)]
-fn run_probe(command: &mut std::process::Command) {
+fn run_probe(command: maestro_test_process::TestProcess) {
     let output = command.output().unwrap();
     assert!(
         output.status.success(),
@@ -258,9 +255,4 @@ fn run_probe(command: &mut std::process::Command) {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    crate::child_process::assert_executed(
-        &output,
-        "architecture::metadata_graph_failures_cross_the_public_interface",
-    )
-    .unwrap();
 }

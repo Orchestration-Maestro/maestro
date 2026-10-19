@@ -7,9 +7,7 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, ExitStatus, Output, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use maestro_test_process::{
-    TestProcess, assert_executed, capture, child_case, rerun, run_alone, selector, test_name,
-};
+use maestro_test_process::{TestProcess, run_alone, test_name};
 
 /// The harness bytes that open a one-test run.
 const START: &[u8] = b"\nrunning 1 test\n";
@@ -183,7 +181,6 @@ fn current_identity_rejects_mismatch_and_unnamed_threads() {
         unnamed.to_string().contains("not a named test"),
         "{unnamed}"
     );
-    assert!(selector("some_other_test").is_err());
 }
 
 #[test]
@@ -671,7 +668,7 @@ fn adapter_route_does_not_discard_os_configuration() {
 }
 
 /// Variables the environment probe reports.
-const VARS: &str = "LLVM_PROFILE_FILE,MTP_AMBIENT,MTP_SET,MTP_OTHER";
+const VARS: &str = "LLVM_PROFILE_FILE,MTP_AMBIENT,MTP_SET,MTP_OTHER,PATH";
 
 /// Report `process`'s view of [`VARS`].
 fn view(process: TestProcess) -> BTreeMap<String, String> {
@@ -685,9 +682,11 @@ fn check_edits(profile: Option<&str>) {
     let before: Vec<_> = std::env::vars_os().collect();
     let inherited = view(plain(&name));
     assert_eq!(inherited["MTP_AMBIENT"], hex("outer"));
+    assert_eq!(inherited["PATH"], hex("outer-path"));
     let kept = profile.map_or_else(|| "-".to_owned(), hex);
     assert_eq!(inherited["LLVM_PROFILE_FILE"], kept);
     let cleared = view(plain(&name).env_clear());
+    assert_eq!(cleared["PATH"], "-");
     assert_eq!(
         (
             cleared["MTP_AMBIENT"].as_str(),
@@ -726,7 +725,9 @@ fn environment_edits_keep_order_profile_bytes_and_parent_state() {
     let profile = format!("{}/prof-%p-%m.profraw", scratch.0.display());
     for ambient in [Some(profile.as_str()), None] {
         let mut command = outer("environment_edits_keep_order_profile_bytes_and_parent_state");
-        command.env("MTP_AMBIENT", "outer");
+        command
+            .env("MTP_AMBIENT", "outer")
+            .env("PATH", "outer-path");
         match ambient {
             Some(profile) => command.env("LLVM_PROFILE_FILE", profile),
             None => command.env_remove("LLVM_PROFILE_FILE"),
@@ -738,76 +739,6 @@ fn environment_edits_keep_order_profile_bytes_and_parent_state() {
             text(&output.stdout),
             text(&output.stderr)
         );
-    }
-}
-
-/// Describe a child's view of the case marker, profile path and clearing, then fail on demand.
-fn legacy_child(case: &str) {
-    let mut out = std::io::stdout();
-    for name in [
-        "MAESTRO_CHILD_CASE",
-        "LLVM_PROFILE_FILE",
-        "MTP_LEGACY",
-        "PATH",
-    ] {
-        let value = std::env::var(name).unwrap_or_else(|_| "-".into());
-        writeln!(out, "{name}={value}").unwrap();
-    }
-    out.flush().unwrap();
-    assert_ne!(case, "fail", "requested failure");
-}
-
-#[test]
-fn legacy_capture_keeps_case_precedence_and_failed_outcomes() {
-    if let Some(case) = child_case() {
-        legacy_child(&case);
-        return;
-    }
-    let test = "legacy_capture_keeps_case_precedence_and_failed_outcomes";
-    let scratch = Scratch::new();
-    let profile = scratch.join("profile-%p.profraw");
-    let profile = profile.to_str().unwrap();
-    let variables = [
-        ("LLVM_PROFILE_FILE", profile),
-        ("MAESTRO_CHILD_CASE", "ignored"),
-        ("MTP_LEGACY", "1"),
-    ];
-    let output = capture(test, "report", &variables).unwrap();
-    let shown = described(&output.stdout);
-    assert_eq!(shown["MAESTRO_CHILD_CASE"], "report");
-    assert_eq!(
-        (
-            shown["LLVM_PROFILE_FILE"].as_str(),
-            shown["MTP_LEGACY"].as_str()
-        ),
-        (profile, "1")
-    );
-    assert_eq!(shown["PATH"], "-");
-    let failed = capture(test, "fail", &[]).unwrap();
-    assert!(!failed.status.success() && failed.stdout.starts_with(START));
-    assert!(text(&failed.stderr).contains("requested failure"));
-}
-
-#[test]
-fn legacy_rerun_and_check_require_named_success() {
-    if let Some(case) = child_case() {
-        assert_ne!(case, "fail", "requested failure");
-        return;
-    }
-    let test = "legacy_rerun_and_check_require_named_success";
-    let name = format!("checked_runs::{test}");
-    rerun(test, "ok", &[]).unwrap();
-    assert!(rerun(test, "fail", &[]).is_err());
-    let passed = capture(test, "ok", &[]).unwrap();
-    assert_executed(&passed, &name).unwrap();
-    assert!(assert_executed(&passed, "checked_runs::other").is_err());
-    let line = format!("test {name} ... ok\n");
-    let summary = "test result: ok. 1 passed;\n";
-    let zero = fake(b"\nrunning 0 tests\n\ntest result: ok. 0 passed;\n", b"");
-    let no_summary = fake(&[START, line.as_bytes()].concat(), b"");
-    let no_line = fake(&[START, summary.as_bytes()].concat(), b"");
-    for output in [zero, no_summary, no_line] {
-        assert!(assert_executed(&output, &name).is_err());
     }
 }
 

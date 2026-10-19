@@ -1,10 +1,4 @@
 //! Completed exact-test subprocesses.
-#[allow(
-    dead_code,
-    reason = "Child runs use only test selection and the execution check."
-)]
-#[path = "../../../maestro-models/tests/support/child_process.rs"]
-pub mod child_process;
 
 /// Complete the exact test with supplied environment presence and absence.
 /// # Panics

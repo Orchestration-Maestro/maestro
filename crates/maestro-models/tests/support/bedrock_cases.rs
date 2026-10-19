@@ -9,7 +9,6 @@ use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_be
 
 use crate::bedrock;
 use crate::chat::{TestResult, block_on};
-use crate::child_process;
 use crate::transport;
 
 /// What a case expects the SDK to do.
@@ -122,7 +121,7 @@ impl Drop for AwsFiles {
 
 /// Run every case of `test` in its own child, or the case this process was started for.
 pub fn run_cases(test: &str, cases: &[Case]) -> TestResult {
-    if let Some(id) = child_process::child_case() {
+    if let Ok(id) = std::env::var("MAESTRO_CHILD_CASE") {
         let case = cases
             .iter()
             .find(|case| case.id == id)
@@ -133,7 +132,15 @@ pub fn run_cases(test: &str, cases: &[Case]) -> TestResult {
     for case in cases {
         let vars = files.environment(case);
         let vars: Vec<(&str, &str)> = vars.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
-        child_process::rerun(test, case.id, &vars)?;
+        {
+            let output = maestro_test_process::TestProcess::current(test)?
+                .nocapture()
+                .env_clear()
+                .envs(vars.iter().copied())
+                .env("MAESTRO_CHILD_CASE", case.id)
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
     }
     Ok(())
 }

@@ -2,7 +2,6 @@
 
 use crate::bedrock;
 use crate::chat;
-use crate::child_process;
 use crate::transport;
 
 use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_bedrock};
@@ -815,7 +814,7 @@ fn setup_failure_ends_stream(profile: Option<&str>) -> TestResult {
 
 #[test]
 fn sdk_setup_failures_end_stream() -> TestResult {
-    match child_process::child_case().as_deref() {
+    match std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() {
         Some("no credentials") => return setup_failure_ends_stream(None),
         Some("unknown profile") => return setup_failure_ends_stream(Some("absent")),
         _ => {}
@@ -825,7 +824,16 @@ fn sdk_setup_failures_end_stream() -> TestResult {
         ("AWS_EC2_METADATA_DISABLED", "true"),
     ];
     for case in ["no credentials", "unknown profile"] {
-        child_process::rerun("sdk_setup_failures_end_stream", case, &isolated)?;
+        {
+            let output =
+                maestro_test_process::TestProcess::current("sdk_setup_failures_end_stream")?
+                    .nocapture()
+                    .env_clear()
+                    .envs(isolated.iter().copied())
+                    .env("MAESTRO_CHILD_CASE", case)
+                    .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
     }
     block_on(true, async {
         let scripted = transport::transport(vec![transport::Attempt::Fail(FetchError::Timeout)]);

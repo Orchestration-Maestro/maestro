@@ -148,10 +148,11 @@ fn selected_configuration_roots_feed_package_resolution_and_persistence() {
         envs.push(("HOME", &home));
         assert!(
             probe::probe(
-                &crate::child_process::selector(
+                maestro_test_process::TestProcess::current(
                     "selected_configuration_roots_feed_package_resolution_and_persistence"
                 )
-                .unwrap(),
+                .unwrap()
+                .name(),
                 &dir.0.join("work"),
                 &envs,
                 &["MAESTRO_CODING_AGENT_DIR", "MAESTRO_OFFLINE"]
@@ -273,10 +274,11 @@ fn selected_package_roots_keep_update_pins_and_progress() {
         let npm = format!("{root}/global/node_modules");
         assert!(
             probe::probe(
-                &crate::child_process::selector(
+                maestro_test_process::TestProcess::current(
                     "selected_package_roots_keep_update_pins_and_progress"
                 )
-                .unwrap(),
+                .unwrap()
+                .name(),
                 &dir.0.join("work"),
                 &[
                     ("MAESTRO_PACKAGE_CASE", &case.id),

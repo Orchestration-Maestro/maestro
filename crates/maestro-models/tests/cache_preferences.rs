@@ -15,7 +15,7 @@ fn maestro_cache_preferences_reach_each_protocol() -> TestResult {
         .iter()
         .filter(|row| row["kind"] == "retention")
         .collect();
-    if let Some(case) = crate::child_process::child_case() {
+    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
         if let Some(index) = case.strip_prefix("shared-retention:") {
             return assert_retention_row(rows[index.parse::<usize>()?]);
         }
@@ -28,11 +28,17 @@ fn maestro_cache_preferences_reach_each_protocol() -> TestResult {
             .map(|value| ("MAESTRO_CACHE_RETENTION", value))
             .into_iter()
             .collect();
-        crate::child_process::rerun(
-            "maestro_cache_preferences_reach_each_protocol",
-            &format!("shared-retention:{index}"),
-            &variables,
-        )?;
+        {
+            let output = maestro_test_process::TestProcess::current(
+                "maestro_cache_preferences_reach_each_protocol",
+            )?
+            .nocapture()
+            .env_clear()
+            .envs(variables.iter().copied())
+            .env("MAESTRO_CHILD_CASE", format!("shared-retention:{index}"))
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
     }
     Ok(())
 }

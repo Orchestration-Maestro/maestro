@@ -284,7 +284,9 @@ fn child_case(name: &str, group: Group, index: usize) {
     let refs: Vec<_> = envs.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
     assert_eq!(
         child::probe(
-            &crate::child_process::selector(name).unwrap(),
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .name(),
             &scratch.0,
             &refs,
             fixture::REMOVED
@@ -317,7 +319,9 @@ fn qualify(name: &str, group: Group) {
         let scratch = child::Scratch::new();
         assert_eq!(
             child::probe(
-                &crate::child_process::selector(name).unwrap(),
+                maestro_test_process::TestProcess::current(name)
+                    .unwrap()
+                    .name(),
                 &scratch.0,
                 &[
                     ("MAESTRO_DEFAULT_OUTER", "1"),

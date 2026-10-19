@@ -1,7 +1,6 @@
 //! Request construction and sending for direct message-protocol invocations.
 
 use crate::chat;
-use crate::child_process;
 use crate::json;
 use crate::loopback;
 use crate::messages;
@@ -10,7 +9,6 @@ use crate::transport;
 use std::sync::{Arc, Mutex, OnceLock};
 
 use chat::{TestResult, block_on};
-use child_process::child_case;
 use futures_util::FutureExt;
 use maestro_models::{
     AnthropicClient, AnthropicOptions, AnthropicRequestOptions, AssistantMessageEvent,
@@ -65,7 +63,7 @@ async fn default_client_posts_request() -> TestResult {
 fn messages_send_key_request() -> TestResult {
     block_on(false, async {
         messages::assert_rows(FIXTURE, "messages_send_key_request").await?;
-        if child_case().as_deref() == Some("*") {
+        if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             default_client_posts_request().await?;
         }
         Ok(())
@@ -117,7 +115,7 @@ async fn nonfinite_numbers_are_written_as_json_does() -> TestResult {
 fn messages_apply_raw_token_default() -> TestResult {
     block_on(false, async {
         messages::assert_rows(FIXTURE, "messages_apply_raw_token_default").await?;
-        if child_case().as_deref() == Some("*") {
+        if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             nonfinite_numbers_are_written_as_json_does().await?;
         }
         Ok(())
@@ -224,7 +222,7 @@ async fn payload_members_are_written_in_order() -> TestResult {
 fn messages_apply_metadata_and_tool_choice() -> TestResult {
     block_on(false, async {
         messages::assert_rows(FIXTURE, "messages_apply_metadata_and_tool_choice").await?;
-        if child_case().as_deref() == Some("*") {
+        if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             payload_members_are_written_in_order().await?;
         }
         Ok(())
@@ -334,12 +332,12 @@ async fn payload_hook_precedes_authentication_failure() -> TestResult {
 fn messages_keep_auth_failure_in_stream() -> TestResult {
     block_on(false, async {
         messages::assert_rows(FIXTURE, "messages_keep_auth_failure_in_stream").await?;
-        if child_case().as_deref() == Some("*") {
+        if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             payload_hook_precedes_authentication_failure().await?;
         }
         Ok(())
     })?;
-    if child_case().is_none() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
         call_outside_a_runtime_ends_in_error()?;
     }
     Ok(())

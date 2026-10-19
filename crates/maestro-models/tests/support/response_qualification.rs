@@ -1,6 +1,6 @@
 //! Recorded response invocations exercised through public dispatch.
 
-use crate::{bundled, chat, child_process, json::canonical, messages, transport};
+use crate::{bundled, chat, json::canonical, messages, transport};
 use chat::TestResult;
 use maestro_models::{CacheRetention, Context, Model, ThinkingLevel};
 use serde::Deserialize;
@@ -453,14 +453,18 @@ pub fn assert_corpus_rows(source: &str, owners: &[(&str, usize)], test: &str) ->
     assert!(!owned.is_empty(), "unowned test");
     let _registry = bundled::registry();
     let partitions = partitions(&owned, &all)?;
-    let Some(case) = child_process::child_case() else {
+    let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") else {
         let full_name = test_path(&owned[0].test, test)?;
         for (index, env) in partitions.iter().enumerate() {
-            child_process::rerun(
-                &full_name,
-                &format!("responses:{index}"),
-                &env.iter().map(|(k, v)| (*k, *v)).collect::<Vec<_>>(),
-            )?;
+            {
+                let output = maestro_test_process::TestProcess::current(&full_name)?
+                    .nocapture()
+                    .env_clear()
+                    .envs(env.iter().map(|(k, v)| (*k, *v)))
+                    .env("MAESTRO_CHILD_CASE", format!("responses:{index}"))
+                    .output()?;
+                assert!(output.status.success(), "{output:?}");
+            };
         }
         return Ok(());
     };

@@ -16,12 +16,6 @@ mod browser_storage_support;
 #[cfg(unix)]
 #[path = "support/child.rs"]
 mod child;
-#[allow(
-    dead_code,
-    reason = "This binary uses part of the shared child-process helper."
-)]
-#[path = "../../maestro-models/tests/support/child_process.rs"]
-mod child_process;
 mod clipboard_copy;
 mod clipboard_images;
 #[cfg(not(target_arch = "wasm32"))]

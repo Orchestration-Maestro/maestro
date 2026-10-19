@@ -539,15 +539,26 @@ fn chat_local_simple_entries_keep_setup_and_admission_errors() -> crate::TestRes
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn direct_cloud_local_submission_preserves_hook_phases() -> crate::TestResult {
-    if crate::child_process::child_case().is_none() {
-        return crate::child_process::rerun(
-            "direct_cloud_local_submission_preserves_hook_phases",
-            "local-cloud",
-            &[
-                ("AWS_BEARER_TOKEN_BEDROCK", "fixture-token"),
-                ("AWS_REGION", "us-east-1"),
-            ],
-        );
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "direct_cloud_local_submission_preserves_hook_phases",
+            )?
+            .nocapture()
+            .env_clear()
+            .envs(
+                [
+                    ("AWS_BEARER_TOKEN_BEDROCK", "fixture-token"),
+                    ("AWS_REGION", "us-east-1"),
+                ]
+                .iter()
+                .copied(),
+            )
+            .env("MAESTRO_CHILD_CASE", "local-cloud")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     crate::chat::block_on(
         false,

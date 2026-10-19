@@ -2,7 +2,6 @@
 
 use crate::cases;
 use crate::chat;
-use crate::child_process;
 use crate::json;
 use crate::loopback;
 use crate::transport;
@@ -1132,8 +1131,18 @@ async fn response_headers_after(head_lines: &[u8]) -> TestResult<BTreeMap<String
 
 #[test]
 fn maestro_chat_observes_repeated_response_headers() -> TestResult {
-    if child_process::child_case().is_none() {
-        return child_process::rerun("maestro_chat_observes_repeated_response_headers", "*", &[]);
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "maestro_chat_observes_repeated_response_headers",
+            )?
+            .nocapture()
+            .env_clear()
+            .env("MAESTRO_CHILD_CASE", "*")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     block_on(false, async {
         let headers = response_headers_after(
@@ -1165,8 +1174,18 @@ fn maestro_chat_observes_repeated_response_headers() -> TestResult {
 
 #[test]
 fn maestro_chat_transport_is_replaceable() -> TestResult {
-    if child_process::child_case().is_none() {
-        return child_process::rerun("maestro_chat_transport_is_replaceable", "*", &[]);
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "maestro_chat_transport_is_replaceable",
+            )?
+            .nocapture()
+            .env_clear()
+            .env("MAESTRO_CHILD_CASE", "*")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     block_on(false, async {
         let body = framed_response();
@@ -1262,14 +1281,20 @@ async fn deep_unread_fields_are_passed_over() -> TestResult {
 
 #[test]
 fn maestro_chat_passes_over_deeply_nested_unread_fields() -> TestResult {
-    if child_process::child_case().is_some() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
         return block_on(true, deep_unread_fields_are_passed_over());
     }
-    child_process::rerun(
-        "maestro_chat_passes_over_deeply_nested_unread_fields",
-        "nesting",
-        &[],
-    )
+    {
+        let output = maestro_test_process::TestProcess::current(
+            "maestro_chat_passes_over_deeply_nested_unread_fields",
+        )?
+        .nocapture()
+        .env_clear()
+        .env("MAESTRO_CHILD_CASE", "nesting")
+        .output()?;
+        assert!(output.status.success(), "{output:?}");
+        Ok(())
+    }
 }
 
 /// Selected error details within the conversion bound render; deeper details report the
@@ -1298,10 +1323,19 @@ async fn error_details_convert_to_the_json_limit() -> TestResult {
 
 #[test]
 fn maestro_chat_bounds_error_detail_nesting() -> TestResult {
-    if child_process::child_case().is_some() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
         return block_on(true, error_details_convert_to_the_json_limit());
     }
-    child_process::rerun("maestro_chat_bounds_error_detail_nesting", "nesting", &[])
+    {
+        let output =
+            maestro_test_process::TestProcess::current("maestro_chat_bounds_error_detail_nesting")?
+                .nocapture()
+                .env_clear()
+                .env("MAESTRO_CHILD_CASE", "nesting")
+                .output()?;
+        assert!(output.status.success(), "{output:?}");
+        Ok(())
+    }
 }
 
 /// A streamed signature is kept up to 127 nested arrays or objects; a deeper one is dropped
@@ -1324,14 +1358,20 @@ async fn streamed_signatures_convert_to_the_json_limit() -> TestResult {
 
 #[test]
 fn maestro_chat_bounds_streamed_signature_nesting() -> TestResult {
-    if child_process::child_case().is_some() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
         return block_on(true, streamed_signatures_convert_to_the_json_limit());
     }
-    child_process::rerun(
-        "maestro_chat_bounds_streamed_signature_nesting",
-        "nesting",
-        &[],
-    )
+    {
+        let output = maestro_test_process::TestProcess::current(
+            "maestro_chat_bounds_streamed_signature_nesting",
+        )?
+        .nocapture()
+        .env_clear()
+        .env("MAESTRO_CHILD_CASE", "nesting")
+        .output()?;
+        assert!(output.status.success(), "{output:?}");
+        Ok(())
+    }
 }
 
 /// Check the sole tool call without changing its argument record type.

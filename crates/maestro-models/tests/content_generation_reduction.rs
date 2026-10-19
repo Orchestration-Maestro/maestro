@@ -794,7 +794,7 @@ pub(crate) fn cloud_entry_rows() -> TestResult {
     ] {
         selected.extend(rows(name)?);
     }
-    if let Some(case) = crate::child_process::child_case() {
+    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
         return block_on(false, async {
             let index = case.parse::<usize>()?;
             cloud_entry_row(&selected[index]).await?;
@@ -805,11 +805,16 @@ pub(crate) fn cloud_entry_rows() -> TestResult {
         });
     }
     for index in 0..selected.len() {
-        crate::child_process::rerun(
-            "cloud_raw_entry_uses_shared_response_reduction",
-            &index.to_string(),
-            &[],
-        )?;
+        {
+            let output = maestro_test_process::TestProcess::current(
+                "cloud_raw_entry_uses_shared_response_reduction",
+            )?
+            .nocapture()
+            .env_clear()
+            .env("MAESTRO_CHILD_CASE", index.to_string())
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
     }
     Ok(())
 }

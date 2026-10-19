@@ -3,7 +3,6 @@ use crate::bedrock;
 use crate::chat;
 use crate::transport;
 
-use crate::child_process;
 use chat::{TestResult, block_on};
 
 use bedrock::corpus;
@@ -173,12 +172,23 @@ fn cancellation_keeps_partial_blocks_and_allows_a_new_call() -> TestResult {
 
 #[test]
 fn thinking_tool_results_replay_through_generic_dispatch() -> TestResult {
-    if child_process::child_case().is_none() {
-        return child_process::rerun(
-            "thinking_tool_results_replay_through_generic_dispatch",
-            "replay",
-            &[("AWS_BEARER_TOKEN_BEDROCK", "fixture-token")],
-        );
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "thinking_tool_results_replay_through_generic_dispatch",
+            )?
+            .nocapture()
+            .env_clear()
+            .envs(
+                [("AWS_BEARER_TOKEN_BEDROCK", "fixture-token")]
+                    .iter()
+                    .copied(),
+            )
+            .env("MAESTRO_CHILD_CASE", "replay")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     block_on(
         false,

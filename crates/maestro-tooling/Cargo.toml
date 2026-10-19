@@ -21,6 +21,9 @@ workspace = true
 [dev-dependencies]
 toml = "=1.1.6"
 
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-test-process.workspace = true
+
 [[test]]
 name = "integration"
 path = "tests/integration.rs"

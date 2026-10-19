@@ -503,12 +503,20 @@ fn maestro_bounds_materialized_arguments() {
     }
 }
 
-use crate::child_process;
-
 #[test]
-fn maestro_drops_extreme_argument_depth_safely() -> child_process::TestResult {
-    if child_process::child_case().is_none() {
-        return child_process::rerun("maestro_drops_extreme_argument_depth_safely", "depth", &[]);
+fn maestro_drops_extreme_argument_depth_safely() -> crate::chat::TestResult {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "maestro_drops_extreme_argument_depth_safely",
+            )?
+            .nocapture()
+            .env_clear()
+            .env("MAESTRO_CHILD_CASE", "depth")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     for kind in ["array", "object", "mixed"] {
         for leaf in ["0", "1e400"] {

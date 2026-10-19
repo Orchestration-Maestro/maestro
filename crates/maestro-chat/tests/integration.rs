@@ -62,7 +62,6 @@ mod shell_rows;
 mod simple_selectors;
 #[path = "../../maestro-catalog/tests/support/subprocess.rs"]
 mod subprocess;
-use subprocess::child_process;
 mod tool_rows;
 #[path = "support/tree.rs"]
 mod tree;

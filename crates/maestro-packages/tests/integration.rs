@@ -8,8 +8,6 @@ mod cache_resolution_checks;
 #[cfg(not(target_arch = "wasm32"))]
 mod cache_support;
 mod capture_checks;
-#[path = "../../maestro-models/tests/support/child_process.rs"]
-mod child_process;
 mod component_entry_checks;
 #[cfg(not(target_arch = "wasm32"))]
 mod component_support;

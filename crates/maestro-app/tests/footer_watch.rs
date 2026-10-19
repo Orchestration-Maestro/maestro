@@ -893,8 +893,11 @@ fn native_command_probe(root: &native::Scratch) {
         std::path::Path::new(&root.join("bin/git")),
     );
     let output = native::probe(
-        &crate::child_process::selector("footer_native_async_lookup_runs_selected_command")
-            .unwrap(),
+        maestro_test_process::TestProcess::current(
+            "footer_native_async_lookup_runs_selected_command",
+        )
+        .unwrap()
+        .name(),
         &root.0,
         &[
             ("FOOTER_ASYNC_REPO", &root.join("")),
@@ -910,8 +913,11 @@ fn native_command_probe(root: &native::Scratch) {
         ]
     );
     let failed = native::probe(
-        &crate::child_process::selector("footer_native_async_lookup_runs_selected_command")
-            .unwrap(),
+        maestro_test_process::TestProcess::current(
+            "footer_native_async_lookup_runs_selected_command",
+        )
+        .unwrap()
+        .name(),
         &root.0,
         &[
             ("FOOTER_ASYNC_REPO", &root.join("")),
@@ -1136,8 +1142,11 @@ os._exit(0)
     );
     assert!(
         native::probe(
-            &crate::child_process::selector("footer_async_lookup_keeps_output_until_pipe_eof")
-                .unwrap(),
+            maestro_test_process::TestProcess::current(
+                "footer_async_lookup_keeps_output_until_pipe_eof"
+            )
+            .unwrap()
+            .name(),
             &root.0,
             &[("PATH", &root.join("bin")), ("MAESTRO_FOOTER_HOLDER", "1")],
             &[]

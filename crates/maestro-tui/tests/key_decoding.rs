@@ -2,7 +2,6 @@
 //! protocol state.
 
 use std::io;
-use std::process::Command;
 use std::sync::{MutexGuard, PoisonError};
 
 use maestro_tui::keys::decode_printable_key;
@@ -162,19 +161,17 @@ fn check_row(row: &Row, data: &str, candidates: &[&str], active: bool) {
 /// Runs `scenario` in a child process of this executable whose terminal variables are
 /// exactly `variables`, and asserts that the child passes.
 fn run_probe(scenario: &str, variables: &[(&str, &str)]) -> io::Result<()> {
-    let mut child = Command::new(std::env::current_exe()?);
-    child.args([
-        "--exact",
-        "key_decoding::environment_probe",
-        "--test-threads=1",
-    ]);
+    let mut child = maestro_test_process::TestProcess::named("key_decoding::environment_probe")
+        .map_err(io::Error::other)?
+        .single_threaded();
     for name in TERMINAL_VARIABLES {
-        child.env_remove(name);
+        child = child.env_remove(name);
     }
     let output = child
         .envs(variables.iter().copied())
         .env(PROBE, scenario)
-        .output()?;
+        .output()
+        .map_err(io::Error::other)?;
     assert!(
         output.status.success(),
         "probe {scenario} failed:\n{}\n{}",

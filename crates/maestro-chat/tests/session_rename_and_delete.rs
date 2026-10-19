@@ -200,9 +200,10 @@ fn session_rename_waits_for_visible_scope_load() {
 #[test]
 fn session_native_file_effects_keep_process_and_unlink_failures() {
     session_picker::session_picker_scopes::mutations::native(
-        &crate::child_process::selector(
+        maestro_test_process::TestProcess::current(
             "session_native_file_effects_keep_process_and_unlink_failures",
         )
-        .unwrap(),
+        .unwrap()
+        .name(),
     );
 }
