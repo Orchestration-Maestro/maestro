@@ -61,6 +61,7 @@ impl<'a> Tokenizer<'a> {
         }
         let mut output = Vec::new();
         let mut cursor = extent.start;
+        let mut line_end = cursor;
         let masked = self.mask(extent.clone(), atoms);
         while cursor < extent.end {
             let atom = atoms.partition_point(|range| range.end <= cursor);
@@ -90,9 +91,11 @@ impl<'a> Tokenizer<'a> {
                 cursor += size;
                 continue;
             }
-            let window = &text[..limit - cursor];
+            if cursor >= line_end {
+                line_end = self.line_end(cursor..extent.end);
+            }
             // Only the first line is kept, so the recognizer never reads past its newline.
-            let line = window.find('\n').map_or(window, |end| &window[..=end]);
+            let line = &text[..line_end.min(limit) - cursor];
             let size = self.text(line);
             let size = line[..size].find('\n').unwrap_or(size);
             self.push_text(cursor..cursor + size, &mut output);
@@ -160,6 +163,15 @@ impl<'a> Tokenizer<'a> {
         }
         let matched = rules::INLINE_TAG.as_ref()?.find(text)?;
         Some((matched.end(), Kind::Html(text[matched.range()].to_owned())))
+    }
+
+    /// The end of the line containing `range.start`: just past its newline, or the range end.
+    fn line_end(&self, range: Range<usize>) -> usize {
+        let text = &self.source.text[range.clone()];
+        let end = text.find('\n').map_or(text.len(), |newline| newline + 1);
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.line_bytes += end);
+        range.start + end
     }
 
     /// Select fallback text without crossing a typed operand boundary.

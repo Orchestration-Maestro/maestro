@@ -29,6 +29,8 @@ pub(crate) struct Work {
     pub(crate) reference_indexes: usize,
     /// Bytes supplied to the fallback text recognizer.
     pub(crate) text_bytes: usize,
+    /// Bytes searched for the end of a fallback text line.
+    pub(crate) line_bytes: usize,
 }
 thread_local! {
     /// Instrument all complete-parse/index and local-parse entry points.
@@ -272,12 +274,12 @@ fn absent_extension_hints_skip_extension_scans() {
     suffix_work(true, "ordinary paragraph\n\n");
 }
 
-/// Bytes supplied to the fallback text recognizer for one paragraph of identical plain lines.
-fn plain_text_work(lines: usize, options: crate::MarkedOptions) -> usize {
+/// Fallback text work for one plain paragraph: recognizer bytes and line-end search bytes.
+fn plain_text_work(source: String, options: crate::MarkedOptions) -> (usize, usize) {
     WORK.with_borrow_mut(|work| *work = Work::default());
-    let document = crate::parse_with_options("plain line.\n".repeat(lines), options);
+    let document = crate::parse_with_options(source, options);
     assert_eq!(document.nodes.len(), 1);
-    WORK.with_borrow(|work| work.text_bytes)
+    WORK.with_borrow(|work| (work.text_bytes, work.line_bytes))
 }
 
 #[test]
@@ -289,7 +291,16 @@ fn paragraph_text_work_grows_linearly_with_its_lines() {
         crate::MarkedOptions::Browser { escape_html: false },
         crate::MarkedOptions::Browser { escape_html: true },
     ] {
-        let [small, medium, large] = [64, 128, 256].map(|lines| plain_text_work(lines, options));
-        assert_eq!(large - medium, 2 * (medium - small), "{options:?}");
+        let grows = |shape: &str| {
+            let [small, medium, large] =
+                [64, 128, 256].map(|count| plain_text_work(shape.repeat(count), options));
+            (
+                large.0 - medium.0 == 2 * (medium.0 - small.0),
+                large.1 - medium.1 == 2 * (medium.1 - small.1),
+            )
+        };
+        assert_eq!(grows("plain line.\n"), (true, true), "{options:?} lines");
+        // One line keeps the rest of the line visible to the recognizer, but finds its end once.
+        assert!(grows("a_ ").1, "{options:?} one line");
     }
 }
