@@ -50,3 +50,25 @@ impl Terminal {
         });
     }
 }
+
+impl Terminal {
+    /// Whether any mouse tracking protocol is enabled, independently of the selected event.
+    #[must_use]
+    pub fn mouse_tracking_enabled(&self) -> bool {
+        use crate::Mode;
+        [
+            Mode::MouseEventX10,
+            Mode::MouseEventNormal,
+            Mode::MouseEventButton,
+            Mode::MouseEventAny,
+        ]
+        .into_iter()
+        .any(|mode| self.modes.get(mode))
+    }
+
+    /// Whether numeric extended modifier-key encoding is enabled.
+    #[must_use]
+    pub fn modify_other_keys_enabled(&self) -> bool {
+        self.flags.modify_other_keys_2
+    }
+}

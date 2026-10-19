@@ -40,3 +40,16 @@ pub enum EraseDisplay {
     /// Move nonempty active rows into history.
     ScrollComplete,
 }
+
+/// Selected window-information report.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SizeReportStyle {
+    /// Text area size in pixels.
+    Csi14T,
+    /// Character cell size in pixels.
+    Csi16T,
+    /// Text area size in characters.
+    Csi18T,
+    /// Window title.
+    Csi21T,
+}

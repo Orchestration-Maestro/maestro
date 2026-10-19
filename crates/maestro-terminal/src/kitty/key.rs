@@ -20,6 +20,15 @@ impl Flags {
     /// Enable all five enhancements.
     pub const TRUE: Self = Self(31);
 
+    /// Construct flags only when all bits belong to the five-bit protocol domain.
+    #[must_use]
+    pub fn from_int(value: u16) -> Option<Self> {
+        u8::try_from(value)
+            .ok()
+            .filter(|&bits| bits <= 31)
+            .map(Self)
+    }
+
     /// Return the protocol bit representation.
     #[must_use]
     pub fn int(self) -> u8 {

@@ -97,6 +97,8 @@ pub struct Flags {
     pub focused: bool,
     /// Whether modified keys use the extended encoding.
     pub modify_other_keys_2: bool,
+    /// Explicit selection of shift capture, or no request yet.
+    pub mouse_shift_capture: Option<bool>,
     /// The last selected mouse event mode.
     pub mouse_event: mouse::Event,
     /// The last selected mouse encoding.
@@ -111,6 +113,7 @@ impl Default for Flags {
     fn default() -> Self {
         Self {
             focused: true,
+            mouse_shift_capture: None,
             modify_other_keys_2: false,
             mouse_event: mouse::Event::None,
             mouse_format: mouse::Format::X10,
@@ -150,6 +153,8 @@ pub struct Terminal {
     cols: u16,
     /// Configured grid height.
     rows: u16,
+    /// Parser and cursor defaults retained between byte writes.
+    pub(crate) write_state: Option<crate::stream_terminal::WriteState>,
     /// Configured history byte limit, before storage rounding.
     max_scrollback: usize,
 }
@@ -189,6 +194,7 @@ impl Terminal {
             cols,
             rows,
             max_scrollback: scrollback_limit,
+            write_state: None,
         })
     }
 

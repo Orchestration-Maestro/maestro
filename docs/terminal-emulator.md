@@ -381,3 +381,31 @@ Prompt redraw defaults to off, including after full reset. An explicit shell
 option selects False, True or Last: resize preserves prompts, clears the full
 prompt region or clears its last row respectively. Alternate resize never uses
 this primary prompt-redraw policy.
+
+## Byte input
+
+`Terminal::write(&[u8])` updates the screen synchronously. It retains incomplete
+UTF-8, escape sequences and cursor-default selections between calls, so a single
+write and byte-at-a-time input produce the same screen. Invalid UTF-8 subparts
+become replacement characters; ESC terminates an incomplete scalar once. Empty
+writes do not flush pending input.
+
+The `stream::Stream` decoder also works with a recording handler. Its one
+`stream::Handler` trait receives typed `Action` values synchronously; borrowed
+parameters remain valid only during the callback. OSC commands keep their
+existing owned payloads. Terminal writes temporarily take the retained stream
+out of the terminal, lend the terminal to `stream_terminal::Handler`, and restore
+the stream without cloning it.
+
+The terminal handler applies cursor movement, edits, erasure, character sets,
+tabs, modes, screen switching, keyboard flags, rendition, hyperlinks and shell
+prompt phases through their existing owners. Storage errors stop the current
+action, not later input. `mouse_tracking_enabled` reads the tracking mode bits;
+`modify_other_keys_enabled` reads numeric extended modifier-key mode. Tracking
+bits and the selected mouse event or format remain independent.
+
+Query and window requests are observable as typed stream actions, but replies
+and external effects are not delivered yet. OSC title, directory, colour and
+clipboard effects, bells and APC routing are pending; image execution is also
+pending. The terminal handler consumes DCS without changing the screen. These
+pending effects do not prevent decoding subsequent input.
