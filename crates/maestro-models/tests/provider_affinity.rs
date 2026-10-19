@@ -579,6 +579,7 @@ async fn direct_cloud_local_case(simple: bool) -> crate::TestResult {
     use crate::{bedrock, transport};
     use serde_json::json;
     use std::cell::RefCell;
+    let policy = crate::bundled::policy("bedrock-converse-stream");
     let transport = bedrock::serve(vec![
         bedrock::event("messageStart", &json!({"role":"assistant"}))?,
         bedrock::event("messageStop", &json!({"stopReason":"end_turn"}))?,
@@ -599,15 +600,7 @@ async fn direct_cloud_local_case(simple: bool) -> crate::TestResult {
     }
     assert_eq!(result.error_message, None);
     assert_eq!(events, ["start", "done"]);
-    assert_eq!(
-        *phases.borrow(),
-        [
-            "payload-before",
-            "payload-after",
-            "response-before",
-            "response-after"
-        ]
-    );
+    assert_eq!(*phases.borrow(), hook_phases(policy));
     let (_, body) = transport.first_request()?;
     let body: serde_json::Value = serde_json::from_slice(&body)?;
     assert_eq!(body["inferenceConfig"]["temperature"], json!(0.25));

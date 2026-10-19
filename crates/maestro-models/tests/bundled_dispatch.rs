@@ -202,12 +202,12 @@ async fn invoke(protocol: &Protocol, route: Route, text: &str) -> TestResult<Obs
     })
 }
 
-/// Hooks a successful call runs; the conversation adapter has no response hook.
+/// Hooks a successful call runs under the protocol's response-hook policy.
 fn expected_hooks(protocol: &Protocol) -> &'static [&'static str] {
-    if protocol.api == "mistral-conversations" {
-        &["payload"]
-    } else {
+    if bundled::policy(protocol.api).response_hook {
         &["payload", "response 200"]
+    } else {
+        &["payload"]
     }
 }
 

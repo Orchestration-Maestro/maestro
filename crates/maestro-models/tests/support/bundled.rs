@@ -1,4 +1,4 @@
-//! Controlled wire bodies, models and request capture for the six bundled protocols.
+//! Controlled wire bodies, models and request capture for the bundled protocols.
 
 use crate::chat::{TestResult, context, model};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
@@ -20,7 +20,7 @@ pub struct Protocol {
     pub base_url: &'static str,
 }
 
-/// The six bundled protocols in registration order.
+/// The six SSE fixture protocols in registration order.
 pub const PROTOCOLS: [Protocol; 6] = [
     Protocol {
         api: "anthropic-messages",

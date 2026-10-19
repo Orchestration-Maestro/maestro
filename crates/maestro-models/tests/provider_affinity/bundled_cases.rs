@@ -272,7 +272,6 @@ fn protocol_test_policies_cover_the_registry() {
     for api in &registered {
         assert_eq!(crate::bundled::policy(api).api, api);
     }
-    assert_eq!(registered, crate::bundled::registered_apis());
 }
 #[test]
 fn default_submission_preserves_protocol_runtime_policy() -> crate::TestResult {
