@@ -553,6 +553,18 @@ fn terminal_bytes_device_replies_are_queued_in_order() {
 }
 
 #[test]
+fn terminal_bytes_fixed_embedding_replies() {
+    let mut t = Terminal::new(80, 24, 0).unwrap();
+    t.write(b"\x05");
+    assert!(t.take_pty_reply().is_empty());
+    t.write(b"\x1b[>0q\x1b[>q");
+    assert_eq!(
+        t.take_pty_reply(),
+        b"\x1bP>|libghostty\x1b\\\x1bP>|libghostty\x1b\\"
+    );
+}
+
+#[test]
 fn terminal_bytes_cursor_report_respects_origin() {
     let mut t = Terminal::new(80, 24, 0).unwrap();
     t.write(b"\x1b[4;8H\x1b[6n");
@@ -715,8 +727,10 @@ fn clipboard_requires_padded_canonical_standard_base64() {
     for payload in [
         "aA", "aA=", "aA===", "aB==", "aGV=", "a A==", "_w==", "-w==", "!!!!", "=aA=", "aA==YQ==",
     ] {
-        t.write(format!("\x1b]52;c;{payload}\x07").as_bytes());
-        assert!(t.take_clipboard_writes().is_empty(), "{payload:?}");
+        for ending in ["\x07", "\x1b\\"] {
+            t.write(format!("\x1b]52;c;{payload}{ending}").as_bytes());
+            assert!(t.take_clipboard_writes().is_empty(), "{payload:?}");
+        }
     }
     for whitespace in [b'\t', b'\n', b'\r', 12] {
         let mut data = b"aA==".to_vec();

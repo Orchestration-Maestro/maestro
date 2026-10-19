@@ -418,7 +418,8 @@ queue. Replies concatenate in input order; bells saturate at `u16::MAX`.
 The byte consumer answers operating-status, cursor-position, device-attribute,
 version, mode, keyboard-protocol, size and title queries. Cursor reports are relative
 to the scrolling origin when origin mode is enabled. Title reports use the stored
-title, including an empty title. The default enquiry answer is empty.
+title, including an empty title. The enquiry answer is empty. Device-attribute
+and version replies use fixed defaults, without embedding reply callbacks.
 `set_color_scheme` selects light or dark status replies; `None` suppresses them.
 With mode 2031 enabled, changing between two known schemes queues a report.
 Initial discovery, removal and unchanged values do not produce unsolicited reports.
