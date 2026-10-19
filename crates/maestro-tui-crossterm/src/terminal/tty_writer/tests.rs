@@ -59,9 +59,14 @@ fn native_output_partial_interrupt_and_zero_results() {
     assert_eq!(progress, [3, 3, 2]);
     assert_eq!(observed, b"abcdefgh");
     queue.enqueue(b"x".to_vec());
-    assert!(matches!(queue.flush(|_| Ok(0)), WriteStatus::Zero));
-    assert!(
-        matches!(queue.flush(|_| Err(io::ErrorKind::BrokenPipe.into())), WriteStatus::Failed(error) if error.kind() == io::ErrorKind::BrokenPipe)
+    let zero = super::write_result(queue.flush(|_| Ok(0))).unwrap_err();
+    assert_eq!(zero.kind(), io::ErrorKind::WriteZero);
+    let broken =
+        super::write_result(queue.flush(|_| Err(rustix::io::Errno::PIPE.into()))).unwrap_err();
+    assert_eq!(broken.kind(), io::ErrorKind::BrokenPipe);
+    assert_eq!(
+        broken.raw_os_error(),
+        Some(rustix::io::Errno::PIPE.raw_os_error())
     );
     assert_eq!(queue.pending(), 0);
 }

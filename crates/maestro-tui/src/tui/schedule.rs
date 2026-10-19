@@ -89,7 +89,9 @@ impl TUI {
                     None => Ok(()),
                 }),
             );
-            self.shared.schedule.borrow_mut().forced_timer = Some(timer);
+            let schedule = &self.shared.schedule;
+            let expired = schedule.borrow_mut().forced_timer.replace(timer);
+            drop(expired);
         }
     }
 
@@ -111,7 +113,9 @@ impl TUI {
                 None => Ok(()),
             }),
         );
-        self.shared.schedule.borrow_mut().render_timer = Some(timer);
+        let schedule = &self.shared.schedule;
+        let expired = schedule.borrow_mut().render_timer.replace(timer);
+        drop(expired);
     }
 
     /// Claims the pending request for a frame that starts now; false when none is pending.
@@ -146,7 +150,9 @@ impl TUI {
                     None => Ok(()),
                 }),
             );
-            self.shared.schedule.borrow_mut().render_timer = Some(timer);
+            let schedule = &self.shared.schedule;
+            let expired = schedule.borrow_mut().render_timer.replace(timer);
+            drop(expired);
         }
         true
     }

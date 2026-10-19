@@ -37,18 +37,23 @@ impl Inner {
             .queue
             .borrow_mut()
             .flush_bounded(MAX_TTY_WRITE_CHUNK_BYTES, |bytes| write_once(source, bytes));
-        match status {
-            WriteStatus::Complete => Ok(()),
-            WriteStatus::Blocked => Err(io::ErrorKind::WouldBlock.into()),
-            WriteStatus::Zero => Err(io::ErrorKind::WriteZero.into()),
-            WriteStatus::Failed(error) => Err(error),
-        }
+        write_result(status)
     }
 
     /// Discards the failed queue and refuses later admission.
     fn fail(&self) {
         self.dead.set(true);
         *self.queue.borrow_mut() = Writes::default();
+    }
+}
+
+/// Converts queue progress into readiness or the original write failure.
+fn write_result(status: WriteStatus) -> io::Result<()> {
+    match status {
+        WriteStatus::Complete => Ok(()),
+        WriteStatus::Blocked => Err(io::ErrorKind::WouldBlock.into()),
+        WriteStatus::Zero => Err(io::ErrorKind::WriteZero.into()),
+        WriteStatus::Failed(error) => Err(error),
     }
 }
 

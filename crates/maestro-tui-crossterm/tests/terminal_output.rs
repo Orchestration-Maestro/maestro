@@ -12,7 +12,6 @@ use std::thread::JoinHandle;
 
 use maestro_tui::Terminal;
 use maestro_tui_crossterm::ProcessTerminal;
-use rustix::event::{PollFd, PollFlags, poll};
 use rustix::fs::{OFlags, fcntl_getfl, fcntl_setfl};
 use rustix::stdio::stdout;
 use support::{
@@ -20,17 +19,16 @@ use support::{
     pty_output,
 };
 
-/// Collects on another thread until `length` bytes arrived, so a writer can fill the pipe and
-/// wait for room.
-fn collect(capture: Capture, length: usize) -> JoinHandle<String> {
+/// Collects exact bytes, including scalars split across kernel reads.
+fn collect_bytes(capture: Capture, length: usize) -> JoinHandle<Vec<u8>> {
     std::thread::spawn(move || {
-        let mut collected = String::new();
-        while collected.len() < length {
-            let mut waiting = [PollFd::new(&capture.0, PollFlags::IN)];
-            poll(&mut waiting, None).unwrap();
-            collected.push_str(&capture.take());
-        }
-        collected
+        use std::io::Read;
+        let flags = fcntl_getfl(&capture.0).unwrap();
+        fcntl_setfl(&capture.0, flags & !OFlags::NONBLOCK).unwrap();
+        let mut file = std::fs::File::from(capture.0);
+        let mut bytes = vec![0; length];
+        file.read_exact(&mut bytes).unwrap();
+        bytes
     })
 }
 
@@ -82,11 +80,11 @@ fn native_writes_complete_on_a_nonblocking_standard_output() {
         fcntl_setfl(stdout(), flags | OFlags::NONBLOCK).unwrap();
         let mut terminal = ProcessTerminal::new(rig.local());
         let data = "x".repeat(300_000);
-        let collected = collect(capture, data.len());
+        let collected = collect_bytes(capture, data.len());
         terminal.write(&data).unwrap();
         let received = collected.join().unwrap();
         assert_eq!(received.len(), data.len());
-        assert!(received.bytes().all(|byte| byte == b'x'));
+        assert!(received.iter().all(|byte| *byte == b'x'));
     });
 }
 
@@ -430,11 +428,11 @@ fn native_output_backlog_keeps_input_responsive() {
             received.await.unwrap();
             assert!(terminal.pending_output_bytes() > 0);
             let _reader = rustix::io::dup(&output.0).unwrap();
-            let collector = collect(output, data.len());
+            let collector = collect_bytes(output, data.len());
             while !collector.is_finished() {
                 tokio::task::yield_now().await;
             }
-            assert_eq!(collector.join().unwrap(), data);
+            assert_eq!(collector.join().unwrap(), data.as_bytes());
             terminal.stop().unwrap();
         });
     });
@@ -446,19 +444,6 @@ async fn queued_terminal(rig: &Rig, output: &Capture) -> ProcessTerminal {
     terminal.start(Box::new(|_| {}), Box::new(|| {})).unwrap();
     output.written(START_BYTES).await;
     terminal
-}
-
-/// Collects exact bytes, including scalars split across kernel reads.
-fn collect_bytes(capture: Capture, length: usize) -> JoinHandle<Vec<u8>> {
-    std::thread::spawn(move || {
-        use std::io::Read;
-        let flags = fcntl_getfl(&capture.0).unwrap();
-        fcntl_setfl(&capture.0, flags & !OFlags::NONBLOCK).unwrap();
-        let mut file = std::fs::File::from(capture.0);
-        let mut bytes = vec![0; length];
-        file.read_exact(&mut bytes).unwrap();
-        bytes
-    })
 }
 
 #[test]
