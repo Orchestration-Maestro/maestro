@@ -53,30 +53,68 @@ impl Drop for Lock {
     }
 }
 
-impl SettingsStorage for FileSettingsStorage {
-    fn with_lock(
+impl FileSettingsStorage {
+    /// Runs the shared raw-text operation with the requested write intent.
+    fn transact(
         &self,
         scope: SettingsScope,
         update: &mut dyn FnMut(Option<&str>) -> SettingsUpdate,
+        write: bool,
     ) -> Result<(), SettingsStorageError> {
         let path = Path::new(match scope {
             SettingsScope::Global => &self.global,
             SettingsScope::Project => &self.project,
         });
-        let exists = path.exists();
-        let mut lock = exists.then(|| Lock::acquire(path)).transpose()?;
-        let current = exists.then(|| fs::read_to_string(path)).transpose()?;
+        if write {
+            create_parent(path)?;
+        }
+        let mut lock = (write || path.exists())
+            .then(|| Lock::acquire(path))
+            .transpose()?;
+        let current = if lock.is_some() {
+            match fs::read_to_string(path) {
+                Ok(text) => Some(text),
+                Err(error) if write && error.kind() == std::io::ErrorKind::NotFound => None,
+                Err(error) => return Err(error.into()),
+            }
+        } else {
+            None
+        };
         let Some(next) = update(current.as_deref())? else {
             return Ok(());
         };
-        if let Some(directory) = path.parent().filter(|directory| !directory.exists()) {
-            fs::create_dir_all(directory)?;
-        }
+        create_parent(path)?;
         if lock.is_none() {
             lock = Some(Lock::acquire(path)?);
         }
         fs::write(path, next)?;
         drop(lock);
         Ok(())
+    }
+}
+
+/// Creates a missing settings parent directory without creating the settings file.
+fn create_parent(path: &Path) -> Result<(), SettingsStorageError> {
+    if let Some(directory) = path.parent().filter(|directory| !directory.exists()) {
+        fs::create_dir_all(directory)?;
+    }
+    Ok(())
+}
+
+impl SettingsStorage for FileSettingsStorage {
+    fn with_lock(
+        &self,
+        scope: SettingsScope,
+        update: &mut dyn FnMut(Option<&str>) -> SettingsUpdate,
+    ) -> Result<(), SettingsStorageError> {
+        self.transact(scope, update, false)
+    }
+
+    fn with_write_lock(
+        &self,
+        scope: SettingsScope,
+        update: &mut dyn FnMut(Option<&str>) -> SettingsUpdate,
+    ) -> Result<(), SettingsStorageError> {
+        self.transact(scope, update, true)
     }
 }

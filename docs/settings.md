@@ -129,9 +129,9 @@ runtime overrides and pending edits. Nothing is printed by any of these operatio
 
 ## Storage
 
-`SettingsStorage::with_lock` exchanges raw text for one scope. It calls the update
-callback exactly once, synchronously, with the current text (`None` if the scope
-was never written), unless the adapter fails to acquire its exclusion or read
+`SettingsStorage::with_lock` and `with_write_lock` exchange raw text for one scope.
+Each operation calls the update callback exactly once, synchronously, with the
+current text (`None` if the scope was never written), unless the adapter fails to acquire its exclusion or read
 first; it then returns that failure without calling the callback. The
 callback returns `Ok(None)` to leave the stored text untouched, `Ok(Some(text))` to
 replace it, or an error, which is returned without writing.
@@ -142,7 +142,7 @@ again, in either scope; when callbacks overlap, the last write wins.
 `FileSettingsStorage` (not available for the browser build) joins the supplied
 agent directory, and the working directory with the configuration directory, with
 `settings.json` through the shared `maestro-path` functions, giving the runtime's
-join results, then works in place:
+join results, then works in place. Its legacy `with_lock` operation behaves as follows:
 
 1. For an existing file it locks the stable `settings.json.lock` sidecar before
    reading, keeps the lock through the callback and the write, and releases it on
@@ -150,6 +150,36 @@ join results, then works in place:
 2. For a missing file it runs the callback first without creating anything. Only a
    replacement creates the directory, takes the lock and writes, without reading again.
 3. Synchronous acquisition delegates to [the shared file-lock operation](locking.md).
+
+Manager saves use `with_write_lock`. The native adapter creates the parent as
+needed and takes the same stable sidecar lock before reading, including when the
+settings file is absent. It holds exclusion through the single callback and
+optional write. Independent manager edits therefore survive concurrent first
+writes as well as existing-file saves. Acquire/read failures skip the callback;
+callback and write failures release exclusion. `Ok(None)` and callback errors
+leave settings bytes untouched, but may leave a new parent and sidecar. Locking
+alone never creates a settings file.
+
+Raw callers that merge concurrent first writes must choose write intent too:
+
+```rust,no_run
+use maestro_settings::{FileSettingsStorage, SettingsScope, SettingsStorage};
+
+let storage = FileSettingsStorage::new("work", "agent", ".maestro");
+storage.with_write_lock(SettingsScope::Global, &mut |current| {
+    let mut document: serde_json::Value = serde_json::from_str(current.unwrap_or("{}"))?;
+    document["theme"] = "light".into();
+    Ok(Some(serde_json::to_string_pretty(&document)?))
+})?;
+# Ok::<(), maestro_settings::SettingsStorageError>(())
+```
+
+The legacy operation retains its noncreating reads and lazy first replacement;
+it does not serialize preparation of concurrent first replacements. Custom
+adapters inherit `with_write_lock` by delegation to their own `with_lock`, with
+no stronger exclusion promised. Native decorators forward write intent to retain
+the native guarantee. In-memory callbacks still run without a lock and retain
+last-writer behavior.
 
 Writes are not atomic: there is no rename, rollback or sync step.
 

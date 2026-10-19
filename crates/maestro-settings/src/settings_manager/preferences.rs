@@ -73,10 +73,11 @@ pub trait SettingsStorage: thread_bound::StorageThreadBound {
     /// without calling `update`.
     ///
     /// `Ok(None)` leaves the stored text untouched, `Ok(Some(text))` replaces it
-    /// and `Err` propagates without writing. The file adapter holds its lock from
-    /// before the read until after the write and runs `update` for a missing file
-    /// before any directory or lock is created; the in-memory adapter holds
-    /// nothing while `update` runs, so `update` may use the same storage again.
+    /// and `Err` propagates without writing. For an existing file the file adapter
+    /// holds its lock from before the read until after the write. For a missing
+    /// file it runs `update` before creating any directory or lock, so concurrent
+    /// first replacements need [`Self::with_write_lock`] instead. The in-memory
+    /// adapter holds nothing while `update` runs, allowing storage re-entry.
     ///
     /// # Errors
     ///
@@ -87,4 +88,26 @@ pub trait SettingsStorage: thread_bound::StorageThreadBound {
         scope: SettingsScope,
         update: &mut dyn FnMut(Option<&str>) -> SettingsUpdate,
     ) -> Result<(), SettingsStorageError>;
+
+    /// Runs a raw-text update with explicit write intent.
+    ///
+    /// The default delegates once to [`Self::with_lock`], preserving the supplied
+    /// adapter's callback, exclusion and re-entry policy. Native decorators must
+    /// forward this operation to retain the file adapter's write exclusion.
+    /// The file adapter creates the parent as needed and acquires its stable
+    /// sidecar before reading and invoking `update` exactly once. It releases
+    /// exclusion on every outcome; acquire/read failures skip the callback.
+    /// `Ok(None)` and callback failure leave settings bytes untouched but may
+    /// leave a newly created parent and sidecar, never a new settings file.
+    ///
+    /// # Errors
+    ///
+    /// Returns the callback's failure or the adapter's acquire, read or write failure.
+    fn with_write_lock(
+        &self,
+        scope: SettingsScope,
+        update: &mut dyn FnMut(Option<&str>) -> SettingsUpdate,
+    ) -> Result<(), SettingsStorageError> {
+        self.with_lock(scope, update)
+    }
 }
