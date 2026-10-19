@@ -729,6 +729,12 @@ The host colour query builders and reply parsing in
 under the same license. Changes include shared framing, three-channel RGBA reply
 admission and checked string slicing for malformed non-ASCII hex replies.
 
+The resume records and argument plans, retained pane state, presentation metadata,
+terminal title normalization and host theme in `crates/maestro-daemon/` derive from
+the agent resume, terminal state, terminal metadata, terminal title and terminal
+theme modules under the same license. Retained provenance uses Maestro's
+canonical source spelling; state arbitration retains the source's session and
+process-generation ownership rules.
 
 The pane terminal, shell and foreground process code in `crates/maestro-process/`
 also derives from herdr v0.8.2 under Apache-2.0. Its process sources include the

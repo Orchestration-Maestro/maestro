@@ -3342,6 +3342,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-daemon"
+version = "0.1.0"
+dependencies = [
+ "maestro-dependencies",
+ "maestro-detection",
+ "maestro-protocol",
+ "maestro-tui",
+ "maestro-workspace",
+]
+
+[[package]]
 name = "maestro-dependencies"
 version = "0.1.0"
 dependencies = [

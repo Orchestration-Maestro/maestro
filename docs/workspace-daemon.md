@@ -146,3 +146,55 @@ pairs from identity-only pairs; it does not evaluate screens or derive completio
 state. Authority predicates accept canonical `maestro:` provenance. Call
 `normalize_agent_source` at a retained report boundary to translate a legacy
 provenance prefix without changing other source text.
+
+## Agent state
+
+`maestro-daemon::terminal::state::TerminalState` retains one pane's detected
+agent, hook authority, session identity, managed launch and presentation. Detection
+and integration reports feed one effective-state recomputation. Live lifecycle
+integrations own state while matching foreground evidence remains valid; other
+hooks can yield to fresh visible blockers. Process exit clears matching authority
+before recomputation. Replacement sessions need the integration's recognized
+start reason and fresh process evidence; stale and buffered reports remain tied
+to their source and generation.
+
+Retained hook, session and metadata inputs normalize provenance once. Clear and
+release lookups use the same normalizer, so legacy and canonical source spellings
+share ownership and sequence freshness. External agent labels stay unchanged.
+
+`terminal::metadata` applies presentation overrides without changing execution
+state. Title, display agent and state labels have independent precedence times.
+Source and agent guards hide unrelated reports. Expiry is explicit: callers read
+the next deadline and apply an expiry observation; the state owner starts no
+timer. Manual labels are trimmed, while agent names retain their spelling and
+session ownership. Managed launches use caller-supplied settling and timeout
+values, releasing their names on mismatch or process exit.
+
+`maestro-daemon::terminal::title::stripped_terminal_title` trims a terminal title
+and removes one recognized leading activity glyph only when whitespace or the
+end of the title follows it. Other symbols and Unicode text stay intact. An empty
+result has no presented title. Raw-title changes are tracked separately from
+normalized presentation changes; only the latter advance the wrapping revision.
+Windows elevation-title handling is tracked in
+[Windows qualification](https://github.com/Orchestration-Maestro/maestro/issues/1473).
+
+`maestro-daemon::terminal_theme` retains default foreground/background colours
+and palette entries. A palette alone does not make the default-colour theme
+nonempty. Background luminance determines light or dark appearance when the host
+has not supplied one. The module builds colour-scheme reports and default-colour
+set/reset sequences. Host colour queries and reply parsing have one owner,
+`maestro-tui::terminal_theme`; consumers reuse its RGB and default-colour records.
+
+## Resume plans
+
+`maestro-daemon::agent_resume` validates official integration session references
+from reports or snapshots. Identifiers contain at most 512 UTF-8 bytes; absolute
+paths contain at most 4096. Both reject empty values and control characters.
+Path-capable integrations prefer a valid path, falling back to a valid identifier.
+Other integrations accept identifiers only.
+
+Snapshot admission retains canonical source provenance and rejects a source that
+does not match its agent. Resume plans contain the external executable and literal
+argument strings, never a shell command. Their deduplication key separates source,
+agent, reference kind and value with NUL bytes. Planning starts no process and
+performs no filesystem lookup.
