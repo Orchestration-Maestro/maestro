@@ -75,7 +75,7 @@ impl ToolContent for Recipe {
     }
 }
 /// Adapt ordinary user messages without inventing a second agent execution family.
-pub(super) struct Renderer(pub(super) Rc<RefCell<Vec<String>>>);
+pub(crate) struct Renderer(pub(crate) Rc<RefCell<Vec<String>>>);
 impl maestro_web::MessageRenderer<BrowserMessages<NoCustomMessages>> for Renderer {
     fn render(
         &self,
@@ -84,17 +84,36 @@ impl maestro_web::MessageRenderer<BrowserMessages<NoCustomMessages>> for Rendere
         let AgentMessage::User(message) = message else {
             unreachable!()
         };
-        let maestro_app::UserContent::Text(text) = &message.read().unwrap().content else {
-            unreachable!()
+        let text = match &message.read().unwrap().content {
+            maestro_app::UserContent::Text(text) => text.clone(),
+            maestro_app::UserContent::Blocks(blocks) => blocks
+                .iter()
+                .filter_map(|block| {
+                    if let maestro_app::UserBlock::Text(text) = block {
+                        Some(text.text.as_str())
+                    } else {
+                        None
+                    }
+                })
+                .collect(),
         };
         Ok(Box::new(Recipe {
-            text: text.clone(),
+            text,
             calls: Rc::clone(&self.0),
         }))
     }
 }
 /// Frame the public aggregate using the production registry and browser Agent.
 pub(crate) fn draw(scene: &Slots, interface: &mut AgentInterface, i18n: &I18n) {
+    try_draw(scene, interface, i18n).unwrap();
+}
+/// Return a reached render failure without hiding its following retry frame.
+pub(crate) fn try_draw(
+    scene: &Slots,
+    interface: &mut AgentInterface,
+    i18n: &I18n,
+) -> Result<(), ToolUiError> {
+    let mut response = Ok(());
     let host: Rc<dyn maestro_web::browser::attachment_content::AttachmentHost> = scene.host.clone();
     let p = scene.pack.presentation(scene.mode).unwrap();
     scene
@@ -119,11 +138,12 @@ pub(crate) fn draw(scene: &Slots, interface: &mut AgentInterface, i18n: &I18n) {
                     },
                 );
                 assert!(output.overlays.is_empty());
-                output.response.unwrap();
+                response = output.response.map(|_| ());
             },
         )
         .textures_delta
         .clear();
+    response
 }
 /// Every text root stays searchable while actual canvas invocation follows the native scroll.
 /// # Panics

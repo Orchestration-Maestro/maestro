@@ -130,27 +130,37 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
     /// Returns reached child/host failures while transferring independently opened overlays.
     pub fn render(&mut self, ui: &mut egui::Ui, view: ToolRenderView<'_>) -> ToolContentOutput {
         let mut overlays = vec![];
-        self.observation.borrow_mut().context = Some(ui.ctx().clone());
-        let response = self.render_body(ui, view, &mut overlays);
-        ToolContentOutput { response, overlays }
-    }
-    /// Refresh operands without retaining Agent/message guards across user callbacks.
-    fn refresh(&mut self) -> Result<bool, ToolUiError> {
         let (refresh, stream) = {
             let mut observation = self.observation.borrow_mut();
+            observation.context = Some(ui.ctx().clone());
             (
                 std::mem::take(&mut observation.refresh),
                 std::mem::replace(&mut observation.stream, StreamObservation::Unchanged),
             )
         };
-        let ended = matches!(&stream, StreamObservation::End);
+        let response = self.render_body(ui, view, &mut overlays, (refresh, &stream));
+        if response.is_err() {
+            let mut observation = self.observation.borrow_mut();
+            observation.refresh = true;
+            if matches!(observation.stream, StreamObservation::Unchanged) {
+                observation.stream = stream;
+            }
+        }
+        ToolContentOutput { response, overlays }
+    }
+    /// Refresh operands without retaining Agent/message guards across user callbacks.
+    fn refresh(
+        &mut self,
+        (refresh, stream): (bool, &StreamObservation<C>),
+    ) -> Result<bool, ToolUiError> {
+        let ended = matches!(stream, StreamObservation::End);
         match stream {
             StreamObservation::Unchanged => {}
             StreamObservation::Clear | StreamObservation::End => {
                 self.stream.set_message(None, true)?;
             }
             StreamObservation::Message(message) => {
-                self.stream.set_message(Some(message), false)?;
+                self.stream.set_message(Some(message.clone()), false)?;
             }
         }
         if refresh && let Some(session) = &self.session {
@@ -189,11 +199,12 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         overlays: &mut Vec<crate::AttachmentOverlay>,
+        observation: (bool, &StreamObservation<C>),
     ) -> Result<egui::Response, ToolUiError> {
         if self.session.is_none() {
             return self.empty.render(ui, view);
         }
-        let refresh = self.refresh()?;
+        let refresh = self.refresh(observation)?;
         let stable = self.list.len();
         let stream_revision = self.stream.revision();
         let dirty_stream =

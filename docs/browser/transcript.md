@@ -111,7 +111,8 @@ index once for both stable and streaming rows. Native resize notifications ident
 the affected positional slot; offscreen image growth updates its height before
 later rows are revealed. Rows use their planned canvas origin while native slot
 sizes are published together, so a preceding row's growth does not offset a child
-twice.
+twice. A reached render failure keeps the session refresh pending, so a later
+frame retries preparation and native slot sizing without another Agent event.
 
 `set_auto_scroll` overrides whether later content growth follows the bottom. A
 nonzero upward scroll disables following only beyond 50 pixels from the bottom;

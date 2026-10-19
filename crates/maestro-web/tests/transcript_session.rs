@@ -14,8 +14,12 @@ use wasm_bindgen::prelude::*;
 
 #[path = "transcript_session/lifecycle.rs"]
 mod lifecycle;
+#[path = "transcript_session/publication.rs"]
+mod publication;
 #[path = "transcript_session/requests.rs"]
 mod requests;
+#[path = "transcript_session/retry.rs"]
+mod retry;
 #[path = "transcript_session/tools.rs"]
 mod tools;
 
