@@ -141,6 +141,7 @@ impl Slots {
                 opacity: 1.,
                 occluders: self.holes.clone(),
                 content: AttachmentContent::Reading(ReadingPlacement {
+                    intrinsic_width: false,
                     content: Rc::clone(&self.content),
                     phase,
                     sizes,

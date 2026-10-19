@@ -27,6 +27,8 @@ pub(crate) enum TextKind {
     Caption,
     /// Input or output label.
     Label,
+    /// Normal-weight small detail text.
+    Detail,
     /// Compact usage, optionally interactive.
     Usage(bool),
     /// Reasoning disclosure, optionally shimmering.
@@ -104,6 +106,7 @@ impl NativeText {
                 ToolUiError::Host(AttachmentHostError::Host("Missing tool text".into()))
             })?;
         let layout = ControlledReading {
+            intrinsic_width: false,
             height: ReadingHeight::Flow,
             host: self.host.as_ref(),
             id: self.id,
@@ -238,6 +241,7 @@ fn update(mounted: &Mounted, text: &str, kind: TextKind) {
     let class = match kind {
         TextKind::Caption => "maestro-tool-caption",
         TextKind::Label => "maestro-tool-label",
+        TextKind::Detail => "maestro-tool-detail",
         TextKind::Usage(false) => "maestro-message-usage",
         TextKind::Usage(true) => "maestro-message-usage maestro-text-action",
         TextKind::Thinking(false) => "maestro-thinking-header maestro-text-action",

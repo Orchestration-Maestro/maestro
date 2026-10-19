@@ -13,6 +13,67 @@ use wasm_bindgen::prelude::*;
 mod tests {
     use super::*;
 
+    /// The retained chevron paints the utility transition before reaching its endpoint.
+    /// # Panics
+    /// Panics if opening or hover paint jumps to the destination or fails to settle.
+    #[wasm_bindgen]
+    pub fn thinking_chevron_paints_intermediate_rotation_and_color() {
+        let mut surface = Surface::new();
+        surface.time = Some(0.);
+        let mut row = ThinkingBlock::new(surface.host());
+        draw_thinking(&mut surface, &mut row, None);
+        let glyph = surface
+            .painted
+            .iter()
+            .find(|(name, _)| name == "image")
+            .unwrap()
+            .1;
+        let initial = surface
+            .paint
+            .region(&surface.context, &surface.shapes, glyph);
+        let _ = js("document.querySelector('.maestro-thinking-header').click()");
+        surface.events = vec![egui::Event::PointerMoved(glyph.center())];
+        draw_thinking(&mut surface, &mut row, None);
+        let started = surface
+            .paint
+            .region(&surface.context, &surface.shapes, glyph);
+        assert_eq!(
+            started, initial,
+            "transition starts at the previous painted state"
+        );
+        surface.time = Some(0.075);
+        draw_thinking(&mut surface, &mut row, None);
+        let middle = surface
+            .paint
+            .region(&surface.context, &surface.shapes, glyph);
+        let (reference, shapes) = canvas_paint::rotated_icon(
+            &surface.context,
+            glyph,
+            "ChevronRight",
+            (
+                maestro_web::icons::IconSize::Sm,
+                egui::Color32::from_rgb(236, 216, 194),
+                69.8005_f32.to_radians(),
+            ),
+        );
+        assert_eq!(
+            middle,
+            reference.region(&surface.context, &shapes, glyph),
+            "half-time glyph matches the reference rotation and color"
+        );
+        surface.time = Some(0.15);
+        draw_thinking(&mut surface, &mut row, None);
+        let end = surface
+            .paint
+            .region(&surface.context, &surface.shapes, glyph);
+        assert_ne!(middle, initial);
+        assert_ne!(
+            middle, end,
+            "half-time paint has not jumped to the endpoint"
+        );
+        assert_ne!(end, initial);
+    }
+
     /// Content updates keep expansion, while collapse releases the body.
     /// # Panics
     /// Panics if rendering or a native observation fails.
@@ -211,6 +272,8 @@ mod tests {
         draw_thinking(&mut surface, &mut row, None);
         support::reading_paint::observe("message-thinking-hover").await;
         let _ = js("document.querySelector('.maestro-thinking-header').click()");
+        draw_thinking(&mut surface, &mut row, None);
+        surface.time = Some(1.);
         draw_thinking(&mut surface, &mut row, None);
         let expanded = surface
             .paint

@@ -267,6 +267,7 @@ fn reading(
             opacity: 1.,
             occluders: vec![],
             content: AttachmentContent::Reading(ReadingPlacement {
+                intrinsic_width: false,
                 content: content.clone(),
                 phase,
                 sizes: &[],

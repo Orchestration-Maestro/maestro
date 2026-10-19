@@ -190,7 +190,7 @@ mod tests {
                     "document.querySelectorAll('.maestro-tool-label')[1].textContent === debugResult",
                 );
                 check(
-                    "document.querySelectorAll('.maestro-tool-label')[2].textContent === debugAbsent",
+                    "document.querySelector('.maestro-tool-detail').textContent === debugAbsent && getComputedStyle(document.querySelector('.maestro-tool-detail')).fontWeight === '400'",
                 );
                 check("document.querySelectorAll('.maestro-code').length === 1");
                 row.has_result = true;

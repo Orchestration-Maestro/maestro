@@ -1,4 +1,5 @@
 //! Retained reasoning disclosure with native text and Markdown.
+use crate::browser::transition::{Transition, TransitionStyle};
 use crate::{
     browser::attachment_content::{self, AttachmentHost},
     components::{
@@ -23,6 +24,8 @@ pub struct ThinkingBlock {
     header: NativeText,
     /// Body exists only while expanded.
     body: Option<MarkdownBlock>,
+    /// Mounted color and rotation properties, independent of body lifetime.
+    transitions: Option<(Transition<3>, Transition<1>)>,
     /// Primary gesture admitted by the current clipped header.
     pressed: Option<()>,
 }
@@ -46,6 +49,7 @@ impl ThinkingBlock {
             header,
             body: None,
             pressed: None,
+            transitions: None,
         }
     }
     /// Draw the disclosure, retaining expansion across content and streaming updates.
@@ -110,6 +114,41 @@ impl ThinkingBlock {
         if !self.is_streaming {
             self.header.set_hovered(hovered)?;
         }
+        self.paint_chevron(ui, rect, hovered, view)?;
+        Ok(header.response)
+    }
+    /// Sample the existing property owner before painting either changing property.
+    fn paint_chevron(
+        &mut self,
+        ui: &egui::Ui,
+        rect: egui::Rect,
+        hovered: bool,
+        view: ToolRenderView<'_>,
+    ) -> Result<(), ToolUiError> {
+        let color =
+            attachment_content::color(view.presentation, if hovered { "text" } else { "muted" })
+                .map_err(|error| ToolUiError::Presentation(error.to_string()))?;
+        let [r, g, b, _] = color.to_array();
+        let target = [r, g, b].map(f32::from);
+        let rotation = [if self.expanded.get() {
+            std::f32::consts::FRAC_PI_2
+        } else {
+            0.
+        }];
+        let transitions = self
+            .transitions
+            .get_or_insert_with(|| (Transition::new(target), Transition::new(rotation)));
+        let now = ui.input(|input| input.time);
+        let style = TransitionStyle {
+            duration: 0.15,
+            curve: [0.4, 0., 0.2, 1.],
+        };
+        let color = transitions.0.sample(now, target, style);
+        let rotation = transitions.1.sample(now, rotation, style);
+        if color.active || rotation.active {
+            ui.ctx().request_repaint();
+        }
+        let [r, g, b] = color.value.map(attachment_content::channel);
         let icons =
             crate::icons::icons().map_err(|error| ToolUiError::Presentation(error.to_string()))?;
         let icon = icons
@@ -121,18 +160,10 @@ impl ThinkingBlock {
             icon,
             (
                 crate::icons::IconSize::Sm,
-                attachment_content::color(
-                    view.presentation,
-                    if hovered { "text" } else { "muted" },
-                )
-                .map_err(|error| ToolUiError::Presentation(error.to_string()))?,
-                if self.expanded.get() {
-                    std::f32::consts::FRAC_PI_2
-                } else {
-                    0.
-                },
+                egui::Color32::from_rgb(r, g, b),
+                rotation.value[0],
             ),
         )?;
-        Ok(header.response)
+        Ok(())
     }
 }

@@ -1,5 +1,5 @@
 //! One restoration owner for bounded measurements and atomic publication.
-use super::{AttachmentHostError, ReadingPhase, attr, host_error};
+use super::{AttachmentHostError, ReadingPhase, ReadingRoot, attr, host_error};
 use js_sys::Reflect;
 use std::collections::HashMap;
 use wasm_bindgen::JsValue;
@@ -105,4 +105,33 @@ pub(super) fn transaction<T>(
     }
     let offsets = scroll.apply(nodes.1);
     result.and_then(|value| restored.and(offsets).map(|()| value))
+}
+
+/// Read the decoration's actual border rather than assuming CSS pixel rounding.
+pub(super) fn decoration_border(
+    root: &ReadingRoot,
+) -> Result<egui::epaint::MarginF32, AttachmentHostError> {
+    let Some(decoration) = &root.decoration else {
+        return Ok(egui::epaint::MarginF32::ZERO);
+    };
+    let style = decoration
+        .owner_document()
+        .and_then(|d| d.default_view())
+        .ok_or_else(|| AttachmentHostError::Host("Missing decoration window".into()))?
+        .get_computed_style(decoration)
+        .map_err(|e| host_error(&e))?
+        .ok_or_else(|| AttachmentHostError::Host("Missing decoration style".into()))?;
+    let side = |name| -> Result<f32, AttachmentHostError> {
+        let value = style.get_property_value(name).map_err(|e| host_error(&e))?;
+        value
+            .trim_end_matches("px")
+            .parse()
+            .map_err(|e| AttachmentHostError::Host(format!("Invalid decoration border: {e}")))
+    };
+    Ok(egui::epaint::MarginF32 {
+        left: side("border-left-width")?,
+        right: side("border-right-width")?,
+        top: side("border-top-width")?,
+        bottom: side("border-bottom-width")?,
+    })
 }

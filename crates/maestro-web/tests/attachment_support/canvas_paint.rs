@@ -320,20 +320,34 @@ pub fn icon(
     color: egui::Color32,
 ) -> (Paint, Vec<egui::epaint::ClippedShape>) {
     use egui::emath::GuiRounding as _;
-    let catalog = maestro_web::icons::icons().unwrap();
-    let image = maestro_web::icons::icon(
-        &catalog[name],
-        maestro_web::icons::IconSize::Md,
-        color,
-        ctx.pixels_per_point(),
+    rotated_icon(
+        ctx,
+        rect.round_to_pixels(ctx.pixels_per_point()),
+        name,
+        (maestro_web::icons::IconSize::Md, color, 0.),
     )
-    .unwrap();
+}
+
+/// Native glyph sampled after a caller-supplied reference rotation and size.
+/// # Panics
+/// Panics if the glyph cannot be resolved or rasterized.
+#[must_use]
+pub fn rotated_icon(
+    ctx: &egui::Context,
+    rect: egui::Rect,
+    name: &str,
+    (size, color, angle): (maestro_web::icons::IconSize, egui::Color32, f32),
+) -> (Paint, Vec<egui::epaint::ClippedShape>) {
+    let catalog = maestro_web::icons::icons().unwrap();
+    let image =
+        maestro_web::icons::icon(&catalog[name], size, color, ctx.pixels_per_point()).unwrap();
     let mut mesh = egui::Mesh::with_texture(egui::TextureId::default());
     mesh.add_rect_with_uv(
-        rect.round_to_pixels(ctx.pixels_per_point()),
+        rect,
         egui::Rect::from_min_max(egui::Pos2::ZERO, egui::pos2(1., 1.)),
         egui::Color32::WHITE,
     );
+    mesh.rotate(egui::emath::Rot2::from_angle(angle), rect.center());
     (
         Paint::native_image(image),
         vec![egui::epaint::ClippedShape {

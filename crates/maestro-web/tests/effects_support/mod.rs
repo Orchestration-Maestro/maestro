@@ -141,6 +141,8 @@ impl AttachmentHost for Host {
         id: egui::Id,
     ) -> Result<maestro_web::browser::attachment_content::ReadingLayout, AttachmentHostError> {
         Ok(ReadingLayout {
+            width: 0.,
+            border: egui::epaint::MarginF32::ZERO,
             height: 64.,
             controls: self.layouts.borrow().get(&id).cloned().unwrap(),
         })

@@ -77,6 +77,39 @@ mod tests {
         );
     }
 
+    /// Native intrinsic measurement bounds both short text and wrapping attachment rows.
+    /// # Panics
+    /// Panics if reading allocation or its decorated bubble stretches beyond content.
+    #[wasm_bindgen]
+    pub async fn user_bubbles_measure_intrinsic_width_before_decoration() {
+        let mut surface = Surface::new();
+        let mut row = UserMessage::new(surface.host());
+        let attachments = [attachment("note.txt")];
+        for (text, tiles, expected) in [
+            ("User message".to_owned(), None, 147.0625),
+            ("User message ".repeat(40), None, 768.),
+            ("Hi".to_owned(), Some(&attachments[..]), 97.6),
+        ] {
+            let content = maestro_app::UserContent::Text(text);
+            draw_user(
+                &mut surface,
+                &mut row,
+                UserMessageInput::WithAttachments {
+                    content: &content,
+                    attachments: tiles,
+                },
+            );
+            publish(
+                "expectedBubbleWidth",
+                &wasm_bindgen::JsValue::from_f64(expected),
+            );
+            check(
+                "(()=>{const f=document.querySelector('.maestro-markdown').closest('.maestro-reading-frame').getBoundingClientRect(),b=document.querySelector('.maestro-user-decoration').getBoundingClientRect(); console.log('BUBBLE WIDTH',f.width,b.width,expectedBubbleWidth); return Math.abs(b.width-expectedBubbleWidth)<0.1 && f.width<=b.width-32 && (expectedBubbleWidth!==147.0625 || Math.abs(f.width-113.4625)<0.1) && b.right<=784.01})()",
+            );
+            support::reading_paint::observe("user-intrinsic-width").await;
+        }
+    }
+
     /// Draw one user input through the actual native host and return independent overlays.
     fn draw_user(
         surface: &mut Surface,

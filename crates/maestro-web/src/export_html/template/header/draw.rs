@@ -21,6 +21,7 @@ impl Placement<'_> {
     /// Measure and publish through the shared mixed-content flow.
     fn draw(&mut self, ui: &mut egui::Ui) -> io::Result<Vec<HeaderAction>> {
         let layout = ControlledReading {
+            intrinsic_width: false,
             height: ReadingHeight::Viewport,
             host: self.state.host.as_ref(),
             id: self.state.id,

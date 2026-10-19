@@ -17,6 +17,8 @@ pub(crate) enum ReadingHeight {
 pub(crate) struct ControlledReading<'a> {
     /// Native flow or explicitly bounded viewport.
     pub height: ReadingHeight,
+    /// Shrink to the bounded intrinsic native width instead of filling the row.
+    pub intrinsic_width: bool,
     /// Existing platform transaction owner.
     pub host: &'a dyn AttachmentHost,
     /// Retained surface identity.
@@ -57,6 +59,7 @@ impl ControlledReading<'_> {
                 content: AttachmentContent::Reading(ReadingPlacement {
                     content: Rc::clone(self.content),
                     phase,
+                    intrinsic_width: self.intrinsic_width,
                     sizes: self.sizes,
                     modal: self.modal,
                     context: ui.ctx(),
@@ -84,7 +87,11 @@ impl ControlledReading<'_> {
         )?;
         let layout = self.host.reading_layout(self.id)?;
         let (id, rect) = ui.allocate_space(egui::vec2(
-            available.x,
+            if self.intrinsic_width {
+                layout.width.min(available.x).max(0.)
+            } else {
+                available.x
+            },
             layout.height.min(available.y).max(0.),
         ));
         let controls: Vec<_> = layout

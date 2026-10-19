@@ -71,7 +71,11 @@ impl ToolMessageDebugView {
                 self.listings = None;
                 self.absent
                     .get_or_insert_with(|| NativeText::new(Rc::clone(&self.host)))
-                    .render(ui, (&view.i18n.text("(no result)")?, TextKind::Label), view)?;
+                    .render(
+                        ui,
+                        (&view.i18n.text("(no result)")?, TextKind::Detail),
+                        view,
+                    )?;
             }
             Ok(())
         });

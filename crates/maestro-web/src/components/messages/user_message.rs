@@ -45,7 +45,7 @@ impl UserMessage {
         Self {
             decoration: decoration(),
             decoration_id: attachment_content::identity(),
-            text: MarkdownBlock::new(Rc::clone(&host)),
+            text: MarkdownBlock::for_user(Rc::clone(&host)),
             host,
             tiles: Vec::new(),
         }
@@ -95,14 +95,22 @@ impl UserMessage {
             ReadingPhase::Measure,
             view,
         )?;
-        let row = egui::Frame::new()
+        let border = self.host.reading_layout(self.decoration_id)?.border;
+        let mut frame = egui::Frame::new()
             .inner_margin(egui::Margin::symmetric(16, 8))
             .outer_margin(egui::Margin::symmetric(16, 0))
-            .show(ui, |ui| self.draw(ui, view));
-        let overlays = row.inner?;
+            .begin(ui);
+        let mut content = frame.content_ui.new_child(
+            egui::UiBuilder::new().max_rect(frame.content_ui.available_rect_before_wrap() - border),
+        );
+        let overlays = self.draw(&mut content, view)?;
+        frame
+            .content_ui
+            .allocate_rect(content.min_rect() + border, egui::Sense::hover());
+        let response = frame.end(ui);
         self.place(
             ui,
-            row.response.rect.shrink2(egui::vec2(16., 0.)),
+            response.rect.shrink2(egui::vec2(16., 0.)),
             ReadingPhase::Publish,
             view,
         )?;
@@ -125,6 +133,7 @@ impl UserMessage {
                 opacity: 1.,
                 occluders: vec![],
                 content: AttachmentContent::Reading(ReadingPlacement {
+                    intrinsic_width: false,
                     content: Rc::clone(&self.decoration),
                     phase,
                     sizes: &[],

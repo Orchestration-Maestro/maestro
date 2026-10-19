@@ -41,6 +41,7 @@ pub(super) fn present(
                 opacity: 1.,
                 occluders: holes,
                 content: AttachmentContent::Reading(ReadingPlacement {
+                    intrinsic_width: false,
                     content: reading.clone(),
                     phase,
                     sizes: &sizes,

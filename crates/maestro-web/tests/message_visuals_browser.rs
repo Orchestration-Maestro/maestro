@@ -44,6 +44,52 @@ mod tests {
             }
         }
     }
+    /// Absent output keeps body weight while both debug headings stay medium.
+    /// # Panics
+    /// Panics if native glyph paint or the heading treatments differ.
+    #[wasm_bindgen]
+    pub async fn absent_result_paints_normal_weight_without_changing_headings() {
+        let mut surface = Surface::new();
+        let pack = surface.pack.clone();
+        let presentation = pack.presentation(BrandMode::Dark).unwrap();
+        let mut row = ToolMessageDebugView::new(surface.host());
+        draw(&mut surface, &presentation, |ui, view| {
+            row.render(ui, view).unwrap()
+        });
+        support::reading_paint::observe("debug-absent-weight").await;
+        check(
+            "(()=>{const headings=[...document.querySelectorAll('.maestro-tool-label')]; return headings.length===2 && headings.every(n=>getComputedStyle(n).fontWeight==='500')})()",
+        );
+    }
+
+    /// Native action text paints the utility curve rather than the browser default easing.
+    /// # Panics
+    /// Panics if the halfway-time glyph pixels differ from the recorded curve.
+    #[wasm_bindgen]
+    pub async fn message_action_text_paints_utility_transition_midpoint() {
+        let mut surface = Surface::new();
+        let pack = surface.pack.clone();
+        let presentation = pack.presentation(BrandMode::Dark).unwrap();
+        publish(
+            "colors",
+            &serde_json::to_string(&presentation.colors).unwrap().into(),
+        );
+        let mut row = AssistantMessage::new(surface.host());
+        draw(&mut surface, &presentation, |ui, view| {
+            row.render(
+                ui,
+                &assistant("stop"),
+                AssistantMessageProps::<serde_json::Value> {
+                    on_cost_click: Some(Rc::new(|| {})),
+                    ..Default::default()
+                },
+                view,
+            )
+            .unwrap()
+        });
+        support::reading_paint::observe("message-action-transition").await;
+    }
+
     /// Screenshot specifications name native consumers, never authored markup snapshots.
     async fn observe(selector: &str, role: &str) {
         publish(

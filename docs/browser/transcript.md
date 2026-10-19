@@ -14,6 +14,8 @@ attachment handles. Only the first text block is displayed. A render returns
 independently owned attachment overlays: keep those overlays separately if they
 must outlive the row. The user bubble's gradient and border share its fixed
 frame; that frame applies the rounded backdrop blur outside the text scroller.
+The bubble fits its text and attachments within the parent width, including its
+native-resolved border and padding.
 
 `AssistantMessageProps` supplies tool names, pending IDs, result maps, visibility
 flags, streaming state and an optional cost action. `ToolMessageProps` borrows
@@ -21,11 +23,13 @@ the original call and result. Both preserve caller-defined native result details
 without serialization bounds. Assistant children retain state by visible position
 and component kind. Thinking disclosures start collapsed and keep expansion
 through content and streaming updates. Replacing the cost action replaces the
-live callback; removing usage or releasing the row revokes it.
+live callback; removing usage or releasing the row revokes it. Chevron rotation,
+hover color and action text use a 150-ms cubic-bezier(0.4, 0, 0.2, 1) transition.
 
 Debug fields distinguish absent arguments/details, explicit JSON null and
-result presence. Strict JSON strings are parsed for display; other strings stay
-literal. All three debug listings use literal code input, so `YWJj` stays
+result presence. Call and Result headings use medium weight; absent-result text
+uses normal-weight small text. Strict JSON strings are parsed for display; other
+strings stay literal. All three debug listings use literal code input, so `YWJj` stays
 `YWJj` when displayed or copied. The standalone encoded-input `CodeBlock`
 constructor keeps its existing behavior.
 
