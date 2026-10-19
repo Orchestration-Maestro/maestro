@@ -2,14 +2,14 @@
 #![cfg(test)]
 use super::{
     browser::{self, ListingRecipe},
-    cases,
+    cases, header, status,
 };
 use crate::{
     markdown_support::{check, first_slot_center, settle},
     surface,
 };
 use maestro_web::{
-    render_collapsible_header, render_header,
+    render_header,
     tools::{
         renderer_registry::{ToolHeaderState, ToolHeaderText},
         types::{ToolRenderResult, ToolRenderState},
@@ -24,23 +24,12 @@ fn recipe(
     expanded: Option<Rc<Cell<bool>>>,
     text: &str,
 ) -> ToolRenderResult {
-    let icon = maestro_web::icons::icons()
-        .unwrap()
-        .shift_remove("Code")
-        .unwrap();
     let text = if rich {
         ToolHeaderText::Content(Box::new(ListingRecipe { code: text.into() }))
     } else {
         ToolHeaderText::Text(text.into())
     };
-    ToolRenderResult {
-        content: if let Some(expanded) = expanded {
-            render_collapsible_header(state, icon, text, expanded)
-        } else {
-            render_header(state, icon, text)
-        },
-        is_custom: false,
-    }
+    header(state, text, expanded)
 }
 fn alpha(pixels: Vec<[u8; 4]>) -> Vec<u8> {
     pixels.into_iter().map(|pixel| pixel[3]).collect()
@@ -132,7 +121,7 @@ async fn plain_case(
     let rich = case["rich"].as_bool().unwrap();
     let expected = &case["expected"];
     let recipe = recipe(
-        browser::status(case["state"].as_str().unwrap()),
+        status(case["state"].as_str().unwrap()),
         rich,
         None,
         expected["text"].as_str().unwrap(),
@@ -193,7 +182,7 @@ async fn caption(
 
 fn collapse_case(surface: &mut crate::markdown_support::Surface, case: &serde_json::Value) {
     let expanded = Rc::new(Cell::new(case["expanded"].as_bool().unwrap()));
-    let state = browser::status(case["state"].as_str().unwrap());
+    let state = status(case["state"].as_str().unwrap());
     let header = recipe(state, true, Some(expanded.clone()), "caption");
     let mut row = ToolRenderState::default();
     let mut previous = None;

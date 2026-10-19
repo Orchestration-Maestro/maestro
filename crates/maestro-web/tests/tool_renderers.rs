@@ -347,6 +347,7 @@ mod brand;
 pub mod canvas_paint;
 pub mod copy_button_support;
 mod effects_support;
+pub mod highlighter_support;
 mod support;
 
 /// Raw admission remains available after independently selected decoder failures.

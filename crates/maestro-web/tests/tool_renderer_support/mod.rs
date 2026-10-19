@@ -1,15 +1,16 @@
 //! Shared custom renderer recipes for browser tool dispatch witnesses.
 #![cfg(test)]
 use maestro_web::{
+    render_collapsible_header, render_header,
     tools::types::ToolUiError,
     tools::{
-        renderer_registry::TOOL_RENDERERS,
+        renderer_registry::{TOOL_RENDERERS, ToolHeaderState, ToolHeaderText},
         types::{
             ToolContent, ToolRenderResult, ToolRenderView, ToolRenderer, ToolResultMessageView,
         },
     },
 };
-use std::rc::Rc;
+use std::{cell::Cell, rc::Rc};
 
 pub type Callback<P, D> = dyn Fn(
     Option<&P>,
@@ -45,6 +46,40 @@ pub fn content(text: &str, is_custom: bool) -> ToolRenderResult {
         is_custom,
     }
 }
+/// Read a recorded header status name.
+/// # Panics
+/// Panics if the recording names an unknown status.
+#[must_use]
+pub fn status(name: &str) -> ToolHeaderState {
+    match name {
+        "inprogress" => ToolHeaderState::Inprogress,
+        "complete" => ToolHeaderState::Complete,
+        "error" => ToolHeaderState::Error,
+        _ => panic!("unknown recorded header state"),
+    }
+}
+/// Build the shared code-glyph header, collapsible when it gets an expansion handle.
+/// # Panics
+/// Panics if the icon catalog has no code glyph.
+#[must_use]
+pub fn header(
+    state: ToolHeaderState,
+    text: ToolHeaderText,
+    expanded: Option<Rc<Cell<bool>>>,
+) -> ToolRenderResult {
+    let icon = maestro_web::icons::icons()
+        .unwrap()
+        .shift_remove("Code")
+        .unwrap();
+    ToolRenderResult {
+        content: if let Some(expanded) = expanded {
+            render_collapsible_header(state, icon, text, expanded)
+        } else {
+            render_header(state, icon, text)
+        },
+        is_custom: false,
+    }
+}
 pub fn reset() {
     let old = TOOL_RENDERERS.with(std::cell::RefCell::take);
     drop(old);
@@ -72,6 +107,10 @@ pub fn message<D>(details: Option<D>) -> maestro_app::ToolResultMessage<D> {
 
 #[cfg(not(target_arch = "wasm32"))]
 mod console_controls;
+#[cfg(not(target_arch = "wasm32"))]
+mod default_sections;
+#[cfg(not(target_arch = "wasm32"))]
+mod header_controls;
 
 /// Read semantic observations of the recorded headers, collapse, console and forwarding cases.
 /// # Panics

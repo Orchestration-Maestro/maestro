@@ -6,10 +6,7 @@ use maestro_web::{
     TranslationFunction,
     browser::attachment_content::AttachmentHost,
     components::code_block::{CodeBlock, CodeBlockView},
-    tools::{
-        renderer_registry::ToolHeaderState,
-        types::{ToolContent, ToolRenderResult, ToolRenderState, ToolRenderView},
-    },
+    tools::types::{ToolContent, ToolRenderResult, ToolRenderState, ToolRenderView},
 };
 use std::rc::Rc;
 
@@ -49,18 +46,6 @@ pub fn click(
     surface.click(at, |ui, frame| {
         recipe.render(ui, view(&host, frame), row).unwrap()
     });
-}
-/// Observe the real native recipe through the shared frame.
-/// # Panics
-/// Panics if native setup or the expected observation fails.
-#[must_use]
-pub fn status(name: &str) -> ToolHeaderState {
-    match name {
-        "inprogress" => ToolHeaderState::Inprogress,
-        "complete" => ToolHeaderState::Complete,
-        "error" => ToolHeaderState::Error,
-        _ => panic!("unknown recorded header state"),
-    }
 }
 #[must_use]
 pub fn glyphs(surface: &Surface) -> Vec<egui::Rect> {
