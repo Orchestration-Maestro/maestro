@@ -2,32 +2,23 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 
+#[path = "../../../maestro-agent/tests/support/controlled_loop.rs"]
+mod controlled_loop;
 use crate::read_support::model;
+pub use controlled_loop::{responses, user};
 use maestro_agent::{
     AgentContext, AgentEvent, AgentLoopConfig, AgentLoopOptions, AgentMessage, AgentTool,
     run_agent_loop,
 };
 use maestro_models::{
-    AssistantContent, AssistantMessage, AssistantMessageEventStream, Context, JsonObject, Message,
-    ProviderObjects, SharedAssistantMessage, SimpleStreamOptions, StopReason, TextContent,
-    ToolCall, UserContent, UserMessage,
+    AssistantContent, AssistantMessage, JsonObject, Message, SharedAssistantMessage, StopReason,
+    TextContent, ToolCall,
 };
 use serde_json::{Value, json};
-use std::{
-    collections::VecDeque,
-    sync::{
-        Arc, Mutex, RwLock,
-        atomic::{AtomicUsize, Ordering},
-    },
+use std::sync::{
+    Arc, Mutex, RwLock,
+    atomic::{AtomicUsize, Ordering},
 };
-
-/// A shared user entry.
-pub fn user(text: &str) -> AgentMessage {
-    AgentMessage::User(Arc::new(RwLock::new(UserMessage {
-        content: UserContent::Text(text.into()),
-        timestamp: 1.0,
-    })))
-}
 
 /// A completed assistant response, optionally requesting `calls` as `(id, tool, arguments)`.
 pub fn assistant(text: &str, calls: &[(&str, &str, Value)]) -> SharedAssistantMessage {
@@ -63,59 +54,7 @@ pub fn assistant(text: &str, calls: &[(&str, &str, Value)]) -> SharedAssistantMe
 
 /// A loop configuration that converts history without a provider.
 pub fn config() -> AgentLoopConfig {
-    AgentLoopConfig {
-        thinking_budgets: None,
-        model: Arc::new(RwLock::new(model(vec![]).as_ref().clone())),
-        options: SimpleStreamOptions::default(),
-        extra: JsonObject::new(),
-        objects: ProviderObjects::default(),
-        convert_to_llm: Arc::new(|history| {
-            let messages = history
-                .read()
-                .unwrap()
-                .iter()
-                .map(|message| match message {
-                    AgentMessage::User(value) => Message::User(value.read().unwrap().clone()),
-                    AgentMessage::Assistant(value) => {
-                        Message::Assistant(value.read().unwrap().clone())
-                    }
-                    AgentMessage::ToolResult(value) => {
-                        Message::ToolResult(value.read().unwrap().clone())
-                    }
-                    AgentMessage::Custom(_) => unreachable!(),
-                })
-                .collect();
-            Box::pin(async { Ok(messages) })
-        }),
-        transform_context: None,
-        get_api_key: None,
-        before_tool_call: None,
-        after_tool_call: None,
-        should_stop_after_turn: None,
-        get_steering_messages: None,
-        get_follow_up_messages: None,
-        tool_execution: Some(maestro_agent::ToolExecutionMode::Sequential),
-    }
-}
-
-/// A controlled model that answers each turn with the next prepared response.
-pub fn responses(messages: Vec<SharedAssistantMessage>) -> AgentLoopOptions {
-    let messages = Arc::new(Mutex::new(VecDeque::from(messages)));
-    AgentLoopOptions {
-        signal: None,
-        stream_fn: Some(Arc::new(move |_, _: Context, _, _| {
-            let message = messages
-                .lock()
-                .unwrap()
-                .pop_front()
-                .expect("unexpected turn");
-            Box::pin(async {
-                let stream = AssistantMessageEventStream::new();
-                stream.end(Some(message));
-                Ok(stream)
-            })
-        })),
-    }
+    controlled_loop::config(model(vec![]).as_ref().clone())
 }
 
 /// The tool-result messages one turn produced, as the model receives them, and its progress events.
