@@ -659,6 +659,18 @@ fn theme_shared_records_edge_is_scoped() {
 }
 
 #[test]
+fn documentation_checks_may_reuse_the_markdown_owner() {
+    let workspace = Workspace::new();
+    workspace.foundation(&["maestro-test-conventions", "maestro-markdown"]);
+    workspace.member(
+        "maestro-test-conventions",
+        "maestro-test-conventions",
+        "[dependencies]\nmaestro-markdown = { path = \"../maestro-markdown\" }",
+    );
+    assert_eq!(check_workspace(&workspace.root), Ok(()));
+}
+
+#[test]
 fn permitted_downward_edges_pass_without_absent_crates() {
     documented_foundation_graph_matches_policy();
     assert_eq!(support::policy::POLICY.len(), 46);
@@ -667,7 +679,7 @@ fn permitted_downward_edges_pass_without_absent_crates() {
             .iter()
             .map(|row| row.1.len())
             .sum::<usize>(),
-        144
+        145
     );
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
@@ -745,7 +757,7 @@ fn path_utility_edges_preserve_native_layer_rules() {
         .collect();
     assert_eq!(rows.len(), 46);
     assert_eq!(consumers.len(), 29);
-    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 12);
+    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 11);
     native_consumers_may_declare_the_utility(&consumers);
     for from in consumers {
         native_consumer_may_not_dev_declare_the_utility(from);

@@ -103,6 +103,26 @@ mod tests {
         }
     }
 
+    /// The selected grammar reaches the mounted writer in both policy directions.
+    #[wasm_bindgen]
+    pub fn caller_policy_reaches_document_inline_and_final_writer() {
+        let mut surface = Surface::new();
+        let mut block = surface.markdown("~one~ ~~two~~ <b>kept</b>");
+        for escape in [true, false, true] {
+            block.escape_html = escape;
+            surface.settle(&mut block);
+            assert_eq!(
+                js("document.querySelectorAll('.maestro-markdown del').length").as_f64(),
+                Some(2.0)
+            );
+            assert_eq!(
+                js("document.querySelector('.maestro-markdown b') !== null").as_bool(),
+                Some(!escape)
+            );
+            check("document.querySelector('.maestro-markdown').textContent.includes('kept')");
+        }
+    }
+
     /// Code text reaches the listing and the clipboard as the original, decoded once.
     #[wasm_bindgen]
     pub async fn markdown_code_entities_decode_exactly_once() {
@@ -434,5 +454,103 @@ mod tests {
         check(
             "maestro.root().querySelector('.hljs-keyword') === null && maestro.root().querySelector('code').textContent === 'let x;\\n'",
         );
+    }
+
+    /// List-table formulas render through the public block without generated marker text.
+    #[wasm_bindgen]
+    pub fn markdown_list_tables_keep_formula_content_without_placeholders() {
+        let mut surface = Surface::new();
+        for (source, expected) in [
+            ("- | a |\n|---|\n$x$", "x"),
+            ("1. | a |\n|---|\n(u)>$x$", "(u)>x"),
+        ] {
+            let block = surface.markdown(source);
+            publish("cellText", &expected.into());
+            check("maestro.root().querySelector('li th').textContent === 'a'");
+            check("maestro.root().querySelector('li td').textContent === cellText");
+            check("maestro.root().querySelector('li td .katex') !== null");
+            check(
+                "maestro.root().querySelector('m') === null && !maestro.root().textContent.includes('<m></m>')",
+            );
+            drop(block);
+        }
+    }
+
+    /// Recorded caller identities and their independent markup or semantic-tree targets.
+    #[derive(serde::Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct CallerReplay {
+        /// Stable replay identity, including repeated inputs under different operations.
+        id: String,
+        /// Original authored source.
+        content: String,
+        /// Per-render authored HTML policy.
+        escape_html: bool,
+        /// Per-render text presentation.
+        thinking: bool,
+        /// Unmodified caller observation, retained independently of corrected targets.
+        original_reference: String,
+        /// Authority for a corrected observable result.
+        ruling: Option<String>,
+        /// Independent source of the selected target.
+        target_source: String,
+        /// Recorded document markup when a complete tree is not needed.
+        html: Option<String>,
+        /// Recorded semantic math/container tree.
+        tree: Option<serde_json::Value>,
+    }
+
+    /// Replay every recorded caller identity without stopping at its first mismatch.
+    #[wasm_bindgen::prelude::wasm_bindgen]
+    pub fn markdown_recorded_caller_corpus_preserves_observable_output() {
+        let rows: Vec<CallerReplay> =
+            serde_json::from_str(include_str!("fixtures/markdown/caller_replay.json")).unwrap();
+        assert_eq!(rows.len(), 447);
+        let mut surface = Surface::new();
+        let mut failures = Vec::new();
+        let (mut exact, mut corrected, mut unresolved) = (0, 0, 0);
+        let mut dom_bytes_exact = 0;
+        for row in rows {
+            let block = surface.row(&BlockRow {
+                id: row.id.clone(),
+                test: String::new(),
+                content: row.content,
+                escape_html: row.escape_html,
+                thinking: row.thinking,
+                html: String::new(),
+                current_html: None,
+                original_html: None,
+            });
+            let difference = match row.tree {
+                Some(tree) => Surface::tree_difference(&tree),
+                None => Surface::difference(row.html.as_deref().unwrap()),
+            };
+            if !difference.is_empty() {
+                failures.push(format!("{} ({}): {difference}", row.id, row.target_source));
+            }
+            dom_bytes_exact += usize::from(
+                js("maestro.root().innerHTML").as_string().unwrap() == row.original_reference,
+            );
+            let raw_difference = Surface::difference(&row.original_reference);
+            if raw_difference.is_empty() {
+                exact += 1;
+            } else if row.ruling.is_some() {
+                corrected += 1;
+            } else {
+                unresolved += 1;
+                failures.push(format!(
+                    "{}: unexplained raw observation: {raw_difference}",
+                    row.id
+                ));
+            }
+            drop(block);
+        }
+        web_sys::console::log_1(
+            &format!(
+                "caller replay: exact={exact}, corrected={corrected}, unresolved={unresolved}, dom_bytes_exact={dom_bytes_exact}"
+            )
+            .into(),
+        );
+        assert!(failures.is_empty(), "{}", failures.join("\n"));
     }
 }

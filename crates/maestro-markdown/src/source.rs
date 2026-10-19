@@ -1,72 +1,5 @@
 //! Container-local source framing.
-use crate::inline::ScopeKey;
-use std::{cell::RefCell, collections::HashMap, ops::Range};
-/// Authored source and the native containers enclosing the current events.
-#[derive(Clone, Copy)]
-pub(crate) struct Source<'a> {
-    /// Normalized original input.
-    pub(crate) text: &'a str,
-    /// Container prefixes removed by the native parser on continuation lines.
-    pub(crate) frame: Option<&'a Frame<'a>>,
-    /// Whether the events belong to a table cell, where `\|` spells a literal pipe.
-    pub(crate) cell: bool,
-    /// Document-local scope collector; absent during local interpretation.
-    pub(crate) scopes: Option<&'a RefCell<HashMap<ScopeKey, ScopeSource>>>,
-}
-/// One enclosing native block's continuation prefix.
-pub(crate) struct Frame<'a> {
-    /// Outer block, stripped before this block.
-    pub(crate) parent: Option<&'a Frame<'a>>,
-    /// Quote marker or list continuation indentation.
-    pub(crate) kind: Prefix,
-}
-/// Native block framing relevant to authored inline spans.
-pub(crate) enum Prefix {
-    /// One quote marker with its optional following space.
-    Quote,
-    /// List marker width on the item's first line.
-    Item(usize),
-}
-impl Frame<'_> {
-    /// Removes only prefixes belonging to the captured container path.
-    pub(crate) fn strip<'a>(&self, line: &'a str) -> &'a str {
-        let line = self.parent.map_or(line, |parent| parent.strip(line));
-        match self.kind {
-            Prefix::Quote => strip_quote(line),
-            Prefix::Item(width) => {
-                let spaces = line.bytes().take_while(|byte| *byte == b' ').count();
-                &line[spaces.min(width)..]
-            }
-        }
-    }
-}
-impl Source<'_> {
-    /// Retains authored bytes while removing enclosing continuation prefixes.
-    pub(crate) fn authored(&self, range: Range<usize>) -> String {
-        let authored = self.text[range]
-            .split('\n')
-            .enumerate()
-            .map(|(index, line)| {
-                if index == 0 {
-                    line
-                } else {
-                    self.frame.map_or(line, |frame| frame.strip(line))
-                }
-            })
-            .collect::<Vec<_>>()
-            .join("\n");
-        self.spelling(authored)
-    }
-
-    /// Spells a table cell's `\|` as a literal pipe; other sources pass through unchanged.
-    pub(crate) fn spelling(&self, text: String) -> String {
-        if self.cell {
-            text.replace("\\|", "|")
-        } else {
-            text
-        }
-    }
-}
+use std::ops::Range;
 /// Removes a native quote prefix, leaving lazy continuation text intact.
 pub(crate) fn strip_quote(line: &str) -> &str {
     let spaces = line.bytes().take_while(|byte| *byte == b' ').count().min(3);
@@ -76,10 +9,13 @@ pub(crate) fn strip_quote(line: &str) -> &str {
 }
 
 /// Container-local authored source with ordered native provenance.
+#[derive(Clone)]
 pub(crate) struct ScopeSource {
     /// Bytes before inline interpretation.
     pub(crate) text: String,
-    /// Ordered identity spans or atomic table-pipe transformations.
+    /// Source-ordered starts of lazy container continuations that cannot open tables.
+    pub(crate) lazy_lines: Vec<usize>,
+    /// Ordered identity spans or atomic spelling transformations.
     units: Vec<(Range<usize>, Range<usize>)>,
 }
 impl ScopeSource {
@@ -142,49 +78,196 @@ impl ScopeSource {
         Some(start..end)
     }
 }
-impl Source<'_> {
-    /// Capture inline provenance while the native container path is still available.
-    pub(crate) fn scope(&self, key: &Range<usize>, range: Range<usize>, label: bool) {
-        let Some(scopes) = self.scopes else {
-            return;
-        };
-        let mut mapped = ScopeSource {
+impl ScopeSource {
+    /// Capture an unchanged source buffer with absolute provenance.
+    pub(crate) fn identity(text: &str) -> Self {
+        Self {
+            text: text.to_owned(),
+            units: vec![(0..text.len(), 0..text.len())],
+            lazy_lines: Vec::new(),
+        }
+    }
+    /// Retain selected authored pieces and their original coordinates.
+    pub(crate) fn select(&self, pieces: impl IntoIterator<Item = Range<usize>>) -> Self {
+        let mut output = Self {
             text: String::new(),
             units: Vec::new(),
+            lazy_lines: Vec::new(),
         };
-        let mut native = range.start;
-        for (index, line) in self.text[range].split_inclusive('\n').enumerate() {
-            let shown = if index == 0 {
-                line
-            } else {
-                self.frame.map_or(line, |frame| frame.strip(line))
-            };
-            let begin = native + line.len() - shown.len();
-            mapped.push(shown, begin, self.cell);
-            native += line.len();
+        for piece in pieces {
+            self.select_piece(piece, &mut output);
         }
-        scopes
-            .borrow_mut()
-            .insert((key.start, key.end, label), mapped);
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.source_bytes += output.text.len());
+        output
+    }
+    /// Append one authored piece, preserving atomic spelling transformations.
+    fn select_piece(&self, piece: Range<usize>, output: &mut Self) {
+        if piece.is_empty() {
+            return;
+        }
+        let base = output.text.len();
+        let first = self
+            .units
+            .partition_point(|(_, local)| local.end <= piece.start);
+        let last = self
+            .units
+            .partition_point(|(_, local)| local.start < piece.end);
+        for (native, local) in &self.units[first..last] {
+            let start = local.start.max(piece.start);
+            let end = local.end.min(piece.end);
+            let absolute = if native.len() == local.len() {
+                native.start + start - local.start..native.start + end - local.start
+            } else {
+                native.clone()
+            };
+            let begin = output.text.len();
+            output.text.push_str(&self.text[start..end]);
+            output.units.push((absolute, begin..output.text.len()));
+        }
+        let first = self
+            .lazy_lines
+            .partition_point(|offset| *offset < piece.start);
+        let last = self
+            .lazy_lines
+            .partition_point(|offset| *offset < piece.end);
+        output.lazy_lines.extend(
+            self.lazy_lines[first..last]
+                .iter()
+                .map(|offset| base + offset - piece.start),
+        );
+    }
+
+    /// Source extent of a local selection, including an empty boundary.
+    pub(crate) fn extent(&self, range: Range<usize>) -> Range<usize> {
+        self.native(&range).unwrap_or_else(|| {
+            let offset = self.units.last().map_or(0, |(native, _)| native.end);
+            offset..offset
+        })
     }
 }
+
 impl ScopeSource {
-    /// Record equal spans and the table parser's one atomic spelling transform.
-    fn push(&mut self, mut text: &str, mut native: usize, cell: bool) {
-        while !text.is_empty() {
-            let end = if cell {
-                text.find("\\|").unwrap_or(text.len())
-            } else {
-                text.len()
-            };
-            let size = if end == 0 { 2 } else { end };
-            let shown = if end == 0 { "|" } else { &text[..end] };
-            let start = self.text.len();
-            self.text.push_str(shown);
-            self.units
-                .push((native..native + size, start..self.text.len()));
-            native += size;
-            text = &text[size..];
+    /// Unescape label brackets before inline parsing, retaining original byte coordinates.
+    pub(crate) fn brackets(&self) -> Self {
+        let mut pieces = Vec::new();
+        let mut start = 0;
+        for (offset, pair) in self.text.as_bytes().windows(2).enumerate() {
+            if pair[0] == b'\\' && matches!(pair[1], b'[' | b']') {
+                pieces.push(start..offset);
+                start = offset + 1;
+            }
+        }
+        pieces.push(start..self.text.len());
+        self.select(pieces)
+    }
+
+    /// Replace native spelling units without rebuilding earlier transformation spans.
+    pub(crate) fn replace(&self, from: &str, to: &str) -> Self {
+        let mut output = self.select(std::iter::empty());
+        let mut start = 0;
+        for (offset, _) in self.text.match_indices(from) {
+            self.select_piece(start..offset, &mut output);
+            let begin = output.text.len();
+            output.text.push_str(to);
+            output.units.push((
+                self.extent(offset..offset + from.len()),
+                begin..begin + to.len(),
+            ));
+            start = offset + from.len();
+        }
+        self.select_piece(start..self.text.len(), &mut output);
+        output
+    }
+
+    /// Append a framed span without losing transformations or lazy-line boundaries.
+    pub(crate) fn append(&mut self, other: Self) {
+        let base = self.text.len();
+        self.text.push_str(&other.text);
+        self.units.extend(
+            other
+                .units
+                .into_iter()
+                .map(|(native, local)| (native, base + local.start..base + local.end)),
+        );
+        self.lazy_lines
+            .extend(other.lazy_lines.into_iter().map(|offset| base + offset));
+    }
+
+    /// Apply table-pipe spelling once while preserving each atomic source unit.
+    pub(crate) fn pipes(&self) -> Self {
+        self.replace("\\|", "|")
+    }
+}
+
+/// Borrowed parser window with provenance in its retained source owner.
+#[derive(Clone, Copy)]
+pub(crate) struct Source<'a> {
+    /// Current authored bytes, without copying an unconsumed suffix.
+    pub(crate) text: &'a str,
+    /// Full mapped source for coordinate projection.
+    owner: &'a ScopeSource,
+    /// Start of this window in the mapped source.
+    offset: usize,
+}
+impl ScopeSource {
+    /// Borrow a parser window without allocating text or mapping units.
+    pub(crate) fn view(&self, range: Range<usize>) -> Source<'_> {
+        Source {
+            text: &self.text[range.clone()],
+            owner: self,
+            offset: range.start,
+        }
+    }
+}
+impl Source<'_> {
+    /// Borrow a bounded grammar prefix without copying source or projection units.
+    pub(crate) fn prefix(&self, end: usize) -> Source<'_> {
+        Source {
+            text: &self.text[..end],
+            owner: self.owner,
+            offset: self.offset,
+        }
+    }
+    /// Borrow the unconsumed suffix without copying its text or mapping.
+    pub(crate) fn suffix(&self, start: usize) -> Source<'_> {
+        Source {
+            text: &self.text[start..],
+            owner: self.owner,
+            offset: self.offset + start,
+        }
+    }
+    /// Retain only selected construct bytes, never the unconsumed document suffix.
+    pub(crate) fn select(&self, pieces: impl IntoIterator<Item = Range<usize>>) -> ScopeSource {
+        self.owner.select(
+            pieces
+                .into_iter()
+                .map(|range| self.offset + range.start..self.offset + range.end),
+        )
+    }
+    /// A lazy continuation cannot introduce a table at this local boundary.
+    pub(crate) fn is_lazy(&self, offset: usize) -> bool {
+        self.owner
+            .lazy_lines
+            .binary_search(&(self.offset + offset))
+            .is_ok()
+    }
+    /// Project an original extent into this borrowed window's local coordinates.
+    pub(crate) fn local(&self, range: &Range<usize>) -> Option<Range<usize>> {
+        let local = self.owner.local(range)?;
+        Some(local.start.checked_sub(self.offset)?..local.end.checked_sub(self.offset)?)
+    }
+    /// Project a construct from this borrowed window to original document coordinates.
+    pub(crate) fn extent(&self, range: Range<usize>) -> Range<usize> {
+        self.owner
+            .extent(self.offset + range.start..self.offset + range.end)
+    }
+    /// Build an owned semantic node from the current window.
+    pub(crate) fn node(&self, range: Range<usize>, kind: crate::Kind) -> crate::Node {
+        crate::Node {
+            authored: self.text[range.clone()].to_owned(),
+            range: self.extent(range),
+            kind,
         }
     }
 }

@@ -341,7 +341,7 @@
       "indent": null,
       "lines": [
         "\u001b[2m```\u001b[22m                     ",
-        "  \u001b[32ma\u001b[39m                     ",
+        "  \u001b[32m a\u001b[39m                    ",
         "\u001b[2m```\u001b[22m                     "
       ]
     },
@@ -714,7 +714,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[9ma\u001b[29m                             "
+        "~a~                           "
       ]
     },
     {
@@ -839,7 +839,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[9m﻿a\u001b[29m                             "
+        "~~﻿a~~                         "
       ]
     },
     {
@@ -851,7 +851,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "~~a~~                         "
+        "\u001b[9ma\u001b[29m                             "
       ]
     },
     {
@@ -1169,7 +1169,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "ftp://x.y                                                   "
+        "\u001b[34m\u001b[4mftp://x.y\u001b[24m\u001b[39m                                                   "
       ]
     },
     {
@@ -2579,7 +2579,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "ftp://a.b                                                                       "
+        "\u001b[34m\u001b[4mftp://a.b\u001b[24m\u001b[39m                                                                       "
       ]
     },
     {
@@ -2591,7 +2591,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "HTTP://a.b                                                                      "
+        "\u001b[34m\u001b[4mHTTP://a.b\u001b[24m\u001b[39m                                                                      "
       ]
     },
     {
@@ -2627,7 +2627,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "WWW.a.b                                                                         "
+        "\u001b[34m\u001b[4mWWW.a.b\u001b[24m\u001b[39m                                                                         "
       ]
     },
     {
@@ -2991,7 +2991,7 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[9m\u001b[34m\u001b[4ma@b.c\u001b[24m\u001b[39m\u001b[29m                                                                           "
+        "~\u001b[34m\u001b[4ma@b.c\u001b[24m\u001b[39m~                                                                         "
       ]
     },
     {

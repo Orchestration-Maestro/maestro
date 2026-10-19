@@ -2,14 +2,18 @@
 use crate::{
     inline::ScopeKey,
     source::ScopeSource,
-    types::{Document, Kind, Node, Text},
+    types::{Document, Kind, MarkedOptions, Node, Text},
 };
 use regress::Regex;
 use std::{collections::HashMap, ops::Range, sync::LazyLock};
 
 /// Web candidates, validated before reserving any text.
-static WEB: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::new(r"(?:https?://|www\.)[^\s<]+").ok());
+static WEB: LazyLock<Option<Regex>> = LazyLock::new(|| {
+    Regex::new(r"(?:(?:[hH][tT][tT][pP][sS]?|[fF][tT][pP])://|www\.)[^\s<]+").ok()
+});
+/// Earlier caller grammars fold the complete protocol and web prefix.
+static LEGACY_WEB: LazyLock<Option<Regex>> =
+    LazyLock::new(|| Regex::with_flags(r"(?:(?:https?|ftp)://|www\.)[^\s<]+", "i").ok());
 /// Email candidates scanned independently of rejected web spans.
 static EMAIL: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::new(r"[A-Za-z0-9._+-]+@[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+").ok());
@@ -18,9 +22,14 @@ static DOMAIN: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::with_flags(r"^[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)+", "u").ok());
 
 /// Selects valid candidates before excluding overlaps with accepted links.
-fn links(run: &Run) -> Vec<(Range<usize>, String)> {
+fn links(run: &Run, options: MarkedOptions) -> Vec<(Range<usize>, String)> {
     let mut candidates = Vec::new();
-    for (regex, email) in [(WEB.as_ref(), false), (EMAIL.as_ref(), true)] {
+    let web = if matches!(options, MarkedOptions::Terminal | MarkedOptions::Export) {
+        LEGACY_WEB.as_ref()
+    } else {
+        WEB.as_ref()
+    };
+    for (regex, email) in [(web, false), (EMAIL.as_ref(), true)] {
         let Some(regex) = regex else {
             continue;
         };
@@ -241,22 +250,26 @@ impl Run {
     }
     /// Preserves the source extent of selected native text units.
     fn source_range(&self, range: Range<usize>) -> Range<usize> {
-        let start = self
-            .units
-            .iter()
-            .find(|unit| unit.authored.end > range.start)
-            .map_or(0, |unit| {
-                if unit.source.len() == unit.authored.len() {
-                    unit.source.start + range.start - unit.authored.start
-                } else {
-                    unit.source.start
-                }
-            });
-        let end = self
-            .units
-            .iter()
-            .rev()
-            .find(|unit| unit.authored.start < range.end)
+        let first = self.units.partition_point(|unit| {
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| work.source_examinations += 1);
+            unit.authored.end <= range.start
+        });
+        let start = self.units.get(first).map_or(0, |unit| {
+            if unit.source.len() == unit.authored.len() {
+                unit.source.start + range.start - unit.authored.start
+            } else {
+                unit.source.start
+            }
+        });
+        let last = self.units.partition_point(|unit| {
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| work.source_examinations += 1);
+            unit.authored.start < range.end
+        });
+        let end = last
+            .checked_sub(1)
+            .and_then(|index| self.units.get(index))
             .map_or(start, |unit| {
                 if unit.source.len() == unit.authored.len() {
                     unit.source.start + range.end - unit.authored.start
@@ -277,14 +290,14 @@ impl Run {
 }
 
 /// Replaces accepted links while preserving native-decoded surrounding text.
-fn extend(parts: Vec<Node>, mapping: Option<&ScopeSource>) -> Vec<Node> {
+fn extend(parts: Vec<Node>, mapping: Option<&ScopeSource>, options: MarkedOptions) -> Vec<Node> {
     if parts.is_empty() {
         return parts;
     }
     let run = Run::new(parts, mapping);
     let mut output = Vec::new();
     let mut end = 0;
-    for (range, href) in links(&run) {
+    for (range, href) in links(&run, options) {
         if range.start > end {
             output.push(run.node(end..range.start));
         }
@@ -306,7 +319,7 @@ fn extend(parts: Vec<Node>, mapping: Option<&ScopeSource>) -> Vec<Node> {
                 href,
                 crate::types::LinkMetadata {
                     title: String::new(),
-                    link_type: pulldown_cmark::LinkType::Autolink,
+                    link_type: crate::LinkType::Autolink,
                     id: String::new(),
                 },
             ),
@@ -324,11 +337,10 @@ fn domain(label: &str) -> bool {
     let Some(regex) = DOMAIN.as_ref() else {
         return false;
     };
-    let text = label
-        .strip_prefix("https://")
-        .or_else(|| label.strip_prefix("http://"))
-        .or_else(|| label.strip_prefix("www."))
-        .unwrap_or(label);
+    let text = label.split_once("://").map_or_else(
+        || label.strip_prefix("www.").unwrap_or(label),
+        |(_, text)| text,
+    );
     regex.find(text).is_some_and(|domain| {
         !text[domain.range()]
             .rsplit('.')
@@ -337,61 +349,94 @@ fn domain(label: &str) -> bool {
     })
 }
 
-/// Scans only contiguous eligible text children of the same container.
-fn runs(nodes: Vec<Node>, mapping: Option<&ScopeSource>) -> Vec<Node> {
-    let mut result = Vec::new();
-    let mut parts = Vec::new();
-    for node in nodes {
-        if matches!(node.kind, Kind::Text(_)) {
-            parts.push(node);
-        } else {
-            result.extend(super::autolinks::extend(
-                std::mem::take(&mut parts),
-                mapping,
-            ));
-            result.push(node);
-        }
-    }
-    result.extend(super::autolinks::extend(parts, mapping));
-    result
+/// Apply shared mapped extended links after caller-owned inline admission.
+pub fn autolinks(document: &mut Document) {
+    map_links(
+        &mut document.nodes,
+        &document.scopes,
+        None,
+        document.options,
+        &mut false,
+    );
 }
 
-/// Apply shared mapped extended links after any caller-owned inline admission.
-pub fn autolinks(document: &mut Document) {
-    map_links(&mut document.nodes, &document.scopes, None);
-}
-/// Keep native opaque nodes intact while sharing the one mapped text-run scanner.
+/// Scan eligible runs in source order, retaining raw-anchor state across containers.
 fn map_links(
     nodes: &mut Vec<Node>,
     scopes: &HashMap<ScopeKey, ScopeSource>,
     mapping: Option<&ScopeSource>,
+    options: MarkedOptions,
+    in_link: &mut bool,
 ) {
-    for node in nodes.iter_mut() {
-        match &mut node.kind {
-            Kind::Paragraph(children)
-            | Kind::Inline(children)
-            | Kind::Strong(children)
-            | Kind::Strike(children)
-            | Kind::Emphasis(children)
-            | Kind::Item(children)
-            | Kind::List(_, children)
-            | Kind::Heading(_, children, _)
-            | Kind::Quote(children, _) => map_links(children, scopes, mapping),
-            Kind::Table(table) => {
-                for cell in table
-                    .header
-                    .iter_mut()
-                    .chain(table.rows.iter_mut().flatten())
-                {
-                    map_links(
-                        &mut cell.children,
-                        scopes,
-                        scopes.get(&(cell.range.start, cell.range.end, false)),
-                    );
-                }
-            }
-            _ => {}
+    let mut result = Vec::new();
+    let mut parts = Vec::new();
+    for mut node in std::mem::take(nodes) {
+        if matches!(node.kind, Kind::Text(_)) && !*in_link {
+            parts.push(node);
+            continue;
         }
+        result.extend(extend(std::mem::take(&mut parts), mapping, options));
+        map_children(&mut node, scopes, mapping, options, in_link);
+        result.push(node);
     }
-    *nodes = runs(std::mem::take(nodes), mapping);
+    result.extend(extend(parts, mapping, options));
+    *nodes = result;
+}
+
+/// Reuse the original scope mapping through formatted spans and table cells.
+fn map_children(
+    node: &mut Node,
+    scopes: &HashMap<ScopeKey, ScopeSource>,
+    mapping: Option<&ScopeSource>,
+    options: MarkedOptions,
+    in_link: &mut bool,
+) {
+    let mapping = scopes
+        .get(&(node.range.start, node.range.end, false))
+        .or(mapping);
+    match &mut node.kind {
+        Kind::Paragraph(children)
+        | Kind::Inline(children)
+        | Kind::Strong(children)
+        | Kind::Strike(children)
+        | Kind::Emphasis(children)
+        | Kind::Item(children)
+        | Kind::List(_, children)
+        | Kind::Heading(_, children, _)
+        | Kind::Quote(children, _) => map_links(children, scopes, mapping, options, in_link),
+        Kind::Table(table) => {
+            for cell in table
+                .header
+                .iter_mut()
+                .chain(table.rows.iter_mut().flatten())
+            {
+                map_links(
+                    &mut cell.children,
+                    scopes,
+                    scopes.get(&(cell.range.start, cell.range.end, false)),
+                    options,
+                    in_link,
+                );
+            }
+        }
+        Kind::Html(text) => *in_link = anchor_state(text, *in_link),
+        _ => {}
+    }
+}
+
+/// Follow the grammar's raw opening and closing anchor transitions.
+fn anchor_state(text: &str, in_link: bool) -> bool {
+    if text
+        .get(..3)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("<a "))
+    {
+        true
+    } else if text
+        .get(..4)
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case("</a>"))
+    {
+        false
+    } else {
+        in_link
+    }
 }

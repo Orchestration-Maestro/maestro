@@ -617,7 +617,7 @@ fn markdown_list_literal_fallbacks_sample_default_context() {
 }
 
 #[test]
-fn markdown_list_html_callbacks_receive_untrimmed_lines() {
+fn markdown_list_html_callbacks_receive_selected_lines() {
     let calls = Rc::new(RefCell::new(Vec::new()));
     let recording = Rc::clone(&calls);
     let style = DefaultTextStyle {
@@ -628,8 +628,8 @@ fn markdown_list_html_callbacks_receive_untrimmed_lines() {
         ..DefaultTextStyle::default()
     };
     let rows = component("- <div>x</div>  \n", markdown::plain(), Some(style)).render(20);
-    assert_eq!(rows[0], "- <div>x</div>      ");
-    assert_eq!(*calls.borrow(), ["\0", "<div>x</div>  ", ""]);
+    assert_eq!(rows, ["- <div>x</div>      ", "                    "]);
+    assert_eq!(*calls.borrow(), ["\0", "<div>x</div>"]);
 }
 
 #[test]

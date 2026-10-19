@@ -2,8 +2,9 @@
 
 `Markdown` renders headings, paragraphs, code blocks, rules, quotes, lists and tables
 through supplied `MarkdownTheme` callbacks. Inline formatting includes emphasis,
-strong text, strikethrough, code and links. The native `CommonMark` parser owns the
-grammar through the [shared owned parser](../markdown.md); bare HTTP/HTTPS, www and email links are recognized in authored text,
+strong text, strikethrough, code and links. The [shared owned parser](../markdown.md)
+uses its terminal grammar by default, including strict double-tilde strikethrough.
+Bare HTTP/HTTPS, www and email links are recognized in authored text,
 before entity and backslash decoding, without starting inside a consumed punctuation
 escape. Selected links retain their literal spelling; surrounding text uses native
 decoding. A www link requires a period in the domain

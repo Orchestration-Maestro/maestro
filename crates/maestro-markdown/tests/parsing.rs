@@ -40,6 +40,48 @@ fn parser_keeps_owned_browser_metadata() {
 }
 
 #[test]
+fn source_framed_images_keep_code_and_document_references() {
+    let document = {
+        let input =
+            String::from("> ![a `[b]` [c][r]][img]\n\n[r]: /c \"child\"\n[img]: /img \"tip\"\n");
+        parse(input)
+    };
+    let Kind::Quote(quote, _) = &document.nodes[0].kind else {
+        panic!("quote")
+    };
+    let Kind::Paragraph(children) = &quote[0].kind else {
+        panic!("paragraph")
+    };
+    let image = &children[0];
+    assert_eq!(image.authored, "![a `[b]` [c][r]][img]");
+    assert_eq!(
+        &document.source[image.range.clone()],
+        "![a `[b]` [c][r]][img]"
+    );
+    let Kind::Image(_, metadata) = &image.kind else {
+        panic!("image")
+    };
+    assert_eq!(metadata.destination, "/img");
+    assert_eq!(metadata.title, "tip");
+    assert_eq!(metadata.id, "img");
+    assert_eq!(metadata.link_type, LinkType::Reference);
+    assert_image_reference_children(metadata);
+}
+
+/// Check opaque code and the separately resolved definition inside an image label.
+fn assert_image_reference_children(metadata: &maestro_markdown::ImageMetadata) {
+    assert!(matches!(&metadata.children[1].kind, Kind::Code(code) if code == "[b]"));
+    let Kind::Link(label, _, href, child) = &metadata.children[3].kind else {
+        panic!("reference child")
+    };
+    assert_eq!(href, "/c");
+    assert_eq!(child.title, "child");
+    assert_eq!(child.id, "r");
+    assert_eq!(child.link_type, LinkType::Reference);
+    assert!(matches!(&label[0].kind, Kind::Text(text) if text.decoded == "c"));
+}
+
+#[test]
 fn parser_retains_container_source_extents() {
     let document = parse(
         "> $$x\n> y$$\n\n- a \\*b\\* `opaque`\n  tail\n\n| a | b |\n| - | - |\n| \\| | &amp; |\n"
@@ -227,32 +269,149 @@ fn inline_scopes_map_container_prefixes_escaped_labels_and_table_pipes() {
     let scope = context.scope(&table.rows[0][0].range, false).unwrap();
     assert_eq!(scope.text(), " https://example.test/a|b/$x$ $y$ ");
     assert_eq!(
+        &scope.text()[scope.content_range()],
+        "https://example.test/a|b/$x$ $y$"
+    );
+    assert_eq!(
         &scope.text()[scope.operands[0].0.clone()],
         "https://example.test/a|b/$x$"
     );
 }
 
 #[test]
-fn interpreted_runs_lower_formula_atoms_inside_tables() {
-    use maestro_markdown::InlineContext;
-    // A list item's lazy lines stay one paragraph, but interpreted on their own they form a table.
-    let document = parse("- | a |\n|---|\n$x$".into());
-    let context = InlineContext::new(&document);
-    let Kind::List(_, c) = &document.nodes[0].kind else {
+fn mapped_links_keep_entity_units_and_suffix_source_ranges() {
+    for entity in ["&amp;", "&#38;", "&#x26;"] {
+        for (frame, source_tail, decoded_tail) in [
+            ("", " tail", " tail"),
+            ("> ", "\n> tail", "\ntail"),
+            ("- ", "\n  tail", "\ntail"),
+        ] {
+            assert_mapped_entity_link(entity, frame, source_tail, decoded_tail);
+        }
+    }
+}
+
+/// Observe a complete mapped link and its decoded suffix in one source frame.
+fn assert_mapped_entity_link(entity: &str, frame: &str, source_tail: &str, decoded_tail: &str) {
+    let label = format!("https://x.y/a{entity}b");
+    let mut document = parse(format!("{frame}{label}{source_tail}"));
+    maestro_markdown::autolinks(&mut document);
+    let mut nodes = document.nodes.as_slice();
+    let nodes = loop {
+        nodes = match &nodes[0].kind {
+            Kind::Quote(children, _) | Kind::List(_, children) | Kind::Item(children) => children,
+            Kind::Paragraph(children) | Kind::Inline(children) => break children,
+            _ => panic!("container"),
+        };
+    };
+    assert_eq!(nodes.len(), 2);
+    assert_eq!(nodes[0].range, frame.len()..frame.len() + label.len());
+    let Kind::Link(children, actual, href, _) = &nodes[0].kind else {
+        panic!("link")
+    };
+    assert_eq!(actual, &label);
+    assert_eq!(href, &label);
+    assert!(matches!(&children[0].kind, Kind::Text(text) if text.decoded == label));
+    assert_eq!(&document.source[nodes[1].range.clone()], source_tail);
+    assert!(matches!(&nodes[1].kind, Kind::Text(text) if text.decoded == decoded_tail));
+}
+
+#[test]
+fn list_lazy_continuations_stop_after_nonparagraph_blocks() {
+    for first in ["# h", "    code", "```", "***"] {
+        let source = format!("- {first}\noutside");
+        let document = parse(source.clone());
+        assert_eq!(document.nodes.len(), 2, "{source:?}");
+        assert!(matches!(&document.nodes[0].kind, Kind::List(..)));
+        assert_eq!(
+            &document.source[document.nodes[0].range.clone()],
+            format!("- {first}")
+        );
+        assert_eq!(&document.source[document.nodes[1].range.clone()], "outside");
+    }
+}
+
+#[test]
+fn list_tabs_align_continuations_without_losing_source_ranges() {
+    let document = parse("- a\n\n\tb".into());
+    assert_eq!(document.nodes.len(), 1);
+    let Kind::List(_, items) = &document.nodes[0].kind else {
         panic!("list")
     };
-    let Kind::Item(c) = &c[0].kind else {
+    let Kind::Item(children) = &items[0].kind else {
         panic!("item")
     };
-    let scope = context.scope(&c[0].range, false).unwrap();
-    assert_eq!(scope.text(), "| a |\n|---|\n$x$");
-    let run = scope.interpret(0..15, std::slice::from_ref(&(12..15)));
-    let Kind::Table(table) = &run.nodes[0].kind else {
+    let paragraphs: Vec<_> = children
+        .iter()
+        .filter(|node| matches!(node.kind, Kind::Paragraph(_)))
+        .collect();
+    assert_eq!(paragraphs.len(), 2);
+    assert_eq!(&document.source[paragraphs[1].range.clone()], "\tb");
+}
+
+#[test]
+fn tabbed_list_table_operands_keep_original_source_coordinates() {
+    let source = "- | a |\n  | - |\n  | x\thttps://x.y/a&amp;b tail |";
+    let mut document = parse(source.into());
+    maestro_markdown::autolinks(&mut document);
+    let Kind::List(_, items) = &document.nodes[0].kind else {
+        panic!("list")
+    };
+    let Kind::Item(children) = &items[0].kind else {
+        panic!("item")
+    };
+    let Kind::Table(table) = &children[0].kind else {
         panic!("table")
     };
-    let kinds: Vec<_> = table.rows[0][0].children.iter().map(|n| &n.kind).collect();
-    assert!(
-        matches!(kinds[..], [Kind::Atom(0)]),
-        "cell keeps the formula atom"
-    );
+    let cell = &table.rows[0][0];
+    let context = maestro_markdown::InlineContext::new(&document);
+    let scope = context.scope(&cell.range, false).unwrap();
+    assert_eq!(scope.operands.len(), 1);
+    let (range, node) = &scope.operands[0];
+    assert_eq!(&scope.text()[range.clone()], "https://x.y/a&amp;b");
+    assert_eq!(&document.source[node.range.clone()], "https://x.y/a&amp;b");
+}
+
+#[test]
+fn list_continuations_separate_measurement_spelling_and_history() {
+    for (source, expected, outside) in [
+        ("- a\n`b\tc`", "b\tc", false),
+        ("- a\n\t`b\tc`", "b    c", false),
+        ("- a\n`b\tc`\ntail", "b\tc", true),
+    ] {
+        for options in [
+            maestro_markdown::MarkedOptions::Terminal,
+            maestro_markdown::MarkedOptions::Browser { escape_html: false },
+            maestro_markdown::MarkedOptions::Browser { escape_html: true },
+            maestro_markdown::MarkedOptions::Export,
+        ] {
+            let document = maestro_markdown::parse_with_options(source.into(), options);
+            let Kind::List(_, items) = &document.nodes[0].kind else {
+                panic!("list")
+            };
+            let Kind::Item(children) = &items[0].kind else {
+                panic!("item")
+            };
+            let Kind::Inline(children) = &children[0].kind else {
+                panic!("inline")
+            };
+            let code = children
+                .iter()
+                .find(|n| matches!(n.kind, Kind::Code(_)))
+                .unwrap();
+            assert_eq!(&source[code.range.clone()], "`b\tc`");
+            assert!(
+                matches!(&code.kind, Kind::Code(text) if text == expected),
+                "{source:?} {options:?}"
+            );
+            assert_eq!(
+                document.nodes.len(),
+                if outside { 2 } else { 1 },
+                "{source:?}"
+            );
+            if outside {
+                assert_eq!(&source[document.nodes[1].range.clone()], "tail");
+            }
+        }
+    }
 }

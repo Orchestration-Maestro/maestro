@@ -61,8 +61,5 @@ opt-level = 3
 [profile.dev.package.proc-macro2]
 opt-level = 3
 
-[profile.dev.package.pulldown-cmark]
-opt-level = 3
-
 [profile.test]
 debug = "line-tables-only"

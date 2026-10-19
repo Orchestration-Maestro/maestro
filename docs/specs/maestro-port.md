@@ -300,7 +300,7 @@ from the optional foundation utility described below.
 | `maestro-models` | supply model invocations | `maestro-cancellation`, `maestro-request`, `maestro-text`, `maestro-json`, `maestro-brand` | 0 |
 | `maestro-resources` | discover instruction resources | `maestro-request`, `maestro-pattern`, `maestro-text` | 0 |
 | `maestro-settings` | own accepted preferences | `maestro-lock`, `maestro-json` | 0 |
-| `maestro-test-conventions` | verify workspace structure | — | 0 |
+| `maestro-test-conventions` | verify workspace structure | `maestro-markdown` | 0 |
 | `maestro-test-process` | run one named test in a checked child process | — | 0 |
 | `maestro-tooling` | automate repository development | — | 0 |
 | `maestro-tui` | render terminal components | `maestro-cancellation`, `maestro-text`, `maestro-process`, `maestro-markdown` | 0 |
@@ -592,6 +592,8 @@ Manifest mode and its settings locks are specified in [manifest mode](manifest-m
 extended links. The toolkit keeps terminal normalization and formatting. The
 application re-exports the parser as `markdown`; browser consumers use that edge.
 The parser depends internally only on text and introduces no UI or effect owner.
+The dedicated conventions checker may consume its code-block source ranges for
+documentation checks; it does not own a separate Markdown grammar.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
 Native callers use its default JSON schema through models; guest authoring keeps

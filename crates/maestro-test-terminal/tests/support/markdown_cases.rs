@@ -75,6 +75,7 @@ pub fn ansi() -> MarkdownTheme {
 
 /// One component invocation and its recorded rows.
 #[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Case {
     /// Authored Markdown.
     pub text: String,

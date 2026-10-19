@@ -1,5 +1,5 @@
 //! Shared owned document to transcript HTML, with contextual math.
-use super::admission::{Formula, escape_tags, scan, starts_display};
+use super::admission::{Formula, MathBlocks, block_formula, scan, starts_display};
 use maestro_app::{
     is_whitespace_scalar,
     markdown::{self, Alignment, InlineAtom, InlineContext, InlineScope, Kind, Node, Table},
@@ -75,16 +75,25 @@ fn escape(text: &str, out: &mut String) {
 /// Prepare `content` as transcript HTML.
 pub(super) fn prepare(content: &str, escape_html: bool) -> Prepared {
     let source = normalize_to_lf(content);
-    let mut document = if escape_html {
-        escape_tags(source)
-    } else {
-        markdown::parse(source)
-    };
-    let lower = document.source.to_ascii_lowercase();
+    let lower = source.to_ascii_lowercase();
     let mut slot_attribute = "data-maestro-listing".to_owned();
     while lower.contains(&slot_attribute) {
         slot_attribute.push('x');
     }
+    let mut document = match markdown::parse_with_tokenizer(
+        source,
+        markdown::MarkedOptions::Browser { escape_html },
+        Some(&mut MathBlocks),
+    ) {
+        Ok(document) => document,
+        Err(error) => {
+            return Prepared {
+                html: format!("<p>{error}</p>"),
+                slot_attribute,
+                ..Prepared::default()
+            };
+        }
+    };
     markdown::autolinks(&mut document);
     let inline = InlineContext::new(&document);
     let mut writer = Writer {
@@ -123,6 +132,13 @@ impl Writer<'_, '_> {
     /// Write one block node.
     fn block(&mut self, node: &Node, atoms: Atoms<'_, '_>, out: &mut String) {
         match &node.kind {
+            Kind::CustomBlock(kind, text) => {
+                if let Some(formula) = block_formula(kind, text, node.authored.len()) {
+                    out.push_str(&self.math(&formula));
+                } else {
+                    escape(&node.authored, out);
+                }
+            }
             Kind::Paragraph(c) => self.flow(c, (&node.range, Flow::Paragraph), atoms, out),
             Kind::Inline(c) => self.flow(c, (&node.range, Flow::Item), atoms, out),
             Kind::Heading(level, c, _) => {
@@ -231,49 +247,47 @@ impl Writer<'_, '_> {
             return;
         };
         let source = scope.text();
-        let end = if flow == Flow::Paragraph {
-            source.trim_end_matches('\n').len()
-        } else {
-            source.len()
-        };
-        let block = flow == Flow::Paragraph || (flow == Flow::Item && starts_display(source));
+        let content = scope.content_range();
+        let end = content.end;
+        let block = flow == Flow::Paragraph
+            || (flow == Flow::Item && starts_display(&source[content.clone()]));
         let displays = if block {
-            scan(scope, 0..source.len(), true)
+            scan(scope, content.clone(), true)
         } else {
             Vec::new()
         };
         let wrap = flow == Flow::Paragraph;
         if displays.is_empty() {
-            let formulas = scan(scope, 0..scope.text().len(), false);
+            let formulas = scan(scope, content.clone(), false);
             if formulas.is_empty() {
                 let mut body = String::new();
                 self.inline(children, None, &mut body);
                 wrapped(&body, wrap, out);
             } else {
-                self.piece(scope, 0..end, (&formulas, wrap, false), out);
+                self.piece(scope, content, (&formulas, wrap), out);
             }
             return;
         }
-        let mut begin = 0;
+        let mut begin = content.start;
         for formula in &displays {
             let trimmed = source[begin..formula.range.start]
                 .trim_end_matches('\n')
                 .len();
             let range = begin..begin + trimmed;
             let formulas = scan(scope, range.clone(), false);
-            self.piece(scope, range, (&formulas, wrap, true), out);
+            self.piece(scope, range, (&formulas, wrap), out);
             out.push_str(&self.math(formula));
             begin = formula.range.end;
         }
         let formulas = scan(scope, begin..end, false);
-        self.piece(scope, begin..end, (&formulas, wrap, true), out);
+        self.piece(scope, begin..end, (&formulas, wrap), out);
     }
     /// Interpret a local slice with admitted formulas and retained native operands as atoms.
     fn piece(
         &mut self,
         scope: &InlineScope<'_>,
         range: Range<usize>,
-        (formulas, wrap, edges): (&[Formula], bool, bool),
+        (formulas, wrap): (&[Formula], bool),
         out: &mut String,
     ) {
         if range.is_empty() {
@@ -286,32 +300,17 @@ impl Writer<'_, '_> {
             .iter()
             .map(|formula| formula.range.clone())
             .collect();
-        let run = scope.interpret(range.clone(), &spans);
-        let source = &scope.text()[range];
+        let run = scope.interpret(range, &spans);
         let inline = run
             .nodes
             .iter()
             .all(|node| matches!(node.kind, Kind::Paragraph(_)));
-        let edges = edges && inline;
-        let edge = |c: char| c == ' ' || c == '\t';
         let mut body = String::new();
-        if edges {
-            escape(
-                &source[..source.len() - source.trim_start_matches(edge).len()],
-                &mut body,
-            );
-        }
         for node in &run.nodes {
             match &node.kind {
                 Kind::Paragraph(c) => self.inline(c, Some((&run.atoms, formulas)), &mut body),
                 _ => self.block(node, Some((&run.atoms, formulas)), &mut body),
             }
-        }
-        if edges {
-            escape(
-                &source[source.trim_end_matches([' ', '\t', '\n']).len()..],
-                &mut body,
-            );
         }
         wrapped(&body, wrap && inline, out);
     }
@@ -350,11 +349,12 @@ impl Writer<'_, '_> {
         title(&meta.title, out);
         out.push('>');
         if let Some(scope) = self.inline.scope(&node.range, true) {
-            let formulas = scan(scope, 0..scope.text().len(), false);
+            let content = scope.content_range();
+            let formulas = scan(scope, content.clone(), false);
             if formulas.is_empty() {
                 self.inline(children, None, out);
             } else {
-                self.piece(scope, 0..scope.text().len(), (&formulas, false, false), out);
+                self.piece(scope, content, (&formulas, false), out);
             }
         } else {
             self.inline(children, None, out);

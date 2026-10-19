@@ -1,6 +1,82 @@
 //! Owned native source records.
-use pulldown_cmark::LinkType;
 use std::ops::Range;
+
+/// Immutable grammar selection for an existing Markdown consumer.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum MarkedOptions {
+    /// Terminal grammar and strict double-tilde deletion.
+    #[default]
+    Terminal,
+    /// Browser grammar with caller-selected authored HTML handling.
+    Browser {
+        /// Show authored tags as text instead of live markup.
+        escape_html: bool,
+    },
+    /// Standalone document grammar and strict double-tilde deletion.
+    Export,
+    /// Code-block source ranges for documentation checks.
+    Documentation,
+}
+
+/// A caller-admitted block extension token.
+pub struct BlockToken {
+    /// Authored input prefix; admission requires it to be nonempty.
+    pub raw: String,
+    /// Caller-owned token classification.
+    pub kind: String,
+    /// Parsed content retained for the caller's renderer.
+    pub text: String,
+}
+
+/// A resolved, first-wins document reference definition.
+#[derive(Clone)]
+pub(crate) struct Definition {
+    /// Authored destination, decoded only when resolving an operand.
+    pub(crate) destination: String,
+    /// Authored optional title, decoded only when resolving an operand.
+    pub(crate) title: String,
+}
+
+/// Alignment of a table column.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Alignment {
+    /// No authored alignment.
+    None,
+    /// Left alignment.
+    Left,
+    /// Center alignment.
+    Center,
+    /// Right alignment.
+    Right,
+}
+
+/// Source classification of a link or image.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum LinkType {
+    /// Inline destination.
+    Inline,
+    /// Explicit reference definition.
+    Reference,
+    /// Unresolved explicit reference supplied by a caller.
+    ReferenceUnknown,
+    /// Collapsed reference definition.
+    Collapsed,
+    /// Unresolved collapsed reference supplied by a caller.
+    CollapsedUnknown,
+    /// Shortcut reference definition.
+    Shortcut,
+    /// Unresolved shortcut reference supplied by a caller.
+    ShortcutUnknown,
+    /// Angle-enclosed URI or mapped bare destination.
+    Autolink,
+    /// Angle-enclosed email address.
+    Email,
+    /// Caller-supplied wiki classification; parsing does not enable wiki syntax.
+    WikiLink {
+        /// Whether an explicit label separates the destination from its display text.
+        has_pothole: bool,
+    },
+}
 
 /// A native node together with its source extent.
 pub struct Node {
@@ -13,6 +89,8 @@ pub struct Node {
 }
 /// Block and inline structures admitted by the configured parser.
 pub enum Kind {
+    /// Caller-owned block classification and parsed content.
+    CustomBlock(String, String),
     /// Opaque atom in a locally interpreted inline run, indexed by that run.
     Atom(usize),
     /// Ordinary paragraph children.
@@ -74,7 +152,7 @@ pub struct Table {
     /// Header cells in column order.
     pub header: Cells,
     /// Per-column native alignment.
-    pub alignments: Vec<pulldown_cmark::Alignment>,
+    pub alignments: Vec<Alignment>,
     /// Body rows in authored order.
     pub rows: Vec<Cells>,
     /// Authored rows without container prefixes or the final line terminator.
@@ -111,6 +189,10 @@ pub struct ImageMetadata {
 }
 /// Owned shared document; source coordinates name this exact string.
 pub struct Document {
+    /// Grammar retained for local inline interpretation.
+    pub(crate) options: MarkedOptions,
+    /// Definitions shared by all inline scopes, including forward references.
+    pub(crate) definitions: std::collections::HashMap<String, Definition>,
     /// Captured inline source provenance, owned by this document.
     pub(crate) scopes:
         std::collections::HashMap<crate::inline::ScopeKey, crate::source::ScopeSource>,

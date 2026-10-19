@@ -15,7 +15,7 @@ ra-ap-rustc_lexer = "=0.176.0"
 serde = { version = "=1.0.229", features = ["derive"] }
 proc-macro2 = { version = "=1.0.107", features = ["span-locations"] }
 
-pulldown-cmark = { version = "=0.13.4", default-features = false }
+maestro-markdown = { path = "../maestro-markdown" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 maestro-dependencies.workspace = true
