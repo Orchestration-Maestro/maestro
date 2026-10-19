@@ -2,7 +2,7 @@
 name = "maestro-terminal"
 version = "0.1.0"
 edition.workspace = true
-license = "MIT"
+license = "MIT AND Apache-2.0"
 repository.workspace = true
 autotests = false
 

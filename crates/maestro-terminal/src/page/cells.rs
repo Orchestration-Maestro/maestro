@@ -91,6 +91,10 @@ impl Page {
 impl Page {
     /// Swap packed cell records and their suffix/link map entries without reallocating.
     pub fn swap_cells(&mut self, src: CellPosition, dst: CellPosition) {
+        #[cfg(test)]
+        {
+            self.row_shift_work += 1;
+        }
         let first = self.cell_index(src);
         let second = self.cell_index(dst);
         if first == second {

@@ -2,6 +2,9 @@
 
 pub mod unicode;
 
+pub mod modes;
+pub use modes::Mode;
+
 pub mod ansi;
 pub mod cursor;
 pub mod screen;
@@ -49,3 +52,11 @@ pub use point::{Coordinate, Point};
 
 pub mod page_list;
 pub use page_list::{PageList, Pin, Scrollbar};
+
+pub mod mouse;
+pub mod terminal;
+pub use terminal::{SizeError, Terminal};
+
+mod tabstops;
+
+pub mod csi;

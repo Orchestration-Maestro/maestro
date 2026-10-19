@@ -792,3 +792,14 @@ fn prompt_continuation_limits_ignore_endpoint_columns() {
         }
     }
 }
+
+#[test]
+fn same_page_full_row_transfer_does_not_visit_cells() {
+    for cols in [8, 16] {
+        let mut list = resize::screen(cols, 3);
+        let source = list.pin(Point::Active(Coordinate { x: 0, y: 0 })).unwrap();
+        let destination = source.down(&list, 1).unwrap();
+        list.transfer_row(source, destination, 0..cols).unwrap();
+        assert_eq!(list.page(source.node).unwrap().row_shift_work, 0);
+    }
+}

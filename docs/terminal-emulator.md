@@ -200,6 +200,10 @@ retain their bytes. `cursor_set_hyperlink` gives the current cell its own link
 reference, and `end_hyperlink` releases only the cursor's reference. Reusing a full
 live hyperlink identity needs no additional string storage. Page replacement
 restores cursor references without changing the references held by copied cells.
+`append_grapheme(column, scalar)` appends a suffix to a textual cell on the cursor
+row. If suffix storage fills, it grows the page through the same retained cursor
+owner and retries at the original column. Capacity failures remain typed; cursor
+style and hyperlink ownership survive replacement.
 
 Clearing releases page-owned styles, hyperlinks and grapheme suffixes before
 applying background-only blanks. `clear_rows` uses inclusive endpoints and each
@@ -232,13 +236,72 @@ storage error and earlier changes; reset the screen before reusing its content.
 
 `ScreenSet` initializes the primary screen immediately and creates an alternate
 screen only through `get_init`. `get` and `get_mut` borrow initialized screens
-without allocating. `switch_to` selects an initialized key. Each screen retains
+without allocating. `active` and `active_mut` borrow the selected resident
+screen; `active_key()` reports its identity. `switch_to` returns a typed error
+for an uninitialized alternate screen. Each screen retains
 its own content and protocol state. Remove alternate storage while the primary
 is active; removal advances only the alternate generation, and removing an absent
 alternate is a no-op. Recreating it keeps that generation. The primary cannot be
-removed.
+removed. Removing the active alternate screen also returns a typed error;
+select the primary first.
 
 `kitty::key::FlagStack` retains eight keyboard-protocol flag sets. Push evicts the
 oldest entry when full; pop clears removed entries, and a count of eight or more
 resets the history. Set replaces, enables or disables the five supported bits
 without changing the stack position.
+
+
+## Terminal operations
+
+`Terminal::new(cols, rows, scrollback_limit)` constructs a blank terminal and
+rejects either zero dimension with `SizeError`. The history limit is in bytes.
+Pixel dimensions start at zero. The palette and clear dirty flags start clear.
+Grapheme clustering is enabled in both the current and reset-default modes;
+the saved value remains the catalogue default until explicitly saved.
+
+`modes::ModeState` retains 41 modes, current values, saved values and reset
+defaults. `Mode::from_number` distinguishes ANSI and private numbers and returns
+`None` for an unsupported number. `get_report` and `Report::encode` produce
+mode reports, including unknown-number responses.
+
+`horizontal_tab` stops at the next tab destination or the right margin.
+`horizontal_tab_back` stops at the preceding destination, bounded by the left
+margin in origin mode or column zero otherwise. `tab_set` sets the current
+column; `tab_clear` clears that column or every stop. Clearing an absent stop
+never creates one. `tab_reset` restores interval-eight stops, excluding the
+final column. The private storage retains positions across width changes;
+growth does not add interval stops.
+
+Screen identity, retained row count, keyboard flags and viewport scrolling use
+the selected screen. `scroll_viewport` accepts top, bottom, signed delta or
+absolute row destinations. `scrollbar` reports the selected screen's visible
+interval. `cols`, `rows` and `max_scrollback` return the configured dimensions
+and history byte limit.
+
+`set_default_palette` preserves explicit index overrides and marks the palette
+dirty. `default_palette` reads defaults without those overrides. The three
+dynamic-colour default setters also retain overrides and mark the palette dirty.
+`effective_foreground_color` and `effective_cursor_color` independently select
+the override before the default, returning `None` when neither is set. An unset
+cursor colour does not fall back to the foreground.
+
+`print`, `print_string`, `print_slice` and `print_repeat` share scalar printing,
+charset translation, pending wrap, insert mode and cluster-width effects.
+`print_string` treats newline as carriage return followed by linefeed. Selecting
+`StatusDisplay::StatusLine` suppresses scalar text, but not that newline handling.
+Rows containing image placeholders are marked for renderer lookup.
+
+Cursor moves clamp to the current margins or screen edge. `set_cursor_pos`
+uses one-based coordinates and applies scrolling offsets in origin mode.
+`save_cursor` and `restore_cursor` retain position, style, protection, wrap,
+origin and charset state independently for each screen. `set_attribute`
+delegates rendition changes to the active screen.
+
+`carriage_return`, `linefeed`, `backspace`, `index` and `reverse_index` provide
+line control. `scroll_up`, `scroll_down`, `insert_lines`, `delete_lines` and
+`insert_blanks` respect the scrolling region and preserve the current background
+in cleared cells. Managed transfers and printing return typed capacity errors;
+changes applied before an error remain visible.
+
+Margin setters, terminal resizing, erasure and screen-switching facades are not
+provided by these direct text and cursor operations.

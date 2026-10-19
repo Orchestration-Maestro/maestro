@@ -88,16 +88,25 @@ impl Page {
 
     /// Release a suffix; refresh row metadata separately after the batch.
     pub fn clear_grapheme(&mut self, position: CellPosition) {
+        self.take_grapheme(position);
+    }
+
+    /// Transfer suffix ownership out of a cell before its page can move or be pruned.
+    pub(crate) fn take_grapheme(&mut self, position: CellPosition) -> Option<Vec<char>> {
         let index = self.cell_index(position);
-        if let Some(entry) = self.graphemes.remove(&index) {
-            self.grapheme_alloc.free(entry.chunks);
-            let first = self.cells[index].codepoint();
-            self.cells[index].set_content(Content::Codepoint(first));
-        }
+        let entry = self.graphemes.remove(&index)?;
+        self.grapheme_alloc.free(entry.chunks);
+        let first = self.cells[index].codepoint();
+        self.cells[index].set_content(Content::Codepoint(first));
+        Some(entry.cps)
     }
 
     /// Clear the row's suffix flag when no addressable cell retains one.
     pub fn update_row_grapheme_flag(&mut self, y: u16) {
+        #[cfg(test)]
+        {
+            self.row_shift_work += usize::from(self.size.cols);
+        }
         if !self.get_cells(y).iter().any(|cell| cell.has_grapheme()) {
             self.rows[usize::from(y)].set_grapheme(false);
         }
