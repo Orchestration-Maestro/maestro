@@ -5,10 +5,9 @@ use std::ops::Range;
 
 impl Tokenizer<'_> {
     /// Check left flanking before searching any right-delimiter runs.
-    fn opening(&self, range: &Range<usize>) -> Option<(usize, u8)> {
+    fn opening(&self, range: &Range<usize>, previous: Option<char>) -> Option<(usize, u8)> {
         let text = &self.source.text[range.clone()];
         let left = rules::inline_em_strong_l_delim(self.options)?.find(text)?;
-        let previous = self.source.text[..range.start].chars().next_back();
         if left.group(3).is_some() && previous.is_some_and(char::is_alphanumeric) {
             return None;
         }
@@ -18,7 +17,11 @@ impl Tokenizer<'_> {
         } else {
             punctuation
         };
-        if !punctuation.is_empty() && previous.is_some_and(char::is_alphanumeric) {
+        let spacing = |previous: char| {
+            let rule = rules::INLINE_PUNCTUATION.as_ref();
+            rule.is_some_and(|rule| rule.find(previous.encode_utf8(&mut [0; 4])).is_some())
+        };
+        if !punctuation.is_empty() && previous.is_some_and(|previous| !spacing(previous)) {
             return None;
         }
         let delimiter = text.as_bytes()[0];
@@ -27,15 +30,16 @@ impl Tokenizer<'_> {
     }
 
     /// Select an eligible left delimiter and its matching masked right run.
+    /// `masked` is the masked invocation source, its origin and the loop's previous character.
     pub(super) fn emphasis(
         &mut self,
         range: Range<usize>,
-        masked: (&str, usize),
+        masked: (&str, usize, Option<char>),
         atoms: &[Range<usize>],
         in_link: bool,
     ) -> Option<(usize, Kind)> {
-        let (width, delimiter) = self.opening(&range)?;
-        let (masked, origin) = masked;
+        let (masked, origin, previous) = masked;
+        let (width, delimiter) = self.opening(&range, previous)?;
         let suffix = &masked[range.start - origin + width..];
         let rule = if delimiter == b'*' {
             rules::inline_em_strong_r_delim_ast(self.options)?

@@ -63,8 +63,11 @@ impl<'a> Tokenizer<'a> {
         let mut plain_tail = None;
         let mut cursor = extent.start;
         let mut line_end = cursor;
+        // Only a text run keeps the previous character; a run ending in '_' keeps the earlier one.
+        let mut kept = None;
         let masked = self.mask(extent.clone(), atoms);
         while cursor < extent.end {
+            let previous = kept.take();
             let atom = atoms.partition_point(|range| range.end <= cursor);
             if let Some(range) = atoms.get(atom).filter(|range| range.start == cursor) {
                 output.push(node(self.source, range.clone(), Kind::Atom(atom)));
@@ -79,7 +82,8 @@ impl<'a> Tokenizer<'a> {
                 .soft_break(text)
                 .or_else(|| self.admit_operand(cursor..extent.end, atoms, in_link))
                 .or_else(|| {
-                    self.emphasis(cursor..extent.end, (&masked, extent.start), atoms, in_link)
+                    let masked = (masked.as_str(), extent.start, previous);
+                    self.emphasis(cursor..extent.end, masked, atoms, in_link)
                 })
                 .or_else(|| self.line_break(text))
                 .or_else(|| self.deletion(cursor..extent.end, atoms, in_link));
@@ -100,6 +104,11 @@ impl<'a> Tokenizer<'a> {
             let size = self.text(line);
             let size = line[..size].find('\n').unwrap_or(size);
             self.push_text(cursor..cursor + size, &mut output, &mut plain_tail);
+            kept = line[..size]
+                .chars()
+                .next_back()
+                .filter(|&c| c != '_')
+                .or(previous);
             cursor += size;
         }
         output
