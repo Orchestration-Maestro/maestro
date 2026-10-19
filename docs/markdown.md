@@ -14,9 +14,7 @@ resolved operands and opaque ranges without parsing a fragment for admission.
 and resolved operands as typed atoms. The caller supplies ordered, disjoint spans
 within the selected UTF-8 source range. Link hrefs, titles and reference identities
 remain those of the original document; label interpretation uses inline-only grammar
-and does not resolve them again. `InlineScope::inline_tokens`
-uses that same resolved document and operand selection while forcing inline-only
-grammar for a caller-admitted subrange, including block-looking text. Subrange lookup selects source-ordered operands by
+and does not resolve them again. Subrange lookup selects source-ordered operands by
 start offset rather than scanning the entire scope. Captured table-pipe provenance
 also keeps mapped URLs separate from their neighboring inline source. Link-label
 scopes retain authored escapes for caller admission; export interpretation unescapes

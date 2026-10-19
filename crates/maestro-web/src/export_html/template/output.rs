@@ -56,13 +56,14 @@ fn body(
 #[cfg(target_arch = "wasm32")]
 pub fn bind_expandable_output(
     root: &web_sys::Element,
-) -> Result<Option<Box<dyn std::any::Any>>, crate::browser::attachment_content::AttachmentUiError> {
+) -> Result<Option<Box<dyn std::any::Any>>, crate::browser::attachment_content::AttachmentHostError>
+{
     use crate::browser::{
         attachment_content::browser::host_error,
         disclosure::{Disclosure, bind},
     };
     let document = root.owner_document().ok_or_else(|| {
-        crate::browser::attachment_content::AttachmentUiError::Host(
+        crate::browser::attachment_content::AttachmentHostError::Host(
             "missing output document".into(),
         )
     })?;
@@ -77,7 +78,7 @@ pub fn bind_expandable_output(
         include_str!("markdown.css"),
     )?;
     let syntax = maestro_theme::highlight_css().map_err(|error| {
-        crate::browser::attachment_content::AttachmentUiError::Presentation(error.to_string())
+        crate::browser::attachment_content::AttachmentHostError::Presentation(error.to_string())
     })?;
     crate::browser::install_stylesheet(&document, "maestro-export-syntax", &syntax)?;
     let mut state = Vec::new();

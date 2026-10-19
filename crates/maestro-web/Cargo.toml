@@ -32,6 +32,7 @@ js-sys = "=0.3.106"
 maestro-dependencies.workspace = true
 
 [dev-dependencies]
+regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 egui = { version = "=0.36.2", default-features = false, features = ["default_fonts"] }
 

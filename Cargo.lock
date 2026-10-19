@@ -3953,6 +3953,7 @@ dependencies = [
  "maestro-theme",
  "num-traits",
  "percent-encoding",
+ "regress",
  "resvg",
  "ryu-js",
  "serde",

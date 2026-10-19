@@ -181,10 +181,9 @@ double tildes with non-whitespace edges. Rejected script, VBScript and data URLs
 retain their label or literal image alternative. Attribute escaping prevents
 quoted content from creating attributes. Export code uses the supplied viewer
 highlighter without chat-only formulas, copy controls or language labels.
-Source preparation neutralizes parser-recognized HTML openers, not less-than
-characters inside escapes, definitions, destinations or code. Comments and
-declarations retain literal punctuation. Ordinary tag-like lines follow the
-shared parser's paragraph structure.
+The shared parser selects export grammar with HTML block and tag tokenizers
+disabled. Escapes, definitions, destinations and code keep their own tokenizers;
+no source-rewriting pass runs before parsing.
 
 [`format_expandable_output`](../../crates/maestro-web/src/export_html/template/output.rs)
 replaces tabs with three spaces, preserves LF-split rows and prepares independent

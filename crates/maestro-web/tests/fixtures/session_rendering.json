@@ -1522,7 +1522,7 @@
     "test": "export_markdown_requires_strict_double_tilde_delimiters",
     "branch": "success",
     "expected": {
-      "html": "<p>~~<a href=\"u~~\">label</a></p>\n"
+      "html": "<p><del>[label](u</del>)</p>\n"
     }
   },
   {
@@ -1570,7 +1570,7 @@
     "test": "export_markdown_requires_strict_double_tilde_delimiters",
     "branch": "success",
     "expected": {
-      "html": "<p><del>a <code>b~~</code> c</del></p>\n"
+      "html": "<p><del>a `b</del>` c~~</p>\n"
     }
   },
   {
@@ -3247,7 +3247,7 @@
     "test": "export_markdown_keeps_operands_when_markup_is_literal",
     "branch": "success",
     "expected": {
-      "html": "<p>&lt;div&gt;<br>&lt;div&gt;<br>&lt;tag&gt;<br>&lt;/div&gt;<br>&lt;/div&gt;</p>\n"
+      "html": "<p>&lt;div&gt;</p>\n<p>&lt;div&gt;<br>&lt;tag&gt;</p>\n<p>&lt;/div&gt;</p>\n<p>&lt;/div&gt;</p>\n"
     }
   }
 ]

@@ -1,6 +1,6 @@
 //! Mounted disclosure listeners shared by session headers and tool output.
 use super::{
-    attachment_content::{AttachmentUiError, browser::host_error},
+    attachment_content::{AttachmentHostError, browser::host_error},
     event_subscription::EventSubscription,
     invoke0,
 };
@@ -42,7 +42,7 @@ fn toggle(disclosure: &Disclosure) -> Result<(), JsValue> {
     Ok(())
 }
 /// Bind weak callbacks whose exact-target subscriptions belong to the mounted root.
-pub(crate) fn bind(state: Vec<Disclosure>) -> Result<Option<Box<dyn Any>>, AttachmentUiError> {
+pub(crate) fn bind(state: Vec<Disclosure>) -> Result<Option<Box<dyn Any>>, AttachmentHostError> {
     if state.is_empty() {
         return Ok(None);
     }

@@ -116,20 +116,7 @@ pub(super) fn prepare(content: &str, escape_html: bool) -> Prepared {
 }
 
 /// Local atom operands paired with their caller-admitted formulas.
-type Atoms<'a, 'b> = Option<Operands<'a, 'b>>;
-
-/// Borrowed operands of one locally interpreted run.
-#[derive(Clone, Copy)]
-enum Operands<'a, 'b> {
-    /// Resolved native nodes and admitted formulas.
-    Math(&'b [InlineAtom<'a>], &'b [Formula]),
-    /// Resolved nodes and strict deletion extents in their original scope.
-    Export(
-        &'b [InlineAtom<'a>],
-        &'b [Range<usize>],
-        &'b InlineScope<'a>,
-    ),
-}
+type Atoms<'a, 'b> = Option<(&'b [InlineAtom<'a>], &'b [Formula])>;
 
 /// Rendering behavior selected by the containing surface.
 enum Policy<'a> {
@@ -276,7 +263,9 @@ impl Writer<'_, '_> {
         out: &mut String,
     ) {
         if matches!(self.policy, Policy::Export(_)) {
-            self.export_flow(children, (range, flow), atoms, out);
+            let mut body = String::new();
+            self.inline(children, atoms, &mut body);
+            wrapped(&body, flow == Flow::Paragraph, out);
             return;
         }
         if atoms.is_some() {
@@ -352,9 +341,9 @@ impl Writer<'_, '_> {
         for node in &run.nodes {
             match &node.kind {
                 Kind::Paragraph(c) => {
-                    self.inline(c, Some(Operands::Math(&run.atoms, formulas)), &mut body);
+                    self.inline(c, Some((&run.atoms, formulas)), &mut body);
                 }
-                _ => self.block(node, Some(Operands::Math(&run.atoms, formulas)), &mut body),
+                _ => self.block(node, Some((&run.atoms, formulas)), &mut body),
             }
         }
         wrapped(&body, wrap && inline, out);
@@ -383,13 +372,7 @@ impl Writer<'_, '_> {
             }
             Kind::Break => out.push_str("<br>"),
             Kind::Strong(c) => self.tagged("strong", c, atoms, out),
-            Kind::Strike(c) => {
-                if matches!(self.policy, Policy::Export(_)) {
-                    export::literal_strike(node, out, |out| self.inline(c, atoms, out));
-                } else {
-                    self.tagged("del", c, atoms, out);
-                }
-            }
+            Kind::Strike(c) => self.tagged("del", c, atoms, out),
             Kind::Emphasis(c) => self.tagged("em", c, atoms, out),
             Kind::Link(..) => self.link(node, out),
             Kind::Image(alt, meta) => match self.policy {
@@ -413,14 +396,14 @@ impl Writer<'_, '_> {
         if matches!(self.policy, Policy::Export(_)) {
             let href = href.trim_matches(is_whitespace_scalar);
             if export::blocked(href) {
-                self.export_label(node, children, out);
+                self.inline(children, None, out);
             } else {
                 out.push_str("<a href=\"");
                 escape(href, out);
                 out.push('"');
                 title(&meta.title, out);
                 out.push('>');
-                self.export_label(node, children, out);
+                self.inline(children, None, out);
                 out.push_str("</a>");
             }
             return;
@@ -451,28 +434,18 @@ impl Writer<'_, '_> {
     }
     /// Emit a typed local atom, preserving resolved operands without lookup by display text.
     fn atom(&mut self, index: usize, atoms: Atoms<'_, '_>, out: &mut String) {
-        let Some(operands) = atoms else {
+        let Some((atoms, formulas)) = atoms else {
             return;
         };
-        let atoms = match operands {
-            Operands::Math(atoms, _) | Operands::Export(atoms, ..) => atoms,
-        };
         match atoms.get(index) {
-            Some(InlineAtom::Opaque(id)) => match operands {
-                Operands::Math(_, formulas) => {
-                    if let Some(formula) = formulas.get(*id) {
-                        out.push_str(&self.math(formula));
-                    }
+            Some(InlineAtom::Opaque(id)) => {
+                if let Some(formula) = formulas.get(*id) {
+                    out.push_str(&self.math(formula));
                 }
-                Operands::Export(_, spans, scope) => {
-                    if let Some(span) = spans.get(*id) {
-                        out.push_str("<del>");
-                        self.export_range(scope, span.start + 2..span.end - 2, out);
-                        out.push_str("</del>");
-                    }
-                }
-            },
-            Some(InlineAtom::Resolved(node)) => self.inline(std::slice::from_ref(node), None, out),
+            }
+            Some(InlineAtom::Resolved(node)) => {
+                self.inline(std::slice::from_ref(node), None, out);
+            }
             None => {}
         }
     }

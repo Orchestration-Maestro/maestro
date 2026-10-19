@@ -6,6 +6,31 @@ mod tests {
     use crate::export_support;
     use maestro_web::export_html::template::{format_expandable_output, safe_marked_parse};
 
+    /// Literal constructs do not swallow following Markdown operands.
+    /// # Panics
+    /// Panics when literal markup changes suffix emphasis or links.
+    #[cfg_attr(not(target_arch = "wasm32"), test)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen::prelude::wasm_bindgen)]
+    pub fn export_literal_constructs_preserve_suffix_operands() {
+        let engine = maestro_theme::SyntectHighlighter::new().unwrap();
+        for (source, expected) in [
+            (
+                "<!-- note --> **bold** [go](/docs)",
+                "<p>&lt;!-- note --&gt; <strong>bold</strong> <a href=\"/docs\">go</a></p>\n",
+            ),
+            (
+                "<!DOCTYPE html> **bold** [go](/docs)",
+                "<p>&lt;!DOCTYPE html&gt; <strong>bold</strong> <a href=\"/docs\">go</a></p>\n",
+            ),
+            (
+                "<![CDATA[note]]> **bold** [go](/docs)",
+                "<p>&lt;![CDATA[note]]&gt; <strong>bold</strong> <a href=\"/docs\">go</a></p>\n",
+            ),
+        ] {
+            assert_eq!(safe_marked_parse(source, &engine), expected, "{source}");
+        }
+    }
+
     /// Exercise export markdown attributes cannot create handlers.
     /// # Panics
     /// Panics if a corpus observation differs.
