@@ -132,3 +132,33 @@ larger clipboard captures. Title capture remains fixed in either mode.
 
 OSC parsing does not change a screen, access a clipboard, open a link or write a
 reply. Those effects belong to the command consumer.
+
+## History and viewport
+
+`PageList` owns ordered pages, the active screen and retained history. Its byte
+limit charges logical page layouts, not allocator RSS. A finite limit is raised
+to the minimum needed for the active area and an extra standard page. Growth
+prunes old pages when possible, but never removes the active screen to meet a
+budget. Zero disables access to historical viewport rows; an absent limit leaves
+history unbounded. Retention tests check bounded logical bytes, at least the
+recorded retained rows and unchanged visible content. Exact history row counts
+can differ with the storage layout.
+
+Points address the active screen, history, viewport or all retained screen rows.
+The viewport follows the active screen, stays at the oldest row or follows a
+tracked position. Absolute and signed-delta scrolling saturate at the history
+and active boundaries. The scrollbar reports total rows, viewport offset and
+visible height.
+
+A `Pin` names a checked page lifetime and cell coordinate. Stale, foreign or
+out-of-bounds pins miss. Ordinary pins keep their coordinates during in-place
+edits; tracked pins follow moved content through growth, page replacement,
+splitting, erasure and resize. Release tracked handles explicitly with
+`untrack_pin`. Reset keeps retained handles at the cleared origin and marks
+removed content as garbage.
+
+Resize can keep row boundaries or reflow wrapped text. Both modes preserve
+retained positions and managed cell values; width changes handle wide-cell
+spacers and release discarded values. Capacity errors remain typed. A failed
+resize can leave earlier page changes applied, while keeping page links,
+counts and retained ownership valid.

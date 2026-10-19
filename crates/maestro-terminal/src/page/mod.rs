@@ -54,19 +54,21 @@ pub struct Page {
     /// Whole-page dirty flag, independent of row dirty flags.
     pub dirty: bool,
     /// Packed row metadata in display order.
-    rows: Vec<Row>,
-    /// Packed cells in row-major order.
+    pub(crate) rows: Vec<Row>,
+    /// Physical cell storage, addressed by each logical row's offset.
     cells: Vec<Cell>,
+    /// Physical cell origin owned by each logical row.
+    row_offsets: Vec<usize>,
     /// First-fit chunk ownership of cluster suffixes.
     grapheme_alloc: BitmapAllocator<16>,
     /// Suffix values indexed by physical cell position.
     graphemes: HashMap<usize, graphemes::Grapheme>,
     /// Deduplicated styles addressed by packed cell IDs.
-    styles: crate::style::Set,
+    pub(crate) styles: crate::style::Set,
     /// First-fit 32-byte chunks for link strings.
     string_alloc: BitmapAllocator<32>,
     /// Deduplicated hyperlink identity ownership.
-    hyperlink_set: crate::hyperlink::Set,
+    pub(crate) hyperlink_set: crate::hyperlink::Set,
     /// Linked cells addressed by physical cell position.
     hyperlink_map: HashMap<usize, crate::hyperlink::Id>,
     /// Logical string chunks released with the last identity owner.
@@ -90,6 +92,9 @@ impl Page {
             dirty: false,
             rows: vec![Row::default(); usize::from(capacity.rows)],
             cells: vec![Cell::default(); usize::from(capacity.cols) * usize::from(capacity.rows)],
+            row_offsets: (0..usize::from(capacity.rows))
+                .map(|y| y * usize::from(capacity.cols))
+                .collect(),
             grapheme_alloc: BitmapAllocator::init(capacity.grapheme_bytes),
             graphemes: HashMap::new(),
             styles: crate::style::Set::init(usize::from(capacity.styles)),
@@ -109,7 +114,7 @@ impl Page {
     /// Borrow the addressable cells of one row.
     #[must_use]
     pub fn get_cells(&self, y: u16) -> &[Cell] {
-        let start = usize::from(y) * usize::from(self.capacity.cols);
+        let start = self.row_offsets[usize::from(y)];
         &self.cells[start..start + usize::from(self.size.cols)]
     }
 
@@ -146,7 +151,7 @@ impl Page {
 
     /// Mutably borrow one row's cells; callers maintain managed-table ownership.
     pub fn get_cells_mut(&mut self, y: u16) -> &mut [Cell] {
-        let start = usize::from(y) * usize::from(self.capacity.cols);
+        let start = self.row_offsets[usize::from(y)];
         &mut self.cells[start..start + usize::from(self.size.cols)]
     }
 
@@ -159,9 +164,16 @@ impl Page {
         )
     }
 
-    /// Resolve a coordinate using the fixed allocation stride.
+    /// Resolve a coordinate through its row-owned physical cell origin.
     fn cell_index(&self, position: CellPosition) -> usize {
-        usize::from(position.y) * usize::from(self.capacity.cols) + usize::from(position.x)
+        self.row_offsets[usize::from(position.y)] + usize::from(position.x)
+    }
+
+    /// Rotate logical rows together with their physical cell ownership.
+    pub(crate) fn rotate_rows(&mut self, rows: std::ops::Range<u16>, amount: usize) {
+        let rows = usize::from(rows.start)..usize::from(rows.end);
+        self.rows[rows.clone()].rotate_left(amount);
+        self.row_offsets[rows].rotate_left(amount);
     }
 }
 
@@ -176,6 +188,7 @@ impl Clone for Page {
             dirty: self.dirty,
             rows: self.rows.clone(),
             cells: self.cells.clone(),
+            row_offsets: self.row_offsets.clone(),
             grapheme_alloc: self.grapheme_alloc.clone(),
             graphemes: self.graphemes.clone(),
             styles: self.styles.clone(),

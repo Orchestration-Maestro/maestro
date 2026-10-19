@@ -36,3 +36,9 @@ pub mod x11_color;
 pub mod osc;
 
 pub use parser::{Csi, Dcs, Parser};
+
+pub mod point;
+pub use point::{Coordinate, Point};
+
+pub mod page_list;
+pub use page_list::{PageList, Pin, Scrollbar};
