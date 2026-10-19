@@ -161,3 +161,30 @@ mod terminal_color_effects;
 mod terminal_size_reports;
 
 mod apc;
+mod focus_encoding;
+
+mod input_modifiers;
+
+mod input_events;
+
+mod legacy_encoding;
+
+mod legacy_controls;
+
+mod legacy_tables;
+
+mod protocol_encoding;
+
+mod protocol_fields;
+
+mod protocol_tables;
+
+mod mouse_geometry;
+
+mod mouse_encoding;
+
+mod mouse_positions;
+
+mod input_terminal;
+
+mod mouse_events;

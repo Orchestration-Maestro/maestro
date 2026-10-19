@@ -5,6 +5,69 @@ pure Rust, inherits the workspace's unsafe-code prohibition and has no build
 script or foreign toolchain. Its full contract is the
 [terminal emulator specification](specs/terminal-emulator.md).
 
+## Input encoding
+
+`focus::encode` returns the three-byte focus-gained (`CSI I`) or focus-lost
+(`CSI O`) report. The caller checks whether focus reporting is enabled before
+sending it to the pane program.
+
+`input::key::KeyEvent` stores a physical `Key`, its `KeyAction`, modifier and
+consumed-modifier masks, composition state, generated text and the unshifted
+codepoint. `Mods` keeps pressed keys, lock states and observed modifier sides
+separate. Consumed modifiers are removed only when the event has text.
+
+`input::key_encode::KeyEncoder::encode` returns the bytes for a key event.
+Its `modes` snapshot selects application cursor/keypad sequences, backarrow
+behavior, numeric-keypad handling and the alt escape prefix. The default encoder
+leaves these modes off; callers can change them through `modes.set`.
+`modify_other_keys_state_2` enables extended modified-character sequences.
+With protocol flags disabled, the encoder handles traditional control bytes,
+unambiguous control-key escapes and committed composition text; releases and
+intermediate composition emit nothing. `macos_option_as_alt` selects which option
+keys act as alt on macOS.
+
+`KeyEncoder::from_terminal(&terminal)` snapshots the terminal's modes, extended
+modifier setting and active-screen protocol flags. Unlike the standalone default,
+it retains the terminal's default alt-prefix and numlock handling. Set the macOS
+option policy on the encoder separately; terminal state cannot supply it.
+
+`kitty_flags` enables enhanced keyboard encoding with the existing
+`kitty::key::Flags` values. The flags select escape-code disambiguation, event
+reporting, alternate key codes, all-key reporting and associated text. Functional
+keys use their protocol codes; printable keys use the supplied unshifted
+codepoint. Release events require event reporting. Associated text excludes
+ASCII controls and is omitted for releases or modifiers that prevent text.
+
+Key text is owned. `KeyEvent::set_utf8` copies the supplied text, fixing the
+borrowed-buffer defect where changing the caller's text changed a stored event.
+
+`input::mouse::MouseEvent` carries an action, optional button, keyboard modifiers
+and surface-space pixel position. `input::mouse_encode::MouseEncoder::new(size)`
+starts with reporting disabled. Its `set_event` and `set_format` methods select press-only,
+normal, button-motion or all-motion reporting and byte, UTF-8, SGR, urxvt or SGR
+pixel output. `encode` returns owned bytes.
+
+The mouse geometry types live in `input::mouse_encode::size`. Cell dimensions
+must be nonzero and pixel dimensions must already account for display scaling.
+Coordinate conversion removes padding, clamps grid positions to the visible
+cells and leaves terminal-space pixels unclamped. Off-surface releases remain
+reportable; other off-surface events require motion tracking with
+`any_button_pressed` set. SGR pixels use rounded terminal-space coordinates.
+
+Mouse motion tracking is optional: set `last_cell` to `Some(None)` to start or
+reset cell deduplication, or to `None` to disable it. Accepted events update the
+tracked cell before wire-format limits or unsupported buttons are checked.
+SGR pixel reports bypass cell deduplication. Changing the reporting class or
+format clears the tracked cell; setting either to its current value preserves
+it. `set_size` clears the tracked cell even when the geometry is unchanged.
+Read the current settings with `event()`, `format()` and `size()`.
+
+`MouseEncoder::from_terminal(&terminal, size, format)` snapshots the terminal's
+reporting class and format with supplied renderer geometry. Pass `None` to use
+the terminal's format or `Some(format)` to override it. Button and cell tracking
+start disabled. Both encoders own their snapshots: later terminal changes do not
+affect them. Build another snapshot to read updated terminal state.
+
 ## Codepoint width
 
 [`maestro_terminal::unicode::codepoint_width`](https://docs.rs/maestro-terminal/latest/maestro_terminal/unicode/fn.codepoint_width.html)

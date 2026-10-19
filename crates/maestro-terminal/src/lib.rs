@@ -2,6 +2,9 @@
 
 pub mod unicode;
 
+pub mod focus;
+pub mod input;
+
 pub mod modes;
 pub use modes::Mode;
 
