@@ -4,6 +4,7 @@ use crate::browser::attachment_content::{
     AttachmentHostError, ReadingRoot,
     browser::{append, element as create, host_error},
 };
+use crate::browser::invoke0;
 use std::io;
 use web_sys::{Document, Element};
 mod details;
@@ -83,14 +84,4 @@ pub fn localize_header_date(timestamp: &serde_json::Value) -> io::Result<String>
     result
         .as_string()
         .ok_or_else(|| io::Error::other("nonstring localized date"))
-}
-
-/// Invoke an owning native object's zero-argument operation without coercion.
-fn invoke0(
-    value: &wasm_bindgen::JsValue,
-    name: &str,
-) -> Result<wasm_bindgen::JsValue, wasm_bindgen::JsValue> {
-    js_sys::Reflect::get(value, &name.into())
-        .and_then(wasm_bindgen::JsCast::dyn_into::<js_sys::Function>)
-        .and_then(|f| f.call0(value))
 }

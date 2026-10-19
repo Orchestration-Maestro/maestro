@@ -16,7 +16,7 @@ serde.workspace = true
 serde_json.workspace = true
 ryu-js.workspace = true
 num-traits.workspace = true
-web-sys = { version = "=0.3.106", features = ["CssStyleDeclaration", "DomTokenList", "Text", "WebSocket", "BinaryType", "DomParser", "SupportedType", "ResizeObserver", "Window", "HtmlIFrameElement", "MessageEvent", "Navigator", "Storage", "Location", "console", "Document", "Node", "Element", "SvgElement", "HtmlElement", "HtmlAnchorElement", "Blob", "BlobPropertyBag", "Url", "MediaQueryList", "HtmlCanvasElement", "DomRect", "HtmlInputElement", "HtmlTextAreaElement", "Event", "EventTarget", "KeyboardEvent", "DomException", "DomStringList", "IdbDatabase", "IdbFactory", "IdbIndex", "IdbIndexParameters", "IdbObjectStore", "IdbObjectStoreParameters", "IdbOpenDbRequest", "IdbRequest", "IdbTransaction", "IdbTransactionMode", "IdbKeyRange", "IdbCursor", "IdbCursorWithValue", "IdbCursorDirection", "StorageManager", "StorageEstimate"] }
+web-sys = { version = "=0.3.106", features = ["NodeList", "CssStyleDeclaration", "DomTokenList", "Text", "WebSocket", "BinaryType", "DomParser", "SupportedType", "ResizeObserver", "Window", "HtmlIFrameElement", "MessageEvent", "Navigator", "Storage", "Location", "console", "Document", "Node", "Element", "SvgElement", "HtmlElement", "HtmlAnchorElement", "Blob", "BlobPropertyBag", "Url", "MediaQueryList", "HtmlCanvasElement", "DomRect", "HtmlInputElement", "HtmlTextAreaElement", "Event", "EventTarget", "KeyboardEvent", "DomException", "DomStringList", "IdbDatabase", "IdbFactory", "IdbIndex", "IdbIndexParameters", "IdbObjectStore", "IdbObjectStoreParameters", "IdbOpenDbRequest", "IdbRequest", "IdbTransaction", "IdbTransactionMode", "IdbKeyRange", "IdbCursor", "IdbCursorWithValue", "IdbCursorDirection", "StorageManager", "StorageEstimate"] }
 indexmap = { version = "=2.14.2", features = ["serde"] }
 egui = { version = "=0.36.2", default-features = false }
 usvg = { version = "=0.48.1", default-features = false }
@@ -32,6 +32,7 @@ js-sys = "=0.3.106"
 maestro-dependencies.workspace = true
 
 [dev-dependencies]
+regress = { version = "=0.12.0", features = ["prohibit-unsafe"] }
 chrono = { version = "=0.4.45", default-features = false, features = ["std"] }
 egui = { version = "=0.36.2", default-features = false, features = ["default_fonts"] }
 

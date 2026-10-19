@@ -6,32 +6,10 @@ use super::super::{
 use super::{append, element};
 use crate::browser::{
     attachment_content::{AttachmentHostError, browser::host_error},
-    event_subscription::EventSubscription,
+    disclosure::{Disclosure, bind},
 };
-use std::{cell::Cell, rc::Rc};
-use wasm_bindgen::{JsValue, closure::Closure};
 use web_sys::{Document, Element};
 
-/// One native container and its independent expansion decision.
-struct Disclosure {
-    /// Complete clickable container.
-    element: Element,
-    /// Base classes for collapsed state.
-    base: &'static str,
-    /// Expanded class to append.
-    class: &'static str,
-    /// Last successfully committed expansion.
-    expanded: Cell<bool>,
-}
-/// Fallible native click callable retained through listener removal.
-type Click = Closure<dyn FnMut() -> Result<(), JsValue>>;
-/// Strong mounted state and exact subscription guards, never retained by a factory.
-struct Mounted {
-    /// Strong counterpart to each callback's weak capture.
-    _state: Rc<Vec<Disclosure>>,
-    /// Detachment precedes callable release through the shared owner.
-    _listeners: Vec<EventSubscription<Click>>,
-}
 /// Compose disclosures and install callbacks before publishing their root.
 pub(super) fn mount(
     document: &Document,
@@ -56,28 +34,7 @@ pub(super) fn mount(
         append(&tools, &content)?;
         append(root, &tools)?;
     }
-    if state.is_empty() {
-        return Ok(None);
-    }
-    let state = Rc::new(state);
-    let mut listeners = Vec::new();
-    for (ordinal, disclosure) in state.iter().enumerate() {
-        let weak = Rc::downgrade(&state);
-        let callback = Closure::new(move || {
-            if let Some(state) = weak.upgrade() {
-                toggle(&state[ordinal])?;
-            }
-            Ok(())
-        });
-        listeners.push(
-            EventSubscription::new(disclosure.element.clone().into(), "click", callback)
-                .map_err(|e| host_error(&e))?,
-        );
-    }
-    Ok(Some(Box::new(Mounted {
-        _state: state,
-        _listeners: listeners,
-    })))
+    bind(state)
 }
 /// Append the short or preview/full prompt branch using literal text nodes.
 fn prompt_node(
@@ -109,9 +66,7 @@ fn prompt_node(
             )?;
             state.push(Disclosure {
                 element: node.clone(),
-                base: "system-prompt expandable",
                 class: "expanded",
-                expanded: Cell::new(false),
             });
             full
         }
@@ -151,38 +106,11 @@ fn tool_node(
         append(&node, &content)?;
         state.push(Disclosure {
             element: node.clone(),
-            base: "tool-item",
             class: "params-expanded",
-            expanded: Cell::new(false),
         });
     }
     Ok(node)
 }
-/// Use the actual owning window's live selection before changing one container.
-fn toggle(disclosure: &Disclosure) -> Result<(), JsValue> {
-    let window = disclosure
-        .element
-        .owner_document()
-        .and_then(|d| d.default_view())
-        .ok_or_else(|| JsValue::from_str("missing disclosure window"))?;
-    let selection = super::invoke0(&window, "getSelection")?;
-    if super::invoke0(&selection, "toString")?
-        .as_string()
-        .is_some_and(|s| !s.is_empty())
-    {
-        return Ok(());
-    }
-    let expanded = !disclosure.expanded.get();
-    let class = if expanded {
-        format!("{} {}", disclosure.base, disclosure.class)
-    } else {
-        disclosure.base.into()
-    };
-    disclosure.element.set_attribute("class", &class)?;
-    disclosure.expanded.set(expanded);
-    Ok(())
-}
-
 /// Compose one parameter with literal spacing and its optional description.
 fn parameter_node(
     document: &Document,

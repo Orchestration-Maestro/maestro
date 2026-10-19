@@ -16,6 +16,7 @@ use std::{
 mod admission;
 pub(super) mod browser;
 mod render;
+pub(crate) use render::export::prepare_export;
 #[cfg(test)]
 mod tests;
 

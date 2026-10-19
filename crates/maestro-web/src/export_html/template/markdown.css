@@ -1,0 +1,17 @@
+.markdown-content :is(h1,h2,h3,h4,h5,h6) { color: var(--maestro-color-accent); margin: 1lh 0 0; font-weight: bold; font-size: 1em; }
+.markdown-content p { margin: 0; }
+.markdown-content p + p { margin-top: 1lh; }
+.markdown-content a { color: var(--maestro-color-accent); text-decoration: underline; }
+.markdown-content code { background: var(--maestro-color-panel); color: var(--maestro-color-accent); padding: 0 4px; border-radius: 3px; font-family: inherit; }
+.markdown-content pre { background: transparent; margin: 1lh 0; overflow-x: auto; }
+.markdown-content pre code { display: block; background: none; color: var(--maestro-color-text); }
+.markdown-content blockquote { border-left: 3px solid var(--maestro-color-border); padding-left: 1lh; margin: 1lh 0; color: var(--maestro-color-muted); font-style: italic; }
+.markdown-content :is(ul,ol) { margin: 1lh 0; padding-left: 2lh; }
+.markdown-content li { margin: 0; }
+.markdown-content li::marker { color: var(--maestro-color-accent); }
+.markdown-content hr { border: none; border-top: 1px solid var(--maestro-color-border); margin: 1lh 0; }
+.markdown-content table { border-collapse: collapse; margin: 0.5em 0; width: 100%; }
+.markdown-content :is(th,td) { border: 1px solid var(--maestro-color-border); padding: 6px 10px; }
+.markdown-content :is(th,td):not([align]) { text-align: left; }
+.markdown-content th { background: var(--maestro-color-panel); font-weight: bold; }
+.markdown-content img { max-width: 100%; border-radius: 4px; }

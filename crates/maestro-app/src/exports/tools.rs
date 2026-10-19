@@ -7,7 +7,9 @@ pub use maestro_tools::{
     create_local_bash_operations, utils::shell::get_shell_config,
 };
 
-pub use maestro_tools::output::render_utils::{ToolRenderResultLike, get_text_output};
+pub use maestro_tools::output::render_utils::{
+    ToolRenderResultLike, get_text_output, replace_tabs,
+};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{EditRenderState, ToolDef};
