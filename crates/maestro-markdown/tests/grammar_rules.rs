@@ -120,7 +120,7 @@ fn inline_tags_preserve_link_and_raw_block_state() {
 
 #[test]
 fn blank_lines_retain_block_boundaries() {
-    observations::check("space", 6);
+    observations::check("space", 9);
     let document = parse("\n\nalpha".into());
     assert_eq!(document.nodes[0].range, 0..2);
     assert_eq!(document.nodes[0].authored, "\n\n");
