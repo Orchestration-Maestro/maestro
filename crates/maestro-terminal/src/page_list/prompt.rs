@@ -7,7 +7,7 @@ use crate::{Point, page::row::SemanticPrompt};
 pub struct PromptIterator {
     /// Next row to inspect.
     current: Option<Pin>,
-    /// Inclusive final position.
+    /// Inclusive final row; the column does not constrain row traversal.
     limit: Option<Pin>,
     /// Direction through retained rows.
     direction: Direction,
@@ -18,7 +18,7 @@ impl PromptIterator {
     pub fn next(&mut self, list: &PageList) -> Option<Pin> {
         while let Some(pin) = self.current.take() {
             let role = pin.row_and_cell(list)?.0.semantic_prompt();
-            let at_limit = self.limit == Some(pin);
+            let at_limit = self.at_limit(pin);
             self.current = if at_limit {
                 None
             } else {
@@ -42,6 +42,12 @@ impl PromptIterator {
         None
     }
 
+    /// Test the inclusive row boundary in its checked page lifetime.
+    fn at_limit(&self, pin: Pin) -> bool {
+        self.limit
+            .is_some_and(|limit| limit.node == pin.node && limit.y == pin.y)
+    }
+
     /// Move one row while preserving the current column.
     fn advance(&self, list: &PageList, pin: Pin) -> Option<Pin> {
         match self.direction {
@@ -61,7 +67,7 @@ impl PromptIterator {
                 self.current = Some(next);
                 return;
             }
-            if self.limit == Some(next) {
+            if self.at_limit(next) {
                 return;
             }
             pin = next;
@@ -80,7 +86,7 @@ impl PromptIterator {
                 SemanticPrompt::None => end,
                 _ => prior,
             };
-            if self.limit == Some(prior) {
+            if self.at_limit(prior) {
                 return first.left(first.x.into());
             }
             match row.semantic_prompt() {
@@ -95,7 +101,7 @@ impl PromptIterator {
                 SemanticPrompt::PromptContinuation => end = prior,
             }
         }
-        start.left(start.x.into())
+        end.left(end.x.into())
     }
 }
 

@@ -150,3 +150,33 @@ fn history_resize_reflow_less_cols_to_wrap_a_multi_codepoint_grapheme_with_a_spa
     assert_eq!(role(&list, 2, 0), Wide::SpacerHead);
     integrity(&list);
 }
+
+/// Track the wide source character, not the spacer emitted before its retry.
+fn tracked_wide_cell_after_spacer(cols: u16, prefix: &str) {
+    let mut list = PageList::init(nz(cols), nz(1), Some(0));
+    write(&mut list, 0, prefix);
+    wide(&mut list, cols - 2, 0, '😀');
+    let handle = list
+        .track_pin(list.pin_at_row(0, cols - 2).unwrap())
+        .unwrap();
+    reflow(&mut list, cols - 1);
+    let pin = *list.tracked_pin(handle).unwrap();
+    assert_eq!(pin.row_and_cell(&list).unwrap().1.codepoint(), '😀');
+    assert_eq!(pin.x, 0);
+    assert_eq!(
+        list.point_from_pin(crate::point::Tag::Screen, pin),
+        Some(Point::Screen(Coordinate { x: 0, y: 1 }))
+    );
+    assert_eq!(role(&list, cols - 2, 0), Wide::SpacerHead);
+    integrity(&list);
+}
+
+#[test]
+fn tracked_wide_cell_follows_character_after_inserted_spacer() {
+    tracked_wide_cell_after_spacer(4, "ab");
+}
+
+#[test]
+fn tracked_wide_cell_follows_character_after_single_row_wrap() {
+    tracked_wide_cell_after_spacer(3, "x");
+}

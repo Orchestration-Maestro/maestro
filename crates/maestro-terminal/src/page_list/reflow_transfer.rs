@@ -1,6 +1,6 @@
 //! Cell transfer with managed-capacity recovery through the page owner.
 
-use super::{IncreaseCapacity, PageList, reflow_cursor::ReflowCursor};
+use super::{IncreaseCapacity, PageList, Pin, reflow_cursor::ReflowCursor};
 use crate::{
     Page,
     page::{
@@ -25,20 +25,39 @@ impl ReflowCursor {
         &mut self,
         list: &mut PageList,
         source: &Page,
-        position: CellPosition,
+        origin: Pin,
     ) -> Result<Written, StorageError> {
+        let position = CellPosition {
+            x: origin.x,
+            y: origin.y,
+        };
         let cell = source.get_cells(position.y)[usize::from(position.x)];
         let cols = list.cols();
         match cell.wide() {
-            Wide::SpacerHead => return Ok(Written::One),
+            Wide::SpacerHead => {
+                self.remap_cell(list, origin.node, position);
+                return Ok(Written::One);
+            }
             Wide::Wide if cols == 1 => {
                 if let Some(page) = list.page_mut(self.pin.node) {
                     page.get_cells_mut(self.pin.y)[0] = Cell::default();
                 }
+                self.remap_cell(list, origin.node, position);
+                self.remap_cell(
+                    list,
+                    origin.node,
+                    CellPosition {
+                        x: position.x + 1,
+                        ..position
+                    },
+                );
                 self.forward(cols);
                 return Ok(Written::Pair);
             }
-            Wide::SpacerTail if cols == 1 => return Ok(Written::One),
+            Wide::SpacerTail if cols == 1 => {
+                self.remap_cell(list, origin.node, position);
+                return Ok(Written::One);
+            }
             Wide::Wide if self.pin.x == cols - 1 => {
                 let mut spacer = Cell::default();
                 spacer.set_wide(Wide::SpacerHead);
@@ -57,6 +76,7 @@ impl ReflowCursor {
             page.get_row_mut(self.pin.y)
                 .set_kitty_virtual_placeholder(true);
         }
+        self.remap_cell(list, origin.node, position);
         self.forward(cols);
         Ok(Written::One)
     }

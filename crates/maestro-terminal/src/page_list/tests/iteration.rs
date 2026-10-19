@@ -247,3 +247,49 @@ fn iteration_controls(list: &PageList, origin: Pin, rows: usize) -> usize {
     assert!(list.nodes.queries.get() > stateful * 10);
     stateful
 }
+
+#[test]
+fn pin_row_and_cell_iterators_include_row_limits() {
+    let mut list = screen(2, 3);
+    let first = list.pin_at_row(0, 1).unwrap();
+    let bottom = list.pin_at_row(2, 0).unwrap();
+    list.split(list.pin_at_row(1, 0).unwrap()).unwrap();
+    let bottom = list.pin_at_row(2, bottom.x).unwrap();
+    for (direction, start, limit, expected_rows, expected_cells) in [
+        (
+            Direction::RightDown,
+            first,
+            bottom,
+            vec![(0, 0), (0, 1), (0, 2)],
+            vec![(1, 0), (0, 1), (1, 1), (0, 2), (1, 2)],
+        ),
+        (
+            Direction::LeftUp,
+            bottom,
+            first,
+            vec![(0, 2), (0, 1), (0, 0)],
+            vec![(0, 2), (1, 1), (0, 1), (1, 0), (0, 0)],
+        ),
+    ] {
+        let mut rows = start.row_iterator(direction, Some(limit));
+        let mut actual_rows = Vec::new();
+        while let Some(pin) = rows.next(&list) {
+            let point = list
+                .point_from_pin(crate::point::Tag::Screen, pin)
+                .unwrap()
+                .coord();
+            actual_rows.push((point.x, point.y));
+        }
+        assert_eq!(actual_rows, expected_rows);
+        let mut cells = start.cell_iterator(direction, Some(limit));
+        let mut actual_cells = Vec::new();
+        while let Some(pin) = cells.next(&list) {
+            let point = list
+                .point_from_pin(crate::point::Tag::Screen, pin)
+                .unwrap()
+                .coord();
+            actual_cells.push((point.x, point.y));
+        }
+        assert_eq!(actual_cells, expected_cells);
+    }
+}

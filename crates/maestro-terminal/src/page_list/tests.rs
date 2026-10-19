@@ -722,3 +722,73 @@ mod projection;
 
 mod growth;
 mod retention;
+
+#[test]
+fn prompt_reverse_default_boundary_ignores_columns() {
+    use super::tests::resize::nz;
+    use crate::page::row::SemanticPrompt;
+    let mut list = PageList::init(nz(2), nz(20), None);
+    list.page_mut(list.first)
+        .unwrap()
+        .get_row_mut(3)
+        .set_semantic_prompt(SemanticPrompt::Prompt);
+    assert!(prompt_rows(&list, Direction::LeftUp, 5, None).is_empty());
+    let start = list.pin_at_row(19, 1).unwrap();
+    let limit = list.pin_at_row(5, 0).unwrap();
+    assert!(
+        start
+            .prompt_iterator(Direction::LeftUp, Some(limit))
+            .next(&list)
+            .is_none()
+    );
+    assert_eq!(prompt_rows(&list, Direction::LeftUp, 3, None), [3]);
+}
+
+#[test]
+fn prompt_reverse_pruned_primary_returns_first_retained_continuation() {
+    use crate::page::row::SemanticPrompt;
+    let mut list = resize::screen(2, 3);
+    list.grow();
+    for y in 1..4 {
+        list.page_mut(list.first)
+            .unwrap()
+            .get_row_mut(y)
+            .set_semantic_prompt(SemanticPrompt::PromptContinuation);
+    }
+    list.page_mut(list.first)
+        .unwrap()
+        .get_row_mut(0)
+        .set_semantic_prompt(SemanticPrompt::Prompt);
+    list.erase_history(None);
+    let start = list.pin_at_row(2, 1).unwrap();
+    let mut iterator = start.prompt_iterator(Direction::LeftUp, None);
+    let pin = iterator.next(&list).unwrap();
+    assert_eq!(
+        list.point_from_pin(crate::point::Tag::Screen, pin),
+        Some(Point::Screen(Coordinate::default()))
+    );
+    assert!(iterator.next(&list).is_none());
+}
+
+#[test]
+fn prompt_continuation_limits_ignore_endpoint_columns() {
+    for split in [false, true] {
+        let mut list = prompt_list();
+        if split {
+            list.split(list.pin_at_row(7, 0).unwrap()).unwrap();
+        }
+        for (direction, start, limit, expected) in [
+            (Direction::RightDown, 6, 7, 6),
+            (Direction::LeftUp, 8, 7, 7),
+        ] {
+            let start = list.pin_at_row(start, 1).unwrap();
+            let limit = list.pin_at_row(limit, 0).unwrap();
+            let mut iterator = start.prompt_iterator(direction, Some(limit));
+            assert_eq!(
+                list.point_from_pin(crate::point::Tag::Screen, iterator.next(&list).unwrap()),
+                Some(Point::Screen(Coordinate { x: 0, y: expected }))
+            );
+            assert!(iterator.next(&list).is_none());
+        }
+    }
+}

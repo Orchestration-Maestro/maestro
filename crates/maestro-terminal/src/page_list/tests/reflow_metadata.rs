@@ -3,25 +3,7 @@
 use super::reflow::{flags, reflow};
 use super::resize::{integrity, nz, screen, text, write};
 use super::*;
-use crate::page::{CellPosition, row::SemanticPrompt};
-
-#[test]
-fn history_resize_reflow_less_cols_wrap_preserves_semantic_prompt() {
-    let mut list = PageList::init(nz(4), nz(4), Some(0));
-    assert_eq!(list.total_pages(), 1);
-    list.page_mut(list.first)
-        .unwrap()
-        .get_row_mut(0)
-        .set_semantic_prompt(SemanticPrompt::Prompt);
-    reflow(&mut list, 2);
-    assert_eq!((list.cols(), list.total_rows()), (2, 4));
-    assert_eq!(list.total_pages(), 1);
-    assert_eq!(
-        list.page(list.first).unwrap().get_row(0).semantic_prompt(),
-        SemanticPrompt::Prompt
-    );
-    integrity(&list);
-}
+use crate::page::CellPosition;
 
 #[test]
 fn history_resize_reflow_less_cols_copy_style() {

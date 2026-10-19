@@ -189,8 +189,7 @@ impl ReflowCursor {
         origin: Pin,
         cursor: Option<TrackedPin>,
     ) -> Result<(), StorageError> {
-        let y = origin.y;
-        let row = *source.get_row(y);
+        let row = *source.get_row(origin.y);
         let len = self.meaningful_columns(list, source, origin, cursor);
         if len == 0 {
             if !row.wrap_continuation() {
@@ -221,12 +220,10 @@ impl ReflowCursor {
             if self.pending_wrap {
                 self.wrap_row(list, cap, row.semantic_prompt());
             }
-            self.remap_cell(list, origin.node, CellPosition { x, y });
-            match self.write_cell(list, source, CellPosition { x, y })? {
+            match self.write_cell(list, source, Pin { x, ..origin })? {
                 Written::One => x += 1,
                 Written::Repeat => {}
                 Written::Pair => {
-                    self.remap_cell(list, origin.node, CellPosition { x: x + 1, y });
                     x += 2;
                 }
             }
@@ -289,7 +286,7 @@ impl ReflowCursor {
     }
 
     /// Move retained source coordinates at the moment their cell is consumed.
-    fn remap_cell(&self, list: &mut PageList, source: NodeId, position: CellPosition) {
+    pub(super) fn remap_cell(&self, list: &mut PageList, source: NodeId, position: CellPosition) {
         for pin in list
             .tracked
             .values_mut()

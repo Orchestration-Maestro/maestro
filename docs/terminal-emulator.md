@@ -159,6 +159,11 @@ removed content as garbage.
 
 Resize can keep row boundaries or reflow wrapped text. Both modes preserve
 retained positions and managed cell values; width changes handle wide-cell
-spacers and release discarded values. Capacity errors remain typed. A failed
+spacers and release discarded values. Tracked wide-character pins follow the
+character after spacer insertion, not the spacer. Capacity errors remain typed. A failed
 resize can leave earlier page changes applied, while keeping page links,
 counts and retained ownership valid.
+
+Prompt traversal includes its endpoint row regardless of the endpoint column.
+Backward traversal returns the earliest retained continuation when pruning has
+removed its primary prompt.
