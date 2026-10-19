@@ -146,6 +146,8 @@ impl<C: CustomAgentMessages + 'static> MessageList<C> {
         let results: HashMap<String, ToolResultMessage> = messages
             .iter()
             .filter_map(|message| {
+                #[cfg(test)]
+                tests::index_visit();
                 let AgentMessage::ToolResult(value) = message else {
                     return None;
                 };
@@ -157,7 +159,11 @@ impl<C: CustomAgentMessages + 'static> MessageList<C> {
             .collect();
         let items = messages
             .iter()
-            .filter_map(|message| prepare(message).transpose())
+            .filter_map(|message| {
+                #[cfg(test)]
+                tests::prepare_visit();
+                prepare(message).transpose()
+            })
             .collect::<Result<Vec<_>, _>>()?;
         self.items = items;
         self.results = results;
@@ -295,3 +301,6 @@ fn draw<C: CustomAgentMessages>(
     output.collect(overlays)?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;
