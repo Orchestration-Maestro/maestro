@@ -5,7 +5,7 @@ use crate::diff::sequence::{Kind, diff_sequence};
 
 /// One run of consecutive lines; each value keeps its line separators.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum Change<'a> {
+pub enum Change<'a> {
     /// Lines both texts share, taken from the new text.
     Unchanged(&'a str),
     /// Lines only the new text has.
@@ -52,7 +52,7 @@ impl<'a> Side<'a> {
 
 /// The line change sequence turning `old` into `new`.
 #[must_use]
-pub(super) fn diff_lines<'a>(old: &'a str, new: &'a str) -> Vec<Change<'a>> {
+pub fn diff_lines<'a>(old: &'a str, new: &'a str) -> Vec<Change<'a>> {
     let (mut old, mut new) = (Side::new(old), Side::new(new));
     diff_sequence(&old.tokens, &new.tokens)
         .into_iter()

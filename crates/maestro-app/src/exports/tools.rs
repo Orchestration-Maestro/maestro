@@ -1,5 +1,7 @@
 //! Existing tools owners exposed at the application root.
 
+pub use maestro_tools::diff::text_diff::{Change, diff_lines};
+
 #[cfg(not(target_arch = "wasm32"))]
 pub use maestro_tools::{
     BashOperations, BashRenderState, BashSpawnContext, BashSpawnHook, BashToolDetails,

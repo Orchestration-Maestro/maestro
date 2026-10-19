@@ -1,0 +1,28 @@
+.maestro-diff {
+  box-sizing: border-box;
+  border: 1px solid var(--maestro-color-border);
+  border-radius: var(--maestro-radii-panel);
+  overflow: hidden;
+  color: var(--maestro-color-text);
+}
+.maestro-diff-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.375rem 0.75rem;
+  background: var(--maestro-color-panel);
+  border-bottom: 1px solid var(--maestro-color-border);
+  color: var(--maestro-color-muted);
+  font-family: var(--maestro-type-mono-font);
+  font-size: 0.75rem;
+}
+.maestro-diff-scroll { overflow: auto; max-height: 24rem; }
+.maestro-diff pre {
+  margin: 0;
+  padding: 0.125rem 1rem;
+  font-family: var(--maestro-type-mono-font);
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+.maestro-diff-added { background: color-mix(in srgb, var(--maestro-color-success) 15%, transparent); }
+.maestro-diff-removed { background: color-mix(in srgb, var(--maestro-color-error) 15%, transparent); }

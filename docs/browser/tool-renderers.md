@@ -180,3 +180,30 @@ activation respect the enabled, visible button and focus it; Enter and Space
 toggle the focused button. Keyboard focus is outlined and scrolled into view.
 Presentation comes from the selected brand pack, with native text and clipped
 canvas controls using the same retained host as tool rows.
+
+## Artifact cards
+
+`ArtifactsToolRenderer::new(panel)` captures an optional application artifact
+panel when preparing a card. It is not registered automatically. Register a
+`ToolRendererBinding::from_raw` handle under `artifacts`, adding the caller's
+other parameter/detail pairs with `with_raw`. The renderer accepts model objects,
+explicit JSON values and native `ArtifactsParams`; it does not read result
+details. Partial JSON arguments are rendered without execution-schema decoding.
+
+Create and rewrite cards show literal highlighted content. Updates show a line
+diff. Successful get and logs cards show file content and console output,
+respectively, with a localized empty-output fallback. Edit errors retain their
+code or diff; lowercase `.html` filenames select an error console, while other
+filenames show plain error text. Non-edit errors have no disclosure or file pill.
+The ordinary outer tool card remains in use.
+
+A filename pill captures its literal filename and panel during preparation.
+With a panel, its action consumes the click and opens an existing artifact;
+unknown filenames do not change selection. Without a panel, the pill is passive.
+The standalone `artifact_pill` helper uses the same retained native filename
+owner. Formatted non-string fields are display-only, never artifact identities.
+
+`components::diff::diff` accepts literal old/new text, an optional title and
+caller-supplied native CSS classes through `DiffProps`. The optional header shows
+added/removed line counts. Its selectable rows preserve line order and carriage
+returns, with a local scrolling body capped at 384 CSS pixels.

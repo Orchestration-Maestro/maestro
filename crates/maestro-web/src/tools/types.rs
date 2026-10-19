@@ -165,3 +165,15 @@ pub(crate) fn placement_scope(host: &Rc<dyn AttachmentHost>) -> (egui::Id, Place
     });
     (id, lease)
 }
+
+/// Share whole-value truth/presence without copying an argument object.
+pub(crate) fn json_params<'a>(
+    value: Option<&'a Value>,
+    empty: &'a JsonObject,
+) -> Option<&'a JsonObject> {
+    value.and_then(|value| {
+        value
+            .as_object()
+            .or_else(|| maestro_app::is_truthy(value).then_some(empty))
+    })
+}

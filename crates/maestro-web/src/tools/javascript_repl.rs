@@ -110,6 +110,9 @@ fn prepare<D>(
                 } else {
                     Phase::Pending
                 },
+                diff: None,
+                error: None,
+                fallback: None,
                 url: None,
                 code: if result.is_some() {
                     Some((code.unwrap_or_default(), "javascript"))
@@ -134,6 +137,8 @@ fn prepare<D>(
         caption,
         body,
         attachments,
+        plain_phase: None,
+        error: None,
     }
     .result::<JavaScriptReplRenderer>()
 }

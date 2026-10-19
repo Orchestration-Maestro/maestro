@@ -12,9 +12,7 @@ use crate::{
         native_text::{NativeText, TextKind},
     },
     tools::{
-        renderer_registry::{
-            ToolHeaderState, ToolHeaderText, render_collapsible_header, render_header,
-        },
+        renderer_registry::ToolHeaderState,
         types::{ToolContent, ToolContentOutput, ToolRenderResult, ToolRenderView, ToolUiError},
     },
 };
@@ -31,6 +29,36 @@ pub(in crate::tools) enum Phase {
     Pending,
     /// Completed execution, successful or failed.
     Result,
+    /// Artifact's selected template, independent of its status animation.
+    Artifact(ArtifactTemplate),
+}
+/// Artifact templates which retain the same header and disclosure subtree.
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(in crate::tools) enum ArtifactTemplate {
+    /// No selected command.
+    Preparing,
+    /// Pending create or rewrite.
+    PendingCode,
+    /// Pending update.
+    PendingDiff,
+    /// Pending get or logs.
+    PendingEmpty,
+    /// Pending delete or unknown command.
+    PendingPlain,
+    /// Successful create or rewrite.
+    ResultCode,
+    /// Successful update.
+    ResultDiff,
+    /// Successful get.
+    ResultGet,
+    /// Successful logs.
+    ResultLogs,
+    /// Successful delete or unknown command.
+    ResultPlain,
+    /// Failed create, update or rewrite.
+    ErrorEdit,
+    /// All other failures.
+    ErrorPlain,
 }
 /// Owned body operands, independent of the preparation call.
 pub(in crate::tools) struct Body {
@@ -42,6 +70,12 @@ pub(in crate::tools) struct Body {
     pub(in crate::tools) code: Option<(String, &'static str)>,
     /// Optional nonempty console output.
     pub(in crate::tools) console: Option<(String, ConsoleVariant)>,
+    /// Selected line difference recipe.
+    pub(in crate::tools) diff: Option<Box<dyn ToolContent>>,
+    /// Plain destructive text inside the disclosure.
+    pub(in crate::tools) error: Option<String>,
+    /// Localized replacement for an empty selected output.
+    pub(in crate::tools) fallback: Option<&'static str>,
 }
 /// One immutable card recipe shared by document tools.
 pub(in crate::tools) struct CollapsibleCard {
@@ -55,6 +89,10 @@ pub(in crate::tools) struct CollapsibleCard {
     pub(in crate::tools) body: Option<Body>,
     /// Ordered downloadable file records.
     pub(in crate::tools) attachments: Vec<Download>,
+    /// Template identity when no disclosure exists.
+    pub(in crate::tools) plain_phase: Option<Phase>,
+    /// Plain destructive output outside any disclosure.
+    pub(in crate::tools) error: Option<String>,
 }
 /// Renderer-specific erased identity for one shared drawing implementation.
 struct Content<R> {
@@ -65,8 +103,6 @@ struct Content<R> {
 }
 /// Mounted children retain their own native roots across disclosure changes.
 struct BodyState {
-    /// Branch for which these children were mounted.
-    phase: Phase,
     /// Independent disclosure value.
     expanded: Rc<Cell<bool>>,
     /// Existing numeric property owner for height and top margin.
@@ -79,18 +115,23 @@ struct BodyState {
     code: Option<CodeBlock>,
     /// Literal output console.
     console: Option<crate::ConsoleBlock>,
+    /// Independently retained diff roots.
+    diff: Option<crate::tools::types::ToolRenderState>,
+    /// Plain error native root.
+    error: Option<NativeText>,
 }
 impl BodyState {
     /// Create a collapsed subtree using the shared placement owner.
-    fn new(phase: Phase, view: ToolRenderView<'_>) -> Self {
+    fn new(_phase: Phase, view: ToolRenderView<'_>) -> Self {
         Self {
-            phase,
             expanded: Rc::new(Cell::new(false)),
             transition: Transition::new([0., 0.]),
             scope: crate::tools::types::placement_scope(view.host),
             url: None,
             code: None,
             console: None,
+            diff: None,
+            error: None,
         }
     }
 }
@@ -130,6 +171,12 @@ struct Retained {
     body: Option<BodyState>,
     /// Tiles remain outside the collapsed body.
     tiles: Vec<AttachmentTile>,
+    /// Current selected template, including header-only branches.
+    phase: Option<Phase>,
+    /// Shared nested-caption activation and exclusion.
+    actions: Rc<crate::tools::renderer_registry::header::InlineActions>,
+    /// Optional non-disclosure error root.
+    error: Option<NativeText>,
 }
 impl<R: 'static> ToolContent for Content<R> {
     fn render(
@@ -165,24 +212,40 @@ impl CollapsibleCard {
         retained: &mut Retained,
         overlays: &mut Vec<crate::AttachmentOverlay>,
     ) -> Result<egui::Response, ToolUiError> {
-        if retained.body.as_ref().map(|b| b.phase) != self.body.as_ref().map(|b| b.phase) {
+        let phase = self.body.as_ref().map(|b| b.phase).or(self.plain_phase);
+        if retained.phase != phase {
+            retained.phase = phase;
             retained.header = ToolRendererState::default();
             retained.body = self.body.as_ref().map(|b| BodyState::new(b.phase, view));
         }
         let glyph = attachment_content::glyph_node(self.glyph).map_err(ToolUiError::Control)?;
-        let caption = ToolHeaderText::Text(self.caption.resolve(view.i18n)?);
-        let header = if let Some(body) = &retained.body {
-            render_collapsible_header(self.state, glyph, caption, Rc::clone(&body.expanded))
-        } else {
-            render_header(self.state, glyph, caption)
-        };
+        let caption = self
+            .caption
+            .header(view.i18n, Rc::clone(&retained.actions))?;
+        let header = crate::tools::renderer_registry::header::render_inline_header(
+            self.state,
+            glyph,
+            caption,
+            retained.body.as_ref().map(|body| Rc::clone(&body.expanded)),
+            Rc::clone(&retained.actions),
+        );
         let row = ui.vertical(|ui| -> Result<(), ToolUiError> {
             ui.spacing_mut().item_spacing.y = 0.;
             header
                 .render(ui, view, &retained.header)
                 .collect(overlays)?;
             if let (Some(body), Some(state)) = (&self.body, &mut retained.body) {
-                body.render(ui, view, state)?;
+                body.render(ui, view, state, overlays)?;
+            }
+            if let Some(error) = &self.error {
+                ui.add_space(12.);
+                let text = output(error, Some("An error occurred"), view)?;
+                retained
+                    .error
+                    .get_or_insert_with(|| NativeText::new(Rc::clone(view.host)))
+                    .render(ui, (&text, TextKind::Error(0)), view)?;
+            } else {
+                retained.error = None;
             }
             self.tiles(ui, view, retained, overlays)
         });
@@ -237,6 +300,7 @@ impl Body {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         state: &mut BodyState,
+        overlays: &mut Vec<crate::AttachmentOverlay>,
     ) -> Result<(), ToolUiError> {
         let target = if state.expanded.get() {
             [2000., 12.]
@@ -265,7 +329,7 @@ impl Body {
             egui::vec2(rect.width(), height),
         )));
         let _active = view.host.enter_placement_scope(state.scope.0);
-        let result = self.children(&mut body, view, state);
+        let result = self.children(&mut body, view, state, overlays);
         ui.allocate_space(egui::vec2(
             rect.width(),
             margin + body.min_size().y.min(height),
@@ -278,6 +342,7 @@ impl Body {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         state: &mut BodyState,
+        overlays: &mut Vec<crate::AttachmentOverlay>,
     ) -> Result<(), ToolUiError> {
         ui.spacing_mut().item_spacing.y = 12.;
         if let Some(url) = &self.url {
@@ -297,7 +362,7 @@ impl Body {
             let code = state
                 .code
                 .get_or_insert_with(|| CodeBlock::new_literal(Rc::clone(view.host)));
-            code.code.clone_from(source);
+            code.code = output(source, self.fallback, view)?;
             (*language).clone_into(&mut code.language);
             code.render(
                 ui,
@@ -312,11 +377,30 @@ impl Body {
         } else {
             state.code = None;
         }
+        if let Some(diff) = &self.diff {
+            state
+                .diff
+                .get_or_insert_default()
+                .draw(diff.as_ref(), ui, view)
+                .collect(overlays)?;
+        } else {
+            state.diff = None;
+        }
+        self.output_children(ui, view, state)?;
+        Ok(())
+    }
+    /// Retain consoles and plain errors independently of code/diff selection.
+    fn output_children(
+        &self,
+        ui: &mut egui::Ui,
+        view: ToolRenderView<'_>,
+        state: &mut BodyState,
+    ) -> Result<(), ToolUiError> {
         if let Some((content, variant)) = &self.console {
             let console = state
                 .console
                 .get_or_insert_with(|| crate::ConsoleBlock::new(Rc::clone(view.host)));
-            console.content.clone_from(content);
+            console.content = output(content, self.fallback, view)?;
             console.variant = *variant;
             console
                 .render(ui, view.i18n, view.presentation, view.modal)
@@ -324,6 +408,29 @@ impl Body {
         } else {
             state.console = None;
         }
+        if let Some(error) = &self.error {
+            let text = output(error, self.fallback, view)?;
+            state
+                .error
+                .get_or_insert_with(|| NativeText::new(Rc::clone(view.host)))
+                .render(ui, (&text, TextKind::Error(0)), view)?;
+        } else {
+            state.error = None;
+        }
         Ok(())
     }
+}
+
+/// Translate only a selected empty-output fallback, never caller text.
+fn output(
+    text: &str,
+    fallback: Option<&'static str>,
+    view: ToolRenderView<'_>,
+) -> Result<String, ToolUiError> {
+    if text.is_empty()
+        && let Some(key) = fallback
+    {
+        return Ok(view.i18n.text(key)?);
+    }
+    Ok(text.into())
 }

@@ -14,6 +14,11 @@ use std::{borrow::Cow, rc::Rc};
 pub(in crate::tools) enum Caption {
     /// Caller-authored text.
     Literal(String),
+    /// Localized artifact label followed by an optional captured filename.
+    Artifact(
+        &'static str,
+        Option<crate::tools::artifacts::artifact_pill::Pill>,
+    ),
     /// Translated key followed by a literal suffix.
     Localized(&'static str, String),
 }
@@ -22,6 +27,7 @@ impl Caption {
     pub(super) fn resolve(&self, i18n: &I18n) -> Result<String, ToolUiError> {
         match self {
             Self::Literal(text) => Ok(text.clone()),
+            Self::Artifact(key, _) => Ok(i18n.text(key)?),
             Self::Localized(key, suffix) => Ok(format!("{}{suffix}", i18n.text(key)?)),
         }
     }
@@ -149,4 +155,77 @@ pub(in crate::tools) fn field<'a>(
 ) -> Result<Option<Cow<'a, str>>, ToolUiError> {
     display_truthy(params.and_then(|params| params.get(key)))
         .map_err(|error| ToolUiError::Presentation(error.to_string()))
+}
+
+/// Native inline artifact caption, sharing only its header's action admission.
+struct ArtifactCaption {
+    /// Already localized caption text.
+    text: String,
+    /// Optional owned filename/panel recipe.
+    pill: Option<crate::tools::artifacts::artifact_pill::Pill>,
+    /// Existing containing disclosure activation.
+    actions: Rc<crate::tools::renderer_registry::header::InlineActions>,
+}
+/// Independent native roots within a rich caption.
+#[derive(Default)]
+struct CaptionState {
+    /// Literal label lifetime.
+    label: Option<NativeText>,
+    /// Filename lifetime, absent when that child disappears.
+    pill: maestro_app::ToolRendererState,
+}
+impl Caption {
+    /// Select literal text or the existing rich-header child path.
+    pub(super) fn header(
+        &self,
+        i18n: &I18n,
+        actions: Rc<crate::tools::renderer_registry::header::InlineActions>,
+    ) -> Result<ToolHeaderText, ToolUiError> {
+        if let Self::Artifact(_, pill) = self {
+            let mut pill = pill.clone();
+            if let Some(pill) = &mut pill {
+                pill.actions = Some(Rc::clone(&actions));
+            }
+            Ok(ToolHeaderText::Content(Box::new(ArtifactCaption {
+                text: self.resolve(i18n)?,
+                pill,
+                actions,
+            })))
+        } else {
+            Ok(ToolHeaderText::Text(self.resolve(i18n)?))
+        }
+    }
+}
+impl ToolContent for ArtifactCaption {
+    fn render(
+        &self,
+        ui: &mut egui::Ui,
+        view: ToolRenderView<'_>,
+        state: &ToolRendererState,
+    ) -> ToolContentOutput {
+        let slot = state.state::<CaptionState>();
+        let mut retained = std::mem::take(&mut *slot.borrow_mut());
+        let mut overlays = Vec::new();
+        let row = ui.horizontal_wrapped(|ui| -> Result<(), ToolUiError> {
+            let label = retained
+                .label
+                .get_or_insert_with(|| NativeText::new(Rc::clone(view.host)));
+            label.render(ui, (&self.text, TextKind::InlineCaption), view)?;
+            label.set_action(Some(
+                crate::tools::renderer_registry::header::InlineActions::action(&self.actions),
+            ));
+            if let Some(pill) = &self.pill {
+                pill.render(ui, view, &retained.pill)
+                    .collect(&mut overlays)?;
+            } else {
+                retained.pill = ToolRendererState::default();
+            }
+            Ok(())
+        });
+        drop(slot.replace(retained));
+        ToolContentOutput {
+            response: row.inner.map(|()| row.response),
+            overlays,
+        }
+    }
 }

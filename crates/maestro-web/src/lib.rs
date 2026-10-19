@@ -93,3 +93,7 @@ pub use components::expandable_section::ExpandableSection;
 pub use tools::renderers::bash_renderer::BashRenderer;
 pub use tools::renderers::calculate_renderer::CalculateRenderer;
 pub use tools::renderers::get_current_time_renderer::GetCurrentTimeRenderer;
+
+pub use tools::artifacts::{
+    artifact_pill::artifact_pill, artifacts_tool_renderer::ArtifactsToolRenderer,
+};
