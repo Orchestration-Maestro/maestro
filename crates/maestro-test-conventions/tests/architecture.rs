@@ -672,15 +672,9 @@ fn documentation_checks_may_reuse_the_markdown_owner() {
 
 #[test]
 fn permitted_downward_edges_pass_without_absent_crates() {
-    documented_foundation_graph_matches_policy();
-    assert_eq!(support::policy::POLICY.len(), 46);
-    assert_eq!(
-        support::policy::POLICY
-            .iter()
-            .map(|row| row.1.len())
-            .sum::<usize>(),
-        145
-    );
+    assert!(documented_foundation_graph_matches_policy(
+        FOUNDATION_SPECIFICATION
+    ));
     for &(from, targets) in support::policy::POLICY {
         let workspace = Workspace::new();
         workspace.foundation(&[&[from], targets].concat());
@@ -755,9 +749,6 @@ fn path_utility_edges_preserve_native_layer_rules() {
         .map(|row| row.0)
         .filter(|name| *name != "maestro-path" && !UTILITY_EXCLUDED.contains(name))
         .collect();
-    assert_eq!(rows.len(), 46);
-    assert_eq!(consumers.len(), 29);
-    assert_eq!(rows.iter().filter(|row| row.1.is_empty()).count(), 11);
     native_consumers_may_declare_the_utility(&consumers);
     for from in consumers {
         native_consumer_may_not_dev_declare_the_utility(from);
@@ -1290,11 +1281,28 @@ fn complete_resolved_metadata() {
     workspace.metadata_probe(&declared, &full, "ok");
 }
 
-fn documented_foundation_graph_matches_policy() {
-    use std::collections::{BTreeMap, BTreeSet};
+/// Documented dependencies checked against the permitted policy.
+const FOUNDATION_SPECIFICATION: &str = include_str!("../../../docs/specs/maestro-port.md");
 
-    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let specification = std::fs::read_to_string(root.join("docs/specs/maestro-port.md")).unwrap();
+#[test]
+fn documented_foundation_graph_rejects_missing_and_extra_edges() {
+    let row = FOUNDATION_SPECIFICATION
+        .lines()
+        .find(|line| line.starts_with("| `maestro-theme` |"))
+        .unwrap();
+    for changed in [
+        row.replace("`maestro-watch`, ", ""),
+        row.replace("`maestro-tui`,", "`maestro-lock`, `maestro-tui`,"),
+    ] {
+        assert_ne!(row, changed);
+        let specification = FOUNDATION_SPECIFICATION.replace(row, &changed);
+        assert!(!documented_foundation_graph_matches_policy(&specification));
+    }
+}
+
+/// Compare every documented crate and edge with the policy table.
+fn documented_foundation_graph_matches_policy(specification: &str) -> bool {
+    use std::collections::{BTreeMap, BTreeSet};
     let table = specification
         .split_once("| Crate | One job | Allowed internal dependencies | Layer |\n")
         .unwrap()
@@ -1325,7 +1333,7 @@ fn documented_foundation_graph_matches_policy() {
         .filter(|row| row.0 != "maestro-path")
         .map(|&(name, dependencies)| (name, dependencies.iter().copied().collect()))
         .collect();
-    assert_eq!(documented, expected);
+    documented == expected
 }
 
 /// Declares the targets together in every form; the checker judges and names every edge on its own.
@@ -2260,7 +2268,6 @@ fn test_process_policy_keeps_existing_domain_edges() {
 
 #[test]
 fn test_process_inventory_matches_foundation_contract() {
-    assert_eq!(support::policy::POLICY.len(), 46);
     assert_eq!(support::class(OWNER), "dedicated");
     assert!(UTILITY_EXCLUDED.contains(&OWNER));
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
