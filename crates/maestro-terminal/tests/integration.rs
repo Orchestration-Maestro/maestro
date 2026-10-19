@@ -194,3 +194,5 @@ mod selection;
 mod formatter_plain;
 
 mod formatter_vt;
+
+mod render;

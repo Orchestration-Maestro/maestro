@@ -77,3 +77,6 @@ pub mod selection;
 
 /// Text output from terminal-owned pages.
 pub mod formatter;
+
+/// Retained incremental viewport rendering.
+pub mod render;
