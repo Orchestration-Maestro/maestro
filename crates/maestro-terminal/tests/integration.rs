@@ -184,3 +184,7 @@ mod mouse_geometry;
 mod mouse_encoding;
 
 mod mouse_positions;
+
+mod input_terminal;
+
+mod mouse_events;

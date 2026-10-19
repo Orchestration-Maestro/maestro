@@ -50,6 +50,18 @@ pub struct KeyEncoder {
 }
 
 impl KeyEncoder {
+    /// Snapshot the terminal's input modes and active-screen keyboard flags.
+    /// The macOS option policy defaults to false and may be set by the caller.
+    #[must_use]
+    pub fn from_terminal(terminal: &crate::Terminal) -> Self {
+        Self {
+            modes: terminal.modes.clone(),
+            kitty_flags: terminal.kitty_keyboard_flags(),
+            modify_other_keys_state_2: terminal.modify_other_keys_enabled(),
+            macos_option_as_alt: OptionAsAlt::False,
+        }
+    }
+
     /// Encode one event; releases and intermediate composition may produce no bytes.
     #[must_use]
     pub fn encode(&self, event: &KeyEvent) -> Vec<u8> {

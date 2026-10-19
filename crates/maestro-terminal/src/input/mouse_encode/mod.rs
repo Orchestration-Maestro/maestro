@@ -43,6 +43,18 @@ impl MouseEncoder {
         }
     }
 
+    /// Snapshot terminal reporting modes with caller-supplied renderer geometry.
+    /// An explicit format overrides the terminal's format. Button and cell
+    /// tracking start disabled and may be configured by the caller.
+    #[must_use]
+    pub fn from_terminal(terminal: &crate::Terminal, size: Size, format: Option<Format>) -> Self {
+        Self {
+            event: terminal.flags.mouse_event,
+            format: format.unwrap_or(terminal.flags.mouse_format),
+            ..Self::new(size)
+        }
+    }
+
     /// Encode one event, updating enabled cell tracking even if its button or
     /// coordinates cannot be represented in the selected wire format.
     pub fn encode(&mut self, event: &MouseEvent) -> Vec<u8> {

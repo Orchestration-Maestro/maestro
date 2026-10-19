@@ -26,6 +26,11 @@ unambiguous control-key escapes and committed composition text; releases and
 intermediate composition emit nothing. `macos_option_as_alt` selects which option
 keys act as alt on macOS.
 
+`KeyEncoder::from_terminal(&terminal)` snapshots the terminal's modes, extended
+modifier setting and active-screen protocol flags. Unlike the standalone default,
+it retains the terminal's default alt-prefix and numlock handling. Set the macOS
+option policy on the encoder separately; terminal state cannot supply it.
+
 `kitty_flags` enables enhanced keyboard encoding with the existing
 `kitty::key::Flags` values. The flags select escape-code disambiguation, event
 reporting, alternate key codes, all-key reporting and associated text. Functional
@@ -53,6 +58,12 @@ Mouse motion tracking is optional: set `last_cell` to `Some(None)` to start or
 reset cell deduplication, or to `None` to disable it. Accepted events update the
 tracked cell before wire-format limits or unsupported buttons are checked.
 SGR pixel reports bypass cell deduplication.
+
+`MouseEncoder::from_terminal(&terminal, size, format)` snapshots the terminal's
+reporting class and format with supplied renderer geometry. Pass `None` to use
+the terminal's format or `Some(format)` to override it. Button and cell tracking
+start disabled. Both encoders own their snapshots: later terminal changes do not
+affect them. Build another snapshot to read updated terminal state.
 
 ## Codepoint width
 
