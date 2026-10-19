@@ -772,6 +772,11 @@ action paths, announcement and remote path sources. The action component encoder
 and its hash and reserved-stem helpers derive from the action paths and API
 schema helpers under the same license. Their tests retain the source cases.
 
+The environment vocabulary, structured events, synchronized rotating file writer
+and daemon snapshot wrappers in `crates/maestro-daemon/src/` derive from the pane,
+integration environment, action runtime/environment, logging and persistence I/O
+sources under the same license. The writer tests retain the source cases.
+
 The pane terminal, shell and foreground process code in `crates/maestro-process/`
 also derives from herdr v0.8.2 under Apache-2.0. Its process sources include the
 noninteractive process builder, Linux platform operations, shared Unix quoting

@@ -20,3 +20,12 @@ pub mod paths;
 
 /// Owned named-daemon selection and lifecycle information.
 pub mod instances;
+
+/// Structured workspace events and bounded file logging.
+pub mod logging;
+
+/// Daemon snapshot save and clear operations.
+pub mod persist;
+
+/// Environment names grouped by their runtime consumers.
+pub mod environment;

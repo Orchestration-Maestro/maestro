@@ -97,8 +97,10 @@ Inherited `serde_json =1.0.151` (`preserve_order`, `float_roundtrip`) is now a n
 dependency. Unknown-key capture uses the existing Serde visitor interface over
 borrowed JSON values; no parser or ignored-field library is added.
 
-Controlled warning tests use approved `tracing-subscriber =0.3.23` with default
-features and `env-filter` for thread-scoped warning capture.
+Production file logging uses approved `tracing-subscriber =0.3.23` with default
+features and `env-filter`. Controlled warning tests reuse it for thread-scoped
+capture. Logging promotes the already-locked subscriber to a normal dependency;
+no new package identity is added.
 The tests drive settings futures with the already-locked `tokio =1.53.2` runtime
 feature. No production runtime is introduced by preference loading.
 
