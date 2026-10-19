@@ -283,3 +283,86 @@ fn reset_restores_custom_mode_defaults_and_primary_keyboard_state() {
     assert_eq!(t.screens.active().kitty_keyboard.current(), Flags::DISABLED);
     assert!(!t.screens.active().semantic_prompt.seen);
 }
+
+#[test]
+fn insert_lines_releases_discarded_style_identity() {
+    use crate::sgr::Attribute;
+    let mut t = Terminal::new(5, 3, 0).unwrap();
+    t.print_string("ABC\nDEF\n").unwrap();
+    t.screens
+        .active_mut()
+        .set_attribute(Attribute::Bold)
+        .unwrap();
+    t.print_string("GHI").unwrap();
+    t.screens
+        .active_mut()
+        .set_attribute(Attribute::Unset)
+        .unwrap();
+    let pin = *t
+        .screens
+        .active()
+        .pages
+        .tracked_pin(t.screens.active().cursor.page_pin)
+        .unwrap();
+    assert_eq!(
+        t.screens
+            .active()
+            .pages
+            .page(pin.node)
+            .unwrap()
+            .styles
+            .count(),
+        1
+    );
+    t.set_cursor_pos(2, 2);
+    t.insert_lines(1).unwrap();
+    assert_eq!(
+        t.screens
+            .active()
+            .pages
+            .page(pin.node)
+            .unwrap()
+            .styles
+            .count(),
+        0
+    );
+}
+
+#[test]
+fn row_scrolling_retains_one_hyperlink_identity() {
+    for down in [false, true] {
+        for partial in [false, true] {
+            let mut t = Terminal::new(10, 10, 10).unwrap();
+            if !down {
+                t.print_string("ABC123\n").unwrap();
+            }
+            t.screens
+                .active_mut()
+                .start_hyperlink(b"http://example.com", None)
+                .unwrap();
+            t.print_string(if down { "ABC123" } else { "DEF456" })
+                .unwrap();
+            t.screens.active_mut().end_hyperlink();
+            t.print_string(if down { "\nDEF456\nGHI789" } else { "\nGHI789" })
+                .unwrap();
+            if partial {
+                t.scrolling_region.left = 1;
+                t.scrolling_region.right = 3;
+            }
+            t.set_cursor_pos(2, 2);
+            if down {
+                t.scroll_down(1).unwrap();
+            } else {
+                t.scroll_up(1).unwrap();
+            }
+            let pages = &t.screens.active().pages;
+            let pin = pages
+                .pin(crate::Point::Viewport(crate::Coordinate {
+                    x: 0,
+                    y: u32::from(down),
+                }))
+                .unwrap();
+            assert_eq!(pages.page(pin.node).unwrap().hyperlink_set.count(), 1);
+        }
+    }
+}

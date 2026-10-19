@@ -141,3 +141,5 @@ mod terminal_reset;
 mod terminal_resize;
 
 mod terminal_prompts;
+
+mod terminal_rows;
