@@ -27,6 +27,8 @@ pub(crate) struct Work {
     pub(crate) source_examinations: usize,
     /// Original definition indexes constructed by the document lexer.
     pub(crate) reference_indexes: usize,
+    /// Bytes supplied to the fallback text recognizer.
+    pub(crate) text_bytes: usize,
 }
 thread_local! {
     /// Instrument all complete-parse/index and local-parse entry points.
@@ -268,4 +270,26 @@ fn deletion_raw_suffix_work_matches_reference_growth() {
 #[test]
 fn absent_extension_hints_skip_extension_scans() {
     suffix_work(true, "ordinary paragraph\n\n");
+}
+
+/// Bytes supplied to the fallback text recognizer for one paragraph of identical plain lines.
+fn plain_text_work(lines: usize, options: crate::MarkedOptions) -> usize {
+    WORK.with_borrow_mut(|work| *work = Work::default());
+    let document = crate::parse_with_options("plain line.\n".repeat(lines), options);
+    assert_eq!(document.nodes.len(), 1);
+    WORK.with_borrow(|work| work.text_bytes)
+}
+
+#[test]
+fn paragraph_text_work_grows_linearly_with_its_lines() {
+    for options in [
+        crate::MarkedOptions::Documentation,
+        crate::MarkedOptions::Terminal,
+        crate::MarkedOptions::Export,
+        crate::MarkedOptions::Browser { escape_html: false },
+        crate::MarkedOptions::Browser { escape_html: true },
+    ] {
+        let [small, medium, large] = [64, 128, 256].map(|lines| plain_text_work(lines, options));
+        assert_eq!(large - medium, 2 * (medium - small), "{options:?}");
+    }
 }

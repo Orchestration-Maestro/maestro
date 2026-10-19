@@ -90,8 +90,11 @@ impl<'a> Tokenizer<'a> {
                 cursor += size;
                 continue;
             }
-            let size = self.text(&text[..limit - cursor]);
-            let size = text[..size].find('\n').unwrap_or(size);
+            let window = &text[..limit - cursor];
+            // Only the first line is kept, so the recognizer never reads past its newline.
+            let line = window.find('\n').map_or(window, |end| &window[..=end]);
+            let size = self.text(line);
+            let size = line[..size].find('\n').unwrap_or(size);
             self.push_text(cursor..cursor + size, &mut output);
             cursor += size;
         }
@@ -161,6 +164,8 @@ impl<'a> Tokenizer<'a> {
 
     /// Select fallback text without crossing a typed operand boundary.
     fn text(&self, text: &str) -> usize {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.text_bytes += text.len());
         rules::inline_text(self.options)
             .and_then(|rule| rule.find(text))
             .map_or_else(
