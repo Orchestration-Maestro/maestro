@@ -63,8 +63,9 @@ image/pre elements retain their identity when only their rectangles move. Modal
 ownership hides sibling surfaces and restores them when the overlay closes.
 Surfaces provide disjoint control rectangles as `occluders`: an even-odd CSS path
 cuts these out of the native content so canvas-painted controls remain visible.
-Contained reading frames retain the cuts, and the containing transcript frame
-publishes its children's apertures too, allowing pointers to reach the canvas.
+Contained reading frames retain the cuts. The containing transcript derives its
+apertures from enabled clickable toolkit widgets at the final scroll position,
+allowing pointers to reach canvas controls without per-control registration.
 The full image rectangle and fitting policy are unchanged. Native recording tests
 and a CSS projection test exercise this boundary; browser hit testing, image
 animation/selection and device placement remain qualified by

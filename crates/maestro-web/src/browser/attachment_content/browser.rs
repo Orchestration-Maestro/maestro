@@ -342,13 +342,6 @@ impl AttachmentHost for BrowserAttachmentHost {
         }
         Ok(rem)
     }
-    fn take_reading_apertures(&self, id: egui::Id) -> Vec<egui::Rect> {
-        self.surfaces
-            .borrow_mut()
-            .get_mut(&id)
-            .and_then(|surface| surface.reading.as_mut())
-            .map_or_else(Vec::new, |reading| std::mem::take(&mut reading.apertures))
-    }
     fn set_reading_scroll(&self, id: egui::Id, top: f64) -> Result<(), AttachmentHostError> {
         self.set_scroll(id, top)
     }

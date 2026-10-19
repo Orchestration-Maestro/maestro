@@ -187,10 +187,6 @@ pub trait AttachmentHost {
     fn root_rem(&self) -> Result<f32, AttachmentHostError> {
         Ok(16.)
     }
-    /// Take control apertures published by children in active reading scopes.
-    fn take_reading_apertures(&self, _id: egui::Id) -> Vec<egui::Rect> {
-        Vec::new()
-    }
     /// Assign the native vertical offset, preserving the horizontal position.
     /// # Errors
     /// Returns unsupported-host, missing-viewport or native assignment failures.

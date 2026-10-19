@@ -16,8 +16,6 @@ use transaction::{Scroll, decoration_border, size_slots, transaction};
 pub(super) struct NativeReading {
     /// Stable feature identity.
     content: Rc<ReadingContent>,
-    /// Child control apertures collected during the current containing render.
-    pub(super) apertures: Vec<egui::Rect>,
     /// Constant-time placement lookup independent of transcript length.
     slot_index: std::collections::HashMap<egui::Id, Element>,
     /// Whole feature-owned root.
@@ -69,7 +67,6 @@ impl NativeReading {
             (id, owner),
         )?;
         Ok(Self {
-            apertures: Vec::new(),
             slot_index: root.slots.iter().cloned().collect(),
             content,
             root,
@@ -282,20 +279,6 @@ impl BrowserAttachmentHost {
         }
         let displaced = self.surfaces.borrow_mut().insert(s.id, surface);
         drop(displaced);
-        if result.is_err()
-            || !matches!(&s.content, AttachmentContent::Reading(p) if p.phase == ReadingPhase::Publish)
-        {
-            return result;
-        }
-        let mut surfaces = self.surfaces.borrow_mut();
-        for container in self.containers.borrow().iter() {
-            if let Some(reading) = surfaces
-                .get_mut(&container.owner.0)
-                .and_then(|s| s.reading.as_mut())
-            {
-                reading.apertures.extend(s.occluders.iter().copied());
-            }
-        }
         result
     }
     /// Update the reached native owner without committing partial placement.

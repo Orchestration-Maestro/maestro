@@ -18,12 +18,7 @@ pub(crate) fn pointer_actions<A: Copy + PartialEq>(
             let hit = visible_canvas_slots
                 .iter()
                 // Completed clicks use stale geometry; keep only toolkit layer admission.
-                .find(|(_, rect, layer)| {
-                    let local = context
-                        .layer_transform_from_global(*layer)
-                        .map_or(*canvas_points, |transform| transform * *canvas_points);
-                    rect.contains(local) && context.layer_id_at(*canvas_points) == Some(*layer)
-                })
+                .find(|(_, rect, layer)| pointer_in_rect(context, *layer, *rect, *canvas_points))
                 .map(|(action, _, _)| *action);
             if *down {
                 *pressed = hit;
@@ -60,4 +55,40 @@ pub(crate) fn focus_border(
         );
     }
     Ok(())
+}
+
+/// Keep event admission bounded while collecting unclipped paint for final follow placement.
+#[cfg(target_arch = "wasm32")]
+pub(crate) fn set_pointer_clip(
+    context: &egui::Context,
+    layer: egui::LayerId,
+    clip: egui::Rect,
+) -> egui::Id {
+    let key = layer.id.with("reading-pointer-clip");
+    context.data_mut(|data| data.insert_temp(key, clip));
+    key
+}
+/// Project endpoints into the control's layer while retaining viewport and modal admission.
+pub(crate) fn pointer_in_rect(
+    context: &egui::Context,
+    layer: egui::LayerId,
+    rect: egui::Rect,
+    point: egui::Pos2,
+) -> bool {
+    let local = context
+        .layer_transform_from_global(layer)
+        .map_or(point, |transform| transform * point);
+    let clip =
+        context.data(|data| data.get_temp::<egui::Rect>(layer.id.with("reading-pointer-clip")));
+    let top = context.layer_id_at(point);
+    let parent = context.memory(|memory| memory.areas().parent_layer(layer));
+    rect.contains(local)
+        && clip.is_none_or(|clip| clip.contains(point))
+        && (top == Some(layer) || (parent.is_some() && top == parent))
+}
+
+/// Apply the same layer and viewport admission to hover decoration.
+pub(crate) fn rect_contains_pointer(ui: &egui::Ui, rect: egui::Rect) -> bool {
+    ui.input(|input| input.pointer.hover_pos())
+        .is_some_and(|point| pointer_in_rect(ui.ctx(), ui.layer_id(), rect, point))
 }

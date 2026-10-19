@@ -20,6 +20,10 @@ struct Row {
     top: f32,
     /// Last successfully drawn height, including its following gap.
     height: f32,
+    /// Whether the last draw emitted an enabled focusable control; false until first drawn.
+    focusable: bool,
+    /// Focusable widget identities from this row's last draw, retired with the row.
+    controls: Vec<egui::Id>,
 }
 /// The single native scroll owner around stable and streaming rows.
 pub(super) struct TranscriptViewport {
@@ -31,7 +35,7 @@ pub(super) struct TranscriptViewport {
     content: Rc<ReadingContent>,
     /// Ordered geometry used by clean scroll frames.
     rows: Vec<Row>,
-    /// Constant-time lookup of native resize observations.
+    /// Constant-time lookup of native slots and their focusable controls.
     positions: HashMap<egui::Id, usize>,
     /// Native placement from the previous successful publication.
     placement: Option<(egui::Rect, egui::Rect, u32)>,
@@ -94,24 +98,56 @@ impl TranscriptViewport {
             rect.top() + rem - attachment_content::points(scroll.top),
         );
         let visible = egui::Rect::from_min_size(rect.min, rect.size());
-        drop(self.host.take_reading_apertures(self.id));
+        let (mut rows, input_clip) = canvas_rows(ui, self.id, rect);
         let sizes = self.draw_rows(
-            ui,
+            &mut rows,
             (origin, width, visible, rem),
             (refresh, &changes.slots, extra_dirty),
             draw,
-        )?;
-        let apertures = self.host.take_reading_apertures(self.id);
-        self.place(ui, rect, (&sizes, apertures), view)?;
-        if self.follow.enabled && (refresh || !sizes.is_empty()) {
-            self.host
-                .set_reading_scroll(self.id, self.host.reading_scroll(self.id)?.height)?;
-        }
+        );
+        ui.ctx()
+            .data_mut(|data| data.remove::<egui::Rect>(input_clip));
+        let sizes = sizes?;
+        drop(rows);
+        self.commit(ui, rect, (&sizes, scroll.top, refresh), view)?;
         self.presentation = presentation;
         self.rem = rem;
         Ok(ui.allocate_rect(rect, egui::Sense::hover()))
     }
-    /// Visit visible canvas rows plus explicitly invalidated native rows, never all clean rows.
+    /// Publish changed native sizes, follow, then commit final canvas and aperture geometry.
+    fn commit(
+        &self,
+        ui: &egui::Ui,
+        rect: egui::Rect,
+        (sizes, start_top, refresh): (&[(egui::Id, egui::Vec2)], f64, bool),
+        view: ToolRenderView<'_>,
+    ) -> Result<(), ToolUiError> {
+        let layer = egui::LayerId::new(ui.layer_id().order, self.id.with("canvas"));
+        let parent = ui
+            .ctx()
+            .layer_transform_to_global(ui.layer_id())
+            .unwrap_or_default();
+        self.place(ui, rect, (sizes, vec![]), view)?;
+        if self.follow.enabled && (refresh || !sizes.is_empty()) {
+            self.host
+                .set_reading_scroll(self.id, self.host.reading_scroll(self.id)?.height)?;
+        }
+        let final_top = self.host.reading_scroll(self.id)?.top;
+        let transform = parent
+            * egui::emath::TSTransform::from_translation(egui::vec2(
+                0.,
+                attachment_content::points(start_top - final_top),
+            ));
+        let apertures = commit_geometry(
+            ui.ctx(),
+            layer,
+            transform,
+            parent.mul_rect(rect.intersect(ui.clip_rect())),
+        );
+        self.place(ui, rect, (&[], apertures), view)?;
+        Ok(())
+    }
+    /// Visit visible or invalidated rows plus the focused row and its focusable neighbours.
     fn draw_rows(
         &mut self,
         ui: &mut egui::Ui,
@@ -119,43 +155,38 @@ impl TranscriptViewport {
         (refresh, dirty_slots, extra_dirty): (bool, &HashSet<egui::Id>, Option<usize>),
         mut draw: impl FnMut(usize, &mut egui::Ui) -> Result<(), ToolUiError>,
     ) -> Result<Vec<(egui::Id, egui::Vec2)>, ToolUiError> {
-        let first = self
-            .rows
-            .partition_point(|row| origin.y + row.top + row.height < visible.top());
-        let last = self
-            .rows
-            .partition_point(|row| origin.y + row.top <= visible.bottom());
         let dirty_start = dirty_slots
             .iter()
             .filter_map(|id| self.positions.get(id).copied())
             .chain(extra_dirty)
             .min();
-        let start = if refresh {
-            0
-        } else {
-            first.min(dirty_start.unwrap_or(first))
-        };
+        let focused = self.focus_rows(ui.ctx());
+        let range = self.visit_range((origin.y, visible), (refresh, dirty_start), &focused);
+        let start = range.start;
         let count = self.rows.len();
-        let end = if refresh || dirty_start.is_some() {
-            count
-        } else {
-            last
-        };
         let mut top = self.rows.get(start).map_or(0., |row| row.top);
         let mut sizes = Vec::new();
-        for position in start..end {
+        for position in range {
             let row = &mut self.rows[position];
             let dirty = refresh || dirty_slots.contains(&row.id) || extra_dirty == Some(position);
             let row_origin = origin + egui::vec2(0., top);
             let in_view =
                 row_origin.y <= visible.bottom() && row_origin.y + row.height >= visible.top();
-            if dirty || in_view {
+            if dirty
+                || in_view
+                || focused.contains(&position)
+                || (self.follow.enabled && dirty_start.is_some())
+            {
+                let first = ui
+                    .ctx()
+                    .viewport(|v| v.this_pass.widgets.get_layer(ui.layer_id()).count());
                 let height = draw_row(
                     ui,
                     (&self.host, self.id),
                     (row.id, row_origin, width),
                     |ui| draw(position, ui),
                 )?;
+                row.record_controls(ui, first, (&mut self.positions, position));
                 let gap = f32::from(u8::from(position + 1 < count)) * 0.75 * rem;
                 sizes.extend(row.resize(width, height + gap, dirty));
             }
@@ -163,6 +194,56 @@ impl TranscriptViewport {
             top += row.height;
         }
         Ok(sizes)
+    }
+    /// Admit only the focused row and its nearest known focusable neighbours beyond normal culling.
+    fn focus_rows(&self, context: &egui::Context) -> Vec<usize> {
+        let Some(focused) = context
+            .memory(egui::Memory::focused)
+            .and_then(|id| self.positions.get(&id).copied())
+        else {
+            return vec![];
+        };
+        (0..focused)
+            .rev()
+            .find(|&i| self.rows[i].focusable)
+            .into_iter()
+            .chain(Some(focused))
+            .chain((focused + 1..self.rows.len()).find(|&i| self.rows[i].focusable))
+            .collect()
+    }
+    /// Walk one ordered geometry interval, drawing only visible, dirty or focus-admitted rows.
+    fn visit_range(
+        &self,
+        (origin, visible): (f32, egui::Rect),
+        (refresh, dirty_start): (bool, Option<usize>),
+        focused: &[usize],
+    ) -> std::ops::Range<usize> {
+        let first = self
+            .rows
+            .partition_point(|row| origin + row.top + row.height < visible.top());
+        let last = self
+            .rows
+            .partition_point(|row| origin + row.top <= visible.bottom());
+        let start = if refresh {
+            0
+        } else {
+            first.min(dirty_start.unwrap_or(first))
+        };
+        let end = if refresh || dirty_start.is_some() {
+            self.rows.len()
+        } else {
+            last
+        };
+        focused
+            .iter()
+            .min()
+            .copied()
+            .map_or(start, |i| start.min(i))
+            ..focused
+                .iter()
+                .max()
+                .copied()
+                .map_or(end, |i| end.max(i + 1))
     }
     /// Detach the containing tree when no session remains, without changing the follow override.
     pub(super) fn clear(&mut self) {
@@ -186,6 +267,9 @@ impl TranscriptViewport {
             })?;
         for row in &self.rows[count.min(self.rows.len())..] {
             self.positions.remove(&row.id);
+            for id in &row.controls {
+                self.positions.remove(id);
+            }
         }
         self.rows.truncate(count);
         while self.rows.len() < count {
@@ -195,6 +279,8 @@ impl TranscriptViewport {
                 id: self.id.with(self.rows.len()),
                 top: 0.,
                 height: 0.,
+                focusable: false,
+                controls: vec![],
             });
         }
         Ok(())
@@ -237,6 +323,28 @@ impl Drop for TranscriptViewport {
     }
 }
 impl Row {
+    /// Refresh focus provenance from this row's emitted widgets without retaining widget records.
+    fn record_controls(
+        &mut self,
+        ui: &egui::Ui,
+        first: usize,
+        (positions, position): (&mut HashMap<egui::Id, usize>, usize),
+    ) {
+        for id in self.controls.drain(..) {
+            positions.remove(&id);
+        }
+        self.controls = ui.ctx().viewport(|v| {
+            v.this_pass
+                .widgets
+                .get_layer(ui.layer_id())
+                .skip(first)
+                .filter(|w| w.enabled && w.sense.is_focusable())
+                .map(|w| w.id)
+                .collect()
+        });
+        self.focusable = !self.controls.is_empty();
+        positions.extend(self.controls.iter().map(|&id| (id, position)));
+    }
     /// Retain exact measured geometry, returning only changed native dimensions.
     fn resize(&mut self, width: f32, height: f32, dirty: bool) -> Option<(egui::Id, egui::Vec2)> {
         if !dirty && self.height.to_bits() == height.to_bits() {
@@ -256,7 +364,7 @@ fn draw_row(
     let _scope = host.enter_reading_container(container, Some(id), Some(origin))?;
     let mut child = ui.new_child(
         egui::UiBuilder::new()
-            .id_salt(id)
+            .id(id)
             .max_rect(egui::Rect::from_min_size(
                 origin,
                 egui::vec2(width, f32::INFINITY),
@@ -286,4 +394,62 @@ fn content() -> Rc<ReadingContent> {
             })
         }),
     })
+}
+
+/// Commit emitted paint, hit rectangles and native apertures at the same final transform.
+fn commit_geometry(
+    context: &egui::Context,
+    layer: egui::LayerId,
+    transform: egui::emath::TSTransform,
+    viewport: egui::Rect,
+) -> Vec<egui::Rect> {
+    let clip = transform.inverse().mul_rect(viewport);
+    context.set_transform_layer(layer, transform);
+    context.graphics_mut(|graphics| {
+        let paint = graphics.entry(layer);
+        let end = paint.next_idx().0;
+        for index in 0..end {
+            paint.mutate_shape(egui::layers::ShapeIdx(index), |shape| {
+                shape.clip_rect = shape.clip_rect.intersect(clip);
+            });
+        }
+    });
+    let widgets = context.viewport(|v| {
+        v.this_pass
+            .widgets
+            .get_layer(layer)
+            .copied()
+            .collect::<Vec<_>>()
+    });
+    let mut apertures = vec![];
+    for widget in widgets {
+        if let Some(mut response) = context.read_response(widget.id) {
+            response.interact_rect = widget.interact_rect.intersect(clip);
+            if widget.enabled && widget.sense.senses_click() && response.interact_rect.is_positive()
+            {
+                apertures.push(transform.mul_rect(response.interact_rect));
+            }
+            let _ = response.interact(widget.sense);
+        }
+    }
+    apertures
+}
+
+/// Collect row paint without culling at the old scroll offset, but admit input only inside the viewport.
+fn canvas_rows(ui: &mut egui::Ui, id: egui::Id, rect: egui::Rect) -> (egui::Ui, egui::Id) {
+    let layer = egui::LayerId::new(ui.layer_id().order, id.with("canvas"));
+    let parent = ui
+        .ctx()
+        .layer_transform_to_global(ui.layer_id())
+        .unwrap_or_default();
+    ui.ctx().set_sublayer(ui.layer_id(), layer);
+    ui.ctx().set_transform_layer(layer, parent);
+    let input_clip = attachment_content::reading::controls::set_pointer_clip(
+        ui.ctx(),
+        layer,
+        parent.mul_rect(rect.intersect(ui.clip_rect())),
+    );
+    let mut rows = ui.new_child(egui::UiBuilder::new().layer_id(layer).max_rect(rect));
+    rows.set_clip_rect(egui::Rect::EVERYTHING);
+    (rows, input_clip)
 }

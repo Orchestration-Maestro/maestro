@@ -40,10 +40,7 @@ pub async fn transcript_native_ancestors_admit_canvas_copy_pointer() {
     interface.set_session(Some(agent)).unwrap();
     draw(&scene, &mut interface, &i18n);
     draw(&scene, &mut interface, &i18n);
-    let saved = js(
-        &JsValue::NULL,
-        "globalThis.transcriptPointers=[];globalThis.transcriptCopies=[];const canvas=document.getElementById('canvas');globalThis.transcriptCapture=e=>transcriptPointers.push([e.clientX,e.clientY,e.type==='pointerdown']);canvas.addEventListener('pointerdown',transcriptCapture);canvas.addEventListener('pointerup',transcriptCapture);const saved=Object.getOwnPropertyDescriptor(navigator,'clipboard');Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText(text){transcriptCopies.push(text);return Promise.resolve()}}});return saved",
-    );
+    let saved = capture();
     let promise = js(
         &JsValue::NULL,
         "const r=document.querySelector('.maestro-transcript .control-slot').getBoundingClientRect();globalThis.transcriptHit=document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)===document.getElementById('canvas');console.log('APERTURE-ROOT '+transcriptHit);return globalThis.transcriptPointer()",
@@ -54,10 +51,7 @@ pub async fn transcript_native_ancestors_admit_canvas_copy_pointer() {
     deliver_pointer(&scene, &mut interface, &i18n);
     let copied = js(&JsValue::NULL, "return transcriptCopies.join('|')");
     let admitted = js(&JsValue::NULL, "return transcriptHit");
-    js(
-        &saved,
-        "const canvas=document.getElementById('canvas');canvas.removeEventListener('pointerdown',transcriptCapture);canvas.removeEventListener('pointerup',transcriptCapture);if(value)Object.defineProperty(navigator,'clipboard',value);else delete navigator.clipboard",
-    );
+    release(&saved);
     assert_eq!(
         admitted.as_bool(),
         Some(true),
@@ -70,17 +64,47 @@ pub async fn transcript_native_ancestors_admit_canvas_copy_pointer() {
 }
 
 /// Feed only the pointer endpoints the actual canvas received.
-fn deliver_pointer(scene: &Slots, interface: &mut AgentInterface, i18n: &I18n) {
-    let events = js(&JsValue::NULL, "return JSON.stringify(transcriptPointers)")
-        .as_string()
-        .unwrap();
-    let events: Vec<(f32, f32, bool)> = serde_json::from_str(&events).unwrap();
-    for (x, y, pressed) in events {
+pub(crate) fn deliver_pointer(scene: &Slots, interface: &mut AgentInterface, i18n: &I18n) {
+    for events in events() {
         draw_frame(
             scene,
             interface,
             i18n,
             egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800., 180.)),
+            events,
+        )
+        .unwrap()
+        .textures_delta
+        .clear();
+    }
+}
+
+/// Capture real canvas endpoints and clipboard writes for aggregate witnesses.
+pub(crate) fn capture() -> JsValue {
+    js(
+        &JsValue::NULL,
+        "globalThis.transcriptPointers=[];globalThis.transcriptCopies=[];const canvas=document.getElementById('canvas');globalThis.transcriptCapture=e=>transcriptPointers.push([e.clientX,e.clientY,e.type==='pointerdown']);canvas.addEventListener('pointerdown',transcriptCapture);canvas.addEventListener('pointerup',transcriptCapture);const saved=Object.getOwnPropertyDescriptor(navigator,'clipboard');Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText(text){transcriptCopies.push(text);return Promise.resolve()}}});return saved",
+    )
+}
+/// Restore platform effects and listeners after a pointer witness.
+pub(crate) fn release(saved: &JsValue) {
+    js(
+        saved,
+        "const canvas=document.getElementById('canvas');canvas.removeEventListener('pointerdown',transcriptCapture);canvas.removeEventListener('pointerup',transcriptCapture);if(value)Object.defineProperty(navigator,'clipboard',value);else delete navigator.clipboard;delete globalThis.transcriptTarget",
+    );
+}
+
+/// Convert only endpoints received by the actual canvas into toolkit events.
+pub(crate) fn events() -> Vec<Vec<egui::Event>> {
+    let events: Vec<(f32, f32, bool)> = serde_json::from_str(
+        &js(&JsValue::NULL, "return JSON.stringify(transcriptPointers)")
+            .as_string()
+            .unwrap(),
+    )
+    .unwrap();
+    events
+        .into_iter()
+        .map(|(x, y, pressed)| {
             vec![
                 egui::Event::PointerMoved(egui::pos2(x, y)),
                 egui::Event::PointerButton {
@@ -89,10 +113,14 @@ fn deliver_pointer(scene: &Slots, interface: &mut AgentInterface, i18n: &I18n) {
                     pressed,
                     modifiers: egui::Modifiers::NONE,
                 },
-            ],
-        )
-        .unwrap()
-        .textures_delta
-        .clear();
-    }
+            ]
+        })
+        .collect()
+}
+/// Drive one real gesture through the existing browser driver's endpoint.
+pub(crate) async fn click() {
+    let promise = js(&JsValue::NULL, "return globalThis.transcriptPointer()");
+    wasm_bindgen_futures::JsFuture::from(js_sys::Promise::from(promise))
+        .await
+        .unwrap();
 }

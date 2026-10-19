@@ -145,7 +145,10 @@ impl ExpandableSection {
             "ChevronRight"
         })
         .map_err(ToolUiError::Control)?;
-        let role = if ui.rect_contains_pointer(row.response.rect) {
+        let role = if browser::attachment_content::reading::controls::rect_contains_pointer(
+            ui,
+            row.response.rect,
+        ) {
             "text"
         } else {
             "muted"

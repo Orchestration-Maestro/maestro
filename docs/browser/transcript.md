@@ -107,9 +107,14 @@ remain errors in the Agent's terminal assistant outcome, not successful empty
 requests. Disabled proxy settings skip the URL read, including its failures.
 
 The containing native viewport keeps every row's text attached while clean scroll
-frames draw only intersecting canvas rows. Frame placement is republished when
-rendered, including after canvas movement; presentation changes also reconcile
-offscreen native rows. A history refresh prepares the result
+frames draw intersecting canvas rows. While keyboard focus is in the transcript,
+it also admits the focused row and its nearest known focusable neighbours: at
+most three extra rows, still painted only inside the viewport. Each row records
+its focusable controls when drawn; an undrawn row is not yet known to be
+focusable. Initial reconciliation draws every row. Explicit row identities keep
+control identity independent of which preceding rows were culled.
+Each rendered frame republishes placement, including after canvas movement;
+presentation changes also reconcile offscreen native rows. A history refresh prepares the result
 index once for both stable and streaming rows. Native resize notifications identify
 the affected positional slot; offscreen image growth updates its height before
 later rows are revealed. Rows use their planned canvas origin while native slot
@@ -126,6 +131,9 @@ a distance below 10 pixels enables it again. Equality at either boundary does no
 cross it. A smaller viewport height updates the remembered height without changing
 the remembered top or follow preference. All observations retain fractional values.
 A later publication preserves a reader scroll made after programmatic following.
+After changed row sizes are published, the transcript reads the final native
+scroll offset and commits its canvas transform, paint clipping and hit rectangles
+before returning the frame. Each admitted recipe runs once.
 
 ## Contained native reading
 
@@ -135,10 +143,11 @@ while drawing its children. Its optional canvas origin places a child against th
 planned row position before new native slot heights are published. Without that
 operand, placement uses the slot's current native bounds. The containing viewport
 supplies scrolling and clipping; contained reading bodies do not add independent
-scrollers. Child canvas-control apertures are also published on the containing
-frame through `take_reading_apertures`, so native ancestors do not intercept
-canvas pointer events. Standalone reading views keep their existing fixed frames
-and bounded viewports.
+scrollers. The transcript derives containing-frame apertures from its enabled
+clickable toolkit widgets, clipped at the final scroll position. Tiles and reading
+controls need no separate aperture registration. Non-clickable text keeps native
+selection and scrolling. Standalone reading views keep their existing fixed
+frames and bounded viewports.
 
 On browser hosts, `resize_reading_slots` grows or truncates positional slots without
 replacing the containing root or untouched slots. Its factory receives the actual

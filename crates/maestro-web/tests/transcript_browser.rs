@@ -433,4 +433,7 @@ mod actions;
 #[path = "transcript_browser/invalidation.rs"]
 mod invalidation;
 #[path = "transcript_browser/pointer.rs"]
-mod pointer;
+pub(crate) mod pointer;
+
+#[path = "transcript_browser/transaction.rs"]
+pub(crate) mod transaction;

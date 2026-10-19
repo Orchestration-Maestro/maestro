@@ -141,14 +141,27 @@ pub(crate) fn draw_in_rect(
     })
 }
 /// Return the painted frame after delivering actual canvas pointer events.
-pub(super) fn draw_frame(
+pub(crate) fn draw_frame(
     scene: &Slots,
     interface: &mut AgentInterface,
     i18n: &I18n,
     rect: egui::Rect,
     events: Vec<egui::Event>,
 ) -> Result<egui::FullOutput, ToolUiError> {
+    let (output, overlays) = draw_frame_with_overlays(scene, interface, i18n, rect, events)?;
+    assert!(overlays.is_empty());
+    Ok(output)
+}
+/// Return opened overlays without dropping them inside the drawing closure.
+pub(super) fn draw_frame_with_overlays(
+    scene: &Slots,
+    interface: &mut AgentInterface,
+    i18n: &I18n,
+    rect: egui::Rect,
+    events: Vec<egui::Event>,
+) -> Result<(egui::FullOutput, Vec<maestro_web::AttachmentOverlay>), ToolUiError> {
     let mut response = Ok(());
+    let mut overlays = vec![];
     let host: Rc<dyn maestro_web::browser::attachment_content::AttachmentHost> = scene.host.clone();
     let p = scene.pack.presentation(scene.mode).unwrap();
     let mut output = scene.context.run_ui(
@@ -168,12 +181,12 @@ pub(super) fn draw_frame(
                     None,
                 ),
             );
-            assert!(output.overlays.is_empty());
+            overlays = output.overlays;
             response = output.response.map(|_| ());
         },
     );
     match response {
-        Ok(()) => Ok(output),
+        Ok(()) => Ok((output, overlays)),
         Err(error) => {
             output.textures_delta.clear();
             Err(error)

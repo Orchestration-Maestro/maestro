@@ -380,3 +380,6 @@ fn partial_text(event: &AgentEvent<BrowserMessages<NoCustomMessages>>) -> String
         _ => String::new(),
     }
 }
+
+#[path = "transcript_session/follow.rs"]
+mod follow;
