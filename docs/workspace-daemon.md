@@ -236,3 +236,24 @@ records outcomes under the supplied catalog folder. `auto_update` reloads the
 supplied cache after a commit, before invoking the result callback. Daemon path
 composition, scheduling, offline admission and the catalog-check setting remain
 with the daemon caller.
+
+## Input model
+
+`maestro-daemon::input` owns decoded keys, committed text and host input events.
+It reuses the protocol's key codes, phases and source records. A key keeps native
+Windows evidence or raw VT bytes separately from its canonical phase. Release
+builders clear generated text and reset grouped repetition to one without
+rewriting that evidence.
+
+`TerminalKey::as_key_event` supplies a semantic-only view: code, modifiers and
+phase, with a synthesized source and no generated text. Moving a key into a
+`ClientInputEvent` preserves its transport metadata. The wire has no shifted
+code-point field; that value stays local. Ingress masks unknown modifier bits,
+uses the wire repeat count over the native record's count and normalizes releases
+last. A non-key event returns unchanged to its routing caller.
+
+`input::mouse` accepts supplied host geometry without reading the terminal.
+Host pixel coordinates are one-based; cells and pane rectangles are zero-based.
+Pane pixel results are one-based and scaled with integer arithmetic. Report
+parsing requires a complete numeric SGR report. Relocation preserves the button
+text and terminator without imposing parsing's stricter numeric validation.
