@@ -134,7 +134,7 @@ fn terminal_input_get_kitty_keyboard_flags() {
 }
 
 #[test]
-fn terminal_input_get_modify_other_keys() {
+fn extended_key_queries_follow_mode_two() {
     let mut t = Terminal::new(80, 24, 0).unwrap();
     assert!(!t.modify_other_keys_enabled());
     t.write(b"\x1b[>4;2m");

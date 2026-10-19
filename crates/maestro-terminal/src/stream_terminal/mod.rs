@@ -2,6 +2,7 @@
 
 mod cursor;
 mod modes;
+mod replies;
 mod write;
 pub(crate) use write::WriteState;
 
@@ -9,14 +10,14 @@ use crate::{
     Terminal,
     stream::{
         Action, CharsetAction, CursorAction, EditAction, EraseAction, KeyboardAction, ModeAction,
-        OscAction, PayloadAction, ProtectionAction, QueryAction, TabAction,
+        OscAction, PayloadAction, ProtectionAction, TabAction,
     },
 };
 
 /// Terminal consumer with retained cursor appearance defaults.
 ///
-/// Applies screen state synchronously and consumes queries without replies.
-/// Bells, external commands and application payloads have no external effects.
+/// Applies screen state synchronously and captures replies and bells for draining.
+/// Application payload execution remains separate from the byte consumer.
 /// Each storage refusal ends only the current action; later input remains usable.
 pub struct Handler<'a> {
     /// Terminal updated by each callback.
@@ -56,7 +57,7 @@ impl crate::stream::Handler for Handler<'_> {
             Action::Charset(action) => self.charset(action),
             Action::Protection(action) => self.protection(action),
             Action::Osc(action) => self.osc(action),
-            Action::Query(action) => Self::query(action),
+            Action::Query(action) => self.query(action),
             Action::Payload(action) => Self::payload(&action),
             Action::SetAttribute(attr) => {
                 let _ = self.terminal.set_attribute(attr);
@@ -83,8 +84,10 @@ impl crate::stream::Handler for Handler<'_> {
                 .terminal
                 .set_left_and_right_margin(usize::from(top_left), usize::from(bottom_right)),
             Action::LeftAndRightMarginAmbiguous => self.margin_or_save(),
-            // Readonly consumers have no bell effect.
-            Action::Bell => {}
+            Action::Bell => {
+                let count = &mut self.terminal.effects.bell_count;
+                *count = count.saturating_add(1);
+            }
         }
     }
 }
@@ -273,22 +276,6 @@ impl Handler<'_> {
             | OscAction::ReportPwd(_)
             | OscAction::ColorOperation { .. }
             | OscAction::KittyColorReport(_) => {}
-        }
-    }
-
-    /// Consume queries without producing external effects in the readonly handler.
-    fn query(action: QueryAction) {
-        match action {
-            QueryAction::Enquiry
-            | QueryAction::DeviceAttributes(_)
-            | QueryAction::RequestMode(_)
-            | QueryAction::RequestModeUnknown(_)
-            | QueryAction::KittyKeyboardQuery
-            | QueryAction::DeviceStatus(_)
-            | QueryAction::Xtversion
-            | QueryAction::SizeReport(_)
-            | QueryAction::TitlePush(_)
-            | QueryAction::TitlePop(_) => {}
         }
     }
 

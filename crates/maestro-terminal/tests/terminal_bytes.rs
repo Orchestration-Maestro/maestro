@@ -527,3 +527,81 @@ fn byte_writes_preserve_corrected_erase_and_prompt_owners() {
     t.write(b"\x1bc");
     assert_eq!(row(&t, 0).semantic_prompt(), SemanticPrompt::None);
 }
+
+#[test]
+fn terminal_bytes_bell_effects_are_drained() {
+    let mut t = Terminal::new(10, 3, 0).unwrap();
+    t.write(b"\x07hello\x07");
+    assert_eq!(t.take_bell_count(), 2);
+    assert_eq!(t.take_bell_count(), 0);
+    t.write(&vec![7; 65_536]);
+    assert_eq!(t.take_bell_count(), u16::MAX);
+    assert!(t.take_pty_reply().is_empty());
+    assert!(t.take_pwd_changes().is_empty());
+    assert!(t.take_clipboard_writes().is_empty());
+}
+
+#[test]
+fn terminal_bytes_device_replies_are_queued_in_order() {
+    let mut t = Terminal::new(80, 24, 0).unwrap();
+    t.write(b"\x05\x1b[5n\x1b[c\x1b[>c\x1b[=c\x1b[>q");
+    assert_eq!(
+        t.take_pty_reply(),
+        b"\x1b[0n\x1b[?62;22c\x1b[>1;0;0c\x1bP!|00000000\x1b\\\x1bP>|libghostty\x1b\\"
+    );
+    assert!(t.take_pty_reply().is_empty());
+}
+
+#[test]
+fn terminal_bytes_cursor_report_respects_origin() {
+    let mut t = Terminal::new(80, 24, 0).unwrap();
+    t.write(b"\x1b[4;8H\x1b[6n");
+    assert_eq!(t.take_pty_reply(), b"\x1b[4;8R");
+    t.write(b"\x1b[3;20r\x1b[?6h\x1b[4;8H\x1b[6n");
+    assert_eq!(t.take_pty_reply(), b"\x1b[4;8R");
+}
+
+#[test]
+fn terminal_bytes_mode_reports_preserve_namespaces() {
+    let mut t = Terminal::new(80, 24, 0).unwrap();
+    t.write(b"\x1b[4h\x1b[4$p\x1b[?7l\x1b[?7$p\x1b[1234$p\x1b[?1234$p");
+    assert_eq!(
+        t.take_pty_reply(),
+        b"\x1b[4;1$y\x1b[?7;2$y\x1b[1234;0$y\x1b[?1234;0$y"
+    );
+}
+
+#[test]
+fn terminal_bytes_keyboard_query_tracks_active_flags() {
+    let mut t = Terminal::new(80, 24, 0).unwrap();
+    t.write(b"\x1b[?u\x1b[>31u\x1b[?u\x1b[<u\x1b[?u");
+    assert_eq!(t.take_pty_reply(), b"\x1b[?0u\x1b[?31u\x1b[?0u");
+}
+
+#[test]
+fn terminal_bytes_size_report_csi_21_t_title() {
+    let mut t = Terminal::new(80, 24, 0).unwrap();
+    t.set_title(b"stored title");
+    t.write(b"\x1b[21t");
+    assert_eq!(t.take_pty_reply(), b"\x1b]lstored title\x1b\\");
+    t.set_title(b"");
+    t.write(b"\x1b[21t");
+    assert_eq!(t.take_pty_reply(), b"\x1b]l\x1b\\");
+}
+
+#[test]
+fn terminal_bytes_color_scheme_queries() {
+    use maestro_terminal::device_status::ColorScheme;
+    let mut t = Terminal::new(80, 24, 0).unwrap();
+    t.write(b"\x1b[?996n");
+    assert!(t.take_pty_reply().is_empty());
+    t.set_color_scheme(Some(ColorScheme::Dark));
+    t.write(b"\x1b[?996n");
+    assert_eq!(t.take_pty_reply(), b"\x1b[?997;1n");
+    t.set_color_scheme(Some(ColorScheme::Light));
+    t.write(b"\x1b[?996n");
+    assert_eq!(t.take_pty_reply(), b"\x1b[?997;2n");
+    t.set_color_scheme(None);
+    t.write(b"\x1b[?996n");
+    assert!(t.take_pty_reply().is_empty());
+}

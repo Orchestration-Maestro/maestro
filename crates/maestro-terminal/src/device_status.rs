@@ -21,3 +21,32 @@ pub fn req_from_int(value: u16, question: bool) -> Option<Request> {
         _ => None,
     }
 }
+
+/// Caller-selected terminal colour scheme.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ColorScheme {
+    /// Light background.
+    Light,
+    /// Dark background.
+    Dark,
+}
+
+impl ColorScheme {
+    /// Encode the colour-scheme status report.
+    ///
+    /// # Errors
+    /// Returns the writer's original error on failure.
+    pub fn encode<W: std::io::Write>(self, writer: &mut W) -> std::io::Result<()> {
+        writer.write_all(match self {
+            Self::Dark => b"\x1b[?997;1n",
+            Self::Light => b"\x1b[?997;2n",
+        })
+    }
+}
+
+impl crate::Terminal {
+    /// Set the scheme used to answer colour-scheme queries; `None` suppresses replies.
+    pub fn set_color_scheme(&mut self, scheme: Option<ColorScheme>) {
+        self.color_scheme = scheme;
+    }
+}

@@ -153,3 +153,5 @@ mod terminal_input;
 
 mod stream_links;
 mod stream_tracked_rows;
+
+mod device_attributes;

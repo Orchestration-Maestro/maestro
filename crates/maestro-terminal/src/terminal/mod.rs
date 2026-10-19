@@ -125,6 +125,10 @@ impl Default for Flags {
 
 /// Retained terminal screens with direct text and cursor operations.
 pub struct Terminal {
+    /// Caller-selected scheme for status reports.
+    pub(crate) color_scheme: Option<crate::device_status::ColorScheme>,
+    /// Pending effects captured by the byte consumer.
+    pub(crate) effects: crate::effects::Effects,
     /// Screen storage and selection.
     pub screens: ScreenSet,
     /// Current, saved and reset-default mode values.
@@ -174,6 +178,8 @@ impl Terminal {
         modes.set(Mode::GraphemeCluster, true);
         modes.defaults[Mode::GraphemeCluster as usize] = true;
         Ok(Self {
+            color_scheme: None,
+            effects: crate::effects::Effects::default(),
             screens: ScreenSet::init(opts),
             modes,
             flags: Flags::default(),

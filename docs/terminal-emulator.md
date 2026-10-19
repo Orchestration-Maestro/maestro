@@ -404,8 +404,20 @@ action, not later input. `mouse_tracking_enabled` reads the tracking mode bits;
 `modify_other_keys_enabled` reads numeric extended modifier-key mode. Tracking
 bits and the selected mouse event or format remain independent.
 
-Query and window requests are observable as typed stream actions, but replies
-and external effects are not delivered yet. OSC title, directory, colour and
-clipboard effects, bells and APC routing are pending; image execution is also
-pending. The terminal handler consumes DCS without changing the screen. These
-pending effects do not prevent decoding subsequent input.
+Query and window requests are observable as typed stream actions. OSC title,
+directory, colour and clipboard effects, APC routing and image execution are
+pending. The terminal handler consumes DCS without changing the screen. Input
+decoding continues after these commands.
+
+## Replies and effects
+
+After `Terminal::write`, drain `take_pty_reply`, `take_bell_count`,
+`take_pwd_changes` and `take_clipboard_writes`. Each drain clears only its own
+queue. Replies concatenate in input order; bells saturate at `u16::MAX`.
+
+The byte consumer answers operating-status, cursor-position, device-attribute,
+version, mode, keyboard-protocol and title queries. Cursor reports are relative
+to the scrolling origin when origin mode is enabled. Title reports use the stored
+title, including an empty title. The default enquiry answer is empty.
+`set_color_scheme` selects light or dark status replies; `None` suppresses them.
+Directory and clipboard capture are not connected yet.
