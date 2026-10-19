@@ -175,6 +175,8 @@ pub fn unused_diffs() -> Vec<UnusedDiff> {
 pub mod browser;
 #[cfg(target_arch = "wasm32")]
 pub mod ownership;
+#[cfg(target_arch = "wasm32")]
+pub mod pills;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -242,3 +244,7 @@ pub struct Part {
 pub fn diff_cases() -> Vec<DiffCase> {
     serde_json::from_str(include_str!("../fixtures/artifact_diff_views.json")).unwrap()
 }
+#[cfg(target_arch = "wasm32")]
+pub mod diff;
+#[cfg(target_arch = "wasm32")]
+pub mod lifecycle;

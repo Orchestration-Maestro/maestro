@@ -1,0 +1,36 @@
+[
+  {
+    "supplied": false,
+    "expected": {
+      "filename": "literal <&> 雪.html",
+      "calls": [],
+      "bubbled": 1,
+      "prevented": false,
+      "pointer": false,
+      "nested": {
+        "initiallyCollapsed": true,
+        "collapsedAfterPill": false,
+        "calls": []
+      }
+    }
+  },
+  {
+    "supplied": true,
+    "expected": {
+      "filename": "literal <&> 雪.html",
+      "calls": [
+        "literal <&> 雪.html"
+      ],
+      "bubbled": 0,
+      "prevented": true,
+      "pointer": true,
+      "nested": {
+        "initiallyCollapsed": true,
+        "collapsedAfterPill": true,
+        "calls": [
+          "literal <&> 雪.html"
+        ]
+      }
+    }
+  }
+]

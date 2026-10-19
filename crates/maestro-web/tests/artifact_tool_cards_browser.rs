@@ -53,3 +53,35 @@ pub fn artifact_diffs_keep_ordered_runs_prefixes_and_line_endings() {
 pub fn artifact_recipes_own_selected_inputs_and_panel_handles() {
     crate::artifact_card_support::ownership::run();
 }
+
+#[wasm_bindgen]
+pub fn artifact_pills_open_existing_files_without_toggling_details() {
+    crate::artifact_card_support::pills::actions();
+}
+
+#[wasm_bindgen]
+pub fn artifact_pills_keep_literal_filenames_and_native_selection() {
+    crate::artifact_card_support::pills::literal();
+}
+
+#[wasm_bindgen]
+pub fn artifact_diff_direct_calls_keep_title_counts_and_class() {
+    crate::artifact_card_support::diff::run();
+}
+
+#[wasm_bindgen]
+pub async fn artifact_cards_localize_captions_without_editing_file_data() {
+    cards::localized().await;
+}
+
+#[wasm_bindgen]
+pub fn artifact_disclosures_keep_children_through_reversals_and_updates() {
+    crate::artifact_card_support::lifecycle::templates();
+    crate::artifact_card_support::lifecycle::reversals();
+    crate::artifact_card_support::lifecycle::shared_headers();
+}
+
+#[wasm_bindgen]
+pub fn artifact_views_release_only_removed_children() {
+    crate::artifact_card_support::lifecycle::release();
+}

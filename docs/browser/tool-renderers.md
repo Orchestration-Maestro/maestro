@@ -199,11 +199,13 @@ The ordinary outer tool card remains in use.
 
 A filename pill captures its literal filename and panel during preparation.
 With a panel, its action consumes the click and opens an existing artifact;
-unknown filenames do not change selection. Without a panel, the pill is passive.
+unknown filenames do not change selection. Without a panel, clicking the pill
+activates its containing disclosure.
 The standalone `artifact_pill` helper uses the same retained native filename
 owner. Formatted non-string fields are display-only, never artifact identities.
 
 `components::diff::diff` accepts literal old/new text, an optional title and
 caller-supplied native CSS classes through `DiffProps`. The optional header shows
-added/removed line counts. Its selectable rows preserve line order and carriage
-returns, with a local scrolling body capped at 384 CSS pixels.
+added/removed line counts in the selected success/error colors. Its selectable
+rows preserve line order and carriage returns, with a local scrolling body capped
+at 384 CSS pixels.

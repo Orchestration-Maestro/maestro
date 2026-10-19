@@ -26,3 +26,5 @@
 }
 .maestro-diff-added { background: color-mix(in srgb, var(--maestro-color-success) 15%, transparent); }
 .maestro-diff-removed { background: color-mix(in srgb, var(--maestro-color-error) 15%, transparent); }
+.maestro-diff-added-count { color: var(--maestro-color-success); }
+.maestro-diff-removed-count { color: var(--maestro-color-error); }

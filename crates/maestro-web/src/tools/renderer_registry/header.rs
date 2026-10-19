@@ -108,6 +108,8 @@ struct Header {
 /// State of one continuously mounted header.
 #[derive(Default)]
 struct Retained {
+    /// Plain template identity; collapsible headers share one template across statuses.
+    plain_state: Option<ToolHeaderState>,
     /// Stable button identity for this retained header state.
     button_id: Option<egui::Id>,
     /// Start of the current pending interval.
@@ -128,6 +130,14 @@ impl ToolContent for Header {
     ) -> ToolContentOutput {
         let slot = state.state::<Retained>();
         let mut retained = std::mem::take(&mut *slot.borrow_mut());
+        let plain_state = self.expanded.is_none().then_some(self.state);
+        if plain_state.is_some()
+            && retained.plain_state.is_some()
+            && retained.plain_state != plain_state
+        {
+            retained = Retained::default();
+        }
+        retained.plain_state = plain_state;
         let time = ui.input(|input| input.time);
         let angle = if self.state == ToolHeaderState::Inprogress {
             let start = *retained.pending_since.get_or_insert(time);

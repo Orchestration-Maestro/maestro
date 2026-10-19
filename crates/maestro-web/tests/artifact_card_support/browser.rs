@@ -218,3 +218,20 @@ pub fn diffs() {
         check("document.querySelector('.maestro-diff')===null");
     }
 }
+
+/// Observe translated captions while retaining literal filenames and body data.
+/// # Panics
+/// Panics if a recorded translated branch differs.
+pub async fn localized() {
+    let rows: Vec<Row> =
+        serde_json::from_str(include_str!("../fixtures/artifact_localized.json")).unwrap();
+    assert_eq!(rows.len(), 21);
+    let mut surface = Surface::new();
+    for row in rows {
+        surface
+            .i18n
+            .set_language(row.input.language.as_deref().unwrap())
+            .unwrap();
+        observe(&mut surface, &super::prepare(&row).unwrap(), &row.expected).await;
+    }
+}

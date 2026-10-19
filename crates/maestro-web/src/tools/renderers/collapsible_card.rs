@@ -122,7 +122,7 @@ struct BodyState {
 }
 impl BodyState {
     /// Create a collapsed subtree using the shared placement owner.
-    fn new(_phase: Phase, view: ToolRenderView<'_>) -> Self {
+    fn new(view: ToolRenderView<'_>) -> Self {
         Self {
             expanded: Rc::new(Cell::new(false)),
             transition: Transition::new([0., 0.]),
@@ -216,7 +216,7 @@ impl CollapsibleCard {
         if retained.phase != phase {
             retained.phase = phase;
             retained.header = ToolRendererState::default();
-            retained.body = self.body.as_ref().map(|b| BodyState::new(b.phase, view));
+            retained.body = self.body.as_ref().map(|_| BodyState::new(view));
         }
         let glyph = attachment_content::glyph_node(self.glyph).map_err(ToolUiError::Control)?;
         let caption = self
