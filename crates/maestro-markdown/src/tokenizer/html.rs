@@ -299,9 +299,11 @@ fn append_tag(output: &mut String, tag: &str) {
     }
 }
 
-/// Hide caller-escaped angle delimiters only in the emphasis mask's coordinate space.
-pub(super) fn literal_mask(source: &str) -> String {
+/// Hide caller-escaped angle delimiters only in the emphasis mask's coordinate space, with
+/// the spans the scan consumed whole.
+pub(super) fn literal_mask(source: &str) -> (String, Vec<std::ops::Range<usize>>) {
     let mut bytes = source.as_bytes().to_vec();
+    let mut spans = Vec::new();
     let mut cursor = 0;
     while let Some(relative) = source[cursor..].find('<') {
         let start = cursor + relative;
@@ -310,6 +312,7 @@ pub(super) fn literal_mask(source: &str) -> String {
             .and_then(|rule| rule.find(&source[start..]))
         {
             cursor = start + angle.end();
+            spans.push(start..cursor);
             continue;
         }
         match literal(&source[start..]) {
@@ -328,11 +331,13 @@ pub(super) fn literal_mask(source: &str) -> String {
             }
             _ => cursor = start + 1,
         }
+        spans.push(start..cursor);
     }
     for (offset, scalar) in source.char_indices() {
         if scalar == '<' && matches!(literal(&source[offset..]), Some(Literal::Bare)) {
             bytes[offset] = b'a';
         }
     }
-    String::from_utf8(bytes).unwrap_or_else(|_| source.to_owned())
+    let masked = String::from_utf8(bytes).unwrap_or_else(|_| source.to_owned());
+    (masked, spans)
 }

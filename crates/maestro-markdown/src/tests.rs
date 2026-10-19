@@ -218,6 +218,91 @@ fn mapped_link_source_ranges_use_ordered_boundaries() {
     assert!(counts[2].source_examinations < 3 * counts[1].source_examinations);
 }
 
+/// A caller block from `open` through the next `close`.
+struct Delimited(&'static str, &'static str);
+impl crate::BlockTokenizer for Delimited {
+    fn start(&self, source: &str) -> Option<usize> {
+        source.find(self.0)
+    }
+    fn tokenize(&mut self, source: &str) -> Option<crate::BlockToken> {
+        let rest = source.strip_prefix(self.0)?;
+        let end = self.0.len() + rest.find(self.1)? + self.1.len();
+        Some(crate::BlockToken {
+            raw: source[..end].to_owned(),
+            kind: "block".to_owned(),
+            text: String::new(),
+        })
+    }
+}
+
+/// Paragraph text and caller blocks in document order.
+fn hinted_blocks(source: &str, options: crate::MarkedOptions, mut block: Delimited) -> Vec<String> {
+    let document =
+        crate::parse_with_tokenizer(source.to_owned(), options, Some(&mut block)).unwrap();
+    document
+        .nodes
+        .iter()
+        .filter_map(|node| match node.kind {
+            Kind::Paragraph(_) => Some(node.authored.trim_end().to_owned()),
+            Kind::CustomBlock(..) => Some(format!("block {}", node.authored)),
+            _ => None,
+        })
+        .collect()
+}
+
+#[test]
+fn display_hint_barriers_are_scanned_once_per_block_source() {
+    let counts = [32, 64].map(|count| {
+        WORK.with_borrow_mut(|work| *work = Work::default());
+        let source = "ordinary paragraph\n\n".repeat(count) + "$$x$$\n";
+        let options = crate::MarkedOptions::Browser { escape_html: true };
+        let blocks = hinted_blocks(&source, options, Delimited("$$", "$$"));
+        assert_eq!(blocks.len(), count + 1);
+        assert_eq!(blocks.last().map(String::as_str), Some("block $$x$$"));
+        WORK.with_borrow(|work| *work)
+    });
+    eprintln!("display hint N/2N work={counts:?}");
+    assert!(
+        counts[1].mask_bytes <= 2 * counts[0].mask_bytes,
+        "{counts:?}"
+    );
+}
+
+#[test]
+fn later_paragraphs_see_the_barriers_of_their_own_suffix() {
+    let documentation = crate::MarkedOptions::Documentation;
+    let escaped = crate::MarkedOptions::Browser { escape_html: true };
+    for (source, options, block, expected) in [
+        // A code span of the first paragraph's suffix crosses the next paragraph start.
+        (
+            "`a\n\nb` c `$$x$$` d\n",
+            documentation,
+            Delimited("$$", "$$"),
+            &["`a", "b` c `", "block $$x$$", "` d"][..],
+        ),
+        // The backtick before a paragraph start hides a code span from the earlier suffix.
+        (
+            "p\n\n%%``%%` t\n",
+            documentation,
+            Delimited("%%", "`"),
+            &["p", "block %%`", "`%%` t"][..],
+        ),
+        // An escaped opening tag pairs with an angle past the next paragraph start.
+        (
+            "p <a\n\nq <$$x$$> r\n",
+            escaped,
+            Delimited("$$", "$$"),
+            &["p <a", "q <$$x$$> r"][..],
+        ),
+    ] {
+        assert_eq!(
+            hinted_blocks(source, options, block),
+            expected,
+            "{source:?}"
+        );
+    }
+}
+
 /// The browser's ordinary paragraphs reach the extension's absent-start branch.
 struct NoBlockHint;
 impl crate::BlockTokenizer for NoBlockHint {
