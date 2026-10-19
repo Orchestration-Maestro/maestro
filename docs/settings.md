@@ -324,3 +324,155 @@ Override keys must be canonical detection agent names. Custom tokens start with
 object contains `token` and optional `fg`, `bold` and `dim`; explicit false values
 are retained. Foreground colors accept `#RGB` or `#RRGGBB` and serialize as
 lowercase six-digit hex. Styles belong to each occurrence, not the token name.
+
+### Global workspace projection and reload
+
+`maestro_daemon::settings::io` reads the supplied manager's accepted global
+settings. Workspace preferences never use project values or runtime chat
+overrides. `load_config` consumes startup global errors and returns unrelated
+project errors separately. Read or parse failures emit a structured warning and
+use defaults. `reload_config` waits for queued writes before separating earlier
+errors, awaits the existing manager reload, then applies valid semantic areas.
+Only a new global document failure retains every area and reports `Failed`.
+Warnings or rejected areas report `Partial`; a clean reload reports `Applied`.
+Earlier errors and new project errors are returned for their own reporting path.
+
+The independent areas are onboarding, theme, UI (including sidebar, toast and
+sound), terminal, restore, server, update, advanced, worktrees, experimental and
+remote. A malformed area retains its previous values without blocking valid
+siblings; removed members return to defaults. Required fields reject wrong JSON
+kinds, including positional arrays in place of records. Optional null values
+remain absent. Unknown nested keys produce sorted, deduplicated paths after their
+area decodes successfully; unknown global settings stay silent. Typed projection
+does not rewrite raw values.
+
+The annotated defaults below are available as `settings::DEFAULTS_TEXT`. They
+are a guide, not a separate settings file or a startup write. Optional selections
+are commented out so the host/build default still applies. The guide uses JSONC;
+`settings.json` itself remains JSON.
+
+<!-- workspace-defaults:start -->
+```jsonc
+{
+  // Workspace preferences belong in the global settings.json, not project settings.
+  // Unset optional members stay absent. This guide is not written on startup.
+  "multiplexer": {
+    // Missing onboarding also shows setup; false suppresses it.
+    // "onboarding": true,
+    "theme": {
+      // "name": "catppuccin",
+      "autoSwitch": false
+      // "darkName": "catppuccin",
+      // "lightName": "catppuccin-latte",
+      // "custom": {"panelBg": "reset", "accent": "#f5c2e7"}
+    },
+    // Sidebar width is adjusted to content within these column bounds.
+    "sidebarWidth": 26,
+    "sidebarMinWidth": 18,
+    "sidebarMaxWidth": 36,
+    // Initial collapse applies on launch; compact keeps a narrow status rail.
+    "sidebarStartCollapsed": false,
+    "sidebarCollapsedMode": "compact",
+    "mobileWidthThreshold": 64,
+    // Disable capture to let the terminal handle clicks; pane apps keep their mouse input.
+    "mouseCapture": true,
+    "copyOnSelect": true,
+    // Cursor policy: auto, native or drawn.
+    "hostCursor": "auto",
+    // Empty disables pass-through. Combine ctrl, alt, cmd, meta or hyper with +; no shift.
+    "rightClickPassthroughModifier": "",
+    "redrawOnFocusGained": true,
+    // Missing/null means three lines per notch; explicit counts must be nonzero.
+    // "mouseScrollLines": 3,
+    "confirmClose": true,
+    "promptNewTabName": true,
+    "promptNewWorkspaceName": false,
+    "paneBorders": true,
+    "paneOuterBorders": true,
+    "paneScrollbars": true,
+    "paneGaps": true,
+    "showAgentLabelsOnPaneBorders": false,
+    "hideTabBarWhenSingleTab": false,
+    // Position: top or bottom. Entry types: zoom, hostname, datetime, text, command.
+    "tabBarPosition": "top",
+    "tabBarRight": [],
+    "tabBarRightSeparator": " ",
+    // Empty leaves the outer terminal title alone. Escape braces with {{ and }}.
+    // Tokens: hostname, workspace, tab, pane, terminal_title.
+    "windowTitle": "{hostname}: {workspace}",
+    // Ordering: spaces (also accepts workspaces) or priority; indicators: dots or symbols.
+    "agentPanelSort": "spaces",
+    "statusIndicators": "dots",
+    "sidebar": {
+      "agents": {
+        "rowGap": 0,
+        "rows": [["state_icon", "workspace", "tab"], ["agent"]],
+        // Canonical agent IDs can replace rows for that agent only.
+        "rowsByAgent": {}
+      },
+      "spaces": {
+        "rowGap": 0,
+        "rows": [["state_icon", "workspace"], ["branch", "git_status"]]
+      }
+      // Rows and tokens per row are limited to 16. Custom metadata tokens use $name.
+      // A styled token is an object: {"token":"workspace","fg":"#abc","bold":true}.
+      // Foregrounds accept only #RGB or #RRGGBB; omitted style bits inherit context.
+    },
+    "accent": "cyan",
+    "toast": {
+      // Delivery: off, workspace, terminal or system. Delay range: 0 through 3600 seconds.
+      "delivery": "off",
+      "delaySeconds": 1,
+      "workspace": {"position": "bottom-right"},
+      "clipboard": {"enabled": true, "position": "bottom-center"}
+    },
+    "sound": {
+      "enabled": true,
+      // Optional mp3 paths are relative to the supplied agent directory.
+      // Kind-specific paths override the shared path.
+      // "path": "sounds/notification.mp3",
+      // "donePath": "sounds/done.mp3",
+      // "requestPath": "sounds/request.mp3",
+      // Canonical agent settings: default, on or off. Global false always wins.
+      "agents": {}
+    },
+    "remote": {
+      // Use private connection reuse and keepalive fallbacks after the user's SSH config.
+      // False leaves the user's SSH configuration unchanged.
+      "manageSshConfig": true
+    },
+    "allowNested": false,
+    // Requires a compatible outer terminal.
+    "kittyGraphics": false,
+    // Input-method anchoring is opt-in; an empty agent list applies to any focused pane.
+    "revealHiddenCursorForCjkIme": false,
+    "cjkImeAgents": [],
+    // Shapes: block, steady_block, underline, steady_underline, bar, steady_bar.
+    "cjkImeCursorShape": "steady_block",
+    // Best-effort input-source switching while prefix mode is active on supported hosts.
+    "switchAsciiInputSourceInPrefix": false
+  },
+  "daemon": {
+    // Empty selects the supplied shell, then the platform fallback.
+    "paneShell": "",
+    // Modes: auto, login or non_login. Auto uses login shells on macOS.
+    "paneShellMode": "auto",
+    // Directory policy: follow, home, current or an authored path such as ~/Projects.
+    "newPaneCwd": "follow",
+    "resumeAgentsOnRestore": true,
+    // Unattached terminal size; either zero falls back to the complete default pair.
+    "headlessCols": 120,
+    "headlessRows": 40,
+    "worktreesDirectory": "~/.maestro/worktrees",
+    "scrollbackLimitBytes": 10000000,
+    "paneHistory": false,
+    "detectionCatalogCheck": true
+  },
+  "update": {
+    // Channel defaults to stable, except Windows preview builds use preview.
+    // "channel": "stable",
+    "versionCheck": true
+  }
+}
+```
+<!-- workspace-defaults:end -->

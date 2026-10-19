@@ -46,6 +46,7 @@ stable_deref_trait = { version = "1.2.1", default-features = false, features = [
 syn-7b89eefb6aaa9bf3 = { package = "syn", version = "3.0.6", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
 tinystr = { version = "0.8.4", default-features = false, features = ["alloc", "zerovec"] }
 tokio = { version = "1.53.2", default-features = false, features = ["test-util"] }
+tracing-core = { version = "0.1.36" }
 unicode-width = { version = "0.2.2" }
 writeable = { version = "0.6.4", default-features = false, features = ["alloc"] }
 yoke = { version = "0.8.3", features = ["derive"] }

@@ -20,3 +20,9 @@ pub mod tab_bar;
 
 /// Sidebar row composition and styling.
 pub mod sidebar;
+
+/// Global workspace preference projection and reload.
+pub mod io;
+
+/// Annotated global workspace defaults; optional values remain commented out.
+pub const DEFAULTS_TEXT: &str = include_str!("defaults.jsonc");

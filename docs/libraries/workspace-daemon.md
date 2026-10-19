@@ -84,7 +84,36 @@ Its host-resolved external closure reuses these locked packages:
 |---|---|---|
 | deranged | 0.5.8 | MIT OR Apache-2.0 |
 | num-conv | 0.2.2 | MIT OR Apache-2.0 |
-| powerfmt | 0.2.0 | MIT OR Apache-2.0 |
+| powerfmt | 0.2.1 | MIT OR Apache-2.0 |
 | serde_core | 1.0.229 | MIT OR Apache-2.0 |
 | time | 0.3.55 | MIT OR Apache-2.0 |
 | time-core | 0.1.9 | MIT OR Apache-2.0 |
+
+## Workspace preference diagnostics
+
+The daemon activates its declared settings dependency for global projection and
+reuses `tracing =0.1.44` with defaults disabled and `std` for startup warnings.
+Inherited `serde_json =1.0.151` (`preserve_order`, `float_roundtrip`) is now a normal
+dependency. Unknown-key capture uses the existing Serde visitor interface over
+borrowed JSON values; no parser or ignored-field library is added.
+
+Controlled warning tests use approved `tracing-subscriber =0.3.23` with default
+features and `env-filter` for thread-scoped warning capture.
+The tests drive settings futures with the already-locked `tokio =1.53.2` runtime
+feature. No production runtime is introduced by preference loading.
+
+The subscriber adds these approved locked identities:
+
+| Package | Version | Licence |
+|---|---|---|
+| lazy_static | 1.5.1 | MIT OR Apache-2.0 |
+| matchers | 0.2.0 | MIT |
+| nu-ansi-term | 0.50.3 | MIT |
+| sharded-slab | 0.1.7 | MIT |
+| thread_local | 1.1.10 | MIT OR Apache-2.0 |
+| tracing-log | 0.2.0 | MIT |
+| tracing-subscriber | 0.3.23 | MIT |
+| valuable | 0.1.1 | MIT |
+
+Other selected subscriber dependencies reuse the detection closure above, plus
+`smallvec =1.16.2` (MIT OR Apache-2.0) and `log =0.4.34` (MIT OR Apache-2.0).

@@ -196,14 +196,38 @@ struct RawStyledSidebarToken {
     dim: Option<bool>,
 }
 
-#[derive(Deserialize)]
-#[serde(untagged)]
 /// Plain or styled authored token.
 enum RawSidebarToken {
     /// Unstyled token name.
     Plain(String),
     /// Token name with occurrence styling.
     Styled(RawStyledSidebarToken),
+}
+
+impl<'de> Deserialize<'de> for RawSidebarToken {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        deserializer.deserialize_any(TokenVisitor)
+    }
+}
+
+/// Admit token strings and styled objects, never positional record arrays.
+struct TokenVisitor;
+
+impl<'de> serde::de::Visitor<'de> for TokenVisitor {
+    type Value = RawSidebarToken;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("a token string or styled token object")
+    }
+
+    fn visit_str<E: serde::de::Error>(self, token: &str) -> Result<Self::Value, E> {
+        Ok(RawSidebarToken::Plain(token.to_owned()))
+    }
+
+    fn visit_map<M: serde::de::MapAccess<'de>>(self, map: M) -> Result<Self::Value, M::Error> {
+        RawStyledSidebarToken::deserialize(serde::de::value::MapAccessDeserializer::new(map))
+            .map(RawSidebarToken::Styled)
+    }
 }
 
 impl RawSidebarToken {

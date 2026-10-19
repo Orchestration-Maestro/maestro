@@ -595,3 +595,31 @@ fn onboarding_false_suppresses_setup() {
     };
     assert!(!config.should_show_onboarding());
 }
+
+#[test]
+fn manifest_sensitive_workspace_keys_keep_defaults() {
+    let loaded = crate::settings::io::project_global_settings(
+        &maestro_settings::Settings::default(),
+        std::path::Path::new("."),
+    );
+    assert!(loaded.config.ui.tab_bar_right.is_empty());
+    assert!(!loaded.config.experimental.allow_nested.0);
+    assert!(loaded.config.session.resume_agents_on_restore);
+    assert!(loaded.config.update.manifest_check);
+    assert!(loaded.config.remote.manage_ssh_config);
+    let policy = include_str!("../../../../../docs/specs/manifest-mode.md");
+    for key in [
+        "multiplexer.tabBarRight",
+        "multiplexer.allowNested",
+        "daemon.resumeAgentsOnRestore",
+        "daemon.detectionCatalogCheck",
+        "multiplexer.remote.manageSshConfig",
+    ] {
+        assert!(
+            policy
+                .lines()
+                .any(|line| line == format!("| `{key}` | lock; default |")),
+            "{key}"
+        );
+    }
+}

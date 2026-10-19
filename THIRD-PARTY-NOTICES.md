@@ -761,8 +761,10 @@ The typed preference records in `crates/maestro-daemon/src/settings/model/`,
 sidebar rows in `settings/sidebar.rs`, notification sound selection in
 `settings/sound.rs`, theme data in
 `settings/theme.rs`, tab entries in `settings/tab_bar.rs`, window-title templates
-in `settings/window_title.rs` and their `settings/tests/` cases derive from the
-configuration model, sidebar, sound, theme, tab-bar and window-title modules under the
+in `settings/window_title.rs`, global projection and diagnostics in `settings/io.rs`
+and `settings/io/`, annotated defaults in `settings/defaults.jsonc` and their
+settings tests derive from the configuration, configuration I/O, model, sidebar,
+sound, theme, tab-bar, window-title and default configuration sources under the
 same license.
 
 The pane terminal, shell and foreground process code in `crates/maestro-process/`

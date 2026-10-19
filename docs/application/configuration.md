@@ -89,3 +89,12 @@ used only for extensionless names. Unix access uses the OS write-access operatio
 Windows checks existence and read-only attributes, not directory ACLs, so a later
 update may still fail with a permissions error. See the
 [configuration library notes](../libraries/application-configuration.md).
+
+## Workspace preferences
+
+Workspace preference loading uses the application's existing `SettingsManager`
+and supplied agent directory through `maestro_daemon::settings::io`. Only accepted
+global `multiplexer`, `daemon` and `update` members are projected; project chat
+settings retain their existing merge. The loader does not discover another root,
+create another manager or read another configuration file. See the
+[workspace defaults and reload contract](../settings.md#global-workspace-projection-and-reload).

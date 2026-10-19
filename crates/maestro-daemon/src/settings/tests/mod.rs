@@ -11,3 +11,9 @@ mod sound;
 mod tab_bar;
 
 mod sidebar;
+
+mod io;
+
+mod support;
+
+mod defaults;

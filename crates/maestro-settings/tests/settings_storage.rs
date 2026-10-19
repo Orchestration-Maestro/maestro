@@ -266,16 +266,66 @@ mod tests {
         )
     }
 
+    /// File adapter observing exclusion at the actual manager-write callback.
+    struct ObservedStorage {
+        inner: FileSettingsStorage,
+        sidecar: std::path::PathBuf,
+        writes: std::sync::atomic::AtomicUsize,
+    }
+
+    impl ObservedStorage {
+        /// Probe the sidecar while the file adapter still owns its exclusion.
+        fn observe_write(&self, scope: SettingsScope, replacement: bool) {
+            if scope == SettingsScope::Global && replacement {
+                assert_eq!(
+                    probe_lock(
+                        "settings_storage::tests::global_key_edit_merges_fresh_global_scope",
+                        &self.sidecar
+                    ),
+                    "blocked"
+                );
+                self.writes
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            }
+        }
+    }
+
+    impl SettingsStorage for ObservedStorage {
+        fn with_lock(
+            &self,
+            scope: SettingsScope,
+            update: &mut dyn FnMut(Option<&str>) -> maestro_settings::SettingsUpdate,
+        ) -> Result<(), SettingsStorageError> {
+            self.inner.with_lock(scope, &mut |current| {
+                let next = update(current)?;
+                self.observe_write(scope, next.is_some());
+                Ok(next)
+            })
+        }
+    }
+
     #[test]
     fn global_key_edit_merges_fresh_global_scope() {
+        if support::run_lock_child() {
+            return;
+        }
         let root = TempDir::new();
         let agent = root.path().join("agent");
         fs::create_dir_all(&agent).unwrap();
         let file = agent.join("settings.json");
         let seed = json!({"multiplexer": {"onboarding": true}, "theme": "chat"});
         fs::write(&file, serde_json::to_string_pretty(&seed).unwrap()).unwrap();
-        let mut first = create_manager(root.path());
-        let mut second = create_manager(root.path());
+        let project = root.path().join("work/.maestro/settings.json");
+        fs::create_dir_all(project.parent().unwrap()).unwrap();
+        let project_bytes = b"{ \"multiplexer\": { \"mouseCapture\": true } }\n";
+        fs::write(&project, project_bytes).unwrap();
+        let storage = Arc::new(ObservedStorage {
+            inner: file_storage(root.path()),
+            sidecar: agent.join("settings.json.lock"),
+            writes: std::sync::atomic::AtomicUsize::new(0),
+        });
+        let mut first = SettingsManager::from_storage(storage.clone());
+        let mut second = SettingsManager::from_storage(storage.clone());
         let fresh = json!({
             "multiplexer": {"onboarding": true, "mouseCapture": false},
             "theme": "chat",
@@ -304,6 +354,8 @@ mod tests {
         );
         assert!(first.drain_errors().is_empty());
         assert!(second.drain_errors().is_empty());
+        assert_eq!(fs::read(project).unwrap(), project_bytes);
+        assert_eq!(storage.writes.load(std::sync::atomic::Ordering::Relaxed), 2);
     }
 
     #[test]

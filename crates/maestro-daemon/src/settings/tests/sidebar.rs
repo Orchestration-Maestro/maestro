@@ -93,6 +93,7 @@ fn sidebar_styles_belong_to_each_occurrence() {
 #[test]
 fn sidebar_rejects_malformed_styles() {
     for entry in [
+        json!(["workspace", null, null, null]),
         json!({"token":"workspace", "fg":"red"}),
         json!({"token":"workspace", "fg":"#abcd"}),
         json!({"token":"workspace", "underline":true}),
