@@ -145,22 +145,22 @@ fn continuation_probe_is_raw_first_line_with_a_512_byte_bound() {
 fn default_directory_encodes_authored_cwd_before_joining() {
     if std::env::var_os("MAESTRO_DIRECTORY_CHILD").is_none() {
         let directory = Directory::new();
-        let test =
-            crate::child_process::selector("default_directory_encodes_authored_cwd_before_joining")
-                .unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test, "--nocapture"])
-            .current_dir(&directory.path)
-            .env("MAESTRO_DIRECTORY_CHILD", "1")
-            .output()
-            .unwrap();
+        let output = maestro_test_process::TestProcess::current(
+            "default_directory_encodes_authored_cwd_before_joining",
+        )
+        .unwrap()
+        .nocapture()
+        .current_dir(&directory.path)
+        .env("MAESTRO_DIRECTORY_CHILD", "1")
+        .output()
+        .unwrap();
         assert!(
             output.status.success(),
             "stdout: {}\nstderr: {}",
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
-        crate::child_process::assert_executed(&output, &test).unwrap();
+
         return;
     }
     for case in cases("default_directory_encodes_authored_cwd_before_joining") {
@@ -764,9 +764,9 @@ fn removed_cwd_child(name: &str) -> bool {
         return true;
     }
     let directory = Directory::new();
-    let test = crate::child_process::selector(name).unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test, "--nocapture"])
+    let output = maestro_test_process::TestProcess::current(name)
+        .unwrap()
+        .nocapture()
         .env("MAESTRO_REMOVED_CWD_CHILD", "1")
         .env("MAESTRO_REMOVED_CWD_PARENT", directory.text())
         .output()
@@ -777,7 +777,7 @@ fn removed_cwd_child(name: &str) -> bool {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    crate::child_process::assert_executed(&output, &test).unwrap();
+
     false
 }
 

@@ -89,15 +89,15 @@ fn in_timezone(name: &str, timezone: &str) -> bool {
     if std::env::var("MAESTRO_DATE_CHILD").as_deref() == Ok(name) {
         return true;
     }
-    let test = crate::child_process::selector(name).unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test, "--nocapture"])
+    let output = maestro_test_process::TestProcess::current(name)
+        .unwrap()
+        .nocapture()
         .env("TZ", timezone)
         .env("MAESTRO_DATE_CHILD", name)
         .output()
         .unwrap();
     assert!(output.status.success());
-    crate::child_process::assert_executed(&output, &test).unwrap();
+
     false
 }
 

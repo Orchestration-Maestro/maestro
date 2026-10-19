@@ -3768,6 +3768,7 @@ dependencies = [
  "maestro-json",
  "maestro-lock",
  "maestro-path",
+ "maestro-test-process",
  "serde",
  "serde_json",
  "tokio",
