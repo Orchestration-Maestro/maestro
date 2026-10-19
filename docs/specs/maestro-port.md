@@ -452,10 +452,12 @@ toolkit/text dependency, or make the scenario harness a development target.
 lets extension tests and doctests build a real model catalog over in-memory
 credential storage; it permits no normal or build dependency on credentials.
 The native component adapter (`maestro-extensions-wasmtime`) may depend on
-`maestro-catalog`, `maestro-credentials`, `maestro-models`, `maestro-session` and
-`maestro-theme` as native-only development dependencies. Its composition tests
+`maestro-catalog`, `maestro-credentials`, `maestro-models`, `maestro-session`,
+`maestro-theme` and `maestro-tui` as native-only development dependencies. Its composition tests
 reuse the extension test support to build real catalogs, credentials, messages,
-sessions and themes. These edges permit no normal or build dependencies.
+sessions and themes. The toolkit edge supplies the real terminal and UI to observe
+component-factory width synchronously; it adds no new production layer crossing.
+These edges permit no normal or build dependencies.
 These edges remain subject to test-graph cycle checks, including aliases and
 platform-specific declarations. Add the example dependency and replace its local
 projection only after this contract lands.
