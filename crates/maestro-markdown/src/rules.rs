@@ -12,10 +12,12 @@ pub(crate) static BLOCK_CODE: LazyLock<Option<Regex>> = LazyLock::new(|| {
     Regex::with_flags(r"^((?: {4}| {0,3}\t)[^\n]+(?:\n(?:[ \t]*(?:\n|$))*)?)+", "").ok()
 });
 
+/// Reference spelling of block fences syntax.
+pub(crate) const BLOCK_FENCES_SOURCE: &str = r"^ {0,3}(`{3,}(?=[^`\n]*(?:\n|$))|~{3,})([^\n]*)(?:\n|$)(?:|([\s\S]*?)(?:\n|$))(?: {0,3}\1[~`]* *(?=\n|$)|$)";
+
 /// Recognize block fences syntax without a mutable match cursor.
-pub(crate) static BLOCK_FENCES: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(r"^ {0,3}(`{3,}(?=[^`\n]*(?:\n|$))|~{3,})([^\n]*)(?:\n|$)(?:|([\s\S]*?)(?:\n|$))(?: {0,3}\1[~`]* *(?=\n|$)|$)", "").ok()
-});
+pub(crate) static BLOCK_FENCES: LazyLock<Option<Regex>> =
+    LazyLock::new(|| stepwise(BLOCK_FENCES_SOURCE, ""));
 
 /// Recognize block heading syntax without a mutable match cursor.
 pub(crate) static BLOCK_HEADING: LazyLock<Option<Regex>> =
@@ -40,10 +42,12 @@ pub(crate) static BLOCK_LIST: LazyLock<Option<Regex>> = LazyLock::new(|| {
     Regex::with_flags(r"^( {0,3}(?:[*+-]|\d{1,9}[.)]))([ \t][^\n]+?)?(?:\n|$)", "").ok()
 });
 
+/// Reference spelling of block html syntax.
+pub(crate) const BLOCK_HTML_SOURCE: &str = r#"^ {0,3}(?:<(script|pre|style|textarea)[\s>][\s\S]*?(?:<\/\1>[^\n]*\n+|$)|<!--(?:-?>|[\s\S]*?(?:-->|$))[^\n]*(\n+|$)|<\?[\s\S]*?(?:\?>\n*|$)|<![A-Z][\s\S]*?(?:>\n*|$)|<!\[CDATA\[[\s\S]*?(?:\]\]>\n*|$)|<\/?(address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)(?: +|\n|\/?>)[\s\S]*?(?:(?:\n[ 	]*)+\n|$)|<(?!script|pre|style|textarea)([a-z][\w-]*)(?: +[a-zA-Z:_][\w.:-]*(?: *= *"[^"\n]*"| *= *'[^'\n]*'| *= *[^\s"'=<>`]+)?)*? *\/?>(?=[ \t]*(?:\n|$))[\s\S]*?(?:(?:\n[ 	]*)+\n|$)|<\/(?!script|pre|style|textarea)[a-z][\w-]*\s*>(?=[ \t]*(?:\n|$))[\s\S]*?(?:(?:\n[ 	]*)+\n|$))"#;
+
 /// Recognize block html syntax without a mutable match cursor.
-pub(crate) static BLOCK_HTML: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(r#"^ {0,3}(?:<(script|pre|style|textarea)[\s>][\s\S]*?(?:<\/\1>[^\n]*\n+|$)|<!--(?:-?>|[\s\S]*?(?:-->|$))[^\n]*(\n+|$)|<\?[\s\S]*?(?:\?>\n*|$)|<![A-Z][\s\S]*?(?:>\n*|$)|<!\[CDATA\[[\s\S]*?(?:\]\]>\n*|$)|<\/?(address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|meta|nav|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)(?: +|\n|\/?>)[\s\S]*?(?:(?:\n[ 	]*)+\n|$)|<(?!script|pre|style|textarea)([a-z][\w-]*)(?: +[a-zA-Z:_][\w.:-]*(?: *= *"[^"\n]*"| *= *'[^'\n]*'| *= *[^\s"'=<>`]+)?)*? *\/?>(?=[ \t]*(?:\n|$))[\s\S]*?(?:(?:\n[ 	]*)+\n|$)|<\/(?!script|pre|style|textarea)[a-z][\w-]*\s*>(?=[ \t]*(?:\n|$))[\s\S]*?(?:(?:\n[ 	]*)+\n|$))"#, "i").ok()
-});
+pub(crate) static BLOCK_HTML: LazyLock<Option<Regex>> =
+    LazyLock::new(|| stepwise(BLOCK_HTML_SOURCE, "i"));
 
 /// Recognize block def syntax without a mutable match cursor.
 pub(crate) static BLOCK_DEF: LazyLock<Option<Regex>> = LazyLock::new(|| {
@@ -70,10 +74,12 @@ pub(crate) static INLINE_ESCAPE: LazyLock<Option<Regex>> = LazyLock::new(|| {
     Regex::with_flags(r##"^\\([!"#$%&'()*+,\-./:;<=>?@\[\]\\^_`{|}~])"##, "").ok()
 });
 
+/// Reference spelling of inline tag syntax.
+pub(crate) const INLINE_TAG_SOURCE: &str = r#"^<!--(?:-?>|[\s\S]*?-->)|^<\/[a-zA-Z][\w:-]*\s*>|^<[a-zA-Z][\w-]*(?:\s+[a-zA-Z:_][\w.:-]*(?:\s*=\s*"[^"]*"|\s*=\s*'[^']*'|\s*=\s*[^\s"'=<>`]+)?)*?\s*\/?>|^<\?[\s\S]*?\?>|^<![a-zA-Z]+\s[\s\S]*?>|^<!\[CDATA\[[\s\S]*?\]\]>"#;
+
 /// Recognize inline tag syntax without a mutable match cursor.
-pub(crate) static INLINE_TAG: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(r#"^<!--(?:-?>|[\s\S]*?-->)|^<\/[a-zA-Z][\w:-]*\s*>|^<[a-zA-Z][\w-]*(?:\s+[a-zA-Z:_][\w.:-]*(?:\s*=\s*"[^"]*"|\s*=\s*'[^']*'|\s*=\s*[^\s"'=<>`]+)?)*?\s*\/?>|^<\?[\s\S]*?\?>|^<![a-zA-Z]+\s[\s\S]*?>|^<!\[CDATA\[[\s\S]*?\]\]>"#, "").ok()
-});
+pub(crate) static INLINE_TAG: LazyLock<Option<Regex>> =
+    LazyLock::new(|| stepwise(INLINE_TAG_SOURCE, ""));
 
 /// Recognize inline link syntax without a mutable match cursor.
 pub(crate) static INLINE_LINK: LazyLock<Option<Regex>> = LazyLock::new(|| {
@@ -123,9 +129,12 @@ pub(crate) static INLINE_BLOCK_SKIP: LazyLock<Option<Regex>> = LazyLock::new(|| 
     Regex::with_flags(r"\[(?:[^\[\]`]|(?<a>`+)[^`]+\k<a>(?!`))*?\]\((?:\\[\s\S]|[^\\\(\)]|\((?:\\[\s\S]|[^\\\(\)])*\))*\)|(?<!`)()(?<b>`+)[^`]+\k<b>(?!`)|<(?! )[^<>]*?>", "").ok()
 });
 
+/// Reference spelling of inline code syntax.
+pub(crate) const INLINE_CODE_SOURCE: &str = r"^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)";
+
 /// Recognize inline code syntax without a mutable match cursor.
 pub(crate) static INLINE_CODE: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::with_flags(r"^(`+)([^`]|[^`][\s\S]*?[^`])\1(?!`)", "").ok());
+    LazyLock::new(|| stepwise(INLINE_CODE_SOURCE, ""));
 
 /// Recognize inline br syntax without a mutable match cursor.
 pub(crate) static INLINE_BR: LazyLock<Option<Regex>> =
@@ -137,8 +146,11 @@ pub(crate) static INLINE_AUTOLINK: LazyLock<Option<Regex>> = LazyLock::new(|| {
 });
 
 /// Recognize inline text syntax without a mutable match cursor.
-pub(crate) static INLINE_TEXT: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(r"^([`~]+|[^`~])(?:(?= {2,}\n)|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)|[\s\S]*?(?:(?=[\\<!\[`*~_]|\b_|[hH][tT][tT][pP][sS]?|[fF][tT][pP]:\/\/|www\.|$)|[^ ](?= {2,}\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)))", "").ok()
+static INLINE_TEXT: LazyLock<Option<Regex>> = LazyLock::new(|| {
+    stepwise(
+        inline_text_source(MarkedOptions::Browser { escape_html: false }),
+        "",
+    )
 });
 
 /// Immutable caller-specific block def terminal recognizer.
@@ -302,24 +314,41 @@ pub(crate) fn inline_block_skip(options: MarkedOptions) -> Option<&'static Regex
     }
 }
 
+/// Reference spelling of the inline text recognizer for one caller grammar.
+pub(crate) fn inline_text_source(options: MarkedOptions) -> &'static str {
+    match options {
+        MarkedOptions::Terminal => {
+            r"^([`~]+|[^`~])(?:(?= {2,}\n)|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)|[\s\S]*?(?:(?=[\\<!\[`*~_]|\b_|https?:\/\/|ftp:\/\/|www\.|$)|[^ ](?= {2,}\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)))"
+        }
+        MarkedOptions::Browser { .. } => {
+            r"^([`~]+|[^`~])(?:(?= {2,}\n)|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)|[\s\S]*?(?:(?=[\\<!\[`*~_]|\b_|[hH][tT][tT][pP][sS]?|[fF][tT][pP]:\/\/|www\.|$)|[^ ](?= {2,}\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)))"
+        }
+        MarkedOptions::Export => {
+            r"^([`~]+|[^`~])(?:(?= *\n)|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)|[\s\S]*?(?:(?=[\\<!\[`*~_]|\b_| *\n|https?:\/\/|ftp:\/\/|www\.|$)|[^ ](?= *\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)))"
+        }
+        MarkedOptions::Documentation => {
+            r"^(`+|[^`])(?:(?= {2,}\n)|[\s\S]*?(?:(?=[\\<!\[`*_]|\b_|$)|[^ ](?= {2,}\n)))"
+        }
+    }
+}
+
+/// Compile a reference spelling whose lazy any-character loops advance one step at a time.
+fn stepwise(pattern: &str, flags: &str) -> Option<Regex> {
+    // regress =0.12.0 scans a lazy one-char loop's reach to the input end; `(?!)` avoids that.
+    Regex::with_flags(&pattern.replace(r"[\s\S]*?", r"(?:[\s\S]|(?!))*?"), flags).ok()
+}
+
 /// Immutable caller-specific inline text terminal recognizer.
-static INLINE_TEXT_TERMINAL: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(r"^([`~]+|[^`~])(?:(?= {2,}\n)|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)|[\s\S]*?(?:(?=[\\<!\[`*~_]|\b_|https?:\/\/|ftp:\/\/|www\.|$)|[^ ](?= {2,}\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)))", "").ok()
-});
+static INLINE_TEXT_TERMINAL: LazyLock<Option<Regex>> =
+    LazyLock::new(|| stepwise(inline_text_source(MarkedOptions::Terminal), ""));
 
 /// Immutable caller-specific inline text export recognizer.
-static INLINE_TEXT_EXPORT: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(r"^([`~]+|[^`~])(?:(?= *\n)|(?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)|[\s\S]*?(?:(?=[\\<!\[`*~_]|\b_| *\n|https?:\/\/|ftp:\/\/|www\.|$)|[^ ](?= *\n)|[^a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-](?=[a-zA-Z0-9.!#$%&'*+\/=?_`{\|}~-]+@)))", "").ok()
-});
+static INLINE_TEXT_EXPORT: LazyLock<Option<Regex>> =
+    LazyLock::new(|| stepwise(inline_text_source(MarkedOptions::Export), ""));
 
 /// Immutable caller-specific inline text documentation recognizer.
-static INLINE_TEXT_DOCUMENTATION: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::with_flags(
-        r"^(`+|[^`])(?:(?= {2,}\n)|[\s\S]*?(?:(?=[\\<!\[`*_]|\b_|$)|[^ ](?= {2,}\n)))",
-        "",
-    )
-    .ok()
-});
+static INLINE_TEXT_DOCUMENTATION: LazyLock<Option<Regex>> =
+    LazyLock::new(|| stepwise(inline_text_source(MarkedOptions::Documentation), ""));
 
 /// Select inline text syntax from the immutable caller grammar.
 pub(crate) fn inline_text(options: MarkedOptions) -> Option<&'static Regex> {
