@@ -268,11 +268,15 @@ descriptor or shell setting. `shell_setup` (Unix) runs shell text before the
 executable replaces the shell. `capture`, `rerun` and `assert_executed` remain for
 launches still built outside the builder.
 
-Captured child-test suites use `TestProcess::current` for the running test or
+Child-test suites use `TestProcess::current` for the running test or
 `TestProcess::named` for a supplied complete identity. `output()` checks that the
 selected test starts; callers still check its exit status and scenario output.
 `env_clear()` preserves the inherited coverage profile destination, and later
-caller edits can override or remove it.
+caller edits can override or remove it. Live protocols retain `CheckedChild` and
+its replaying `CheckedStdout` until the exchange completes, then check successful
+reaping. Settings helpers select supplied complete nested identities with `named`
+and apply shell setup through `shell_setup`, keeping reports separate from exit
+status checks.
 
 Credential tests acquire `SERIAL` before `PROCESS_CREATION` when both are needed.
 Configure the builder first, hold the creation guard only around checked `spawn`,

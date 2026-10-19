@@ -769,12 +769,14 @@ mod tests {
 
         #[cfg(unix)]
         {
-            let mut limited = support::shell_child_command(
+            let limited = support::shell_child_command(
                 "settings_reload::tests::flush_observes_without_cancelling_dropped_waiter",
                 "limit",
                 "ulimit -u 1 2>/dev/null",
             );
-            let report = support::child_report(&limited.output().unwrap());
+            let output = limited.output().unwrap();
+            assert!(output.status.success());
+            let report = support::child_report(&output);
             if report != json!("limit not enforced") {
                 assert_eq!(
                     report,

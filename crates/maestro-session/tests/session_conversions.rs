@@ -68,23 +68,21 @@ fn converted_context_uses_existing_local_timestamp_policy() {
         return;
     }
     for zone in ["UTC", "America/New_York"] {
-        let test = crate::child_process::selector(
+        let output = maestro_test_process::TestProcess::current(
             "converted_context_uses_existing_local_timestamp_policy",
         )
+        .unwrap()
+        .nocapture()
+        .env("TZ", zone)
+        .env("MAESTRO_CONVERSION_TIME_CHILD", zone)
+        .output()
         .unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test, "--nocapture"])
-            .env("TZ", zone)
-            .env("MAESTRO_CONVERSION_TIME_CHILD", zone)
-            .output()
-            .unwrap();
         assert!(
             output.status.success(),
             "stdout: {}\nstderr: {}",
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
-        crate::child_process::assert_executed(&output, &test).unwrap();
     }
 }
 
