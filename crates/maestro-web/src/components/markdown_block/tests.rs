@@ -162,6 +162,50 @@ fn escaping_keeps_stable_code_and_autolinks_literal() {
     assert_eq!(prepare("<b>x</b>", false).html, "<p><b>x</b></p>\n");
 }
 
+/// Script and active-document targets, with the HTML that keeps only their text.
+const REFUSED: [(&str, &str); 9] = [
+    ("[x](javascript:alert(1))", "<p>x</p>\n"),
+    ("[x](JaVaScRiPt:alert(1))", "<p>x</p>\n"),
+    ("[x]( javascript:alert(1))", "<p>x</p>\n"),
+    ("[x](vbscript:msgbox(1))", "<p>x</p>\n"),
+    (
+        "[x](data:text/html,<script>alert(1)</script>)",
+        "<p>x</p>\n",
+    ),
+    ("![i](javascript:alert(1))", "<p>i</p>\n"),
+    ("[r]\n\n[r]: javascript:alert(1)", "<p>r</p>\n"),
+    ("[x](&#106;avascript:alert(1))", "<p>x</p>\n"),
+    (
+        "<javascript:alert(1)>",
+        "<p>&lt;javascript:alert(1)&gt;</p>\n",
+    ),
+];
+
+#[test]
+fn executable_link_and_image_targets_keep_only_their_text() {
+    for (source, html) in REFUSED {
+        assert_eq!(prepare(source, true).html, html, "{source:?}");
+    }
+    let raw = prepare("<javascript:alert(1)>", false).html;
+    assert_eq!(raw, "<p>javascript:alert(1)</p>\n");
+    let anchor = "<a target=\"_blank\" rel=\"noopener noreferrer\" href=";
+    for (source, target) in [
+        ("[x](https://a.b/c)", "\"https://a.b/c\">x</a>"),
+        ("[x](/relative)", "\"/relative\">x</a>"),
+        ("[x](#top)", "\"#top\">x</a>"),
+        ("[x](mailto:a@b.c)", "\"mailto:a@b.c\">x</a>"),
+    ] {
+        assert_eq!(
+            prepare(source, true).html,
+            format!("<p>{anchor}{target}</p>\n")
+        );
+    }
+    for target in ["https://a.b/i.png", "data:image/png;base64,AAAA"] {
+        let html = prepare(&format!("![i]({target})"), true).html;
+        assert_eq!(html, format!("<p><img src=\"{target}\" alt=\"i\"></p>\n"));
+    }
+}
+
 /// Independent native spans following code whose surrounding structure changes.
 const SUFFIXES: [(&str, &str, Option<&str>); 5] = [
     ("`<i>`", "<p><code>&lt;i&gt;</code></p>\n", None),
