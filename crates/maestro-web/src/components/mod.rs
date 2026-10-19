@@ -2,6 +2,8 @@
 pub mod attachment_tile;
 /// Retained single-line browser input.
 pub mod input;
+/// Stable emitted-position conversation rows.
+pub mod message_list;
 /// Open custom-message role callbacks.
 pub mod message_renderer_registry;
 /// Retained transcript message rows.

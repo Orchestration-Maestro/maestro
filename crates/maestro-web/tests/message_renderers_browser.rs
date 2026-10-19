@@ -31,7 +31,7 @@ mod tests {
         let input = message("browser-custom", handle.clone());
         register_message_renderer(
             "browser-custom",
-            Rc::new(Renderer(Rc::new(|message| {
+            Rc::new(Renderer::<NativeMessage>(Rc::new(|message| {
                 let maestro_app::AgentMessage::Custom(value) = message else {
                     unreachable!()
                 };
@@ -66,7 +66,7 @@ mod tests {
         );
         register_message_renderer(
             "browser-custom",
-            Rc::new(Renderer(Rc::new(|_| {
+            Rc::new(Renderer::<NativeMessage>(Rc::new(|_| {
                 Ok(Box::new(renderer_recipes::RichText(
                     "**Replacement message**".into(),
                 )))

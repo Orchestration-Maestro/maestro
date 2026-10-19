@@ -23,15 +23,12 @@ impl CustomAgentMessages for NativeMessage {
     }
 }
 /// A supplied typed callback, without JSON conversion or retained frame operands.
-pub type Callback =
-    dyn Fn(&AgentMessage<NativeMessage>) -> Result<Box<dyn ToolContent>, ToolUiError>;
+pub type Callback<C = NativeMessage> =
+    dyn Fn(&AgentMessage<C>) -> Result<Box<dyn ToolContent>, ToolUiError>;
 /// Ordinary user renderer for the native fixture.
-pub struct Renderer(pub Rc<Callback>);
-impl MessageRenderer<NativeMessage> for Renderer {
-    fn render(
-        &self,
-        message: &AgentMessage<NativeMessage>,
-    ) -> Result<Box<dyn ToolContent>, ToolUiError> {
+pub struct Renderer<C: CustomAgentMessages = NativeMessage>(pub Rc<Callback<C>>);
+impl<C: CustomAgentMessages> MessageRenderer<C> for Renderer<C> {
+    fn render(&self, message: &AgentMessage<C>) -> Result<Box<dyn ToolContent>, ToolUiError> {
         (self.0)(message)
     }
 }

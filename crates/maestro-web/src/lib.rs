@@ -10,6 +10,7 @@ pub mod dialogs;
 mod docx_preview;
 pub use components::attachment_tile::AttachmentTile;
 pub use components::input::Input;
+pub use components::message_list::{MessageList, MessageListProps};
 pub use components::message_renderer_registry::{
     MessageRenderer, MessageRole, get_message_renderer, register_message_renderer, render_message,
 };

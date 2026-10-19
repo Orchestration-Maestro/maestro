@@ -44,7 +44,7 @@ fn recording_renderer(
     version: u32,
 ) -> Rc<dyn maestro_web::MessageRenderer<NativeMessage>> {
     let seen = seen.clone();
-    Rc::new(Renderer(Rc::new(move |_| {
+    Rc::new(Renderer::<NativeMessage>(Rc::new(move |_| {
         seen.borrow_mut().push(version);
         Ok(Box::new(renderer_recipes::Caption("owned".into())))
     })))
@@ -60,7 +60,7 @@ fn message_callbacks_keep_native_fields_and_allow_reentrant_registration() {
     let original = Arc::clone(&handle);
     register_message_renderer(
         "native-reentrant",
-        Rc::new(Renderer(Rc::new(move |message| {
+        Rc::new(Renderer::<NativeMessage>(Rc::new(move |message| {
             let AgentMessage::Custom(value) = message else {
                 unreachable!()
             };
@@ -72,7 +72,7 @@ fn message_callbacks_keep_native_fields_and_allow_reentrant_registration() {
             let seen = captured.clone();
             register_message_renderer(
                 "native-reentrant",
-                Rc::new(Renderer(Rc::new(move |_| {
+                Rc::new(Renderer::<NativeMessage>(Rc::new(move |_| {
                     seen.borrow_mut().push(99);
                     Ok(Box::new(renderer_recipes::Caption("next".into())))
                 }))),
@@ -101,14 +101,14 @@ fn assert_reentrant_drop() {
     let owner = Reenter(dropped.clone());
     register_message_renderer(
         "drop-reentrant",
-        Rc::new(Renderer(Rc::new(move |_| {
+        Rc::new(Renderer::<NativeMessage>(Rc::new(move |_| {
             let _keep = &owner;
             Ok(Box::new(renderer_recipes::Caption("old".into())))
         }))),
     );
     register_message_renderer(
         "drop-reentrant",
-        Rc::new(Renderer(Rc::new(|_| {
+        Rc::new(Renderer::<NativeMessage>(Rc::new(|_| {
             Ok(Box::new(renderer_recipes::Caption("new".into())))
         }))),
     );

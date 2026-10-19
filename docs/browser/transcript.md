@@ -37,6 +37,19 @@ All text uses the existing native reading host, with its fixed placement frame,
 clipped scrolling viewport, fractional canvas projection and modal admission.
 Message rows do not add a separate placement or event-listener system.
 
+## Stable transcript list
+
+`MessageList::new(host)` composes the retained message widgets. Pass ordered
+browser messages in `MessageListProps` to `render`; empty props produce an empty
+list. Tool results are indexed by call ID before rows are prepared, with the last
+matching result winning. Standalone results and unknown roles have no builtin
+row. Repeated messages remain repeated and in order.
+
+Artifacts are filtered before custom-role dispatch. Other registered roles take
+precedence over builtin rows, including user and tool-result roles. Custom
+recipes keep native callback handles without a serialization bound; an empty
+recipe still occupies its emitted position.
+
 ## Custom message roles
 
 `register_message_renderer`, `get_message_renderer` and `render_message` use

@@ -64,6 +64,7 @@ mod tool_cards;
 mod tool_cards_browser;
 mod tool_renderers;
 mod tool_renderers_browser;
+mod transcript_lists;
 
 #[cfg(target_arch = "wasm32")]
 pub(crate) use artifact_support::presentation;
