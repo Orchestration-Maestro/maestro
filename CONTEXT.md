@@ -269,4 +269,8 @@ From `docs/specs/packages.md`.
 - **Type-only skill:** a skill marked `disable-model-invocation: true`; it stays out of the model's skill list and
   runs only when typed as `/skill:<name>` or through an alias command.
 
+## Tool and terminal additions
+
+From `docs/specs/tool-additions.md`.
+
 - **Output backlog:** Bytes the native terminal has queued and not yet written.
