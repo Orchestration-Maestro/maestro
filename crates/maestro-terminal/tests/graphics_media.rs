@@ -615,6 +615,25 @@ fn shared_memory_pixels_trim_alignment_padding() {
 
 #[test]
 #[cfg(target_os = "linux")]
+fn shared_memory_images_stop_at_the_image_limit() {
+    // A valid PNG, then sparse padding past the 400 MiB limit or far beyond any allocation.
+    for size in [400 * 1024 * 1024 + 1, 1 << 40] {
+        let segment = Segment::new(include_bytes!("fixtures/images/rgba8.png"));
+        let flags = rustix::shm::OFlags::RDWR;
+        File::from(
+            rustix::shm::open(segment.0.as_str(), flags, rustix::shm::Mode::empty()).unwrap(),
+        )
+        .set_len(size)
+        .unwrap();
+        let mut cmd = segment.command();
+        transmission_mut(&mut cmd).format = Format::Png;
+        assert_error(&cmd, ImageError::InvalidData);
+        assert!(!segment.exists());
+    }
+}
+
+#[test]
+#[cfg(target_os = "linux")]
 fn shared_memory_invalid_ranges_release_the_segment() {
     let root = Segment::new(b"ABC");
     let mut invalid = root.command();
