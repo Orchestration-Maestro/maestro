@@ -64,6 +64,7 @@ pub mod csi;
 pub mod device_attributes;
 pub mod device_status;
 pub mod effects;
+pub mod size_report;
 pub mod stream;
 
 pub mod stream_terminal;

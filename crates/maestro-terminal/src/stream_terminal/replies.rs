@@ -35,11 +35,25 @@ impl Handler<'_> {
                 bytes.extend_from_slice(&title);
                 bytes.extend_from_slice(b"\x1b\\");
             }
-            QueryAction::Enquiry
-            | QueryAction::SizeReport(_)
-            | QueryAction::TitlePush(_)
-            | QueryAction::TitlePop(_) => {}
+            QueryAction::SizeReport(style) => self.size_report(style),
+            QueryAction::Enquiry | QueryAction::TitlePush(_) | QueryAction::TitlePop(_) => {}
         }
+    }
+
+    /// Report raw caller geometry only when every dimension is known.
+    fn size_report(&mut self, style: SizeReportStyle) {
+        use crate::size_report::{self, Style};
+        let size = self.terminal.size_report;
+        if size.rows == 0 || size.columns == 0 || size.cell_width == 0 || size.cell_height == 0 {
+            return;
+        }
+        let style = match style {
+            SizeReportStyle::Csi14T => Style::Csi14T,
+            SizeReportStyle::Csi16T => Style::Csi16T,
+            SizeReportStyle::Csi18T => Style::Csi18T,
+            SizeReportStyle::Csi21T => return,
+        };
+        let _ = size_report::encode(&mut self.terminal.effects.pty_reply, style, size);
     }
 
     /// Encode the default device attributes through their record owners.

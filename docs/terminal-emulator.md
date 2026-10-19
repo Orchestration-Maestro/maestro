@@ -415,12 +415,22 @@ After `Terminal::write`, drain `take_pty_reply`, `take_bell_count`,
 queue. Replies concatenate in input order; bells saturate at `u16::MAX`.
 
 The byte consumer answers operating-status, cursor-position, device-attribute,
-version, mode, keyboard-protocol and title queries. Cursor reports are relative
+version, mode, keyboard-protocol, size and title queries. Cursor reports are relative
 to the scrolling origin when origin mode is enabled. Title reports use the stored
 title, including an empty title. The default enquiry answer is empty.
 `set_color_scheme` selects light or dark status replies; `None` suppresses them.
 With mode 2031 enabled, changing between two known schemes queues a report.
 Initial discovery, removal and unchanged values do not produce unsolicited reports.
+
+CSI 14, 16 and 18 t report text-area pixels, cell pixels and text-area cells
+from the last successful caller resize. No size query replies until both cell
+pixel dimensions are nonzero; they start at zero after construction. Mode 2048
+queues an in-band size report on every successful resize, including unchanged
+grid sizes. It uses cell dimensions clamped to at least one, independently of
+the raw query size. Both report paths preserve full pixel products, even when
+the screen's stored pixel dimensions saturate at `u32::MAX`. Rejected zero-grid
+resizes leave the query size unchanged and queue no report.
+
 Directory changes and accepted clipboard writes are owned byte vectors, queued
 in input order. Repeated directory reports each produce a notification, including
 reports that clear the directory.

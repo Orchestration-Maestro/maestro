@@ -127,6 +127,8 @@ impl Default for Flags {
 pub struct Terminal {
     /// Caller-selected scheme for status reports.
     pub(crate) color_scheme: Option<crate::device_status::ColorScheme>,
+    /// Last caller geometry, before clamping cell pixels for the screen.
+    pub(crate) size_report: crate::size_report::Size,
     /// Pending effects captured by the byte consumer.
     pub(crate) effects: crate::effects::Effects,
     /// Screen storage and selection.
@@ -179,6 +181,12 @@ impl Terminal {
         modes.defaults[Mode::GraphemeCluster as usize] = true;
         Ok(Self {
             color_scheme: None,
+            size_report: crate::size_report::Size {
+                columns: cols,
+                rows,
+                cell_width: 0,
+                cell_height: 0,
+            },
             effects: crate::effects::Effects::default(),
             screens: ScreenSet::init(opts),
             modes,
