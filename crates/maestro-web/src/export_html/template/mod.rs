@@ -27,3 +27,6 @@ mod values;
 
 #[cfg(target_arch = "wasm32")]
 pub use output::bind_expandable_output;
+
+mod tool_call;
+pub use tool_call::render_tool_call;

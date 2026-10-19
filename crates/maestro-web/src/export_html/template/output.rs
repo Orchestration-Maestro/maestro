@@ -77,6 +77,11 @@ pub fn bind_expandable_output(
         "maestro-export-markdown",
         include_str!("markdown.css"),
     )?;
+    crate::browser::install_stylesheet(
+        &document,
+        "maestro-export-tool-cards",
+        include_str!("tool_call.css"),
+    )?;
     let syntax = maestro_theme::highlight_css().map_err(|error| {
         crate::browser::attachment_content::AttachmentHostError::Presentation(error.to_string())
     })?;

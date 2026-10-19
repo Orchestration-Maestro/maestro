@@ -200,3 +200,33 @@ expanded class is toggled without replacing unrelated classes. The containing
 viewer supplies its base typography and selected brand properties.
 Binding reports mount-time document, presentation and listener failures;
 selection and class-toggle failures are thrown by the later native click callback.
+
+## Offline tool cards
+
+[`render_tool_call`](../../crates/maestro-web/src/export_html/template/tool_call/mod.rs)
+borrows a `SessionDocument`, a raw call and the supplied syntax highlighter,
+returning one complete owned HTML card. It looks up the first matching result in
+current entry order, including results before the call. Pending, success and
+error shells use the selected panel role. This operation does not execute tools
+or consult the live renderer registry.
+
+Built-in command, read, write, edit and directory cards retain their own preview,
+trimming and literal-output policies. File paths shorten lexical `/home/` and
+`/Users/` prefixes without reading the host environment. Numeric read ranges use
+the application's range formatter; malformed display operands remain escaped
+literal text or canonical JSON. Image metadata is escaped for quoted attributes.
+Nonstring text and metadata display through the shared canonical JSON writers.
+
+Exporter-supplied `renderedTools` strings remain trusted HTML, including their
+inline styling. Distinct collapsed and expanded results use the
+[shared output binding](#markdown-and-output); session-authored names, arguments
+and output never gain that trust. Without supplied bodies, arguments display as
+two-space canonical JSON and results remain literal text. Mount the card through
+the existing reading-content host and retain the binding guard in its
+`ReadingRoot.owner`; cards add no retained surface owner.
+
+Reached missing or nonstring call identities/names, malformed result content and
+truthy nonstring edit diffs return `InvalidData`, without partial HTML. A caller
+can report that failure for one card and continue with its neighbors. Nonstring
+result identities do not match string calls. Message composition remains
+[#1043](https://github.com/Orchestration-Maestro/maestro/issues/1043).
