@@ -306,7 +306,8 @@ fn observe_events(
                         >= 3.
                 );
                 assert!(
-                    text().contains(partial.trim()),
+                    js(&JsValue::NULL, "return document.querySelector('.maestro-transcript-slot:last-child').innerText")
+                        .as_string().unwrap().contains(partial.trim()),
                     "published partial: {partial:?}"
                 );
             }
