@@ -3783,6 +3783,7 @@ dependencies = [
  "flate2",
  "icu_properties",
  "maestro-dependencies",
+ "maestro-text",
  "num-traits",
  "png 0.17.16",
  "rustix",
