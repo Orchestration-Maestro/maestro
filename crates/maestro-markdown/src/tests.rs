@@ -164,6 +164,7 @@ fn inline_subrange_operand_work_is_bounded_in_one_paragraph() {
 }
 
 mod grammar_rules;
+mod stepwise_rules;
 
 #[test]
 fn parser_does_not_repeat_document_admission() {
