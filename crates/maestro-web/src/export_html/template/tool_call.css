@@ -1,0 +1,31 @@
+.maestro-export .tool-execution {
+  padding: 1lh;
+  border-radius: var(--maestro-radii-control);
+}
+.maestro-export .tool-execution + .tool-execution,
+.maestro-export .assistant-text + .tool-execution { margin-top: 1lh; }
+.maestro-export .tool-execution.pending,
+.maestro-export .tool-execution.success,
+.maestro-export .tool-execution.error { background: var(--maestro-color-panel); }
+.maestro-export .tool-header, .maestro-export .tool-name { font-weight: bold; }
+.maestro-export .tool-path { color: var(--maestro-color-accent); word-break: break-all; }
+.maestro-export .line-numbers { color: var(--maestro-color-warning); }
+.maestro-export .line-count { color: var(--maestro-color-muted); }
+.maestro-export .tool-command {
+  font-weight: bold;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+.maestro-export .tool-image {
+  max-width: 100%;
+  max-height: 500px;
+  border-radius: var(--maestro-radii-control);
+  margin: 1lh 0;
+}
+.maestro-export .tool-diff { font: inherit; overflow-x: auto; white-space: pre; }
+.maestro-export .diff-added { color: var(--maestro-color-success); }
+.maestro-export .diff-removed { color: var(--maestro-color-error); }
+.maestro-export .diff-context { color: var(--maestro-color-muted); }
+.maestro-export .tool-error { color: var(--maestro-color-error); }

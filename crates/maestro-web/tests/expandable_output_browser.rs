@@ -1,7 +1,7 @@
 //! Mounted output disclosure behavior in native browser documents.
 #![cfg(all(test, target_arch = "wasm32"))]
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use crate::{export_mount, markdown_support, reading_slots_support, support};
     use maestro_web::browser::attachment_content::AttachmentHost as _;
     use maestro_web::export_html::template::{
@@ -14,16 +14,28 @@ mod tests {
     /// Generated output binds its root and keeps the guard in the mounted parent.
     #[wasm_bindgen]
     pub fn expandable_outputs_keep_selection_and_mounted_lifetimes() {
-        let mut slots = Slots::new();
         let engine = maestro_theme::SyntectHighlighter::new().unwrap();
         let html = format_expandable_output("one\n\nthree", 1, None, &engine);
+        disclosures_keep_selection_and_mounted_lifetimes(html);
+    }
+
+    /// Replay root, selection, live-class and teardown transitions for caller-produced HTML.
+    pub(crate) fn disclosures_keep_selection_and_mounted_lifetimes(html: String) {
+        let mut slots = Slots::new();
         let root = export_mount::mount(&mut slots, format!("{html}{html}"));
         let factory = Rc::clone(&slots.content);
-        let first = root.first_element_child().unwrap();
-        let second = first.next_element_sibling().unwrap();
+        let outputs = root.query_selector_all(".tool-output.expandable").unwrap();
+        let first = outputs
+            .item(0)
+            .unwrap()
+            .unchecked_into::<web_sys::Element>();
+        let second = outputs
+            .item(1)
+            .unwrap()
+            .unchecked_into::<web_sys::Element>();
         js(
             &root,
-            "value.firstElementChild.classList.add('retained-class');value.ownerDocument.defaultView.getSelection().removeAllRanges()",
+            "value.querySelector('.tool-output.expandable').classList.add('retained-class');value.ownerDocument.defaultView.getSelection().removeAllRanges()",
         );
         click(&first);
         assert!(expanded(&first));

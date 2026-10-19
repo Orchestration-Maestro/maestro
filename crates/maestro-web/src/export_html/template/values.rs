@@ -2,10 +2,6 @@
 use serde_json::Value;
 
 /// Borrow a string, keeping absent/null distinct from invalid display types.
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "Prepared for offline message consumers")
-)]
 pub(crate) fn str(value: Option<&Value>) -> Option<&str> {
     match value {
         None | Some(Value::Null) => Some(""),
@@ -15,10 +11,6 @@ pub(crate) fn str(value: Option<&Value>) -> Option<&str> {
 }
 
 /// Restrict the shared suffix registry to viewer-admitted languages.
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "Prepared for offline tool consumers")
-)]
 pub(crate) fn get_language_from_path(file_path: &str) -> Option<&'static str> {
     let suffix = file_path.rsplit('.').next()?.to_lowercase();
     matches!(
@@ -75,10 +67,6 @@ pub(crate) fn format_timestamp(
 /// Borrow the first matching result, reading message receivers only when reached.
 /// # Errors
 /// Returns the shared invalid-data failure for a reached missing/null message.
-#[cfg_attr(
-    not(test),
-    expect(dead_code, reason = "Prepared for offline tool consumers")
-)]
 pub(crate) fn find_tool_result<'a>(
     document: &'a super::SessionDocument,
     tool_call_id: &str,
@@ -127,4 +115,15 @@ pub(crate) fn localize_timestamp(timestamp: &serde_json::Value) -> std::io::Resu
         .map_err(|e| std::io::Error::other(format!("{e:?}")))?
         .as_string()
         .ok_or_else(|| std::io::Error::from(std::io::ErrorKind::InvalidData))
+}
+
+/// Shorten the viewer's lexical home prefixes without observing the host filesystem.
+pub(crate) fn shorten_path(path: &str) -> std::borrow::Cow<'_, str> {
+    for prefix in ["/Users/", "/home/"] {
+        if let Some(rest) = path.strip_prefix(prefix) {
+            let suffix = rest.find('/').map_or("", |index| &rest[index..]);
+            return std::borrow::Cow::Owned(format!("~{suffix}"));
+        }
+    }
+    std::borrow::Cow::Borrowed(path)
 }

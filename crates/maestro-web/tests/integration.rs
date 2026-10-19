@@ -115,3 +115,8 @@ mod message_renderer_support;
 use tool_renderer_support as renderer_recipes;
 
 use text_image_support::recording as recording_highlighter;
+
+mod offline_tool_card_support;
+mod offline_tool_cards;
+
+mod offline_tool_cards_browser;
