@@ -178,3 +178,9 @@ mod protocol_encoding;
 mod protocol_fields;
 
 mod protocol_tables;
+
+mod mouse_geometry;
+
+mod mouse_encoding;
+
+mod mouse_positions;

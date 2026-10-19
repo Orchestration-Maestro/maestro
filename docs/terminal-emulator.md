@@ -36,6 +36,24 @@ ASCII controls and is omitted for releases or modifiers that prevent text.
 Key text is owned. `KeyEvent::set_utf8` copies the supplied text, fixing the
 borrowed-buffer defect where changing the caller's text changed a stored event.
 
+`input::mouse::MouseEvent` carries an action, optional button, keyboard modifiers
+and surface-space pixel position. `input::mouse_encode::MouseEncoder::new(size)`
+starts with reporting disabled. Its `event` and `format` fields select press-only,
+normal, button-motion or all-motion reporting and byte, UTF-8, SGR, urxvt or SGR
+pixel output. `encode` returns owned bytes.
+
+The mouse geometry types live in `input::mouse_encode::size`. Cell dimensions
+must be nonzero and pixel dimensions must already account for display scaling.
+Coordinate conversion removes padding, clamps grid positions to the visible
+cells and leaves terminal-space pixels unclamped. Off-surface releases remain
+reportable; other off-surface events require motion tracking with
+`any_button_pressed` set. SGR pixels use rounded terminal-space coordinates.
+
+Mouse motion tracking is optional: set `last_cell` to `Some(None)` to start or
+reset cell deduplication, or to `None` to disable it. Accepted events update the
+tracked cell before wire-format limits or unsupported buttons are checked.
+SGR pixel reports bypass cell deduplication.
+
 ## Codepoint width
 
 [`maestro_terminal::unicode::codepoint_width`](https://docs.rs/maestro-terminal/latest/maestro_terminal/unicode/fn.codepoint_width.html)
