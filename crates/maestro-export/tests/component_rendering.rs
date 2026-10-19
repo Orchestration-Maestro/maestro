@@ -4,7 +4,7 @@
 fn result_padding_keeps_red_one_and_plain_two() {
     component_support::check("result_padding_keeps_red_one_and_plain_two");
 }
-mod component_support;
+use crate::component_support;
 #[test]
 fn width_defaults_only_when_omitted() {
     component_support::check("width_defaults_only_when_omitted");

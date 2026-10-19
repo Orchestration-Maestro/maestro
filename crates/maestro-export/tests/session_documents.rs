@@ -1,11 +1,14 @@
 //! Session-document behavior through public export operations.
 #![cfg(test)]
-mod support;
+use crate::support;
 use maestro_export::*;
 use maestro_session::{SessionManager, session_manager::ReadonlySessionManager};
 use serde_json::{Value, json};
 use std::{collections::VecDeque, io};
-use support::*;
+use support::{
+    ASSETS, CSS, NativeObserved, Operations, Renderer, Returns, Scratch, View, adapter_swap,
+    brand_swap, bundle, call_view, corpus, document, html, native_theme, payload, record,
+};
 
 #[test]
 fn preconditions_precede_render_assets_and_write() {
@@ -646,9 +649,7 @@ fn public_options_forward_theme_and_renderer() {
     }
 }
 
-#[path = "component_support/mod.rs"]
-#[allow(dead_code)]
-mod component_support;
+use crate::component_support;
 
 #[test]
 fn standard_renderer_integrates_with_document_export() {
