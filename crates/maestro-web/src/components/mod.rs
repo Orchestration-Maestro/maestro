@@ -2,6 +2,13 @@
 pub mod attachment_tile;
 /// Retained single-line browser input.
 pub mod input;
+/// Open custom-message role callbacks.
+pub mod message_renderer_registry;
+/// Retained transcript message rows.
+pub mod messages;
+pub(crate) mod native_text;
+/// Retained reasoning disclosure.
+pub mod thinking_block;
 
 /// Sandbox runtime messaging.
 pub mod sandbox;

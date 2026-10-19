@@ -15,6 +15,8 @@ pub enum ToolUiError {
     Host(AttachmentHostError),
     /// Reading preparation failed.
     Reading(ReadingUiError),
+    /// Attachment tile or overlay failed.
+    Attachment(crate::dialogs::attachment_overlay::AttachmentUiError),
     /// Tool operands or presentation could not be prepared.
     Presentation(String),
 }
@@ -25,6 +27,7 @@ impl std::fmt::Display for ToolUiError {
             Self::Control(error) => std::fmt::Display::fmt(error, f),
             Self::Host(error) => std::fmt::Display::fmt(error, f),
             Self::Reading(error) => std::fmt::Display::fmt(error, f),
+            Self::Attachment(error) => std::fmt::Display::fmt(error, f),
             Self::Presentation(error) => std::fmt::Display::fmt(error, f),
         }
     }
@@ -36,6 +39,7 @@ impl std::error::Error for ToolUiError {
             Self::Control(error) => std::error::Error::source(error),
             Self::Host(error) => Some(error),
             Self::Reading(error) => Some(error),
+            Self::Attachment(error) => Some(error),
             Self::Presentation(_) => None,
         }
     }

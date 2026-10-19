@@ -1,3 +1,4 @@
+.maestro-markdown-root { display: flow-root; }
 .maestro-artifact-padding { padding: var(--maestro-spacing-md); }
 .maestro-markdown {
   display: block;

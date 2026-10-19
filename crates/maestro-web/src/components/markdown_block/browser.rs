@@ -106,8 +106,6 @@ fn mount(
             "maestro-markdown-root"
         },
     )?;
-    flow.set_attribute("style", "display:flow-root")
-        .map_err(|e| host_error(&e))?;
     let style = code::styles(dom)?;
     style.set_text_content(Some(&format!(
         "{}{}",
@@ -136,6 +134,8 @@ fn mount(
     mounted.set_thinking(thinking);
     *owner.borrow_mut() = Rc::downgrade(&mounted);
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         element: flow,
         slots,
         commit: match update {

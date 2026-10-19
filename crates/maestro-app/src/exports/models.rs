@@ -2,15 +2,15 @@
 
 pub use maestro_models::{ModelCost, Usage, UsageCost};
 
-pub use maestro_agent::{AgentMessage, CustomAgentMessages, StreamFn};
+pub use maestro_agent::{AgentMessage, CustomAgentMessages, NoCustomMessages, StreamFn};
 
 pub use maestro_models::{
     AssistantContent, AssistantMessage, AssistantMessageEventStream, BoxFuture, Cancellation,
     Context, DiagnosticErrorInfo, Fetch, FetchError, HttpBody, HttpRequest, HttpResponse,
-    ImageContent, Message, Model, ModelInput, OAuthCallbacks, OAuthCredentials, OAuthError,
-    OAuthProviderInterface, ProviderStreamOptions, SharedAssistantMessage, SharedHandle,
-    SimpleStreamOptions, StopReason, TextContent, ToolResultMessage, UserBlock, UserContent,
-    default_fetch,
+    ImageContent, JsonObject, Message, Model, ModelInput, OAuthCallbacks, OAuthCredentials,
+    OAuthError, OAuthProviderInterface, ProviderStreamOptions, SharedAssistantMessage,
+    SharedHandle, SimpleStreamOptions, StopReason, TextContent, ToolCall, ToolResultMessage,
+    UserBlock, UserContent, UserMessage, default_fetch,
 };
 
 /// Agent reasoning levels, including disabled reasoning.

@@ -42,6 +42,11 @@ pub type ReadingMount = dyn Fn(&web_sys::Document) -> Result<ReadingRoot, Attach
 /// Feature-owned native reading root.
 #[cfg(target_arch = "wasm32")]
 pub struct ReadingRoot {
+    /// Feature-owned decoration style applied to the fixed frame, outside its backdrop root.
+    pub frame_style: &'static str,
+    /// Optional non-scrolling decoration, mounted inside the fixed clipped frame.
+    /// Its positioning and pointer policy belong to the feature's stylesheet.
+    pub decoration: Option<web_sys::Element>,
     /// Feature-created native text root.
     pub element: web_sys::Element,
     /// Empty native slots retaining their caller identities.

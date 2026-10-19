@@ -89,17 +89,14 @@ impl Paint {
             let egui::epaint::Primitive::Mesh(mesh) = primitive.primitive else {
                 continue;
             };
-            let source = mesh
+            for source in mesh
                 .indices
                 .as_chunks::<3>()
                 .0
                 .iter()
-                .find_map(|indices| triangle_pixel(&mesh, *indices, point, &self.textures));
-            let Some(source) = source else {
-                continue;
-            };
-            for (channel, value) in pixel.iter_mut().zip(source) {
-                *channel = value + *channel * (1. - source[3] / 255.);
+                .filter_map(|indices| triangle_pixel(&mesh, *indices, point, &self.textures))
+            {
+                pixel = std::array::from_fn(|i| source[i] + pixel[i] * (1. - source[3] / 255.));
             }
         }
         pixel
@@ -175,12 +172,24 @@ fn triangle_pixel(
         return None;
     }
     let weights = [
-        cross(second.pos - point, third.pos - point) / area,
-        cross(third.pos - point, first.pos - point) / area,
-    ];
-    let weights = [weights[0], weights[1], 1. - weights[0] - weights[1]];
+        cross(second.pos - point, third.pos - point),
+        cross(third.pos - point, first.pos - point),
+        cross(first.pos - point, second.pos - point),
+    ]
+    .map(|edge| edge / area);
     if weights.iter().any(|w| *w < 0.) {
         return None;
+    }
+    // Shared triangle edges belong to one face, not both alpha-blended faces.
+    for (weight, (from, to)) in
+        weights
+            .into_iter()
+            .zip([(second, third), (third, first), (first, second)])
+    {
+        let edge = (to.pos - from.pos) * area.signum();
+        if weight <= 0. && !(edge.y < 0. || edge.y <= 0. && edge.x > 0.) {
+            return None;
+        }
     }
     let vertices = [first, second, third];
     let mut source = std::array::from_fn(|i| {
@@ -332,4 +341,53 @@ pub fn icon(
             shape: egui::Shape::mesh(mesh),
         }],
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Paint;
+
+    /// Batched overlapping rectangles retain painter order after tessellation.
+    #[test]
+    fn canvas_samples_composite_every_covering_triangle_in_draw_order() {
+        let context = egui::Context::default();
+        let mut output = context.run_ui(egui::RawInput::default(), |ui| {
+            let rect = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(40., 40.));
+            ui.painter().add(egui::Shape::Vec(vec![
+                egui::Shape::rect_filled(rect, 0., egui::Color32::RED),
+                egui::Shape::rect_filled(rect, 0., egui::Color32::BLUE),
+            ]));
+        });
+        let mut paint = Paint::default();
+        paint.update(&output);
+        output.textures_delta.clear();
+        assert_eq!(
+            paint
+                .pixel(&context, &output.shapes, egui::pos2(17., 19.))
+                .map(f32::to_bits),
+            [0.0_f32, 0., 255., 255.].map(f32::to_bits)
+        );
+    }
+    /// One shared mesh edge cannot blend the same translucent surface twice.
+    #[test]
+    fn canvas_samples_shared_edges_only_once() {
+        let context = egui::Context::default();
+        let color = egui::Color32::from_rgba_premultiplied(0, 0, 128, 128);
+        let mut output = context.run_ui(egui::RawInput::default(), |ui| {
+            ui.painter().rect_filled(
+                egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(40., 40.)),
+                0.,
+                color,
+            );
+        });
+        let mut paint = Paint::default();
+        paint.update(&output);
+        output.textures_delta.clear();
+        assert_eq!(
+            paint
+                .pixel(&context, &output.shapes, egui::pos2(20., 20.))
+                .map(f32::to_bits),
+            color.to_array().map(|v| f32::from(v).to_bits())
+        );
+    }
 }

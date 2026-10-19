@@ -14,11 +14,16 @@ Dispatch releases its registry borrow before calling custom code.
 
 [`ToolRendererBinding`](../../crates/maestro-web/src/tools/types/binding.rs)
 keeps the native renderer. `from_raw` requires no serialization or decoding
-traits. `from_typed` additionally admits ordinary JSON parameters and details
-through the selected types' decoders. A decoder failure prevents the callback;
-an incompatible native operand type returns a rendering error.
+traits. `ToolRenderer` defaults to borrowed model `JsonObject` arguments and
+JSON-value details. Explicit type parameters keep native operands and non-object
+JSON values available. `from_typed` additionally admits both model objects and
+ordinary JSON values through the selected types' decoders. A decoder failure
+prevents the callback; an incompatible native operand type returns a rendering
+error.
 
-`ToolParams::json` uses canonical JSON formatting. `ToolParams::typed` borrows a
+`ToolParams::object` borrows the model's original map without wrapping or copying
+it. Its default projection uses the shared object writer. `ToolParams::json` uses
+canonical JSON formatting for an explicit JSON-value operand. `ToolParams::typed` borrows a
 native value with a formatter that runs only when default rendering is selected.
 The borrowed result view delegates the original message envelope and content;
 custom renderers can retain their own shared data in the returned recipe.
@@ -33,7 +38,7 @@ use maestro_web::{DefaultRenderer, ToolRenderer, register_tool_renderer, render_
 use maestro_web::tools::types::{ToolParams, ToolRendererBinding, ToolRenderView};
 use std::rc::Rc;
 
-let renderer: Rc<dyn ToolRenderer> = Rc::new(DefaultRenderer);
+let renderer: Rc<dyn ToolRenderer<serde_json::Value>> = Rc::new(DefaultRenderer);
 register_tool_renderer("inspect", ToolRendererBinding::from_raw(renderer));
 let params = serde_json::json!({"path": "src"});
 let recipe = render_tool::<serde_json::Value, serde_json::Value>(

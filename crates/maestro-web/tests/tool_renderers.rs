@@ -9,7 +9,7 @@ use serde_json::Value;
 use std::rc::Rc;
 
 struct Renderer(&'static str);
-impl ToolRenderer for Renderer {
+impl ToolRenderer<Value> for Renderer {
     fn render(
         &self,
         _: Option<&Value>,
@@ -26,12 +26,12 @@ impl ToolRenderer for Renderer {
 fn registry_preserves_replacement_and_retained_handles() {
     TOOL_RENDERERS.with(|all| all.borrow_mut().clear());
     assert!(get_tool_renderer::<Value, Value>("missing").is_none());
-    let renderer: Rc<dyn ToolRenderer> = Rc::new(Renderer("original"));
+    let renderer: Rc<dyn ToolRenderer<Value>> = Rc::new(Renderer("original"));
     for name in ["", "雪", "__proto__"] {
         register_tool_renderer(name, ToolRendererBinding::from_raw(renderer.clone()));
     }
     let retained = get_tool_renderer::<Value, Value>("雪").unwrap();
-    let replacement: Rc<dyn ToolRenderer> = Rc::new(Renderer("replacement"));
+    let replacement: Rc<dyn ToolRenderer<Value>> = Rc::new(Renderer("replacement"));
     register_tool_renderer("雪", ToolRendererBinding::from_raw(replacement.clone()));
     let current = get_tool_renderer::<Value, Value>("雪").unwrap();
     assert!(Rc::ptr_eq(&current, &replacement));
@@ -195,7 +195,7 @@ fn typed_tool_renderer_json_admission_preserves_borrowed_message_fields() {
         .is_custom
     );
     assert_eq!(seen.get(), 1);
-    let raw: Rc<dyn ToolRenderer> = Rc::new(Renderer("original"));
+    let raw: Rc<dyn ToolRenderer<Value>> = Rc::new(Renderer("original"));
     let binding = ToolRendererBinding::from_typed(raw.clone());
     assert!(Rc::ptr_eq(
         &binding.renderer::<Value, Value>().unwrap(),
@@ -261,7 +261,7 @@ fn json_mode_bypasses_custom_renderers_without_unregistering() {
     reset();
     let calls = Rc::new(Cell::new(0));
     let count = calls.clone();
-    let renderer: Rc<dyn ToolRenderer> = Rc::new(CallbackRenderer(Rc::new(
+    let renderer: Rc<dyn ToolRenderer<Value>> = Rc::new(CallbackRenderer(Rc::new(
         move |_: Option<&Value>, _: Option<ToolResultMessageView<'_>>, _| {
             count.set(count.get() + 1);
             Ok(content("custom", true))

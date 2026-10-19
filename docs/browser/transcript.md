@@ -1,4 +1,90 @@
-# Native copy controls
+# Browser transcript
+
+## Retained message rows
+
+`UserMessage`, `AssistantMessage`, `ToolMessage`, `ToolMessageDebugView`,
+`AbortedMessage` and `ThinkingBlock` are available at the web crate root and
+under `components`. Construct host-backed rows with `new(host)`; tool rows need
+no host until rendering. Each render borrows `ToolRenderView` for the current
+localization, presentation, syntax engine, native host and modal identity.
+Keep the row between frames, not its borrowed view or props.
+
+`UserMessageInput` borrows ordinary user content or content with the original
+attachment handles. Only the first text block is displayed. A render returns
+independently owned attachment overlays: keep those overlays separately if they
+must outlive the row. The user bubble's gradient and border share its fixed
+frame; that frame applies the rounded backdrop blur outside the text scroller.
+
+`AssistantMessageProps` supplies tool names, pending IDs, result maps, visibility
+flags, streaming state and an optional cost action. `ToolMessageProps` borrows
+the original call and result. Both preserve caller-defined native result details
+without serialization bounds. Assistant children retain state by visible position
+and component kind. Thinking disclosures start collapsed and keep expansion
+through content and streaming updates. Replacing the cost action replaces the
+live callback; removing usage or releasing the row revokes it.
+
+Debug fields distinguish absent arguments/details, explicit JSON null and
+result presence. Strict JSON strings are parsed for display; other strings stay
+literal. All three debug listings use literal code input, so `YWJj` stays
+`YWJj` when displayed or copied. The standalone encoded-input `CodeBlock`
+constructor keeps its existing behavior.
+
+All text uses the existing native reading host, with its fixed placement frame,
+clipped scrolling viewport, fractional canvas projection and modal admission.
+Message rows do not add a separate placement or event-listener system.
+
+## Custom message roles
+
+`register_message_renderer`, `get_message_renderer` and `render_message` use
+open role strings. Registering the same role replaces the current callback for
+that native message representation. A previously retained callback remains
+usable. Unknown roles return no content. Callbacks prepare owned `ToolContent`
+recipes; draw them with the ordinary `ToolRenderResult` and `ToolRenderState`.
+The registry releases its guards before invoking or dropping user callbacks.
+
+A custom message can carry a native handle without JSON conversion:
+
+```rust
+use std::sync::{Arc, atomic::{AtomicU32, Ordering}};
+use maestro_app::{AgentMessage, CustomAgentMessages, ToolRendererState};
+use maestro_web::{MessageRenderer, register_message_renderer};
+use maestro_web::tools::types::{ToolContent, ToolRenderView, ToolUiError};
+
+struct NativeMessage {
+    role: String,
+    counter: Arc<AtomicU32>,
+}
+impl CustomAgentMessages for NativeMessage {
+    fn role(&self) -> &str { &self.role }
+}
+struct Label(String);
+impl ToolContent for Label {
+    fn render(
+        &self, ui: &mut egui::Ui, _: ToolRenderView<'_>, _: &ToolRendererState,
+    ) -> Result<egui::Response, ToolUiError> {
+        Ok(ui.label(&self.0))
+    }
+}
+struct CounterRenderer;
+impl MessageRenderer<NativeMessage> for CounterRenderer {
+    fn render(
+        &self, message: &AgentMessage<NativeMessage>,
+    ) -> Result<Box<dyn ToolContent>, ToolUiError> {
+        let AgentMessage::Custom(value) = message else {
+            return Err(ToolUiError::Presentation("Expected a native counter".into()));
+        };
+        let value = value.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+        Ok(Box::new(Label(value.counter.load(Ordering::Relaxed).to_string())))
+    }
+}
+register_message_renderer("counter", std::rc::Rc::new(CounterRenderer));
+```
+
+The input remains the caller's `AgentMessage<NativeMessage>`. Changing its
+counter changes the next prepared recipe; no registry or message guard spans
+recipe drawing.
+
+## Native copy controls
 
 `maestro_web::components::copy_button::CopyButton` retains a supplied
 `AttachmentHost`. Construct it with the current localization owner, set `text`,

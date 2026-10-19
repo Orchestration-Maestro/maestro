@@ -170,12 +170,16 @@ impl Composition {
                 );
                 let controls = vec![(egui::Id::new("link-slot"), slot)];
                 *target.borrow_mut() = Some(ReadingRoot {
+                    frame_style: "",
+                    decoration: None,
                     element: root.clone(),
                     slots: controls.clone(),
                     commit: None,
                     owner: None,
                 });
                 Ok(ReadingRoot {
+                    frame_style: "",
+                    decoration: None,
                     element: root,
                     slots: controls,
                     commit: None,

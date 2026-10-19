@@ -1,0 +1,35 @@
+.maestro-tool-caption, .maestro-tool-label, .maestro-message-usage, .maestro-thinking-header, .maestro-message-abort, .maestro-message-error {
+  display: block;
+  color: var(--maestro-color-muted);
+  font-family: var(--maestro-type-body-font);
+}
+.maestro-tool-caption, .maestro-thinking-header, .maestro-message-abort, .maestro-message-error { font-size: 0.875rem; line-height: 1.25rem; }
+.maestro-tool-label, .maestro-message-usage { font-size: 0.75rem; line-height: 1rem; }
+.maestro-tool-label { font-weight: 500; }
+.maestro-message-abort, .maestro-message-error { color: var(--maestro-color-error); }
+.maestro-message-abort { font-style: italic; }
+.maestro-text-action { cursor: pointer; transition: color 0.2s; }
+.maestro-text-action:not(.maestro-shimmer):hover, .maestro-text-hover:not(.maestro-shimmer) { color: var(--maestro-color-text); }
+.maestro-thinking-header { user-select: none; padding: 0.25rem 0; }
+.maestro-shimmer {
+  background: linear-gradient(to right, var(--maestro-color-muted), var(--maestro-color-text), var(--maestro-color-muted));
+  background-size: 200% 100%;
+  background-clip: text;
+  color: transparent;
+  animation: maestro-shimmer 2s ease-in-out infinite;
+}
+@keyframes maestro-shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+
+.maestro-user-decoration {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-sizing: border-box;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--maestro-color-accent) 12%, transparent), color-mix(in srgb, var(--maestro-color-live) 12%, transparent), color-mix(in srgb, var(--maestro-color-warning) 12%, transparent));
+  border: 1px solid color-mix(in srgb, var(--maestro-color-live) 25%, transparent);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}

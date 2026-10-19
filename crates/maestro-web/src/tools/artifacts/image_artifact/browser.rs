@@ -72,6 +72,8 @@ pub(super) fn mount(
     };
     sync(&body.borrow()).map_err(|error| host_error(&error))?;
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         element: root,
         slots: vec![],
         owner: listener.map(|listener| Box::new(listener) as Box<dyn std::any::Any>),

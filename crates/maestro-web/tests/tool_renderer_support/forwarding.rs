@@ -16,7 +16,7 @@ struct Forwarding {
     blocks: usize,
     calls: Rc<Cell<usize>>,
 }
-impl ToolRenderer for Forwarding {
+impl ToolRenderer<Value> for Forwarding {
     fn render(
         &self,
         params: Option<&Value>,

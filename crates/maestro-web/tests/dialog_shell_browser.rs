@@ -184,6 +184,8 @@ pub fn dialog_body_keeps_owned_mixed_content() {
             let control = document.create_element("span").unwrap();
             element.append_child(&control).unwrap();
             Ok(ReadingRoot {
+                frame_style: "",
+                decoration: None,
                 element,
                 slots: vec![(slot, control)],
                 commit: None,
@@ -571,6 +573,8 @@ pub fn dialog_first_frame_uses_current_body_size_and_slot_geometry() {
             child.set_id("dialog-body-slot");
             element.append_child(&child).unwrap();
             Ok(ReadingRoot {
+                frame_style: "",
+                decoration: None,
                 element,
                 slots: vec![(slot, child)],
                 commit: None,

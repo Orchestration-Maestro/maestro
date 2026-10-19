@@ -42,6 +42,8 @@ pub(in crate::dialogs::attachment_overlay) fn mount(
     text.borrow_mut().nodes = Some(nodes);
     sync(&text.borrow());
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         commit: None,
         owner: None,
         element: root,

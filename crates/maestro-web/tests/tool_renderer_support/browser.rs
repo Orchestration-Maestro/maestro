@@ -3,8 +3,6 @@
 use crate::markdown_support::Surface;
 use maestro_web::tools::types::ToolUiError;
 use maestro_web::{
-    TranslationFunction,
-    browser::attachment_content::AttachmentHost,
     components::code_block::{CodeBlock, CodeBlockView},
     tools::{
         renderer_registry::ToolHeaderState,
@@ -13,18 +11,7 @@ use maestro_web::{
 };
 use std::rc::Rc;
 
-pub fn view<'a>(
-    host: &'a Rc<dyn AttachmentHost>,
-    frame: CodeBlockView<'a, TranslationFunction>,
-) -> ToolRenderView<'a> {
-    ToolRenderView {
-        host,
-        i18n: frame.i18n,
-        presentation: frame.presentation,
-        highlighter: frame.highlighter,
-        modal: frame.modal,
-    }
-}
+pub use crate::support::reading_view::view;
 /// Observe the real native recipe through the shared frame.
 /// # Panics
 /// Panics if native setup or the expected observation fails.

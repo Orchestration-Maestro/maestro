@@ -230,6 +230,12 @@ impl BrowserAttachmentHost {
             .child
             .set_attribute("class", "maestro-reading-viewport")
             .map_err(|e| host_error(&e))?;
+        if let Some(decoration) = &root.decoration {
+            candidate
+                .wrapper
+                .insert_before(decoration, Some(&candidate.child))
+                .map_err(|e| host_error(&e))?;
+        }
         candidate
             .child
             .append_child(&root.element)
@@ -310,6 +316,7 @@ impl BrowserAttachmentHost {
             reading.stage(s, style, placement);
             return Ok(());
         }
+        let style = style + reading.root.frame_style;
         let top = self.overlays.borrow().last().copied();
         let previous = std::mem::replace(&mut target.style, style);
         let previous_modal = target.modal;

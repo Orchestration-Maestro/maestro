@@ -48,6 +48,8 @@ pub(super) fn mount(
     text.nodes = Some(nodes);
     sync(&text);
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         commit: None,
         owner: None,
         element: root,

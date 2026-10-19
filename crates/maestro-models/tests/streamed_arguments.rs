@@ -593,3 +593,54 @@ fn parsed_arguments_preserves_object_fallback_and_public_path() {
         }
     }
 }
+
+/// Strict display parsing shares projection without model string repair.
+#[test]
+fn strict_json_projection_preserves_complete_values_without_repair() {
+    use maestro_models::arguments::json_parse::parse_json;
+    use serde_json::json;
+    for input in ["1e309", "-1e309"] {
+        assert_eq!(parse_json(input).unwrap(), serde_json::Value::Null);
+    }
+    assert_eq!(parse_json(r#"{"n":1e309}"#).unwrap(), json!({"n": null}));
+    assert_eq!(parse_json("1e308").unwrap().as_f64(), Some(1e308));
+    let duplicate = parse_json(r#"{"first":"\ud800","last":3,"first":7}"#).unwrap();
+    assert_eq!(duplicate, json!({"first":7,"last":3}));
+    assert_eq!(
+        duplicate
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect::<Vec<_>>(),
+        ["first", "last"]
+    );
+    assert!(
+        parse_json("-0")
+            .unwrap()
+            .as_f64()
+            .unwrap()
+            .is_sign_negative()
+    );
+    for input in [
+        "\"raw\ncontrol\"",
+        "\u{feff}null",
+        "\u{85}null",
+        "{} trailing",
+        "[1,",
+    ] {
+        let native = serde_json::from_str::<serde_json::Value>(input).unwrap_err();
+        assert_eq!(
+            parse_json(input).unwrap_err().to_string(),
+            native.to_string()
+        );
+    }
+    assert_eq!(
+        parse_json(" \r\n\t[false,0,\"\"] \n").unwrap(),
+        json!([false, 0, ""])
+    );
+    assert_eq!(
+        maestro_models::parse_json_with_repair("\"raw\ncontrol\"").unwrap(),
+        json!("raw\ncontrol")
+    );
+}

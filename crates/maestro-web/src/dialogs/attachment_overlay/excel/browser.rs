@@ -62,6 +62,8 @@ pub(super) fn mount(
     *sheets.nodes.borrow_mut() = nodes;
     select(sheets, 0)?;
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         commit: None,
         owner: None,
         element: root,

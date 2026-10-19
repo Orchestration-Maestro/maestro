@@ -82,12 +82,16 @@ impl Slots {
                     })
                     .collect::<Vec<_>>();
                 *target.borrow_mut() = Some(ReadingRoot {
+                    frame_style: "",
+                    decoration: None,
                     commit: None,
                     owner: None,
                     element: root.clone(),
                     slots: slots.clone(),
                 });
                 Ok(ReadingRoot {
+                    frame_style: "",
+                    decoration: None,
                     commit: None,
                     owner: None,
                     element: root,

@@ -235,6 +235,8 @@ fn reading_content(
             element.set_class_name(class);
             element.set_text_content(Some("retained native text"));
             Ok(ReadingRoot {
+                frame_style: "",
+                decoration: None,
                 commit: None,
                 owner: None,
                 element,
