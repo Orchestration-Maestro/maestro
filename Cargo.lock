@@ -3438,10 +3438,16 @@ name = "maestro-detection"
 version = "0.1.0"
 dependencies = [
  "maestro-dependencies",
+ "maestro-lock",
  "maestro-process",
  "maestro-protocol",
  "maestro-test-process",
  "maestro-text",
+ "regex",
+ "serde",
+ "serde_json",
+ "toml",
+ "tracing",
 ]
 
 [[package]]
