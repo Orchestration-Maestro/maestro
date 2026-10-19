@@ -657,6 +657,24 @@ pub struct RecordedTruncation {
     /// Byte budget.
     pub max_bytes: usize,
 }
+impl RecordedTruncation {
+    /// The typed truncation with `truncated_by` as the tool reports it.
+    pub fn result(self, truncated_by: Option<TruncationBy>) -> TruncationResult {
+        TruncationResult {
+            content: String::new(),
+            truncated: self.truncated,
+            max_bytes: self.max_bytes,
+            truncated_by,
+            total_lines: 0,
+            total_bytes: 0,
+            output_lines: 0,
+            output_bytes: 0,
+            last_line_partial: false,
+            first_line_exceeds_limit: false,
+            max_lines: 0,
+        }
+    }
+}
 
 /// Recorded result details.
 #[derive(Deserialize)]
@@ -675,19 +693,9 @@ fn ls_result(result: &Value) -> AgentToolResult<LsToolDetails> {
         let recorded: RecordedDetails = serde_json::from_value(details.clone()).unwrap();
         LsToolDetails {
             entry_limit_reached: recorded.entry_limit_reached,
-            truncation: recorded.truncation.map(|cut| TruncationResult {
-                truncated: cut.truncated,
-                max_bytes: cut.max_bytes,
-                content: String::new(),
-                truncated_by: Some(TruncationBy::Bytes),
-                total_lines: 0,
-                total_bytes: 0,
-                output_lines: 0,
-                output_bytes: 0,
-                last_line_partial: false,
-                first_line_exceeds_limit: false,
-                max_lines: 0,
-            }),
+            truncation: recorded
+                .truncation
+                .map(|cut| cut.result(Some(TruncationBy::Bytes))),
         }
     });
     AgentToolResult {

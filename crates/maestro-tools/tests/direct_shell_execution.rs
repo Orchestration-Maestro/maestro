@@ -417,21 +417,7 @@ fn direct_local_line_overflow_writes_complete_artifact() {
         assert!(result.truncated);
         assert_eq!(result.exit_code, Some(0.0));
         assert!(!result.cancelled);
-        let filename = std::path::Path::new(&path)
-            .file_name()
-            .unwrap()
-            .to_str()
-            .unwrap();
-        let id = filename
-            .strip_prefix("maestro-bash-")
-            .unwrap()
-            .strip_suffix(".log")
-            .unwrap();
-        assert_eq!(id.len(), 16);
-        assert!(
-            id.bytes()
-                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
-        );
+        crate::agent_shell_support::assert_output_file_name(&path);
     });
 }
 

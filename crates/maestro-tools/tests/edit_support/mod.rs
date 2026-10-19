@@ -74,7 +74,7 @@ use crate::{
     read_support::content_json,
     write_support::{Journal, Mode, ScriptedWrite},
 };
-use maestro_agent::AgentToolResult;
+use maestro_agent::{AgentTool, AgentToolResult};
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
 use maestro_tools::{
     EditOperations, EditToolDetails, EditToolInput, EditToolOptions, ToolDefinition,
@@ -165,8 +165,17 @@ pub fn index(stage: &str) -> usize {
     }
 }
 /// A definition over supplied operations.
-pub fn tool(ops: &Arc<Operations>, cwd: &str) -> Tool {
+pub fn tool(ops: &Arc<impl EditOperations + 'static>, cwd: &str) -> Tool {
     create_edit_tool_definition(
+        cwd.into(),
+        EditToolOptions {
+            operations: Some(ops.clone()),
+        },
+    )
+}
+/// The wrapped agent tool over supplied operations.
+pub fn agent_tool(ops: &Arc<Operations>, cwd: &str) -> AgentTool {
+    maestro_tools::create_edit_tool(
         cwd.into(),
         EditToolOptions {
             operations: Some(ops.clone()),

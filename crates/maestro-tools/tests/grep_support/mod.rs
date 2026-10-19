@@ -297,19 +297,7 @@ pub fn rendered_result(value: &Value) -> maestro_agent::AgentToolResult<GrepTool
         GrepToolDetails {
             match_limit_reached: d.match_limit_reached,
             lines_truncated: d.lines_truncated,
-            truncation: d.truncation.map(|cut| maestro_tools::TruncationResult {
-                content: String::new(),
-                truncated: cut.truncated,
-                max_bytes: cut.max_bytes,
-                truncated_by: None,
-                total_lines: 0,
-                total_bytes: 0,
-                output_lines: 0,
-                output_bytes: 0,
-                last_line_partial: false,
-                first_line_exceeds_limit: false,
-                max_lines: 0,
-            }),
+            truncation: d.truncation.map(|cut| cut.result(None)),
         }
     });
     maestro_agent::AgentToolResult {

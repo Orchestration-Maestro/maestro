@@ -462,21 +462,7 @@ pub fn normalize(result: &mut Value, updates: &mut [Value]) -> Vec<Vec<u8>> {
     let bytes = paths
         .iter()
         .map(|path| {
-            let filename = std::path::Path::new(path)
-                .file_name()
-                .unwrap()
-                .to_str()
-                .unwrap();
-            let id = filename
-                .strip_prefix("maestro-bash-")
-                .unwrap()
-                .strip_suffix(".log")
-                .unwrap();
-            assert_eq!(id.len(), 16);
-            assert!(
-                id.bytes()
-                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
-            );
+            assert_output_file_name(path);
             let bytes = std::fs::read(path).unwrap();
             std::fs::remove_file(path).unwrap();
             bytes
@@ -486,6 +472,27 @@ pub fn normalize(result: &mut Value, updates: &mut [Value]) -> Vec<Vec<u8>> {
         replace_paths(value, &paths);
     }
     bytes
+}
+/// Require the full-output file name: `maestro-bash-`, 16 lowercase hex digits, `.log`.
+///
+/// # Panics
+/// Panics when the name differs.
+pub fn assert_output_file_name(path: &str) {
+    let filename = std::path::Path::new(path)
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap();
+    let id = filename
+        .strip_prefix("maestro-bash-")
+        .unwrap()
+        .strip_suffix(".log")
+        .unwrap();
+    assert_eq!(id.len(), 16);
+    assert!(
+        id.bytes()
+            .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+    );
 }
 /// Keep the complete JSON tree while replacing only known artifact strings.
 fn replace_paths(value: &mut Value, paths: &[String]) {
