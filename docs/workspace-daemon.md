@@ -2,7 +2,7 @@
 
 The [daemon specification](specs/workspace-daemon.md) defines the application.
 The transport leaf described here provides synchronous Unix sockets; application
-wiring and environment selection are tracked in [path composition](https://github.com/Orchestration-Maestro/maestro/issues/1441).
+wiring remains separate from its supplied-path and owned selection interfaces.
 The common command records live in [daemon protocol](daemon-protocol.md).
 
 ## Sockets
@@ -17,7 +17,7 @@ shared [JSONL codec](json.md#jsonl-framing); socket code defines no command set.
 2. The client path derived from the supplied API socket override
    (`MAESTRO_SOCKET_PATH` at the application boundary).
 3. The supplied client override (`MAESTRO_CLIENT_SOCKET_PATH`), even when empty.
-4. `maestro-client.sock` inside the supplied daemon folder.
+4. `daemon-client.sock` inside the supplied daemon folder.
 
 Derivation uses the API path's native file stem and parent: `api.sock` becomes
 `api-client.sock`, `a.tar.gz` becomes `a.tar-client.sock`, and a path with no usable
@@ -46,6 +46,19 @@ not consumed by a disconnect probe.
 Windows transport is tracked in [Windows sockets](https://github.com/Orchestration-Maestro/maestro/issues/1473),
 and other Unix qualification in [Unix qualification](https://github.com/Orchestration-Maestro/maestro/issues/1472).
 See [socket libraries](libraries/workspace-daemon.md) for dependency features and licences.
+
+## Window-title templates
+
+`maestro_daemon::settings::window_title` parses the default
+`{hostname}: {workspace}` format and the `hostname`, `workspace`, `tab`, `pane`
+and `terminal_title` tokens. Doubled braces are literal braces; whitespace inside
+a token is ignored. Empty formats disable titles. Unknown tokens and unbalanced
+braces return diagnostics rather than a partial template.
+
+Title sanitation removes control characters, keeps the first 200 Unicode scalar
+values, then trims surrounding whitespace. An empty result is absent. The library
+provides parsing and sanitation; applying titles to the outer terminal remains a
+runtime responsibility.
 
 ## Topology
 
@@ -257,3 +270,92 @@ Host pixel coordinates are one-based; cells and pane rectangles are zero-based.
 Pane pixel results are one-based and scaled with integer arithmetic. Report
 parsing requires a complete numeric SGR report. Relocation preserves the button
 text and terminator without imposing parsing's stricter numeric validation.
+
+## Named daemons
+
+`maestro_daemon::instances::Selection` observes supplied attach arguments, an
+explicit daemon-command target and inherited environment values. It never
+rewrites argv or changes process environment. `attach --daemon <name>` and
+`attach --daemon=<name>` select explicitly; chat `--session` arguments and
+arguments after `--` remain untouched. Help stays with command dispatch.
+
+Names contain 1–64 ASCII letters, digits, dots, underscores or hyphens; `.` and
+`..` are rejected. `default` selects the agent root. Listing returns default once,
+then valid named directories in lexical order. Deletion refuses default and live
+daemons, tolerates a missing directory and leaves other folders alone.
+
+Explicit selection ignores inherited socket overrides. Implicit API overrides
+win over client-only overrides; either avoids validating an unused inherited
+name. Attach, stop and restart guidance names the selected daemon and warns that
+stopping exits pane processes. A custom API socket is retained in restart
+guidance. Selection does not dispatch commands, launch a process or implement
+graceful stop.
+
+## Environment names
+
+`maestro_daemon::environment::NAMES` lists the names injected into panes and
+workspace actions, plus the inputs observed by daemon selection. It is a
+vocabulary table, not an environment reader or launcher. Callers supply observed
+values to `SelectionEnvironment`; selection never mutates the process environment.
+
+| Name | Consumers |
+|---|---|
+| `MAESTRO_ENV` | Pane, action |
+| `MAESTRO_SOCKET_PATH` | Pane, action, daemon selection |
+| `MAESTRO_BIN_PATH` | Pane, action |
+| `MAESTRO_WORKSPACE_ID` | Pane, action |
+| `MAESTRO_TAB_ID` | Pane, action |
+| `MAESTRO_PANE_ID` | Pane, action |
+| `MAESTRO_PANE_RUNTIME_ID` | Pane on Windows |
+| `MAESTRO_ACTION_ROOT` | Action pane, action |
+| `MAESTRO_ACTION_CONFIG_DIR` | Action pane, action |
+| `MAESTRO_ACTION_STATE_DIR` | Action pane, action |
+| `MAESTRO_ACTION_MANIFEST_ID` | Action pane, action |
+| `MAESTRO_ACTION_ENTRYPOINT_ID` | Action pane, action |
+| `MAESTRO_ACTION_CONTEXT_JSON` | Action pane, action |
+| `MAESTRO_ACTION_ID` | Action runtime |
+| `MAESTRO_ACTION_EVENT` | Action runtime |
+| `MAESTRO_ACTION_EVENT_JSON` | Action runtime |
+| `MAESTRO_ACTION_CLICKED_URL` | Action runtime |
+| `MAESTRO_ACTION_LINK_HANDLER_ID` | Action runtime |
+| `MAESTRO_DAEMON` | Daemon selection |
+| `MAESTRO_CLIENT_SOCKET_PATH` | Daemon selection |
+
+Optional context fields are injected only when present. The manifest identifier
+and the identifier of an action declared by that manifest are distinct values.
+Build flags, test inputs and unrelated runtime settings are not daemon-selection
+inputs.
+
+## File logging
+
+`logging::init_file_logging` takes `DaemonPaths`, a role and the caller's observed
+`MAESTRO_LOG` value. Roles `in-process`, `client` and `daemon` write
+`maestro-in-process.log`, `maestro-client.log` and `maestro-daemon.log` in the
+selected daemon folder. `help_log_paths_summary` describes those locations.
+
+All file writers share one synchronized retained file per initialization. Output
+appends until a write would exceed 5 MiB, then replaces the file without keeping
+numbered generations. File creation failure leaves logging uninstalled; a later
+write, flush or rotation failure disables that writer without failing the caller.
+An already-installed process subscriber is not replaced.
+
+The default filter is `maestro=info`. A supplied valid `MAESTRO_LOG` directive
+replaces it; an invalid directive uses the default. Logs include targets and
+structured event fields without ANSI colour. Routine API observations log at
+DEBUG; nonroutine UI-changing requests and non-OK completions log at INFO.
+Request failures and wait timeouts log at WARN. Pane wait and persistence failures
+log at ERROR. Lifecycle, workspace, tab, restore, update and integration helpers
+retain their event, subsystem, outcome and operation-specific fields.
+
+## Snapshot operations
+
+`persist::save`, `clear` and `clear_history` use `DaemonPaths` and the existing
+workspace snapshot storage. They add no format or serializer. Save commits
+topology before separate history; absent history removes the history file.
+Only a completed combined save emits success. A history failure does not undo
+already-committed topology.
+
+Clear removes topology first. If that fails, history remains untouched and only
+the failure is logged. Once topology is removed, clear attempts history removal
+before reporting topology-clear success, even if history removal failed.
+Direct history clear tolerates absence and reports other native removal errors.

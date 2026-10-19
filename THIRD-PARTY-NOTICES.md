@@ -757,6 +757,25 @@ modules and reuse the toolkit decoders. Chat and
 host input share sequence recognition while retaining their different byte and
 paste policies. These reuse the existing protocol vocabulary rather than
 terminal-library records.
+The typed preference records in `crates/maestro-daemon/src/settings/model/`,
+sidebar rows in `settings/sidebar.rs`, notification sound selection in
+`settings/sound.rs`, theme data in
+`settings/theme.rs`, tab entries in `settings/tab_bar.rs`, window-title templates
+in `settings/window_title.rs`, global projection and diagnostics in `settings/io.rs`
+and `settings/io/`, annotated defaults in `settings/defaults.jsonc` and their
+settings tests derive from the configuration, configuration I/O, model, sidebar,
+sound, theme, tab-bar, window-title and default configuration sources under the
+same license.
+The supplied paths and named-daemon operations in `crates/maestro-daemon/src/paths.rs`
+and `instances.rs` derive from the session, persistence I/O, detection catalog,
+action paths, announcement and remote path sources. The action component encoder
+and its hash and reserved-stem helpers derive from the action paths and API
+schema helpers under the same license. Their tests retain the source cases.
+
+The environment vocabulary, structured events, synchronized rotating file writer
+and daemon snapshot wrappers in `crates/maestro-daemon/src/` derive from the pane,
+integration environment, action runtime/environment, logging and persistence I/O
+sources under the same license. The writer tests retain the source cases.
 
 The pane terminal, shell and foreground process code in `crates/maestro-process/`
 also derives from herdr v0.8.2 under Apache-2.0. Its process sources include the

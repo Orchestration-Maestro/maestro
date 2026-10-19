@@ -71,3 +71,60 @@ and test support retain their own closures.
 | unicode-ident | 1.0.24 | (MIT OR Apache-2.0) AND Unicode-3.0 |
 | winnow | 1.0.4 | MIT |
 | zmij | 1.0.23 | MIT |
+
+## Workspace preference validation
+
+`maestro-daemon` uses the already-locked `time =0.3.55` with default features and
+`formatting` to parse strftime formats and check that a date/time value can render
+them. It does not start a clock or schedule commands.
+
+Its host-resolved external closure reuses these locked packages:
+
+| Package | Version | Licence |
+|---|---|---|
+| deranged | 0.5.8 | MIT OR Apache-2.0 |
+| num-conv | 0.2.2 | MIT OR Apache-2.0 |
+| powerfmt | 0.2.1 | MIT OR Apache-2.0 |
+| serde_core | 1.0.229 | MIT OR Apache-2.0 |
+| time | 0.3.55 | MIT OR Apache-2.0 |
+| time-core | 0.1.9 | MIT OR Apache-2.0 |
+
+## Workspace preference diagnostics
+
+The daemon activates its declared settings dependency for global projection and
+reuses `tracing =0.1.44` with defaults disabled and `std` for startup warnings.
+Inherited `serde_json =1.0.151` (`preserve_order`, `float_roundtrip`) is now a normal
+dependency. Unknown-key capture uses the existing Serde visitor interface over
+borrowed JSON values; no parser or ignored-field library is added.
+
+Production file logging uses approved `tracing-subscriber =0.3.23` with default
+features and `env-filter`. Controlled warning tests reuse it for thread-scoped
+capture. Logging promotes the already-locked subscriber to a normal dependency;
+no new package identity is added.
+The tests drive settings futures with the already-locked `tokio =1.53.2` runtime
+feature. No production runtime is introduced by preference loading.
+
+The subscriber adds these approved locked identities:
+
+| Package | Version | Licence |
+|---|---|---|
+| lazy_static | 1.5.1 | MIT OR Apache-2.0 |
+| matchers | 0.2.0 | MIT |
+| nu-ansi-term | 0.50.3 | MIT |
+| sharded-slab | 0.1.7 | MIT |
+| thread_local | 1.1.10 | MIT OR Apache-2.0 |
+| tracing-log | 0.2.0 | MIT |
+| tracing-subscriber | 0.3.23 | MIT |
+| valuable | 0.1.1 | MIT |
+
+Other selected subscriber dependencies reuse the detection closure above, plus
+`smallvec =1.16.2` (MIT OR Apache-2.0) and `log =0.4.34` (MIT OR Apache-2.0).
+
+## Action path components
+
+`maestro-daemon` reuses the already-locked `sha2 =0.11.0`, with default features
+disabled, for the six-byte SHA-256 suffix on long action path components. This is
+the same approved dependency used by the model and package owners; it adds no
+package identity or version. SHA-2 is licensed under MIT OR Apache-2.0. The shared
+native feature unifier is unchanged. Windows device-stem recognition reuses
+`maestro-path::win32::is_reserved`; the daemon keeps no second reserved-name list.

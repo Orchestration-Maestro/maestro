@@ -33,8 +33,12 @@ fn same_name(a: &str, b: &str) -> bool {
     a == b || a.to_lowercase() == b.to_lowercase()
 }
 
-/// Report whether `name` is a reserved device name.
-fn is_reserved(name: &str) -> bool {
+/// Report whether an entire name is a reserved Windows device stem.
+///
+/// Matching ignores ASCII case and includes the superscript digit spellings.
+/// Callers testing a filename must supply its stem before the first dot.
+#[must_use]
+pub fn is_reserved(name: &str) -> bool {
     RESERVED
         .iter()
         .any(|reserved| reserved.eq_ignore_ascii_case(name))

@@ -50,7 +50,7 @@ impl SettingsManager {
     }
 
     /// Sets one key of a global top-level object member.
-    pub(super) fn set_global_key(
+    pub fn set_global_key(
         &mut self,
         field: &'static str,
         key: &'static str,

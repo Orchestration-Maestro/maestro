@@ -20,3 +20,6 @@ pub mod rpc_types;
 
 /// Shared command and binary-channel protocol version.
 pub const PROTOCOL_VERSION: u32 = 21;
+
+#[cfg(test)]
+mod tests;
