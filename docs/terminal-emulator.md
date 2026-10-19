@@ -404,10 +404,9 @@ action, not later input. `mouse_tracking_enabled` reads the tracking mode bits;
 `modify_other_keys_enabled` reads numeric extended modifier-key mode. Tracking
 bits and the selected mouse event or format remain independent.
 
-Query and window requests are observable as typed stream actions. OSC title,
-directory, colour and clipboard effects, APC routing and image execution are
-pending. The terminal handler consumes DCS without changing the screen. Input
-decoding continues after these commands.
+Query and window requests are observable as typed stream actions. Colour effects,
+APC routing and image execution are pending. The terminal handler consumes DCS
+without changing the screen. Input decoding continues after these commands.
 
 ## Replies and effects
 
@@ -420,4 +419,23 @@ version, mode, keyboard-protocol and title queries. Cursor reports are relative
 to the scrolling origin when origin mode is enabled. Title reports use the stored
 title, including an empty title. The default enquiry answer is empty.
 `set_color_scheme` selects light or dark status replies; `None` suppresses them.
-Directory and clipboard capture are not connected yet.
+Directory changes and accepted clipboard writes are owned byte vectors, queued
+in input order. Repeated directory reports each produce a notification, including
+reports that clear the directory.
+
+## OSC and APC
+
+OSC 0 and 2 set the title, capped at 1024 bytes. OSC 7, 1337 `CurrentDir=` and
+9;9 set the raw working directory, capped at 4096 bytes. The caps apply only at
+command ingress; direct `set_title` and `set_pwd` calls remain uncapped. Titles
+must be valid UTF-8 before ingress, but truncation can split a scalar. Directory
+payloads remain unparsed bytes.
+
+OSC 52 and 1337 `Copy=:` decode clipboard writes with padded standard base64.
+Queries, clears, malformed payloads, selection and primary targets capture
+nothing. Other targets select the standard clipboard. Only nonempty decoded
+writes of at most 192 KiB are queued; no system clipboard access occurs.
+The stream ignores control bytes such as tabs and newlines inside OSC strings
+before payload decoding. Spaces reach the decoder and are rejected.
+
+APC routing is not connected yet.

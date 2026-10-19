@@ -605,3 +605,148 @@ fn terminal_bytes_color_scheme_queries() {
     t.write(b"\x1b[?996n");
     assert!(t.take_pty_reply().is_empty());
 }
+
+#[test]
+fn terminal_replies_and_directory_changes_are_captured() {
+    let mut t = Terminal::new(8, 3, 100).unwrap();
+    t.write(b"\x1b[6n\x1b]7;file:///tmp/maestro\x07");
+    assert_eq!(t.take_pty_reply(), b"\x1b[1;1R");
+    assert_eq!(t.get_pwd(), Some(b"file:///tmp/maestro".as_slice()));
+    assert_eq!(t.take_pwd_changes(), [b"file:///tmp/maestro".to_vec()]);
+    assert!(t.take_pwd_changes().is_empty());
+}
+
+#[test]
+fn osc_title_ingress_caps_bytes_without_capping_direct_setters() {
+    let mut t = Terminal::new(10, 3, 0).unwrap();
+    for prefix in ["0;", "2;"] {
+        t.write(format!("\x1b]{prefix}{}\x07", "é".repeat(513)).as_bytes());
+        assert_eq!(t.get_title(), Some("é".repeat(512).as_bytes()));
+    }
+    t.write(format!("\x1b]2;{}é\x07", "x".repeat(1023)).as_bytes());
+    let mut expected = vec![b'x'; 1023];
+    expected.push(0xc3);
+    assert_eq!(t.get_title(), Some(expected.as_slice()));
+    t.write(b"\x1b]2;\x07\x1b[21t");
+    assert_eq!(t.get_title(), None);
+    assert_eq!(t.take_pty_reply(), b"\x1b]l\x1b\\");
+    t.set_title(&vec![b'x'; 1025]);
+    assert_eq!(t.get_title().unwrap().len(), 1025);
+}
+
+#[test]
+fn directory_forms_capture_each_stored_value_in_order() {
+    let mut t = Terminal::new(10, 3, 0).unwrap();
+    t.write(b"\x1b]7;file:///raw%20path\x07\x1b]1337;currentdir=/tmp\x1b\\");
+    t.write(b"\x1b]9;9;/tmp\x07\x1b]7;\x07");
+    assert_eq!(t.get_pwd(), None);
+    assert_eq!(
+        t.take_pwd_changes(),
+        [
+            b"file:///raw%20path".to_vec(),
+            b"/tmp".to_vec(),
+            b"/tmp".to_vec(),
+            vec![]
+        ]
+    );
+    t.write(b"\x1b]1337;CurrentDir=\x07");
+    assert!(t.take_pwd_changes().is_empty());
+    t.write(b"\x1b]9;9;\x07");
+    assert_eq!(t.take_pwd_changes(), [Vec::<u8>::new()]);
+}
+
+#[test]
+fn directory_handler_caps_ingress_but_not_direct_setters() {
+    use maestro_terminal::{
+        stream::{Action, Handler, OscAction},
+        stream_terminal,
+    };
+    let mut t = Terminal::new(10, 3, 0).unwrap();
+    for len in [4095, 4096, 4097] {
+        stream_terminal::Handler::new(&mut t)
+            .vt(Action::Osc(OscAction::ReportPwd(vec![0xff; len])));
+        let expected = vec![0xff; len.min(4096)];
+        assert_eq!(t.get_pwd(), Some(expected.as_slice()));
+        assert_eq!(t.take_pwd_changes(), [expected]);
+    }
+    t.set_pwd(&vec![b'x'; 4097]);
+    assert_eq!(t.get_pwd().unwrap().len(), 4097);
+    assert!(t.take_pwd_changes().is_empty());
+}
+
+#[test]
+fn clipboard_writes_finish_at_either_string_terminator() {
+    let mut t = Terminal::new(10, 5, 0).unwrap();
+    t.write(b"\x1b]52;c;aGVs");
+    assert!(t.take_clipboard_writes().is_empty());
+    t.write(b"bG8=\x07");
+    assert_eq!(t.take_clipboard_writes(), [b"hello".to_vec()]);
+    t.write(b"\x1b]52;c;d29ybGQ=\x1b\\");
+    assert_eq!(t.take_clipboard_writes(), [b"world".to_vec()]);
+    for byte in b"\x1b]1337;Copy=:Y29weQ==\x1b\\" {
+        t.write(&[*byte]);
+    }
+    assert_eq!(t.take_clipboard_writes(), [b"copy".to_vec()]);
+    assert!(t.take_clipboard_writes().is_empty());
+}
+
+#[test]
+fn clipboard_clear_and_unsupported_targets_are_ignored() {
+    let mut t = Terminal::new(10, 5, 0).unwrap();
+    for term in ["\x07", "\x1b\\"] {
+        for payload in ["c;", "c;?", "s;dGV4dA==", "p;dGV4dA==", ";?"] {
+            t.write(format!("\x1b]52;{payload}{term}").as_bytes());
+            assert!(t.take_clipboard_writes().is_empty(), "{payload:?}");
+        }
+        for target in ["c", "x", ""] {
+            t.write(format!("\x1b]52;{target};dGV4dA=={term}").as_bytes());
+            assert_eq!(t.take_clipboard_writes(), [b"text".to_vec()]);
+        }
+    }
+}
+
+#[test]
+fn clipboard_requires_padded_canonical_standard_base64() {
+    use maestro_terminal::{
+        stream::{Action, Handler, OscAction},
+        stream_terminal,
+    };
+    let mut t = Terminal::new(10, 5, 0).unwrap();
+    for payload in [
+        "aA", "aA=", "aA===", "aB==", "aGV=", "a A==", "_w==", "-w==", "!!!!", "=aA=", "aA==YQ==",
+    ] {
+        t.write(format!("\x1b]52;c;{payload}\x07").as_bytes());
+        assert!(t.take_clipboard_writes().is_empty(), "{payload:?}");
+    }
+    for whitespace in [b'\t', b'\n', b'\r', 12] {
+        let mut data = b"aA==".to_vec();
+        data.push(whitespace);
+        stream_terminal::Handler::new(&mut t).vt(Action::Osc(OscAction::ClipboardContents {
+            kind: b'c',
+            data,
+        }));
+        assert!(t.take_clipboard_writes().is_empty());
+        t.write(format!("\x1b]52;c;aA=={}\x07", char::from(whitespace)).as_bytes());
+        assert_eq!(t.take_clipboard_writes(), [b"h".to_vec()]);
+    }
+    t.write(b"\x1b]52;c;aA==\x07\x1b]52;c;aGU=\x07\x1b]52;c;aGVs\x07");
+    t.write(b"\x1b]52;c;/wA=\x07");
+    assert_eq!(
+        t.take_clipboard_writes(),
+        [b"h".to_vec(), b"he".to_vec(), b"hel".to_vec(), vec![255, 0]]
+    );
+}
+
+#[test]
+fn clipboard_size_limit_is_on_decoded_bytes() {
+    use base64::{Engine as _, engine::general_purpose::STANDARD};
+    let mut t = Terminal::new(10, 5, 0).unwrap();
+    let at_limit = vec![b'x'; 192 * 1024];
+    t.write(format!("\x1b]52;c;{}\x07", STANDARD.encode(&at_limit)).as_bytes());
+    assert_eq!(t.take_clipboard_writes(), [at_limit]);
+    let over_limit = vec![b'x'; 192 * 1024 + 1];
+    t.write(format!("\x1b]52;c;{}\x1b\\", STANDARD.encode(over_limit)).as_bytes());
+    assert!(t.take_clipboard_writes().is_empty());
+    t.write(b"\x1b]52;c;b2s=\x07");
+    assert_eq!(t.take_clipboard_writes(), [b"ok".to_vec()]);
+}

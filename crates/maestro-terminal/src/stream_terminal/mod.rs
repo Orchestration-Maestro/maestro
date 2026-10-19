@@ -257,7 +257,7 @@ impl Handler<'_> {
         self.terminal.set_protected_mode(mode);
     }
 
-    /// Apply retained screen commands; external effects stay outside this consumer.
+    /// Apply retained screen commands and capture accepted external effects.
     fn osc(&mut self, action: OscAction) {
         match action {
             OscAction::SemanticPrompt(cmd) => {
@@ -271,11 +271,31 @@ impl Handler<'_> {
                     .start_hyperlink(&uri, id.as_deref());
             }
             OscAction::EndHyperlink => self.terminal.screens.active_mut().end_hyperlink(),
-            OscAction::WindowTitle(_)
-            | OscAction::ClipboardContents { .. }
-            | OscAction::ReportPwd(_)
-            | OscAction::ColorOperation { .. }
-            | OscAction::KittyColorReport(_) => {}
+            OscAction::ReportPwd(mut value) => {
+                value.truncate(4096);
+                self.terminal.set_pwd(&value);
+                self.terminal.effects.pwd_changes.push(value);
+            }
+            OscAction::WindowTitle(mut value) => {
+                value.truncate(1024);
+                self.terminal.set_title(&value);
+            }
+            OscAction::ClipboardContents { kind, data } => self.clipboard_contents(kind, &data),
+            OscAction::ColorOperation { .. } | OscAction::KittyColorReport(_) => {}
+        }
+    }
+
+    /// Capture nonempty standard-location writes decoded with padded standard base64.
+    fn clipboard_contents(&mut self, kind: u8, data: &[u8]) {
+        use base64::{Engine as _, engine::general_purpose::STANDARD};
+        if matches!(kind, b's' | b'p') || data.is_empty() || data == b"?" {
+            return;
+        }
+        let Ok(decoded) = STANDARD.decode(data) else {
+            return;
+        };
+        if !decoded.is_empty() && decoded.len() <= 192 * 1024 {
+            self.terminal.effects.clipboard_writes.push(decoded);
         }
     }
 
