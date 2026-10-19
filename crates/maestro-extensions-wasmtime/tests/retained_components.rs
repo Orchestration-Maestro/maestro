@@ -44,10 +44,28 @@ pub(super) async fn loaded_on(
     ExtensionRunner<Local>,
     EventBus<Local>,
 ) {
+    loaded_in(
+        events,
+        session::runner_session("/render-domain").0,
+        support::credential_operations(),
+    )
+    .await
+}
+
+/// Keeps the original loader runtime bound to the caller's actual session owners.
+pub(super) async fn loaded_in(
+    events: EventBus<Local>,
+    session: maestro_extensions::runner::ExtensionRunnerSession,
+    operations: Rc<dyn maestro_credentials::ConfigValueOperations>,
+) -> (
+    ExtensionHandle<Local>,
+    ExtensionRunner<Local>,
+    EventBus<Local>,
+) {
     let runtime = create_extension_runtime::<Local>();
     let path = std::env::var("MAESTRO_CONTEXT_COMPONENT").unwrap();
     let owner = load_extension_from_factory(
-        artifact_factory(path.clone(), support::credential_operations()),
+        artifact_factory(path.clone(), operations),
         "/fixture".into(),
         events.clone(),
         runtime.clone(),
@@ -58,7 +76,7 @@ pub(super) async fn loaded_on(
     let runner = ExtensionRunner::<Local>::new(
         Rc::new(RwLock::new(vec![owner.clone()])),
         runtime,
-        session::runner_session("/render-domain").0,
+        session,
         Rc::new(|_| {}),
         maestro_theme::LiveTheme::default(),
     );

@@ -34,7 +34,7 @@ async fn tool() {
         endpoint
             .registration(|reply| Request::Tool {
                 metadata: json!({"name":" exact ","label":" Label ","description":" desc ",
-                "parameters":"{\"type\":\"object\"}","promptSnippet":"",
+                "parameters":{"type":"object"},"promptSnippet":"",
                 "promptGuidelines":[],"executionMode":"parallel","renderShell":"self"})
                 .to_string(),
                 prepare: Some(prepare),
@@ -144,6 +144,7 @@ async fn drive<F: std::future::Future>(pump: &mut Pump, work: F) -> F::Output {
 fn metadata(definition: &maestro_extensions::RegisteredTool<Local>) {
     let metadata = definition.definition.metadata();
     assert_eq!(metadata.definition.description, " desc ");
+    assert_eq!(metadata.definition.parameters, json!({"type":"object"}));
     assert_eq!(metadata.prompt_snippet.as_deref(), Some(""));
     assert_eq!(metadata.prompt_guidelines, Some(Vec::new()));
     assert_eq!(metadata.execution_mode, Some(ToolExecutionMode::Parallel));
@@ -166,9 +167,9 @@ fn malformed_tool_documents_never_register_a_native_definition() {
         let worker = std::thread::spawn(move || {
             for metadata in [
                 "not JSON".to_owned(),
-                json!({"name":"bad","label":"bad","description":"bad","parameters":"bad schema"}).to_string(),
-                json!({"name":"bad","label":"bad","description":"bad","parameters":"{}","renderShell":"unknown"}).to_string(),
-                json!({"name":"bad","label":"bad","description":"bad","parameters":"{}","executionMode":"unknown"}).to_string(),
+                json!({"name":"bad","label":"bad","description":"bad"}).to_string(),
+                json!({"name":"bad","label":"bad","description":"bad","parameters":{},"renderShell":"unknown"}).to_string(),
+                json!({"name":"bad","label":"bad","description":"bad","parameters":{},"executionMode":"unknown"}).to_string(),
             ] {
                 assert!(endpoint.registration(|reply| Request::Tool {
                     metadata, prepare: None, execute: handler.clone(), reply,

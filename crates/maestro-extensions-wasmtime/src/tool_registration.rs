@@ -16,8 +16,8 @@ struct Metadata {
     label: String,
     /// Literal model-facing description.
     description: String,
-    /// Authored JSON schema text.
-    parameters: String,
+    /// Authored semantic JSON schema.
+    parameters: Value,
     /// Independently optional prompt text.
     #[serde(default)]
     prompt_snippet: Presence<String>,
@@ -60,13 +60,12 @@ pub(crate) fn definition(
     events: EventBus<Local>,
 ) -> Result<ToolDefinition<maestro_extensions::ExtensionContext, Value, Value, ()>, String> {
     let metadata: Metadata = decode(metadata)?;
-    let parameters = decode(&metadata.parameters)?;
     let prepare_arguments = prepare.map(|prepare| prepare.prepare(registry.clone(), events));
     Ok(ToolDefinition {
         definition: Tool {
             name: metadata.name,
             description: metadata.description,
-            parameters,
+            parameters: metadata.parameters,
         },
         label: metadata.label,
         prompt_snippet: optional(metadata.prompt_snippet),

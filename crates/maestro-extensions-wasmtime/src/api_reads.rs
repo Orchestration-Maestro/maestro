@@ -80,21 +80,9 @@ impl Request {
             Self::AllTools(reply) => send_json(&reply, api.get_all_tools()),
             Self::SetActiveTools(names, reply) => send(&reply, api.set_active_tools(names)),
             Self::Commands(reply) => send_json(&reply, api.get_commands()),
-            Self::Thinking(reply) => {
-                let result = api
-                    .get_thinking_level()
-                    .map_err(|e| e.to_string())
-                    .and_then(|level| {
-                        serde_json::to_value(level)
-                            .and_then(serde_json::from_value)
-                            .map_err(|e| e.to_string())
-                    });
-                let _ = reply.send(result);
-            }
+            Self::Thinking(reply) => send_json(&reply, api.get_thinking_level()),
             Self::SetThinking(level, reply) => {
-                let result = level
-                    .parse::<maestro_extensions::ModelThinkingLevel>()
-                    .map_err(|e| e.to_string())
+                let result = decode(&level)
                     .and_then(|level| api.set_thinking_level(level).map_err(|e| e.to_string()));
                 let _ = reply.send(result);
             }

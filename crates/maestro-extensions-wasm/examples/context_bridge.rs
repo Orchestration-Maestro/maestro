@@ -13,11 +13,20 @@ use maestro_extensions_wasm::{
 use std::rc::Rc;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/api.rs"]
+mod api;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/commands.rs"]
 mod commands;
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/json_boundary.rs"]
+mod json_boundary;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/reads.rs"]
 mod reads;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/registrations.rs"]
+mod registrations;
 
 /// Registers callbacks whose errors expose the actual supplied context operands.
 #[cfg(target_arch = "wasm32")]
@@ -59,6 +68,7 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
             }),
         )?;
         let release = ReleaseTrap(std::cell::Cell::new(false));
+        let command_api = api.clone();
         api.register_command(
             "bridge-observe",
             CommandOptions {
@@ -68,7 +78,7 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                     if args == "arm-release-trap" {
                         release.arm();
                     }
-                    command(args, context)
+                    command(args, context, command_api.clone())
                 }),
             },
         )?;
@@ -120,8 +130,12 @@ fn listener_tail(
 fn command(
     args: String,
     context: maestro_extensions_wasm::ExtensionCommandContext,
+    api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if let Some(root) = args.strip_prefix("api imports:") {
+            return Err(api::observe(&api, &context, root).await?.to_string());
+        }
         if let Some(path) = args.strip_prefix("command imports:") {
             return Err(commands::observe(&context, path.into()).await?.to_string());
         }
