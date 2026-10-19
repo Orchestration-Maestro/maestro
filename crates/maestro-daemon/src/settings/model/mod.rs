@@ -269,3 +269,34 @@ pub struct ExperimentalConfig {
     /// Temporarily select an ASCII input source while prefix mode is active.
     pub switch_ascii_input_source_in_prefix: Flag,
 }
+
+mod ui;
+pub use ui::{
+    AgentPanelSortConfig, HostCursorModeConfig, SidebarCollapsedModeConfig, StatusIndicatorStyle,
+    TabBarPositionConfig, UiConfig,
+};
+
+/// Accept ordered sidebar bounds before they reach a clamp operation.
+#[must_use]
+pub fn validated_sidebar_bounds(min: u16, max: u16) -> Option<(u16, u16)> {
+    (min <= max).then_some((min, max))
+}
+
+/// SSH connection preferences for remote clients.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct RemoteConfig {
+    /// Manage keepalive fallbacks and private connection reuse.
+    pub manage_ssh_config: bool,
+}
+
+impl Default for RemoteConfig {
+    fn default() -> Self {
+        Self {
+            manage_ssh_config: true,
+        }
+    }
+}
+
+mod config;
+pub use config::{Config, ConfigReloadReport, ConfigReloadStatus, LoadedConfig};

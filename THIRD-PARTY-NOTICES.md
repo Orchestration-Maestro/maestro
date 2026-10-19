@@ -758,10 +758,11 @@ host input share sequence recognition while retaining their different byte and
 paste policies. These reuse the existing protocol vocabulary rather than
 terminal-library records.
 The typed preference records in `crates/maestro-daemon/src/settings/model/`,
-notification sound selection in `settings/sound.rs`, theme data in
+sidebar rows in `settings/sidebar.rs`, notification sound selection in
+`settings/sound.rs`, theme data in
 `settings/theme.rs`, tab entries in `settings/tab_bar.rs`, window-title templates
 in `settings/window_title.rs` and their `settings/tests/` cases derive from the
-configuration model, sound, theme, tab-bar and window-title modules under the
+configuration model, sidebar, sound, theme, tab-bar and window-title modules under the
 same license.
 
 The pane terminal, shell and foreground process code in `crates/maestro-process/`

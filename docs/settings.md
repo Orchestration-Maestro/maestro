@@ -308,3 +308,19 @@ custom color strings, per-agent sound overrides and ordered tab entries. Sound
 paths resolve against a supplied agent directory. `NotificationShowSound::None`
 never selects a file. Tab commands default to a five-second refresh interval
 and a two-second execution deadline; these records do not execute commands.
+
+Interface records default to an expanded sidebar 26 columns wide, bounded by
+18 and 36 columns. Mouse capture, copy-on-select, focus redraw and pane borders,
+scrollbars and gaps are enabled. New tabs prompt for a name; new workspaces do
+not. The mouse wheel scrolls three lines unless given a nonzero override.
+Host cursor rendering is `auto`; agent ordering is `spaces` (`workspaces` is
+an accepted alias), with `priority` available. Status indicators default to
+`dots`, with `symbols` available.
+
+`settings::sidebar` retains ordered agent and workspace token rows. Each layout
+allows at most 16 rows with 16 tokens per row, including per-agent overrides.
+Override keys must be canonical detection agent names. Custom tokens start with
+`$` and use 1–32 ASCII letters, digits, underscores or hyphens. A styled token
+object contains `token` and optional `fg`, `bold` and `dim`; explicit false values
+are retained. Foreground colors accept `#RGB` or `#RRGGBB` and serialize as
+lowercase six-digit hex. Styles belong to each occurrence, not the token name.

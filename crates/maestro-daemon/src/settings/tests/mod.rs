@@ -9,3 +9,5 @@ mod theme;
 mod sound;
 
 mod tab_bar;
+
+mod sidebar;

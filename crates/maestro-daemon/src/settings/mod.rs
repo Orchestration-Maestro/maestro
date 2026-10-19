@@ -17,3 +17,6 @@ pub mod sound;
 
 /// Ordered right-side tab entries and schedule validation.
 pub mod tab_bar;
+
+/// Sidebar row composition and styling.
+pub mod sidebar;

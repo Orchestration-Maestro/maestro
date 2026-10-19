@@ -376,3 +376,222 @@ fn right_click_modifier_rejects_invalid_parts() {
         );
     }
 }
+
+#[test]
+fn host_cursor_mode_round_trips() {
+    use super::super::model::{HostCursorModeConfig, UiConfig};
+    assert_eq!(UiConfig::default().host_cursor, HostCursorModeConfig::Auto);
+    for text in ["auto", "native", "drawn"] {
+        let config: UiConfig = serde_json::from_value(json!({"hostCursor":text})).unwrap();
+        assert_eq!(serde_json::to_value(config.host_cursor).unwrap(), text);
+    }
+}
+
+#[test]
+fn agent_panel_sort_accepts_current_vocabulary() {
+    use super::super::model::{AgentPanelSortConfig, UiConfig};
+    assert_eq!(UiConfig::default().agent_panel_sort.as_str(), "spaces");
+    for text in ["spaces", "workspaces", "priority"] {
+        let config: UiConfig = serde_json::from_value(json!({"agentPanelSort":text})).unwrap();
+        assert_eq!(
+            config.agent_panel_sort,
+            if text == "priority" {
+                AgentPanelSortConfig::Priority
+            } else {
+                AgentPanelSortConfig::Spaces
+            }
+        );
+    }
+}
+
+#[test]
+fn status_indicators_select_symbols() {
+    use super::super::model::{StatusIndicatorStyle, UiConfig};
+    assert_eq!(UiConfig::default().status_indicators.as_str(), "dots");
+    let config: UiConfig = serde_json::from_value(json!({"statusIndicators":"symbols"})).unwrap();
+    assert_eq!(config.status_indicators, StatusIndicatorStyle::Symbols);
+    assert_eq!(config.status_indicators.as_str(), "symbols");
+}
+
+#[test]
+fn pane_appearance_options_remain_independent() {
+    use super::super::model::{TabBarPositionConfig, UiConfig};
+    let defaults = UiConfig::default();
+    assert!(
+        defaults.pane_borders.0
+            && defaults.pane_outer_borders.0
+            && defaults.pane_scrollbars.0
+            && defaults.pane_gaps.0
+    );
+    assert!(
+        !defaults.show_agent_labels_on_pane_borders.0 && !defaults.hide_tab_bar_when_single_tab.0
+    );
+    assert_eq!(defaults.tab_bar_position, TabBarPositionConfig::Top);
+    assert!(defaults.tab_bar_right.is_empty());
+    assert_eq!(defaults.tab_bar_right_separator, " ");
+    for key in [
+        "paneBorders",
+        "paneOuterBorders",
+        "paneScrollbars",
+        "paneGaps",
+        "showAgentLabelsOnPaneBorders",
+        "hideTabBarWhenSingleTab",
+    ] {
+        let value = !matches!(
+            key,
+            "paneBorders" | "paneOuterBorders" | "paneScrollbars" | "paneGaps"
+        );
+        let config: UiConfig = serde_json::from_value(json!({key:value})).unwrap();
+        assert_eq!(
+            [
+                config.pane_borders.0,
+                config.pane_outer_borders.0,
+                config.pane_scrollbars.0,
+                config.pane_gaps.0,
+                config.show_agent_labels_on_pane_borders.0,
+                config.hide_tab_bar_when_single_tab.0
+            ],
+            [
+                key != "paneBorders",
+                key != "paneOuterBorders",
+                key != "paneScrollbars",
+                key != "paneGaps",
+                key == "showAgentLabelsOnPaneBorders",
+                key == "hideTabBarWhenSingleTab"
+            ]
+        );
+    }
+    let config: UiConfig = serde_json::from_value(json!({"tabBarPosition":"bottom", "tabBarRightSeparator":" | ", "tabBarRight":[
+        {"type":"text", "text":"ready"}, {"type":"datetime", "format":"%H:%M"}, {"type":"command", "command":"uptime"}, {"type":"zoom"}, {"type":"hostname"}]})).unwrap();
+    assert_eq!(config.tab_bar_position, TabBarPositionConfig::Bottom);
+    assert_eq!(config.tab_bar_right_separator, " | ");
+    assert_eq!(config.tab_bar_right.len(), 5);
+}
+
+#[test]
+fn new_tab_prompt_can_be_disabled() {
+    use super::super::model::UiConfig;
+    assert!(UiConfig::default().prompt_new_tab_name.0);
+    let config: UiConfig = serde_json::from_value(json!({"promptNewTabName":false})).unwrap();
+    assert!(!config.prompt_new_tab_name.0);
+}
+
+#[test]
+fn new_workspace_prompt_can_be_enabled() {
+    use super::super::model::UiConfig;
+    assert!(!UiConfig::default().prompt_new_workspace_name.0);
+    let config: UiConfig = serde_json::from_value(json!({"promptNewWorkspaceName":true})).unwrap();
+    assert!(config.prompt_new_workspace_name.0);
+}
+
+#[test]
+fn sidebar_bounds_default_and_decode() {
+    use super::super::model::UiConfig;
+    let defaults = UiConfig::default();
+    assert_eq!(
+        (
+            defaults.sidebar_width,
+            defaults.sidebar_min_width,
+            defaults.sidebar_max_width
+        ),
+        (26, 18, 36)
+    );
+    let config: UiConfig = serde_json::from_value(
+        json!({"sidebarWidth":30,"sidebarMinWidth":20,"sidebarMaxWidth":40}),
+    )
+    .unwrap();
+    assert_eq!(
+        (
+            config.sidebar_width,
+            config.sidebar_min_width,
+            config.sidebar_max_width
+        ),
+        (30, 20, 40)
+    );
+}
+
+#[test]
+fn sidebar_can_start_collapsed() {
+    use super::super::model::UiConfig;
+    assert!(!UiConfig::default().sidebar_start_collapsed.0);
+    let config: UiConfig = serde_json::from_value(json!({"sidebarStartCollapsed":true})).unwrap();
+    assert!(config.sidebar_start_collapsed.0);
+}
+
+#[test]
+fn sidebar_collapsed_mode_selects_hidden() {
+    use super::super::model::{SidebarCollapsedModeConfig, UiConfig};
+    assert_eq!(
+        UiConfig::default().sidebar_collapsed_mode,
+        SidebarCollapsedModeConfig::Compact
+    );
+    let config: UiConfig =
+        serde_json::from_value(json!({"sidebarCollapsedMode":"hidden"})).unwrap();
+    assert_eq!(
+        config.sidebar_collapsed_mode,
+        SidebarCollapsedModeConfig::Hidden
+    );
+}
+
+#[test]
+fn sidebar_bounds_reject_inversion() {
+    use super::super::model::validated_sidebar_bounds;
+    assert_eq!(validated_sidebar_bounds(18, 36), Some((18, 36)));
+    assert_eq!(validated_sidebar_bounds(18, 18), Some((18, 18)));
+    assert_eq!(validated_sidebar_bounds(36, 18), None);
+}
+
+#[test]
+fn mouse_capture_can_be_disabled() {
+    use super::super::model::UiConfig;
+    assert!(UiConfig::default().mouse_capture.0);
+    let config: UiConfig = serde_json::from_value(json!({"mouseCapture":false})).unwrap();
+    assert!(!config.mouse_capture.0);
+}
+
+#[test]
+fn copy_on_select_can_be_disabled() {
+    use super::super::model::UiConfig;
+    assert!(UiConfig::default().copy_on_select.0);
+    let config: UiConfig = serde_json::from_value(json!({"copyOnSelect":false})).unwrap();
+    assert!(!config.copy_on_select.0);
+}
+
+#[test]
+fn focus_redraw_can_be_disabled() {
+    use super::super::model::UiConfig;
+    assert!(UiConfig::default().redraw_on_focus_gained.0);
+    let config: UiConfig = serde_json::from_value(json!({"redrawOnFocusGained":false})).unwrap();
+    assert!(!config.redraw_on_focus_gained.0);
+}
+
+#[test]
+fn mouse_wheel_count_uses_nonzero_override() {
+    use super::super::model::UiConfig;
+    assert_eq!(UiConfig::default().mouse_scroll_lines(), 3);
+    let config: UiConfig = serde_json::from_value(json!({"mouseScrollLines":1})).unwrap();
+    assert_eq!(config.mouse_scroll_lines(), 1);
+    assert_eq!(config.right_click_passthrough_modifiers(), None);
+}
+
+#[test]
+fn mouse_wheel_zero_is_invalid() {
+    use super::super::model::UiConfig;
+    assert!(serde_json::from_value::<UiConfig>(json!({"mouseScrollLines":0})).is_err());
+}
+
+#[test]
+fn onboarding_defaults_to_visible() {
+    use super::super::model::Config;
+    assert!(Config::default().should_show_onboarding());
+}
+
+#[test]
+fn onboarding_false_suppresses_setup() {
+    use super::super::model::Config;
+    let config = Config {
+        onboarding: Some(false),
+        ..Config::default()
+    };
+    assert!(!config.should_show_onboarding());
+}
