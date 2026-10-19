@@ -16,10 +16,16 @@ mod build;
 fn main() -> Result<(), String> {
     let path = build::author_component()?;
     build::compile(path).map_err(|error| error.to_string())?;
+    let context = build::component("context_bridge", "MAESTRO_CONTEXT_COMPONENT")?;
+    build::compile(&context).map_err(|error| error.to_string())?;
     if let Some(environment) = std::env::var_os("NEXTEST_ENV") {
         std::fs::write(
             environment,
-            format!("MAESTRO_AUTHOR_COMPONENT={}\n", path.display()),
+            format!(
+                "MAESTRO_AUTHOR_COMPONENT={}\nMAESTRO_CONTEXT_COMPONENT={}\n",
+                path.display(),
+                context.display()
+            ),
         )
         .map_err(|error| error.to_string())?;
     }

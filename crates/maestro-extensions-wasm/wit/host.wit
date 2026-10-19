@@ -49,7 +49,15 @@ interface host {
     /// Emits ordinary data.
     event-emit: async func(channel: string, data: string) -> result<_, string>;
     /// Emits during a synchronous callback.
-    callback-emit: async func(emitter: borrow<callback-emitter>, channel: string, data: string) -> result<_, string>;
+    callback-emit: func(emitter: borrow<callback-emitter>, channel: string, data: string) -> result<tuple<u32, list<option<u32>>>, string>;
+    /// Opens one guest-local prefix with an independent native return boundary.
+    callback-begin-local: func(emitter: borrow<callback-emitter>, snapshot: u32, index: u32) -> result<callback-emitter, string>;
+    /// Completes a guest-local prefix through the native tail and error owner.
+    callback-end-local: func(emitter: borrow<callback-emitter>, error: option<string>) -> result<_, string>;
+    /// Runs a consecutive host segment before continuing the guest-local walk.
+    callback-segment: func(emitter: borrow<callback-emitter>, snapshot: u32, start: u32, end: u32) -> result<_, string>;
+    /// Releases a snapshot after traversal, including a failed traversal.
+    callback-end-snapshot: func(emitter: borrow<callback-emitter>, snapshot: u32) -> result<_, string>;
     /// Announces an independently owned tail.
     start-event-tail: func(emitter: borrow<callback-emitter>, tail: borrow<callback>) -> result<_, string>;
 

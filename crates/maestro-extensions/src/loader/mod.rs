@@ -1,5 +1,6 @@
 //! Owned registration facade implementations.
 mod registration;
+pub(crate) use registration::STALE_MESSAGE;
 
 mod actions;
 pub(crate) mod runtime;

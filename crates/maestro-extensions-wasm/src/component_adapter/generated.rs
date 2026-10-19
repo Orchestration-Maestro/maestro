@@ -18,6 +18,44 @@ use crate::{AutocompleteItem, FlagOptions, FlagValue};
 struct Generated;
 
 impl Imports for Generated {
+    fn callback_emit(
+        &self,
+        emitter: &Self::Emitter,
+        channel: &str,
+        data: &str,
+    ) -> ExtensionResult<()> {
+        let (snapshot, tags) = host::callback_emit(emitter, channel, data)?;
+        let result = (|| {
+            let mut index = 0;
+            while index < tags.len() {
+                if let Some(id) = tags[index] {
+                    let local = host::callback_begin_local(
+                        emitter,
+                        snapshot,
+                        u32::try_from(index).map_err(|error| error.to_string())?,
+                    )?;
+                    let result = Exports::new(Generated).invoke_listener(id, data, &local);
+                    host::callback_end_local(&local, result.err().as_deref())?;
+                    index += 1;
+                } else {
+                    let start = index;
+                    while index < tags.len() && tags[index].is_none() {
+                        index += 1;
+                    }
+                    host::callback_segment(
+                        emitter,
+                        snapshot,
+                        u32::try_from(start).map_err(|error| error.to_string())?,
+                        u32::try_from(index).map_err(|error| error.to_string())?,
+                    )?;
+                }
+            }
+            Ok(())
+        })();
+        let end = host::callback_end_snapshot(emitter, snapshot);
+        result.and(end)
+    }
+
     forward_resources! { functions {
         send_message(message: &str, options: Option<&str>) -> ExtensionResult<()> => host::send_message;
         send_user_message(content: &str, options: Option<&str>) -> ExtensionResult<()> => host::send_user_message;
@@ -31,7 +69,6 @@ impl Imports for Generated {
         get_thinking_level() -> ExtensionResult<String> => host::get_thinking_level;
         set_thinking_level(level: &str) -> ExtensionResult<()> => host::set_thinking_level;
         event_on(channel: &str, handler: &Self::Callback) -> ExtensionResult<Self::Subscription> => host::event_on;
-        callback_emit(emitter: &Self::Emitter, channel: &str, data: &str) -> ExtensionResult<()> => host::callback_emit;
         start_event_tail(emitter: &Self::Emitter, tail: &Self::Callback) -> ExtensionResult<()> => host::start_event_tail;
         register_message_renderer(custom_type: &str, handler: &host::Callback) -> ExtensionResult<()> => host::register_message_renderer;
         on(event: &str, handler: &host::Callback) -> ExtensionResult<()> => host::on;
@@ -235,7 +272,7 @@ pub struct Glue<E>(PhantomData<E>);
 impl<E: Extension> Guest for Glue<E> {
     type ComponentView = RenderedComponent;
     type BashOperations = ReturnedBashOperations;
-    fn invoke_renderer(
+    async fn invoke_renderer(
         handler: &host::Callback,
         request: guest::RenderRequest,
         emitter: &host::CallbackEmitter,
@@ -259,14 +296,14 @@ impl<E: Extension> Guest for Glue<E> {
             .invoke_setup(handler.id(), writer)
             .await
     }
-    fn invoke_compaction_complete(
+    async fn invoke_compaction_complete(
         handler: &host::Callback,
         result: String,
         emitter: &host::CallbackEmitter,
     ) -> ExtensionResult<()> {
         Exports::new(Generated).invoke_compaction_complete(handler.id(), &result, emitter)
     }
-    fn invoke_compaction_error(
+    async fn invoke_compaction_error(
         handler: &host::Callback,
         error: String,
         emitter: &host::CallbackEmitter,
@@ -282,14 +319,14 @@ impl<E: Extension> Guest for Glue<E> {
         release(handler.id());
     }
 
-    fn invoke_prepare(
+    async fn invoke_prepare(
         handler: &host::Callback,
         args: String,
         emitter: &host::CallbackEmitter,
     ) -> ExtensionResult<String> {
         Exports::new(Generated).invoke_prepare(handler.id(), &args, emitter)
     }
-    fn invoke_listener(
+    async fn invoke_listener(
         handler: &host::Callback,
         data: String,
         emitter: &host::CallbackEmitter,
@@ -377,20 +414,28 @@ impl<E: Extension> Guest for Glue<E> {
 #[doc(hidden)]
 pub struct RenderedComponent(crate::Component);
 impl guest::GuestComponentView for RenderedComponent {
-    fn render(&self, width: u32, emitter: &host::CallbackEmitter) -> ExtensionResult<Vec<String>> {
+    async fn render(
+        &self,
+        width: u32,
+        emitter: &host::CallbackEmitter,
+    ) -> ExtensionResult<Vec<String>> {
         super::renderers::with_emitter(&Generated, emitter, |emitter| self.0.render(width, emitter))
     }
-    fn handle_input(&self, data: String, emitter: &host::CallbackEmitter) -> ExtensionResult<()> {
+    async fn handle_input(
+        &self,
+        data: String,
+        emitter: &host::CallbackEmitter,
+    ) -> ExtensionResult<()> {
         super::renderers::with_emitter(&Generated, emitter, |emitter| {
             self.0.handle_input(&data, emitter)
         })
     }
-    fn wants_key_release(&self, emitter: &host::CallbackEmitter) -> ExtensionResult<bool> {
+    async fn wants_key_release(&self, emitter: &host::CallbackEmitter) -> ExtensionResult<bool> {
         super::renderers::with_emitter(&Generated, emitter, |emitter| {
             self.0.wants_key_release(emitter)
         })
     }
-    fn invalidate(&self, emitter: &host::CallbackEmitter) -> ExtensionResult<()> {
+    async fn invalidate(&self, emitter: &host::CallbackEmitter) -> ExtensionResult<()> {
         super::renderers::with_emitter(&Generated, emitter, |emitter| self.0.invalidate(emitter))
     }
 }

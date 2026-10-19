@@ -1,5 +1,6 @@
 //! Formatting and projection of application conversation messages.
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, TimeZone};
+mod encoding;
 use maestro_agent::AgentMessage;
 use maestro_models::{Message, TextContent, UserBlock, UserContent, UserMessage};
 pub use maestro_request::messages::{

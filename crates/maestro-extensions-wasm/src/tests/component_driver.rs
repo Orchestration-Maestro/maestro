@@ -289,7 +289,7 @@ impl Driver for ComponentDriver {
                 &mut harness.store,
                 (
                     borrow(handler),
-                    &fixtures::guest::RenderRequest {
+                    fixtures::guest::RenderRequest {
                         message: message.into(),
                         expanded,
                         theme,
@@ -380,7 +380,7 @@ impl Driver for ComponentDriver {
                 &mut harness.store,
                 (
                     borrow(handler),
-                    payload,
+                    payload.to_owned(),
                     Resource::new_borrow(emitter.rep()),
                 ),
             )
@@ -494,7 +494,7 @@ impl Driver for ComponentDriver {
                 &mut harness.store,
                 (
                     borrow(handler),
-                    args,
+                    args.to_owned(),
                     wasmtime::component::Resource::new_borrow(emitter.rep()),
                 ),
             )
@@ -1156,7 +1156,11 @@ async fn component_call(
             .func_handle_input()
             .call_async(
                 &mut harness.store,
-                (component, data, Resource::new_borrow(emitter.rep())),
+                (
+                    component,
+                    data.to_owned(),
+                    Resource::new_borrow(emitter.rep()),
+                ),
             )
             .await
             .map_err(|e| e.to_string())?

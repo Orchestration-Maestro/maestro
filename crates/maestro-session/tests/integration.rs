@@ -1,5 +1,6 @@
 //! Shared integration-test executable.
 #![cfg(test)]
+mod application_message_encoding;
 
 mod branch_summary;
 #[path = "../../maestro-catalog/tests/support/subprocess.rs"]

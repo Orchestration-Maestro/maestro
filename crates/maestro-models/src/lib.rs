@@ -130,5 +130,7 @@ pub use providers::content::google_vertex::{
     stream_simple_google_vertex, stream_simple_google_vertex_for,
 };
 
+/// Shared extension event inventory for concrete native adapters.
+pub use maestro_request::extension_event_table;
 /// Shared extension events and assembled prompt records.
 pub use maestro_request::{extension_events, system_prompt};

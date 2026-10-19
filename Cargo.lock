@@ -3483,6 +3483,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "maestro-extensions-wasmtime"
+version = "0.1.0"
+dependencies = [
+ "futures-util",
+ "maestro-catalog",
+ "maestro-credentials",
+ "maestro-dependencies",
+ "maestro-extensions",
+ "maestro-models",
+ "maestro-session",
+ "maestro-theme",
+ "serde",
+ "serde_json",
+ "tokio",
+ "wasmtime",
+ "wasmtime-wasi",
+]
+
+[[package]]
 name = "maestro-ipc"
 version = "0.1.0"
 dependencies = [

@@ -519,19 +519,8 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
     assert_async_exports(&contract);
     assert_eq!(
         names(&contract.exports, false),
-        [
-            "[method]component-view.handle-input",
-            "[method]component-view.invalidate",
-            "[method]component-view.render",
-            "[method]component-view.wants-key-release",
-            "invoke-compaction-complete",
-            "invoke-compaction-error",
-            "invoke-listener",
-            "invoke-prepare",
-            "invoke-renderer",
-            "release"
-        ],
-        "component methods, preparation and release stay synchronous"
+        ["release"],
+        "only closure release remains a synchronous export"
     );
     assert_shell_contract(&contract);
     assert_renderer_contract(&contract);
@@ -554,7 +543,6 @@ fn maestro_component_contract_keeps_sync_and_async_calls() -> Result<(), String>
             "[method]model-registry.get-api-key-and-headers",
             "[method]replaced-session-context.send-message",
             "[method]replaced-session-context.send-user-message",
-            "callback-emit",
             "event-emit",
             "set-model",
         ]
@@ -966,9 +954,18 @@ fn assert_async_exports(contract: &Contract) {
         names(&contract.exports, true),
         [
             "[method]bash-operations.exec",
+            "[method]component-view.handle-input",
+            "[method]component-view.invalidate",
+            "[method]component-view.render",
+            "[method]component-view.wants-key-release",
             "invoke-command",
+            "invoke-compaction-complete",
+            "invoke-compaction-error",
             "invoke-completion",
             "invoke-event",
+            "invoke-listener",
+            "invoke-prepare",
+            "invoke-renderer",
             "invoke-setup",
             "invoke-shortcut",
             "invoke-tail",

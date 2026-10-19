@@ -16,6 +16,9 @@ use crate::bindings::host_side::maestro::extension::session::{
 };
 use crate::bindings::host_side::maestro::extension::{host, session};
 
+/// Snapshot key and registration-ordered callback identities in the author-only host.
+type ListenerSnapshot = (u32, Vec<Option<u32>>);
+
 /// Host identity of one guest closure.
 pub struct Identity(u32);
 /// Cancellation flag.
@@ -59,6 +62,59 @@ impl WasiView for State {
 }
 
 impl State {
+    /// Records literal emission data and retains this fixture's all-local listener list.
+    fn snapshot_listeners(
+        &mut self,
+        emitter: &Resource<super::bus_host::Emitter>,
+        channel: &str,
+        data: &str,
+    ) -> wasmtime::Result<Result<ListenerSnapshot, String>> {
+        let key = self.table.get(emitter)?.key;
+        if key != 0 {
+            self.observed.bus.renderer_emissions.push((
+                key,
+                channel.into(),
+                serde_json::from_str(data)?,
+            ));
+        }
+        let handlers = match self.observed.bus.emit(channel, data) {
+            Ok(handlers) => handlers,
+            Err(error) => return Ok(Err(error)),
+        };
+        let id = u32::try_from(self.observed.bus.snapshots.len())?;
+        let tags = handlers
+            .iter()
+            .map(|id| {
+                self.table
+                    .get(&borrow(*id))
+                    .map(|identity| Some(identity.0))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        self.observed.bus.snapshots.push(Some(handlers));
+        Ok(Ok((id, tags)))
+    }
+    /// Provides an independently owned emitter resource for one local prefix.
+    fn begin_local_listener(
+        &mut self,
+        emitter: &Resource<super::bus_host::Emitter>,
+        snapshot: u32,
+        index: u32,
+    ) -> wasmtime::Result<Result<Resource<super::bus_host::Emitter>, String>> {
+        let valid = self
+            .observed
+            .bus
+            .snapshots
+            .get(snapshot as usize)
+            .and_then(Option::as_ref)
+            .and_then(|entries| entries.get(index as usize))
+            .is_some();
+        if !valid {
+            return Ok(Err("snapshot entry ended".into()));
+        }
+        let key = self.table.get(emitter)?.key;
+        Ok(Ok(self.table.push(super::bus_host::Emitter { key })?))
+    }
+
     /// A state with no registrations.
     fn new() -> Self {
         Self {
@@ -402,6 +458,60 @@ impl host::HostCallbackEmitter for State {
     }
 }
 impl host::Host for State {
+    fn callback_emit(
+        &mut self,
+        emitter: Resource<super::bus_host::Emitter>,
+        channel: String,
+        data: String,
+    ) -> wasmtime::Result<Result<(u32, Vec<Option<u32>>), String>> {
+        self.snapshot_listeners(&emitter, &channel, &data)
+    }
+    fn callback_begin_local(
+        &mut self,
+        emitter: Resource<super::bus_host::Emitter>,
+        snapshot: u32,
+        index: u32,
+    ) -> wasmtime::Result<Result<Resource<super::bus_host::Emitter>, String>> {
+        self.begin_local_listener(&emitter, snapshot, index)
+    }
+    fn callback_end_local(
+        &mut self,
+        _: Resource<super::bus_host::Emitter>,
+        error: Option<String>,
+    ) -> wasmtime::Result<Result<(), String>> {
+        if let Some(error) = error {
+            self.observed.log(format!("listener error: {error}"));
+        }
+        Ok(Ok(()))
+    }
+    fn callback_segment(
+        &mut self,
+        _: Resource<super::bus_host::Emitter>,
+        _: u32,
+        start: u32,
+        end: u32,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(if start == end {
+            Ok(())
+        } else {
+            Err("author fixture has only guest-local listeners".into())
+        })
+    }
+    fn callback_end_snapshot(
+        &mut self,
+        _: Resource<super::bus_host::Emitter>,
+        snapshot: u32,
+    ) -> wasmtime::Result<Result<(), String>> {
+        Ok(self
+            .observed
+            .bus
+            .snapshots
+            .get_mut(snapshot as usize)
+            .and_then(Option::take)
+            .map(drop)
+            .ok_or_else(|| "snapshot ended".into()))
+    }
+
     fn register_message_renderer(
         &mut self,
         custom_type: String,
@@ -1033,11 +1143,15 @@ impl host::HostWithStore<State> for Imports {
         let emitter = accessor
             .with(|mut access| access.get().table.push(super::bus_host::Emitter { key: 0 }))?;
         let result =
-            Self::callback_emit(accessor, Resource::new_borrow(emitter.rep()), channel, data).await;
+            Self::emit_listeners(accessor, Resource::new_borrow(emitter.rep()), channel, data)
+                .await;
         accessor.with(|mut access| access.get().table.delete(emitter))?;
         result
     }
-    async fn callback_emit(
+}
+
+impl Imports {
+    async fn emit_listeners(
         accessor: &Accessor<State, Self>,
         emitter: Resource<super::bus_host::Emitter>,
         channel: String,

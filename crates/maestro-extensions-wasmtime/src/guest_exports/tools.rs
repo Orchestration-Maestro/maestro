@@ -1,0 +1,171 @@
+//! Canonical tool callbacks transfer their original native invocation capabilities.
+use super::arguments;
+use crate::{
+    context_imports::Context,
+    guest_calls::{Callback, ToolCall},
+    local_resources::{SignalEndpoint, effects::ToolUpdate},
+};
+use wasmtime::{
+    Store,
+    component::{
+        Accessor, ComponentExportIndex, ComponentType, Instance, Lower, Resource, TypedFunc,
+    },
+};
+use wasmtime_wasi::WasiView;
+
+/// Exact owned canonical tool invocation record.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+struct Invocation {
+    /// Literal invocation identity.
+    #[component(name = "tool-call-id")]
+    tool_call_id: String,
+    /// Serialized native arguments.
+    params: String,
+}
+
+/// Independently retained original execution resources.
+#[derive(ComponentType, Lower)]
+#[component(record)]
+struct Capabilities {
+    /// Original wrapper-created context.
+    ctx: Resource<Context>,
+    /// Independently optional native cancellation.
+    signal: Option<Resource<SignalEndpoint>>,
+    /// Independently optional progress observer.
+    update: Option<Resource<ToolUpdate>>,
+}
+
+/// Exact canonical preparation signature, returning an argument document.
+type Prepare = TypedFunc<
+    (
+        Resource<Callback>,
+        String,
+        Resource<crate::local_resources::effects::EmitterEndpoint>,
+    ),
+    (Result<String, String>,),
+>;
+/// Canonical asynchronous tool execution signature.
+type Execute = TypedFunc<(Resource<Callback>, Invocation, Capabilities), (Result<String, String>,)>;
+
+/// Required tool exports from the same canonical guest instance.
+pub(super) struct Exports {
+    /// Synchronous preparation callback.
+    prepare: Prepare,
+    /// Asynchronous execution callback.
+    execute: Execute,
+}
+
+impl Exports {
+    /// Resolves real guest exports, without an alternate implementation.
+    pub(super) fn new<T: 'static>(
+        store: &mut Store<T>,
+        instance: &Instance,
+        guest: &ComponentExportIndex,
+    ) -> wasmtime::Result<Self> {
+        let mut index = |name| {
+            instance
+                .get_export_index(&mut *store, Some(guest), name)
+                .ok_or_else(|| wasmtime::format_err!("missing extension guest export {name}"))
+        };
+        let prepare = index("invoke-prepare")?;
+        let execute = index("invoke-tool")?;
+        Ok(Self {
+            prepare: instance.get_typed_func(&mut *store, prepare)?,
+            execute: instance.get_typed_func(&mut *store, execute)?,
+        })
+    }
+
+    /// Enters the actual authored callback through the active Accessor.
+    pub(super) async fn invoke<T: WasiView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        call: ToolCall,
+    ) -> wasmtime::Result<()> {
+        match call {
+            ToolCall::Prepare {
+                handler,
+                args,
+                emitter,
+                reply,
+            } => {
+                let result = self.prepared(accessor, &handler, args, emitter).await?;
+                let _ = reply.send(result);
+            }
+            ToolCall::Execute {
+                handler,
+                id,
+                params,
+                context,
+                signal,
+                update,
+                reply,
+            } => {
+                let (callback, ctx) = arguments(accessor, &handler, Context(context))?;
+                let resources = capabilities(accessor, ctx, signal, update)?;
+                let result = self
+                    .execute
+                    .call_concurrent(
+                        accessor,
+                        (
+                            Resource::new_borrow(callback.rep()),
+                            Invocation {
+                                tool_call_id: id,
+                                params,
+                            },
+                            resources,
+                        ),
+                    )
+                    .await;
+                accessor.with(|mut access| access.get().ctx().table.delete(callback))?;
+                let _ = reply.send(result?.0);
+            }
+        }
+        Ok(())
+    }
+    /// Runs one preparation under the original invocation frame, deleting temporary borrows.
+    async fn prepared<T: WasiView + 'static>(
+        &self,
+        accessor: &Accessor<T>,
+        handler: &crate::guest_calls::Handle,
+        args: String,
+        emitter: crate::local_resources::effects::EmitterEndpoint,
+    ) -> wasmtime::Result<Result<String, String>> {
+        let (callback, emitter) = arguments(accessor, handler, emitter)?;
+        let result = self
+            .prepare
+            .call_concurrent(
+                accessor,
+                (
+                    Resource::new_borrow(callback.rep()),
+                    args,
+                    Resource::new_borrow(emitter.rep()),
+                ),
+            )
+            .await;
+        accessor.with(|mut access| {
+            let table = access.get().ctx().table;
+            table.delete(callback)?;
+            table.delete(emitter)?;
+            Ok::<_, wasmtime::Error>(())
+        })?;
+        Ok(result?.0)
+    }
+}
+
+/// Pushes independent execution operands into the same canonical resource table.
+fn capabilities<T: WasiView + 'static>(
+    accessor: &Accessor<T>,
+    ctx: Resource<Context>,
+    signal: Option<SignalEndpoint>,
+    update: Option<ToolUpdate>,
+) -> wasmtime::Result<Capabilities> {
+    accessor.with(|mut access| {
+        let table = access.get().ctx().table;
+        Ok(Capabilities {
+            ctx,
+            signal: signal.map(|signal| table.push(signal)).transpose()?,
+            update: update.map(|update| table.push(update)).transpose()?,
+        })
+    })
+}

@@ -18,19 +18,25 @@ const TARGET: &str = "wasm32-wasip2";
 /// Returns the build's failure, which names the target to install when it is missing.
 pub fn author_component() -> Result<&'static Path, String> {
     static BUILT: OnceLock<Result<PathBuf, String>> = OnceLock::new();
-    BUILT.get_or_init(build).as_deref().map_err(Clone::clone)
+    BUILT
+        .get_or_init(|| component("author_component", "MAESTRO_AUTHOR_COMPONENT"))
+        .as_deref()
+        .map_err(Clone::clone)
 }
 
-/// Runs the author build and finds the artifact it reports.
-fn build() -> Result<PathBuf, String> {
-    if let Some(path) = std::env::var_os("MAESTRO_AUTHOR_COMPONENT") {
+/// Builds a named author example, unless its artifact is supplied by the environment.
+///
+/// # Errors
+/// Returns build failure or a diagnostic when Cargo reports no component artifact.
+pub fn component(example: &str, environment: &str) -> Result<PathBuf, String> {
+    if let Some(path) = std::env::var_os(environment) {
         return Ok(PathBuf::from(path));
     }
     let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
     let output = Command::new(cargo)
         .current_dir(env!("CARGO_MANIFEST_DIR"))
         .env_remove("RUSTC_WRAPPER")
-        .args(["build", "--example", "author_component", "--target", TARGET])
+        .args(["build", "--example", example, "--target", TARGET])
         .args(["--release", "--locked", "--message-format=json"])
         .output()
         .map_err(|error| format!("cannot run cargo: {error}"))?;
@@ -45,7 +51,7 @@ fn build() -> Result<PathBuf, String> {
         .lines()
         .filter_map(|line| serde_json::from_str::<serde_json::Value>(line).ok())
         .filter(|message| message["reason"] == "compiler-artifact")
-        .filter(|message| message["target"]["name"] == "author_component")
+        .filter(|message| message["target"]["name"] == example)
         .flat_map(|message| message["filenames"].as_array().cloned().unwrap_or_default())
         .filter_map(|file| file.as_str().map(PathBuf::from))
         .find(|file| {

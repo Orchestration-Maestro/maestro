@@ -1,0 +1,33 @@
+[package]
+name = "maestro-extensions-wasmtime"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+autotests = false
+
+[dependencies]
+maestro-extensions = { path = "../maestro-extensions" }
+futures-util = { workspace = true, features = ["std", "async-await"] }
+serde.workspace = true
+serde_json.workspace = true
+wasmtime = { version = "=49.0.3", default-features = false, features = ["std", "runtime", "cranelift", "component-model-async"] }
+wasmtime-wasi = { version = "=49.0.3", default-features = false, features = ["p2"] }
+tokio = { version = "=1.53.2", default-features = false, features = ["rt", "sync"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+maestro-dependencies.workspace = true
+
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+maestro-catalog = { path = "../maestro-catalog" }
+maestro-credentials = { path = "../maestro-credentials" }
+maestro-models = { path = "../maestro-models" }
+maestro-session = { path = "../maestro-session" }
+maestro-theme = { path = "../maestro-theme" }
+
+[[test]]
+name = "integration"
+path = "tests/integration.rs"
+
+[lints]
+workspace = true

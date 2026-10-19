@@ -17,6 +17,7 @@ cargo_metadata = { version = "0.23.1" }
 chrono = { version = "0.4.45", default-features = false, features = ["clock", "wasmbind"] }
 crc32fast = { version = "1.5.2" }
 flate2 = { version = "1.1.10", features = ["zlib-rs"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["async-await", "sink", "std"] }
 hashbrown = { version = "0.17.1" }
 icu_locale_core = { version = "2.3.0", default-features = false, features = ["alloc", "zerovec"] }
 icu_normalizer = { version = "2.3.0", default-features = false, features = ["compiled_data", "utf16_iter", "utf8_iter"] }
@@ -79,7 +80,7 @@ futures-channel = { version = "0.3.34", features = ["sink"] }
 futures-core = { version = "0.3.34" }
 futures-io = { version = "0.3.34", default-features = false, features = ["std"] }
 futures-sink = { version = "0.3.34" }
-futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
@@ -111,7 +112,7 @@ futures-channel = { version = "0.3.34", features = ["sink"] }
 futures-core = { version = "0.3.34" }
 futures-io = { version = "0.3.34", default-features = false, features = ["std"] }
 futures-sink = { version = "0.3.34" }
-futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
@@ -144,7 +145,7 @@ futures-channel = { version = "0.3.34", features = ["sink"] }
 futures-core = { version = "0.3.34" }
 futures-io = { version = "0.3.34", default-features = false, features = ["std"] }
 futures-sink = { version = "0.3.34" }
-futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
@@ -176,7 +177,7 @@ futures-channel = { version = "0.3.34", features = ["sink"] }
 futures-core = { version = "0.3.34" }
 futures-io = { version = "0.3.34", default-features = false, features = ["std"] }
 futures-sink = { version = "0.3.34" }
-futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io", "sink"] }
+futures-util = { version = "0.3.34", default-features = false, features = ["async-await-macro", "channel", "io"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 libc = { version = "0.2.190", features = ["extra_traits"] }
@@ -203,7 +204,6 @@ fastrand = { version = "2.5.0" }
 form_urlencoded = { version = "1.2.2" }
 futures-core = { version = "0.3.34" }
 futures-sink = { version = "0.3.34" }
-futures-util = { version = "0.3.34", default-features = false, features = ["async-await", "sink", "std"] }
 getrandom = { version = "0.4.3", default-features = false, features = ["std", "sys_rng"] }
 image = { version = "0.24.9", default-features = false, features = ["dds", "farbfeld", "gif", "hdr", "ico", "jpeg", "pnm", "tiff", "webp"] }
 num-integer = { version = "0.1.47", features = ["i128"] }

@@ -250,6 +250,11 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
 pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-tui-crossterm", "maestro-brand"),
     ("maestro-extensions", "maestro-credentials"),
+    ("maestro-extensions-wasmtime", "maestro-catalog"),
+    ("maestro-extensions-wasmtime", "maestro-credentials"),
+    ("maestro-extensions-wasmtime", "maestro-models"),
+    ("maestro-extensions-wasmtime", "maestro-session"),
+    ("maestro-extensions-wasmtime", "maestro-theme"),
 ];
 
 /// Foundation utility that native crates may use beyond their table row.

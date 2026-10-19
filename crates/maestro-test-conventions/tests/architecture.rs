@@ -437,7 +437,6 @@ fn forbidden_direct_edges_are_rejected() {
         ("maestro-app", "maestro-extensions-wasmtime"),
         ("maestro-tools", "maestro-extensions"),
         ("maestro-tools", "maestro-app"),
-        ("maestro-extensions-wasmtime", "maestro-models"),
         ("maestro", "maestro-agent"),
         ("maestro-agent", "maestro-app"),
         ("maestro-app", "maestro-pattern"),
@@ -1757,6 +1756,36 @@ fn terminal_example_brand_edge_is_development_only() {
             Err("forbidden production dependency: maestro-tui-crossterm -> maestro-brand".into()),
             "{kind}{extra}"
         );
+    }
+}
+
+#[test]
+fn native_component_fixture_edges_are_development_only() {
+    for dependency in [
+        "maestro-catalog",
+        "maestro-credentials",
+        "maestro-models",
+        "maestro-session",
+        "maestro-theme",
+    ] {
+        let workspace = Workspace::new();
+        workspace.foundation(&["maestro-extensions-wasmtime", dependency]);
+        workspace.member("maestro-extensions-wasmtime", "maestro-extensions-wasmtime", &format!(
+            "[target.'cfg(not(target_arch = \"wasm32\"))'.dev-dependencies]\nalias = {{ package = {dependency:?}, path = \"../{dependency}\" }}"
+        ));
+        assert_eq!(check_workspace(&workspace.root), Ok(()), "{dependency}");
+        for (kind, extra) in DECLARATIONS {
+            workspace.member("maestro-extensions-wasmtime", "maestro-extensions-wasmtime", &format!(
+                "[{kind}]\nalias = {{ package = {dependency:?}, path = \"../{dependency}\"{extra} }}"
+            ));
+            assert_eq!(
+                check_workspace(&workspace.root),
+                Err(format!(
+                    "forbidden production dependency: maestro-extensions-wasmtime -> {dependency}"
+                )),
+                "{dependency} {kind}{extra}"
+            );
+        }
     }
 }
 

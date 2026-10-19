@@ -27,7 +27,7 @@ pub type BashResult = maestro_tool::bash_executor::BashResult<Option<f64>, Optio
 pub async fn execute_bash_with_operations(
     command: &str,
     cwd: &str,
-    operations: &dyn BashOperations,
+    operations: &(dyn BashOperations + Send + Sync + '_),
     mut options: BashExecutorOptions<'_>,
 ) -> Result<BashResult, BashError> {
     let mut state = Output::default();

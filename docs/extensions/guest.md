@@ -142,6 +142,11 @@ return to the author/caller without undoing prior output. For the signal's live
 `bus.emit(channel, data)`; a synchronous listener uses its borrowed `CallbackEmitter`.
 Both forward literal channels and JSON payloads without trimming or sorting.
 See [shared event-bus scheduling](event_bus.md) for the host's delivery rules.
+The component adapter preserves the emission-time listener snapshot in registration order.
+Same-instance listeners run locally, interleaved with synchronously acknowledged host segments;
+nested emission takes a fresh snapshot. Each listener has its own callback-return and tail boundary.
+The internal component exports are async-typed, but author callbacks and `CallbackEmitter::emit`
+remain synchronous; no `.await` is added to author code.
 
 `bus.on(channel, listener)` returns an explicitly invoked `Subscription`.
 Dropping its facade does not unsubscribe; call `unsubscribe()` to forward removal.
