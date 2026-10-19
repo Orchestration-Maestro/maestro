@@ -56,8 +56,7 @@ fn registry_preserves_replacement_and_retained_handles() {
     );
 }
 
-#[cfg(test)]
-pub mod tool_renderer_support;
+use crate::tool_renderer_support;
 use maestro_web::{render_tool, set_show_json_mode, tools::types::ToolParams};
 use std::cell::{Cell, RefCell};
 use tool_renderer_support::{Renderer as CallbackRenderer, content, message, reset};
@@ -340,14 +339,6 @@ fn renderer_callback_can_replace_registry_entries() {
     );
     assert!(get_tool_renderer::<Value, Value>("other").is_some());
 }
-
-#[path = "support/brand.rs"]
-mod brand;
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-pub mod copy_button_support;
-mod effects_support;
-mod support;
 
 /// Raw admission remains available after independently selected decoder failures.
 fn raw_registration_after_decoder_failures() {

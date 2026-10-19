@@ -2,8 +2,8 @@
 #![cfg(test)]
 use crate::{
     markdown_support::{check, js},
-    surface,
     tool_renderer_support::browser,
+    tool_renderers_browser::surface,
 };
 use maestro_web::{
     render_header,

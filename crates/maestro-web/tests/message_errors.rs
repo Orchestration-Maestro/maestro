@@ -1,8 +1,6 @@
 //! Message composition preserves reached operation failures and their original causes.
 #![cfg(test)]
-pub mod attachment_support;
-pub mod effects_support;
-pub mod support;
+use crate::{attachment_support, effects_support};
 
 use maestro_web::{
     AbortedMessage, AssistantMessage, AssistantMessageProps, UserMessage, UserMessageInput,

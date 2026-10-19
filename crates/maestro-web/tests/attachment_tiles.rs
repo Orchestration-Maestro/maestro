@@ -1,8 +1,7 @@
 //! Attachment tiles exercised through actual drawing and pointer input.
 #![cfg(test)]
 /// Controlled drawing and platform effects.
-pub mod attachment_support;
-mod support;
+use crate::attachment_support;
 use attachment_support::*;
 use maestro_web::{AttachmentTile, browser::attachment_content::ImageFit};
 use serde::Deserialize;

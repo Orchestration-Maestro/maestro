@@ -1,11 +1,6 @@
 //! Mounted copy-link property transitions observed through actual clipped paint.
 #![cfg(test)]
-#[path = "support/brand.rs"]
-pub mod brand;
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-pub mod effects_support;
-pub mod session_links_support;
+use crate::session_links_support;
 use maestro_theme::BrandMode;
 use session_links_support::Canvas;
 

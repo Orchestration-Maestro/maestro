@@ -95,10 +95,9 @@ fn leaf_sources() {
     }
 }
 
-pub mod attachment_support;
-pub mod highlighter_support;
-pub mod input_support;
-pub mod support;
+use crate::attachment_support;
+use crate::highlighter_support;
+use crate::input_support;
 
 /// Reach each artifact's real localized control before any native body work.
 fn artifact_control_cause(filename: &str) {
@@ -156,8 +155,7 @@ fn text_artifact_preparation_keeps_original_control_cause() {
     artifact_control_cause("a.txt");
 }
 
-#[path = "artifact_support/text_image.rs"]
-pub mod text_image_support;
+use crate::text_image_support;
 
 #[test]
 fn markdown_artifact_preparation_keeps_original_highlight_cause() {

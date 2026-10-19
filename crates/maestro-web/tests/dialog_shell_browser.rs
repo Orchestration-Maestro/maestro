@@ -35,8 +35,8 @@ pub fn dialog_header_retains_title_description_and_literal_text() {
     }
 }
 
-pub mod attachment_support;
-pub mod support;
+use crate::attachment_support;
+use crate::support;
 use maestro_web::{
     I18n,
     browser::attachment_content::*,

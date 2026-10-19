@@ -1,13 +1,9 @@
 //! Message-link behavior through the retained public control.
 #![cfg(test)]
-#[path = "support/brand.rs"]
-pub mod brand;
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-mod copy_button_support;
-mod effects_support;
-mod session_links_support;
-mod support;
+use crate::brand;
+use crate::copy_button_support;
+use crate::effects_support;
+use crate::session_links_support;
 use session_links_support::*;
 
 #[test]

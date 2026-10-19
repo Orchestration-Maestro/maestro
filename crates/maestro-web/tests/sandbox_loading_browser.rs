@@ -1,6 +1,6 @@
 //! Actual browser document, event-source and subscription lifetime witnesses.
 #![cfg(all(test, target_arch = "wasm32"))]
-mod sandbox_loading_support;
+use crate::sandbox_loading_support;
 use maestro_app::SharedHandle;
 use maestro_app::browser::components::sandbox::sandbox_runtime_provider::SandboxRuntimeProvider;
 use maestro_web::browser::sandbox_value::BrowserSandboxValue;

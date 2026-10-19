@@ -9,7 +9,7 @@ use maestro_web::export_html::template::{
 use std::rc::Rc;
 use wasm_bindgen::{JsCast as _, prelude::*};
 
-pub mod support;
+use crate::support;
 use support::brand::Pack;
 /// Real native owner and canvas caller retained across repaints.
 struct Header {
@@ -269,8 +269,9 @@ fn localized(timestamp: &serde_json::Value, recorded: &serde_json::Value) -> Str
     }
 }
 
+#[path = "session_header_browser_support/mod.rs"]
 mod session_header_browser_support;
-mod session_header_support;
+use crate::session_header_support;
 use maestro_web::browser::attachment_content::{AttachmentHost as _, ReadingPhase};
 use num_traits::ToPrimitive as _;
 use session_header_browser_support::{Slots, js, snapshot, unchanged};

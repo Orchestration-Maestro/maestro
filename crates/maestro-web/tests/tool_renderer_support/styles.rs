@@ -3,7 +3,7 @@
 use super::browser;
 use crate::{
     markdown_support::{check, first_slot_center, js},
-    surface,
+    tool_renderers_browser::surface,
 };
 use maestro_theme::{BrandMode, BrandPresentation};
 use maestro_web::{

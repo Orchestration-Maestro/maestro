@@ -1,9 +1,5 @@
 //! Real-browser Markdown rendering through the public native component.
 #![cfg(all(test, target_arch = "wasm32"))]
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-pub mod markdown_support;
-pub mod support;
 
 #[cfg(test)]
 mod tests {

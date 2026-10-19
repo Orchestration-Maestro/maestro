@@ -1,5 +1,6 @@
 //! Model object admission through the public browser tool dispatch.
 #![cfg(test)]
+use crate::{brand, effects_support, recording_highlighter, support, tool_renderer_support};
 
 use maestro_web::tools::types::{
     ToolParams, ToolRendererBinding, ToolResultMessageView, ToolUiError,
@@ -8,8 +9,6 @@ use maestro_web::{ToolRenderer, register_tool_renderer, render_tool};
 use serde_json::{Map, Value, json};
 use std::{cell::Cell, rc::Rc};
 
-#[path = "tool_renderer_support/recipes.rs"]
-mod tool_renderer_support;
 use tool_renderer_support::{Renderer, content, message, reset};
 
 #[derive(serde::Deserialize)]
@@ -222,13 +221,6 @@ fn native_operands_and_non_object_sdk_values_remain_available() {
     assert_eq!(native.get(), 42);
     non_object_sdk_values();
 }
-
-#[path = "support/brand.rs"]
-pub mod brand;
-pub mod effects_support;
-#[path = "highlighter_support/recording.rs"]
-pub mod recording_highlighter;
-pub mod support;
 
 #[test]
 fn default_object_input_keeps_canonical_json_spelling() {

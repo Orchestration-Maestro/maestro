@@ -1,10 +1,9 @@
 //! Timer ownership and input Escape operands; native dispatch is browser-qualified.
 #![cfg(test)]
 /// Shared drawing conformance support.
-pub mod attachment_support;
-mod effects_support;
-mod input_support;
-mod support;
+use crate::attachment_support;
+use crate::effects_support;
+use crate::input_support;
 use effects_support::Host;
 use maestro_web::{Input, browser::attachment_content::*, components::input::InputProps};
 use std::{

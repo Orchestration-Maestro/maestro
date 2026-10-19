@@ -1,10 +1,8 @@
 //! Actual browser observations of spreadsheet content, controls and ownership.
 #![cfg(all(test, target_arch = "wasm32"))]
-mod panel_browser_support;
-#[path = "artifact_support/presentation.rs"]
-mod presentation;
-mod reading_browser_support;
-pub mod support;
+use crate::panel_browser_support;
+use crate::reading_browser_support;
+use crate::support;
 use maestro_web::AttachmentOverlay;
 use reading_browser_support::{View, check, click, js, run};
 use std::{cell::RefCell, rc::Rc};
@@ -480,8 +478,6 @@ pub fn excel_keyboard_reveals_offscreen_sheet_tabs() {
         "getComputedStyle(document.querySelectorAll('.maestro-excel-sheet')[1]).display!=='none'&&document.querySelectorAll('.maestro-excel-sheet')[1].querySelector('td').textContent==='1000'",
     );
 }
-
-pub mod highlighter_support;
 
 /// Retained binary cells reach mounted tables through the existing reader owner.
 #[wasm_bindgen]

@@ -1,9 +1,8 @@
 //! PDF artifact and attachment public behavior.
 #![cfg(test)]
-pub mod artifact_support;
-pub mod attachment_support;
-pub mod session_header_support;
-pub mod support;
+use crate::artifact_support;
+use crate::attachment_support;
+use crate::session_header_support;
 use base64::Engine as _;
 use maestro_web::tools::artifacts::create_artifact_element;
 use std::rc::Rc;
@@ -119,7 +118,7 @@ fn pdf_preview_advances_once_per_frame_without_reopening() {
     }
 }
 
-pub mod pdf_support;
+use crate::pdf_support;
 #[test]
 fn pdf_download_and_render_share_complete_original_bytes() {
     use pdf_support::Outcome;
@@ -452,5 +451,3 @@ fn pdf_tool_edits() -> [(serde_json::Value, String, &'static [u8]); 3] {
         ),
     ]
 }
-
-pub mod highlighter_support;

@@ -40,7 +40,7 @@ fn format_cost_preserves_four_digit_rounding() {
     }
 }
 
-mod support;
+use crate::support;
 use maestro_app::{ModelCost, Usage, UsageCost};
 use maestro_web::{I18n, format_model_cost};
 use std::rc::Rc;

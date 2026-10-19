@@ -1,6 +1,5 @@
 //! Offline Markdown and output formatting through their public entry points.
 #![cfg(test)]
-mod export_support;
 #[cfg(test)]
 mod tests {
     use crate::export_support;

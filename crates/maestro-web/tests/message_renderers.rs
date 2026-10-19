@@ -1,8 +1,6 @@
 //! Open typed message roles through the public browser registry.
 #![cfg(test)]
-pub mod message_renderer_support;
-#[path = "tool_renderer_support/recipes.rs"]
-pub mod renderer_recipes;
+use crate::{message_renderer_support, renderer_recipes};
 
 use maestro_app::AgentMessage;
 use maestro_web::{get_message_renderer, register_message_renderer, render_message};

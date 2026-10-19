@@ -1,10 +1,8 @@
 //! Markdown and SVG through the application, retained panel and artifact interface.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-pub mod artifact_support;
-pub mod highlighter_support;
-pub mod session_header_support;
-pub mod support;
+use crate::artifact_support;
+use crate::session_header_support;
 use artifact_support::panel::{Harness, Input};
 
 /// Filename policy installs specialized views through the actual application caller.
@@ -37,12 +35,10 @@ fn artifact_factory_installs_markdown_and_svg_views() {
     );
 }
 
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-mod effects_support;
-pub mod markdown_svg_support;
-#[path = "artifact_support/text_image.rs"]
-pub mod text_image_support;
+use crate::canvas_paint;
+use crate::effects_support;
+use crate::markdown_svg_support;
+use crate::text_image_support;
 use artifact_support::Frame;
 use maestro_web::{
     ArtifactElement, MarkdownArtifact, SvgArtifact,

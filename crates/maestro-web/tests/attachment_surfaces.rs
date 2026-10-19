@@ -1,8 +1,7 @@
 //! Embedding surfaces, ownership and supplied presentation roles.
 #![cfg(test)]
 /// Controlled platform and genuine drawing fixtures.
-pub mod attachment_support;
-mod support;
+use crate::attachment_support;
 use attachment_support::*;
 use maestro_web::{AttachmentOverlay, AttachmentTile};
 use std::rc::Rc;

@@ -20,12 +20,16 @@ mod tests {
                 root.set_inner_html(&html);
                 let owner = bind_expandable_output(&root)?;
                 *target.borrow_mut() = Some(ReadingRoot {
+                    frame_style: "",
+                    decoration: None,
                     element: root.clone(),
                     slots: Vec::new(),
                     owner: None,
                     commit: None,
                 });
                 Ok(ReadingRoot {
+                    frame_style: "",
+                    decoration: None,
                     element: root,
                     slots: Vec::new(),
                     owner,

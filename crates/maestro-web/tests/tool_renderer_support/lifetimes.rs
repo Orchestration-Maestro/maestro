@@ -1,7 +1,7 @@
 //! Native resources retained by output recipes after their borrowing call ends.
 #![cfg(test)]
 use super::browser;
-use crate::surface;
+use crate::tool_renderers_browser::surface;
 use maestro_web::{
     tools::types::ToolUiError,
     tools::types::{
@@ -65,7 +65,7 @@ pub fn tool_content_keeps_owned_inputs_and_independent_row_lifetimes() {
     let (prepared, weak) = prepare_owned();
     let alias = Rc::new(RefCell::new(None));
     let recipe = ToolRenderResult {
-        content: Box::new(crate::Aliased {
+        content: Box::new(crate::tool_renderers_browser::Aliased {
             inner: prepared.content,
             alias: alias.clone(),
         }),

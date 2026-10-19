@@ -1,12 +1,6 @@
 //! Registered native messages through the retained rich-text consumer.
 #![cfg(all(test, target_arch = "wasm32"))]
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-pub mod markdown_support;
-pub mod message_renderer_support;
-#[path = "tool_renderer_support/recipes.rs"]
-pub mod renderer_recipes;
-pub mod support;
+use crate::{markdown_support, message_renderer_support, renderer_recipes, support};
 
 #[cfg(test)]
 mod tests {

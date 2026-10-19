@@ -100,7 +100,7 @@ impl SandboxRuntimeProvider<BrowserSandboxValue> for Provider {
         Ok(String::new())
     }
 }
-mod placement;
+pub(crate) mod placement;
 pub use placement::{adapter, adapter_pack};
 /// Materialize native provider values before preparation, preserving failure phases.
 pub fn document_cases() -> Vec<DocumentCase> {
