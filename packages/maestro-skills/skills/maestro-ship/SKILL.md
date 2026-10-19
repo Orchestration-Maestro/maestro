@@ -60,6 +60,9 @@ arrive and verify the rollback mechanism, preferably in a dry run.
 
 ## Plan rollback before deploy
 
+Illustrative rollback targets to verify for your service: feature flag <1 minute, redeployment <5 minutes,
+and database rollback <15 minutes. These are examples, not observed project results.
+
 Write triggers, accountable operator, exact verified flag/redeployment steps, health/metric checks and team
 communication. State the measured rollback time rather than inventing one. Explain migration reversibility
 and what happens to newly written data. A code revert does not undo a destructive schema or data change.
