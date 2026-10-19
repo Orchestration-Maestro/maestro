@@ -310,31 +310,12 @@ impl View {
         let array = js_sys::Array::from(&position);
         self.overlay(
             overlay,
-            click(egui::pos2(
+            crate::pointer_support::click(egui::pos2(
                 num_traits::cast(array.get(0).as_f64().unwrap()).unwrap(),
                 num_traits::cast(array.get(1).as_f64().unwrap()).unwrap(),
             )),
         );
     }
-}
-/// A complete pointer activation.
-#[must_use]
-pub fn click(pos: egui::Pos2) -> Vec<egui::Event> {
-    vec![
-        egui::Event::PointerMoved(pos),
-        egui::Event::PointerButton {
-            pos,
-            button: egui::PointerButton::Primary,
-            pressed: true,
-            modifiers: egui::Modifiers::NONE,
-        },
-        egui::Event::PointerButton {
-            pos,
-            button: egui::PointerButton::Primary,
-            pressed: false,
-            modifiers: egui::Modifiers::NONE,
-        },
-    ]
 }
 
 /// Require one actual document observation.

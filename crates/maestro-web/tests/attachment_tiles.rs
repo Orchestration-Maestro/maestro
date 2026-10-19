@@ -2,9 +2,11 @@
 #![cfg(test)]
 /// Controlled drawing and platform effects.
 pub mod attachment_support;
+pub mod pointer_support;
 mod support;
 use attachment_support::*;
 use maestro_web::{AttachmentTile, browser::attachment_content::ImageFit};
+use pointer_support::click;
 use serde::Deserialize;
 use std::rc::Rc;
 /// Expected tile output.

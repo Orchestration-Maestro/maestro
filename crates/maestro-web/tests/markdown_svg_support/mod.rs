@@ -102,14 +102,6 @@ pub fn corpus() -> Corpus {
 pub fn locale(i18n: &maestro_web::I18n, language: &str) {
     i18n.set_language(language).unwrap();
 }
-/// Complete admitted pointer activation.
-#[must_use]
-pub fn click(position: egui::Pos2) -> Vec<egui::Event> {
-    crate::session_header_support::pointer(position, true)
-        .into_iter()
-        .chain(crate::session_header_support::pointer(position, false))
-        .collect()
-}
 
 /// One complete keyboard activation without repeat or a modifier chord.
 #[must_use]

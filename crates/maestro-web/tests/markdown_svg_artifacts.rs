@@ -41,6 +41,7 @@ fn artifact_factory_installs_markdown_and_svg_views() {
 pub mod canvas_paint;
 mod effects_support;
 pub mod markdown_svg_support;
+pub mod pointer_support;
 #[path = "artifact_support/text_image.rs"]
 pub mod text_image_support;
 use artifact_support::Frame;
@@ -48,7 +49,8 @@ use maestro_web::{
     ArtifactElement, MarkdownArtifact, SvgArtifact,
     components::preview_code_toggle::{PreviewCodeToggle, ViewMode},
 };
-use markdown_svg_support::{click, corpus, locale};
+use markdown_svg_support::{corpus, locale};
+use pointer_support::click;
 use std::rc::Rc;
 
 /// Draw the public toggle with real toolkit input and supplied branding.

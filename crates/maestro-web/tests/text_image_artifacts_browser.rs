@@ -1,6 +1,8 @@
 //! Actual-document source and image artifacts through the retained panel boundary.
 #![cfg(all(test, target_arch = "wasm32"))]
 #[cfg(test)]
+pub mod pointer_support;
+#[cfg(test)]
 pub mod reading_browser_support;
 #[cfg(test)]
 pub mod support;

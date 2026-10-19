@@ -1,6 +1,7 @@
 //! Text and image views through the public artifact boundary.
 #![cfg(test)]
 pub mod artifact_support;
+pub mod pointer_support;
 pub mod session_header_support;
 pub mod support;
 #[path = "artifact_support/text_image.rs"]

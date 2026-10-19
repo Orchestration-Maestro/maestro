@@ -9,6 +9,7 @@ use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
 
 mod panel_browser_support;
+pub mod pointer_support;
 use panel_browser_support::Panel;
 /// Execute observation-only native DOM operations in the runner's actual document.
 fn js(code: &str) -> JsValue {
@@ -86,21 +87,7 @@ pub fn artifact_panel_browser_switches_keep_native_roots() {
         })
         .next()
         .unwrap();
-    view.draw(vec![
-        egui::Event::PointerMoved(pos),
-        egui::Event::PointerButton {
-            pos,
-            button: egui::PointerButton::Primary,
-            pressed: true,
-            modifiers: egui::Modifiers::NONE,
-        },
-        egui::Event::PointerButton {
-            pos,
-            button: egui::PointerButton::Primary,
-            pressed: false,
-            modifiers: egui::Modifiers::NONE,
-        },
-    ]);
+    view.draw(crate::pointer_support::click(pos));
     drop(view);
     check("!a.isConnected && !b.isConnected");
 }

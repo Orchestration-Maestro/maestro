@@ -2,9 +2,11 @@
 #![cfg(test)]
 /// Controlled platform and genuine drawing fixtures.
 pub mod attachment_support;
+pub mod pointer_support;
 mod support;
 use attachment_support::*;
 use maestro_web::{AttachmentOverlay, AttachmentTile};
+use pointer_support::click;
 use std::rc::Rc;
 #[test]
 fn attachment_surfaces_keep_fractional_rects_and_owned_content() {

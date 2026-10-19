@@ -2,9 +2,11 @@
 #![cfg(test)]
 /// Shared attachment drawing fixtures.
 pub mod attachment_support;
+pub mod pointer_support;
 mod support;
 use attachment_support::*;
 use maestro_web::AttachmentOverlay;
+use pointer_support::click;
 use std::rc::Rc;
 #[test]
 fn overlay_images_use_original_bytes_and_contain_fit() {

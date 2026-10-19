@@ -20,8 +20,10 @@ fn encoded(multi: bool) -> String {
     use base64::Engine as _;
     base64::engine::general_purpose::STANDARD.encode(bytes(multi))
 }
+pub mod pointer_support;
 mod reading_browser_support;
-use reading_browser_support::{View, check, click, js, run};
+use pointer_support::click;
+use reading_browser_support::{View, check, js, run};
 /// Original aliased PDF attachment.
 fn record() -> Rc<RefCell<maestro_web::Attachment>> {
     Rc::new(RefCell::new(maestro_web::Attachment {

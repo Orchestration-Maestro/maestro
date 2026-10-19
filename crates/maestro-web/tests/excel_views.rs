@@ -2,6 +2,7 @@
 #![cfg(test)]
 pub mod artifact_support;
 pub mod attachment_support;
+pub mod pointer_support;
 pub mod session_header_support;
 pub mod support;
 use maestro_web::{
@@ -204,7 +205,8 @@ fn excel_reading_transactions_keep_previous_publication() {
 }
 #[test]
 fn excel_overlay_preserves_alias_mode_and_error_rules() {
-    use attachment_support::{Content, Frame, Host, attachment, click, reading_factory};
+    use crate::pointer_support::click;
+    use attachment_support::{Content, Frame, Host, attachment, reading_factory};
     let record = attachment();
     record.borrow_mut().mime_type = "application/vnd.ms-excel".into();
     record.borrow_mut().content = encoded("two-sheets");
@@ -343,7 +345,7 @@ fn excel_mixed_workbooks_do_not_latch_workbook_failure() {
         })
         .unwrap();
     frame
-        .draw(view.as_mut(), false, attachment_support::click(center))
+        .draw(view.as_mut(), false, pointer_support::click(center))
         .unwrap();
     assert_eq!(host.sizes.borrow().len(), 2);
     frame.click(view.as_mut()).unwrap();

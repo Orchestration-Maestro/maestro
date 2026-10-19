@@ -286,21 +286,7 @@ impl Harness {
             .draw_panel(
                 &self.panel,
                 &self.caller,
-                vec![
-                    egui::Event::PointerMoved(pos),
-                    egui::Event::PointerButton {
-                        pos,
-                        button: egui::PointerButton::Primary,
-                        pressed: true,
-                        modifiers: egui::Modifiers::NONE,
-                    },
-                    egui::Event::PointerButton {
-                        pos,
-                        button: egui::PointerButton::Primary,
-                        pressed: false,
-                        modifiers: egui::Modifiers::NONE,
-                    },
-                ],
+                crate::pointer_support::click(pos),
             )
             .unwrap();
     }

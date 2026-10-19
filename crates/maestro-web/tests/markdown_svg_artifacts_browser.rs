@@ -6,6 +6,8 @@ pub mod highlighter_support;
 pub mod markdown_svg_support;
 #[cfg(test)]
 mod panel_browser_support;
+#[cfg(test)]
+pub mod pointer_support;
 #[path = "artifact_support/presentation.rs"]
 #[cfg(test)]
 pub mod presentation;
@@ -33,7 +35,7 @@ mod tests {
         let controls = controls(view);
         view.draw(
             true,
-            crate::reading_browser_support::click(controls[index].center()),
+            crate::pointer_support::click(controls[index].center()),
         );
     }
     /// Source wraps long words but never trims or reclassifies authored Markdown.
@@ -352,7 +354,7 @@ mod tests {
         view.draw(true, vec![]);
         view.draw(
             true,
-            crate::reading_browser_support::click(controls[1].right_center()),
+            crate::pointer_support::click(controls[1].right_center()),
         );
         view.draw(false, vec![]);
         check(

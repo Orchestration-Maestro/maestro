@@ -1,6 +1,7 @@
 //! Public generic artifact composition.
 #![cfg(test)]
 pub mod artifact_support;
+pub mod pointer_support;
 pub mod session_header_support;
 pub mod support;
 use maestro_web::tools::artifacts::create_artifact_element;

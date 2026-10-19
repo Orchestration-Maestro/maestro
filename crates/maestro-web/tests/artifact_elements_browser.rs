@@ -1,5 +1,6 @@
 //! Real browser qualification of the generic file view.
 #![cfg(all(test, target_arch = "wasm32"))]
+pub mod pointer_support;
 pub mod support;
 use maestro_web::{
     ArtifactElement, I18n,
@@ -74,21 +75,7 @@ impl View {
     /// Activate the actual canvas-owned header control.
     fn click(&mut self) {
         let pos = egui::pos2(18., 16.);
-        self.draw(vec![
-            egui::Event::PointerMoved(pos),
-            egui::Event::PointerButton {
-                pos,
-                button: egui::PointerButton::Primary,
-                pressed: true,
-                modifiers: egui::Modifiers::NONE,
-            },
-            egui::Event::PointerButton {
-                pos,
-                button: egui::PointerButton::Primary,
-                pressed: false,
-                modifiers: egui::Modifiers::NONE,
-            },
-        ]);
+        self.draw(crate::pointer_support::click(pos));
     }
 }
 /// Execute native DOM observations without adding production feature bindings.

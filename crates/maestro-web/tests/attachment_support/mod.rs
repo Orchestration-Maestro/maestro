@@ -337,25 +337,6 @@ impl Frame {
             .unwrap_or_else(|| panic!("missing label {label}"))
     }
 }
-/// A complete primary click at a supplied point.
-#[must_use]
-pub fn click(pos: Pos2) -> Vec<Event> {
-    vec![
-        Event::PointerMoved(pos),
-        Event::PointerButton {
-            pos,
-            button: egui::PointerButton::Primary,
-            pressed: true,
-            modifiers: egui::Modifiers::NONE,
-        },
-        Event::PointerButton {
-            pos,
-            button: egui::PointerButton::Primary,
-            pressed: false,
-            modifiers: egui::Modifiers::NONE,
-        },
-    ]
-}
 
 /// Original typed record input.
 #[derive(serde::Deserialize)]

@@ -2,6 +2,7 @@
 #![cfg(test)]
 pub mod artifact_support;
 pub mod attachment_support;
+pub mod pointer_support;
 pub mod session_header_support;
 pub mod support;
 use base64::Engine as _;
@@ -249,7 +250,8 @@ fn pdf_edits_cancel_old_pages_before_replacement() {
 
 #[test]
 fn pdf_text_toggle_and_close_cancel_unfinished_pages() {
-    use attachment_support::{Content, Frame, Host, attachment, click};
+    use crate::pointer_support::click;
+    use attachment_support::{Content, Frame, Host, attachment};
     let record = attachment();
     record.borrow_mut().mime_type = "application/pdf".into();
     record.borrow_mut().content = encoded("synthetic-multipage.pdf");
@@ -307,7 +309,8 @@ fn pdf_text_toggle_and_close_cancel_unfinished_pages() {
 
 #[test]
 fn pdf_load_failures_keep_controls_and_recover_on_authorized_change() {
-    use attachment_support::{Content, Frame, Host, attachment, click};
+    use crate::pointer_support::click;
+    use attachment_support::{Content, Frame, Host, attachment};
     let record = attachment();
     record.borrow_mut().mime_type = "application/pdf".into();
     record.borrow_mut().content = encoded("synthetic-wide.pdf");

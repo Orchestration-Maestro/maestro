@@ -4,6 +4,7 @@ pub mod attachment_support;
 #[path = "support/brand.rs"]
 mod brand;
 pub mod input_support;
+pub mod pointer_support;
 mod support;
 use maestro_web::{
     browser::attachment_content::ReadingContent,
@@ -13,6 +14,7 @@ use maestro_web::{
     },
 };
 use num_traits::ToPrimitive as _;
+use pointer_support::click;
 use std::{cell::Cell, rc::Rc};
 
 /// The canvas Close control of the default dialog frame.
@@ -378,10 +380,9 @@ fn dialog_backdrop_content_and_close_use_one_close_owner() {
     let dialogs = DialogContext::new(frame.ctx.clone(), host.clone());
     let owner = dialog(&dialogs, DialogProps::new(true, body(Rc::default()))).unwrap();
     frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
-    frame.run(
-        attachment_support::click(egui::pos2(475., 125.)),
-        |_, i, p| dialogs.render(i, p).unwrap(),
-    );
+    frame.run(click(egui::pos2(475., 125.)), |_, i, p| {
+        dialogs.render(i, p).unwrap();
+    });
     assert_eq!(
         host.removed.borrow().len(),
         1,
@@ -389,22 +390,19 @@ fn dialog_backdrop_content_and_close_use_one_close_owner() {
     );
     owner.open().unwrap();
 
-    frame.run(
-        attachment_support::click(egui::pos2(150., 150.)),
-        |_, i, p| dialogs.render(i, p).unwrap(),
-    );
+    frame.run(click(egui::pos2(150., 150.)), |_, i, p| {
+        dialogs.render(i, p).unwrap();
+    });
     assert_eq!(host.removed.borrow().len(), 1);
-    frame.run(
-        attachment_support::click(egui::pos2(30., 30.)),
-        |_, i, p| dialogs.render(i, p).unwrap(),
-    );
+    frame.run(click(egui::pos2(30., 30.)), |_, i, p| {
+        dialogs.render(i, p).unwrap();
+    });
     assert_eq!(host.removed.borrow().len(), 2);
     owner.open().unwrap();
     frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
-    frame.run(
-        attachment_support::click(egui::pos2(475., 125.)),
-        |_, i, p| dialogs.render(i, p).unwrap(),
-    );
+    frame.run(click(egui::pos2(475., 125.)), |_, i, p| {
+        dialogs.render(i, p).unwrap();
+    });
     assert_eq!(host.removed.borrow().len(), 3);
 }
 
@@ -584,7 +582,7 @@ fn dialog_pointer_requires_both_endpoints_in_current_clip_and_layer() {
             for _ in 0..2 {
                 pointer_frame(&mut frame, &dialogs, vec![], cover && blocked);
             }
-            let mut events = attachment_support::click(close);
+            let mut events = click(close);
             events.retain(
                 |e| !matches!(e, egui::Event::PointerButton { pressed, .. } if *pressed != down),
             );

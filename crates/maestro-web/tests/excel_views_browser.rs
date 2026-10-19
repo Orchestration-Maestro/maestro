@@ -1,12 +1,14 @@
 //! Actual browser observations of spreadsheet content, controls and ownership.
 #![cfg(all(test, target_arch = "wasm32"))]
 mod panel_browser_support;
+pub mod pointer_support;
 #[path = "artifact_support/presentation.rs"]
 mod presentation;
 mod reading_browser_support;
 pub mod support;
 use maestro_web::AttachmentOverlay;
-use reading_browser_support::{View, check, click, js, run};
+use pointer_support::click;
+use reading_browser_support::{View, check, js, run};
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
 /// Qualified original modern workbook bytes.
