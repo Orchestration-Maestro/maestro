@@ -7,16 +7,24 @@ use crate::{
 use regress::Regex;
 use std::{collections::HashMap, ops::Range, sync::LazyLock};
 
-/// Web candidates, validated before reserving any text.
-static WEB: LazyLock<Option<Regex>> = LazyLock::new(|| {
-    Regex::new(r"(?:(?:[hH][tT][tT][pP][sS]?|[fF][tT][pP])://|www\.)[^\s<]+").ok()
+/// Web, earlier-grammar web and email candidate sources with their flags; earlier caller
+/// grammars fold the complete protocol and web prefix, and emails are scanned
+/// independently of rejected web spans.
+const SOURCES: [(&str, &str); 3] = [
+    (
+        r"(?:(?:[hH][tT][tT][pP][sS]?|[fF][tT][pP])://|www\.)[^\s<]+",
+        "",
+    ),
+    (r"(?:(?:https?|ftp)://|www\.)[^\s<]+", "i"),
+    (r"[A-Za-z0-9._+-]+@[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+", ""),
+];
+/// Candidate rules for scanning a text run, validated before reserving any text.
+static SCAN: LazyLock<[Option<Regex>; 3]> =
+    LazyLock::new(|| SOURCES.map(|(source, flags)| Regex::with_flags(source, flags).ok()));
+/// The same rules anchored at an inline token start.
+static START: LazyLock<[Option<Regex>; 3]> = LazyLock::new(|| {
+    SOURCES.map(|(source, flags)| Regex::with_flags(&format!("^(?:{source})"), flags).ok())
 });
-/// Earlier caller grammars fold the complete protocol and web prefix.
-static LEGACY_WEB: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::with_flags(r"(?:(?:https?|ftp)://|www\.)[^\s<]+", "i").ok());
-/// Email candidates scanned independently of rejected web spans.
-static EMAIL: LazyLock<Option<Regex>> =
-    LazyLock::new(|| Regex::new(r"[A-Za-z0-9._+-]+@[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+").ok());
 /// Domain labels permit Unicode letters and numbers.
 static DOMAIN: LazyLock<Option<Regex>> =
     LazyLock::new(|| Regex::with_flags(r"^[\p{L}\p{N}_-]+(?:\.[\p{L}\p{N}_-]+)+", "u").ok());
@@ -24,12 +32,7 @@ static DOMAIN: LazyLock<Option<Regex>> =
 /// Selects valid candidates before excluding overlaps with accepted links.
 fn links(run: &Run, options: MarkedOptions) -> Vec<(Range<usize>, String)> {
     let mut candidates = Vec::new();
-    let web = if matches!(options, MarkedOptions::Terminal | MarkedOptions::Export) {
-        LEGACY_WEB.as_ref()
-    } else {
-        WEB.as_ref()
-    };
-    for (regex, email) in [(web, false), (EMAIL.as_ref(), true)] {
+    for (regex, email) in rules(options, &SCAN) {
         let Some(regex) = regex else {
             continue;
         };
@@ -59,20 +62,51 @@ fn links(run: &Run, options: MarkedOptions) -> Vec<(Range<usize>, String)> {
         })
         .collect()
 }
+/// The grammar's web rule and the email rule from one rule set.
+fn rules(
+    options: MarkedOptions,
+    set: &'static [Option<Regex>; 3],
+) -> [(Option<&'static Regex>, bool); 2] {
+    let web = usize::from(matches!(
+        options,
+        MarkedOptions::Terminal | MarkedOptions::Export
+    ));
+    [(set[web].as_ref(), false), (set[2].as_ref(), true)]
+}
+
+/// Length of the web or email address the run scan would link at the start of `text`.
+///
+/// `previous` is the character before it in the same text run.
+pub(crate) fn address(text: &str, previous: Option<char>, options: MarkedOptions) -> Option<usize> {
+    rules(options, &START)
+        .into_iter()
+        .find_map(|(regex, email)| {
+            // The run scan starts an email where its run of address characters starts.
+            let inside = |c: char| c.is_ascii_alphanumeric() || "._+-".contains(c);
+            if email && previous.is_some_and(inside) {
+                return None;
+            }
+            let matched = regex?.find(text)?;
+            Some(accepted(previous, &text[matched.range()], email)?.0)
+        })
+}
+
 /// Validates one web or email match and retains its authored spelling.
 fn candidate(run: &Run, range: Range<usize>, email: bool) -> Option<(Range<usize>, String)> {
-    let authored = &run.authored[range.clone()];
+    let previous = run.authored[..range.start].chars().next_back();
+    let (length, href) = accepted(previous, &run.authored[range.clone()], email)?;
+    Some((range.start..range.start + length, href))
+}
+
+/// Accept a candidate after `previous`, returning its label length and destination.
+fn accepted(previous: Option<char>, authored: &str, email: bool) -> Option<(usize, String)> {
     let label = if email {
         if authored.ends_with(['-', '_']) {
             return None;
         }
         authored.trim_end_matches('.')
     } else {
-        if run.authored[..range.start]
-            .chars()
-            .next_back()
-            .is_some_and(|c| !maestro_text::is_whitespace_scalar(c) && !"*_~(".contains(c))
-        {
+        if previous.is_some_and(|c| !maestro_text::is_whitespace_scalar(c) && !"*_~(".contains(c)) {
             return None;
         }
         let label = suffix(authored);
@@ -88,7 +122,7 @@ fn candidate(run: &Run, range: Range<usize>, email: bool) -> Option<(Range<usize
     } else {
         label.to_owned()
     };
-    Some((range.start..range.start + label.len(), href))
+    Some((label.len(), href))
 }
 /// Reduces punctuation, unbalanced closing parentheses and entity tails.
 fn suffix(candidate: &str) -> &str {

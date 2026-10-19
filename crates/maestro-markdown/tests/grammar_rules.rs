@@ -352,7 +352,7 @@ fn hrefs(nodes: &[Node]) -> Vec<&str> {
 
 #[test]
 fn mapped_links_share_one_policy_aware_scanner() {
-    observations::check("url", 10);
+    observations::check("url", 16);
     for (options, expected) in [
         (
             MarkedOptions::Terminal,

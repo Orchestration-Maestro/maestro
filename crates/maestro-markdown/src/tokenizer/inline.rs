@@ -87,16 +87,16 @@ impl<'a> Tokenizer<'a> {
                 })
                 .or_else(|| self.line_break(text))
                 .or_else(|| self.deletion(cursor..extent.end, atoms, in_link));
-            if let Some((size, kind)) = token.filter(|(size, kind)| {
-                // A span may contain whole atoms but never end inside one.
-                let end = cursor + size;
-                let enclosing = atoms.get(atoms.partition_point(|range| range.end <= end));
-                *size > 0
-                    && (end <= limit
-                        || matches!(kind, Kind::Emphasis(_) | Kind::Strong(_) | Kind::Strike(_))
-                            && enclosing.is_none_or(|range| range.start >= end))
-            }) {
+            if let Some((size, kind)) =
+                token.filter(|(size, kind)| *size > 0 && fits(atoms, cursor + size, limit, kind))
+            {
                 output.push(node(self.source, cursor..cursor + size, kind));
+                cursor += size;
+                continue;
+            }
+            let address = self.address(text, &output, in_link);
+            if let Some(size) = address.filter(|size| cursor + size <= limit) {
+                self.push_text(cursor..cursor + size, &mut output, &mut plain_tail);
                 cursor += size;
                 continue;
             }
@@ -116,6 +116,18 @@ impl<'a> Tokenizer<'a> {
             cursor += size;
         }
         output
+    }
+
+    /// A bare address the mapped-link scan accepts at the start of `text` stays one
+    /// text token, outside link labels.
+    fn address(&self, text: &str, output: &[Node], in_link: bool) -> Option<usize> {
+        let previous = match output.last().map(|node| &node.kind) {
+            Some(Kind::Text(text)) => text.authored.chars().next_back(),
+            _ => None,
+        };
+        (!in_link)
+            .then(|| crate::autolinks::address(text, previous, self.options))
+            .flatten()
     }
 
     /// Emit decoded units with their original source boundaries.
@@ -490,4 +502,13 @@ fn mask_source(
     } else {
         (std::borrow::Cow::Borrowed(text), Vec::new())
     }
+}
+
+/// Whether a token fits before the next atom: a span may contain whole atoms but never
+/// end inside one.
+fn fits(atoms: &[Range<usize>], end: usize, limit: usize, kind: &Kind) -> bool {
+    let enclosing = atoms.get(atoms.partition_point(|range| range.end <= end));
+    end <= limit
+        || matches!(kind, Kind::Emphasis(_) | Kind::Strong(_) | Kind::Strike(_))
+            && enclosing.is_none_or(|range| range.start >= end)
 }
