@@ -1,7 +1,10 @@
 //! Streaming clusters retain their scalars and cell-width effects.
 
 use super::support::terminal::{assert_text, cell, clear_dirty, dirty, suffix};
-use maestro_terminal::{Mode, Terminal, page::cell::Wide};
+use maestro_terminal::{
+    Coordinate, Mode, Point, Terminal,
+    page::{cell::Wide, layout::STD_CAPACITY},
+};
 
 #[test]
 fn cluster_render_multicodepoint_grapheme_disabled_mode_2027() {
@@ -709,4 +712,301 @@ fn cluster_render_breaks_valid_grapheme_cluster_with_prepend_ascii_for_speed() {
     assert_eq!(value.codepoint(), '1');
 
     assert_eq!((value.has_grapheme(), value.wide()), (false, Wide::Narrow));
+}
+
+#[test]
+fn cluster_enabling_grapheme_mode_handles_stored_breaks() {
+    let mut t = Terminal::new(5, 1, 0).unwrap();
+    t.modes.set(Mode::GraphemeCluster, false);
+    t.print_slice(&['a', '\u{200b}']).unwrap();
+    t.modes.set(Mode::GraphemeCluster, true);
+    t.print('\u{301}').unwrap();
+    assert_text(&t, "a\u{200b}\u{301}");
+}
+
+#[test]
+fn cluster_vs15_to_make_narrow_character_with_pending_wrap() {
+    let mut t = Terminal::new(4, 5, 0).unwrap();
+    assert!(t.modes.get(Mode::Wraparound));
+    t.print_slice(&['🍋', '☔']).unwrap();
+    assert!(dirty(&t, 0));
+    clear_dirty(&mut t);
+    assert_eq!(
+        (
+            t.screens.active().cursor.x,
+            t.screens.active().cursor.y,
+            t.screens.active().cursor.pending_wrap
+        ),
+        (3, 0, true)
+    );
+    t.print('\u{fe0e}').unwrap();
+    assert!(dirty(&t, 0));
+    clear_dirty(&mut t);
+    assert_eq!(
+        (
+            t.screens.active().cursor.x,
+            t.screens.active().cursor.y,
+            t.screens.active().cursor.pending_wrap
+        ),
+        (3, 0, false)
+    );
+    assert_text(&t, "🍋☔︎");
+    assert_eq!(
+        (
+            cell(&t, 2, 0).codepoint(),
+            cell(&t, 2, 0).wide(),
+            cell(&t, 2, 0).has_grapheme()
+        ),
+        ('☔', Wide::Narrow, true)
+    );
+    assert_eq!(suffix(&t, 2, 0).unwrap().len(), 1);
+    assert_eq!(
+        (cell(&t, 0, 0).codepoint(), cell(&t, 0, 0).wide()),
+        ('🍋', Wide::Wide)
+    );
+    assert_eq!(
+        (cell(&t, 1, 0).codepoint(), cell(&t, 1, 0).wide()),
+        ('\0', Wide::SpacerTail)
+    );
+}
+
+#[test]
+fn cluster_vs16_to_make_wide_character_on_next_line_with_hyperlink() {
+    let mut t = Terminal::new(3, 5, 0).unwrap();
+    t.screens
+        .active_mut()
+        .start_hyperlink(b"http://example.com", None)
+        .unwrap();
+    t.cursor_right(2);
+    t.print('#').unwrap();
+    assert_eq!(
+        (
+            t.screens.active().cursor.x,
+            t.screens.active().cursor.pending_wrap
+        ),
+        (2, true)
+    );
+    t.print('\u{fe0f}').unwrap();
+    assert_eq!(
+        (
+            t.screens.active().cursor.x,
+            t.screens.active().cursor.y,
+            t.screens.active().cursor.pending_wrap
+        ),
+        (2, 1, false)
+    );
+    for (x, y, cp, wide) in [
+        (2, 0, '\0', Wide::SpacerHead),
+        (0, 1, '#', Wide::Wide),
+        (1, 1, '\0', Wide::SpacerTail),
+    ] {
+        let value = cell(&t, x, y);
+        assert_eq!(
+            (value.codepoint(), value.wide(), value.hyperlink()),
+            (cp, wide, true)
+        );
+    }
+    assert!(super::support::terminal::row(&t, 0).wrap());
+    assert!(cell(&t, 0, 1).has_grapheme());
+    assert_eq!(suffix(&t, 0, 1), Some(&['\u{fe0f}'][..]));
+}
+
+#[test]
+fn cluster_render_devanagari_grapheme_should_be_wide_on_next_page() {
+    let (cols, rows) = (STD_CAPACITY.cols, STD_CAPACITY.rows);
+    let mut t = Terminal::new(cols, rows, 0).unwrap();
+    t.cursor_down(usize::from(rows - 1));
+    let screen = t.screens.active();
+    let pin = screen
+        .pages
+        .pin(Point::Active(Coordinate { x: 0, y: 0 }))
+        .unwrap();
+    let capacity_rows = screen.pages.page(pin.node).unwrap().capacity.rows;
+    for _ in rows..capacity_rows {
+        t.index().unwrap();
+    }
+    t.cursor_right(usize::from(cols - 1));
+    assert_eq!(
+        (t.screens.active().cursor.x, t.screens.active().cursor.y),
+        (cols - 1, rows - 1)
+    );
+    t.print_slice(&['क', '\u{94d}', '\u{200d}']).unwrap();
+    assert_eq!(
+        (
+            t.screens.active().cursor.x,
+            t.screens.active().cursor.pending_wrap
+        ),
+        (cols - 1, true)
+    );
+    t.print('ष').unwrap();
+    assert_eq!(
+        (
+            t.screens.active().cursor.x,
+            t.screens.active().cursor.y,
+            t.screens.active().cursor.pending_wrap
+        ),
+        (2, rows - 1, false)
+    );
+    let previous = cell(&t, cols - 1, u32::from(rows - 2));
+    assert_eq!(
+        (
+            previous.codepoint(),
+            previous.wide(),
+            previous.has_grapheme()
+        ),
+        ('\0', Wide::SpacerHead, false)
+    );
+    let head = cell(&t, 0, u32::from(rows - 1));
+    assert_eq!(
+        (head.codepoint(), head.wide(), head.has_grapheme()),
+        ('क', Wide::Wide, true)
+    );
+    assert_eq!(
+        suffix(&t, 0, u32::from(rows - 1)),
+        Some(&['\u{94d}', '\u{200d}', 'ष'][..])
+    );
+    assert_eq!(cell(&t, 1, u32::from(rows - 1)).wide(), Wide::SpacerTail);
+}
+
+fn overwrite_family(column: usize, expected: &str) {
+    let mut t = Terminal::new(10, 10, 0).unwrap();
+    t.print_string("👨‍👩‍👧").unwrap();
+    assert_eq!(
+        (t.screens.active().cursor.x, t.screens.active().cursor.y),
+        (2, 0)
+    );
+    let pin = *t
+        .screens
+        .active()
+        .pages
+        .tracked_pin(t.screens.active().cursor.page_pin)
+        .unwrap();
+    assert_eq!(
+        t.screens
+            .active()
+            .pages
+            .page(pin.node)
+            .unwrap()
+            .grapheme_count(),
+        1
+    );
+    t.set_cursor_pos(1, column);
+    clear_dirty(&mut t);
+    t.print('X').unwrap();
+    assert!(dirty(&t, 0));
+    assert_eq!(
+        (
+            usize::from(t.screens.active().cursor.x),
+            t.screens.active().cursor.y
+        ),
+        (column, 0)
+    );
+    assert_eq!(
+        t.screens
+            .active()
+            .pages
+            .page(pin.node)
+            .unwrap()
+            .grapheme_count(),
+        0
+    );
+    assert_text(&t, expected);
+}
+
+#[test]
+fn cluster_overwrite_multicodepoint_grapheme_clears_grapheme_data() {
+    overwrite_family(1, "X");
+}
+
+#[test]
+fn cluster_overwrite_multicodepoint_grapheme_tail_clears_grapheme_data() {
+    overwrite_family(2, " X");
+}
+
+fn assert_widths(cases: &[(&str, u16)]) {
+    for &(text, width) in cases {
+        let mut t = Terminal::new(80, 5, 0).unwrap();
+        t.print_string(text).unwrap();
+        assert_eq!(
+            (t.screens.active().cursor.x, t.screens.active().cursor.y),
+            (width, 0),
+            "{text:?}"
+        );
+    }
+}
+
+#[test]
+fn printed_clusters_use_recorded_cell_widths() {
+    assert_widths(&[
+        ("❤️", 2),
+        ("x\u{fe0f}\u{fe0f}", 1),
+        ("⌚\u{fe0e}\u{fe0f}", 1),
+        ("🏴‍☠️", 2),
+        ("👨‍👩‍👧", 2),
+        ("#\u{fe0f}\u{20e3}", 2),
+        ("1\u{20e3}", 1),
+        ("👋🏿", 2),
+        ("🇦🇧🇨", 4),
+        ("ab", 2),
+        ("\u{301}\u{302}", 0),
+    ]);
+}
+
+#[test]
+fn printed_cluster_variation_selectors() {
+    assert_widths(&[
+        ("❤️", 2),
+        ("#\u{fe0f}", 2),
+        ("x\u{fe0f}", 1),
+        ("x\u{fe0f}\u{fe0f}", 1),
+        ("#\u{fe0e}", 1),
+        ("⌚\u{fe0e}", 1),
+        ("⌚\u{fe0e}\u{fe0f}", 1),
+        ("🏴‍☠️", 2),
+    ]);
+}
+
+#[test]
+fn printed_cluster_emoji_sequences() {
+    assert_widths(&[
+        ("👨‍👩‍👧", 2),
+        ("#\u{fe0f}\u{20e3}", 2),
+        ("1\u{20e3}", 1),
+        ("👋🏿", 2),
+    ]);
+}
+
+#[test]
+fn printed_cluster_spacing_marks_can_widen_narrow_clusters() {
+    assert_eq!(maestro_terminal::unicode::codepoint_width('ः'), 1);
+    let mut t = Terminal::new(80, 5, 0).unwrap();
+    t.print_string("aः").unwrap();
+    assert_eq!(t.screens.active().cursor.x, 2);
+    assert_eq!(cell(&t, 0, 0).wide(), Wide::Wide);
+    assert_eq!(suffix(&t, 0, 0), Some(&['ः'][..]));
+}
+
+#[test]
+fn printed_cluster_segmentation() {
+    assert_widths(&[
+        ("a", 1),
+        ("ab", 2),
+        ("🇦🇧🇨", 4),
+        ("🇨", 2),
+        ("", 0),
+        ("\u{301}\u{302}", 0),
+    ]);
+}
+
+#[test]
+fn grapheme_clusters_advance_the_cursor_by_their_width() {
+    assert_widths(&[
+        ("", 0),
+        ("e\u{301}", 1),
+        ("⚠️", 2),
+        ("⚠︎", 1),
+        ("🇧🇷", 2),
+        ("👍🏽", 2),
+        ("👨‍👩‍👧", 2),
+    ]);
 }

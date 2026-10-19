@@ -20,6 +20,14 @@ fn text(t: &Terminal, x: u16, y: u32) -> char {
 fn terminal_status_line_printing_leaves_main_untouched() {
     let mut t = Terminal::new(5, 3, 0).unwrap();
     t.status_display = StatusDisplay::StatusLine;
+    t.print('a').unwrap();
+    t.print_slice(&['b', 'c']).unwrap();
+    assert_eq!(
+        (t.screens.active().cursor.x, t.screens.active().cursor.y),
+        (0, 0)
+    );
+    assert_text(&t, "");
+    assert!(!dirty(&t, 0));
     t.print_string("abc\nxyz").unwrap();
     assert_eq!(
         (t.screens.active().cursor.x, t.screens.active().cursor.y),

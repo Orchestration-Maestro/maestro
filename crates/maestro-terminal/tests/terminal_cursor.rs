@@ -395,3 +395,177 @@ fn cursor_state_cursorright_right_of_right_margin() {
         assert_text(&t, "    X");
     }
 }
+
+#[test]
+fn cursor_state_cursorpos_resets_wrap() {
+    let mut t = Terminal::new(5, 5, 0).unwrap();
+    t.print_string("ABCDE").unwrap();
+    assert!(t.screens.active().cursor.pending_wrap);
+    t.set_cursor_pos(1, 1);
+    assert!(!t.screens.active().cursor.pending_wrap);
+    t.print('X').unwrap();
+    assert_text(&t, "XBCDE");
+}
+
+#[test]
+fn cursor_state_cursorpos_relative_to_origin() {
+    let mut t = Terminal::new(5, 5, 0).unwrap();
+    t.scrolling_region.top = 2;
+    t.scrolling_region.bottom = 3;
+    t.modes.set(Mode::Origin, true);
+    t.set_cursor_pos(1, 1);
+    t.print('X').unwrap();
+    assert_text(&t, "\n\nX");
+}
+
+#[test]
+fn cursor_state_cursorpos_relative_to_origin_with_left_right() {
+    let mut t = Terminal::new(5, 5, 0).unwrap();
+    t.scrolling_region.top = 2;
+    t.scrolling_region.bottom = 3;
+    t.scrolling_region.left = 2;
+    t.scrolling_region.right = 4;
+    t.modes.set(Mode::Origin, true);
+    t.set_cursor_pos(1, 1);
+    t.print('X').unwrap();
+    assert_text(&t, "\n\n  X");
+}
+
+#[test]
+fn cursor_state_cursorpos_limits_with_full_scroll_region() {
+    let mut t = Terminal::new(5, 5, 0).unwrap();
+    t.scrolling_region.top = 2;
+    t.scrolling_region.bottom = 3;
+    t.scrolling_region.left = 2;
+    t.scrolling_region.right = 4;
+    t.modes.set(Mode::Origin, true);
+    t.set_cursor_pos(500, 500);
+    t.print('X').unwrap();
+    assert_text(&t, "\n\n\n    X");
+}
+
+#[test]
+fn cursor_state_setcursorpos_original_test() {
+    let mut t = Terminal::new(80, 80, 0).unwrap();
+    assert_eq!(
+        (t.screens.active().cursor.x, t.screens.active().cursor.y),
+        (0, 0)
+    );
+    t.set_cursor_pos(0, 0);
+    assert_eq!(
+        (t.screens.active().cursor.x, t.screens.active().cursor.y),
+        (0, 0)
+    );
+    t.set_cursor_pos(81, 81);
+    assert_eq!(
+        (t.screens.active().cursor.x, t.screens.active().cursor.y),
+        (79, 79)
+    );
+    t.set_cursor_pos(0, 80);
+    t.print('c').unwrap();
+    assert!(t.screens.active().cursor.pending_wrap);
+    t.set_cursor_pos(0, 80);
+    assert!(!t.screens.active().cursor.pending_wrap);
+    t.modes.set(Mode::Origin, true);
+    t.set_cursor_pos(81, 81);
+    assert_eq!(
+        (t.screens.active().cursor.x, t.screens.active().cursor.y),
+        (79, 79)
+    );
+    t.scrolling_region.top = 9;
+    t.scrolling_region.bottom = 79;
+    t.set_cursor_pos(0, 0);
+    assert_eq!(
+        (t.screens.active().cursor.x, t.screens.active().cursor.y),
+        (0, 9)
+    );
+    t.set_cursor_pos(1, 1);
+    assert_eq!(
+        (t.screens.active().cursor.x, t.screens.active().cursor.y),
+        (0, 9)
+    );
+    t.set_cursor_pos(100, 0);
+    assert_eq!(
+        (t.screens.active().cursor.x, t.screens.active().cursor.y),
+        (0, 79)
+    );
+    t.scrolling_region.bottom = 10;
+    t.set_cursor_pos(2, 0);
+    assert_eq!(
+        (t.screens.active().cursor.x, t.screens.active().cursor.y),
+        (0, 10)
+    );
+}
+
+#[test]
+fn cursor_state_savecursor() {
+    use maestro_terminal::{CharsetSlot as Slots, sgr::Attribute};
+    let mut t = Terminal::new(3, 3, 0).unwrap();
+    t.set_attribute(Attribute::Bold).unwrap();
+    t.screens.active_mut().charset.gr = Slots::G3;
+    t.modes.set(Mode::Origin, true);
+    t.save_cursor();
+    t.screens.active_mut().charset.gr = Slots::G0;
+    t.set_attribute(Attribute::Unset).unwrap();
+    t.modes.set(Mode::Origin, false);
+    t.restore_cursor();
+    assert!(t.screens.active().cursor.style.flags.bold());
+    assert_eq!(t.screens.active().charset.gr, Slots::G3);
+    assert!(t.modes.get(Mode::Origin));
+}
+
+#[test]
+fn cursor_state_savecursor_position() {
+    let mut t = Terminal::new(10, 5, 0).unwrap();
+    t.set_cursor_pos(1, 5);
+    t.print('A').unwrap();
+    t.save_cursor();
+    t.set_cursor_pos(1, 1);
+    t.print('B').unwrap();
+    t.restore_cursor();
+    t.print('X').unwrap();
+    assert_text(&t, "B   AX");
+}
+
+#[test]
+fn cursor_state_savecursor_pending_wrap_state() {
+    let mut t = Terminal::new(5, 5, 0).unwrap();
+    t.set_cursor_pos(1, 5);
+    t.print('A').unwrap();
+    t.save_cursor();
+    t.set_cursor_pos(1, 1);
+    t.print('B').unwrap();
+    t.restore_cursor();
+    t.print('X').unwrap();
+    assert_text(&t, "B   A\nX");
+}
+
+#[test]
+fn cursor_state_savecursor_origin_mode() {
+    let mut t = Terminal::new(10, 5, 0).unwrap();
+    t.modes.set(Mode::Origin, true);
+    t.save_cursor();
+    t.modes.set(Mode::EnableLeftAndRightMargin, true);
+    t.scrolling_region.left = 2;
+    t.scrolling_region.right = 4;
+    t.scrolling_region.top = 1;
+    t.scrolling_region.bottom = 3;
+    t.set_cursor_pos(1, 1);
+    t.restore_cursor();
+    t.print('X').unwrap();
+    assert_text(&t, "X");
+}
+
+#[test]
+fn cursor_state_savecursor_does_not_modify_hyperlink_state() {
+    let mut t = Terminal::new(3, 3, 0).unwrap();
+    t.screens
+        .active_mut()
+        .start_hyperlink(b"http://example.com", None)
+        .unwrap();
+    let id = t.screens.active().cursor.hyperlink_id;
+    t.save_cursor();
+    assert_eq!(t.screens.active().cursor.hyperlink_id, id);
+    t.restore_cursor();
+    assert_eq!(t.screens.active().cursor.hyperlink_id, id);
+}

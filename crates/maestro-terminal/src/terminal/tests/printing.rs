@@ -108,3 +108,159 @@ fn screen_do_not_garbage_collect_old_styles_in_use() {
     let page = screen.pages.page(pin.node).unwrap();
     assert_eq!(page.styles.count(), 1);
 }
+
+#[test]
+fn terminal_grapheme_growth_retains_cursor_references() {
+    let mut t = Terminal::new(80, 24, 0).unwrap();
+    t.set_attribute(Attribute::Bold).unwrap();
+    t.screens
+        .active_mut()
+        .start_hyperlink(b"https://example.test/cluster", Some(b"cluster"))
+        .unwrap();
+    t.print('o').unwrap();
+    let handle = t.screens.active().cursor.page_pin;
+    let initial = *t.screens.active().pages.tracked_pin(handle).unwrap();
+    let expected = t.screens.active().cursor.clone();
+    let capacity = t
+        .screens
+        .active()
+        .pages
+        .page(initial.node)
+        .unwrap()
+        .capacity
+        .grapheme_bytes;
+    let position = crate::page::CellPosition { x: 0, y: initial.y };
+    let page = t.screens.active_mut().pages.page_mut(initial.node).unwrap();
+    let mut count = 0;
+    while page.append_grapheme(position, '\u{301}').is_ok() {
+        count += 1;
+    }
+    page.get_row_mut(initial.y).set_dirty(false);
+    t.print('\u{301}').unwrap();
+    assert!(dirty(&t, 0));
+    let screen = t.screens.active();
+    let pin = *screen.pages.tracked_pin(handle).unwrap();
+    assert_ne!(pin.node, initial.node);
+    assert!(screen.pages.page(initial.node).is_none());
+    assert_eq!(screen.cursor.page_pin, handle);
+    assert_eq!((screen.cursor.x, screen.cursor.y), (1, 0));
+    let page = screen.pages.page(pin.node).unwrap();
+    assert!(page.capacity.grapheme_bytes > capacity);
+    assert_eq!(
+        page.lookup_grapheme(crate::page::CellPosition { x: 0, y: pin.y })
+            .unwrap(),
+        vec!['\u{301}'; count + 1]
+    );
+    assert_eq!(page.get_cells(pin.y)[0].codepoint(), 'o');
+    assert_eq!(
+        page.get_row(pin.y).grapheme(),
+        cell(&t, 0, 0).has_grapheme()
+    );
+    assert_cursor_references(screen, &expected);
+}
+
+/// Check cell and cursor ownership after the page replacement.
+fn assert_cursor_references(screen: &crate::Screen, expected: &crate::screen::Cursor) {
+    let pin = screen.pages.tracked_pin(screen.cursor.page_pin).unwrap();
+    let page = screen.pages.page(pin.node).unwrap();
+    assert_eq!(screen.cursor.style, expected.style);
+    assert_eq!(*page.styles.get(screen.cursor.style_id), expected.style);
+    assert_eq!(page.styles.ref_count(screen.cursor.style_id), 2);
+    assert_eq!(screen.cursor.hyperlink, expected.hyperlink);
+    assert_eq!(
+        page.hyperlink_set.get(screen.cursor.hyperlink_id),
+        expected.hyperlink.as_deref().unwrap()
+    );
+    assert_eq!(page.hyperlink_set.ref_count(screen.cursor.hyperlink_id), 2);
+}
+
+#[test]
+fn cursor_state_restorecursor_uses_default_style_on_outofspace() {
+    use crate::{
+        color::Rgb,
+        page_list::IncreaseCapacity,
+        style::{Color, Style},
+    };
+    let mut t = Terminal::new(10, 1, 0).unwrap();
+    t.set_attribute(Attribute::Bold).unwrap();
+    t.save_cursor();
+    t.set_attribute(Attribute::Unset).unwrap();
+    assert!(!t.screens.active().cursor.style.flags.bold());
+    loop {
+        let screen = t.screens.active_mut();
+        let pin = *screen.pages.tracked_pin(screen.cursor.page_pin).unwrap();
+        if screen.pages.page(pin.node).unwrap().capacity.styles == u16::MAX {
+            break;
+        }
+        screen
+            .increase_capacity(pin.node, Some(IncreaseCapacity::Styles))
+            .unwrap();
+    }
+    let screen = t.screens.active_mut();
+    let pin = *screen.pages.tracked_pin(screen.cursor.page_pin).unwrap();
+    let page = screen.pages.page_mut(pin.node).unwrap();
+    assert_eq!(page.capacity.styles, u16::MAX);
+    for n in 1..=u16::MAX {
+        let [r, g] = n.to_be_bytes();
+        if page
+            .styles
+            .add(Style {
+                bg_color: Color::Rgb(Rgb { r, g, b: 0 }),
+                ..Style::default()
+            })
+            .is_err()
+        {
+            break;
+        }
+    }
+    t.restore_cursor();
+    assert!(!t.screens.active().cursor.style.flags.bold());
+    assert_eq!(t.screens.active().cursor.style_id, crate::style::DEFAULT_ID);
+}
+
+#[test]
+fn line_control_index_bottom_of_scroll_region_clear_hyperlinks() {
+    let mut t = Terminal::new(5, 5, 0).unwrap();
+    t.scrolling_region.top = 1;
+    t.scrolling_region.bottom = 2;
+    t.set_cursor_pos(2, 1);
+    t.screens
+        .active_mut()
+        .start_hyperlink(b"http://example.com", None)
+        .unwrap();
+    t.print('A').unwrap();
+    t.screens.active_mut().end_hyperlink();
+    t.index().unwrap();
+    t.carriage_return();
+    t.print('B').unwrap();
+    t.index().unwrap();
+    t.carriage_return();
+    t.print('C').unwrap();
+    for y in 0..5 {
+        for x in 0..5 {
+            assert_eq!(
+                cell(&t, x, y).codepoint(),
+                match (x, y) {
+                    (0, 1) => 'B',
+                    (0, 2) => 'C',
+                    _ => '\0',
+                }
+            );
+        }
+    }
+    let screen = t.screens.active();
+    for y in 1..3 {
+        let pin = screen
+            .pages
+            .pin(Point::Viewport(Coordinate { x: 0, y }))
+            .unwrap();
+        let (row, cell) = pin.row_and_cell(&screen.pages).unwrap();
+        let page = screen.pages.page(pin.node).unwrap();
+        assert_eq!((row.hyperlink(), cell.hyperlink()), (false, false));
+        assert_eq!(
+            page.lookup_hyperlink(crate::page::CellPosition { x: 0, y: pin.y }),
+            None
+        );
+        assert_eq!(page.hyperlink_set.count(), 0);
+    }
+}
