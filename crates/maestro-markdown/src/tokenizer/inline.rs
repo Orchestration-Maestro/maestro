@@ -60,6 +60,7 @@ impl<'a> Tokenizer<'a> {
             crate::tests::WORK.with_borrow_mut(|work| work.local_bytes += extent.len());
         }
         let mut output = Vec::new();
+        let mut plain_tail = None;
         let mut cursor = extent.start;
         let mut line_end = cursor;
         let masked = self.mask(extent.clone(), atoms);
@@ -98,14 +99,19 @@ impl<'a> Tokenizer<'a> {
             let line = &text[..line_end.min(limit) - cursor];
             let size = self.text(line);
             let size = line[..size].find('\n').unwrap_or(size);
-            self.push_text(cursor..cursor + size, &mut output);
+            self.push_text(cursor..cursor + size, &mut output, &mut plain_tail);
             cursor += size;
         }
         output
     }
 
     /// Emit decoded units with their original source boundaries.
-    fn push_text(&self, range: Range<usize>, output: &mut Vec<Node>) {
+    fn push_text(
+        &self,
+        range: Range<usize>,
+        output: &mut Vec<Node>,
+        plain_tail: &mut Option<usize>,
+    ) {
         entities::decode_units(&self.source.text[range.clone()], |unit, decoded| {
             let range = range.start + unit.start..range.start + unit.end;
             append_text(
@@ -118,6 +124,7 @@ impl<'a> Tokenizer<'a> {
                         decoded: decoded.to_owned(),
                     }),
                 ),
+                plain_tail,
             );
         });
     }
@@ -340,20 +347,34 @@ impl<'a> Tokenizer<'a> {
     }
 }
 
+/// Whether a text node displays exactly its authored spelling.
+fn plain(text: &Text) -> bool {
+    #[cfg(test)]
+    crate::tests::WORK.with_borrow_mut(|work| work.merge_bytes += text.authored.len());
+    text.decoded == text.authored
+}
+
 /// Coalesce ordinary text without discarding authored extents or decoding twice.
-fn append_text(output: &mut Vec<Node>, node: Node) {
-    if let Some(last) = output.last_mut()
+///
+/// `plain_tail` is the index of the plain text node this extent last created or extended,
+/// so that node is not compared again; any other previous node is checked in full.
+fn append_text(output: &mut Vec<Node>, node: Node, plain_tail: &mut Option<usize>) {
+    let tail = output.len().checked_sub(1);
+    let current_plain = matches!(&node.kind, Kind::Text(current) if plain(current));
+    if current_plain
+        && let Some(last) = output.last_mut()
         && let (Kind::Text(previous), Kind::Text(current)) = (&mut last.kind, &node.kind)
-        && previous.decoded == previous.authored
-        && current.decoded == current.authored
+        && (*plain_tail == tail || plain(previous))
     {
         previous.decoded.push_str(&current.decoded);
         previous.authored.push_str(&current.authored);
         last.authored.push_str(&node.authored);
         last.range.end = node.range.end;
+        *plain_tail = tail;
         return;
     }
     output.push(node);
+    *plain_tail = current_plain.then(|| output.len() - 1);
 }
 
 /// Retain punctuation flanking while hiding the contents of an opaque operand.
