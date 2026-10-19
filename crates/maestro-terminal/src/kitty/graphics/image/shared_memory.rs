@@ -4,7 +4,7 @@ use super::super::command::Format;
 use super::super::command::Transmission;
 use super::ImageError;
 #[cfg(target_os = "linux")]
-use super::MAX_DIMENSION;
+use super::{MAX_DIMENSION, MAX_SIZE};
 
 /// Select a checked range within the logical image, excluding segment padding.
 #[cfg(target_os = "linux")]
@@ -38,7 +38,8 @@ fn shared_memory_range(
             .ok_or(ImageError::InvalidData)?
             .min(expected)
     };
-    if start > end {
+    // A PNG segment's size is the caller's; bound it as the file medium bounds its reads.
+    if start > end || end - start > MAX_SIZE {
         return Err(ImageError::InvalidData);
     }
     Ok(start..end)
