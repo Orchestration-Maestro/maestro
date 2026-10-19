@@ -306,9 +306,9 @@ fn isolated(name: &str) -> bool {
     let directory =
         std::env::temp_dir().join(format!("maestro-dialog-{}-{name}", std::process::id()));
     std::fs::create_dir(&directory).unwrap();
-    let test = crate::child_process::selector(name).unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test, "--nocapture"])
+    let output = maestro_test_process::TestProcess::current(name)
+        .unwrap()
+        .nocapture()
         .env("MAESTRO_EDITOR_CHILD", name)
         .env("TMPDIR", &directory)
         .env("TEMP", &directory)

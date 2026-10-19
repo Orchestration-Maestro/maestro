@@ -374,20 +374,19 @@ mod tests {
             assert!(case.output.stdout.is_empty());
             assert!(case.output.requests.is_none());
             assert!(case.output.phases.is_none());
-            let mut command = std::process::Command::new(std::env::current_exe().unwrap());
-            command
-                .args([
-                    "--exact",
-                    "tests::token_measurement_requires_an_environment_key",
-                    "--nocapture",
-                ])
+            let mut command = maestro_test_process::TestProcess::current(
+                "token_measurement_requires_an_environment_key",
+            )
+            .unwrap();
+            command = command
+                .nocapture()
                 .env("MAESTRO_COUNT_ENTRY_CHILD", "1")
                 .env("LC_ALL", &case.input.locale)
                 .env("LANG", &case.input.locale)
                 .env("LC_MESSAGES", &case.input.locale)
                 .env_remove("ANTHROPIC_API_KEY");
             if let Some(key) = case.input.api_key {
-                command.env("ANTHROPIC_API_KEY", key);
+                command = command.env("ANTHROPIC_API_KEY", key);
             }
             let output = command.output().unwrap();
             assert_eq!(output.status.code(), Some(case.output.exit));
@@ -587,7 +586,10 @@ mod tests {
     fn native_child_completed() -> bool {
         const CHILD: &str = "MAESTRO_COUNT_NATIVE_CHILD";
         if std::env::var_os(CHILD).is_none() {
-            let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+            let mut command = maestro_test_process::TestProcess::current(
+                "token_measurement_sends_five_current_descriptions_in_order",
+            )
+            .unwrap();
             for name in [
                 "HTTP_PROXY",
                 "HTTPS_PROXY",
@@ -598,14 +600,10 @@ mod tests {
                 "NO_PROXY",
                 "no_proxy",
             ] {
-                command.env_remove(name);
+                command = command.env_remove(name);
             }
             let output = command
-                .args([
-                    "--exact",
-                    "tests::token_measurement_sends_five_current_descriptions_in_order",
-                    "--nocapture",
-                ])
+                .nocapture()
                 .env(CHILD, "1")
                 .env("ANTHROPIC_API_KEY", "controlled")
                 .env("LC_ALL", "en_US.UTF-8")

@@ -1,6 +1,5 @@
 use std::ffi::OsString;
 use std::path::PathBuf;
-use std::process::Command;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use maestro_models::{find_env_keys, get_env_api_key};
@@ -65,18 +64,13 @@ pub fn run(
     provider: &str,
     expected: (Option<Vec<&str>>, Option<&str>),
 ) -> TestResult {
-    let test = crate::child_process::selector(test)?;
-    let mut command = Command::new(std::env::current_exe()?);
-    command.env_clear().current_dir(&directory.0);
-    command
+    let output = maestro_test_process::TestProcess::current(test)?
+        .env_clear()
+        .current_dir(&directory.0)
         .env("HOME", &directory.0)
-        .env("USERPROFILE", &directory.0);
-    if let Some(profile) = std::env::var_os("LLVM_PROFILE_FILE") {
-        command.env("LLVM_PROFILE_FILE", profile);
-    }
-    let output = command
-        .args(["--exact", &test, "--nocapture"])
-        .envs(variables.iter().cloned())
+        .env("USERPROFILE", &directory.0)
+        .nocapture()
+        .envs(variables.iter().map(|(key, value)| (key, value)))
         .env(
             "MAESTRO_ENV_EXPECTATION",
             serde_json::to_string(&(provider, expected.0, expected.1))?,
@@ -88,7 +82,6 @@ pub fn run(
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    crate::child_process::assert_executed(&output, &test)?;
     Ok(())
 }
 

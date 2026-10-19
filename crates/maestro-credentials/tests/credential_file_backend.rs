@@ -19,6 +19,65 @@ mod tests {
     use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::time::Duration;
 
+    /// Clearing the environment keeps the profile until a caller overrides it.
+    #[test]
+    fn cleared_child_preserves_profile_and_explicit_override() {
+        const NAME: &str =
+            "credential_file_backend::tests::cleared_child_preserves_profile_and_explicit_override";
+        const PROFILE: &str = "inherited-%p-%m.profraw";
+        const OVERRIDE: &str = "explicit-%p-%m.profraw";
+        if let Ok(stage) = std::env::var("MAESTRO_PROFILE_STAGE") {
+            let cwd = std::env::current_dir().unwrap();
+            assert_eq!(
+                cwd,
+                std::path::Path::new(&std::env::var("MAESTRO_PROFILE_CWD").unwrap())
+            );
+            if stage != "outer" {
+                assert!(is_child());
+                assert!(std::env::var_os("MAESTRO_PROFILE_SENTINEL").is_none());
+                assert_eq!(
+                    std::env::var("LLVM_PROFILE_FILE").unwrap(),
+                    if stage == "inherited" {
+                        PROFILE
+                    } else {
+                        OVERRIDE
+                    }
+                );
+                return;
+            }
+            assert_eq!(std::env::var("LLVM_PROFILE_FILE").unwrap(), PROFILE);
+            assert_eq!(
+                std::env::var("MAESTRO_PROFILE_SENTINEL").unwrap(),
+                "ambient"
+            );
+            let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
+            for (stage, profile) in [("inherited", None), ("override", Some(OVERRIDE))] {
+                let cwd_text = cwd.to_str().unwrap();
+                let mut envs = vec![
+                    ("MAESTRO_PROFILE_STAGE", stage),
+                    ("MAESTRO_PROFILE_CWD", cwd_text),
+                ];
+                envs.extend(profile.map(|value| ("LLVM_PROFILE_FILE", value)));
+                run_child(NAME, &cwd, &envs);
+            }
+            let unchanged =
+                std::env::vars_os().collect::<std::collections::BTreeMap<_, _>>() == before;
+            assert!(unchanged, "child launches changed the outer environment");
+            return;
+        }
+        let dir = TempDir::new("profile-order");
+        run_child(
+            NAME,
+            dir.root(),
+            &[
+                ("MAESTRO_PROFILE_STAGE", "outer"),
+                ("MAESTRO_PROFILE_CWD", dir.root().to_str().unwrap()),
+                ("LLVM_PROFILE_FILE", PROFILE),
+                ("MAESTRO_PROFILE_SENTINEL", "ambient"),
+            ],
+        );
+    }
+
     /// Environment-free configuration operations.
     struct NoOperations;
 

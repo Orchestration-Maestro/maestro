@@ -1,5 +1,6 @@
 //! Reusable child-process test observation.
-use std::{path::Path, process::Command};
+use maestro_test_process::TestProcess;
+use std::path::Path;
 #[cfg(unix)]
 /// Run this test binary again for the single test `name`, with `envs`, and
 /// return the `PROBE ` lines the child printed.
@@ -10,12 +11,13 @@ pub fn probe(
     envs: &[(&str, &str)],
     removed: &[&str],
 ) -> Vec<String> {
-    let mut command = Command::new(std::env::current_exe().expect("test binary path"));
+    let mut command = TestProcess::named(name).expect("complete test name");
     for key in removed {
-        command.env_remove(key);
+        command = command.env_remove(key);
     }
     let output = command
-        .args(["--exact", name, "--nocapture", "--test-threads=1"])
+        .nocapture()
+        .single_threaded()
         .current_dir(current_dir)
         .envs(envs.iter().copied())
         .output()
