@@ -6,7 +6,9 @@ mod clearing;
 mod cursor;
 mod grapheme;
 mod hyperlink;
+mod prompt;
 mod resize;
+pub use prompt::{InputTermination, SemanticContent};
 mod scrolling;
 pub use resize::Resize;
 
@@ -18,7 +20,7 @@ use crate::{
     charsets::{Charset, Slots},
     hyperlink::Hyperlink,
     kitty::KeyFlagStack,
-    page::cell::SemanticContent,
+    page::cell::SemanticContent as CellContent,
     page_list::TrackedPin,
     style::{self, Style},
 };
@@ -77,7 +79,7 @@ pub struct Cursor {
     /// Owned identity retained across page replacement and cursor copying.
     pub hyperlink: Option<Box<Hyperlink>>,
     /// Semantic role applied to newly written cells.
-    pub semantic_content: SemanticContent,
+    pub semantic_content: CellContent,
     /// Whether semantic content extends through the end of the line.
     pub semantic_content_clear_eol: bool,
     /// Retained cell location resolved through the owning page list.
@@ -98,7 +100,7 @@ impl Cursor {
             hyperlink_id: 0,
             hyperlink_implicit_id: 0,
             hyperlink: None,
-            semantic_content: SemanticContent::Output,
+            semantic_content: CellContent::Output,
             semantic_content_clear_eol: false,
             page_pin,
         }

@@ -370,3 +370,31 @@ fn history_resize_reflow_invalidates_viewport_offset_cache() {
     );
     integrity(&list);
 }
+
+#[test]
+fn history_reflow_saved_blank_pin_is_independent_of_insertion_order() {
+    for cursor_first in [true, false] {
+        let mut list = screen(10, 5);
+        let position = list.pin_at_row(0, 9).unwrap();
+        let first = list.track_pin(position).unwrap();
+        let second = list.track_pin(position).unwrap();
+        let (cursor, saved) = if cursor_first {
+            (first, second)
+        } else {
+            (second, first)
+        };
+        list.resize(Resize {
+            cols: Some(nz(5)),
+            cursor: Some(Cursor {
+                x: 9,
+                y: 0,
+                pin: Some(cursor),
+            }),
+            ..Resize::default()
+        })
+        .unwrap();
+        assert_eq!(active(&list, saved), Some(Coordinate { x: 4, y: 0 }));
+        assert_eq!(active(&list, cursor), Some(Coordinate { x: 4, y: 1 }));
+        integrity(&list);
+    }
+}
