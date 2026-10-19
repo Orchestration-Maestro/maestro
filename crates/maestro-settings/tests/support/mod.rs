@@ -1,6 +1,4 @@
 //! Shared helpers for the public-interface settings tests.
-//!
-//! Every test binary includes this module and uses a different subset of it.
 
 #![allow(dead_code)]
 
@@ -265,7 +263,7 @@ pub fn child_command(test: &str, case: &str) -> Command {
     command
         .args([
             "--exact",
-            &format!("tests::{test}"),
+            test,
             "--nocapture",
             "--quiet",
             "--test-threads=1",
@@ -488,7 +486,7 @@ pub fn shell_child_command(test: &str, case: &str, setup: &str) -> Command {
         .arg(std::env::current_exe().unwrap())
         .args([
             "--exact",
-            &format!("tests::{test}"),
+            test,
             "--nocapture",
             "--quiet",
             "--test-threads=1",

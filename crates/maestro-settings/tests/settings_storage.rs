@@ -2,18 +2,15 @@
 //! the native file locking.
 
 #[cfg(test)]
-mod support;
-
-#[cfg(test)]
 mod tests {
-    use super::support;
+    use crate::support;
     use std::fs;
     use std::path::Path;
     use std::sync::Arc;
 
     use serde_json::json;
 
-    use super::support::{
+    use crate::support::{
         ControlledStorage, Holder, TempDir, block_on, file_storage, location, probe_lock, raw,
     };
     use maestro_settings::{
@@ -243,10 +240,13 @@ mod tests {
             fs::create_dir_all(file.parent().unwrap()).unwrap();
             fs::write(file, text).unwrap();
         }
-        let output = support::child_command("relative_locations_keep_their_leading_parents", "run")
-            .current_dir(&process_directory)
-            .output()
-            .unwrap();
+        let output = support::child_command(
+            "settings_storage::tests::relative_locations_keep_their_leading_parents",
+            "run",
+        )
+        .current_dir(&process_directory)
+        .output()
+        .unwrap();
         assert_eq!(
             support::child_report(&output),
             json!(["global seed", "project seed"]),
@@ -368,7 +368,7 @@ mod tests {
 
     #[test]
     fn existing_transaction_holds_exclusion() {
-        const TEST: &str = "existing_transaction_holds_exclusion";
+        const TEST: &str = "settings_storage::tests::existing_transaction_holds_exclusion";
         if support::run_lock_child() {
             return;
         }
@@ -407,7 +407,7 @@ mod tests {
 
     #[test]
     fn held_sidecar_skips_update_until_released() {
-        const TEST: &str = "held_sidecar_skips_update_until_released";
+        const TEST: &str = "settings_storage::tests::held_sidecar_skips_update_until_released";
         if support::run_lock_child() {
             return;
         }
@@ -453,7 +453,7 @@ mod tests {
 
     #[test]
     fn callback_and_write_failure_release_lock() {
-        const TEST: &str = "callback_and_write_failure_release_lock";
+        const TEST: &str = "settings_storage::tests::callback_and_write_failure_release_lock";
         if support::run_lock_child() {
             return;
         }
@@ -489,7 +489,7 @@ mod tests {
 
     #[test]
     fn sidecar_remains_stable_after_release() {
-        const TEST: &str = "sidecar_remains_stable_after_release";
+        const TEST: &str = "settings_storage::tests::sidecar_remains_stable_after_release";
         if support::run_lock_child() {
             return;
         }
@@ -540,9 +540,12 @@ mod tests {
         if support::child_case().is_some() {
             return run_quiet_operations();
         }
-        let output = support::child_command("settings_operations_are_silent", "quiet")
-            .output()
-            .unwrap();
+        let output = support::child_command(
+            "settings_storage::tests::settings_operations_are_silent",
+            "quiet",
+        )
+        .output()
+        .unwrap();
         assert!(
             output.status.success(),
             "{}",
