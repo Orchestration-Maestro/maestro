@@ -15,7 +15,7 @@ pub use maestro_agent::AgentToolRecord;
 pub use maestro_models::Tool;
 
 /// Execution representations required by caller-owned scripted response factories.
-pub use maestro_models::{Execution, Invoke, Local, ProviderExecution, Threaded};
+pub use maestro_models::{Execution, Invoke, Local, Threaded};
 
 /// Scripted response factory input and retained callback ownership.
 pub use maestro_models::{FauxResponseFactory, FauxResponseInput, StreamOptionsInput};
