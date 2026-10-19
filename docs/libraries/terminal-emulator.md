@@ -38,3 +38,10 @@ Unicode-3.0. No Unicode data is downloaded or generated during a build.
 These versions are already in the workspace lockfile. Their selected licences
 are MIT, Apache-2.0, Apache-2.0 WITH LLVM-exception or Zlib as applicable. No
 foreign compiler or unsafe code is introduced.
+
+## Clipboard decoding
+
+OSC clipboard writes reuse `base64 =0.23.1` with its `STANDARD` engine: standard
+alphabet, required canonical padding and rejected nonzero trailing bits.
+Whitespace that reaches this decoder is rejected. This configuration is separate
+from the image protocol's forgiving decoder; it does not change image handling.

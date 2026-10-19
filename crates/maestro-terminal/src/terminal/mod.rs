@@ -125,6 +125,14 @@ impl Default for Flags {
 
 /// Retained terminal screens with direct text and cursor operations.
 pub struct Terminal {
+    /// APC routing and caller-selected image payload limit.
+    pub apc_handler: crate::apc::Handler,
+    /// Caller-selected scheme for status reports.
+    pub(crate) color_scheme: Option<crate::device_status::ColorScheme>,
+    /// Last caller geometry, before clamping cell pixels for the screen.
+    pub(crate) size_report: crate::size_report::Size,
+    /// Pending effects captured by the byte consumer.
+    pub(crate) effects: crate::effects::Effects,
     /// Screen storage and selection.
     pub screens: ScreenSet,
     /// Current, saved and reset-default mode values.
@@ -174,6 +182,15 @@ impl Terminal {
         modes.set(Mode::GraphemeCluster, true);
         modes.defaults[Mode::GraphemeCluster as usize] = true;
         Ok(Self {
+            apc_handler: crate::apc::Handler::default(),
+            color_scheme: None,
+            size_report: crate::size_report::Size {
+                columns: cols,
+                rows,
+                cell_width: 0,
+                cell_height: 0,
+            },
+            effects: crate::effects::Effects::default(),
             screens: ScreenSet::init(opts),
             modes,
             flags: Flags::default(),

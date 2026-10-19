@@ -30,6 +30,11 @@ impl std::error::Error for ResizeError {}
 impl Terminal {
     /// Resize the grid and effective host pixels, ending synchronized output on success.
     ///
+    /// Screen pixels and mode 2048 reports clamp cell dimensions to at least one.
+    /// CSI 14/16/18 queries retain the raw caller dimensions and emit nothing when
+    /// either cell dimension is zero. Each successful resize queues an in-band
+    /// report if mode 2048 is enabled, including resizes to unchanged dimensions.
+    ///
     /// # Errors
     /// Rejects zero grid dimensions before mutation. A storage refusal may leave earlier
     /// screen changes applied; reset before using content after that refusal.
@@ -44,6 +49,24 @@ impl Terminal {
         self.width_px = u32::from(cols).saturating_mul(cell_width_px.max(1));
         self.height_px = u32::from(rows).saturating_mul(cell_height_px.max(1));
         self.modes.set(Mode::SynchronizedOutput, false);
+        self.size_report = crate::size_report::Size {
+            columns: cols,
+            rows,
+            cell_width: cell_width_px,
+            cell_height: cell_height_px,
+        };
+        if self.modes.get(Mode::InBandSizeReports) {
+            let size = crate::size_report::Size {
+                cell_width: cell_width_px.max(1),
+                cell_height: cell_height_px.max(1),
+                ..self.size_report
+            };
+            let _ = crate::size_report::encode(
+                &mut self.effects.pty_reply,
+                crate::size_report::Style::Mode2048,
+                size,
+            );
+        }
         Ok(())
     }
 

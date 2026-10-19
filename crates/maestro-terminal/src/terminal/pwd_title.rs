@@ -14,6 +14,14 @@ impl Terminal {
         (!self.title.is_empty()).then_some(self.title.as_slice())
     }
 
+    /// Queue the stored title as an operating-system command reply.
+    pub(crate) fn report_title(&mut self) {
+        let bytes = &mut self.effects.pty_reply;
+        bytes.extend_from_slice(b"\x1b]l");
+        bytes.extend_from_slice(&self.title);
+        bytes.extend_from_slice(b"\x1b\\");
+    }
+
     /// Copy directory bytes without decoding or ingress limits; empty bytes unset it.
     pub fn set_pwd(&mut self, pwd: &[u8]) {
         pwd.clone_into(&mut self.pwd);

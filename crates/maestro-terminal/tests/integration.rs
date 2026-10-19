@@ -153,3 +153,11 @@ mod terminal_input;
 
 mod stream_links;
 mod stream_tracked_rows;
+
+mod device_attributes;
+
+mod terminal_color_effects;
+
+mod terminal_size_reports;
+
+mod apc;

@@ -1,7 +1,9 @@
 //! Synchronous application of decoded operations to retained terminal state.
 
+mod colors;
 mod cursor;
 mod modes;
+mod replies;
 mod write;
 pub(crate) use write::WriteState;
 
@@ -9,14 +11,14 @@ use crate::{
     Terminal,
     stream::{
         Action, CharsetAction, CursorAction, EditAction, EraseAction, KeyboardAction, ModeAction,
-        OscAction, PayloadAction, ProtectionAction, QueryAction, TabAction,
+        OscAction, PayloadAction, ProtectionAction, TabAction,
     },
 };
 
 /// Terminal consumer with retained cursor appearance defaults.
 ///
-/// Applies screen state synchronously and consumes queries without replies.
-/// Bells, external commands and application payloads have no external effects.
+/// Applies screen state synchronously and captures replies and bells for draining.
+/// APC strings are parsed with image execution disabled; DCS has no effects.
 /// Each storage refusal ends only the current action; later input remains usable.
 pub struct Handler<'a> {
     /// Terminal updated by each callback.
@@ -56,8 +58,8 @@ impl crate::stream::Handler for Handler<'_> {
             Action::Charset(action) => self.charset(action),
             Action::Protection(action) => self.protection(action),
             Action::Osc(action) => self.osc(action),
-            Action::Query(action) => Self::query(action),
-            Action::Payload(action) => Self::payload(&action),
+            Action::Query(action) => self.query(action),
+            Action::Payload(action) => self.payload(&action),
             Action::SetAttribute(attr) => {
                 let _ = self.terminal.set_attribute(attr);
             }
@@ -83,8 +85,10 @@ impl crate::stream::Handler for Handler<'_> {
                 .terminal
                 .set_left_and_right_margin(usize::from(top_left), usize::from(bottom_right)),
             Action::LeftAndRightMarginAmbiguous => self.margin_or_save(),
-            // Readonly consumers have no bell effect.
-            Action::Bell => {}
+            Action::Bell => {
+                let count = &mut self.terminal.effects.bell_count;
+                *count = count.saturating_add(1);
+            }
         }
     }
 }
@@ -254,7 +258,7 @@ impl Handler<'_> {
         self.terminal.set_protected_mode(mode);
     }
 
-    /// Apply retained screen commands; external effects stay outside this consumer.
+    /// Apply retained screen commands and capture accepted external effects.
     fn osc(&mut self, action: OscAction) {
         match action {
             OscAction::SemanticPrompt(cmd) => {
@@ -268,41 +272,57 @@ impl Handler<'_> {
                     .start_hyperlink(&uri, id.as_deref());
             }
             OscAction::EndHyperlink => self.terminal.screens.active_mut().end_hyperlink(),
-            OscAction::WindowTitle(_)
-            | OscAction::ClipboardContents { .. }
-            | OscAction::ReportPwd(_)
-            | OscAction::ColorOperation { .. }
-            | OscAction::KittyColorReport(_) => {}
+            OscAction::ReportPwd(mut value) => {
+                value.truncate(4096);
+                self.terminal.set_pwd(&value);
+                self.terminal.effects.pwd_changes.push(value);
+            }
+            OscAction::WindowTitle(mut value) => {
+                value.truncate(1024);
+                self.terminal.set_title(&value);
+            }
+            OscAction::ClipboardContents { kind, data } => self.clipboard_contents(kind, &data),
+            OscAction::ColorOperation {
+                requests,
+                terminator,
+                ..
+            } => {
+                self.color_operation(&requests, terminator);
+            }
+            OscAction::KittyColorReport(request) => self.kitty_color_operation(&request),
         }
     }
 
-    /// Consume queries without producing external effects in the readonly handler.
-    fn query(action: QueryAction) {
-        match action {
-            QueryAction::Enquiry
-            | QueryAction::DeviceAttributes(_)
-            | QueryAction::RequestMode(_)
-            | QueryAction::RequestModeUnknown(_)
-            | QueryAction::KittyKeyboardQuery
-            | QueryAction::DeviceStatus(_)
-            | QueryAction::Xtversion
-            | QueryAction::SizeReport(_)
-            | QueryAction::TitlePush(_)
-            | QueryAction::TitlePop(_) => {}
+    /// Capture nonempty standard-location writes decoded with padded standard base64.
+    fn clipboard_contents(&mut self, kind: u8, data: &[u8]) {
+        use base64::{Engine as _, engine::general_purpose::STANDARD};
+        if matches!(kind, b's' | b'p') || data.is_empty() || data == b"?" {
+            return;
+        }
+        let Ok(decoded) = STANDARD.decode(data) else {
+            return;
+        };
+        if !decoded.is_empty() && decoded.len() <= 192 * 1024 {
+            self.terminal.effects.clipboard_writes.push(decoded);
         }
     }
 
-    /// Consume DCS without terminal modification; APC execution is a separate consumer.
-    fn payload(action: &PayloadAction<'_>) {
+    /// Route APC strings while consuming DCS without terminal modification.
+    fn payload(&mut self, action: &PayloadAction<'_>) {
         match action {
-            PayloadAction::DcsHook(_)
-            | PayloadAction::DcsPut(_)
-            | PayloadAction::DcsUnhook
-            | PayloadAction::ApcStart
-            | PayloadAction::ApcPut(_)
-            | PayloadAction::ApcEnd => {}
+            PayloadAction::ApcStart => self.terminal.apc_handler.start(),
+            PayloadAction::ApcPut(byte) => self.terminal.apc_handler.feed(*byte),
+            PayloadAction::ApcEnd => {
+                if let Some(command) = self.terminal.apc_handler.end() {
+                    Self::execute_apc(command);
+                }
+            }
+            PayloadAction::DcsHook(_) | PayloadAction::DcsPut(_) | PayloadAction::DcsUnhook => {}
         }
     }
+
+    /// Consume parsed image commands without execution or replies while images are disabled.
+    fn execute_apc(_command: crate::kitty::graphics::command::Command) {}
 
     /// Resolve the parameterless horizontal-margin and cursor-save ambiguity.
     fn margin_or_save(&mut self) {

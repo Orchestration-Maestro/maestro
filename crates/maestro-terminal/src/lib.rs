@@ -43,6 +43,7 @@ pub mod parser;
 
 pub mod x11_color;
 
+pub mod apc;
 pub mod osc;
 
 pub use parser::{Csi, Dcs, Parser};
@@ -63,6 +64,8 @@ pub mod csi;
 
 pub mod device_attributes;
 pub mod device_status;
+pub mod effects;
+pub mod size_report;
 pub mod stream;
 
 pub mod stream_terminal;

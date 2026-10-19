@@ -404,8 +404,76 @@ action, not later input. `mouse_tracking_enabled` reads the tracking mode bits;
 `modify_other_keys_enabled` reads numeric extended modifier-key mode. Tracking
 bits and the selected mouse event or format remain independent.
 
-Query and window requests are observable as typed stream actions, but replies
-and external effects are not delivered yet. OSC title, directory, colour and
-clipboard effects, bells and APC routing are pending; image execution is also
-pending. The terminal handler consumes DCS without changing the screen. These
-pending effects do not prevent decoding subsequent input.
+Query and window requests are observable as typed stream actions. The terminal
+handler captures replies and colour effects, routes APC strings and consumes DCS
+without changing the screen. Image execution remains disabled. Input decoding
+continues after these commands.
+
+## Replies and effects
+
+After `Terminal::write`, drain `take_pty_reply`, `take_bell_count`,
+`take_pwd_changes` and `take_clipboard_writes`. Each drain clears only its own
+queue. Replies concatenate in input order; bells saturate at `u16::MAX`.
+
+The byte consumer answers operating-status, cursor-position, device-attribute,
+version, mode, keyboard-protocol, size and title queries. Cursor reports are relative
+to the scrolling origin when origin mode is enabled. Title reports use the stored
+title, including an empty title. The enquiry answer is empty. Device-attribute
+and version replies use fixed defaults, without embedding reply callbacks.
+`set_color_scheme` selects light or dark status replies; `None` suppresses them.
+With mode 2031 enabled, changing between two known schemes queues a report.
+Initial discovery, removal and unchanged values do not produce unsolicited reports.
+
+CSI 14, 16 and 18 t report text-area pixels, cell pixels and text-area cells
+from the last successful caller resize. No size query replies until both cell
+pixel dimensions are nonzero; they start at zero after construction. Mode 2048
+queues an in-band size report on every successful resize, including unchanged
+grid sizes. It uses cell dimensions clamped to at least one, independently of
+the raw query size. Both report paths preserve full pixel products, even when
+the screen's stored pixel dimensions saturate at `u32::MAX`. Rejected zero-grid
+resizes leave the query size unchanged and queue no report.
+
+Directory changes and accepted clipboard writes are owned byte vectors, queued
+in input order. Repeated directory reports each produce a notification, including
+reports that clear the directory.
+
+## OSC and APC
+
+OSC 0 and 2 set the title, capped at 1024 bytes. OSC 7, 1337 `CurrentDir=` and
+9;9 set the raw working directory, capped at 4096 bytes. The caps apply only at
+command ingress; direct `set_title` and `set_pwd` calls remain uncapped. Titles
+must be valid UTF-8 before ingress, but truncation can split a scalar. Directory
+payloads remain unparsed bytes.
+
+OSC 52 and 1337 `Copy=:` decode clipboard writes with padded standard base64.
+Queries, clears, malformed payloads, selection and primary targets capture
+nothing. Other targets select the standard clipboard. Only nonempty decoded
+writes of at most 192 KiB are queued; no system clipboard access occurs.
+The stream ignores control bytes such as tabs and newlines inside OSC strings
+before payload decoding. Spaces reach the decoder and are rejected.
+
+OSC 4, 10, 11 and 12 set palette, foreground, background and cursor overrides.
+OSC 104 resets selected palette entries or the entire palette; OSC 110, 111 and
+112 restore the dynamic defaults. OSC 21 accesses the same retained colours with
+named or indexed keys. Unsupported special and dynamic targets change nothing.
+Palette mutations mark the palette dirty; dynamic mutations retain their
+independent defaults.
+
+Colour queries observe preceding operations in the same command. OSC 4 and
+10 through 12 report replicated sixteen-bit RGB channels; an unset cursor falls
+back to the foreground. OSC 21 combines query fields in one reply, uses eight-bit
+channels and reports supported unset values as empty fields without a cursor
+fallback. Unsupported targets produce no query field. Each reply uses the
+query's BEL or ST terminator.
+
+APC strings beginning with `G` enter the existing image command parser. Other
+protocols are ignored. `apc::Handler` supports byte and slice feeding, drops
+malformed or over-budget commands and returns an owned command at `end`.
+`Terminal::apc_handler` retains this routing across writes. Its `max_bytes` limits
+the encoded image payload, not the control fields; the default is 65 MiB.
+Changing the limit or protocol enablement affects future strings, not a parser
+already selected by `G`. A new `start` releases an unfinished command.
+
+Image execution is disabled: parsed commands change no screen state and produce
+no replies. APC payloads never print as text; normal text resumes after the
+string terminator.
