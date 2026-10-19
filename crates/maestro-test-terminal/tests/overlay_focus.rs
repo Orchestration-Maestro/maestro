@@ -1,25 +1,13 @@
 //! Overlay controls observed through focus flags, input and rendered frames.
 
-#[allow(
-    dead_code,
-    reason = "Support items are shared by several test targets."
-)]
-mod support {
-    pub mod checks;
-    pub mod components;
-    pub mod manual_runtime;
-    pub mod recording_terminal;
-    pub mod scene;
-    pub mod virtual_terminal;
-}
-
+use crate::support::{components::Probe, scene::Scene};
 use maestro_tui::OverlayOptions;
 use std::cell::RefCell;
 use std::rc::Rc;
-use support::{components::Probe, scene::Scene};
 
 #[test]
 fn maestro_overlays_non_capturing_overlay_preserves_focus_on_creation() {
+    let _input = crate::input_support::globals();
     let scene = Scene::new(20, 6);
     scene.start(&["editor"]);
     scene.tui.set_focus(Some(scene.probe.clone()));
@@ -136,6 +124,7 @@ fn maestro_overlays_capturing_overlay_removed_with_non_capturing_below_restores_
 
 #[test]
 fn maestro_overlays_sub_overlay_cleanup_then_hideoverlay_restores_focus_and_input_to_editor() {
+    let _input = crate::input_support::globals();
     let scene = focused_scene();
     let (timer, mut handle) = show(&scene, "T", true).unwrap();
     let (controller, _) = show(&scene, "C", false).unwrap();
@@ -154,6 +143,7 @@ fn maestro_overlays_deferred_sub_overlay_restores_focus() {
     use maestro_tui::tui::TuiRuntime;
     use std::cell::Cell;
     use std::time::Duration;
+    let _input = crate::input_support::globals();
     let scene = focused_scene();
     let (timer, timer_handle) = show(&scene, "T", true).unwrap();
     let controller = Probe::shared(&["C"]);
@@ -190,6 +180,7 @@ fn maestro_overlays_deferred_sub_overlay_restores_focus() {
 fn maestro_overlays_handleinput_redirection_skips_non_capturing_overlays_when_focused_overlay_becomes_invisible()
  {
     use std::cell::Cell;
+    let _input = crate::input_support::globals();
     let scene = focused_scene();
     let (fallback, _) = show(&scene, "F", false).unwrap();
     let (noncapturing, _) = show(&scene, "N", true).unwrap();
@@ -281,6 +272,7 @@ fn maestro_overlays_unfocus_when_overlay_does_not_have_focus_is_a_no_op() {
 #[test]
 fn maestro_overlays_unfocus_with_null_prefocus_clears_focus_and_does_not_route_input_back_to_overlay()
  {
+    let _input = crate::input_support::globals();
     let scene = Scene::new(20, 6);
     scene.start(&[]);
     let (overlay, mut handle) = show(&scene, "A", false).unwrap();
@@ -387,6 +379,7 @@ fn maestro_overlays_unfocus_does_not_change_visual_order_until_another_overlay_i
 
 #[test]
 fn overlay_removed_handles_cannot_mutate_focus_or_visibility() {
+    let _input = crate::input_support::globals();
     let scene = focused_scene();
     let (_, mut handle) = show(&scene, "A", true).unwrap();
     handle.set_hidden(true);
@@ -409,6 +402,7 @@ fn overlay_removed_handles_cannot_mutate_focus_or_visibility() {
 #[test]
 fn overlay_restoration_skips_unavailable_predecessors() {
     use std::cell::Cell;
+    let _input = crate::input_support::globals();
     for unavailable in [
         "removed",
         "hidden",
@@ -604,6 +598,7 @@ fn overlay_render_selection_captures_visible_entries() {
 
 #[test]
 fn overlay_invalidation_walks_live_entries() {
+    let _input = crate::input_support::globals();
     let scene = focused_scene();
     let order = Rc::new(RefCell::new(Vec::new()));
     let log = order.clone();
@@ -711,9 +706,9 @@ fn overlay_handle_noops_preserve_hidden_state_and_render_requests() {
 
 #[test]
 fn overlay_cursor_failures_keep_completed_state_changes() {
+    use crate::support::{manual_runtime::ManualRuntime, recording_terminal::RecordingTerminal};
     use maestro_tui::{TUI, TerminalImage};
     use std::io::ErrorKind;
-    use support::{manual_runtime::ManualRuntime, recording_terminal::RecordingTerminal};
     let terminal = RecordingTerminal::new(20, 6);
     let runtime = ManualRuntime::new();
     let tui = TUI::new(
@@ -754,6 +749,7 @@ fn overlay_cursor_failures_keep_completed_state_changes() {
 fn overlay_focus_fallback_precedes_key_release_filtering() {
     use maestro_tui::tui::InputListenerResult;
     use std::cell::Cell;
+    let _input = crate::input_support::globals();
     let scene = focused_scene();
     let visible = Rc::new(Cell::new(true));
     let calls = Rc::new(Cell::new(0));
@@ -870,6 +866,7 @@ fn overlay_padding_ignores_highwater_and_suspends_clear_on_shrink() {
 
 #[test]
 fn overlay_handles_preserve_component_identity_when_owner_is_cloned() {
+    let _input = crate::input_support::globals();
     let scene = focused_scene();
     let owner = scene.tui.clone();
     let same_a = Probe::shared(&["same"]);
@@ -928,7 +925,7 @@ fn reject_release_after_repair(scene: &Scene, overlay: &Rc<Probe>) {
 fn clipped_cursor_markers() {
     use maestro_tui::{CURSOR_MARKER, SizeValue};
     let scene = focused_scene();
-    support::checks::succeeds(scene.tui.set_show_hardware_cursor(true));
+    crate::support::checks::succeeds(scene.tui.set_show_hardware_cursor(true));
     let lower = Probe::shared(&[]);
     lower.set_lines(&[format!("{CURSOR_MARKER}L"), format!("X{CURSOR_MARKER}")]);
     let shown = scene.tui.show_overlay(
@@ -979,6 +976,7 @@ fn visibility_tail(scene: &Scene) -> std::io::Result<Rc<std::cell::Cell<usize>>>
 
 #[test]
 fn overlay_focus_restoration_uses_post_callback_stack_slot() {
+    let _input = crate::input_support::globals();
     for replacement_state in ["capturing", "noncapturing", "hidden", "invisible"] {
         let scene = focused_scene();
         let armed = Rc::new(std::cell::Cell::new(false));
@@ -1041,6 +1039,7 @@ fn overlay_focus_restoration_uses_post_callback_stack_slot() {
 
 #[test]
 fn overlay_focus_candidates_cannot_commit_callback_removed_targets() {
+    let _input = crate::input_support::globals();
     for operation in ["create", "unhide", "focus"] {
         let scene = focused_scene();
         let candidate = Probe::shared(&["candidate"]);
@@ -1082,6 +1081,7 @@ fn overlay_focus_candidates_cannot_commit_callback_removed_targets() {
 
 #[test]
 fn overlay_predecessor_rechecks_callback_hidden_or_removed_identity() {
+    let _input = crate::input_support::globals();
     for remove in [false, true] {
         let scene = focused_scene();
         let candidate = Probe::shared(&["candidate"]);
@@ -1159,6 +1159,7 @@ fn unavailable_callback(
 
 #[test]
 fn overlay_captured_component_survives_removal_of_its_original_alias() {
+    let _input = crate::input_support::globals();
     let scene = focused_scene();
     let component = Probe::shared(&["X"]);
     let options = || {
@@ -1191,6 +1192,7 @@ fn overlay_captured_component_survives_removal_of_its_original_alias() {
 
 #[test]
 fn overlay_input_resamples_false_visibility_without_excluding_its_entry() {
+    let _input = crate::input_support::globals();
     let scene = focused_scene();
     let candidate = Probe::shared(&["X"]);
     let calls = Rc::new(std::cell::Cell::new(0));
@@ -1217,6 +1219,7 @@ fn overlay_input_resamples_false_visibility_without_excluding_its_entry() {
 
 #[test]
 fn overlay_top_walk_stops_when_an_accepted_slot_is_vacated() {
+    let _input = crate::input_support::globals();
     let scene = focused_scene();
     let lower_calls = Rc::new(std::cell::Cell::new(0));
     let lower_options = Rc::new(RefCell::new(OverlayOptions::default()));
@@ -1265,6 +1268,7 @@ fn overlay_top_walk_stops_when_an_accepted_slot_is_vacated() {
 
 #[test]
 fn overlay_input_keeps_the_first_alias_visibility_trigger() {
+    let _input = crate::input_support::globals();
     for hidden in [false, true] {
         let scene = focused_scene();
         let candidate = Probe::shared(&["X"]);
@@ -1316,6 +1320,7 @@ fn overlay_input_keeps_the_first_alias_visibility_trigger() {
 
 #[test]
 fn overlay_creation_retains_its_component_when_callback_replaces_the_entry() {
+    let _input = crate::input_support::globals();
     let scene = focused_scene();
     let candidate = Probe::shared(&["X"]);
     let calls = Rc::new(std::cell::Cell::new(0));
@@ -1353,6 +1358,7 @@ fn overlay_creation_retains_its_component_when_callback_replaces_the_entry() {
 
 #[test]
 fn overlay_same_label_is_not_a_component_availability_witness() {
+    let _input = crate::input_support::globals();
     let scene = focused_scene();
     let (original, mut handle) = show(&scene, "X", true).unwrap();
     handle.focus();

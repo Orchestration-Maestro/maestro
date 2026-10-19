@@ -1,6 +1,5 @@
 //! Markdown callbacks, style boundaries and retained state.
-#[path = "support/markdown_cases.rs"]
-mod markdown;
+use crate::support::markdown_cases as markdown;
 
 #[test]
 fn markdown_inline_styles_restore_parent_and_strip_terminal_prefix() {
@@ -349,8 +348,8 @@ fn maestro_markdown_preserve_heading_styling_after_inline_code_for_h1() {
 
 #[test]
 fn maestro_markdown_not_leak_h1_underline_into_padding_when_inline_code_is_the_last_token() {
-    let terminal = support::virtual_terminal::VirtualTerminal::new(80, 4);
-    let runtime = support::manual_runtime::ManualRuntime::new();
+    let terminal = crate::support::virtual_terminal::VirtualTerminal::new(80, 4);
+    let runtime = crate::support::manual_runtime::ManualRuntime::new();
     let tui = maestro_tui::TUI::new(
         terminal.handle(),
         runtime.handle(),
@@ -403,16 +402,6 @@ fn markdown_decorations_apply_in_fixed_order_without_duplicates() {
     }
 }
 
-#[allow(
-    dead_code,
-    reason = "Screen support is shared by several test targets."
-)]
-mod support {
-    pub mod manual_runtime;
-    pub mod recording_terminal;
-    pub mod virtual_terminal;
-}
-
 /// A Markdown component followed by a plain input row.
 struct MarkdownWithInput {
     /// Rendered message.
@@ -434,8 +423,8 @@ impl Component for MarkdownWithInput {
 
 #[test]
 fn maestro_markdown_not_leak_styles_into_following_lines_when_rendered_in_tui() {
-    let terminal = support::virtual_terminal::VirtualTerminal::new(80, 6);
-    let runtime = support::manual_runtime::ManualRuntime::new();
+    let terminal = crate::support::virtual_terminal::VirtualTerminal::new(80, 6);
+    let runtime = crate::support::manual_runtime::ManualRuntime::new();
     let tui = maestro_tui::TUI::new(
         terminal.handle(),
         runtime.handle(),

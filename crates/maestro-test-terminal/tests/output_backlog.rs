@@ -4,23 +4,13 @@ use std::rc::Rc;
 
 use maestro_tui::{TUI, TerminalImage};
 
-#[allow(
-    dead_code,
-    reason = "Support items are shared by several test targets."
-)]
-mod support {
-    pub mod components;
-    pub mod manual_runtime;
-    pub mod recording_terminal;
-    pub mod writer;
-}
-use support::components::Probe;
-use support::manual_runtime::{ManualRuntime, ms};
-use support::recording_terminal::RecordingTerminal;
+use crate::support::components::Probe;
+use crate::support::manual_runtime::{ManualRuntime, ms};
+use crate::support::recording_terminal::RecordingTerminal;
 
 /// A controlled output port with one observable component.
 fn writer() -> (TUI, RecordingTerminal, ManualRuntime, Rc<Probe>) {
-    let (tui, terminal, runtime) = support::writer::writer();
+    let (tui, terminal, runtime) = crate::support::writer::writer();
     let probe = Probe::shared(&["frame-A"]);
     tui.add_child(probe.clone());
     (tui, terminal, runtime, probe)
