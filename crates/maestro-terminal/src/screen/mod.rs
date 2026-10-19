@@ -215,6 +215,7 @@ impl Screen {
 
     /// Clear content and protocol state, preserving dimensions and cursor handle.
     pub fn reset(&mut self) {
+        self.detach_cursor();
         self.pages.reset();
         self.cursor = Cursor::new(self.cursor.page_pin);
         self.saved_cursor = None;

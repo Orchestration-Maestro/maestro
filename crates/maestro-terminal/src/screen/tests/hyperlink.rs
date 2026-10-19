@@ -140,9 +140,14 @@ fn screen_cursor_copy_hyperlink_copy_disabled() {
     source
         .start_hyperlink(b"https://example.test", None)
         .unwrap();
+    let source_link = std::ptr::from_ref(source.cursor.hyperlink.as_deref().unwrap());
     let mut target = screen(10, 10);
     target.start_hyperlink(b"https://old.test", None).unwrap();
     target.cursor_copy(&source.cursor, false).unwrap();
+    assert_eq!(
+        std::ptr::from_ref(source.cursor.hyperlink.as_deref().unwrap()),
+        source_link
+    );
     assert_eq!(target.cursor.hyperlink_id, 0);
     assert!(target.cursor.hyperlink.is_none());
     assert_eq!(page(&target).hyperlink_set.count(), 0);
@@ -257,4 +262,137 @@ fn screen_hyperlink_cursor_state_on_resize() {
         assert_eq!(s.cursor.hyperlink_id, 0);
         assert_eq!(page(&s).hyperlink_set.count(), 0);
     }
+}
+
+#[test]
+fn screen_structural_edits_restore_cursor_managed_owners() {
+    for erase in [false, true] {
+        let mut s = screen(5, 2);
+        let (first, _) = super::split_rows(&mut s, 1);
+        s.set_attribute(crate::sgr::Attribute::Bold).unwrap();
+        s.start_hyperlink(b"https://example.test", Some(b"link"))
+            .unwrap();
+        super::write_row(&mut s, "A");
+        let old_style = s.cursor.style_id;
+        let old_link = s.cursor.hyperlink_id;
+        if erase {
+            s.erase_active(0);
+        } else {
+            s.scroll_clear();
+        }
+        let current = super::page(&s);
+        // A cursor reference must resolve before a cell tries to retain it.
+        assert_eq!(current.hyperlink_set.ref_count(s.cursor.hyperlink_id), 1);
+        assert_eq!(current.styles.ref_count(s.cursor.style_id), 1);
+        if let Some(old) = s.pages.page(first) {
+            assert_eq!(old.styles.ref_count(old_style), 1);
+            assert_eq!(old.hyperlink_set.ref_count(old_link), 1);
+        }
+        s.cursor_set_hyperlink().unwrap();
+        let link = super::page(&s).hyperlink_set.get(s.cursor.hyperlink_id);
+        assert_eq!(link.uri, b"https://example.test");
+        let id = s.cursor.hyperlink_id;
+        s.end_hyperlink();
+        assert_eq!(super::page(&s).hyperlink_set.ref_count(id), 1);
+    }
+}
+
+#[test]
+fn screen_hyperlink_bytes_and_explicit_empty_identity() {
+    let mut s = screen(5, 2);
+    let uri = b"\xff\0URI";
+    for id in [None, Some(b"".as_slice()), Some(b"\xfe\0id".as_slice())] {
+        s.start_hyperlink(uri, id).unwrap();
+        s.cursor_set_hyperlink().unwrap();
+        assert_eq!(pin(&s).hyperlink_uri(&s.pages).unwrap(), uri);
+        let stored = page(&s).hyperlink_set.get(s.cursor.hyperlink_id);
+        assert_eq!(stored.uri, uri);
+        match (&stored.id, id) {
+            (HyperlinkId::Implicit(_), None) => {}
+            (HyperlinkId::Explicit(actual), Some(expected)) => assert_eq!(actual, expected),
+            _ => panic!("identity kind changed"),
+        }
+    }
+}
+
+/// Exercise an edit that removes or retargets the cursor's original page.
+fn structurally_edited_cursor(erase: bool) -> super::Screen {
+    let mut s = screen(5, 2);
+    super::split_rows(&mut s, 1);
+    s.start_hyperlink(b"https://example.test", Some(b"link"))
+        .unwrap();
+    super::write_row(&mut s, "A");
+    if erase {
+        s.erase_active(0);
+    } else {
+        s.scroll_clear();
+    }
+    s
+}
+
+#[test]
+fn screen_scroll_clear_cursor_root_reference() {
+    let s = structurally_edited_cursor(false);
+    assert_eq!(page(&s).hyperlink_set.ref_count(s.cursor.hyperlink_id), 1);
+}
+
+#[test]
+fn screen_erase_active_cursor_root_reference() {
+    let s = structurally_edited_cursor(true);
+    assert_eq!(page(&s).hyperlink_set.ref_count(s.cursor.hyperlink_id), 1);
+}
+
+/// Verify the real consumer retains the link and returns its original URI.
+fn assert_edited_cursor_writes_link(mut s: super::Screen) {
+    s.cursor_set_hyperlink().unwrap();
+    assert_eq!(
+        pin(&s).hyperlink_uri(&s.pages).unwrap(),
+        b"https://example.test"
+    );
+}
+
+#[test]
+fn screen_scroll_clear_cursor_link_write() {
+    assert_edited_cursor_writes_link(structurally_edited_cursor(false));
+}
+
+#[test]
+fn screen_erase_active_cursor_link_write() {
+    assert_edited_cursor_writes_link(structurally_edited_cursor(true));
+}
+
+#[test]
+fn screen_scroll_clear_regenerates_implicit_identity_only_across_pages() {
+    for cross_page in [false, true] {
+        let mut s = screen(5, 2);
+        if cross_page {
+            super::split_rows(&mut s, 1);
+        }
+        s.start_hyperlink(b"implicit", None).unwrap();
+        super::write_row(&mut s, "A");
+        s.scroll_clear();
+        assert_eq!(
+            s.cursor.hyperlink_implicit_id,
+            if cross_page { 2 } else { 1 }
+        );
+        s.cursor_set_hyperlink().unwrap();
+        assert_eq!(pin(&s).hyperlink_uri(&s.pages).unwrap(), b"implicit");
+    }
+}
+
+#[test]
+fn screen_erasure_releases_the_last_cursor_owner_before_removing_storage() {
+    let mut s = screen(5, 2);
+    super::split_rows(&mut s, 1);
+    s.set_attribute(crate::sgr::Attribute::Bold).unwrap();
+    s.start_hyperlink(b"last-owner", None).unwrap();
+    let old = pin(&s).node;
+    s.erase_active(0);
+    assert!(s.pages.page(old).is_none());
+    assert_eq!(page(&s).hyperlink_set.ref_count(s.cursor.hyperlink_id), 1);
+    assert_eq!(page(&s).styles.ref_count(s.cursor.style_id), 1);
+    s.end_hyperlink();
+    s.set_attribute(crate::sgr::Attribute::Unset).unwrap();
+    assert_eq!(page(&s).hyperlink_set.count(), 0);
+    assert_eq!(page(&s).styles.count(), 0);
 }

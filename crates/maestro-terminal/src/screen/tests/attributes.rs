@@ -547,7 +547,7 @@ fn screen_cursor_scroll_region_up_with_styled_erased_row() {
 
 #[test]
 fn screen_storage_copy_errors_remain_typed_and_keep_partial_state() {
-    for above in [false, true] {
+    for (above, reset) in [(false, false), (true, false), (false, true), (true, true)] {
         let mut s = screen(5, 5);
         let (first, second) = super::split_rows(&mut s, 2);
         let destination = if above { second } else { first };
@@ -575,9 +575,7 @@ fn screen_storage_copy_errors_remain_typed_and_keep_partial_state() {
         let source = if above { first } else { second };
         assert_eq!(s.pages.page(source).unwrap().styles.count(), 1);
         assert!(s.pages.pin_is_valid(super::pin(&s)));
-        for node in [first, second] {
-            clear_managed_page(s.pages.page_mut(node).unwrap());
-        }
+        assert_refusal_cleanup(&mut s, [first, second], reset);
     }
 }
 
@@ -628,6 +626,50 @@ fn screen_scroll_above_retains_managed_rows_across_pages() {
             }
             assert_eq!(page.styles.count(), 0);
             assert_eq!(page.hyperlink_set.count(), 0);
+        }
+    }
+}
+
+/// Prove a partially applied storage refusal can recover through the public reset.
+fn assert_reset_usable(s: &mut Screen) {
+    s.reset();
+    write_row(s, "RESET");
+    assert_eq!(page(s).get_cells(0)[0], crate::Cell::init('R'));
+    assert_eq!((s.cursor.x, s.cursor.y), (4, 0));
+}
+
+#[test]
+fn screen_region_scroll_retains_style_for_following_write() {
+    let mut s = screen(5, 5);
+    super::split_rows(&mut s, 3);
+    for (y, text) in ["1A", "2B", "3C", "4D", "5E"].into_iter().enumerate() {
+        s.cursor_absolute(0, u16::try_from(y).unwrap());
+        write_row(&mut s, text);
+    }
+    s.cursor_absolute(0, 3);
+    s.set_attribute(Attribute::Bold).unwrap();
+    s.cursor_scroll_region_up(2).unwrap();
+    write_row(&mut s, "X");
+    assert_eq!(page(&s).get_cells(0)[0].codepoint(), 'X');
+    assert_eq!(page(&s).styles.count(), 1);
+    assert_eq!(page(&s).styles.ref_count(s.cursor.style_id), 2);
+    assert_eq!(page(&s).get_cells(0)[0].style_id(), s.cursor.style_id);
+    s.set_attribute(Attribute::Unset).unwrap();
+    assert_eq!(
+        page(&s)
+            .styles
+            .ref_count(page(&s).get_cells(0)[0].style_id()),
+        1
+    );
+}
+
+/// Observe last-owner release or direct reset without pre-clearing the failed state.
+fn assert_refusal_cleanup(s: &mut Screen, nodes: [crate::page_list::NodeId; 2], reset: bool) {
+    if reset {
+        assert_reset_usable(s);
+    } else {
+        for node in nodes {
+            clear_managed_page(s.pages.page_mut(node).unwrap());
         }
     }
 }

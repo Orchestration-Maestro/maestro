@@ -417,24 +417,53 @@ fn screen_resize_with_prompt_redraw_last_multiline_prompt_clears_only_last_line(
 
 #[test]
 fn screen_prompt_redraw_is_explicit_and_preserves_output() {
-    for (policy, expected) in [
-        (Redraw::False, "OUTPUT\nPROMPT\nINPUT"),
-        (Redraw::True, "OUTPUT"),
-        (Redraw::Last, "OUTPUT\nPROMPT"),
-    ] {
-        let mut s = small_screen(10, 4, 100_000);
-        write_text(&mut s, "OUTPUT\nPROMPT\nINPUT");
-        mark_prompt(
-            &mut s,
-            1,
-            maestro_terminal::page::row::SemanticPrompt::Prompt,
-        );
-        // Input can continue onto a row without a semantic row marker.
-        s.cursor.semantic_content = maestro_terminal::page::cell::SemanticContent::Input;
-        redraw(&mut s, 20, policy);
-        assert_eq!(contents(&s, Tag::Viewport), expected);
-        assert_eq!((s.cursor.x, s.cursor.y), (5, 2));
-        assert_eq!(s.pages.count_tracked_pins(), 2);
+    use maestro_terminal::page::{cell::SemanticContent, row::SemanticPrompt};
+    let cases = [
+        SemanticContent::Output,
+        SemanticContent::Prompt,
+        SemanticContent::Input,
+    ]
+    .into_iter()
+    .flat_map(|semantic| {
+        [Redraw::False, Redraw::True, Redraw::Last].map(|policy| (semantic, policy))
+    });
+    for (semantic, policy) in cases {
+        for (found, cross_page) in [(false, false), (false, true), (true, false), (true, true)] {
+            let mut s = small_screen(10, 5, 100_000);
+            write_text(&mut s, "OUTPUT\nPROMPT\nCONT\nINPUT");
+            if found {
+                mark_prompt(&mut s, 1, SemanticPrompt::Prompt);
+                mark_prompt(&mut s, 2, SemanticPrompt::PromptContinuation);
+            }
+            if cross_page {
+                let p = s
+                    .pages
+                    .pin(Point::Active(Coordinate { x: 0, y: 2 }))
+                    .unwrap();
+                s.pages.split(p).unwrap();
+                s.cursor_reload();
+            }
+            s.cursor.semantic_content = semantic;
+            let rows = s.pages.total_rows();
+            redraw(&mut s, 20, policy);
+            let expected = if semantic == SemanticContent::Output || policy == Redraw::False {
+                "OUTPUT\nPROMPT\nCONT\nINPUT"
+            } else if policy == Redraw::Last {
+                "OUTPUT\nPROMPT\nCONT"
+            } else if found {
+                "OUTPUT"
+            } else {
+                "OUTPUT\nPROMPT\nCONT\nINPUT"
+            };
+            assert_eq!(
+                contents(&s, Tag::Viewport),
+                expected,
+                "{semantic:?} {policy:?} found={found} pages={cross_page}"
+            );
+            assert_eq!((s.cursor.x, s.cursor.y), (5, 3));
+            assert_eq!(s.pages.total_rows(), rows);
+            assert_eq!(s.pages.count_tracked_pins(), 2);
+        }
     }
 }
 
@@ -442,19 +471,30 @@ fn screen_prompt_redraw_is_explicit_and_preserves_output() {
 fn screen_saved_cursor_outside_active_resets_to_origin() {
     let mut s = small_screen(5, 3, 100_000);
     write_text(&mut s, "FIRST\nMID\nLAST");
+    s.charset.gl = maestro_terminal::CharsetSlot::G3;
+    let style = maestro_terminal::style::Style {
+        bg_color: maestro_terminal::style::Color::Palette(7),
+        ..maestro_terminal::style::Style::default()
+    };
     s.saved_cursor = Some(maestro_terminal::screen::SavedCursor {
         x: 4,
         y: 0,
-        style: maestro_terminal::style::Style::default(),
-        protected: false,
+        style,
+        protected: true,
         pending_wrap: true,
-        origin: false,
+        origin: true,
         charset: s.charset,
     });
     resize(&mut s, 5, 1, true);
     let saved = s.saved_cursor.unwrap();
     assert_eq!((saved.x, saved.y, saved.pending_wrap), (0, 0, false));
+    assert_eq!(saved.style, style);
+    assert_eq!(saved.charset, s.charset);
+    assert!(saved.protected && saved.origin);
     assert_eq!(s.pages.count_tracked_pins(), 2);
+    s.saved_cursor = None;
+    resize(&mut s, 6, 2, true);
+    assert!(s.saved_cursor.is_none());
 }
 
 #[test]

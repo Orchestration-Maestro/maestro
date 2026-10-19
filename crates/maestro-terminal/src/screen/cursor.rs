@@ -8,6 +8,17 @@ use crate::{
     style::Style,
 };
 
+/// Source-owned hyperlink identity policy while restoring page-local references.
+#[derive(Clone, Copy)]
+pub(super) enum LinkRestore {
+    /// Capacity replacement retains the authored or generated identity.
+    Preserve,
+    /// Explicit cursor moves regenerate implicit identities across pages.
+    PageChange,
+    /// Resize regenerates an implicit identity even within the same page.
+    Reidentify,
+}
+
 impl Screen {
     /// Borrow a cell to the right without moving the cursor.
     #[must_use]
@@ -157,14 +168,22 @@ impl Screen {
     ) -> Result<(), IncreaseCapacityError> {
         assert!(other.x < self.pages.cols() && other.y < self.pages.rows());
         self.end_hyperlink();
-        let old = self.cursor.clone();
-        self.cursor = other.clone();
-        self.cursor.page_pin = old.page_pin;
-        self.cursor.x = old.x;
-        self.cursor.y = old.y;
-        self.cursor.style_id = old.style_id;
-        self.cursor.hyperlink = None;
-        self.cursor.hyperlink_id = 0;
+        let cursor = Cursor {
+            x: self.cursor.x,
+            y: self.cursor.y,
+            page_pin: self.cursor.page_pin,
+            style_id: self.cursor.style_id,
+            hyperlink: None,
+            hyperlink_id: 0,
+            cursor_style: other.cursor_style,
+            pending_wrap: other.pending_wrap,
+            protected: other.protected,
+            style: other.style,
+            hyperlink_implicit_id: other.hyperlink_implicit_id,
+            semantic_content: other.semantic_content,
+            semantic_content_clear_eol: other.semantic_content_clear_eol,
+        };
+        let old = std::mem::replace(&mut self.cursor, cursor);
         if let Err(error) = self.manual_style_update() {
             self.cursor = old;
             return Err(error);
@@ -189,36 +208,68 @@ impl Screen {
             self.cursor_mark_dirty();
             new.mark_dirty(&mut self.pages);
         }
-        let changed = old.node != new.node;
-        if changed && let Some(page) = self.pages.page_mut(old.node) {
-            if self.cursor.style_id != 0 {
+        if old.node == new.node {
+            if let Some(pin) = self.pages.tracked_pin_mut(self.cursor.page_pin) {
+                *pin = new;
+            }
+            return;
+        }
+        self.with_cursor_detached(LinkRestore::PageChange, |screen| {
+            if let Some(pin) = screen.pages.tracked_pin_mut(screen.cursor.page_pin) {
+                *pin = new;
+            }
+        });
+    }
+
+    /// Release page-local cursor owners before storage can move or disappear.
+    pub(super) fn detach_cursor(&mut self) -> (bool, Option<Box<crate::hyperlink::Hyperlink>>) {
+        let styled = self.cursor.style_id != 0;
+        if let Ok(pin) = self.cursor_pin()
+            && let Some(page) = self.pages.page_mut(pin.node)
+        {
+            if styled {
                 page.styles.release_multiple(self.cursor.style_id, 1);
             }
             if self.cursor.hyperlink_id != 0 {
                 page.release_hyperlink(self.cursor.hyperlink_id);
             }
         }
-        if let Some(pin) = self.pages.tracked_pin_mut(self.cursor.page_pin) {
-            *pin = new;
-        }
-        if !changed {
-            return;
-        }
-        // Capacity growth during style migration must not restore an already released link.
-        let link = self.cursor.hyperlink.take();
-        self.cursor.hyperlink_id = 0;
-        let had_style = self.cursor.style_id != 0;
         self.cursor.style_id = 0;
-        if had_style && self.manual_style_update().is_err() {
+        self.cursor.hyperlink_id = 0;
+        (styled, self.cursor.hyperlink.take())
+    }
+
+    /// Restore detached owners once, including after a partially applied edit fails.
+    pub(super) fn with_cursor_detached<R>(
+        &mut self,
+        restore: LinkRestore,
+        edit: impl FnOnce(&mut Self) -> R,
+    ) -> R {
+        let old = self.cursor_pin().ok();
+        let (styled, link) = self.detach_cursor();
+        let result = edit(self);
+        if styled && self.manual_style_update().is_err() {
             self.cursor.style = Style::default();
         }
         if let Some(link) = link {
-            let id = match &link.id {
-                crate::hyperlink::HyperlinkId::Explicit(id) => Some(id.as_slice()),
-                crate::hyperlink::HyperlinkId::Implicit(_) => None,
+            let regenerate = match restore {
+                LinkRestore::Preserve => false,
+                LinkRestore::Reidentify => true,
+                LinkRestore::PageChange => old
+                    .zip(self.cursor_pin().ok())
+                    .is_some_and(|(a, b)| a.node != b.node),
             };
-            let _ = self.start_hyperlink(&link.uri, id);
+            if regenerate {
+                let id = match &link.id {
+                    crate::hyperlink::HyperlinkId::Explicit(id) => Some(id.as_slice()),
+                    crate::hyperlink::HyperlinkId::Implicit(_) => None,
+                };
+                let _ = self.start_hyperlink(&link.uri, id);
+            } else {
+                let _ = self.admit_hyperlink(&link);
+            }
         }
+        result
     }
 
     /// Mark the current row dirty without setting the whole-page dirty flag.

@@ -1,10 +1,9 @@
 //! Cursor ownership across page replacement and splitting.
 
-use super::Screen;
+use super::{Screen, cursor::LinkRestore};
 use crate::{
     Page,
     page_list::{IncreaseCapacity, IncreaseCapacityError as Error, NodeId, Pin, SplitError},
-    style::Style,
 };
 
 impl Screen {
@@ -25,31 +24,14 @@ impl Screen {
         node: NodeId,
         adjustment: Option<IncreaseCapacity>,
     ) -> Result<NodeId, Error> {
-        let cursor_page = self.cursor_pin()?.node == node;
-        let new = self.pages.increase_capacity(node, adjustment)?;
-        if !cursor_page {
-            return Ok(new);
+        if self.cursor_pin()?.node != node {
+            return self.pages.increase_capacity(node, adjustment);
         }
-        if self.cursor.style_id != 0 {
-            if let Ok(id) = self
-                .pages
-                .page_mut(new)
-                .ok_or(Error::InvalidNode)?
-                .styles
-                .add(self.cursor.style)
-            {
-                self.cursor.style_id = id;
-            } else {
-                self.cursor.style = Style::default();
-                self.cursor.style_id = 0;
-            }
-        }
-        if let Some(link) = self.cursor.hyperlink.take() {
-            self.cursor.hyperlink_id = 0;
-            let _ = self.start_hyperlink_once(*link);
-        }
-        self.cursor_reload();
-        Ok(new)
+        self.with_cursor_detached(LinkRestore::Preserve, |screen| {
+            let new = screen.pages.increase_capacity(node, adjustment)?;
+            screen.cursor_reload();
+            Ok(new)
+        })
     }
 
     /// Split so the pinned row occupies the less heavily used side.
@@ -62,18 +44,20 @@ impl Screen {
         } else {
             pin
         };
-        let old = self.cursor_pin()?;
-        self.pages.split(split).map_err(|error| match error {
-            SplitError::OutOfSpace => Error::OutOfSpace,
-            SplitError::InvalidPin => Error::InvalidNode,
-        })?;
-        let new = self.cursor_pin()?;
-        if new.node != old.node {
-            if let Some(pin) = self.pages.tracked_pin_mut(self.cursor.page_pin) {
+        self.with_cursor_detached(LinkRestore::PageChange, |screen| {
+            let old = screen.cursor_pin()?;
+            screen.pages.split(split).map_err(|error| match error {
+                SplitError::OutOfSpace => Error::OutOfSpace,
+                SplitError::InvalidPin => Error::InvalidNode,
+            })?;
+            let new = screen.cursor_pin()?;
+            if old.node != new.node
+                && let Some(pin) = screen.pages.tracked_pin_mut(screen.cursor.page_pin)
+            {
                 *pin = old;
+                screen.cursor_change_pin(new);
             }
-            self.cursor_change_pin(new);
-        }
-        Ok(())
+            Ok(())
+        })
     }
 }

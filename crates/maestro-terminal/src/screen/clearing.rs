@@ -13,11 +13,7 @@ impl Screen {
     /// Construct an unstyled blank retaining only the cursor background.
     #[must_use]
     pub fn blank_cell(&self) -> Cell {
-        if self.cursor.style_id == 0 {
-            Cell::default()
-        } else {
-            self.cursor.style.bg_cell().unwrap_or_default()
-        }
+        self.cursor.style.bg_cell().unwrap_or_default()
     }
 
     /// Clear an inclusive region of rows, optionally retaining protected cells.
@@ -90,7 +86,7 @@ impl Screen {
         }
     }
 
-    /// Reset pending wrapping, continuation metadata and a trailing spacer head.
+    /// Reset pending wrap; on wrapped rows, also clear continuation and spacer state.
     pub fn cursor_reset_wrap(&mut self) {
         self.cursor.pending_wrap = false;
         let Ok(pin) = self.cursor_pin() else {

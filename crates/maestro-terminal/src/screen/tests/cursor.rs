@@ -4,6 +4,20 @@ use crate::page::cell::Content;
 #[test]
 fn screen_cursor_small_moves_keep_pin_coordinates() {
     let mut s = screen(8, 5);
+    s.cursor_right(0);
+    s.cursor_left(0);
+    s.cursor_up(0);
+    s.cursor_down(0);
+    assert_eq!((pin(&s).x, pin(&s).y), (0, 0));
+    s.cursor_right(7);
+    assert_eq!(pin(&s).x, 7);
+    s.cursor_left(7);
+    s.cursor_down(4);
+    assert_eq!(pin(&s).y, 4);
+    s.cursor_up(4);
+    s.cursor_horizontal_absolute(7);
+    assert_eq!(pin(&s).x, 7);
+    s.cursor_horizontal_absolute(0);
     s.cursor_right(4);
     assert_eq!((s.cursor.x, pin(&s).x), (4, 4));
     s.cursor_left(2);
@@ -33,30 +47,33 @@ fn screen_cursor_small_moves_keep_pin_coordinates() {
 #[test]
 fn screen_cursor_dirty_marks_old_and_new_rows() {
     let mut s = screen(8, 5);
-    for y in 0..5 {
-        let node = pin(&s).node;
-        s.pages
-            .page_mut(node)
-            .unwrap()
-            .get_row_mut(y)
-            .set_dirty(false);
+    let (first, second) = super::split_rows(&mut s, 2);
+    for y in 0_u16..5 {
+        let p = s
+            .pages
+            .pin(crate::Point::Active(crate::Coordinate {
+                x: 0,
+                y: u32::from(y),
+            }))
+            .unwrap();
+        p.row_and_cell_mut(&mut s.pages).unwrap().0.set_dirty(false);
     }
     s.cursor_right(1);
     assert!(!page(&s).get_row(0).dirty());
     s.cursor_absolute(2, 2);
-    assert!(page(&s).get_row(0).dirty());
-    assert!(!page(&s).get_row(1).dirty());
-    assert!(page(&s).get_row(2).dirty());
+    assert!(s.pages.page(first).unwrap().get_row(0).dirty());
+    assert!(!s.pages.page(first).unwrap().get_row(1).dirty());
+    assert!(s.pages.page(second).unwrap().get_row(0).dirty());
     let node = pin(&s).node;
     s.pages
         .page_mut(node)
         .unwrap()
-        .get_row_mut(2)
+        .get_row_mut(0)
         .set_dirty(false);
     s.cursor_absolute(2, 2);
-    assert!(!page(&s).get_row(2).dirty());
+    assert!(!page(&s).get_row(0).dirty());
     s.cursor_mark_dirty();
-    assert!(page(&s).get_row(2).dirty());
+    assert!(s.pages.page(second).unwrap().get_row(0).dirty());
 }
 
 #[test]

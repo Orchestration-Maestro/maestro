@@ -848,10 +848,19 @@ fn screen_scroll_above_no_scrollback_bottom_of_page() {
 fn screen_saved_cursor_follows_resize_and_loses_invalid_wrap() {
     let mut s = small_screen(5, 3, 100_000);
     write_text(&mut s, "ABCDE");
+    s.charset.gl = maestro_terminal::CharsetSlot::G3;
+    s.charset.charsets.set(
+        maestro_terminal::CharsetSlot::G3,
+        maestro_terminal::Charset::Ascii,
+    );
+    let style = Style {
+        bg_color: maestro_terminal::style::Color::Palette(7),
+        ..Style::default()
+    };
     s.saved_cursor = Some(SavedCursor {
         x: 4,
         y: 0,
-        style: Style::default(),
+        style,
         protected: true,
         pending_wrap: true,
         origin: true,
@@ -867,5 +876,19 @@ fn screen_saved_cursor_follows_resize_and_loses_invalid_wrap() {
     let saved = s.saved_cursor.unwrap();
     assert_eq!((saved.x, saved.y, saved.pending_wrap), (5, 0, false));
     assert!(saved.protected && saved.origin);
+    assert_eq!(saved.style, style);
+    assert_eq!(saved.charset, s.charset);
+    s.resize(maestro_terminal::screen::Resize {
+        cols: std::num::NonZeroU16::new(3).unwrap(),
+        rows: std::num::NonZeroU16::new(2).unwrap(),
+        reflow: true,
+        prompt_redraw: maestro_terminal::osc::semantic_prompt::Redraw::False,
+    })
+    .unwrap();
+    let shrunk = s.saved_cursor.unwrap();
+    assert_eq!((shrunk.x, shrunk.y, shrunk.pending_wrap), (2, 0, false));
+    assert_eq!(shrunk.style, style);
+    assert_eq!(shrunk.charset, saved.charset);
+    assert!(shrunk.protected && shrunk.origin);
     assert_eq!(s.pages.count_tracked_pins(), 2);
 }

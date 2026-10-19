@@ -204,8 +204,8 @@ restores cursor references without changing the references held by copied cells.
 Clearing releases page-owned styles, hyperlinks and grapheme suffixes before
 applying background-only blanks. `clear_rows` uses inclusive endpoints and each
 page's stored width; selective clearing retains protected cells and row metadata.
-`cursor_reset_wrap` clears pending wrap, the next row's continuation and a trailing
-spacer head. `split_cell_boundary` removes disconnected wide-cell halves without
+`cursor_reset_wrap` clears pending wrap. When the current row wraps, it also
+clears the next row's continuation and a trailing spacer head. `split_cell_boundary` removes disconnected wide-cell halves without
 changing wrap metadata.
 
 `cursor_down_scroll` scrolls at the active bottom. With history disabled it rotates

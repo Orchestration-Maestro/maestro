@@ -1,14 +1,12 @@
 //! Screen resize policy around the retained page-list resize owner.
 
-use super::Screen;
+use super::{Screen, cursor::LinkRestore};
 use crate::{
     Point,
-    hyperlink::HyperlinkId,
     osc::semantic_prompt::Redraw,
     page::{StorageError, cell::SemanticContent},
     page_list::{Direction, TrackedPin},
     point::Tag,
-    style::Style,
 };
 use std::num::NonZeroU16;
 
@@ -32,11 +30,16 @@ impl Screen {
     /// Returns a managed-copy refusal. Earlier storage changes remain applied;
     /// reset the screen before using content after a failed resize.
     pub fn resize(&mut self, opts: Resize) -> Result<(), StorageError> {
-        let style = self.cursor.style;
-        self.cursor.style = Style::default();
-        let _ = self.manual_style_update();
-        let link = self.cursor.hyperlink.take();
-        self.end_hyperlink();
+        self.with_cursor_detached(LinkRestore::Reidentify, |screen| {
+            let style = std::mem::take(&mut screen.cursor.style);
+            let result = screen.resize_detached(opts);
+            screen.cursor.style = style;
+            result
+        })
+    }
+
+    /// Resize with no page-local cursor references retained in mutable storage.
+    fn resize_detached(&mut self, opts: Resize) -> Result<(), StorageError> {
         let saved = self
             .saved_cursor
             .and_then(|cursor| {
@@ -49,20 +52,6 @@ impl Screen {
         let result = self.resize_content(opts, saved);
         if let Some(saved) = saved {
             self.pages.untrack_pin(saved);
-        }
-        if result.is_ok()
-            && let Some(link) = link
-        {
-            let id = match &link.id {
-                HyperlinkId::Explicit(id) => Some(id.as_slice()),
-                HyperlinkId::Implicit(_) => None,
-            };
-            let _ = self.start_hyperlink(&link.uri, id);
-        }
-        self.cursor.style = style;
-        if self.manual_style_update().is_err() {
-            self.cursor.style = Style::default();
-            self.cursor.style_id = 0;
         }
         result
     }

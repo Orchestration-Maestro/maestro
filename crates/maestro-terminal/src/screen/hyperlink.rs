@@ -31,7 +31,7 @@ impl Screen {
     }
 
     /// Retry admission only after the exhausted managed dimension grows.
-    fn admit_hyperlink(&mut self, link: &Hyperlink) -> Result<(), Error> {
+    pub(super) fn admit_hyperlink(&mut self, link: &Hyperlink) -> Result<(), Error> {
         loop {
             let adjustment = match self.start_hyperlink_once(link.clone()) {
                 Ok(()) => return Ok(()),

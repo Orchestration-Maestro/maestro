@@ -8,7 +8,7 @@ use crate::{
 };
 
 impl Screen {
-    /// Apply a decoded rendition attribute, retaining the old style on failure.
+    /// Apply a decoded rendition attribute, restoring the old style or the default on failure.
     ///
     /// # Errors
     /// Returns a page capacity error when the style cannot be admitted.

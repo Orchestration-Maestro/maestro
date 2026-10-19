@@ -1,6 +1,6 @@
 //! Screen cursor scrolling and viewport operations over the retained page list.
 
-use super::Screen;
+use super::{Screen, cursor::LinkRestore};
 use crate::{Coordinate, Point, page::StorageError, page_list::Scroll, style::Color};
 
 impl Screen {
@@ -11,8 +11,10 @@ impl Screen {
 
     /// Move nonempty active rows into history and reload the tracked cursor.
     pub fn scroll_clear(&mut self) {
-        self.pages.scroll_clear();
-        self.cursor_reload();
+        self.with_cursor_detached(LinkRestore::PageChange, |screen| {
+            screen.pages.scroll_clear();
+            screen.cursor_reload();
+        });
     }
 
     /// Whether the viewport follows the active area.
@@ -23,14 +25,18 @@ impl Screen {
 
     /// Physically remove history through an inclusive endpoint, or all history.
     pub fn erase_history(&mut self, bottom: Option<Point>) {
-        self.pages.erase_history(bottom);
-        self.cursor_reload();
+        self.with_cursor_detached(LinkRestore::PageChange, |screen| {
+            screen.pages.erase_history(bottom);
+            screen.cursor_reload();
+        });
     }
 
     /// Physically remove active rows through an inclusive row index.
     pub fn erase_active(&mut self, y: u16) {
-        self.pages.erase_active(y);
-        self.cursor_reload();
+        self.with_cursor_detached(LinkRestore::PageChange, |screen| {
+            screen.pages.erase_active(y);
+            screen.cursor_reload();
+        });
     }
 
     /// Scroll at the active bottom, retaining history unless disabled.
@@ -41,6 +47,11 @@ impl Screen {
     /// # Panics
     /// Panics if the cursor is not on the active area's last row.
     pub fn cursor_down_scroll(&mut self) -> Result<(), StorageError> {
+        self.with_cursor_detached(LinkRestore::PageChange, Self::cursor_down_scroll_detached)
+    }
+
+    /// Scroll with cursor references detached.
+    fn cursor_down_scroll_detached(&mut self) -> Result<(), StorageError> {
         assert_eq!(self.cursor.y, self.pages.rows() - 1);
         let Ok(old) = self.cursor_pin() else {
             return Ok(());
@@ -73,7 +84,7 @@ impl Screen {
                 self.clear_cursor_row();
             }
         }
-        if self.cursor.style_id != 0 && self.cursor.style.bg_cell().is_some() {
+        if self.cursor.style.bg_cell().is_some() {
             self.clear_cursor_row();
         }
         Ok(())
@@ -107,6 +118,11 @@ impl Screen {
     /// # Errors
     /// Returns a managed boundary-copy refusal; preceding rotations remain applied.
     pub fn cursor_scroll_above(&mut self) -> Result<(), StorageError> {
+        self.with_cursor_detached(LinkRestore::PageChange, Self::cursor_scroll_above_detached)
+    }
+
+    /// Insert above with cursor references detached.
+    fn cursor_scroll_above_detached(&mut self) -> Result<(), StorageError> {
         self.cursor_mark_dirty();
         if self.cursor.y == self.pages.rows() - 1 {
             return self.cursor_down_scroll();
@@ -137,6 +153,13 @@ impl Screen {
     /// # Panics
     /// Panics when `limit` is zero or extends above the active area.
     pub fn cursor_scroll_region_up(&mut self, limit: usize) -> Result<(), StorageError> {
+        self.with_cursor_detached(LinkRestore::PageChange, |screen| {
+            screen.cursor_scroll_region_up_detached(limit)
+        })
+    }
+
+    /// Rotate the region with cursor references detached.
+    fn cursor_scroll_region_up_detached(&mut self, limit: usize) -> Result<(), StorageError> {
         assert!(limit >= 1 && limit <= usize::from(self.cursor.y));
         let Ok(old) = self.cursor_pin() else {
             return Ok(());

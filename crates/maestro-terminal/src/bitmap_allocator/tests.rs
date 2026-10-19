@@ -831,3 +831,23 @@ const BITMAP_LAYOUTS: &[(usize, u64, super::Layout)] = &[
         },
     ),
 ];
+
+#[test]
+fn bitmap_empty_allocation_claims_no_storage() {
+    for bytes in [64, 0] {
+        let mut alloc = BitmapAllocator::<1>::init(bytes);
+        let capacity = alloc.capacity_bytes();
+        let empty = alloc.alloc(0).unwrap();
+        assert_eq!(empty, 0..0);
+        assert_eq!(alloc.used_bytes(), 0);
+        assert!(b"".get(empty.clone()).unwrap().is_empty());
+        alloc.free(empty);
+        assert_eq!(alloc.used_bytes(), 0);
+        assert_eq!(alloc.capacity_bytes(), capacity);
+        if bytes != 0 {
+            assert_eq!(alloc.alloc(64).unwrap(), 0..64);
+            assert_eq!(alloc.alloc(0).unwrap(), 0..0);
+            assert_eq!(alloc.used_bytes(), 64);
+        }
+    }
+}
