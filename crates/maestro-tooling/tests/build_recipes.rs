@@ -1,7 +1,6 @@
 #![cfg(test)]
 
-#[path = "fixtures/toolchain_support.rs"]
-mod toolchain_support;
+use crate::toolchain_support;
 
 use std::fs;
 use std::path::{Path, PathBuf};
