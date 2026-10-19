@@ -438,3 +438,94 @@ fn browser_deletion_repeated_inputs_keep_reference_output() {
         }
     }
 }
+
+#[test]
+fn native_math_preparation_keeps_delimiters_and_opaque_neighbors() {
+    for (source, display) in [
+        ("$x$", false),
+        (r"\( x \)", false),
+        ("$$x$$", true),
+        (r"\[ x \]", true),
+    ] {
+        let html = prepare(source, true).html;
+        assert!(html.contains("class=\"katex\""), "{source}: {html}");
+        assert_eq!(html.contains("maestro-math-block"), display, "{source}");
+        assert!(html.contains(">x</span>"), "{source}: {html}");
+    }
+    assert_eq!(
+        prepare(r"`$x$` and \$x", true).html,
+        "<p><code>$x$</code> and $x</p>\n"
+    );
+    let html = prepare("[value $x$](/a$x$ \"title $y$\")", true).html;
+    assert!(html.starts_with(
+        "<p><a target=\"_blank\" rel=\"noopener noreferrer\" href=\"/a$x$\" title=\"title $y$\">value "
+    ));
+    assert_eq!(html.matches("class=\"katex\"").count(), 1);
+    assert!(html.ends_with("</a></p>\n"));
+}
+
+#[test]
+fn native_document_preparation_preserves_structural_operands() {
+    let cases = [
+        (
+            "## Title\n\n3. third\n4. fourth",
+            "<h2>Title</h2>\n<ol start=\"3\">\n<li>third</li>\n<li>fourth</li>\n</ol>\n",
+        ),
+        (
+            "- [x] done\n- [ ] next",
+            "<ul>\n<li><input checked=\"\" disabled=\"\" type=\"checkbox\"> done</li>\n<li><input disabled=\"\" type=\"checkbox\"> next</li>\n</ul>\n",
+        ),
+        (
+            "![*snow*](a%20b \"caption\")",
+            "<p><img src=\"a%20b\" alt=\"snow\" title=\"caption\"></p>\n",
+        ),
+        (
+            "one  \ntwo\n\n> **bold**",
+            "<p>one<br>two</p>\n<blockquote>\n<p><strong>bold</strong></p>\n</blockquote>\n",
+        ),
+        (
+            "| a | b |\n| :- | -: |\n| *x* | `y` |",
+            "<div class=\"maestro-table-scroll\"><table>\n<thead>\n<tr>\n<th align=\"left\">a</th>\n<th align=\"right\">b</th>\n</tr>\n</thead>\n<tbody><tr>\n<td align=\"left\"><em>x</em></td>\n<td align=\"right\"><code>y</code></td>\n</tr>\n</tbody></table>\n</div>",
+        ),
+    ];
+    for (source, expected) in cases {
+        assert_eq!(prepare(source, true).html, expected, "{source}");
+    }
+}
+
+#[test]
+fn native_code_preparation_preserves_source_order_and_slot_identity() {
+    let prepared = prepare(
+        "data-maestro-listing\n\n```c++ extra\n<&amp;> 雪\n```\n\n```\nsecond\n```",
+        true,
+    );
+    assert_eq!(prepared.slot_attribute, "data-maestro-listingx");
+    assert_eq!(
+        prepared.html,
+        "<p>data-maestro-listing</p>\n<div class=\"maestro-code-slot\" data-maestro-listingx=\"0\"></div>\n<div class=\"maestro-code-slot\" data-maestro-listingx=\"1\"></div>\n"
+    );
+    let code: Vec<_> = prepared
+        .code
+        .iter()
+        .map(|c| (c.language.as_str(), c.code.as_str()))
+        .collect();
+    assert_eq!(code, [("c++", "<&amp;> 雪\n"), ("text", "second\n")]);
+}
+
+#[test]
+fn native_math_preparation_keeps_errors_and_container_boundaries() {
+    let error = prepare(r"before $\frac{$ after", true).html;
+    assert!(error.starts_with("<p>before "));
+    assert!(error.contains("katex-error"));
+    assert!(error.ends_with(" after</p>\n"));
+    let quoted = prepare("> before $x$ after", true).html;
+    assert!(quoted.starts_with("<blockquote>\n<p>before "));
+    assert!(quoted.contains("class=\"katex\""));
+    assert!(quoted.ends_with(" after</p>\n</blockquote>\n"));
+    let table = prepare("| math |\n| - |\n| $x$ |", true).html;
+    assert!(table.contains("<td><span class=\"katex\""));
+    assert!(!table.contains("maestro-math-block"));
+    let code = prepare("```text\n$x$\n```", true);
+    assert!(!code.html.contains("katex"));
+    assert_eq!(code.code[0].code, "$x$\n");
+}

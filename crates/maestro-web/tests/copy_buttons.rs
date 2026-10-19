@@ -151,3 +151,97 @@ fn copy_button_clips_pointer_but_keeps_keyboard_action() {
     ));
     assert!(canvas.host.copies.borrow().is_empty());
 }
+
+mod highlighter_support;
+
+/// Activate one native reading slot and settle its exact clipboard operand.
+/// # Panics
+/// Panics if the slot is missing or the clipboard admission differs from `expected`.
+fn copy_reading(
+    canvas: &mut Canvas,
+    expected: &str,
+    mut render: impl FnMut(
+        &mut egui::Ui,
+        &I18n,
+        &maestro_theme::BrandPresentation<'_>,
+    ) -> egui::Response,
+) {
+    let before = canvas.host.copies.borrow().len();
+    for pressed in [None, Some(true), Some(false)] {
+        let events = pressed.map_or_else(Vec::new, |pressed| {
+            pointer(canvas.host.controls.borrow()[0].center(), pressed)
+        });
+        copy_button_support::draw(
+            &canvas.context,
+            &mut canvas.paint,
+            events,
+            (egui::Rect::EVERYTHING, true),
+            &mut render,
+        );
+    }
+    assert_eq!(canvas.host.copies.borrow().len(), before + 1);
+    assert_eq!(canvas.host.copies.borrow().last().unwrap(), expected);
+    canvas.host.results.borrow().last().unwrap().set(Some(true));
+    canvas.host.run_work();
+}
+
+/// Standalone preparation, replacement and activation retain the decoded clipboard operand.
+#[test]
+fn code_block_copies_decoded_and_replaced_native_input() {
+    use maestro_web::components::code_block::{CodeBlock, CodeBlockView};
+    let mut canvas = Canvas::new();
+    let mut block = CodeBlock::new(canvas.host.clone());
+    assert!(block.code.is_empty() && block.language.is_empty());
+    for (input, expected) in [("6Zuq", "雪"), ("<&amp;>", "<&amp;>"), ("/w==", "/w==")] {
+        block.code = input.into();
+        block.language = "unknown".into();
+        copy_reading(&mut canvas, expected, |ui, i18n, presentation| {
+            block
+                .render(
+                    ui,
+                    CodeBlockView {
+                        i18n,
+                        presentation,
+                        highlighter: &highlighter_support::NoHighlight,
+                        modal: None,
+                    },
+                )
+                .unwrap()
+        });
+    }
+    drop(block);
+    assert_eq!(canvas.host.removed.borrow().len(), 1);
+    assert_eq!(canvas.host.live(), 0);
+}
+
+/// The retained Markdown consumer publishes new code operands, not stale controls.
+#[test]
+fn markdown_block_copies_current_native_listing_after_replacement() {
+    use maestro_web::components::{code_block::CodeBlockView, markdown_block::MarkdownBlock};
+    let mut canvas = Canvas::new();
+    let mut block = MarkdownBlock::new(canvas.host.clone());
+    assert!(block.content.is_empty() && block.escape_html && !block.is_thinking);
+    for (content, expected) in [
+        ("```text\nfirst <&amp;>\n```", "first <&amp;>\n"),
+        ("```text\n雪\n```", "雪\n"),
+    ] {
+        block.content = content.into();
+        block.is_thinking = !block.is_thinking;
+        copy_reading(&mut canvas, expected, |ui, i18n, presentation| {
+            block
+                .render(
+                    ui,
+                    CodeBlockView {
+                        i18n,
+                        presentation,
+                        highlighter: &highlighter_support::NoHighlight,
+                        modal: None,
+                    },
+                )
+                .unwrap()
+        });
+    }
+    drop(block);
+    assert_eq!(canvas.host.removed.borrow().len(), 1);
+    assert_eq!(canvas.host.live(), 0);
+}
