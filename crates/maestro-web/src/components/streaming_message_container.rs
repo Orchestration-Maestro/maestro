@@ -180,7 +180,8 @@ impl<C: CustomAgentMessages + 'static> StreamingMessageContainer<C> {
                 return Ok(());
             }
             if published.is_none() || matches!(published, Some(AgentMessage::Assistant(_))) {
-                ui.add_space(12.);
+                // Item spacing already supplies the twelve-pixel bottom margin.
+                ui.add_space(0.);
             }
             Ok(())
         });

@@ -1,5 +1,5 @@
 //! Browser Agent binding, conditional request defaults and transcript composition.
-use super::viewport::TranscriptViewport;
+use super::{empty::EmptySession, viewport::TranscriptViewport};
 use crate::{
     browser::attachment_content::AttachmentHost,
     components::{
@@ -20,6 +20,8 @@ enum StreamObservation<C: CustomAgentMessages> {
     Unchanged,
     /// Retire the completed streaming subtree.
     Clear,
+    /// Retire the finished run's streaming row before the Agent settles idle.
+    End,
     /// Publish the latest assistant according to its reduced streaming state.
     Message(AgentMessage<BrowserMessages<C>>),
 }
@@ -50,6 +52,8 @@ pub struct AgentInterface<C: CustomAgentMessages = NoCustomMessages> {
     stream: StreamingMessageContainer<C>,
     /// One containing native scroll owner.
     viewport: TranscriptViewport,
+    /// Native literal while no session is bound.
+    empty: EmptySession,
     /// Available tool names from the latest admitted refresh.
     tools: Vec<String>,
     /// Pending calls from the latest admitted refresh.
@@ -75,6 +79,7 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
             })),
             list: MessageList::new(Rc::clone(&host)),
             stream: StreamingMessageContainer::new(Rc::clone(&host)),
+            empty: EmptySession::new(Rc::clone(&host)),
             viewport: TranscriptViewport::new(host),
             tools: vec![],
             pending: HashSet::new(),
@@ -110,6 +115,7 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
             self.is_streaming = false;
         }
         if let Some(session) = &self.session {
+            self.empty.clear();
             install_defaults(session);
             self.subscription = Some(subscribe(session, &self.observation));
         }
@@ -141,9 +147,12 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
                 observation.immediate,
             )
         };
+        let ended = matches!(&stream, StreamObservation::End);
         match stream {
             StreamObservation::Unchanged => {}
-            StreamObservation::Clear => self.stream.set_message(None, true)?,
+            StreamObservation::Clear | StreamObservation::End => {
+                self.stream.set_message(None, true)?;
+            }
             StreamObservation::Message(message) => {
                 self.stream.set_message(Some(message), immediate)?;
             }
@@ -158,7 +167,7 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
                 .read()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .clone();
-            self.is_streaming = state.is_streaming();
+            self.is_streaming = state.is_streaming() && !ended;
             self.pending = state.pending_tool_calls().iter().cloned().collect();
             self.tools = state
                 .tools()
@@ -186,7 +195,7 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
         overlays: &mut Vec<crate::AttachmentOverlay>,
     ) -> Result<egui::Response, ToolUiError> {
         if self.session.is_none() {
-            return Ok(ui.label("No session set"));
+            return self.empty.render(ui, view);
         }
         let refresh = self.refresh()?;
         let stable = self.list.len();
@@ -273,9 +282,8 @@ impl<C: CustomAgentMessages> Observation<C> {
             AgentEvent::ToolExecutionStart { .. }
             | AgentEvent::ToolExecutionUpdate { .. }
             | AgentEvent::ToolExecutionEnd { .. } => return,
-            AgentEvent::MessageEnd { .. } | AgentEvent::AgentEnd { .. } => {
-                self.stream = StreamObservation::Clear;
-            }
+            AgentEvent::MessageEnd { .. } => self.stream = StreamObservation::Clear,
+            AgentEvent::AgentEnd { .. } => self.stream = StreamObservation::End,
             AgentEvent::MessageUpdate { message, .. } => {
                 self.stream = StreamObservation::Message(AgentMessage::Assistant(message.clone()));
             }

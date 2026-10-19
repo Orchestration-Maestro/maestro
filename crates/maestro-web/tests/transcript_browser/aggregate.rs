@@ -75,7 +75,7 @@ impl ToolContent for Recipe {
     }
 }
 /// Adapt ordinary user messages without inventing a second agent execution family.
-struct Renderer(Rc<RefCell<Vec<String>>>);
+pub(super) struct Renderer(pub(super) Rc<RefCell<Vec<String>>>);
 impl maestro_web::MessageRenderer<BrowserMessages<NoCustomMessages>> for Renderer {
     fn render(
         &self,
@@ -336,7 +336,7 @@ fn last_row_top(root: &JsValue) -> f64 {
 }
 
 /// Locate the public containing native root in the actual runner document.
-fn transcript_root() -> JsValue {
+pub(super) fn transcript_root() -> JsValue {
     js(
         &JsValue::NULL,
         "return document.querySelector('.maestro-transcript')",

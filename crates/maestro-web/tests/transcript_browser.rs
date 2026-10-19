@@ -399,6 +399,12 @@ pub fn transcript_registry_positions_rows_before_publishing_their_new_heights() 
 
 #[path = "transcript_browser/aggregate.rs"]
 pub(crate) mod aggregate;
+#[path = "transcript_browser/layout.rs"]
+mod layout;
+#[path = "transcript_browser/placeholder.rs"]
+mod placeholder;
+#[path = "transcript_browser/reveal.rs"]
+mod reveal;
 
 /// Later publication must not undo a reader scroll after an earlier programmatic assignment.
 /// # Panics

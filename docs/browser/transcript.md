@@ -70,7 +70,8 @@ so the next response starts collapsed. Keep returned overlays separately: a late
 child failure does not consume an already-opened overlay.
 
 The native cursor is 8 by 16 pixels, inset 16 pixels, with a two-second pulse in
-the selected pack's muted color. Editor input, send/abort actions and conversation
+the selected pack's muted color. Cursor rows have a 12-pixel gap and bottom
+margin, without an extra interactive-row minimum height. Editor input, send/abort actions and conversation
 statistics belong to the separate editor interface.
 
 ## Session transcript view
@@ -79,7 +80,18 @@ On browser targets, `AgentInterface::new(host)` binds the transcript to an exter
 Agent with `set_session`. `session()` returns that retained owner. Replacement and
 release explicitly remove the old subscription. Session callbacks observe reduced
 state, retain no state guard and hold weak references back to the view and session.
-Tool execution events do not directly refresh the transcript.
+Tool execution events do not directly refresh the transcript. The final agent
+event retires the streaming row before the Agent settles idle.
+
+Without a session, the view shows the localized native text `No session set`,
+centered with 16-pixel padding. Binding removes that literal. The transcript is
+centered at a maximum width of 48rem, with 16-pixel side/top padding and no bottom
+padding. Browser Find and keyboard focus can reveal attached offscreen text;
+the next canvas frame draws the revealed rows.
+
+The application facade exports `AgentOptions` and `PromptInput` for constructing
+and prompting the bound Agent. Its scripted model registration and response
+constructors support controlled application sessions without live provider calls.
 
 Binding fills only missing stream and credential callbacks. The default stream
 reads the current proxy-enabled setting per request, then reads the current URL

@@ -7,6 +7,15 @@ pub use maestro_agent::{
     StreamFn, Subscription,
 };
 
+/// Construction options and prompt operands for application-owned agents.
+pub use maestro_agent::{AgentOptions, PromptInput};
+
+/// Scripted model registration and owned response construction for controlled applications.
+pub use maestro_models::{
+    FauxAssistantMessageOptions, FauxProviderRegistration, FauxResponseStep,
+    RegisterFauxProviderOptions, faux_assistant_message, register_faux_provider,
+};
+
 pub use maestro_models::{
     AssistantContent, AssistantMessage, AssistantMessageEventStream, BoxFuture, Cancellation,
     Context, DiagnosticErrorInfo, Fetch, FetchError, HttpBody, HttpRequest, HttpResponse,

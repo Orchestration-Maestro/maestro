@@ -67,6 +67,7 @@ mod tool_renderers_browser;
 mod transcript_browser;
 mod transcript_lists;
 mod transcript_scroll;
+mod transcript_session;
 mod transcript_streaming;
 
 #[cfg(target_arch = "wasm32")]

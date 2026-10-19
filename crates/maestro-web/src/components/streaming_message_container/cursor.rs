@@ -38,18 +38,22 @@ impl Cursor {
             self.content = Some((color.to_owned(), factory(color)));
         }
         if let Some((_, content)) = &self.content {
-            ui.horizontal(|ui| {
-                ui.spacing_mut().item_spacing.x = 0.;
-                ui.add_space(16.);
-                let (_, rect) = ui.allocate_space(egui::vec2(8., 16.));
-                attachment_content::reading::present(
-                    self.host.as_ref(),
-                    ui,
-                    (self.id, rect, view.modal),
-                    content,
-                    view.presentation,
-                )
-            })
+            ui.allocate_ui_with_layout(
+                egui::vec2(0., 16.),
+                egui::Layout::left_to_right(egui::Align::Min),
+                |ui| {
+                    ui.spacing_mut().item_spacing.x = 0.;
+                    ui.add_space(16.);
+                    let (_, rect) = ui.allocate_space(egui::vec2(8., 16.));
+                    attachment_content::reading::present(
+                        self.host.as_ref(),
+                        ui,
+                        (self.id, rect, view.modal),
+                        content,
+                        view.presentation,
+                    )
+                },
+            )
             .inner?;
         }
         Ok(())
