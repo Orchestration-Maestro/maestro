@@ -22,6 +22,8 @@ pub struct ReadingPlacement<'a> {
     pub content: Rc<ReadingContent>,
     /// Current transaction phase.
     pub phase: ReadingPhase,
+    /// Shrink measurement to content, bounded by the supplied frame width.
+    pub intrinsic_width: bool,
     /// Actual canvas-control sizes, matched by identity.
     pub sizes: &'a [(egui::Id, egui::Vec2)],
     /// Containing foreground modal.
@@ -31,6 +33,10 @@ pub struct ReadingPlacement<'a> {
 }
 /// Live natural dimensions in canvas points.
 pub struct ReadingLayout {
+    /// Measured native frame width in canvas points.
+    pub width: f32,
+    /// Native-resolved decoration border in local canvas points.
+    pub border: egui::epaint::MarginF32,
     /// Unclipped natural height.
     pub height: f32,
     /// Full native slot rectangles relative to the fixed frame in canvas points.
@@ -42,6 +48,11 @@ pub type ReadingMount = dyn Fn(&web_sys::Document) -> Result<ReadingRoot, Attach
 /// Feature-owned native reading root.
 #[cfg(target_arch = "wasm32")]
 pub struct ReadingRoot {
+    /// Feature-owned decoration style applied to the fixed frame, outside its backdrop root.
+    pub frame_style: &'static str,
+    /// Optional non-scrolling decoration, mounted inside the fixed clipped frame.
+    /// Its positioning and pointer policy belong to the feature's stylesheet.
+    pub decoration: Option<web_sys::Element>,
     /// Feature-created native text root.
     pub element: web_sys::Element,
     /// Empty native slots retaining their caller identities.
@@ -78,6 +89,7 @@ pub(crate) fn present(
                 content: super::AttachmentContent::Reading(ReadingPlacement {
                     content: Rc::clone(reading),
                     phase,
+                    intrinsic_width: false,
                     sizes: &[],
                     modal: surface.2,
                     context: ui.ctx(),

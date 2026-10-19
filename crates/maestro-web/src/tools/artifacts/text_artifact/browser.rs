@@ -46,6 +46,8 @@ pub(super) fn mount(
     body.borrow_mut().code = Some(code);
     sync(&body.borrow(), true);
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         element: root,
         slots: vec![],
         owner: None,

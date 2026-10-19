@@ -13,7 +13,7 @@ use std::{cell::RefCell, fmt::Write as _, rc::Rc};
 use wasm_bindgen::{JsCast as _, closure::Closure};
 use web_sys::{Element, ResizeObserver};
 mod transaction;
-use transaction::{Scroll, size_slots, transaction};
+use transaction::{Scroll, decoration_border, size_slots, transaction};
 /// Retained root/viewport lifetime with staged frame and viewport placements.
 pub(super) struct NativeReading {
     /// Stable feature identity.
@@ -94,6 +94,13 @@ impl NativeReading {
             "width:100%;height:100%;box-sizing:border-box;overflow:auto;clip-path:inset(0);".into();
         self.viewport_measurement = self.viewport_style.clone() + "height:auto;";
         self.measurement = style + "visibility:hidden;pointer-events:none;height:auto;";
+        if placement.intrinsic_width {
+            let _ = write!(
+                self.measurement,
+                "width:fit-content;max-width:{}px;",
+                s.rect.width()
+            );
+        }
         if s.rect.height().is_finite() {
             let _ = write!(self.measurement, "max-height:{}px;", s.rect.height());
             let _ = write!(
@@ -162,6 +169,10 @@ impl NativeReading {
                 attr(&self.viewport, &self.viewport_measurement)?;
                 retained.unwrap_or(saved).apply(&self.viewport)?;
                 let layout = ReadingLayout {
+                    border: decoration_border(&self.root)?,
+                    width: transform
+                        .relative([0., 0., bounds(frame)?.width(), 0.], [0., 0.])
+                        .width(),
                     height: transform.height(bounds(&self.root.element)?.height()),
                     controls: self.controls(frame, transform)?,
                 };
@@ -219,6 +230,7 @@ impl BrowserAttachmentHost {
     fn create_reading(
         &self,
         placement: &ReadingPlacement<'_>,
+        style: &str,
     ) -> Result<DomSurface, AttachmentHostError> {
         let mut candidate = self.create("div")?;
         let root = (placement.content.mount)(&self.document)?;
@@ -230,6 +242,12 @@ impl BrowserAttachmentHost {
             .child
             .set_attribute("class", "maestro-reading-viewport")
             .map_err(|e| host_error(&e))?;
+        if let Some(decoration) = &root.decoration {
+            candidate
+                .wrapper
+                .insert_before(decoration, Some(&candidate.child))
+                .map_err(|e| host_error(&e))?;
+        }
         candidate
             .child
             .append_child(&root.element)
@@ -243,7 +261,7 @@ impl BrowserAttachmentHost {
         )?);
         attr(
             &candidate.wrapper,
-            "position:fixed;visibility:hidden;pointer-events:none;",
+            &(style.to_owned() + "visibility:hidden;pointer-events:none;"),
         )?;
         self.document
             .body()
@@ -294,7 +312,7 @@ impl BrowserAttachmentHost {
             surface.pending = if same {
                 None
             } else {
-                Some(Box::new(self.create_reading(placement)?))
+                Some(Box::new(self.create_reading(placement, &style)?))
             };
         }
         let target = match surface.pending.as_deref_mut() {
@@ -310,6 +328,7 @@ impl BrowserAttachmentHost {
             reading.stage(s, style, placement);
             return Ok(());
         }
+        let style = style + reading.root.frame_style;
         let top = self.overlays.borrow().last().copied();
         let previous = std::mem::replace(&mut target.style, style);
         let previous_modal = target.modal;

@@ -113,7 +113,9 @@ candidate before reading the retained root.
 
 `ReadingPhase::Measure` stages a hidden candidate without replacing the published
 root. Placements supply actual canvas control sizes by identity.
-`reading_layout(id)` reads unclipped natural height and full slot rectangles in
+`intrinsic_width` requests a content-sized measurement bounded by the frame width.
+`reading_layout(id)` reads measured width, native-resolved decoration borders,
+unclipped natural height and full slot rectangles in
 frame-local canvas points after bounded layout and native viewport scroll clamping;
 `ReadingPhase::Publish` installs complete placement. Zero-sized final viewports
 are valid. Failed measurement/publication discards the candidate and retains the

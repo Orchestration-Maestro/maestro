@@ -65,6 +65,8 @@ pub(super) fn mount(
     pages.borrow_mut().root = Some(root.clone());
     sync(&pages.borrow())?;
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         commit: None,
         owner: None,
         element: root,

@@ -63,3 +63,7 @@ pub mod brand;
 /// Awaited screenshot observations for native reading witnesses.
 #[cfg(target_arch = "wasm32")]
 pub mod reading_paint;
+
+/// Shared projection for native reading consumers.
+#[cfg(target_arch = "wasm32")]
+pub mod reading_view;

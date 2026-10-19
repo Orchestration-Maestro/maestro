@@ -55,20 +55,24 @@ pub fn repair_json(json: &str) -> String {
 /// # Errors
 /// Returns the native strict-reader cause from the last attempted parse.
 pub fn parse_json_with_repair(json: &str) -> Result<serde_json::Value, crate::DiagnosticErrorInfo> {
-    strict(json)
+    parse_json(json)
         .or_else(|original| {
             let repaired = repair_json(json);
             if repaired == json {
                 Err(original)
             } else {
-                strict(&repaired)
+                parse_json(&repaired)
             }
         })
         .map_err(|error| crate::DiagnosticErrorInfo::new(None, error.to_string()))
 }
 
-/// Project validated JSON after preserving the native reader's error priority.
-fn strict(text: &str) -> Result<serde_json::Value, serde_json::Error> {
+/// Parse complete JSON without repairing string literals.
+/// Numbers and duplicate members use the shared argument projection.
+///
+/// # Errors
+/// Returns the native reader's cause when validation or projection fails.
+pub fn parse_json(text: &str) -> Result<serde_json::Value, serde_json::Error> {
     match serde_json::from_str::<serde_json::Value>(text) {
         Ok(value) => {
             drop(value);

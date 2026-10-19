@@ -133,6 +133,7 @@ From `docs/specs/maestro-port.md`. Manifest mode is specified in
 - **Extension context:** The single-thread handle callbacks receive; each operation fails with the stale error once its runner is invalidated, otherwise it reads the runner's current session, UI and bound operations, except the model reader fixed at creation.
 - **Command context:** The single-thread extension context plus guarded, call-time session-control operations; replacement contexts add the creating session's unguarded message operations.
 - **Message renderer:** An extension callback that renders a custom message type; the first extension in load order that registered the type supplies it.
+- **Browser message renderer:** A typed callback registered by an open message role. Registration replaces that role's current callback; already retained handles keep the prior callback. This browser replacement policy is separate from extension load order.
 - **Package:** An npm, Git or local source containing extension components or resources; consumer installation does not compile Rust code.
 - **File pattern:** A glob or ignore rule matched against relative file paths.
 - **Resource:** Discovered instruction material, such as skills, prompt templates or context files, with source/provenance data and entry-point-specific ordering.

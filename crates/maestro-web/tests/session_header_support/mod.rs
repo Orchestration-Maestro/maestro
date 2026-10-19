@@ -156,6 +156,8 @@ impl AttachmentHost for Host {
             return Err(AttachmentHostError::BorrowConflict);
         }
         Ok(ReadingLayout {
+            width: 0.,
+            border: egui::epaint::MarginF32::ZERO,
             height: self.height.get(),
             controls: if self.controls.get() {
                 self.sizes

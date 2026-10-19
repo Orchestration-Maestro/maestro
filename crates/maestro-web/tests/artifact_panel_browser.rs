@@ -235,6 +235,8 @@ fn reading_content(
             element.set_class_name(class);
             element.set_text_content(Some("retained native text"));
             Ok(ReadingRoot {
+                frame_style: "",
+                decoration: None,
                 commit: None,
                 owner: None,
                 element,
@@ -265,6 +267,7 @@ fn reading(
             opacity: 1.,
             occluders: vec![],
             content: AttachmentContent::Reading(ReadingPlacement {
+                intrinsic_width: false,
                 content: content.clone(),
                 phase,
                 sizes: &[],

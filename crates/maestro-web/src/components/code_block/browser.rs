@@ -154,6 +154,8 @@ fn mount(
     let mounted = Rc::new(built.mounted);
     *slot.borrow_mut() = Rc::downgrade(&mounted);
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         element: flow,
         slots: vec![(id, built.slot)],
         commit: Some(Box::new({

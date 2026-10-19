@@ -142,6 +142,7 @@ impl ConsoleBlock {
                 )
             })?;
         let result = ControlledReading {
+            intrinsic_width: false,
             height: ReadingHeight::Flow,
             host: self.host.as_ref(),
             id: self.id,

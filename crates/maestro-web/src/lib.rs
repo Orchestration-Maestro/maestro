@@ -10,6 +10,14 @@ pub mod dialogs;
 mod docx_preview;
 pub use components::attachment_tile::AttachmentTile;
 pub use components::input::Input;
+pub use components::message_renderer_registry::{
+    MessageRenderer, MessageRole, get_message_renderer, register_message_renderer, render_message,
+};
+pub use components::messages::{
+    AbortedMessage, AssistantMessage, AssistantMessageProps, ToolMessage, ToolMessageDebugView,
+    ToolMessageProps, UserMessage, UserMessageInput,
+};
+pub use components::thinking_block::ThinkingBlock;
 pub use dialogs::attachment_overlay::AttachmentOverlay;
 pub mod export_html;
 pub mod icons;

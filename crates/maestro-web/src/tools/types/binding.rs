@@ -1,7 +1,7 @@
 //! Typed renderer handles using the existing row-state erasure owner.
 use super::{ToolRenderResult, ToolRenderer, ToolResultMessageView};
 use crate::tools::types::ToolUiError;
-use maestro_app::ToolRendererState;
+use maestro_app::{JsonObject, ToolRendererState};
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 use std::{any::TypeId, rc::Rc};
@@ -40,6 +40,15 @@ impl ToolRendererBinding {
                 .owner
                 .state::<RendererSlot<Value, Value>>()
                 .borrow_mut()
+                .0 = Some(Rc::new(DecodedRenderer {
+                renderer: Rc::clone(&renderer),
+            }));
+        }
+        if TypeId::of::<(P, D)>() != TypeId::of::<(JsonObject, Value)>() {
+            binding
+                .owner
+                .state::<RendererSlot<JsonObject, Value>>()
+                .borrow_mut()
                 .0 = Some(Rc::new(DecodedRenderer { renderer }));
         }
         binding
@@ -69,16 +78,44 @@ impl<P: DeserializeOwned, D: DeserializeOwned> ToolRenderer<Value, Value>
             .map(P::deserialize)
             .transpose()
             .map_err(|e| ToolUiError::Presentation(e.to_string()))?;
+        self.finish(params.as_ref(), result.as_ref(), is_streaming)
+    }
+}
+impl<P: DeserializeOwned, D: DeserializeOwned> ToolRenderer<JsonObject, Value>
+    for DecodedRenderer<P, D>
+{
+    fn render(
+        &self,
+        params: Option<&JsonObject>,
+        result: Option<ToolResultMessageView<'_, Value>>,
+        is_streaming: bool,
+    ) -> Result<ToolRenderResult, ToolUiError> {
+        let params = params
+            .map(|object| {
+                let entries = object.iter().map(|(key, value)| (key.as_str(), value));
+                P::deserialize(
+                    serde::de::value::MapDeserializer::<_, serde_json::Error>::new(entries),
+                )
+            })
+            .transpose()
+            .map_err(|error| ToolUiError::Presentation(error.to_string()))?;
+        self.finish(params.as_ref(), result.as_ref(), is_streaming)
+    }
+}
+impl<P, D: DeserializeOwned> DecodedRenderer<P, D> {
+    /// Decode details and invoke the native callback for either JSON carrier.
+    fn finish(
+        &self,
+        params: Option<&P>,
+        result: Option<&ToolResultMessageView<'_, Value>>,
+        is_streaming: bool,
+    ) -> Result<ToolRenderResult, ToolUiError> {
         let details = result
-            .as_ref()
             .and_then(ToolResultMessageView::details)
             .map(D::deserialize)
             .transpose()
             .map_err(|e| ToolUiError::Presentation(e.to_string()))?;
-        let projected = result
-            .as_ref()
-            .map(|result| result.with_details(details.as_ref()));
-        self.renderer
-            .render(params.as_ref(), projected, is_streaming)
+        let projected = result.map(|result| result.with_details(details.as_ref()));
+        self.renderer.render(params, projected, is_streaming)
     }
 }

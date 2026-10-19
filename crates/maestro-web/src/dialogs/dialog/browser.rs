@@ -33,6 +33,8 @@ pub(super) fn header(
         element.append_child(&text).map_err(|e| host_error(&e))?;
     }
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         element,
         slots: vec![],
         commit: None,
@@ -56,6 +58,8 @@ pub(super) fn content(
         owners.push(child.owner);
     }
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         element,
         slots,
         commit: None,
@@ -175,6 +179,8 @@ fn mount(
         state.native.borrow_mut().candidate = Rc::downgrade(&semantic);
     }
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         element,
         slots: child.slots,
         commit: None,

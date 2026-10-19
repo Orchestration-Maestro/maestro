@@ -110,6 +110,7 @@ impl Placement<'_> {
                     opacity: 1.,
                     occluders,
                     content: AttachmentContent::Reading(ReadingPlacement {
+                        intrinsic_width: false,
                         content: self.reading(),
                         phase,
                         sizes: &self.props.children.control_sizes,

@@ -2,8 +2,21 @@
 
 ## Streamed arguments
 
-`maestro-models` provides five shared parsing and sanitizing operations for
+`maestro-models` provides shared parsing and sanitizing operations for
 model-supplied JSON.
+
+`maestro_models::arguments::json_parse::parse_json(&str)` parses complete JSON
+without repairing string literals. It returns `serde_json::Error` on failure.
+Use this strict operation for displayed JSON text; use `parse_json_with_repair`
+for completed model arguments and `parse_streaming_json` for incomplete ones.
+The browser application facade exposes the strict operation at
+`maestro_app::browser::utils::parse_json`.
+
+Strict parsing uses the same binary64 number projection and duplicate-member
+resolution as argument parsing. Valid overflow becomes null. Duplicate members
+keep their first position and last value, including when that replacement
+discards an unrepresentable earlier value. Malformed raw controls remain errors;
+strict parsing does not apply the streaming operation's outer Unicode trimming.
 
 `repair_json(&str) -> String` escapes raw controls and invalid backslashes only
 inside string literals. Valid escapes and text outside strings stay unchanged.

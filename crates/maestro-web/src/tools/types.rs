@@ -4,7 +4,7 @@ use crate::{
     I18n,
     browser::attachment_content::{AttachmentHost, PlacementScope},
 };
-use maestro_app::ToolRendererState;
+use maestro_app::{JsonObject, ToolRendererState};
 use serde_json::Value;
 use std::{
     any::{Any, TypeId},
@@ -92,7 +92,7 @@ impl ToolRenderState {
     }
 }
 /// Custom renderer receiving original native operands or explicitly decoded JSON.
-pub trait ToolRenderer<P = Value, D = Value> {
+pub trait ToolRenderer<P = JsonObject, D = Value> {
     /// Prepare owned content without retaining borrowed operands.
     /// # Errors
     /// Returns the renderer's preparation failure.
@@ -109,6 +109,17 @@ pub struct ToolParams<'a, P = Value> {
     pub(crate) value: &'a P,
     /// Invoked only after default rendering is selected.
     pub(crate) format: fn(&P) -> Result<Option<String>, ToolUiError>,
+}
+impl<'a> ToolParams<'a, JsonObject> {
+    /// Borrow model arguments with deferred canonical object formatting.
+    #[must_use]
+    pub fn object(value: &'a JsonObject) -> Self {
+        Self::typed(value, |object| {
+            maestro_app::pretty_object(object)
+                .map(Some)
+                .map_err(|error| ToolUiError::Presentation(error.to_string()))
+        })
+    }
 }
 impl<'a> ToolParams<'a, Value> {
     /// Borrow ordinary JSON using the default formatter.

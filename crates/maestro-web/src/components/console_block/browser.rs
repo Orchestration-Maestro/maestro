@@ -110,6 +110,8 @@ fn mount(
     mounted.update(prepared);
     *target.borrow_mut() = Rc::downgrade(&mounted);
     Ok(ReadingRoot {
+        frame_style: "",
+        decoration: None,
         element: root,
         slots: vec![(id, slot)],
         owner: Some(Box::new(mounted)),

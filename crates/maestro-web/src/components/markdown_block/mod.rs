@@ -51,6 +51,16 @@ struct Published {
     thinking: bool,
 }
 
+/// Native document width and padding policy.
+enum DocumentLayout {
+    /// Fill the supplied flow width without inner padding.
+    Flow,
+    /// Fill an artifact viewport with document padding.
+    Padded,
+    /// Fit user content within the supplied bubble width.
+    Intrinsic,
+}
+
 /// Markdown content rendered as selectable native text with canvas copy controls.
 pub struct MarkdownBlock {
     /// Markdown source.
@@ -59,8 +69,8 @@ pub struct MarkdownBlock {
     pub is_thinking: bool,
     /// Show tag-like text literally instead of as markup.
     pub escape_html: bool,
-    /// Include document padding inside the native scroll viewport.
-    padded: bool,
+    /// Native document width and padding policy.
+    layout: DocumentLayout,
     /// Replaceable platform effects.
     host: Rc<dyn AttachmentHost>,
     /// Stable native surface identity.
@@ -76,16 +86,22 @@ impl MarkdownBlock {
             content: String::new(),
             is_thinking: false,
             escape_html: true,
-            padded: false,
+            layout: DocumentLayout::Flow,
             host,
             id: crate::browser::attachment_content::identity(),
             published: None,
         }
     }
+    /// Keep user text intrinsic within its containing bubble.
+    pub(crate) fn for_user(host: Rc<dyn AttachmentHost>) -> Self {
+        let mut block = Self::new(host);
+        block.layout = DocumentLayout::Intrinsic;
+        block
+    }
     /// Retain artifact padding inside the shared scrollable document.
     pub(crate) fn for_artifact(host: Rc<dyn AttachmentHost>) -> Self {
         let mut block = Self::new(host);
-        block.padded = true;
+        block.layout = DocumentLayout::Padded;
         block
     }
     /// Forward retained containing-owner admission to the native root.
@@ -121,7 +137,11 @@ impl MarkdownBlock {
             content: browser::content(
                 &document,
                 ids,
-                (self.is_thinking, self.padded, &mounted),
+                (
+                    self.is_thinking,
+                    matches!(self.layout, DocumentLayout::Padded),
+                    &mounted,
+                ),
                 browser::Update::Replace,
             ),
             mounted,
@@ -161,11 +181,16 @@ impl MarkdownBlock {
             browser::content(
                 &target.document,
                 target.buttons.iter().map(|button| button.id).collect(),
-                (self.is_thinking, self.padded, &mounted),
+                (
+                    self.is_thinking,
+                    matches!(self.layout, DocumentLayout::Padded),
+                    &mounted,
+                ),
                 browser::Update::Presentation,
             )
         });
         let layout = ControlledReading {
+            intrinsic_width: matches!(self.layout, DocumentLayout::Intrinsic),
             height: ReadingHeight::Flow,
             host: self.host.as_ref(),
             id: self.id,
