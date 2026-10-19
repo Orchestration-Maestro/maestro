@@ -1,5 +1,6 @@
 //! Browser attachment components.
 pub mod attachment_tile;
+pub mod diff;
 /// Retained single-line browser input.
 pub mod input;
 /// Stable emitted-position conversation rows.

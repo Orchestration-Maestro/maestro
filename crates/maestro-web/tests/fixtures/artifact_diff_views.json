@@ -1,0 +1,1063 @@
+[
+  {
+    "input": {
+      "oldText": "",
+      "newText": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "",
+      "newText": "",
+      "title": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "",
+      "newText": "",
+      "title": "Change <&>",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [],
+      "title": "Change <&>",
+      "counts": "+0 / -0",
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "",
+      "newText": "a",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "+ a",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "",
+      "newText": "a",
+      "title": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "+ a",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "",
+      "newText": "a",
+      "title": "Change <&>",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "+ a",
+          "kind": "added"
+        }
+      ],
+      "title": "Change <&>",
+      "counts": "+1 / -0",
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a",
+      "newText": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a",
+          "kind": "removed"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a",
+      "newText": "",
+      "title": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a",
+          "kind": "removed"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a",
+      "newText": "",
+      "title": "Change <&>",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a",
+          "kind": "removed"
+        }
+      ],
+      "title": "Change <&>",
+      "counts": "+0 / -1",
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a",
+      "newText": "a",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "  a",
+          "kind": "unchanged"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a",
+      "newText": "a",
+      "title": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "  a",
+          "kind": "unchanged"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a",
+      "newText": "a",
+      "title": "Change <&>",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "  a",
+          "kind": "unchanged"
+        }
+      ],
+      "title": "Change <&>",
+      "counts": "+0 / -0",
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a\n",
+      "newText": "a",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a",
+          "kind": "removed"
+        },
+        {
+          "text": "+ a",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a\n",
+      "newText": "a",
+      "title": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a",
+          "kind": "removed"
+        },
+        {
+          "text": "+ a",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a\n",
+      "newText": "a",
+      "title": "Change <&>",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a",
+          "kind": "removed"
+        },
+        {
+          "text": "+ a",
+          "kind": "added"
+        }
+      ],
+      "title": "Change <&>",
+      "counts": "+1 / -1",
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a",
+      "newText": "a\n",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a",
+          "kind": "removed"
+        },
+        {
+          "text": "+ a",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a",
+      "newText": "a\n",
+      "title": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a",
+          "kind": "removed"
+        },
+        {
+          "text": "+ a",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a",
+      "newText": "a\n",
+      "title": "Change <&>",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a",
+          "kind": "removed"
+        },
+        {
+          "text": "+ a",
+          "kind": "added"
+        }
+      ],
+      "title": "Change <&>",
+      "counts": "+1 / -1",
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "\n",
+      "newText": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- ",
+          "kind": "removed"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "\n",
+      "newText": "",
+      "title": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- ",
+          "kind": "removed"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "\n",
+      "newText": "",
+      "title": "Change <&>",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- ",
+          "kind": "removed"
+        }
+      ],
+      "title": "Change <&>",
+      "counts": "+0 / -1",
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "",
+      "newText": "\n",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "+ ",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "",
+      "newText": "\n",
+      "title": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "+ ",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "",
+      "newText": "\n",
+      "title": "Change <&>",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "+ ",
+          "kind": "added"
+        }
+      ],
+      "title": "Change <&>",
+      "counts": "+1 / -0",
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a\r\n",
+      "newText": "a\n",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a\r",
+          "kind": "removed"
+        },
+        {
+          "text": "+ a",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a\r\n",
+      "newText": "a\n",
+      "title": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a\r",
+          "kind": "removed"
+        },
+        {
+          "text": "+ a",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a\r\n",
+      "newText": "a\n",
+      "title": "Change <&>",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a\r",
+          "kind": "removed"
+        },
+        {
+          "text": "+ a",
+          "kind": "added"
+        }
+      ],
+      "title": "Change <&>",
+      "counts": "+1 / -1",
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a\rb",
+      "newText": "a\rc",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a\rb",
+          "kind": "removed"
+        },
+        {
+          "text": "+ a\rc",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a\rb",
+      "newText": "a\rc",
+      "title": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a\rb",
+          "kind": "removed"
+        },
+        {
+          "text": "+ a\rc",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a\rb",
+      "newText": "a\rc",
+      "title": "Change <&>",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a\rb",
+          "kind": "removed"
+        },
+        {
+          "text": "+ a\rc",
+          "kind": "added"
+        }
+      ],
+      "title": "Change <&>",
+      "counts": "+1 / -1",
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a\nb\na\n",
+      "newText": "a\nc\na\n",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "  a",
+          "kind": "unchanged"
+        },
+        {
+          "text": "- b",
+          "kind": "removed"
+        },
+        {
+          "text": "+ c",
+          "kind": "added"
+        },
+        {
+          "text": "  a",
+          "kind": "unchanged"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a\nb\na\n",
+      "newText": "a\nc\na\n",
+      "title": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "  a",
+          "kind": "unchanged"
+        },
+        {
+          "text": "- b",
+          "kind": "removed"
+        },
+        {
+          "text": "+ c",
+          "kind": "added"
+        },
+        {
+          "text": "  a",
+          "kind": "unchanged"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a\nb\na\n",
+      "newText": "a\nc\na\n",
+      "title": "Change <&>",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "  a",
+          "kind": "unchanged"
+        },
+        {
+          "text": "- b",
+          "kind": "removed"
+        },
+        {
+          "text": "+ c",
+          "kind": "added"
+        },
+        {
+          "text": "  a",
+          "kind": "unchanged"
+        }
+      ],
+      "title": "Change <&>",
+      "counts": "+1 / -1",
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a\nb\n",
+      "newText": "b\na\n",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a",
+          "kind": "removed"
+        },
+        {
+          "text": "  b",
+          "kind": "unchanged"
+        },
+        {
+          "text": "+ a",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a\nb\n",
+      "newText": "b\na\n",
+      "title": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a",
+          "kind": "removed"
+        },
+        {
+          "text": "  b",
+          "kind": "unchanged"
+        },
+        {
+          "text": "+ a",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a\nb\n",
+      "newText": "b\na\n",
+      "title": "Change <&>",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a",
+          "kind": "removed"
+        },
+        {
+          "text": "  b",
+          "kind": "unchanged"
+        },
+        {
+          "text": "+ a",
+          "kind": "added"
+        }
+      ],
+      "title": "Change <&>",
+      "counts": "+1 / -1",
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "same\nsame\n",
+      "newText": "same\n",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "  same",
+          "kind": "unchanged"
+        },
+        {
+          "text": "- same",
+          "kind": "removed"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "same\nsame\n",
+      "newText": "same\n",
+      "title": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "  same",
+          "kind": "unchanged"
+        },
+        {
+          "text": "- same",
+          "kind": "removed"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "same\nsame\n",
+      "newText": "same\n",
+      "title": "Change <&>",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "  same",
+          "kind": "unchanged"
+        },
+        {
+          "text": "- same",
+          "kind": "removed"
+        }
+      ],
+      "title": "Change <&>",
+      "counts": "+0 / -1",
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "<a>&雪\n",
+      "newText": "<b>\t雪\n",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- <a>&雪",
+          "kind": "removed"
+        },
+        {
+          "text": "+ <b>\t雪",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "<a>&雪\n",
+      "newText": "<b>\t雪\n",
+      "title": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- <a>&雪",
+          "kind": "removed"
+        },
+        {
+          "text": "+ <b>\t雪",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "<a>&雪\n",
+      "newText": "<b>\t雪\n",
+      "title": "Change <&>",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- <a>&雪",
+          "kind": "removed"
+        },
+        {
+          "text": "+ <b>\t雪",
+          "kind": "added"
+        }
+      ],
+      "title": "Change <&>",
+      "counts": "+1 / -1",
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "one\n\nthree\n",
+      "newText": "one\n\nnext\n",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "  one",
+          "kind": "unchanged"
+        },
+        {
+          "text": "  ",
+          "kind": "unchanged"
+        },
+        {
+          "text": "- three",
+          "kind": "removed"
+        },
+        {
+          "text": "+ next",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "one\n\nthree\n",
+      "newText": "one\n\nnext\n",
+      "title": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "  one",
+          "kind": "unchanged"
+        },
+        {
+          "text": "  ",
+          "kind": "unchanged"
+        },
+        {
+          "text": "- three",
+          "kind": "removed"
+        },
+        {
+          "text": "+ next",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "one\n\nthree\n",
+      "newText": "one\n\nnext\n",
+      "title": "Change <&>",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "  one",
+          "kind": "unchanged"
+        },
+        {
+          "text": "  ",
+          "kind": "unchanged"
+        },
+        {
+          "text": "- three",
+          "kind": "removed"
+        },
+        {
+          "text": "+ next",
+          "kind": "added"
+        }
+      ],
+      "title": "Change <&>",
+      "counts": "+1 / -1",
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a b",
+      "newText": "a c",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a b",
+          "kind": "removed"
+        },
+        {
+          "text": "+ a c",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a b",
+      "newText": "a c",
+      "title": "",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a b",
+          "kind": "removed"
+        },
+        {
+          "text": "+ a c",
+          "kind": "added"
+        }
+      ],
+      "title": null,
+      "counts": null,
+      "classPresent": true
+    }
+  },
+  {
+    "input": {
+      "oldText": "a b",
+      "newText": "a c",
+      "title": "Change <&>",
+      "className": "custom-token"
+    },
+    "expected": {
+      "rows": [
+        {
+          "text": "- a b",
+          "kind": "removed"
+        },
+        {
+          "text": "+ a c",
+          "kind": "added"
+        }
+      ],
+      "title": "Change <&>",
+      "counts": "+1 / -1",
+      "classPresent": true
+    }
+  }
+]

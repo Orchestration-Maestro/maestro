@@ -1,6 +1,6 @@
 //! Numbered line diffs with surrounding context.
 
-use super::text_diff::{Change, diff_lines};
+use crate::diff::text_diff::{Change, diff_lines};
 
 /// A numbered diff and the first changed line of the new text.
 #[derive(Debug, PartialEq, Eq, serde::Serialize)]

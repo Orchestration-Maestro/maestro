@@ -170,6 +170,7 @@ fn mount(
                     mounted.update(&prepared);
                     *slot.borrow_mut() = Rc::downgrade(mounted);
                 }
+                Ok(())
             }
         })),
         owner: Some(Box::new(mounted)),

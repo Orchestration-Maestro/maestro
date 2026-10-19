@@ -114,13 +114,7 @@ fn render<R>(
         );
         draw(
             &mut ui,
-            ToolRenderView {
-                host,
-                i18n,
-                presentation,
-                highlighter: engine,
-                modal: None,
-            },
+            ToolRenderView::new(host, i18n, presentation, engine, None),
         )
     })
 }

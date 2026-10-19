@@ -78,13 +78,13 @@ fn draw(scene: &Slots, i18n: &I18n, stream: &mut StreamingMessageContainer) -> e
                             is_streaming: true,
                             ..Default::default()
                         },
-                        ToolRenderView {
-                            host: &host,
+                        ToolRenderView::new(
+                            &host,
                             i18n,
-                            presentation: &p,
-                            highlighter: &crate::highlighter_support::NoHighlight,
-                            modal: None,
-                        },
+                            &p,
+                            &crate::highlighter_support::NoHighlight,
+                            None,
+                        ),
                     )
                     .response
                     .unwrap()

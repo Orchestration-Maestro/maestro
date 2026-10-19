@@ -48,6 +48,7 @@ pub trait ToolContent: Any {
 }
 /// Borrowed presentation inputs for one frame.
 #[derive(Clone, Copy)]
+#[non_exhaustive]
 pub struct ToolRenderView<'a> {
     /// Platform effects.
     pub host: &'a Rc<dyn AttachmentHost>,
@@ -59,6 +60,30 @@ pub struct ToolRenderView<'a> {
     pub highlighter: &'a dyn maestro_theme::SyntaxHighlighter,
     /// Containing modal.
     pub modal: Option<egui::Id>,
+    /// Native labels inheriting the containing header's foreground this frame.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) captions: Option<&'a std::cell::RefCell<Vec<web_sys::Element>>>,
+}
+impl<'a> ToolRenderView<'a> {
+    /// Borrow the platform and presentation operands for one rendered frame.
+    #[must_use]
+    pub fn new(
+        host: &'a Rc<dyn AttachmentHost>,
+        i18n: &'a I18n,
+        presentation: &'a maestro_theme::BrandPresentation<'a>,
+        highlighter: &'a dyn maestro_theme::SyntaxHighlighter,
+        modal: Option<egui::Id>,
+    ) -> Self {
+        Self {
+            host,
+            i18n,
+            presentation,
+            highlighter,
+            modal,
+            #[cfg(target_arch = "wasm32")]
+            captions: None,
+        }
+    }
 }
 /// Rendered recipe and outer-card choice.
 pub struct ToolRenderResult {
@@ -164,4 +189,16 @@ pub(crate) fn placement_scope(host: &Rc<dyn AttachmentHost>) -> (egui::Id, Place
         }
     });
     (id, lease)
+}
+
+/// Share whole-value truth/presence without copying an argument object.
+pub(crate) fn json_params<'a>(
+    value: Option<&'a Value>,
+    empty: &'a JsonObject,
+) -> Option<&'a JsonObject> {
+    value.and_then(|value| {
+        value
+            .as_object()
+            .or_else(|| maestro_app::is_truthy(value).then_some(empty))
+    })
 }

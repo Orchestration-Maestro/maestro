@@ -18,6 +18,8 @@ struct TextActionState {
     callback: Option<Rc<dyn Fn()>>,
     /// Drawing context to wake after native activation.
     context: Option<egui::Context>,
+    /// Whether this nested action consumes the native event.
+    consuming: bool,
 }
 
 /// Typography and selector of a tool's literal text.
@@ -25,6 +27,10 @@ struct TextActionState {
 pub(crate) enum TextKind {
     /// Shared header caption.
     Caption,
+    /// Natural-width label within a rich header.
+    InlineCaption,
+    /// Literal artifact filename with an optional consuming action.
+    Pill(bool),
     /// Literal section summary with native activation.
     Summary,
     /// Input or output label.
@@ -75,11 +81,20 @@ impl NativeText {
     #[cfg(target_arch = "wasm32")]
     pub(crate) fn set_hovered(&self, hovered: bool) -> Result<(), AttachmentHostError> {
         if let Some(node) = self.node.borrow().as_ref() {
-            node.class_list()
-                .toggle_with_force("maestro-text-hover", hovered)
-                .map_err(|error| attachment_content::browser::host_error(&error))?;
+            Self::set_target_hovered(node, hovered)?;
         }
         Ok(())
+    }
+    /// Apply inherited foreground to one native caption, not its independently styled siblings.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn set_target_hovered(
+        node: &web_sys::Element,
+        hovered: bool,
+    ) -> Result<(), AttachmentHostError> {
+        node.class_list()
+            .toggle_with_force("maestro-text-hover", hovered)
+            .map(|_| ())
+            .map_err(|error| attachment_content::browser::host_error(&error))
     }
     /// Replace the current action without a guard spanning user-owned release.
     pub(crate) fn set_action(&mut self, action: Option<Rc<dyn Fn()>>) {
@@ -98,11 +113,12 @@ impl NativeText {
         view: ToolRenderView<'_>,
     ) -> Result<egui::Response, ToolUiError> {
         self.action.borrow_mut().context = Some(ui.ctx().clone());
+        self.action.borrow_mut().consuming = matches!(text.1, TextKind::Pill(true));
         let changed = self
             .shown
             .as_ref()
             .is_none_or(|shown| shown.0 != text.0 || shown.1 != text.1);
-        let candidate = changed.then(|| content(text.0, text.1, self));
+        let candidate = changed.then(|| content(text.0, text.1, self)).transpose()?;
         let content = candidate
             .as_ref()
             .or(self.content.as_ref())
@@ -110,7 +126,7 @@ impl NativeText {
                 ToolUiError::Host(AttachmentHostError::Host("Missing tool text".into()))
             })?;
         let layout = ControlledReading {
-            intrinsic_width: false,
+            intrinsic_width: matches!(text.1, TextKind::Pill(_) | TextKind::InlineCaption),
             height: ReadingHeight::Flow,
             host: self.host.as_ref(),
             id: self.id,
@@ -124,6 +140,13 @@ impl NativeText {
             self.content = Some(content);
             self.shown = Some((text.0.into(), text.1));
         }
+        #[cfg(target_arch = "wasm32")]
+        if matches!(text.1, TextKind::InlineCaption)
+            && let Some(captions) = view.captions
+            && let Some(node) = self.node.borrow().as_ref()
+        {
+            captions.borrow_mut().push(node.clone());
+        }
         Ok(layout.response)
     }
 }
@@ -133,22 +156,37 @@ impl Drop for NativeText {
     }
 }
 /// Build a literal factory without retaining mounted owners or frame operands.
-fn content(text: &str, kind: TextKind, owner: &NativeText) -> Rc<ReadingContent> {
+fn content(
+    text: &str,
+    kind: TextKind,
+    owner: &NativeText,
+) -> Result<Rc<ReadingContent>, ToolUiError> {
+    let icon = matches!(kind, TextKind::Pill(_))
+        .then(|| attachment_content::glyph_node("FileCode2"))
+        .transpose()
+        .map_err(ToolUiError::Control)?;
     #[cfg(target_arch = "wasm32")]
     {
         let text = text.to_owned();
         let target = Rc::downgrade(&owner.node);
         let action = Rc::downgrade(&owner.action);
-        Rc::new(ReadingContent {
-            mount: Rc::new(move |document| mount(document, &text, kind, (&target, &action))),
-        })
+        Ok(Rc::new(ReadingContent {
+            mount: Rc::new(move |document| {
+                mount(document, &text, kind, (&target, &action), icon.as_ref())
+            }),
+        }))
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        let _ = (text, kind, owner);
-        Rc::new(ReadingContent {})
+        let _ = (text, kind, owner, icon);
+        Ok(Rc::new(ReadingContent {}))
     }
 }
+/// Shared native click subscription type.
+#[cfg(target_arch = "wasm32")]
+type Click = crate::browser::event_subscription::EventSubscription<
+    wasm_bindgen::closure::Closure<dyn FnMut(web_sys::Event)>,
+>;
 /// Mounted text and its native click subscription share one lifetime.
 #[cfg(target_arch = "wasm32")]
 struct Mounted {
@@ -159,9 +197,7 @@ struct Mounted {
     /// Literal text following the prefix.
     body: web_sys::Element,
     /// Detaches before its native callback is released.
-    _click: crate::browser::event_subscription::EventSubscription<
-        wasm_bindgen::closure::Closure<dyn FnMut(web_sys::Event)>,
-    >,
+    _click: Click,
 }
 /// Weak targets do not extend the containing row's lifetime.
 #[cfg(target_arch = "wasm32")]
@@ -176,6 +212,7 @@ fn mount(
     text: &str,
     kind: TextKind,
     targets: Targets<'_>,
+    icon: Option<&crate::icons::IconNode>,
 ) -> Result<attachment_content::ReadingRoot, AttachmentHostError> {
     use attachment_content::browser::{append, element, host_error};
     let root = element(document, "div", "maestro-tool-text")?;
@@ -185,32 +222,20 @@ fn mount(
     let node = element(document, "span", "")?;
     let prefix = element(document, "strong", "")?;
     let body = element(document, "span", "")?;
+    if let Some(icon) = icon {
+        let icon = crate::icons::icon_dom(icon, crate::icons::IconSize::Sm, None)
+            .map_err(|error| host_error(&error))?;
+        node.append_child(&icon)
+            .map_err(|error| host_error(&error))?;
+    }
     append(&node, &prefix)?;
     append(&node, &body)?;
     append(&root, &node)?;
-    let action = targets.1.clone();
-    let callback = wasm_bindgen::closure::Closure::wrap(Box::new(move |_: web_sys::Event| {
-        let current = action.upgrade().map(|action| {
-            let action = action.borrow();
-            (action.callback.clone(), action.context.clone())
-        });
-        if let Some((Some(callback), context)) = current {
-            callback();
-            if let Some(context) = context {
-                context.request_repaint();
-            }
-        }
-    }) as Box<dyn FnMut(web_sys::Event)>);
     let mounted = Mounted {
         node: node.clone(),
         prefix,
         body,
-        _click: crate::browser::event_subscription::EventSubscription::new(
-            node.clone().into(),
-            "click",
-            callback,
-        )
-        .map_err(|error| host_error(&error))?,
+        _click: subscribe(&node, targets.1)?,
     };
     update(&mounted, text, kind);
     let text = text.to_owned();
@@ -235,15 +260,52 @@ fn mount(
                     *target.borrow_mut() = Some(mounted.node.clone());
                 }
             }
+            Ok(())
         })),
     })
+}
+/// Native click subscription retains only the weak action slot.
+#[cfg(target_arch = "wasm32")]
+fn subscribe(
+    node: &web_sys::Element,
+    action: &std::rc::Weak<RefCell<TextActionState>>,
+) -> Result<Click, AttachmentHostError> {
+    let action = action.clone();
+    let callback = wasm_bindgen::closure::Closure::wrap(Box::new(move |event: web_sys::Event| {
+        let current = action.upgrade().map(|action| {
+            let action = action.borrow();
+            (
+                action.callback.clone(),
+                action.context.clone(),
+                action.consuming,
+            )
+        });
+        if let Some((Some(callback), context, consuming)) = current {
+            if consuming {
+                event.prevent_default();
+                event.stop_propagation();
+            }
+            callback();
+            if let Some(context) = context {
+                context.request_repaint();
+            }
+        }
+    }) as Box<dyn FnMut(web_sys::Event)>);
+    crate::browser::event_subscription::EventSubscription::new(
+        node.clone().into(),
+        "click",
+        callback,
+    )
+    .map_err(|error| attachment_content::browser::host_error(&error))
 }
 /// Update typography and literal text without interpreting authored markup.
 #[cfg(target_arch = "wasm32")]
 fn update(mounted: &Mounted, text: &str, kind: TextKind) {
     use attachment_content::browser::set_text_if_changed;
     let class = match kind {
-        TextKind::Caption => "maestro-tool-caption",
+        TextKind::Caption | TextKind::InlineCaption => "maestro-tool-caption",
+        TextKind::Pill(false) => "maestro-artifact-pill",
+        TextKind::Pill(true) => "maestro-artifact-pill maestro-text-action",
         TextKind::Summary => "maestro-tool-caption maestro-text-action",
         TextKind::Label => "maestro-tool-label",
         TextKind::Detail => "maestro-tool-detail",

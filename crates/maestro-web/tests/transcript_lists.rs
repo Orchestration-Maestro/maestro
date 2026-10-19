@@ -91,13 +91,7 @@ fn draw<C: CustomAgentMessages + 'static>(
         let output = list.render(
             &mut ui,
             props,
-            ToolRenderView {
-                host,
-                i18n,
-                presentation,
-                highlighter: engine,
-                modal: None,
-            },
+            ToolRenderView::new(host, i18n, presentation, engine, None),
         );
         assert!(output.overlays.is_empty());
         output.response.unwrap();

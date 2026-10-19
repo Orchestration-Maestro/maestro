@@ -56,13 +56,7 @@ fn rendered(
         let output = container.render(
             &mut ui,
             StreamingMessageProps::default(),
-            ToolRenderView {
-                host,
-                i18n,
-                presentation,
-                highlighter: &highlighter,
-                modal: None,
-            },
+            ToolRenderView::new(host, i18n, presentation, &highlighter, None),
         );
         assert!(output.overlays.is_empty());
         output.response.unwrap();
@@ -239,13 +233,13 @@ fn streaming_updates_retain_children_until_clear() {
         let output = container.render(
             &mut ui,
             StreamingMessageProps::default(),
-            ToolRenderView {
-                host: &host,
+            ToolRenderView::new(
+                &host,
                 i18n,
                 presentation,
-                highlighter: &crate::highlighter_support::NoHighlight,
-                modal: None,
-            },
+                &crate::highlighter_support::NoHighlight,
+                None,
+            ),
         );
         assert_eq!(
             output.response.unwrap_err().to_string(),

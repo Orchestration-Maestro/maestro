@@ -129,13 +129,13 @@ pub(crate) fn try_draw(
             |ui| {
                 let output = interface.render(
                     ui,
-                    ToolRenderView {
-                        host: &host,
+                    ToolRenderView::new(
+                        &host,
                         i18n,
-                        presentation: &p,
-                        highlighter: &crate::highlighter_support::NoHighlight,
-                        modal: None,
-                    },
+                        &p,
+                        &crate::highlighter_support::NoHighlight,
+                        None,
+                    ),
                 );
                 assert!(output.overlays.is_empty());
                 response = output.response.map(|_| ());

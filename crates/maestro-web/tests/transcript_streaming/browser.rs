@@ -79,13 +79,13 @@ impl Scene {
                         tool_results_by_id: props.tool_results_by_id,
                         on_cost_click: action.clone(),
                     },
-                    ToolRenderView {
-                        host: &host,
-                        i18n: &self.i18n,
-                        presentation: &p,
-                        highlighter: &crate::highlighter_support::NoHighlight,
-                        modal: None,
-                    },
+                    ToolRenderView::new(
+                        &host,
+                        &self.i18n,
+                        &p,
+                        &crate::highlighter_support::NoHighlight,
+                        None,
+                    ),
                 );
                 assert!(result.overlays.is_empty());
                 result.response.unwrap();

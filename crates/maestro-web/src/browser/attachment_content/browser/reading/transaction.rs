@@ -20,7 +20,7 @@ impl Scroll {
             top: offset(viewport, "scrollTop")?,
         })
     }
-    /// Restore the qualified prospective offsets after the infallible native content commit.
+    /// Restore the qualified prospective offsets after the successful native content commit.
     pub(super) fn commit(&self, viewport: &Element) {
         viewport.scroll_to_with_x_and_y(self.left, self.top);
     }

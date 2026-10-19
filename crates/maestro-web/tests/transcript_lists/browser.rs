@@ -72,13 +72,13 @@ fn draw_siblings(
                             is_streaming: policies[index],
                             on_cost_click: Some(action(hits[index].clone())),
                         },
-                        ToolRenderView {
-                            host: &host,
+                        ToolRenderView::new(
+                            &host,
                             i18n,
-                            presentation: &p,
-                            highlighter: &crate::highlighter_support::NoHighlight,
-                            modal: None,
-                        },
+                            &p,
+                            &crate::highlighter_support::NoHighlight,
+                            None,
+                        ),
                     )
                     .response
                     .unwrap();

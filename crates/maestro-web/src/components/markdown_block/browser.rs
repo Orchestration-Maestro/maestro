@@ -106,13 +106,7 @@ fn mount(
             "maestro-markdown-root"
         },
     )?;
-    let style = code::styles(dom)?;
-    style.set_text_content(Some(&format!(
-        "{}{}",
-        style.text_content().unwrap_or_default(),
-        include_str!("markdown.css")
-    )));
-    append(&flow, &style)?;
+    append(&flow, &styles(dom)?)?;
     let root = element(dom, "div", "maestro-markdown")?;
     root.set_inner_html(&document.html);
     append(&flow, &root)?;
@@ -151,9 +145,22 @@ fn mount(
                         mounted.set_thinking(thinking);
                         *owner.borrow_mut() = Rc::downgrade(mounted);
                     }
+                    Ok(())
                 }
             })),
         },
         owner: Some(Box::new(mounted)),
     })
+}
+
+/// Combine Markdown presentation with the shared native listing stylesheet.
+#[cfg(target_arch = "wasm32")]
+fn styles(dom: &web_sys::Document) -> Result<Element, AttachmentHostError> {
+    let style = code::styles(dom)?;
+    style.set_text_content(Some(&format!(
+        "{}{}",
+        style.text_content().unwrap_or_default(),
+        include_str!("markdown.css")
+    )));
+    Ok(style)
 }
