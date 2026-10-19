@@ -132,3 +132,5 @@ mod terminal_erase_chars;
 mod terminal_erase_line;
 
 mod terminal_erase_display;
+
+mod terminal_alignment;

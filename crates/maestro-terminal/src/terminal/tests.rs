@@ -174,3 +174,45 @@ fn character_erasure_releases_refcounted_styles() {
         0
     );
 }
+
+#[test]
+fn alignment_visits_each_cell_once() {
+    let small = alignment_work(8);
+    let large = alignment_work(16);
+    eprintln!(
+        "alignment N8={} N16={}; repeated N8={} N16={}",
+        small.0, large.0, small.1, large.1
+    );
+    assert_eq!(large.0, small.0 * 2);
+    assert!(large.1 > small.1 * 3);
+}
+
+/// Count alignment writes and a repeated-prefix read control over the same cells.
+fn alignment_work(cols: u16) -> (usize, usize) {
+    let mut t = Terminal::new(cols, 4, 0).unwrap();
+    let node = t
+        .screens
+        .active()
+        .pages
+        .tracked_pin(t.screens.active().cursor.page_pin)
+        .unwrap()
+        .node;
+    t.screens
+        .active_mut()
+        .pages
+        .page_mut(node)
+        .unwrap()
+        .row_shift_work = 0;
+    t.decaln().unwrap();
+    let page = t.screens.active().pages.page(node).unwrap();
+    let mut repeated = 0;
+    for y in 0..4 {
+        for end in 0..usize::from(cols) {
+            for cell in &page.get_cells(y)[..=end] {
+                assert_eq!(cell.codepoint(), 'E');
+                repeated += 1;
+            }
+        }
+    }
+    (page.row_shift_work, repeated)
+}

@@ -338,5 +338,10 @@ A later nonempty output row or an alternate screen does not trigger that rule.
 The selector shares scroll-clear's cell-emptiness rules. Complete clearing marks
 the terminal clear flag; partial erasure marks only affected rows.
 
+`decaln` fills the grid with unprotected E cells, releases old managed contents,
+resets margins and origin mode, and returns the cursor home. It keeps foreground
+and background colours while clearing other rendition attributes. Cursor
+protection remains selected but does not protect cells from alignment.
+
 Terminal resizing and screen-switching facades are not provided by these direct
 operations.

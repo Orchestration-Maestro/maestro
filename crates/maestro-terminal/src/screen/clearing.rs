@@ -114,9 +114,13 @@ impl Screen {
             while x < end && !cells[usize::from(x)].protected() {
                 x += 1;
             }
-            if let Some(page) = self.pages.page_mut(node) {
-                page.release_cells(y, start..x);
-                page.get_cells_mut(y)[usize::from(start)..usize::from(x)].fill(blank);
+            let Some(page) = self.pages.page_mut(node) else {
+                return;
+            };
+            page.release_cells(y, start..x);
+            page.get_cells_mut(y)[usize::from(start)..usize::from(x)].fill(blank);
+            if start == 0 && x == page.size.cols {
+                page.get_row_mut(y).set_kitty_virtual_placeholder(false);
             }
         }
         if let Some(page) = self.pages.page_mut(node) {

@@ -423,3 +423,22 @@ fn selective_clear_keeps_wrapped_protected_owners() {
         }
     }
 }
+
+#[test]
+fn selective_clear_retains_full_and_partial_placeholder_metadata() {
+    for range in [0..4, 1..3] {
+        let mut s = screen(4, 1);
+        write_row(&mut s, "ABCD");
+        let p = pin(&s);
+        s.pages
+            .page_mut(p.node)
+            .unwrap()
+            .get_row_mut(0)
+            .set_kitty_virtual_placeholder(true);
+        s.clear_unprotected_cells(p.node, 0, range.clone());
+        assert_eq!(
+            page(&s).get_row(0).kitty_virtual_placeholder(),
+            range != (0..4)
+        );
+    }
+}

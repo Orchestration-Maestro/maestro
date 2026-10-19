@@ -1,5 +1,6 @@
 //! Direct operations on terminal screens and retained protocol state.
 
+mod alignment;
 mod chars;
 mod colors;
 mod cursor;
