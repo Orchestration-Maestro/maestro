@@ -24,18 +24,6 @@ enum Entry {
     /// Protocol-specific mode-aware SDK entry.
     Direct,
 }
-/// Nine delivered protocols, including the native SDK route.
-const PROTOCOLS: [&str; 9] = [
-    "openai-completions",
-    "anthropic-messages",
-    "openai-responses",
-    "azure-openai-responses",
-    "mistral-conversations",
-    "google-generative-ai",
-    "google-vertex",
-    "openai-codex-responses",
-    "bedrock-converse-stream",
-];
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
 fn bundled_registered_requests_keep_local_payload_hooks() -> crate::TestResult {
@@ -65,9 +53,8 @@ fn bundled_registered_requests_keep_local_payload_hooks() -> crate::TestResult {
     crate::chat::block_on(
         false,
         tokio::task::LocalSet::new().run_until(async {
-            for protocol in PROTOCOLS
-                .iter()
-                .copied()
+            for protocol in crate::bundled::registered_apis()
+                .into_iter()
                 .filter(|api| *api != "google-vertex")
             {
                 affinity(protocol).await?;
@@ -173,6 +160,7 @@ async fn local(
     observation: Observation,
     entry: Entry,
 ) -> crate::TestResult<Vec<u8>> {
+    let policy = crate::bundled::policy(protocol);
     let transport = transport(protocol)?;
     let phases = Rc::new(RefCell::new(Vec::new()));
     let tasks = Rc::new(RefCell::new(Vec::new()));
@@ -190,7 +178,7 @@ async fn local(
         task.await?;
     }
     check(
-        protocol,
+        policy,
         &transport,
         &phases.borrow(),
         events.as_deref(),
@@ -204,6 +192,7 @@ async fn threaded(
     observation: Observation,
     entry: Entry,
 ) -> crate::TestResult<Vec<u8>> {
+    let policy = crate::bundled::policy(protocol);
     let transport = transport(protocol)?;
     let phases = Arc::new(Mutex::new(Vec::new()));
     let tasks = Arc::new(Mutex::new(Vec::new()));
@@ -221,7 +210,7 @@ async fn threaded(
         task.await?;
     }
     check(
-        protocol,
+        policy,
         &transport,
         &phases.lock().unwrap(),
         events.as_deref(),
@@ -230,31 +219,19 @@ async fn threaded(
 }
 /// Post-hook wire fields and closed callback phases reject a registry-only preflight.
 fn check(
-    protocol: &str,
+    policy: &crate::bundled::ProtocolPolicy,
     transport: &crate::transport::Transport,
     phases: &[&str],
     events: Option<&[String]>,
     result: &AssistantMessage,
 ) -> crate::TestResult<Vec<u8>> {
+    let protocol = policy.api;
     assert_eq!(result.error_message, None, "{protocol}");
     assert_eq!(result.stop_reason, StopReason::Stop);
     if let Some(events) = events {
         assert_eq!(events, ["start", "done"]);
     }
-    let expected: &[&str] = if matches!(
-        protocol,
-        "mistral-conversations" | "google-generative-ai" | "google-vertex"
-    ) {
-        &["payload-before", "payload-after"]
-    } else {
-        &[
-            "payload-before",
-            "payload-after",
-            "response-before",
-            "response-after",
-        ]
-    };
-    assert_eq!(phases, expected, "{protocol}");
+    assert_eq!(phases, super::hook_phases(policy), "{protocol}");
     let (_, body) = transport.first_request()?;
     let value: serde_json::Value = serde_json::from_slice(&body)?;
     if protocol == "bedrock-converse-stream" {
@@ -285,6 +262,18 @@ async fn observe(
     }
 }
 #[test]
+fn protocol_test_policies_cover_the_registry() {
+    let _serial = crate::bundled::registry();
+    reset_api_providers();
+    let registered: Vec<String> = get_api_providers()
+        .into_iter()
+        .map(|provider| provider.api)
+        .collect();
+    for api in &registered {
+        assert_eq!(crate::bundled::policy(api).api, api);
+    }
+}
+#[test]
 fn default_submission_preserves_protocol_runtime_policy() -> crate::TestResult {
     let _serial = crate::bundled::registry();
     if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
@@ -309,7 +298,7 @@ fn default_submission_preserves_protocol_runtime_policy() -> crate::TestResult {
         };
     }
     reset_api_providers();
-    for protocol in PROTOCOLS {
+    for protocol in crate::bundled::registered_apis() {
         for simple in [false, true] {
             missing_runtime(protocol, simple)?;
         }
@@ -322,7 +311,7 @@ fn default_submission_preserves_protocol_runtime_policy() -> crate::TestResult {
         tokio::task::LocalSet::new().run_until(async {
             let second = default_scripted(&registration)?;
             check_default_scripted(&second).await?;
-            for protocol in PROTOCOLS {
+            for protocol in crate::bundled::registered_apis() {
                 for simple in [false, true] {
                     local(protocol, simple, Observation::Dropped, Entry::Registered).await?;
                     threaded(protocol, simple, Observation::Dropped, Entry::Registered).await?;

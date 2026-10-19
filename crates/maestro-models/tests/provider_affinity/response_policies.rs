@@ -23,8 +23,8 @@ struct Reads {
 }
 /// Original request plus the observer's failure branch.
 struct Case<'a> {
-    /// The protocol selected by the real registry.
-    protocol: &'a str,
+    /// The test policy of the protocol selected by the real registry.
+    policy: &'a crate::bundled::ProtocolPolicy,
     /// Original raw or simple options.
     simple: bool,
     /// Response payload preparation selected by the payload hook.
@@ -77,7 +77,7 @@ policy!(Threaded, Arc, Arc::new(()));
 /// Count actual chunk reads, not body construction or callback registration.
 fn watched(case: &Case<'_>, reads: &Reads) -> crate::TestResult<crate::transport::Transport> {
     use crate::transport::Attempt;
-    let chunks = if case.protocol == "bedrock-converse-stream" {
+    let chunks = if case.policy.api == "bedrock-converse-stream" {
         vec![
             crate::bedrock::event("messageStart", &serde_json::json!({"role":"assistant"}))?,
             crate::bedrock::event("messageStop", &serde_json::json!({"stopReason":"end_turn"}))?,
@@ -85,7 +85,7 @@ fn watched(case: &Case<'_>, reads: &Reads) -> crate::TestResult<crate::transport
     } else if case.nonstream {
         vec![b"{}".to_vec()]
     } else {
-        let Attempt::Respond { body, .. } = super::direct_response(case.protocol) else {
+        let Attempt::Respond { body, .. } = super::direct_response(case.policy.api) else {
             panic!("body fixture")
         };
         vec![body]
@@ -153,9 +153,10 @@ fn bundled_response_policies_survive_local_submission() -> crate::TestResult {
 }
 /// Repeat independent raw/simple and local/threaded choices with unequal read policies.
 async fn cases(protocol: &str, nonstream: bool, status: u16) -> crate::TestResult {
+    let policy = crate::bundled::policy(protocol);
     for simple in [false, true] {
         let case = Case {
-            protocol,
+            policy,
             simple,
             nonstream,
             status,
@@ -169,7 +170,7 @@ async fn cases(protocol: &str, nonstream: bool, status: u16) -> crate::TestResul
 fn counters(case: &Case<'_>) -> Arc<Reads> {
     Arc::new(Reads {
         before_observation: usize::from(
-            case.protocol == "bedrock-converse-stream" || case.nonstream,
+            case.policy.api == "bedrock-converse-stream" || case.nonstream,
         ),
         ..Default::default()
     })
@@ -182,9 +183,9 @@ async fn local(case: &Case<'_>) -> crate::TestResult {
     let admissions = Rc::new(Cell::new(0));
     let spawn = super::local_submission(tasks.clone(), admissions.clone());
     let mut common = Local::common(transport.fetch.clone(), reads.clone(), case.nonstream);
-    common.api_key = Some(crate::bundled::api_key(case.protocol));
+    common.api_key = Some(crate::bundled::api_key(case.policy.api));
     let stream = super::bundled_cases::registered::<Local>(
-        case.protocol,
+        case.policy.api,
         case.simple,
         common,
         Local::provided(spawn),
@@ -204,9 +205,9 @@ async fn threaded(case: &Case<'_>) -> crate::TestResult {
     let tasks = Arc::new(Mutex::new(Vec::new()));
     let spawn = super::threaded_submission(tasks.clone());
     let mut common = Threaded::common(transport.fetch.clone(), reads.clone(), case.nonstream);
-    common.api_key = Some(crate::bundled::api_key(case.protocol));
+    common.api_key = Some(crate::bundled::api_key(case.policy.api));
     let stream = super::bundled_cases::registered::<Threaded>(
-        case.protocol,
+        case.policy.api,
         case.simple,
         common,
         Threaded::provided(spawn),
@@ -228,16 +229,8 @@ fn check(
     events: &[String],
     result: &AssistantMessage,
 ) {
-    if matches!(
-        case.protocol,
-        "mistral-conversations" | "google-generative-ai" | "google-vertex"
-    ) {
-        assert_eq!(reads.responses.load(Ordering::SeqCst), 0);
-        assert_eq!(reads.body.load(Ordering::SeqCst), 1);
-        assert_eq!(result.stop_reason, StopReason::Stop);
-        assert_eq!(events, ["start", "done"]);
-    } else {
-        let attempts = if case.protocol == "openai-codex-responses" {
+    if case.policy.response_hook {
+        let attempts = if case.policy.api == "openai-codex-responses" {
             4
         } else {
             1
@@ -248,5 +241,10 @@ fn check(
         assert_eq!(result.error_message.as_deref(), Some("response stopped"));
         assert_eq!(result.stop_reason, StopReason::Error);
         assert_eq!(events.last().map(String::as_str), Some("error"));
+    } else {
+        assert_eq!(reads.responses.load(Ordering::SeqCst), 0);
+        assert_eq!(reads.body.load(Ordering::SeqCst), 1);
+        assert_eq!(result.stop_reason, StopReason::Stop);
+        assert_eq!(events, ["start", "done"]);
     }
 }

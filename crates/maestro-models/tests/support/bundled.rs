@@ -1,4 +1,4 @@
-//! Controlled wire bodies, models and request capture for the six bundled protocols.
+//! Controlled wire bodies, models and request capture for the bundled protocols.
 
 use crate::chat::{TestResult, context, model};
 use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD};
@@ -20,7 +20,7 @@ pub struct Protocol {
     pub base_url: &'static str,
 }
 
-/// The six bundled protocols in registration order.
+/// The six SSE fixture protocols in registration order.
 pub const PROTOCOLS: [Protocol; 6] = [
     Protocol {
         api: "anthropic-messages",
@@ -59,13 +59,81 @@ pub fn apis() -> Vec<&'static str> {
     PROTOCOLS.iter().map(|protocol| protocol.api).collect()
 }
 
+/// How one registered protocol treats the caller's cancellation signal and response hook.
+pub struct ProtocolPolicy {
+    /// Registered protocol identifier.
+    pub api: &'static str,
+    /// The request uses the signal carried by the payload the payload hook returns.
+    pub selected_signal: bool,
+    /// The response hook observes each HTTP response before its body is read.
+    pub response_hook: bool,
+}
+
+/// Every bundled protocol in registration order, with its test policy.
+pub const PROTOCOL_POLICIES: [ProtocolPolicy; 9] = [
+    ProtocolPolicy {
+        api: "anthropic-messages",
+        selected_signal: false,
+        response_hook: true,
+    },
+    ProtocolPolicy {
+        api: "openai-completions",
+        selected_signal: false,
+        response_hook: true,
+    },
+    ProtocolPolicy {
+        api: "mistral-conversations",
+        selected_signal: false,
+        response_hook: false,
+    },
+    ProtocolPolicy {
+        api: "openai-responses",
+        selected_signal: false,
+        response_hook: true,
+    },
+    ProtocolPolicy {
+        api: "azure-openai-responses",
+        selected_signal: false,
+        response_hook: true,
+    },
+    ProtocolPolicy {
+        api: "openai-codex-responses",
+        selected_signal: false,
+        response_hook: true,
+    },
+    ProtocolPolicy {
+        api: "google-generative-ai",
+        selected_signal: true,
+        response_hook: false,
+    },
+    ProtocolPolicy {
+        api: "google-vertex",
+        selected_signal: true,
+        response_hook: false,
+    },
+    ProtocolPolicy {
+        api: "bedrock-converse-stream",
+        selected_signal: false,
+        response_hook: true,
+    },
+];
+
 /// The complete bundled registry inventory, separate from the SSE fixture protocols.
 pub fn registered_apis() -> Vec<&'static str> {
-    let mut apis = apis();
-    apis.push("google-generative-ai");
-    apis.push("google-vertex");
-    apis.push("bedrock-converse-stream");
-    apis
+    PROTOCOL_POLICIES.iter().map(|policy| policy.api).collect()
+}
+
+/// The test policy of `api`, looked up before any request starts.
+///
+/// # Panics
+///
+/// Panics with the protocol's name when the inventory has no entry for it.
+#[cfg(test)]
+pub fn policy(api: &str) -> &'static ProtocolPolicy {
+    PROTOCOL_POLICIES
+        .iter()
+        .find(|policy| policy.api == api)
+        .unwrap_or_else(|| panic!("no protocol test policy for {api}"))
 }
 
 /// Serializes tests that read or change process-wide provider and cleanup registries.
