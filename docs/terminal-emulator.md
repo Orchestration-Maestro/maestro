@@ -167,3 +167,78 @@ counts and retained ownership valid.
 Prompt traversal includes its endpoint row regardless of the endpoint column.
 Backward traversal returns the earliest retained continuation when pruning has
 removed its primary prompt.
+
+## Screens
+
+`Screen` owns a page list, a tracked cursor, saved cursor state, character-set
+state and per-screen protocol state. `screen::Options` requires positive dimensions
+and defaults to 80 columns by 24 rows. A zero `max_scrollback` disables history;
+a positive byte budget retains the page list's active-area minimum.
+
+The cursor starts at the origin with a block shape, default text attributes,
+output semantics and no hyperlink or pending wrap. G0 through G3 initially use
+Unicode, GL selects G0, GR selects G2 and no single shift is active. Designations,
+GL, GR and single shift are independent. `reset` clears content and protocol
+state while retaining dimensions, history policy and the cursor's tracked handle.
+
+Cursor movement keeps active coordinates and the tracked cell aligned. Cross-page
+moves migrate cursor-owned styles and hyperlinks into the destination page;
+absolute moves mark the old and new rows dirty. Horizontal moves do not wrap.
+Cell and row accessors borrow the actual page storage, including the preceding
+row's final cell when adjacent pages have different stored widths. `cursor_copy`
+copies writing state into another screen and can omit the hyperlink.
+
+`set_attribute` applies decoded rendition attributes. Reasserting an unchanged
+attribute retains its existing style reference. `manual_style_update` reconciles
+a directly edited style with the cursor page, growing or splitting storage when
+necessary. Capacity failures remain typed; `set_attribute` attempts to restore
+the old style before falling back to default attributes.
+
+Hyperlinks retain owned URI and identity bytes independently of caller buffers.
+Implicit identities wrap and regenerate on page crossings; explicit identities
+retain their bytes. `cursor_set_hyperlink` gives the current cell its own link
+reference, and `end_hyperlink` releases only the cursor's reference. Reusing a full
+live hyperlink identity needs no additional string storage. Page replacement
+restores cursor references without changing the references held by copied cells.
+
+Clearing releases page-owned styles, hyperlinks and grapheme suffixes before
+applying background-only blanks. `clear_rows` uses inclusive endpoints and each
+page's stored width; selective clearing retains protected cells and row metadata.
+`cursor_reset_wrap` clears pending wrap, the next row's continuation and a trailing
+spacer head. `split_cell_boundary` removes disconnected wide-cell halves without
+changing wrap metadata.
+
+`cursor_down_scroll` scrolls at the active bottom. With history disabled it rotates
+active rows, or clears a single-row screen. Otherwise it grows retained storage,
+keeps the cursor at the active bottom and migrates managed references on page
+crossings. Viewport scrolling delegates to the page list; `scroll_clear` retains
+nonempty active rows as history. History and active erasure reload the tracked
+cursor. Managed row-copy failures retain their typed errors and partial changes.
+
+`cursor_scroll_above` inserts a blank at the cursor while moving the rows below
+it down. It grows once and rotates only the affected page suffix, leaving older
+history alone. `cursor_scroll_region_up` discards the top row of a full-width
+region ending at the cursor, keeps content outside that region and leaves the
+cursor on the new background-filled bottom row.
+
+`screen::Resize` selects positive dimensions, soft-wrap reflow and prompt redraw.
+Resizing preserves cursor attributes and owned hyperlinks, updates a saved cursor
+through its tracked cell and resets saved coordinates that leave the active area.
+A saved pending wrap clears when its cell is no longer at the right edge.
+Prompt redraw is explicit: `False` preserves content, `Last` clears the cursor
+line, and `True` clears from the prompt's beginning through the remaining rows.
+Output cursors do not trigger prompt clearing. A failed resize retains its typed
+storage error and earlier changes; reset the screen before reusing its content.
+
+`ScreenSet` initializes the primary screen immediately and creates an alternate
+screen only through `get_init`. `get` and `get_mut` borrow initialized screens
+without allocating. `switch_to` selects an initialized key. Each screen retains
+its own content and protocol state. Remove alternate storage while the primary
+is active; removal advances only the alternate generation, and removing an absent
+alternate is a no-op. Recreating it keeps that generation. The primary cannot be
+removed.
+
+`kitty::key::FlagStack` retains eight keyboard-protocol flag sets. Push evicts the
+oldest entry when full; pop clears removed entries, and a count of eight or more
+resets the history. Set replaces, enables or disables the five supported bits
+without changing the stack position.

@@ -862,3 +862,34 @@ fn same_page_copy_refusal_preserves_link_owners() {
         assert_eq!(page.string_alloc.used_bytes(), if full { 0 } else { 32 });
     }
 }
+
+#[test]
+fn existing_hyperlink_retains_without_allocating_strings() {
+    use crate::hyperlink::{Hyperlink, HyperlinkId};
+    for id in [
+        HyperlinkId::Implicit(7),
+        HyperlinkId::Explicit(vec![b'i'; 32]),
+    ] {
+        let mut page = Page::init(Capacity {
+            cols: 2,
+            rows: 1,
+            string_bytes: 2048,
+            ..Capacity::default()
+        });
+        let link = Hyperlink {
+            id,
+            uri: vec![b'u'; 2016],
+        };
+        let first = page.insert_hyperlink(link.clone()).unwrap();
+        let bytes = page.string_alloc.used_bytes();
+        let second = page.insert_hyperlink(link.clone()).unwrap();
+        assert_eq!(second, first);
+        assert_eq!(page.string_alloc.used_bytes(), bytes);
+        assert_eq!(page.hyperlink_set.ref_count(first), 2);
+        assert_eq!(page.hyperlink_set.get(first), &link);
+        page.release_hyperlink(first);
+        assert_eq!(page.hyperlink_set.ref_count(second), 1);
+        page.release_hyperlink(second);
+        assert_eq!(page.string_alloc.used_bytes(), 0);
+    }
+}

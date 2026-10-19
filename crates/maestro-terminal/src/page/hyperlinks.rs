@@ -9,6 +9,10 @@ impl Page {
     /// # Errors
     /// Returns the corresponding capacity error when the requested storage cannot fit.
     pub fn insert_hyperlink(&mut self, link: Hyperlink) -> Result<Id, StorageError> {
+        if let Some(id) = self.hyperlink_set.lookup(&link) {
+            self.hyperlink_set.use_multiple(id, 1);
+            return Ok(id);
+        }
         let uri_chunks = self
             .string_alloc
             .alloc(link.uri.len())
@@ -27,13 +31,8 @@ impl Page {
             uri_chunks,
             id_chunks,
         };
-        let existing = self.hyperlink_set.lookup(&link).is_some();
         if let Ok(id) = self.hyperlink_set.add(link) {
-            if existing {
-                self.free_link_strings(chunks);
-            } else {
-                self.hyperlink_entries.insert(id, chunks);
-            }
+            self.hyperlink_entries.insert(id, chunks);
             Ok(id)
         } else {
             self.free_link_strings(chunks);

@@ -293,3 +293,39 @@ fn pin_row_and_cell_iterators_include_row_limits() {
         assert_eq!(actual_cells, expected_cells);
     }
 }
+
+#[test]
+fn reverse_row_rotation_visits_only_the_affected_suffix() {
+    let small = reverse_rotation_work(64, 64);
+    let large = reverse_rotation_work(128, 64);
+    let history = reverse_rotation_work(64, 128);
+    assert_eq!(large.0 + 3, (small.0 + 3) * 2);
+    assert_eq!(history.0, small.0);
+    assert!(large.1 > small.1 * 3);
+}
+
+/// Count actual tail-to-cursor reads against a repeated-prefix negative control.
+fn reverse_rotation_work(rows: u16, history: u16) -> (usize, usize) {
+    let mut list = screen(5, rows + history);
+    for y in (16..rows + history).step_by(16) {
+        let pin = list.pin_at_row(usize::from(y), 0).unwrap();
+        list.split(pin).unwrap();
+    }
+    let origin = list.pin_at_row(usize::from(history), 0).unwrap();
+    let cursor = list.track_pin(origin).unwrap();
+    list.nodes.queries.set(0);
+    let origin = *list.tracked_pin(cursor).unwrap();
+    list.rotate_rows_down_from(origin).unwrap();
+    let reverse = list.nodes.queries.get();
+    list.nodes.queries.set(0);
+    for target in 0..rows / 16 {
+        let mut node = origin.node;
+        for _ in 0..target {
+            node = list.nodes.get(node).unwrap().next.unwrap();
+        }
+        assert!(list.page(node).is_some());
+    }
+    let repeated = list.nodes.queries.get();
+    eprintln!("ROTATION rows={rows} history={history} reverse={reverse} repeated={repeated}");
+    (reverse, repeated)
+}

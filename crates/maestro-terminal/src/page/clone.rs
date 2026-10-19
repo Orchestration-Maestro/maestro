@@ -209,10 +209,6 @@ impl Page {
                 Ok(id)
             }
             LinkCopy::Foreign(value) => {
-                if let Some(id) = self.hyperlink_set.lookup(value) {
-                    self.hyperlink_set.use_multiple(id, 1);
-                    return Ok(id);
-                }
                 self.insert_hyperlink(value.clone())
                     .map_err(|error| match error {
                         StorageError::StringsOutOfMemory => StorageError::StringAllocOutOfMemory,
