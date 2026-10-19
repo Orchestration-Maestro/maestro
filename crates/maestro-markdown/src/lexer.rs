@@ -261,7 +261,7 @@ impl<'a, E> Lexer<'a, E> {
         };
         let range = matched.group(1)?;
         let logical_end = if matches!(kind, Kind::Paragraph(_)) {
-            paragraph_end(&window, matched.end())
+            self.paragraph_end(&window, matched.end())
         } else {
             matched.end()
         };
@@ -286,28 +286,8 @@ impl<'a, E> Lexer<'a, E> {
 
     /// Select a table only when header and delimiter column counts agree.
     fn table(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
-        if self.options == MarkedOptions::Documentation || source.is_lazy(0) {
-            return None;
-        }
-        let matched = rules::block_table(self.options)?.find(source.text)?;
-        let delimiter = capture(source.text, &matched, 2);
-        if !delimiter.contains(['|', ':']) {
-            return None;
-        }
-        let headers = helpers::cell_ranges(capture(source.text, &matched, 1));
-        let alignments: Vec<_> = helpers::split_cells(delimiter, None)
-            .into_iter()
-            .map(|cell| match (cell.starts_with(':'), cell.ends_with(':')) {
-                (true, true) => Alignment::Center,
-                (true, false) => Alignment::Left,
-                (false, true) => Alignment::Right,
-                (false, false) => Alignment::None,
-            })
-            .collect();
-        if headers.len() != alignments.len() {
-            return None;
-        }
-        let count = headers.len();
+        let (matched, alignments) = self.table_shape(source.text)?;
+        let count = alignments.len();
         let header = self.cells(source, matched.group(1)?, count);
         let rows = matched
             .group(3)
@@ -333,6 +313,66 @@ impl<'a, E> Lexer<'a, E> {
             matched.end(),
             source.node(matched.range(), Kind::Table(table)),
         ))
+    }
+
+    /// Continue item text over a table-looking line the table rule refuses, because the
+    /// reference lexes item text one line at a time; elsewhere the paragraph ends there.
+    fn paragraph_end(&self, source: &Source<'_>, mut end: usize) -> usize {
+        if self.context != BlockContext::ListItem {
+            return end;
+        }
+        while source.text.as_bytes().get(end) == Some(&b'\n') {
+            let next = source.suffix(end + 1);
+            let Some(continuation) = self
+                .takes_as_text(&next)
+                .then(|| rules::block_paragraph(self.options)?.find(next.text))
+                .flatten()
+            else {
+                break;
+            };
+            end += 1 + continuation.end();
+        }
+        end
+    }
+
+    /// Whether line-by-line item text takes a table-looking line as text: indented code and
+    /// definitions join the text, and no other block, including the table, starts there.
+    fn takes_as_text(&self, next: &Source<'_>) -> bool {
+        let starts =
+            |rule: Option<&regress::Regex>| rule.is_some_and(|rule| rule.find(next.text).is_some());
+        if !starts(rules::block_table(self.options)) {
+            return false;
+        }
+        starts(rules::BLOCK_CODE.as_ref())
+            || starts(rules::block_def(self.options))
+            || !(self.table_shape(next.text).is_some()
+                || tokenizer::block::leaf(next, self.options).is_some()
+                || starts(rules::block_blockquote(self.options))
+                || starts(rules::BLOCK_LIST.as_ref())
+                || starts(rules::block_lheading(self.options)))
+    }
+
+    /// The table match and its alignments when header and delimiter column counts agree.
+    fn table_shape(&self, text: &str) -> Option<(regress::Match, Vec<Alignment>)> {
+        if self.options == MarkedOptions::Documentation {
+            return None;
+        }
+        let matched = rules::block_table(self.options)?.find(text)?;
+        let delimiter = capture(text, &matched, 2);
+        if !delimiter.contains(['|', ':']) {
+            return None;
+        }
+        let headers = helpers::cell_ranges(capture(text, &matched, 1));
+        let alignments: Vec<_> = helpers::split_cells(delimiter, None)
+            .into_iter()
+            .map(|cell| match (cell.starts_with(':'), cell.ends_with(':')) {
+                (true, true) => Alignment::Center,
+                (true, false) => Alignment::Left,
+                (false, true) => Alignment::Right,
+                (false, false) => Alignment::None,
+            })
+            .collect();
+        (headers.len() == alignments.len()).then_some((matched, alignments))
     }
 
     /// Retain padded authored cell scopes but interpret their trimmed content.
@@ -438,28 +478,4 @@ pub(crate) fn lines(source: &str) -> impl Iterator<Item = Range<usize>> {
 /// Match reference identities using full Unicode folding without changing their spelling.
 pub(crate) fn reference_key(source: &str) -> String {
     unicase::UniCase::new(reference_id(source)).to_folded_case()
-}
-
-/// Keep a lazy table-looking continuation in its original paragraph.
-fn paragraph_end(source: &Source<'_>, mut end: usize) -> usize {
-    while source.text.as_bytes().get(end) == Some(&b'\n') {
-        let next = end + 1;
-        if !source.is_lazy(next) {
-            break;
-        }
-        let Some(table) = rules::BLOCK_TABLE.as_ref() else {
-            break;
-        };
-        let Some(paragraph) = rules::BLOCK_PARAGRAPH.as_ref() else {
-            break;
-        };
-        if table.find(&source.text[next..]).is_none() {
-            break;
-        }
-        let Some(continuation) = paragraph.find(&source.text[next..]) else {
-            break;
-        };
-        end = next + continuation.end();
-    }
-    end
 }

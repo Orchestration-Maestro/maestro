@@ -131,18 +131,10 @@ fn quote_chunk(source: &str) -> usize {
 /// Strip one quote prefix while keeping every line's native provenance.
 fn quote_source(source: &Source<'_>, end: usize) -> ScopeSource {
     let mut pieces = Vec::new();
-    let mut lazy = Vec::new();
-    let mut local = 0;
     for range in lines(&source.text[..end]) {
         let line = &source.text[range.clone()];
         let shown = crate::source::strip_quote(line);
-        if shown.len() == line.len() {
-            lazy.push(local);
-        }
         pieces.push(range.start + line.len() - shown.len()..range.end);
-        local += shown.len();
     }
-    let mut body = source.select(pieces);
-    body.lazy_lines = lazy;
-    body
+    source.select(pieces)
 }

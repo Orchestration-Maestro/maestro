@@ -1617,7 +1617,7 @@
       ]
     }
   ],
-  "markdown_table_lazy_lines_follow_commonmark": [
+  "markdown_table_lazy_lines_open_tables_in_quotes_and_items": [
     {
       "text": "- item\n| A | B |\n| --- | --- |\n| 1 | 2 |",
       "width": 30,
@@ -1627,7 +1627,7 @@
       "hyperlinks": false,
       "lines": [
         "\u001b[36m- \u001b[39mitem                        ",
-        "| A | B |                     ",
+        "  | A | B |                   ",
         "| --- | --- |                 ",
         "| 1 | 2 |                     "
       ]
@@ -1641,9 +1641,12 @@
       "hyperlinks": false,
       "lines": [
         "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mq\u001b[23m\u001b[3m\u001b[23m                           ",
-        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m| A | B |\u001b[23m\u001b[3m\u001b[23m                   ",
-        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m| --- | --- |\u001b[23m\u001b[3m\u001b[23m               ",
-        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m| 1 | 2 |\u001b[23m\u001b[3m\u001b[23m                   "
+        "\u001b[2m│ \u001b[22m                            ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m┌───┬───┐\u001b[23m\u001b[3m\u001b[23m                   ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m│ \u001b[1mA\u001b[22m │ \u001b[1mB\u001b[22m │\u001b[23m\u001b[3m\u001b[23m                   ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m├───┼───┤\u001b[23m\u001b[3m\u001b[23m                   ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m│ 1 │ 2 │\u001b[23m\u001b[3m\u001b[23m                   ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m└───┴───┘\u001b[23m\u001b[3m\u001b[23m                   "
       ]
     },
     {

@@ -184,8 +184,8 @@ fn markdown_table_inside_list_item_keeps_source_rows() {
 }
 
 #[test]
-fn markdown_table_lazy_lines_follow_commonmark() {
-    markdown::cases("markdown_table_lazy_lines_follow_commonmark");
+fn markdown_table_lazy_lines_open_tables_in_quotes_and_items() {
+    markdown::cases("markdown_table_lazy_lines_open_tables_in_quotes_and_items");
 }
 
 /// Renders `text` with the supplied theme and hyperlink capability.

@@ -180,9 +180,6 @@ fn item_lines(
         } else {
             0
         };
-        if strip == 0 && !empty {
-            body.lazy_lines.push(body.text.len());
-        }
         previous = String::from_utf16_lossy(
             &aligned
                 .text

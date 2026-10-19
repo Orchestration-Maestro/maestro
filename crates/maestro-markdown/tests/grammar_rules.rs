@@ -147,7 +147,7 @@ fn line_breaks_distinguish_authored_and_decoded_newlines() {
 
 #[test]
 fn lists_keep_marker_indent_looseness_and_task_state() {
-    observations::check("list", 17);
+    observations::check("list", 23);
     let document = parse("-\n- b".into());
     let Kind::List(None, items) = &document.nodes[0].kind else {
         panic!("list")
@@ -266,27 +266,6 @@ fn fences_retain_body_info_and_closing_rules() {
 #[test]
 fn tables_keep_column_alignment_pipes_and_authored_padding() {
     observations::check("table", 9);
-    let document = parse("- item\n| A | B |\n| --- | --- |\n| 1 | 2 |".into());
-    let Kind::List(_, items) = &document.nodes[0].kind else {
-        panic!("list")
-    };
-    let Kind::Item(children) = &items[0].kind else {
-        panic!("item")
-    };
-    assert_eq!(children.len(), 1);
-    let Kind::Inline(children) = &children[0].kind else {
-        panic!("lazy inline continuation")
-    };
-    assert_eq!(text(children), "item\n| A | B |\n| --- | --- |\n| 1 | 2 |");
-    let document = parse("> q\n| A | B |\n| --- | --- |\n| 1 | 2 |".into());
-    let Kind::Quote(children, _) = &document.nodes[0].kind else {
-        panic!("quote")
-    };
-    assert_eq!(children.len(), 1);
-    let Kind::Paragraph(children) = &children[0].kind else {
-        panic!("lazy paragraph")
-    };
-    assert_eq!(text(children), "q\n| A | B |\n| --- | --- |\n| 1 | 2 |");
     for input in [
         "- | A | B |\n  | - | - |\n  | 1 | 2 |",
         "> | A | B |\n> | - | - |\n> | 1 | 2 |",
@@ -373,7 +352,7 @@ fn mapped_links_share_one_policy_aware_scanner() {
 
 #[test]
 fn quotes_keep_lazy_continuations_and_nested_extents() {
-    observations::check("quote", 9);
+    observations::check("quote", 10);
     for input in ["> one\n> https://frame.test\n", "> https://frame.test\n"] {
         let mut document = parse(input.into());
         maestro_markdown::autolinks(&mut document);

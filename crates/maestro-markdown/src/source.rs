@@ -13,8 +13,6 @@ pub(crate) fn strip_quote(line: &str) -> &str {
 pub(crate) struct ScopeSource {
     /// Bytes before inline interpretation.
     pub(crate) text: String,
-    /// Source-ordered starts of lazy container continuations that cannot open tables.
-    pub(crate) lazy_lines: Vec<usize>,
     /// Ordered identity spans or atomic spelling transformations.
     units: Vec<(Range<usize>, Range<usize>)>,
 }
@@ -84,7 +82,6 @@ impl ScopeSource {
         Self {
             text: text.to_owned(),
             units: vec![(0..text.len(), 0..text.len())],
-            lazy_lines: Vec::new(),
         }
     }
     /// Retain selected authored pieces and their original coordinates.
@@ -92,7 +89,6 @@ impl ScopeSource {
         let mut output = Self {
             text: String::new(),
             units: Vec::new(),
-            lazy_lines: Vec::new(),
         };
         for piece in pieces {
             self.select_piece(piece, &mut output);
@@ -106,7 +102,6 @@ impl ScopeSource {
         if piece.is_empty() {
             return;
         }
-        let base = output.text.len();
         let first = self
             .units
             .partition_point(|(_, local)| local.end <= piece.start);
@@ -125,17 +120,6 @@ impl ScopeSource {
             output.text.push_str(&self.text[start..end]);
             output.units.push((absolute, begin..output.text.len()));
         }
-        let first = self
-            .lazy_lines
-            .partition_point(|offset| *offset < piece.start);
-        let last = self
-            .lazy_lines
-            .partition_point(|offset| *offset < piece.end);
-        output.lazy_lines.extend(
-            self.lazy_lines[first..last]
-                .iter()
-                .map(|offset| base + offset - piece.start),
-        );
     }
 
     /// Source extent of a local selection, including an empty boundary.
@@ -180,7 +164,7 @@ impl ScopeSource {
         output
     }
 
-    /// Append a framed span without losing transformations or lazy-line boundaries.
+    /// Append a framed span without losing transformations.
     pub(crate) fn append(&mut self, other: Self) {
         let base = self.text.len();
         self.text.push_str(&other.text);
@@ -190,8 +174,6 @@ impl ScopeSource {
                 .into_iter()
                 .map(|(native, local)| (native, base + local.start..base + local.end)),
         );
-        self.lazy_lines
-            .extend(other.lazy_lines.into_iter().map(|offset| base + offset));
     }
 
     /// Apply table-pipe spelling once while preserving each atomic source unit.
@@ -244,13 +226,6 @@ impl Source<'_> {
                 .into_iter()
                 .map(|range| self.offset + range.start..self.offset + range.end),
         )
-    }
-    /// A lazy continuation cannot introduce a table at this local boundary.
-    pub(crate) fn is_lazy(&self, offset: usize) -> bool {
-        self.owner
-            .lazy_lines
-            .binary_search(&(self.offset + offset))
-            .is_ok()
     }
     /// Project an original extent into this borrowed window's local coordinates.
     pub(crate) fn local(&self, range: &Range<usize>) -> Option<Range<usize>> {
