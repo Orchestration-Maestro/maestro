@@ -1,6 +1,9 @@
 #![doc = include_str!("../../../../docs/terminal/input.md")]
 
 mod framing;
+mod mouse;
+
+pub use mouse::{SgrMouseFields, scan_sgr_mouse_fields};
 
 use std::borrow::Cow;
 use std::mem;

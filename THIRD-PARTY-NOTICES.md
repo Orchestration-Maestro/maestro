@@ -741,7 +741,10 @@ canonical source spelling; state arbitration retains the source's session and
 process-generation ownership rules.
 The input model and mouse geometry derive from the input model and mouse
 modules; decoded input events derive from the raw input module. Structured key
-conversions derive from the client input and protocol wire modules. These reuse
+conversions derive from the client input and protocol wire modules. The structured
+host key decoder in `crates/maestro-tui/src/keys/` derives from the input parser;
+shared SGR fields in `crates/maestro-tui/src/stdin_buffer/mouse.rs` derive from
+the mouse and raw input modules. These reuse
 the existing protocol vocabulary rather than terminal-library records.
 
 The pane terminal, shell and foreground process code in `crates/maestro-process/`

@@ -1,4 +1,4 @@
-//! Key identifiers: the public `Key` helper and the private key vocabulary.
+//! Chat key identifiers and structured logical key vocabulary.
 
 /// A textual key identifier such as `"ctrl+c"`, `"escape"` or `"shift+tab"`.
 ///
@@ -102,13 +102,15 @@ pub(super) fn with_modifiers(name: &str, modifier: u32) -> Option<KeyId> {
     Some(id)
 }
 
-/// A key with a name of its own in identifiers.
+/// A named logical key; only the chat subset has an identifier.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum Named {
+pub enum Named {
     /// The escape key.
     Escape,
     /// The tab key.
     Tab,
+    /// Reverse tab navigation.
+    BackTab,
     /// The enter key.
     Enter,
     /// The space bar.
@@ -137,11 +139,121 @@ pub(super) enum Named {
     Left,
     /// The right arrow.
     Right,
-    /// A function key, numbered from 1 to 12.
+    /// The `CapsLock` functional key.
+    CapsLock,
+    /// The `ScrollLock` functional key.
+    ScrollLock,
+    /// The `NumLock` functional key.
+    NumLock,
+    /// The `PrintScreen` functional key.
+    PrintScreen,
+    /// The `Pause` functional key.
+    Pause,
+    /// The `Menu` functional key.
+    Menu,
+    /// The `KeypadBegin` functional key.
+    KeypadBegin,
+    /// The `MediaPlay` functional key.
+    MediaPlay,
+    /// The `MediaPause` functional key.
+    MediaPause,
+    /// The `MediaPlayPause` functional key.
+    MediaPlayPause,
+    /// The `MediaReverse` functional key.
+    MediaReverse,
+    /// The `MediaStop` functional key.
+    MediaStop,
+    /// The `MediaFastForward` functional key.
+    MediaFastForward,
+    /// The `MediaRewind` functional key.
+    MediaRewind,
+    /// The `MediaTrackNext` functional key.
+    MediaTrackNext,
+    /// The `MediaTrackPrevious` functional key.
+    MediaTrackPrevious,
+    /// The `MediaRecord` functional key.
+    MediaRecord,
+    /// The `MediaLowerVolume` functional key.
+    MediaLowerVolume,
+    /// The `MediaRaiseVolume` functional key.
+    MediaRaiseVolume,
+    /// The `MediaMuteVolume` functional key.
+    MediaMuteVolume,
+    /// The `LeftShift` functional key.
+    LeftShift,
+    /// The `LeftControl` functional key.
+    LeftControl,
+    /// The `LeftAlt` functional key.
+    LeftAlt,
+    /// The `LeftSuper` functional key.
+    LeftSuper,
+    /// The `LeftHyper` functional key.
+    LeftHyper,
+    /// The `LeftMeta` functional key.
+    LeftMeta,
+    /// The `RightShift` functional key.
+    RightShift,
+    /// The `RightControl` functional key.
+    RightControl,
+    /// The `RightAlt` functional key.
+    RightAlt,
+    /// The `RightSuper` functional key.
+    RightSuper,
+    /// The `RightHyper` functional key.
+    RightHyper,
+    /// The `RightMeta` functional key.
+    RightMeta,
+    /// The `IsoLevel3Shift` functional key.
+    IsoLevel3Shift,
+    /// The `IsoLevel5Shift` functional key.
+    IsoLevel5Shift,
+    /// A function key, numbered from 1 to 35.
     Function(u8),
 }
 
 impl Named {
+    /// Maps native functional code points without extending chat identifiers.
+    fn host(codepoint: u32) -> Option<Self> {
+        Some(match codepoint {
+            57358 => Self::CapsLock,
+            57359 => Self::ScrollLock,
+            57360 => Self::NumLock,
+            57361 => Self::PrintScreen,
+            57362 => Self::Pause,
+            57363 => Self::Menu,
+            57427 => Self::KeypadBegin,
+            57428 => Self::MediaPlay,
+            57429 => Self::MediaPause,
+            57430 => Self::MediaPlayPause,
+            57431 => Self::MediaReverse,
+            57432 => Self::MediaStop,
+            57433 => Self::MediaFastForward,
+            57434 => Self::MediaRewind,
+            57435 => Self::MediaTrackNext,
+            57436 => Self::MediaTrackPrevious,
+            57437 => Self::MediaRecord,
+            57438 => Self::MediaLowerVolume,
+            57439 => Self::MediaRaiseVolume,
+            57440 => Self::MediaMuteVolume,
+            57441 => Self::LeftShift,
+            57442 => Self::LeftControl,
+            57443 => Self::LeftAlt,
+            57444 => Self::LeftSuper,
+            57445 => Self::LeftHyper,
+            57446 => Self::LeftMeta,
+            57447 => Self::RightShift,
+            57448 => Self::RightControl,
+            57449 => Self::RightAlt,
+            57450 => Self::RightSuper,
+            57451 => Self::RightHyper,
+            57452 => Self::RightMeta,
+            57453 => Self::IsoLevel3Shift,
+            57454 => Self::IsoLevel5Shift,
+            57376..=57398 => Self::Function(u8::try_from(codepoint - 57376 + 13).ok()?),
+            _ => return None,
+        })
+    }
+
     /// Finds the key an already lowercased identifier names, including its aliases.
     pub(super) fn parse(name: &str) -> Option<Self> {
         Some(match name {
@@ -173,7 +285,7 @@ impl Named {
     }
 
     /// The canonical identifier of the key.
-    pub(super) fn name(self) -> String {
+    pub(super) fn name(self) -> Option<String> {
         let fixed = match self {
             Self::Escape => "escape",
             Self::Tab => "tab",
@@ -191,9 +303,10 @@ impl Named {
             Self::Down => "down",
             Self::Left => "left",
             Self::Right => "right",
-            Self::Function(number) => return format!("f{number}"),
+            Self::Function(number @ 1..=12) => return Some(format!("f{number}")),
+            _ => return None,
         };
-        fixed.to_owned()
+        Some(fixed.to_owned())
     }
 
     /// The enhanced-protocol code of the key, absent for clear and the function keys.
@@ -212,14 +325,35 @@ impl Named {
 
 /// The logical key an enhanced-protocol report names.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum Code {
+pub enum Code {
     /// A key identified by the character it produces or its Unicode code.
     Char(char),
-    /// A navigation or editing key.
+    /// A named navigation, editing or native functional key.
     Key(Named),
 }
 
 impl Code {
+    /// Converts a host code point into its structured logical key.
+    pub(super) fn host(codepoint: u32) -> Option<Self> {
+        if let Some(key) = Named::host(codepoint) {
+            return Some(Self::Key(key));
+        }
+        Some(match codepoint {
+            8 | 127 => Self::Key(Named::Backspace),
+            9 => Self::Key(Named::Tab),
+            13 | 57414 => Self::Key(Named::Enter),
+            27 => Self::Key(Named::Escape),
+            value => {
+                let raw = Self::Char(char::from_u32(value)?);
+                let code = raw.normalized();
+                if (57358..=57454).contains(&value) && code == raw {
+                    return None;
+                }
+                code
+            }
+        })
+    }
+
     /// Maps keypad codes onto the digits, symbols and navigation keys they stand for.
     pub(super) fn normalized(self) -> Self {
         let Self::Char(c) = self else { return self };
@@ -246,13 +380,13 @@ impl Code {
     /// The identifier of the key, absent when it has none.
     pub(super) fn name(self) -> Option<String> {
         match self {
-            Self::Key(key) => Some(key.name()),
+            Self::Key(key) => key.name(),
             Self::Char(c) => match c {
-                '\x1b' => Some(Named::Escape.name()),
-                '\t' => Some(Named::Tab.name()),
-                '\r' | KEYPAD_ENTER => Some(Named::Enter.name()),
-                ' ' => Some(Named::Space.name()),
-                '\x7f' => Some(Named::Backspace.name()),
+                '\x1b' => Named::Escape.name(),
+                '\t' => Named::Tab.name(),
+                '\r' | KEYPAD_ENTER => Named::Enter.name(),
+                ' ' => Named::Space.name(),
+                '\x7f' => Named::Backspace.name(),
                 _ if self.is_authoritative() => Some(c.to_string()),
                 _ => None,
             },

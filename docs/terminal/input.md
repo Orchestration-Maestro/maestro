@@ -112,3 +112,14 @@ a start marker inside it is part of the text. A fragment kept before the start m
 `Paste`.
 Empty input while a paste is open produces nothing. `get_buffer` and `flush` never
 return the text of a paste in progress, and `clear` discards it.
+
+## Shared mouse fields
+
+`stdin_buffer::scan_sgr_mouse_fields` borrows the button, column, row and any
+extra fields from one complete SGR mouse report. `SgrMouseFields::release` records
+whether its terminator is `m` rather than `M`. The scanner checks the framing and
+field count, leaving numeric admission to each caller.
+
+The daemon's geometry parser requires exactly three nonempty ASCII u32 fields,
+permits zero coordinates and rejects extra fields. The scanner itself retains
+plus signs, empty fields and extra text without normalizing them.

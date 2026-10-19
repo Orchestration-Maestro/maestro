@@ -20,7 +20,7 @@ pub(super) fn decode_kitty(data: &str) -> Option<char> {
         return None;
     }
     let typed = match sequence.shifted {
-        Some(shifted) if sequence.modifier & SHIFT != 0 => shifted,
+        Some(shifted) if sequence.modifier & SHIFT != 0 => char::from_u32(shifted)?,
         _ => code,
     };
     match Code::Char(typed).normalized() {
