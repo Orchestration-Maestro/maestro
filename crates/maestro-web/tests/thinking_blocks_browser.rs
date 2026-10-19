@@ -1,9 +1,6 @@
 //! Reasoning disclosure through the actual native reading consumer.
 #![cfg(all(test, target_arch = "wasm32"))]
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-pub mod markdown_support;
-pub mod support;
+use crate::{canvas_paint, markdown_support, support};
 
 use maestro_web::ThinkingBlock;
 use markdown_support::{Surface, check, js};

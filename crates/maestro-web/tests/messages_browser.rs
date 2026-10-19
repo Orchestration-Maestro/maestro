@@ -1,12 +1,6 @@
 //! Composed transcript rows through the real browser reading host.
 #![cfg(all(test, target_arch = "wasm32"))]
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-pub mod markdown_support;
-pub mod support;
-
-#[path = "tool_renderer_support/recipes.rs"]
-pub mod renderer_recipes;
+use crate::{markdown_support, renderer_recipes, support};
 
 use maestro_web::{UserMessage, UserMessageInput};
 use markdown_support::{Surface, check, js, publish};

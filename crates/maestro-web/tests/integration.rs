@@ -13,6 +13,7 @@ mod browser_effects;
 mod browser_errors;
 mod browser_formatting;
 mod code_blocks;
+mod composed_consumer;
 mod copy_buttons;
 mod dialog_shell;
 mod dialog_shell_browser;
@@ -28,6 +29,14 @@ mod markdown_blocks;
 mod markdown_blocks_browser;
 mod markdown_svg_artifacts;
 mod markdown_svg_artifacts_browser;
+mod message_debug_browser;
+mod message_errors;
+mod message_reading_browser;
+mod message_renderers;
+mod message_renderers_browser;
+mod message_tool_arguments;
+mod message_visuals_browser;
+mod messages_browser;
 mod pdf_views;
 mod pdf_views_browser;
 mod provider_exports;
@@ -47,6 +56,7 @@ mod session_links_browser;
 mod storage_exports;
 mod text_image_artifacts;
 mod text_image_artifacts_browser;
+mod thinking_blocks_browser;
 mod tool_renderers;
 mod tool_renderers_browser;
 
@@ -85,3 +95,8 @@ pub mod support;
 #[path = "artifact_support/text_image.rs"]
 pub mod text_image_support;
 pub mod tool_renderer_support;
+
+mod message_renderer_support;
+use tool_renderer_support as renderer_recipes;
+
+use text_image_support::recording as recording_highlighter;
