@@ -1,14 +1,8 @@
 //! Request key selection through the public interface.
 #[cfg(test)]
-mod fallback_support;
-#[cfg(test)]
-mod oauth_support;
-#[cfg(test)]
-mod support;
-#[cfg(test)]
 mod tests {
-    use super::oauth_support::{ControlledProvider, Unregister};
-    use super::support::{TempDir, block_on, is_child, run_child};
+    use crate::oauth_support::{ControlledProvider, Unregister};
+    use crate::support::{PROCESS_CREATION, SERIAL, TempDir, block_on, is_child, run_child};
     use maestro_credentials::{
         AuthStorage, AuthStorageBackend, ConfigValueOperations, InMemoryAuthStorageBackend,
         ProcessConfigValueOperations, clear_config_value_cache,
@@ -151,6 +145,8 @@ mod tests {
 
     #[test]
     fn stored_key_values_keep_resolution_semantics() {
+        let _serial = SERIAL.lock().unwrap();
+        let _creation = PROCESS_CREATION.write().unwrap();
         block_on(async {
             configured_values_resolve().await;
             native_commands_resolve().await;
@@ -159,6 +155,7 @@ mod tests {
 
     #[test]
     fn stored_helper_cache_spans_stores_and_clear() {
+        let _serial = SERIAL.lock().unwrap();
         block_on(async {
             let operations = printing(&[("k3-a", "key-a"), ("k3-b", "key-b")]);
             let (first, second) = (storing("!k3-a"), storing("!k3-a"));
@@ -343,7 +340,7 @@ mod tests {
             let mut envs = variables;
             envs.push(("MAESTRO_AUTH_SCENARIO", name));
             run_child(
-                "tests::environment_precedes_optional_fallback",
+                "credential_key_selection::tests::environment_precedes_optional_fallback",
                 dir.root(),
                 &envs,
             );
@@ -396,7 +393,7 @@ mod tests {
         }
         let dir = TempDir::new("helper-failure");
         run_child(
-            "tests::stored_helper_failure_does_not_consult_ambient_sources",
+            "credential_key_selection::tests::stored_helper_failure_does_not_consult_ambient_sources",
             std::path::Path::new(&dir.path("")),
             &[("OPENAI_API_KEY", "ambient")],
         );
@@ -407,12 +404,12 @@ mod tests {
         if !is_child() {
             let dir = TempDir::new("fallback_keys_and_presence_keep_result_domains");
             return run_child(
-                "tests::fallback_keys_and_presence_keep_result_domains",
+                "credential_key_selection::tests::fallback_keys_and_presence_keep_result_domains",
                 dir.root(),
                 &[],
             );
         }
-        block_on(super::fallback_support::replay(
+        block_on(crate::fallback_support::replay(
             "fallback_keys_and_presence_keep_result_domains",
         ));
     }
@@ -427,14 +424,14 @@ mod tests {
                 ("environment-whitespace", " \t"),
             ] {
                 run_child(
-                    "tests::earlier_sources_skip_failing_fallback",
+                    "credential_key_selection::tests::earlier_sources_skip_failing_fallback",
                     dir.root(),
                     &[("MAESTRO_FALLBACK_ENV", scenario), ("OPENAI_API_KEY", key)],
                 );
             }
             return;
         }
-        block_on(super::fallback_support::replay(
+        block_on(crate::fallback_support::replay(
             "earlier_sources_skip_failing_fallback",
         ));
     }
@@ -444,12 +441,12 @@ mod tests {
         if !is_child() {
             let dir = TempDir::new("fallback_option_false_avoids_callback");
             return run_child(
-                "tests::fallback_option_false_avoids_callback",
+                "credential_key_selection::tests::fallback_option_false_avoids_callback",
                 dir.root(),
                 &[],
             );
         }
-        block_on(super::fallback_support::replay(
+        block_on(crate::fallback_support::replay(
             "fallback_option_false_avoids_callback",
         ));
     }

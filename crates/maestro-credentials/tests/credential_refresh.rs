@@ -1,23 +1,11 @@
 //! Locked refresh, login and provider listing through the public interface.
 #[cfg(test)]
-#[allow(
-    dead_code,
-    reason = "Refresh witnesses share only callback and fixture helpers."
-)]
-mod fallback_support;
-#[cfg(test)]
-mod gate_support;
-#[cfg(test)]
-mod oauth_support;
-#[cfg(test)]
-mod support;
-#[cfg(test)]
 mod tests {
-    use super::gate_support::gated;
-    use super::oauth_support::{
+    use crate::gate_support::gated;
+    use crate::oauth_support::{
         ControlledProvider, FUTURE, RefreshBehavior, Unregister, credentials, error,
     };
-    use super::support::{TempDir, api_key, block_on, is_child, run_child};
+    use crate::support::{TempDir, api_key, block_on, is_child, run_child};
     use maestro_credentials::{
         AsyncLockUpdate, AuthCredential, AuthStorage, AuthStorageBackend, AuthStorageError,
         AuthStorageFuture, ConfigValueOperations, FileAuthStorageBackend,
@@ -400,7 +388,7 @@ mod tests {
         }
         let dir = TempDir::new("refresh-failures");
         run_child(
-            "tests::maestro_refresh_failure_blocks_ambient_fallback",
+            "credential_refresh::tests::maestro_refresh_failure_blocks_ambient_fallback",
             dir.root(),
             &[("OPENAI_API_KEY", "env-key")],
         );
@@ -793,7 +781,7 @@ mod tests {
         ));
     }
     /// Exercise one locked-refresh boundary before selecting the ambient fallback.
-    async fn refresh_fallback_case(case: super::fallback_support::Case) {
+    async fn refresh_fallback_case(case: crate::fallback_support::Case) {
         let input = case.input;
         assert!(
             input.operation.is_none()
@@ -815,13 +803,13 @@ mod tests {
         if phase == "reread-removed" {
             replace_text(&probe, &json!({}));
         }
-        let calls = super::fallback_support::install(&storage, &input.fallback);
+        let calls = crate::fallback_support::install(&storage, &input.fallback);
         let result = request(&storage, &id).await;
         let calls = calls.lock().unwrap().clone();
         let actual = match result {
             Ok(value) => json!({"branch":"ok", "value":value, "calls":calls}),
             Err(error) => {
-                json!({"branch":"error", "error":super::fallback_support::error_value(&error), "calls":calls})
+                json!({"branch":"error", "error":crate::fallback_support::error_value(&error), "calls":calls})
             }
         };
         assert!(actual == case.expected, "recorded refresh outcome");
@@ -834,7 +822,7 @@ mod tests {
     fn fallback_error_after_empty_refresh_is_not_recorded() {
         block_on(async {
             for case in
-                super::fallback_support::cases("fallback_error_after_empty_refresh_is_not_recorded")
+                crate::fallback_support::cases("fallback_error_after_empty_refresh_is_not_recorded")
             {
                 refresh_fallback_case(case).await;
             }

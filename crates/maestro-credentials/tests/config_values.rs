@@ -6,8 +6,9 @@ mod tests {
     use std::collections::HashMap;
     use std::sync::Mutex;
 
-    /// Serializes observations of the process-wide cache.
-    static SERIAL: Mutex<()> = Mutex::new(());
+    #[cfg(unix)]
+    use crate::support::PROCESS_CREATION;
+    use crate::support::SERIAL;
     /// Controlled environment, outputs and executed commands.
     #[derive(Default)]
     struct Operations {
@@ -392,6 +393,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn native_helpers_support_pipes_and_multiline_output() {
+        let _creation = PROCESS_CREATION.write().unwrap();
         let operations =
             ProcessConfigValueOperations::new(|| unreachable!("Unix must avoid selection"));
         for (command, expected) in [
@@ -408,6 +410,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn command_empty_or_failed_output_returns_absence() {
+        let _creation = PROCESS_CREATION.write().unwrap();
         let operations = ProcessConfigValueOperations::new(|| unreachable!());
         for command in [
             "!printf ''",
@@ -426,6 +429,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn native_helpers_decode_invalid_utf8_lossily() {
+        let _creation = PROCESS_CREATION.write().unwrap();
         let operations = ProcessConfigValueOperations::new(|| unreachable!());
         assert_eq!(
             resolve_config_value_uncached("!printf '\\377key'", &operations).as_deref(),
@@ -443,6 +447,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn native_helpers_work_inside_running_runtime() {
+        let _creation = PROCESS_CREATION.write().unwrap();
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -458,13 +463,23 @@ mod tests {
     /// Reinvoke one test with isolated environment and working directory.
     #[cfg(unix)]
     fn child_test(name: &str, root: &std::path::Path) {
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &format!("tests::{name}"), "--nocapture"])
+        let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+        command
+            .args([
+                "--exact",
+                &format!("config_values::tests::{name}"),
+                "--nocapture",
+            ])
             .env("MAESTRO_CONFIG_CHILD", "yes")
             .env("MAESTRO_CONFIG_VALUE", "inherited-value")
             .current_dir(root)
-            .output()
-            .unwrap();
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped());
+        let child = {
+            let _creation = PROCESS_CREATION.write().unwrap();
+            command.spawn().unwrap()
+        };
+        let output = child.wait_with_output().unwrap();
         assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
         assert!(
             output.status.success(),
@@ -549,6 +564,7 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn native_helpers_timeout_without_fallback() {
+        let _creation = PROCESS_CREATION.write().unwrap();
         let root = Directory::new("timeout");
         let ready = root.0.join("ready");
         let operations = ProcessConfigValueOperations::new(|| unreachable!());

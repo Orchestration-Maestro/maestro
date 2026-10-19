@@ -1,12 +1,8 @@
 //! Accepted credential storage through the public interface.
 #[cfg(test)]
-mod fallback_support;
-#[cfg(test)]
-mod support;
-#[cfg(test)]
 mod tests {
 
-    use super::support::{TempDir, api_key, is_child, memory_text, run_child};
+    use crate::support::{TempDir, api_key, is_child, memory_text, run_child};
     use indexmap::IndexMap;
     use maestro_credentials::{
         AsyncLockUpdate, AuthCredential, AuthSource, AuthStatus, AuthStorage, AuthStorageBackend,
@@ -469,7 +465,7 @@ mod tests {
             let mut envs = variables.to_vec();
             envs.push(("MAESTRO_AUTH_SCENARIO", name));
             run_child(
-                "tests::environment_status_names_first_populated_key",
+                "accepted_credentials::tests::environment_status_names_first_populated_key",
                 dir.root(),
                 &envs,
             );
@@ -564,14 +560,14 @@ mod tests {
                 ("environment-whitespace", " \t"),
             ] {
                 run_child(
-                    "tests::fallback_status_keeps_result_domain",
+                    "accepted_credentials::tests::fallback_status_keeps_result_domain",
                     dir.root(),
                     &[("MAESTRO_FALLBACK_ENV", scenario), ("OPENAI_API_KEY", key)],
                 );
             }
             return;
         }
-        super::support::block_on(super::fallback_support::replay(
+        crate::support::block_on(crate::fallback_support::replay(
             "fallback_status_keeps_result_domain",
         ));
     }
@@ -586,14 +582,14 @@ mod tests {
                 ("environment-whitespace", " \t"),
             ] {
                 run_child(
-                    "tests::fallback_status_short_circuits_earlier_sources",
+                    "accepted_credentials::tests::fallback_status_short_circuits_earlier_sources",
                     dir.root(),
                     &[("MAESTRO_FALLBACK_ENV", scenario), ("OPENAI_API_KEY", key)],
                 );
             }
             return;
         }
-        super::support::block_on(super::fallback_support::replay(
+        crate::support::block_on(crate::fallback_support::replay(
             "fallback_status_short_circuits_earlier_sources",
         ));
     }
