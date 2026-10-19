@@ -1,5 +1,4 @@
 //! Provider whose refresh waits on named flags, shared by tests that interleave requests.
-#![allow(dead_code)] // each test binary uses a different part of these helpers
 use crate::oauth_support::{ControlledProvider, FUTURE, credentials};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};

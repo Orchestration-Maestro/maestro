@@ -245,7 +245,7 @@ fn inherited_launch_keeps_descriptors_operands_and_status() {
         let mut child = std::process::Command::new(std::env::current_exe().unwrap())
             .args([
                 "--exact",
-                "inherited_launch_keeps_descriptors_operands_and_status",
+                "helper_launches::inherited_launch_keeps_descriptors_operands_and_status",
                 "--nocapture",
             ])
             .env(CHILD, "1")

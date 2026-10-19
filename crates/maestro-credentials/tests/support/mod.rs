@@ -1,17 +1,23 @@
 //! Temporary directories, isolated child test processes and stored credential fixtures
 //! shared by the storage tests.
-#![allow(dead_code)] // each test binary uses a different part of these helpers
 use maestro_credentials::{
     ApiKeyCredential, AuthCredential, AuthStorageBackend, InMemoryAuthStorageBackend,
 };
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::sync::{RwLock, RwLockReadGuard};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Mutex, RwLock, RwLockReadGuard};
 
 /// Held shared by tests whose file locks must be released exactly when dropped, and
 /// exclusively while a child process is created: a forked child owns a copy of every
 /// open descriptor until it executes, so a lock released meanwhile would stay held.
-static PROCESS_CREATION: RwLock<()> = RwLock::new(());
+pub(crate) static PROCESS_CREATION: RwLock<()> = RwLock::new(());
+
+/// Serializes cache observations; acquire before `PROCESS_CREATION` when both are needed.
+pub(crate) static SERIAL: Mutex<()> = Mutex::new(());
+
+/// Distinguishes fixture directories created in the same process.
+static NEXT_DIRECTORY: AtomicUsize = AtomicUsize::new(0);
 
 /// Disposable directory removed when dropped.
 pub struct TempDir(PathBuf, Option<RwLockReadGuard<'static, ()>>);
@@ -19,9 +25,12 @@ pub struct TempDir(PathBuf, Option<RwLockReadGuard<'static, ()>>);
 impl TempDir {
     /// Create an empty directory named after the test.
     pub fn new(name: &str) -> Self {
-        let path = std::env::temp_dir().join(format!("maestro-auth-{name}-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&path);
-        std::fs::create_dir_all(&path).unwrap();
+        let sequence = NEXT_DIRECTORY.fetch_add(1, Ordering::Relaxed);
+        let path = std::env::temp_dir().join(format!(
+            "maestro-auth-{name}-{}-{sequence}",
+            std::process::id()
+        ));
+        std::fs::create_dir(&path).unwrap();
         Self(path, None)
     }
 
@@ -120,4 +129,23 @@ pub fn block_on_paused<F: std::future::Future>(future: F) -> F::Output {
         .build()
         .unwrap()
         .block_on(future)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::TempDir;
+
+    #[test]
+    fn same_label_directories_preserve_each_others_files() {
+        let first = TempDir::new("repeated-label");
+        std::fs::write(first.path("auth.json"), b"first credential").unwrap();
+        let second = TempDir::new("repeated-label");
+        assert_eq!(
+            std::fs::read(first.path("auth.json")).unwrap(),
+            b"first credential"
+        );
+        assert_ne!(first.root(), second.root());
+        drop(second);
+        assert!(first.root().is_dir());
+    }
 }

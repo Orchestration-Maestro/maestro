@@ -123,7 +123,7 @@ fn pty_child_keeps_job_control_and_one_parent_master() {
         return;
     }
     let before = descriptor_count();
-    let output = TestProcess::named("setup_entry")
+    let output = TestProcess::named("pty_children::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -177,7 +177,7 @@ fn checked_target(
     size: PtySize,
     inspect: impl FnOnce(&pty::Pty) -> io::Result<()>,
 ) -> Output {
-    TestProcess::named("setup_entry")
+    TestProcess::named("pty_children::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -224,7 +224,7 @@ fn pty_setup_preserves_native_failures_and_launch_policy() {
         return;
     }
     assert_launch_policies();
-    TestProcess::named("setup_entry")
+    TestProcess::named("pty_children::setup_entry")
         .unwrap()
         .nocapture()
         .single_threaded()
@@ -312,7 +312,7 @@ fn assert_launch_policies() {
             program: std::env::current_exe().unwrap().into_os_string(),
             args: vec![
                 "--exact".into(),
-                "target_facts".into(),
+                "pty_children::target_facts".into(),
                 "--nocapture".into(),
                 "--test-threads=1".into(),
                 "--skip".into(),

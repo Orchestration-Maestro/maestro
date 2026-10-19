@@ -3,9 +3,7 @@
 #![cfg(test)]
 #![cfg(unix)]
 
-mod lifecycle_support;
-#[macro_use]
-mod support;
+use crate::isolated;
 
 use std::cell::{Cell, RefCell};
 use std::future::{Future, poll_fn};
@@ -13,10 +11,14 @@ use std::pin::pin;
 use std::rc::Rc;
 use std::time::Duration;
 
-use lifecycle_support::{
+use crate::lifecycle_support::{
     DescriptorLimit, UTF8_STREAMS, attributes, consumed, directory_input, file_input,
     open_descriptors, pty_input, socket_input, stdin_attributes, stdin_flags, unread_input,
     window_change,
+};
+use crate::support::{
+    Capture, Feed, Inputs, Resizes, Rig, START_BYTES, elapse, pipe_input, pipe_output, pty_output,
+    until,
 };
 use maestro_tui::Terminal;
 use maestro_tui_crossterm::ProcessTerminal;
@@ -25,10 +27,6 @@ use rustix::io::Errno;
 use rustix::stdio::{stdin, stdout};
 use rustix::termios::{
     InputModes, LocalModes, OptionalActions, OutputModes, SpecialCodeIndex, Termios, tcsetattr,
-};
-use support::{
-    Capture, Feed, Inputs, Resizes, Rig, START_BYTES, elapse, pipe_input, pipe_output, pty_output,
-    until,
 };
 
 /// A started terminal and what it delivered.

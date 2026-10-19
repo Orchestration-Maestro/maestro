@@ -1,8 +1,6 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 //! The native host's clock, timers, local futures, environment and log files.
-#[allow(dead_code, reason = "Each test crate uses part of the shared helpers.")]
-mod runtime_support;
 
 use std::error::Error;
 use std::fmt;
@@ -12,9 +10,9 @@ use std::path::{Path, PathBuf};
 use std::rc::{Rc, Weak};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use crate::runtime_support::{is_child, rerun, run_set};
 use maestro_tui::tui::{LogContext, RenderCallback, TuiRuntime};
 use maestro_tui_crossterm::ProcessTuiRuntime;
-use runtime_support::{is_child, rerun, run_set};
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender, unbounded_channel};
 use tokio::task::{LocalSet, yield_now};

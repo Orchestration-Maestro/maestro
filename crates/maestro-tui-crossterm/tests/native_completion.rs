@@ -1,8 +1,6 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 //! A retained editor completing asynchronously on the native host.
-#[allow(dead_code, reason = "Each test crate uses part of the shared helpers.")]
-mod runtime_support;
 
 use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
@@ -15,6 +13,7 @@ use std::pin::Pin;
 use std::rc::Rc;
 use std::time::Duration;
 
+use crate::runtime_support::{is_child, rerun, run_set};
 use maestro_tui::autocomplete::{
     AutocompleteOperations, CompletionError, CompletionOptions, CompletionResult, CursorPosition,
     NativeAutocompleteOperations,
@@ -28,7 +27,6 @@ use maestro_tui::{
     Terminal, TerminalImage, set_keybindings, tui::InputHandler,
 };
 use maestro_tui_crossterm::ProcessTuiRuntime;
-use runtime_support::{is_child, rerun, run_set};
 use tokio::sync::{mpsc, oneshot};
 use tokio::time::{Instant, advance};
 

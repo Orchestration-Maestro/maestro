@@ -1,18 +1,12 @@
 //! Native credential file backend through the public interface.
 #[cfg(test)]
-mod gate_support;
-#[cfg(test)]
-mod oauth_support;
-#[cfg(test)]
-mod support;
-#[cfg(test)]
 mod tests {
 
-    use super::gate_support::gated;
-    use super::oauth_support::{
+    use crate::gate_support::gated;
+    use crate::oauth_support::{
         ControlledProvider, FUTURE, RefreshBehavior, Unregister, credentials,
     };
-    use super::support::{
+    use crate::support::{
         TempDir, api_key, block_on, block_on_paused, is_child, memory_text, run_child,
     };
     use maestro_credentials::{
@@ -122,7 +116,7 @@ mod tests {
         }
         let dir = TempDir::new("relative");
         run_child(
-            "tests::relative_credentials_path_follows_working_directory",
+            "credential_file_backend::tests::relative_credentials_path_follows_working_directory",
             dir.root(),
             &[],
         );
