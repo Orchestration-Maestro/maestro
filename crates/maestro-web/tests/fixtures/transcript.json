@@ -1,0 +1,730 @@
+{
+  "scroll": [
+    {
+      "id": "ordinary-up-far",
+      "input": {
+        "enabled": true,
+        "lastTop": 200,
+        "lastHeight": 100,
+        "top": 100,
+        "height": 300,
+        "client": 100
+      },
+      "expected": {
+        "enabled": false,
+        "lastTop": 100,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "exact-50",
+      "input": {
+        "enabled": true,
+        "lastTop": 200,
+        "lastHeight": 100,
+        "top": 100,
+        "height": 250,
+        "client": 100
+      },
+      "expected": {
+        "enabled": true,
+        "lastTop": 100,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "above-50",
+      "input": {
+        "enabled": true,
+        "lastTop": 200,
+        "lastHeight": 100,
+        "top": 100,
+        "height": 250.25,
+        "client": 100
+      },
+      "expected": {
+        "enabled": false,
+        "lastTop": 100,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "below-10",
+      "input": {
+        "enabled": false,
+        "lastTop": 90,
+        "lastHeight": 100,
+        "top": 100,
+        "height": 209.5,
+        "client": 100
+      },
+      "expected": {
+        "enabled": true,
+        "lastTop": 100,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "exact-10",
+      "input": {
+        "enabled": false,
+        "lastTop": 90,
+        "lastHeight": 100,
+        "top": 100,
+        "height": 210,
+        "client": 100
+      },
+      "expected": {
+        "enabled": false,
+        "lastTop": 100,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "above-10",
+      "input": {
+        "enabled": false,
+        "lastTop": 90,
+        "lastHeight": 100,
+        "top": 100,
+        "height": 210.25,
+        "client": 100
+      },
+      "expected": {
+        "enabled": false,
+        "lastTop": 100,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "scroll-top-zero",
+      "input": {
+        "enabled": true,
+        "lastTop": 200,
+        "lastHeight": 100,
+        "top": 0,
+        "height": 500,
+        "client": 100
+      },
+      "expected": {
+        "enabled": true,
+        "lastTop": 0,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "unchanged-top-far",
+      "input": {
+        "enabled": true,
+        "lastTop": 100,
+        "lastHeight": 100,
+        "top": 100,
+        "height": 500,
+        "client": 100
+      },
+      "expected": {
+        "enabled": true,
+        "lastTop": 100,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "scroll-down-far",
+      "input": {
+        "enabled": true,
+        "lastTop": 90,
+        "lastHeight": 100,
+        "top": 100,
+        "height": 500,
+        "client": 100
+      },
+      "expected": {
+        "enabled": true,
+        "lastTop": 100,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "up-but-near",
+      "input": {
+        "enabled": false,
+        "lastTop": 200,
+        "lastHeight": 100,
+        "top": 100,
+        "height": 209.5,
+        "client": 100
+      },
+      "expected": {
+        "enabled": true,
+        "lastTop": 100,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "height-shrink-up",
+      "input": {
+        "enabled": true,
+        "lastTop": 200,
+        "lastHeight": 200,
+        "top": 100,
+        "height": 500,
+        "client": 100
+      },
+      "expected": {
+        "enabled": true,
+        "lastTop": 200,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "height-shrink-near",
+      "input": {
+        "enabled": false,
+        "lastTop": 200,
+        "lastHeight": 200,
+        "top": 100,
+        "height": 209,
+        "client": 100
+      },
+      "expected": {
+        "enabled": false,
+        "lastTop": 200,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "height-grows-up",
+      "input": {
+        "enabled": true,
+        "lastTop": 200,
+        "lastHeight": 100,
+        "top": 100,
+        "height": 500,
+        "client": 200
+      },
+      "expected": {
+        "enabled": false,
+        "lastTop": 100,
+        "lastHeight": 200
+      }
+    },
+    {
+      "id": "negative-distance",
+      "input": {
+        "enabled": false,
+        "lastTop": 90,
+        "lastHeight": 100,
+        "top": 100,
+        "height": 199,
+        "client": 100
+      },
+      "expected": {
+        "enabled": true,
+        "lastTop": 100,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "fractional-up",
+      "input": {
+        "enabled": true,
+        "lastTop": 100.5,
+        "lastHeight": 100,
+        "top": 100.25,
+        "height": 251,
+        "client": 100
+      },
+      "expected": {
+        "enabled": false,
+        "lastTop": 100.25,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "no-overflow",
+      "input": {
+        "enabled": false,
+        "lastTop": 0,
+        "lastHeight": 100,
+        "top": 0,
+        "height": 100,
+        "client": 100
+      },
+      "expected": {
+        "enabled": true,
+        "lastTop": 0,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "up-while-disabled",
+      "input": {
+        "enabled": false,
+        "lastTop": 200,
+        "lastHeight": 100,
+        "top": 100,
+        "height": 500,
+        "client": 100
+      },
+      "expected": {
+        "enabled": false,
+        "lastTop": 100,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "down-while-disabled",
+      "input": {
+        "enabled": false,
+        "lastTop": 90,
+        "lastHeight": 100,
+        "top": 100,
+        "height": 500,
+        "client": 100
+      },
+      "expected": {
+        "enabled": false,
+        "lastTop": 100,
+        "lastHeight": 100
+      }
+    },
+    {
+      "id": "no-container",
+      "input": {},
+      "expected": {
+        "enabled": true,
+        "lastTop": 0,
+        "lastHeight": 0
+      }
+    }
+  ],
+  "streaming": [
+    {
+      "id": "coalesce-latest",
+      "steps": [
+        {
+          "action": {
+            "message": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ],
+            "immediate": false
+          },
+          "expected": []
+        },
+        {
+          "action": {
+            "message": [
+              {
+                "type": "toolCall",
+                "id": "x",
+                "name": "tool",
+                "arguments": {
+                  "nested": {
+                    "value": 1
+                  }
+                }
+              }
+            ],
+            "immediate": false
+          },
+          "expected": []
+        },
+        {
+          "action": {
+            "mutate": true
+          },
+          "expected": []
+        },
+        {
+          "action": {
+            "frame": true
+          },
+          "expected": [
+            "{\n  \"nested\": {\n    \"value\": 2\n  }\n}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "clear-pending",
+      "steps": [
+        {
+          "action": {
+            "message": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ],
+            "immediate": false
+          },
+          "expected": []
+        },
+        {
+          "action": {
+            "message": null,
+            "immediate": false
+          },
+          "expected": []
+        },
+        {
+          "action": {
+            "frame": true
+          },
+          "expected": []
+        }
+      ]
+    },
+    {
+      "id": "immediate-update",
+      "steps": [
+        {
+          "action": {
+            "message": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ],
+            "immediate": true
+          },
+          "expected": [
+            "first\n"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "clear-then-next-turn",
+      "steps": [
+        {
+          "action": {
+            "message": null,
+            "immediate": false
+          },
+          "expected": []
+        },
+        {
+          "action": {
+            "message": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ],
+            "immediate": false
+          },
+          "expected": []
+        },
+        {
+          "action": {
+            "frame": true
+          },
+          "expected": [
+            "first\n"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "clear-then-next-turn-second-update",
+      "steps": [
+        {
+          "action": {
+            "message": null,
+            "immediate": false
+          },
+          "expected": []
+        },
+        {
+          "action": {
+            "message": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ],
+            "immediate": false
+          },
+          "expected": []
+        },
+        {
+          "action": {
+            "frame": true
+          },
+          "expected": [
+            "first\n"
+          ]
+        },
+        {
+          "action": {
+            "message": [
+              {
+                "type": "toolCall",
+                "id": "x",
+                "name": "tool",
+                "arguments": {
+                  "nested": {
+                    "value": 2
+                  }
+                }
+              }
+            ],
+            "immediate": false
+          },
+          "expected": [
+            "first\n"
+          ]
+        },
+        {
+          "action": {
+            "frame": true
+          },
+          "expected": [
+            "{\n  \"nested\": {\n    \"value\": 2\n  }\n}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pending-clear-new-turn-before-old-frame",
+      "steps": [
+        {
+          "action": {
+            "message": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ],
+            "immediate": false
+          },
+          "expected": []
+        },
+        {
+          "action": {
+            "message": null,
+            "immediate": false
+          },
+          "expected": []
+        },
+        {
+          "action": {
+            "message": [
+              {
+                "type": "toolCall",
+                "id": "x",
+                "name": "tool",
+                "arguments": {
+                  "nested": {
+                    "value": 2
+                  }
+                }
+              }
+            ],
+            "immediate": false
+          },
+          "expected": []
+        },
+        {
+          "action": {
+            "frame": true
+          },
+          "expected": [
+            "{\n  \"nested\": {\n    \"value\": 2\n  }\n}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "two-independent-instances",
+      "steps": [
+        {
+          "action": {
+            "message": [
+              {
+                "type": "text",
+                "text": "first"
+              }
+            ],
+            "immediate": false
+          },
+          "expected": []
+        },
+        {
+          "action": {
+            "frame": true
+          },
+          "expected": [
+            "first\n"
+          ]
+        }
+      ]
+    }
+  ],
+  "defaults": [
+    {
+      "operand": "enabled",
+      "kind": "missing",
+      "reads": [
+        "settings/proxy.enabled"
+      ]
+    },
+    {
+      "operand": "enabled",
+      "kind": "null",
+      "input": null,
+      "reads": [
+        "settings/proxy.enabled"
+      ]
+    },
+    {
+      "operand": "enabled",
+      "kind": "empty",
+      "input": "",
+      "reads": [
+        "settings/proxy.enabled"
+      ]
+    },
+    {
+      "operand": "enabled",
+      "kind": "text",
+      "input": "https://proxy.test",
+      "output": "https://proxy.test",
+      "reads": [
+        "settings/proxy.enabled",
+        "settings/proxy.url"
+      ]
+    },
+    {
+      "operand": "enabled",
+      "kind": "zero",
+      "input": 0,
+      "reads": [
+        "settings/proxy.enabled"
+      ]
+    },
+    {
+      "operand": "enabled",
+      "kind": "one",
+      "input": 1,
+      "output": "https://proxy.test",
+      "reads": [
+        "settings/proxy.enabled",
+        "settings/proxy.url"
+      ]
+    },
+    {
+      "operand": "enabled",
+      "kind": "false",
+      "input": false,
+      "reads": [
+        "settings/proxy.enabled"
+      ]
+    },
+    {
+      "operand": "enabled",
+      "kind": "true",
+      "input": true,
+      "output": "https://proxy.test",
+      "reads": [
+        "settings/proxy.enabled",
+        "settings/proxy.url"
+      ]
+    },
+    {
+      "operand": "enabled",
+      "kind": "object",
+      "input": {
+        "v": 1
+      },
+      "output": "https://proxy.test",
+      "reads": [
+        "settings/proxy.enabled",
+        "settings/proxy.url"
+      ]
+    },
+    {
+      "operand": "enabled",
+      "kind": "array",
+      "input": [],
+      "output": "https://proxy.test",
+      "reads": [
+        "settings/proxy.enabled",
+        "settings/proxy.url"
+      ]
+    },
+    {
+      "operand": "url",
+      "kind": "missing",
+      "reads": [
+        "settings/proxy.enabled",
+        "settings/proxy.url"
+      ]
+    },
+    {
+      "operand": "url",
+      "kind": "null",
+      "input": null,
+      "reads": [
+        "settings/proxy.enabled",
+        "settings/proxy.url"
+      ]
+    },
+    {
+      "operand": "url",
+      "kind": "empty",
+      "input": "",
+      "reads": [
+        "settings/proxy.enabled",
+        "settings/proxy.url"
+      ]
+    },
+    {
+      "operand": "url",
+      "kind": "text",
+      "input": "https://proxy.test",
+      "output": "https://proxy.test",
+      "reads": [
+        "settings/proxy.enabled",
+        "settings/proxy.url"
+      ]
+    },
+    {
+      "operand": "key",
+      "kind": "missing",
+      "reads": [
+        "provider-keys/provider"
+      ]
+    },
+    {
+      "operand": "key",
+      "kind": "null",
+      "input": null,
+      "reads": [
+        "provider-keys/provider"
+      ]
+    },
+    {
+      "operand": "key",
+      "kind": "empty",
+      "input": "",
+      "output": "",
+      "reads": [
+        "provider-keys/provider"
+      ]
+    },
+    {
+      "operand": "key",
+      "kind": "text",
+      "input": "https://proxy.test",
+      "output": "https://proxy.test",
+      "reads": [
+        "provider-keys/provider"
+      ]
+    }
+  ]
+}

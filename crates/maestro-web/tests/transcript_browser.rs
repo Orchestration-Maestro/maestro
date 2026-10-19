@@ -427,3 +427,6 @@ pub fn transcript_registry_publication_keeps_reader_scroll_after_programmatic_fo
     }
     assert_eq!(slots.host.reading_scroll(slots.id).unwrap(), expected);
 }
+
+#[path = "transcript_browser/actions.rs"]
+mod actions;

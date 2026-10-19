@@ -143,6 +143,7 @@ pub async fn session_proxy_and_key_defaults_read_current_storage_per_request() {
     maestro_web::set_app_storage(storage(backend.clone()));
     let requests = Requests::new();
     let provider = requests.provider();
+    recorded_defaults(&requests, &backend).await;
     for (enabled, proxy) in [
         (json!(true), "https://one.test"),
         (json!({}), "https://two.test"),
@@ -337,4 +338,66 @@ fn assert_failure(requests: &Requests, category: &str) {
     let message = message.read().unwrap();
     assert_eq!(message.stop_reason, maestro_app::StopReason::Error);
     assert!(message.error_message.as_ref().unwrap().contains(category));
+}
+
+/// Recorded typed storage operands reach the real request defaults and their exact read paths.
+async fn recorded_defaults(requests: &Requests, backend: &Adapter) {
+    let corpus: Value = serde_json::from_str(include_str!("../fixtures/transcript.json")).unwrap();
+    let provider = requests.provider();
+    for row in corpus["defaults"].as_array().unwrap() {
+        seed(backend, "settings", "proxy.enabled", Some(json!(true)));
+        seed(
+            backend,
+            "settings",
+            "proxy.url",
+            Some(json!("https://proxy.test")),
+        );
+        seed(backend, "provider-keys", &provider, Some(json!("key")));
+        let operand = row["operand"].as_str().unwrap();
+        let (store, key) = match operand {
+            "enabled" => ("settings", "proxy.enabled"),
+            "url" => ("settings", "proxy.url"),
+            "key" => ("provider-keys", provider.as_str()),
+            _ => unreachable!(),
+        };
+        seed(backend, store, key, row.get("input").cloned());
+        backend.calls.borrow_mut().clear();
+        let expected = row
+            .get("output")
+            .map(|value| value.as_str().unwrap().to_owned());
+        if operand == "key" {
+            let lookup = requests.agent.get_api_key.read().unwrap().clone().unwrap();
+            assert_eq!(
+                lookup(provider.clone()).await.unwrap(),
+                expected,
+                "{}",
+                row["kind"]
+            );
+        } else {
+            requests.request().await;
+            let url = expected.map_or_else(
+                || "https://model.test/messages".into(),
+                |proxy| format!("{proxy}/?url=https%3A%2F%2Fmodel.test%2Fmessages"),
+            );
+            assert_eq!(requests.last().0, url, "{operand}: {}", row["kind"]);
+        }
+        let reads: Vec<String> = backend
+            .calls
+            .borrow()
+            .iter()
+            .filter(|call| call[0] == "get" && call[1] == store)
+            .map(|call| {
+                format!(
+                    "{store}/{}",
+                    if operand == "key" {
+                        "provider"
+                    } else {
+                        call[2].as_str().unwrap()
+                    }
+                )
+            })
+            .collect();
+        let expected_reads: Vec<String> = serde_json::from_value(row["reads"].clone()).unwrap();
+        assert_eq!(reads, expected_reads, "{operand}: {}", row["kind"]);
+    }
 }

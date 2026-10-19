@@ -286,3 +286,6 @@ fn overlay_renderers() -> Rc<std::cell::RefCell<maestro_web::Attachment>> {
     );
     record
 }
+
+#[cfg(not(target_arch = "wasm32"))]
+mod recorded;

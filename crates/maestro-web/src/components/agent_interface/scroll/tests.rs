@@ -88,3 +88,42 @@ fn follow_tracks_positions_and_handles_missing_viewport() {
     assert!(!state.enabled);
     assert_eq!(state.last_top.to_bits(), 100_f64.to_bits());
 }
+
+/// Recorded native viewport operands retain exact follow state and fractional positions.
+#[test]
+fn recorded_scroll_observations_match_follow_state() {
+    let corpus: serde_json::Value = serde_json::from_str(include_str!(concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/fixtures/transcript.json"
+    )))
+    .unwrap();
+    for row in corpus["scroll"].as_array().unwrap() {
+        let input = &row["input"];
+        let mut state = FollowState::default();
+        let current = input["top"].as_f64().map(|top| {
+            state.enabled = input["enabled"].as_bool().unwrap();
+            state.last_top = input["lastTop"].as_f64().unwrap();
+            state.last_height = input["lastHeight"].as_f64().unwrap();
+            ReadingScroll {
+                top,
+                height: input["height"].as_f64().unwrap(),
+                client_height: input["client"].as_f64().unwrap(),
+            }
+        });
+        state.observe(current);
+        let expected = &row["expected"];
+        assert_eq!(state.enabled, expected["enabled"], "{}", row["id"]);
+        assert_eq!(
+            state.last_top.to_bits(),
+            expected["lastTop"].as_f64().unwrap().to_bits(),
+            "{}",
+            row["id"]
+        );
+        assert_eq!(
+            state.last_height.to_bits(),
+            expected["lastHeight"].as_f64().unwrap().to_bits(),
+            "{}",
+            row["id"]
+        );
+    }
+}

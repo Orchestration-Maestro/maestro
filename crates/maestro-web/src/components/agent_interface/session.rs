@@ -38,6 +38,8 @@ struct Observation<C: CustomAgentMessages> {
 pub struct AgentInterface<C: CustomAgentMessages = NoCustomMessages> {
     /// Current usage activation, forwarded to stable and streaming assistants.
     pub on_cost_click: Option<Rc<dyn Fn()>>,
+    /// Usage action acknowledged by the last successful native row publication.
+    published_cost_action: Option<Rc<dyn Fn()>>,
     /// Retained external session owner.
     session: Option<Rc<Agent<BrowserMessages<C>>>>,
     /// Explicitly removed before replacing or releasing its session.
@@ -67,6 +69,7 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
     pub fn new(host: Rc<dyn AttachmentHost>) -> Self {
         Self {
             on_cost_click: None,
+            published_cost_action: None,
             session: None,
             subscription: None,
             observation: Rc::new(RefCell::new(Observation {
@@ -108,6 +111,7 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
         }
         if self.session.is_none() {
             self.list.refresh(&[])?;
+            self.published_cost_action = None;
             self.viewport.clear();
             self.is_streaming = false;
         }
@@ -204,7 +208,7 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
         if self.session.is_none() {
             return self.empty.render(ui, view);
         }
-        let refresh = self.refresh(observation)?;
+        let refresh = self.refresh(observation)? || self.cost_action_changed();
         let stable = self.list.len();
         let stream_revision = self.stream.revision();
         let dirty_stream =
@@ -247,8 +251,17 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
         );
         if response.is_ok() {
             self.stream_revision = stream_revision;
+            self.published_cost_action = self.on_cost_click.clone();
         }
         response
+    }
+    /// Changed callbacks must update attached native controls even outside the canvas viewport.
+    fn cost_action_changed(&self) -> bool {
+        match (&self.on_cost_click, &self.published_cost_action) {
+            (Some(current), Some(published)) => !Rc::ptr_eq(current, published),
+            (None, None) => false,
+            _ => true,
+        }
     }
 }
 impl<C: CustomAgentMessages> Drop for AgentInterface<C> {
