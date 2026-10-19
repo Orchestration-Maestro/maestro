@@ -168,3 +168,26 @@ plus signs, empty fields and extra text without normalizing them.
 values, positive u16 coordinates converted to zero-based cells, and admitted
 button classes. It accepts extra fields. Its `HostMouse` result retains the
 button byte and release terminator for projection without a wire dependency.
+
+## Daemon event projection
+
+`maestro_daemon::input::raw_input::RawInputFramer` projects the toolkit's complete
+frames into the daemon's existing key, paste, mouse, focus and host-reply events.
+`parse_raw_input_bytes_sync` decodes a supplied buffer with one idle flush.
+Neither function reads the terminal. The multiplexer input loop supplies bytes
+and uses `input_flush_timeout` to select a 10 ms idle timeout, or 150 ms while a
+mouse report is incomplete.
+
+The toolkit's `parse_host_color_scheme_report` admits only the exact dark and
+light reports. `parse_host_cell_size_report` reads `CSI 6;height;width t`, returning
+positive u32 dimensions in width, height order. The same admission settles the
+retained query windows and produces daemon events. Default and palette colours
+use the existing toolkit colour parsers.
+
+Structured keys keep their shifted alternate locally. Wire-supported fields keep
+the phase, associated text and original VT bytes; releases clear generated text.
+Direct key parsing produces a synthesized key without invented VT evidence.
+Native functional categories remain available in the toolkit and are filtered
+only when the daemon's wire vocabulary cannot carry them. Mouse projection keeps
+button modifiers, drag events and all four scroll directions; extended-button
+drags become motion.

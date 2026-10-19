@@ -5,7 +5,11 @@ mod mouse;
 mod raw_input;
 mod tails;
 
+pub use framing::host_frame_length;
 pub use raw_input::RawInputByteFramer;
+pub use tails::{
+    HostColorScheme, host_cell_size as parse_host_cell_size_report, parse_host_color_scheme_report,
+};
 
 pub use mouse::{HostMouse, SgrMouseFields, parse_host_mouse, scan_sgr_mouse_fields};
 

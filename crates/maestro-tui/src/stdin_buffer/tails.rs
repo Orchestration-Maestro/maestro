@@ -189,13 +189,28 @@ const DARK_REPORT: &[u8] = b"\x1b[?997;1n";
 /// Light appearance report.
 const LIGHT_REPORT: &[u8] = b"\x1b[?997;2n";
 
-/// Whether a complete report announces a host appearance.
-pub(super) fn is_color_scheme_report(buffer: &[u8]) -> bool {
-    buffer == DARK_REPORT || buffer == LIGHT_REPORT
+/// Decode an exact dark or light host appearance report.
+#[must_use]
+pub fn parse_host_color_scheme_report(buffer: &[u8]) -> Option<HostColorScheme> {
+    match buffer {
+        DARK_REPORT => Some(HostColorScheme::Dark),
+        LIGHT_REPORT => Some(HostColorScheme::Light),
+        _ => None,
+    }
+}
+
+/// A host terminal's reported background appearance.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HostColorScheme {
+    /// Dark background.
+    Dark,
+    /// Light background.
+    Light,
 }
 
 /// Decode positive host cell dimensions in width, height order.
-pub(super) fn host_cell_size(buffer: &[u8]) -> Option<(u32, u32)> {
+#[must_use]
+pub fn host_cell_size(buffer: &[u8]) -> Option<(u32, u32)> {
     let body = buffer.strip_prefix(b"\x1b[")?.strip_suffix(b"t")?;
     let text = std::str::from_utf8(body).ok()?;
     let mut params = text.split(';');

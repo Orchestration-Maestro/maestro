@@ -746,7 +746,9 @@ host key decoder in `crates/maestro-tui/src/keys/` derives from the input parser
 shared SGR fields and admitted host mouse records in
 `crates/maestro-tui/src/stdin_buffer/mouse.rs` derive from the mouse and raw input
 modules. The retained byte framer, reply windows and mouse-tail handling in
-`crates/maestro-tui/src/stdin_buffer/` derive from the raw input module. Chat and
+`crates/maestro-tui/src/stdin_buffer/` derive from the raw input module. The daemon projections in
+`crates/maestro-daemon/src/input/{parse,raw_input}.rs` derive from those input
+modules and reuse the toolkit decoders. Chat and
 host input share sequence recognition while retaining their different byte and
 paste policies. These reuse the existing protocol vocabulary rather than
 terminal-library records.

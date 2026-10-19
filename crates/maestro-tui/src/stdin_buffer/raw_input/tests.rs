@@ -516,3 +516,151 @@ fn host_stops_holding_lone_escape_after_host_color_reply_completes() {
     assert!(framer.push(b"\x1b").is_empty());
     assert_eq!(framer.flush_timeout(), vec![b"\x1b".to_vec()]);
 }
+
+#[test]
+fn host_flushes_lone_escape_after_timeout_pending_bytes() {
+    let mut framer = RawInputByteFramer::default();
+    framer.push(&[27]);
+    framer.flush_timeout();
+    assert!(framer.buffer.is_empty());
+}
+
+#[test]
+fn host_chunked_legacy_arrow_waits_for_completion_pending_bytes() {
+    let mut framer = RawInputByteFramer::default();
+
+    framer.push(b"\x1b");
+    assert_eq!(framer.buffer, b"\x1b");
+
+    framer.push(b"[A");
+    assert!(framer.buffer.is_empty());
+}
+
+#[test]
+fn host_lone_escape_is_buffered_until_timeout_flush_pending_bytes() {
+    let mut framer = RawInputByteFramer::default();
+
+    framer.push(b"\x1b");
+    assert_eq!(framer.buffer, b"\x1b");
+
+    framer.flush_timeout();
+    assert!(framer.buffer.is_empty());
+}
+
+#[test]
+fn host_escape_followed_by_arrow_before_flush_does_not_emit_escape_pending_bytes() {
+    let mut framer = RawInputByteFramer::default();
+
+    framer.push(b"\x1b");
+    assert_eq!(framer.buffer, b"\x1b");
+
+    framer.push(b"[B");
+    assert!(framer.buffer.is_empty());
+}
+
+#[test]
+fn host_escape_followed_by_alt_char_before_flush_becomes_alt_key_pending_bytes() {
+    let mut framer = RawInputByteFramer::default();
+
+    framer.push(b"\x1b");
+    assert_eq!(framer.buffer, b"\x1b");
+
+    framer.push(b"b");
+    assert!(framer.buffer.is_empty());
+}
+
+#[test]
+fn host_chunked_extended_sequence_waits_for_completion_pending_bytes() {
+    let mut framer = RawInputByteFramer::default();
+
+    framer.push(b"\x1b[49:33;2:");
+    assert_eq!(framer.buffer, b"\x1b[49:33;2:");
+
+    framer.push(b"1u");
+    assert!(framer.buffer.is_empty());
+}
+
+#[test]
+fn host_chunked_bracketed_paste_waits_for_terminator_pending_bytes() {
+    let mut framer = RawInputByteFramer::default();
+
+    framer.push(b"\x1b[200~hello");
+    assert_eq!(framer.buffer, b"\x1b[200~hello");
+
+    framer.push(b"\x1b[201~");
+    assert!(framer.buffer.is_empty());
+}
+
+#[test]
+fn host_incomplete_bracketed_paste_is_not_flushed_on_timeout_pending_bytes() {
+    let mut framer = RawInputByteFramer::default();
+
+    framer.push(b"\x1b[200~hello\nworld");
+    assert_eq!(framer.buffer, b"\x1b[200~hello\nworld");
+
+    framer.flush_timeout();
+    assert_eq!(framer.buffer, b"\x1b[200~hello\nworld");
+
+    framer.push(b"\x1b[201~");
+    assert!(framer.buffer.is_empty());
+}
+
+#[test]
+fn host_chunked_alt_utf8_waits_for_continuation_byte_after_escape_pending_bytes() {
+    let mut framer = RawInputByteFramer::default();
+    let bytes = "\x1bé".as_bytes();
+
+    framer.push(&bytes[..2]);
+    assert_eq!(framer.buffer, bytes[..2]);
+    framer.flush_timeout();
+    assert_eq!(framer.buffer, bytes[..2]);
+
+    framer.push(&bytes[2..]);
+    assert!(framer.buffer.is_empty());
+}
+
+#[test]
+fn host_chunked_utf8_waits_for_continuation_byte_pending_bytes() {
+    let mut framer = RawInputByteFramer::default();
+
+    framer.push("é".as_bytes().get(..1).unwrap());
+    assert_eq!(framer.buffer, vec![0xC3]);
+
+    framer.push("é".as_bytes().get(1..).unwrap());
+    assert!(framer.buffer.is_empty());
+}
+
+#[test]
+fn host_chunked_cjk_utf8_waits_for_all_continuation_bytes_pending_bytes() {
+    let mut framer = RawInputByteFramer::default();
+    let bytes = "好".as_bytes();
+
+    framer.push(&bytes[..1]);
+    assert_eq!(framer.buffer, bytes[..1]);
+    framer.flush_timeout();
+    assert_eq!(framer.buffer, bytes[..1]);
+
+    framer.push(&bytes[1..2]);
+    assert_eq!(framer.buffer, bytes[..2]);
+    framer.flush_timeout();
+    assert_eq!(framer.buffer, bytes[..2]);
+
+    framer.push(&bytes[2..]);
+    assert!(framer.buffer.is_empty());
+}
+
+#[test]
+fn host_chunked_four_byte_utf8_waits_for_all_continuation_bytes_pending_bytes() {
+    let mut framer = RawInputByteFramer::default();
+    let bytes = "🙂".as_bytes();
+
+    for split in 1..bytes.len() {
+        framer.push(&bytes[split - 1..split]);
+        assert_eq!(framer.buffer, bytes[..split]);
+        framer.flush_timeout();
+        assert_eq!(framer.buffer, bytes[..split]);
+    }
+
+    framer.push(&bytes[bytes.len() - 1..]);
+    assert!(framer.buffer.is_empty());
+}

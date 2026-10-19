@@ -50,7 +50,8 @@ impl<'a> Iterator for Frames<'a> {
 }
 
 /// Length of the next admitted raw frame, including complete unsupported escapes.
-pub(super) fn host_frame_length(buffer: &[u8]) -> Option<usize> {
+#[must_use]
+pub fn host_frame_length(buffer: &[u8]) -> Option<usize> {
     if buffer.starts_with(PASTE_START) {
         let end = find_subsequence(buffer, PASTE_END)?;
         std::str::from_utf8(&buffer[PASTE_START.len()..end]).ok()?;

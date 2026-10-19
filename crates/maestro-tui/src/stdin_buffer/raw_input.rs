@@ -10,7 +10,7 @@ use super::framing::{
 use super::tails::{
     discard_complete_orphaned_sgr_mouse_tail, discard_host_reply_csi_tail,
     discard_or_buffer_orphaned_sgr_mouse_tail, discard_orphaned_sgr_mouse_tail, host_cell_size,
-    is_color_scheme_report, is_host_color_response, plausible_control_string_tail,
+    is_host_color_response, parse_host_color_scheme_report, plausible_control_string_tail,
     starts_with_incomplete_default_color_response, starts_with_incomplete_default_mouse_sequence,
     starts_with_incomplete_host_cell_size_report, starts_with_incomplete_host_color_scheme_report,
     starts_with_incomplete_orphaned_sgr_mouse_tail, starts_with_incomplete_sgr_mouse_sequence,
@@ -450,7 +450,7 @@ impl RawInputByteFramer {
                 self.host_cell_size_replies_awaited.saturating_sub(1);
         } else if self.policy.host_appearance_query_on_focus && frame == b"\x1b[I" {
             self.host_appearance_query_sent();
-        } else if is_color_scheme_report(frame) {
+        } else if parse_host_color_scheme_report(frame).is_some() {
             self.host_appearance_reply_awaited = false;
             if self.policy.host_color_scheme_change_tracking {
                 self.host_color_query_sent();
