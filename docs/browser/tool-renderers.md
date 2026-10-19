@@ -190,6 +190,25 @@ other parameter/detail pairs with `with_raw`. The renderer accepts model objects
 explicit JSON values and native `ArtifactsParams`; it does not read result
 details. Partial JSON arguments are rendered without execution-schema decoding.
 
+```rust,ignore
+use maestro_app::{JsonObject, browser::tools::artifacts::ArtifactsParams};
+use maestro_web::{ArtifactsToolRenderer, register_tool_renderer,
+    tools::types::ToolRendererBinding};
+use serde_json::Value;
+use std::rc::Rc;
+
+let renderer = Rc::new(ArtifactsToolRenderer::new(panel));
+let binding = ToolRendererBinding::from_raw::<JsonObject, Value>(renderer.clone())
+    .with_raw::<Value, Value>(renderer.clone())
+    .with_raw::<ArtifactsParams, Value>(renderer);
+register_tool_renderer("artifacts", binding);
+```
+
+Register each native details type the caller supplies in place of `Value`.
+`ToolMessage` and `AssistantMessage` use this registration through the ordinary
+shared output path. Replacing or removing the binding takes effect on the next
+render; JSON mode bypasses it without changing the registration.
+
 Create and rewrite cards show literal highlighted content. Updates show a line
 diff. Successful get and logs cards show file content and console output,
 respectively, with a localized empty-output fallback. Edit errors retain their

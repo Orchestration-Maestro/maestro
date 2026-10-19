@@ -248,3 +248,9 @@ pub fn diff_cases() -> Vec<DiffCase> {
 pub mod diff;
 #[cfg(target_arch = "wasm32")]
 pub mod lifecycle;
+
+#[cfg(target_arch = "wasm32")]
+pub mod composed;
+
+#[cfg(target_arch = "wasm32")]
+pub mod styles;

@@ -79,9 +79,22 @@ pub fn artifact_disclosures_keep_children_through_reversals_and_updates() {
     crate::artifact_card_support::lifecycle::templates();
     crate::artifact_card_support::lifecycle::reversals();
     crate::artifact_card_support::lifecycle::shared_headers();
+    crate::artifact_card_support::composed::rich_header();
+    crate::artifact_card_support::composed::caption_without_pill();
 }
 
 #[wasm_bindgen]
-pub fn artifact_views_release_only_removed_children() {
+pub async fn artifact_views_release_only_removed_children() {
     crate::artifact_card_support::lifecycle::release();
+    crate::artifact_card_support::lifecycle::copy_feedback().await;
+}
+
+#[wasm_bindgen]
+pub fn artifact_cards_reach_registered_message_rows_with_native_details() {
+    crate::artifact_card_support::composed::run();
+}
+
+#[wasm_bindgen]
+pub async fn artifact_cards_and_diffs_follow_the_selected_brand_and_final_clip() {
+    crate::artifact_card_support::styles::run().await;
 }

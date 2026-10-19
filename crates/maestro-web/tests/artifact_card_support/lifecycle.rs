@@ -400,3 +400,110 @@ pub fn shared_headers() {
         assert!(surface.context.memory(|m| m.focused()).is_some());
     }
 }
+
+/// Copy feedback survives collapse/reopen and ends only with its disappearing child.
+/// # Panics
+/// Panics if feedback, native roots or original copy bytes are lost.
+pub async fn copy_feedback() {
+    let mut surface = Surface::new();
+    surface.time = Some(0.);
+    let params = json!({"command":"create","filename":"feedback.html","content":"literal code"});
+    let mut result = super::phase("success").unwrap();
+    result
+        .content
+        .push(maestro_app::UserBlock::Text(maestro_app::TextContent {
+            text: "literal logs".into(),
+            text_signature: None,
+        }));
+    let recipe = <ArtifactsToolRenderer as ToolRenderer<Value, Value>>::render(
+        &ArtifactsToolRenderer::new(None),
+        Some(&params),
+        Some((&result).into()),
+        false,
+    )
+    .unwrap();
+    let mut state = ToolRenderState::default();
+    drawing::draw(&mut surface, &recipe, &mut state);
+    crate::document_card_support::browser::open(&mut surface, &recipe, &mut state);
+    let _ = js(
+        "globalThis.feedbackCode=document.querySelector('.maestro-code');globalThis.feedbackConsole=document.querySelector('.maestro-console')",
+    );
+    for index in 0..2 {
+        let at = crate::markdown_support::slot_center(index);
+        drawing::click(&mut surface, at, &recipe, &mut state);
+        crate::markdown_support::settle().await;
+    }
+    drawing::draw(&mut surface, &recipe, &mut state);
+    assert_eq!(
+        *surface.effects.copies.borrow(),
+        ["literal code", "literal logs"]
+    );
+    assert!(surface.painted.iter().any(|(text, _)| text == "Copied!"));
+    let live = || {
+        surface
+            .effects
+            .timers
+            .borrow()
+            .iter()
+            .filter(|timer| timer.get())
+            .count()
+    };
+    assert_eq!(live(), 2);
+    let _ = js("document.querySelector('.maestro-tool-caption').click()");
+    drawing::draw(&mut surface, &recipe, &mut state);
+    surface.time = Some(surface.time.unwrap() + 0.3);
+    drawing::draw(&mut surface, &recipe, &mut state);
+    assert!(!surface.painted.iter().any(|(text, _)| text == "Copied!"));
+    let _ = js("document.querySelector('.maestro-tool-caption').click()");
+    drawing::draw(&mut surface, &recipe, &mut state);
+    surface.time = Some(surface.time.unwrap() + 0.3);
+    drawing::draw(&mut surface, &recipe, &mut state);
+    check(
+        "feedbackCode===document.querySelector('.maestro-code') && feedbackConsole===document.querySelector('.maestro-console')",
+    );
+    assert!(surface.painted.iter().any(|(text, _)| text == "Copied!"));
+    assert_eq!(
+        surface
+            .effects
+            .timers
+            .borrow()
+            .iter()
+            .filter(|timer| timer.get())
+            .count(),
+        2
+    );
+    let mut params = params;
+    params["content"] = "".into();
+    let changed = <ArtifactsToolRenderer as ToolRenderer<Value, Value>>::render(
+        &ArtifactsToolRenderer::new(None),
+        Some(&params),
+        Some((&result).into()),
+        false,
+    )
+    .unwrap();
+    drawing::draw(&mut surface, &changed, &mut state);
+    check(
+        "!feedbackCode.isConnected && feedbackConsole===document.querySelector('.maestro-console')",
+    );
+    assert_eq!(
+        surface
+            .effects
+            .timers
+            .borrow()
+            .iter()
+            .filter(|timer| timer.get())
+            .count(),
+        1
+    );
+    assert!(surface.painted.iter().any(|(text, _)| text == "Copied!"));
+    drop(state);
+    check("!feedbackConsole.isConnected");
+    assert!(
+        surface
+            .effects
+            .timers
+            .borrow()
+            .iter()
+            .all(|timer| !timer.get())
+    );
+}
