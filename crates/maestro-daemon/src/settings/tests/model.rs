@@ -58,10 +58,23 @@ fn restore_agents_can_be_disabled() {
 fn update_options_default_and_decode() {
     use super::super::model::{UpdateChannelConfig, UpdateConfig};
     let defaults: UpdateConfig = serde_json::from_value(json!({})).unwrap();
-    assert_eq!(defaults.channel, UpdateChannelConfig::Stable);
+    assert_eq!(
+        defaults.channel,
+        super::super::model::default_update_channel_for_build(
+            std::env::consts::OS,
+            maestro_protocol::build_info::is_preview(),
+        )
+    );
     assert!(defaults.version_check);
     assert!(defaults.manifest_check);
-    assert_eq!(defaults.channel.as_str(), "stable");
+    assert_eq!(
+        defaults.channel.as_str(),
+        if cfg!(windows) && maestro_protocol::build_info::is_preview() {
+            "preview"
+        } else {
+            "stable"
+        }
+    );
     let config: UpdateConfig = serde_json::from_value(
         json!({"channel": "preview", "versionCheck": false, "detectionCatalogCheck": false}),
     )
@@ -497,7 +510,7 @@ fn sidebar_bounds_default_and_decode() {
         (26, 18, 36)
     );
     let config: UiConfig = serde_json::from_value(
-        json!({"sidebarWidth":30,"sidebarMinWidth":20,"sidebarMaxWidth":40}),
+        json!({"sidebarWidth":30,"sidebarMinWidth":20,"sidebarMaxWidth":40,"mobileWidthThreshold":96}),
     )
     .unwrap();
     assert_eq!(
@@ -508,6 +521,7 @@ fn sidebar_bounds_default_and_decode() {
         ),
         (30, 20, 40)
     );
+    assert_eq!(config.mobile_width_threshold, 96);
 }
 
 #[test]

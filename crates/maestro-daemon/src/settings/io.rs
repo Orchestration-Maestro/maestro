@@ -9,10 +9,10 @@ use std::{cell::RefCell, path::Path};
 
 use maestro_settings::Settings;
 use serde::de::DeserializeOwned;
-use serde_json::{Map, Value};
+use serde_json::Value;
 
 use super::model::{Config, LoadedConfig};
-use ignored::{Decoder, Segment, format_path, path_key};
+use ignored::{Decoder, Segment, ValueRef, format_path, path_key};
 
 /// Client experimental keys stored alongside interface preferences.
 const EXPERIMENTAL_KEYS: &[&str] = &[
@@ -73,14 +73,15 @@ fn project_areas(settings: &Settings, loaded: &mut LoadedConfig) {
     let update = settings.0.get("update");
     macro_rules! area {
         ($field:ident, $root:literal, $value:expr) => {
-            if let Some(value) = decode_area(&$value, $root, stringify!($field), loaded) {
+            if let Some(value) = decode_area($value, $root, stringify!($field), loaded) {
                 loaded.config.$field = value;
             }
         };
     }
+    let empty = Value::Object(serde_json::Map::new());
     project_onboarding(mux, loaded);
-    area!(theme, "multiplexer.theme", nested(mux, "theme", empty()));
-    area!(remote, "multiplexer.remote", nested(mux, "remote", empty()));
+    area!(theme, "multiplexer.theme", nested(mux, "theme", &empty));
+    area!(remote, "multiplexer.remote", nested(mux, "remote", &empty));
     area!(ui, "multiplexer", ui_values(mux));
     area!(
         terminal,
@@ -130,7 +131,7 @@ fn project_onboarding(mux: Option<&Value>, loaded: &mut LoadedConfig) {
     if mux.is_some_and(|value| !value.is_object()) {
         reject_area("onboarding", "multiplexer must be an object", loaded);
     } else if let Some(value) = decode_area(
-        &nested(mux, "onboarding", Value::Null),
+        nested(mux, "onboarding", &Value::Null),
         "multiplexer.onboarding",
         "onboarding",
         loaded,
@@ -139,68 +140,63 @@ fn project_onboarding(mux: Option<&Value>, loaded: &mut LoadedConfig) {
     }
 }
 
-/// An absent record is decoded using its own field defaults.
-fn empty() -> Value {
-    Value::Object(Map::new())
-}
-
 /// Select a nested record, preserving a malformed container for typed rejection.
-fn nested(container: Option<&Value>, key: &str, fallback: Value) -> Value {
-    match container {
+fn nested<'a>(container: Option<&'a Value>, key: &str, fallback: &'a Value) -> ValueRef<'a> {
+    ValueRef::Value(match container {
         None => fallback,
-        Some(Value::Object(values)) => values.get(key).cloned().unwrap_or(fallback),
-        Some(value) => value.clone(),
-    }
+        Some(Value::Object(values)) => values.get(key).unwrap_or(fallback),
+        Some(value) => value,
+    })
 }
 
 /// Select flattened keys for one original semantic area.
-fn selected(container: Option<&Value>, keys: &[&str]) -> Value {
+fn selected<'a>(container: Option<&'a Value>, keys: &[&str]) -> ValueRef<'a> {
     match container {
-        None => empty(),
-        Some(Value::Object(values)) => Value::Object(
-            keys.iter()
-                .filter_map(|key| {
-                    values
-                        .get(*key)
-                        .map(|value| ((*key).to_owned(), value.clone()))
-                })
+        None => ValueRef::Fields(Vec::new()),
+        Some(Value::Object(values)) => ValueRef::Fields(
+            values
+                .iter()
+                .filter(|(key, _)| keys.contains(&key.as_str()))
+                .map(|(key, value)| (key.as_str(), value))
                 .collect(),
         ),
-        Some(value) => value.clone(),
+        Some(value) => ValueRef::Value(value),
     }
 }
 
 /// Interface fields and unknown siblings, excluding independently decoded areas.
-fn ui_values(container: Option<&Value>) -> Value {
-    let Some(Value::Object(values)) = container else {
-        return container.cloned().unwrap_or_else(empty);
-    };
-    Value::Object(
-        values
-            .iter()
-            .filter(|(key, _)| {
-                !matches!(key.as_str(), "theme" | "remote" | "onboarding")
-                    && !EXPERIMENTAL_KEYS.contains(&key.as_str())
-            })
-            .map(|(key, value)| (key.clone(), value.clone()))
-            .collect(),
-    )
+fn ui_values(container: Option<&Value>) -> ValueRef<'_> {
+    match container {
+        None => ValueRef::Fields(Vec::new()),
+        Some(Value::Object(values)) => ValueRef::Fields(
+            values
+                .iter()
+                .filter(|(key, _)| {
+                    !matches!(key.as_str(), "theme" | "remote" | "onboarding")
+                        && !EXPERIMENTAL_KEYS.contains(&key.as_str())
+                })
+                .map(|(key, value)| (key.as_str(), value))
+                .collect(),
+        ),
+        Some(value) => ValueRef::Value(value),
+    }
 }
 
 /// Join fields split between namespaces without hiding a malformed source.
-fn combined(first: Value, second: Value) -> Value {
+fn combined<'a>(first: ValueRef<'a>, second: ValueRef<'a>) -> ValueRef<'a> {
     match (first, second) {
-        (Value::Object(mut first), Value::Object(second)) => {
+        (ValueRef::Fields(mut first), ValueRef::Fields(second)) => {
             first.extend(second);
-            Value::Object(first)
+            first.sort_unstable_by_key(|(key, _)| *key);
+            ValueRef::Fields(first)
         }
-        (Value::Object(_), invalid) | (invalid, _) => invalid,
+        (ValueRef::Fields(_), invalid) | (invalid, _) => invalid,
     }
 }
 
 /// Decode once and publish ignored paths only after the complete area succeeds.
 fn decode_area<T: DeserializeOwned>(
-    value: &Value,
+    value: ValueRef<'_>,
     root: &str,
     area: &str,
     loaded: &mut LoadedConfig,

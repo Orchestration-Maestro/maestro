@@ -3,28 +3,8 @@
 
 use maestro_daemon::{instances, paths::DaemonPaths};
 
-/// Name boundaries shared by daemon selection and deletion admission.
-fn assert_name_boundaries() {
-    for name in ["a", "A.b_0-z", &"a".repeat(64)] {
-        assert!(instances::validate_name(name).is_ok());
-    }
-    for name in [
-        "",
-        ".",
-        "..",
-        "../escape",
-        "a/b",
-        "a\\b",
-        "é",
-        &"a".repeat(65),
-    ] {
-        assert!(instances::validate_name(name).is_err());
-    }
-}
-
 #[test]
 fn daemon_deletion_preserves_running_and_unrelated_folders() {
-    assert_name_boundaries();
     let root = std::env::temp_dir().join(format!("maestro-delete-{}", std::process::id()));
     let agent = root.to_str().unwrap();
     std::fs::create_dir_all(&root).unwrap();

@@ -3,7 +3,7 @@
 use std::{cell::RefCell, slice};
 
 use serde::de::{DeserializeSeed, IntoDeserializer, MapAccess, SeqAccess, Visitor};
-use serde_json::{Value, map};
+use serde_json::Value;
 
 /// Sortable key/index identity, kept unescaped until diagnostic formatting.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -14,10 +14,18 @@ pub(super) enum Segment {
     Index(usize),
 }
 
+/// Borrowed raw value or selected object fields from independent namespaces.
+pub(super) enum ValueRef<'a> {
+    /// Unmodified authored JSON subtree.
+    Value(&'a Value),
+    /// Shallow selection retaining borrowed keys and values.
+    Fields(Vec<(&'a str, &'a Value)>),
+}
+
 /// A borrowed JSON subtree with its diagnostic path and shared ignored paths.
 pub(super) struct Decoder<'a> {
     /// Current JSON value.
-    pub value: &'a Value,
+    pub value: ValueRef<'a>,
     /// Stored key path, including its namespace.
     pub path: Vec<Segment>,
     /// Paths ignored by the typed decoder.
@@ -29,22 +37,29 @@ impl<'de> serde::Deserializer<'de> for Decoder<'de> {
 
     fn deserialize_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
         match self.value {
-            Value::Object(values) => visitor.visit_map(Members {
-                iter: values.iter(),
+            ValueRef::Fields(values) => visitor.visit_map(Members {
+                iter: values.into_iter(),
                 pending: None,
-                parent: self,
+                path: self.path,
+                ignored: self.ignored,
             }),
-            Value::Array(values) => visitor.visit_seq(Elements {
+            ValueRef::Value(Value::Object(values)) => visitor.visit_map(Members {
+                iter: values.iter().map(|(key, value)| (key.as_str(), value)),
+                pending: None,
+                path: self.path,
+                ignored: self.ignored,
+            }),
+            ValueRef::Value(Value::Array(values)) => visitor.visit_seq(Elements {
                 iter: values.iter(),
                 index: 0,
                 parent: self,
             }),
-            value => serde::Deserializer::deserialize_any(value, visitor),
+            ValueRef::Value(value) => serde::Deserializer::deserialize_any(value, visitor),
         }
     }
 
     fn deserialize_option<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
-        if self.value.is_null() {
+        if matches!(self.value, ValueRef::Value(Value::Null)) {
             visitor.visit_none()
         } else {
             visitor.visit_some(self)
@@ -65,7 +80,10 @@ impl<'de> serde::Deserializer<'de> for Decoder<'de> {
         variants: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value, Self::Error> {
-        serde::Deserializer::deserialize_enum(self.value, name, variants, visitor)
+        let ValueRef::Value(value @ Value::String(_)) = self.value else {
+            return Err(serde::de::Error::custom("settings enum must be a string"));
+        };
+        serde::Deserializer::deserialize_enum(value, name, variants, visitor)
     }
 
     fn deserialize_struct<V: Visitor<'de>>(
@@ -74,7 +92,7 @@ impl<'de> serde::Deserializer<'de> for Decoder<'de> {
         _fields: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value, Self::Error> {
-        if !self.value.is_object() {
+        if matches!(self.value, ValueRef::Value(value) if !value.is_object()) {
             return Err(serde::de::Error::custom(
                 "settings record must be an object",
             ));
@@ -94,16 +112,18 @@ impl<'de> serde::Deserializer<'de> for Decoder<'de> {
 }
 
 /// JSON object traversal preserving typed field ownership.
-struct Members<'a> {
+struct Members<'a, I> {
     /// Remaining members, visited once.
-    iter: map::Iter<'a>,
+    iter: I,
     /// Value associated with the most recently decoded key.
     pending: Option<(&'a str, &'a Value)>,
-    /// Parent path and diagnostic collection.
-    parent: Decoder<'a>,
+    /// Parent diagnostic path.
+    path: Vec<Segment>,
+    /// Shared ignored paths.
+    ignored: &'a RefCell<Vec<Vec<Segment>>>,
 }
 
-impl<'de> MapAccess<'de> for Members<'de> {
+impl<'de, I: ExactSizeIterator<Item = (&'de str, &'de Value)>> MapAccess<'de> for Members<'de, I> {
     type Error = serde_json::Error;
 
     fn next_key_seed<K: DeserializeSeed<'de>>(
@@ -114,7 +134,7 @@ impl<'de> MapAccess<'de> for Members<'de> {
             return Ok(None);
         };
         self.pending = Some((key, value));
-        seed.deserialize(key.as_str().into_deserializer()).map(Some)
+        seed.deserialize(key.into_deserializer()).map(Some)
     }
 
     fn next_value_seed<V: DeserializeSeed<'de>>(
@@ -125,12 +145,12 @@ impl<'de> MapAccess<'de> for Members<'de> {
             .pending
             .take()
             .ok_or_else(|| serde::de::Error::custom("settings value requested without its key"))?;
-        let mut path = self.parent.path.clone();
+        let mut path = self.path.clone();
         path.push(Segment::Key(key.to_owned()));
         seed.deserialize(Decoder {
-            value,
+            value: ValueRef::Value(value),
             path,
-            ignored: self.parent.ignored,
+            ignored: self.ignored,
         })
     }
 
@@ -163,7 +183,7 @@ impl<'de> SeqAccess<'de> for Elements<'de> {
         path.push(Segment::Index(self.index));
         self.index += 1;
         seed.deserialize(Decoder {
-            value,
+            value: ValueRef::Value(value),
             path,
             ignored: self.parent.ignored,
         })

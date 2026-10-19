@@ -386,3 +386,61 @@ fn catalog_check_is_owned_by_the_daemon_namespace_only() {
     assert_eq!(loaded.diagnostics.len(), 1);
     assert!(!loaded.diagnostics[0].starts_with("unknown config key"));
 }
+
+#[test]
+fn object_valued_string_enums_reject_projection() {
+    for (path, variant, area) in [
+        ("multiplexer.hostCursor", "native", "ui"),
+        ("multiplexer.agentPanelSort", "priority", "ui"),
+        ("multiplexer.statusIndicators", "symbols", "ui"),
+        ("multiplexer.sidebarCollapsedMode", "hidden", "ui"),
+        ("multiplexer.tabBarPosition", "bottom", "ui"),
+        ("multiplexer.toast.delivery", "system", "ui"),
+        ("multiplexer.toast.clipboard.position", "top-left", "ui"),
+        ("multiplexer.toast.workspace.position", "top-left", "ui"),
+        ("multiplexer.sound.agents.claude", "off", "ui"),
+        ("multiplexer.cjkImeCursorShape", "bar", "experimental"),
+        ("daemon.paneShellMode", "login", "terminal"),
+        ("update.channel", "preview", "update"),
+    ] {
+        let valid = at_path(path, json!(variant));
+        assert!(project(valid).invalid_sections.is_empty(), "{path}");
+        let wrong = at_path(path, json!({variant: null}));
+        let loaded = project(wrong);
+        assert_eq!(loaded.invalid_sections, [area], "{path}");
+        assert!(loaded.diagnostics[0].starts_with(&format!("invalid {area} config:")));
+    }
+    let loaded = project(json!({"multiplexer":{"tabBarRight":[{"type":"text","text":"ready"}]}}));
+    assert!(loaded.invalid_sections.is_empty());
+    assert_eq!(
+        loaded.config.ui.tab_bar_right,
+        [crate::settings::tab_bar::TabBarRightEntryConfig::Text {
+            text: "ready".into()
+        }]
+    );
+}
+
+#[test]
+fn object_host_cursor_retains_previous_ui_on_reload() {
+    let (mut manager, storage) = manager(
+        &json!({"multiplexer":{"hostCursor":"drawn","sidebarWidth":31}}),
+        &json!({}),
+    );
+    let mut current = load_config(&mut manager, Path::new(".")).0.config;
+    let previous = current.ui.clone();
+    put(
+        &*storage,
+        SettingsScope::Global,
+        r#"{"multiplexer":{"hostCursor":{"native":null},"sidebarWidth":40}}"#,
+    );
+    let (report, errors) = block_on(reload_config(&mut manager, &mut current, Path::new(".")));
+    assert!(errors.is_empty());
+    assert_eq!(current.ui, previous);
+    assert_eq!(report.status, ConfigReloadStatus::Partial);
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|message| message.starts_with("invalid ui config:"))
+    );
+}
