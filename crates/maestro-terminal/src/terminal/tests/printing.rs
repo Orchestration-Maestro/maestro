@@ -264,3 +264,164 @@ fn line_control_index_bottom_of_scroll_region_clear_hyperlinks() {
         assert_eq!(page.hyperlink_set.count(), 0);
     }
 }
+
+#[test]
+fn screen_render_over_wide_char_with_bg_color() {
+    let mut t = Terminal::new(80, 80, 0).unwrap();
+    t.set_attribute(Attribute::DirectColorBg(crate::color::Rgb {
+        r: 255,
+        g: 0,
+        b: 0,
+    }))
+    .unwrap();
+    t.print('😀').unwrap();
+    assert_eq!(cursor_page(&t).styles.count(), 1);
+    t.set_cursor_pos(0, 0);
+    t.set_attribute(Attribute::Unset).unwrap();
+    t.print('A').unwrap();
+    assert_eq!(cursor_page(&t).styles.count(), 0);
+    assert!(dirty(&t, 0));
+}
+
+/// Borrow the page owning the active cursor.
+fn cursor_page(t: &Terminal) -> &crate::Page {
+    let screen = t.screens.active();
+    let pin = screen.pages.tracked_pin(screen.cursor.page_pin).unwrap();
+    screen.pages.page(pin.node).unwrap()
+}
+
+#[test]
+fn screen_input_glitch_text() {
+    let mut t = Terminal::new(30, 30, 0).unwrap();
+    let capacity = first_grapheme_capacity(&t);
+    while first_grapheme_capacity(&t) == capacity {
+        t.print_string(include_str!("../../../tests/fixtures/glitch.txt"))
+            .unwrap();
+    }
+    assert!(first_grapheme_capacity(&t) > capacity);
+}
+
+/// Reload the oldest page after a storage replacement.
+fn first_grapheme_capacity(t: &Terminal) -> u32 {
+    let pages = &t.screens.active().pages;
+    let pin = pages.pin(Point::Screen(Coordinate { x: 0, y: 0 })).unwrap();
+    pages.page(pin.node).unwrap().capacity.grapheme_bytes
+}
+
+/// Check a row's linked cell and its retained identity.
+fn assert_link(t: &Terminal, x: u16, id: Option<crate::hyperlink::Id>) {
+    let screen = t.screens.active();
+    let pin = screen
+        .pages
+        .pin(Point::Active(Coordinate { x, y: 0 }))
+        .unwrap();
+    let (row, cell) = pin.row_and_cell(&screen.pages).unwrap();
+    let page = screen.pages.page(pin.node).unwrap();
+    assert!(row.hyperlink());
+    assert_eq!(cell.hyperlink(), id.is_some());
+    assert_eq!(
+        page.lookup_hyperlink(crate::page::CellPosition { x, y: pin.y }),
+        id
+    );
+}
+
+#[test]
+fn screen_render_with_hyperlink() {
+    let mut t = Terminal::new(80, 80, 0).unwrap();
+    t.screens
+        .active_mut()
+        .start_hyperlink(b"http://example.com", None)
+        .unwrap();
+    t.print_string("123456").unwrap();
+    for x in 0..6 {
+        assert_link(&t, x, Some(1));
+    }
+    assert!(dirty(&t, 0));
+}
+
+#[test]
+fn screen_render_over_cell_with_same_hyperlink() {
+    let mut t = Terminal::new(80, 80, 0).unwrap();
+    t.screens
+        .active_mut()
+        .start_hyperlink(b"http://example.com", None)
+        .unwrap();
+    t.print_string("123456").unwrap();
+    t.set_cursor_pos(1, 1);
+    t.print_string("123456").unwrap();
+    for x in 0..6 {
+        assert_link(&t, x, Some(1));
+    }
+    assert!(dirty(&t, 0));
+}
+
+#[test]
+fn screen_render_and_end_hyperlink() {
+    let mut t = Terminal::new(80, 80, 0).unwrap();
+    t.screens
+        .active_mut()
+        .start_hyperlink(b"http://example.com", None)
+        .unwrap();
+    t.print_string("123").unwrap();
+    t.screens.active_mut().end_hyperlink();
+    t.print_string("456").unwrap();
+    for x in 0..3 {
+        assert_link(&t, x, Some(1));
+    }
+    for x in 3..6 {
+        assert_link(&t, x, None);
+    }
+    assert!(dirty(&t, 0));
+}
+
+#[test]
+fn screen_render_and_change_hyperlink() {
+    let mut t = Terminal::new(80, 80, 0).unwrap();
+    t.screens
+        .active_mut()
+        .start_hyperlink(b"http://one.example.com", None)
+        .unwrap();
+    t.print_string("123").unwrap();
+    t.screens
+        .active_mut()
+        .start_hyperlink(b"http://two.example.com", None)
+        .unwrap();
+    t.print_string("456").unwrap();
+    for x in 0..3 {
+        assert_link(&t, x, Some(1));
+    }
+    for x in 3..6 {
+        assert_link(&t, x, Some(2));
+    }
+    assert!(dirty(&t, 0));
+}
+
+#[test]
+fn screen_overwrite_hyperlink() {
+    let mut t = Terminal::new(80, 80, 0).unwrap();
+    t.screens
+        .active_mut()
+        .start_hyperlink(b"http://one.example.com", None)
+        .unwrap();
+    t.print_string("123").unwrap();
+    t.set_cursor_pos(1, 1);
+    t.screens.active_mut().end_hyperlink();
+    t.print_string("456").unwrap();
+    let screen = t.screens.active();
+    for x in 0..3 {
+        let pin = screen
+            .pages
+            .pin(Point::Active(Coordinate { x, y: 0 }))
+            .unwrap();
+        let (row, cell) = pin.row_and_cell(&screen.pages).unwrap();
+        let page = screen.pages.page(pin.node).unwrap();
+        assert!(!row.hyperlink());
+        assert!(!cell.hyperlink());
+        assert_eq!(
+            page.lookup_hyperlink(crate::page::CellPosition { x, y: pin.y }),
+            None
+        );
+        assert_eq!(page.hyperlink_set.count(), 0);
+    }
+    assert!(dirty(&t, 0));
+}
