@@ -73,11 +73,43 @@ The native cursor is 8 by 16 pixels, inset 16 pixels, with a two-second pulse in
 the selected pack's muted color. Editor input, send/abort actions and conversation
 statistics belong to the separate editor interface.
 
+## Session transcript view
+
+On browser targets, `AgentInterface::new(host)` binds the transcript to an external
+Agent with `set_session`. `session()` returns that retained owner. Replacement and
+release explicitly remove the old subscription. Session callbacks observe reduced
+state, retain no state guard and hold weak references back to the view and session.
+Tool execution events do not directly refresh the transcript.
+
+Binding fills only missing stream and credential callbacks. The default stream
+reads the current proxy-enabled setting per request, then reads the current URL
+only when enabled. Credential lookup reads the current application key store.
+Caller-supplied callbacks stay unchanged, and each reached storage read resolves
+the current application store separately.
+
+The containing native viewport keeps every row's text attached while clean scroll
+frames draw only intersecting canvas rows. A history refresh prepares the result
+index once for both stable and streaming rows. Native resize notifications identify
+the affected positional slot; offscreen image growth updates its height before
+later rows are revealed. Rows use their planned canvas origin while native slot
+sizes are published together, so a preceding row's growth does not offset a child
+twice.
+
+`set_auto_scroll` overrides whether later content growth follows the bottom. A
+nonzero upward scroll disables following only beyond 50 pixels from the bottom;
+a distance below 10 pixels enables it again. Equality at either boundary does not
+cross it. A smaller viewport height updates the remembered height without changing
+the remembered top or follow preference. All observations retain fractional values.
+A later publication preserves a reader scroll made after programmatic following.
+
 ## Contained native reading
 
 `AttachmentHost::enter_reading_container` positions nested native frames inside a
 retained reading root or one of its slots. Keep the returned placement scope alive
-while drawing its children. The containing viewport supplies scrolling and clipping;
+while drawing its children. Its optional canvas origin places a child against the
+planned row position before new native slot heights are published. Without that
+operand, placement uses the slot's current native bounds. The containing viewport
+supplies scrolling and clipping;
 contained reading bodies do not add independent scrollers. Standalone reading views
 keep their existing fixed frames and bounded viewports.
 

@@ -42,12 +42,11 @@ pub(super) fn offset(viewport: &Element, name: &str) -> Result<f64, AttachmentHo
 }
 /// Size slots by identity, preserving native slot ownership.
 pub(super) fn size_slots(
-    slots: &[(egui::Id, Element)],
+    slots: &HashMap<egui::Id, Element>,
     sizes: &[(egui::Id, egui::Vec2)],
 ) -> Result<(), AttachmentHostError> {
-    let sizes: HashMap<_, _> = sizes.iter().copied().collect();
-    for (id, slot) in slots {
-        if let Some(size) = sizes.get(id) {
+    for (id, size) in sizes {
+        if let Some(slot) = slots.get(id) {
             attr(slot, &format!("width:{}px;height:{}px;", size.x, size.y))?;
         }
     }

@@ -85,6 +85,10 @@ pub struct MessageList<C: CustomAgentMessages = NoCustomMessages> {
     host: Rc<dyn AttachmentHost>,
     /// Component state for each emitted position.
     rows: Vec<Row>,
+    /// Prepared recipes retained between transcript refreshes.
+    items: Vec<Item>,
+    /// Shared last-result-wins operands for stable and streaming consumers.
+    results: HashMap<String, ToolResultMessage>,
     /// Custom message vocabulary without ownership or serialization bounds.
     custom: std::marker::PhantomData<fn() -> C>,
 }
@@ -95,6 +99,8 @@ impl<C: CustomAgentMessages + 'static> MessageList<C> {
         Self {
             host,
             rows: Vec::new(),
+            items: Vec::new(),
+            results: HashMap::new(),
             custom: std::marker::PhantomData,
         }
     }
@@ -118,8 +124,26 @@ impl<C: CustomAgentMessages + 'static> MessageList<C> {
         props: MessageListProps<'_, C>,
         (view, overlays): (ToolRenderView<'_>, &mut Vec<crate::AttachmentOverlay>),
     ) -> Result<egui::Response, ToolUiError> {
-        let results: HashMap<String, ToolResultMessage> = props
-            .messages
+        self.refresh(props.messages)?;
+        let row = ui.vertical(|ui| {
+            ui.spacing_mut().item_spacing.y = 12.;
+            let mut emitted = 0;
+            for position in 0..self.items.len() {
+                self.draw_row(ui, position, &props, (view, overlays))?;
+                emitted += 1;
+            }
+            self.rows.truncate(emitted);
+            Ok(())
+        });
+        drop(props);
+        row.inner.map(|()| row.response)
+    }
+    /// Prepare native/custom content once for both transcript consumers.
+    pub(crate) fn refresh(
+        &mut self,
+        messages: &[AgentMessage<BrowserMessages<C>>],
+    ) -> Result<(), ToolUiError> {
+        let results: HashMap<String, ToolResultMessage> = messages
             .iter()
             .filter_map(|message| {
                 let AgentMessage::ToolResult(value) = message else {
@@ -131,46 +155,45 @@ impl<C: CustomAgentMessages + 'static> MessageList<C> {
                 Some((result.tool_call_id.clone(), result.clone()))
             })
             .collect();
-        let items = props
-            .messages
+        let items = messages
             .iter()
             .filter_map(|message| prepare(message).transpose())
             .collect::<Result<Vec<_>, _>>()?;
-        let row = ui.vertical(|ui| {
-            ui.spacing_mut().item_spacing.y = 12.;
-            let mut emitted = 0;
-            for item in items {
-                self.draw_row(ui, (emitted, item), (&props, &results), (view, overlays))?;
-                emitted += 1;
-            }
-            self.rows.truncate(emitted);
-            Ok(())
-        });
-        drop(props);
-        row.inner.map(|()| row.response)
+        self.items = items;
+        self.results = results;
+        self.rows.truncate(self.items.len());
+        Ok(())
+    }
+    /// Number of emitted positions, including empty custom recipes.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn len(&self) -> usize {
+        self.items.len()
+    }
+    /// One shared result map for the stable list and the assistant in progress.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn results(&self) -> &HashMap<String, ToolResultMessage> {
+        &self.results
     }
     /// Publish a changed component only after its first successful drawing.
-    fn draw_row(
+    pub(crate) fn draw_row(
         &mut self,
         ui: &mut egui::Ui,
-        (position, item): (usize, Item),
-        policy: (
-            &MessageListProps<'_, C>,
-            &HashMap<String, ToolResultMessage>,
-        ),
+        position: usize,
+        props: &MessageListProps<'_, C>,
         output: (ToolRenderView<'_>, &mut Vec<crate::AttachmentOverlay>),
     ) -> Result<(), ToolUiError> {
+        let item = &self.items[position];
         let mut candidate = self
             .rows
             .get(position)
-            .is_none_or(|row| !row.matches(&item))
-            .then(|| Row::new(&item, &self.host));
+            .is_none_or(|row| !row.matches(item))
+            .then(|| Row::new(item, &self.host));
         let row = if let Some(row) = candidate.as_mut() {
             row
         } else {
             &mut self.rows[position]
         };
-        draw(row, item, ui, policy, output)?;
+        draw(row, item, ui, (props, &self.results), output)?;
         if let Some(row) = candidate {
             match self.rows.get_mut(position) {
                 Some(slot) => *slot = row,
@@ -220,7 +243,7 @@ fn prepare<C: CustomAgentMessages + 'static>(
 /// Draw one prepared row, transferring overlays before observing a later error.
 fn draw<C: CustomAgentMessages>(
     row: &mut Row,
-    item: Item,
+    item: &Item,
     ui: &mut egui::Ui,
     (props, results): (
         &MessageListProps<'_, C>,
@@ -232,7 +255,7 @@ fn draw<C: CustomAgentMessages>(
         (Row::Custom(state), Item::Custom(content)) => state.draw(content.as_ref(), ui, view),
         (Row::Assistant(widget), Item::Assistant(message)) => widget.render(
             ui,
-            &message,
+            message,
             AssistantMessageProps {
                 tools: Some(props.tools),
                 pending_tool_calls: props.pending_tool_calls,
@@ -245,19 +268,19 @@ fn draw<C: CustomAgentMessages>(
             view,
         ),
         (Row::User(widget, retained), Item::User(content, attachments)) => {
-            let attachments = attachments.unwrap_or_default();
+            let attachments = attachments.as_deref().unwrap_or_default();
             retained.truncate(attachments.len());
-            for (index, attachment) in attachments.into_iter().enumerate() {
+            for (index, attachment) in attachments.iter().enumerate() {
                 if let Some(slot) = retained.get(index) {
-                    *slot.borrow_mut() = attachment;
+                    *slot.borrow_mut() = attachment.clone();
                 } else {
-                    retained.push(Rc::new(RefCell::new(attachment)));
+                    retained.push(Rc::new(RefCell::new(attachment.clone())));
                 }
             }
             widget.render(
                 ui,
                 UserMessageInput::WithAttachments {
-                    content: &content,
+                    content,
                     attachments: Some(retained),
                 },
                 view,

@@ -40,7 +40,7 @@ impl BrowserAttachmentHost {
         self.containers
             .borrow()
             .last()
-            .map(|(parent, _)| parent.clone())
+            .map(|container| container.parent.clone())
             .map_or_else(
                 || {
                     self.document
@@ -56,13 +56,16 @@ impl BrowserAttachmentHost {
         &self,
         id: egui::Id,
         slot: Option<egui::Id>,
+        origin: Option<egui::Pos2>,
     ) -> Result<PlacementScope, AttachmentHostError> {
         let surfaces = self.surfaces.borrow();
         let reading = surfaces
             .get(&id)
             .and_then(|s| s.reading.as_ref())
             .ok_or_else(|| AttachmentHostError::Host("Missing reading container".into()))?;
-        let scale = self.transform(reading.pixels)?.scale;
+        let transform = self.transform(reading.pixels)?;
+        let scale = transform.scale;
+        let origin = origin.map(|origin| transform.position(origin));
         let parent = slot
             .map(|id| {
                 reading
@@ -74,7 +77,14 @@ impl BrowserAttachmentHost {
             .transpose()?
             .unwrap_or_else(|| reading.root.element.clone());
         let depth = self.containers.borrow().len();
-        self.containers.borrow_mut().push((parent, scale));
+        self.containers
+            .borrow_mut()
+            .push(super::super::ReadingContainer {
+                parent,
+                scale,
+                origin,
+                owner: (id, slot),
+            });
         let active = Rc::clone(&self.containers);
         Ok(PlacementScope::new(move || {
             active.borrow_mut().truncate(depth);
@@ -86,10 +96,16 @@ impl BrowserAttachmentHost {
         surface: &AttachmentSurface<'_>,
     ) -> Result<Option<String>, AttachmentHostError> {
         let active = self.containers.borrow();
-        let Some((parent, scale)) = active.last() else {
+        let Some(container) = active.last() else {
             return Ok(None);
         };
-        let bounds = super::bounds(parent)?;
+        let scale = container.scale;
+        let [parent_left, parent_top] = if let Some(origin) = &container.origin {
+            *origin
+        } else {
+            let bounds = super::bounds(&container.parent)?;
+            [bounds.left(), bounds.top()]
+        };
         let [left, top] = self
             .transform(surface.pixels_per_point)?
             .position(surface.rect.min);
@@ -100,8 +116,8 @@ impl BrowserAttachmentHost {
         };
         Ok(Some(format!(
             "position:absolute;left:{}px;top:{}px;width:{}px;height:{};opacity:{};overflow:visible;transform-origin:0 0;transform:scale(1,1);clip-path:none;",
-            (left - bounds.left()) / scale.0,
-            (top - bounds.top()) / scale.1,
+            (left - parent_left) / scale.0,
+            (top - parent_top) / scale.1,
             surface.rect.width(),
             height,
             surface.opacity,
@@ -130,6 +146,29 @@ impl BrowserAttachmentHost {
     }
 }
 impl NativeReading {
+    /// Read a complete slot snapshot through the existing inverse projection.
+    pub(super) fn controls(
+        &self,
+        frame: &Element,
+        transform: &super::Transform,
+    ) -> Result<Vec<(egui::Id, egui::Rect)>, AttachmentHostError> {
+        let origin = super::bounds(frame)?;
+        self.root
+            .slots
+            .iter()
+            .map(|(id, element)| {
+                let rect = super::bounds(element)?;
+                Ok((
+                    *id,
+                    transform.relative(
+                        [rect.x(), rect.y(), rect.width(), rect.height()],
+                        [origin.x(), origin.y()],
+                    ),
+                ))
+            })
+            .collect()
+    }
+
     /// Prepare every addition before changing the retained native tree.
     fn resize_slots(
         &mut self,

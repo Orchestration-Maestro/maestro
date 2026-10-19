@@ -35,3 +35,6 @@ pub mod console_block;
 pub mod preview_code_toggle;
 
 pub mod expandable_section;
+
+/// Session-bound native transcript with reader-follow policy.
+pub mod agent_interface;

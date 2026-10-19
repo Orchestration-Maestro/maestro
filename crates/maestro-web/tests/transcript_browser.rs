@@ -220,10 +220,10 @@ impl Nested {
     }
     /// Submit a phase through the actual containing scope, not DOM postprocessing.
     fn place(&self, phase: ReadingPhase) -> Result<(), AttachmentHostError> {
-        let _container = self
-            .outer
-            .host
-            .enter_reading_container(self.outer.id, Some(self.slot))?;
+        let _container =
+            self.outer
+                .host
+                .enter_reading_container(self.outer.id, Some(self.slot), None)?;
         self.outer.host.present(
             AttachmentSurface {
                 id: self.id,
@@ -343,4 +343,77 @@ pub fn transcript_registry_containment_keeps_nested_slots_and_rolls_back_failure
     );
     drop(nested);
     assert!(!root.is_connected());
+}
+
+/// Changed preceding heights do not offset a child twice when sizes publish afterward.
+/// # Panics
+/// Panics when a planned row origin is replaced with the previous native slot bounds.
+#[wasm_bindgen]
+pub fn transcript_registry_positions_rows_before_publishing_their_new_heights() {
+    let nested = Nested::new();
+    let layout = nested.outer.host.reading_layout(nested.outer.id).unwrap();
+    let slot = nested.outer.root.borrow().as_ref().unwrap().slots[1].0;
+    let origin = nested.outer.origin + layout.controls[1].1.min.to_vec2() + egui::vec2(0., 150.);
+    let rect = egui::Rect::from_min_size(origin, egui::vec2(260., 300.));
+    {
+        let _scope = nested
+            .outer
+            .host
+            .enter_reading_container(nested.outer.id, Some(slot), Some(origin))
+            .unwrap();
+        for phase in [ReadingPhase::Measure, ReadingPhase::Publish] {
+            nested
+                .outer
+                .host
+                .present(
+                    AttachmentSurface {
+                        id: nested.id,
+                        rect,
+                        clip_rect: nested.outer.clip,
+                        pixels_per_point: nested.outer.density,
+                        opacity: 1.,
+                        occluders: vec![],
+                        content: AttachmentContent::Reading(ReadingPlacement {
+                            content: Rc::clone(&nested.content),
+                            phase,
+                            intrinsic_width: false,
+                            sizes: &[],
+                            modal: None,
+                            context: &nested.outer.context,
+                        }),
+                    },
+                    &nested.outer.pack.presentation(nested.outer.mode).unwrap(),
+                )
+                .unwrap();
+        }
+    }
+    nested.outer.publish(
+        egui::vec2(300., 100.),
+        &Slots::sizes([(260., 500.), (260., 350.), (260., 350.)]),
+    );
+    check(
+        &nested.root(),
+        "const frame=value.parentElement.parentElement;const a=frame.getBoundingClientRect(),b=frame.parentElement.getBoundingClientRect();return Math.abs(a.left-b.left)<0.1 && Math.abs(a.top-b.top)<0.1",
+    );
+}
+
+#[path = "transcript_browser/aggregate.rs"]
+pub(crate) mod aggregate;
+
+/// Later publication must not undo a reader scroll after an earlier programmatic assignment.
+/// # Panics
+/// Panics when a retired programmatic offset wins over the current native viewport.
+#[wasm_bindgen]
+pub fn transcript_registry_publication_keeps_reader_scroll_after_programmatic_follow() {
+    let slots = Slots::new();
+    let size = egui::vec2(300., 80.);
+    let sizes = Slots::sizes([(30., 200.); 3]);
+    slots.publish(size, &sizes);
+    slots.host.set_reading_scroll(slots.id, 80.).unwrap();
+    js(&slots.wrapper(), "value.scrollTop=30.5");
+    let expected = slots.host.reading_scroll(slots.id).unwrap();
+    for phase in [ReadingPhase::Measure, ReadingPhase::Publish] {
+        slots.place(phase, size, &sizes).unwrap();
+    }
+    assert_eq!(slots.host.reading_scroll(slots.id).unwrap(), expected);
 }

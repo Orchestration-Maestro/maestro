@@ -416,3 +416,7 @@ fn published_roots(
         })
         .collect()
 }
+
+#[cfg(target_arch = "wasm32")]
+#[path = "transcript_lists/browser.rs"]
+mod browser;

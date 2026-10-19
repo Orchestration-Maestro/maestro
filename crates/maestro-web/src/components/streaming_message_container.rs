@@ -36,6 +36,8 @@ struct StreamingState<C: CustomAgentMessages> {
     published: Option<AgentMessage<BrowserMessages<C>>>,
     /// Whether this instance already owns an outstanding frame.
     scheduled: bool,
+    /// Publication generation observed by the containing transcript.
+    revision: u64,
     /// Repaint owner learned from the first render.
     context: Option<egui::Context>,
 }
@@ -62,6 +64,7 @@ impl<C: CustomAgentMessages + 'static> StreamingMessageContainer<C> {
                 pending: None,
                 published: None,
                 scheduled: false,
+                revision: 0,
                 context: None,
             })),
             frame: None,
@@ -84,6 +87,7 @@ impl<C: CustomAgentMessages + 'static> StreamingMessageContainer<C> {
             state.pending = None;
             state.scheduled = false;
             state.published = message;
+            state.revision = state.revision.wrapping_add(1);
             let clear = state.published.is_none();
             let context = state.context.clone();
             drop(state);
@@ -105,6 +109,11 @@ impl<C: CustomAgentMessages + 'static> StreamingMessageContainer<C> {
         }
         self.state.borrow_mut().pending = message;
         Ok(())
+    }
+    /// Observe publication without borrowing pending message contents.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn revision(&self) -> u64 {
+        self.state.borrow().revision
     }
     /// Draw only assistant content or the empty streaming placeholder.
     /// # Errors
@@ -192,6 +201,7 @@ fn publish<C: CustomAgentMessages>(weak: &std::rc::Weak<RefCell<StreamingState<C
         other => other,
     });
     state.scheduled = false;
+    state.revision = state.revision.wrapping_add(1);
     let context = state.context.clone();
     drop(state);
     if let Some(context) = context {

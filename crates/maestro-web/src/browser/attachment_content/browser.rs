@@ -9,8 +9,18 @@ use std::{cell::RefCell, rc::Rc};
 use web_sys::{Document, Element, HtmlCanvasElement};
 mod dialog;
 mod reading;
+pub(crate) use reading::invalidation;
 /// Active native parent with its independent canvas-to-CSS axis scales.
-type ReadingContainer = (Element, (f64, f64));
+struct ReadingContainer {
+    /// Native slot or containing root.
+    parent: Element,
+    /// Independent canvas-to-CSS scales.
+    scale: (f64, f64),
+    /// Projected origin before the native slot sizes change.
+    origin: Option<[f64; 2]>,
+    /// Aggregate and emitted row owning descendant resize observations.
+    owner: (egui::Id, Option<egui::Id>),
+}
 /// Browser objects scoped to the supplied canvas's document.
 pub struct BrowserAttachmentHost {
     /// Canvas coordinate frame.
@@ -316,8 +326,9 @@ impl AttachmentHost for BrowserAttachmentHost {
         &self,
         id: egui::Id,
         slot: Option<egui::Id>,
+        origin: Option<egui::Pos2>,
     ) -> Result<super::PlacementScope, AttachmentHostError> {
-        self.contain(id, slot)
+        self.contain(id, slot, origin)
     }
 
     fn resize_reading_slots(

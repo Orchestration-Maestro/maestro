@@ -190,12 +190,14 @@ pub trait AttachmentHost {
         ))
     }
     /// Position nested native reading frames beneath a retained root or row slot.
+    /// A supplied canvas origin places children before the row's new size is published.
     /// # Errors
     /// Returns unsupported-host or missing-container/slot failures.
     fn enter_reading_container(
         &self,
         _id: egui::Id,
         _slot: Option<egui::Id>,
+        _origin: Option<egui::Pos2>,
     ) -> Result<PlacementScope, AttachmentHostError> {
         Err(AttachmentHostError::Host(
             "Reading viewport unavailable".into(),

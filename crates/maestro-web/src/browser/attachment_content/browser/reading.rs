@@ -1,18 +1,15 @@
 //! Reading transactions in the existing native surface registry.
 use super::super::placement::Transform;
 use super::super::{ReadingContent, ReadingLayout, ReadingPhase, ReadingPlacement, ReadingRoot};
-use crate::browser::{
-    attachment_content::{
-        AttachmentContent, AttachmentHostError, AttachmentSurface,
-        browser::{BrowserAttachmentHost, DomSurface, bounds, host_error},
-    },
-    event_subscription::EventSubscription,
+use crate::browser::attachment_content::{
+    AttachmentContent, AttachmentHostError, AttachmentSurface,
+    browser::{BrowserAttachmentHost, DomSurface, bounds, host_error},
 };
 use maestro_theme::BrandPresentation;
 use std::{cell::RefCell, fmt::Write as _, rc::Rc};
-use wasm_bindgen::{JsCast as _, closure::Closure};
-use web_sys::{Element, ResizeObserver};
+use web_sys::Element;
 mod container;
+pub(crate) mod invalidation;
 mod transaction;
 use transaction::{Scroll, decoration_border, size_slots, transaction};
 /// Retained root/viewport lifetime with staged frame and viewport placements.
@@ -31,10 +28,8 @@ pub(super) struct NativeReading {
     viewport_measurement: String,
     /// Current repaint owner, without a root backedge.
     context: Rc<RefCell<egui::Context>>,
-    /// Native resize registration.
-    observer: ResizeObserver,
-    /// Native scrolling registration.
-    _scroll: EventSubscription<Closure<dyn FnMut()>>,
+    /// Existing native observation lifetimes and published geometry.
+    notifications: invalidation::Notifications,
     /// Hidden frame measurement placement, distinct from published placement.
     measurement: String,
     /// Current physical density for live canvas observation.
@@ -57,20 +52,20 @@ impl NativeReading {
         content: Rc<ReadingContent>,
         viewport: Element,
         host: &BrowserAttachmentHost,
-        repaint: &egui::Context,
+        (repaint, id): (&egui::Context, egui::Id),
     ) -> Result<Self, AttachmentHostError> {
         let repaint = Rc::new(RefCell::new(repaint.clone()));
-        let target = Rc::clone(&repaint);
-        let callback = Closure::wrap(Box::new(move || {
-            let repaint = target.borrow().clone();
-            repaint.request_repaint();
-        }) as Box<dyn FnMut()>);
-        let observer =
-            ResizeObserver::new(callback.as_ref().unchecked_ref()).map_err(|e| host_error(&e))?;
-        let scroll = EventSubscription::new(viewport.clone().into(), "scroll", callback)
-            .map_err(|e| host_error(&e))?;
-        observer.observe(&root.element);
-        observer.observe(&host.canvas);
+        let owner = host
+            .containers
+            .borrow()
+            .last()
+            .map_or((id, None), |container| container.owner);
+        let notifications = invalidation::Notifications::new(
+            &root.element,
+            &host.canvas,
+            Rc::clone(&repaint),
+            (id, owner),
+        )?;
         Ok(Self {
             slot_index: root.slots.iter().cloned().collect(),
             content,
@@ -79,8 +74,7 @@ impl NativeReading {
             viewport_style: String::new(),
             viewport_measurement: String::new(),
             context: repaint,
-            observer,
-            _scroll: scroll,
+            notifications,
             measurement: String::new(),
             pixels: 1.,
             sizes: vec![],
@@ -94,7 +88,8 @@ impl NativeReading {
         style: String,
         placement: &ReadingPlacement<'_>,
         contained: bool,
-    ) {
+    ) -> Result<(), AttachmentHostError> {
+        self.scroll = Some(Scroll::read(&self.viewport)?);
         self.viewport_style = if contained {
             "width:100%;height:100%;box-sizing:border-box;overflow:visible;"
         } else {
@@ -121,15 +116,25 @@ impl NativeReading {
         self.sizes = placement.sizes.to_vec();
         self.pixels = s.pixels_per_point;
         *self.context.borrow_mut() = placement.context.clone();
+        Ok(())
     }
     /// Apply final geometry with the same rollback boundary used by measurement.
     fn publish(&self, frame: &Element, style: &str) -> Result<(), AttachmentHostError> {
+        let changed: Vec<_> = self
+            .sizes
+            .iter()
+            .filter_map(|(id, _)| {
+                self.slot_index
+                    .get(id)
+                    .map(|element| (*id, element.clone()))
+            })
+            .collect();
         transaction(
             (frame, &self.viewport),
-            &self.root.slots,
+            &changed,
             ReadingPhase::Publish,
             |_| {
-                size_slots(&self.root.slots, &self.sizes)?;
+                size_slots(&self.slot_index, &self.sizes)?;
                 attr(frame, style)?;
                 attr(&self.viewport, &self.viewport_style)?;
                 if let Some(scroll) = &self.scroll {
@@ -138,28 +143,6 @@ impl NativeReading {
                 Ok(())
             },
         )
-    }
-    /// Read a complete slot snapshot through the existing inverse projection.
-    fn controls(
-        &self,
-        frame: &Element,
-        transform: &Transform,
-    ) -> Result<Vec<(egui::Id, egui::Rect)>, AttachmentHostError> {
-        let origin = bounds(frame)?;
-        self.root
-            .slots
-            .iter()
-            .map(|(id, element)| {
-                let rect = bounds(element)?;
-                Ok((
-                    *id,
-                    transform.relative(
-                        [rect.x(), rect.y(), rect.width(), rect.height()],
-                        [origin.x(), origin.y()],
-                    ),
-                ))
-            })
-            .collect()
     }
     /// Restore native state before committing only the successful staged offsets.
     fn measure(
@@ -173,7 +156,7 @@ impl NativeReading {
             &self.root.slots,
             ReadingPhase::Measure,
             |saved| {
-                size_slots(&self.root.slots, &self.sizes)?;
+                size_slots(&self.slot_index, &self.sizes)?;
                 attr(frame, &self.measurement)?;
                 attr(&self.viewport, &self.viewport_measurement)?;
                 retained.unwrap_or(saved).apply(&self.viewport)?;
@@ -190,11 +173,6 @@ impl NativeReading {
         )?;
         self.scroll = Some(scroll);
         Ok(layout)
-    }
-}
-impl Drop for NativeReading {
-    fn drop(&mut self) {
-        self.observer.disconnect();
     }
 }
 impl BrowserAttachmentHost {
@@ -244,6 +222,7 @@ impl BrowserAttachmentHost {
         &self,
         placement: &ReadingPlacement<'_>,
         style: &str,
+        id: egui::Id,
     ) -> Result<DomSurface, AttachmentHostError> {
         let mut candidate = self.create("div")?;
         let root = (placement.content.mount)(&self.document)?;
@@ -270,7 +249,7 @@ impl BrowserAttachmentHost {
             Rc::clone(&placement.content),
             candidate.child.clone(),
             self,
-            placement.context,
+            (placement.context, id),
         )?);
         attr(
             &candidate.wrapper,
@@ -323,7 +302,7 @@ impl BrowserAttachmentHost {
             surface.pending = if same {
                 None
             } else {
-                Some(Box::new(self.create_reading(placement, &style)?))
+                Some(Box::new(self.create_reading(placement, &style, s.id)?))
             };
         }
         let target = match surface.pending.as_deref_mut() {
@@ -336,8 +315,7 @@ impl BrowserAttachmentHost {
             .filter(|r| Rc::ptr_eq(&r.content, &placement.content))
             .ok_or_else(|| AttachmentHostError::Host("Reading content was not measured".into()))?;
         if placement.phase == ReadingPhase::Measure {
-            reading.stage(s, style, placement, !self.containers.borrow().is_empty());
-            return Ok(());
+            return reading.stage(s, style, placement, !self.containers.borrow().is_empty());
         }
         let style = style + reading.root.frame_style;
         let top = self.overlays.borrow().last().copied();
@@ -356,7 +334,15 @@ impl BrowserAttachmentHost {
             target.modal = previous_modal;
             return Err(error);
         }
-        publish_pending(surface, &projected)
+        let result = publish_pending(surface, &projected);
+        if result.is_ok()
+            && let Some(reading) = &surface.reading
+        {
+            reading
+                .notifications
+                .published(&reading.root.element, &self.canvas);
+        }
+        result
     }
     /// Read natural height now, restoring placement and native scroll afterwards.
     pub(super) fn measure_reading(
@@ -453,7 +439,7 @@ impl NativeReading {
             &self.root.slots,
             ReadingPhase::Measure,
             |saved| {
-                size_slots(&self.root.slots, &self.sizes)?;
+                size_slots(&self.slot_index, &self.sizes)?;
                 attr(frame, &style)?;
                 attr(&self.viewport, viewport)?;
                 saved.apply(&self.viewport)?;
@@ -496,7 +482,7 @@ fn reconcile(
         &previous.root.slots,
         ReadingPhase::Publish,
         |_| {
-            size_slots(&previous.root.slots, &next.sizes)?;
+            size_slots(&previous.slot_index, &next.sizes)?;
             attr(&surface.wrapper, projected)?;
             attr(&previous.viewport, &next.viewport_style)
         },
