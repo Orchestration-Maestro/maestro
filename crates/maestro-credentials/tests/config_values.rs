@@ -393,7 +393,10 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn native_helpers_support_pipes_and_multiline_output() {
-        let _creation = PROCESS_CREATION.write().unwrap();
+        if std::env::var_os("MAESTRO_CONFIG_CHILD").is_none() {
+            let root = Directory::new("native_helpers_support_pipes_and_multiline_output");
+            return child_test("native_helpers_support_pipes_and_multiline_output", &root.0);
+        }
         let operations =
             ProcessConfigValueOperations::new(|| unreachable!("Unix must avoid selection"));
         for (command, expected) in [
@@ -410,7 +413,10 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn command_empty_or_failed_output_returns_absence() {
-        let _creation = PROCESS_CREATION.write().unwrap();
+        if std::env::var_os("MAESTRO_CONFIG_CHILD").is_none() {
+            let root = Directory::new("command_empty_or_failed_output_returns_absence");
+            return child_test("command_empty_or_failed_output_returns_absence", &root.0);
+        }
         let operations = ProcessConfigValueOperations::new(|| unreachable!());
         for command in [
             "!printf ''",
@@ -429,7 +435,10 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn native_helpers_decode_invalid_utf8_lossily() {
-        let _creation = PROCESS_CREATION.write().unwrap();
+        if std::env::var_os("MAESTRO_CONFIG_CHILD").is_none() {
+            let root = Directory::new("native_helpers_decode_invalid_utf8_lossily");
+            return child_test("native_helpers_decode_invalid_utf8_lossily", &root.0);
+        }
         let operations = ProcessConfigValueOperations::new(|| unreachable!());
         assert_eq!(
             resolve_config_value_uncached("!printf '\\377key'", &operations).as_deref(),
@@ -447,7 +456,10 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn native_helpers_work_inside_running_runtime() {
-        let _creation = PROCESS_CREATION.write().unwrap();
+        if std::env::var_os("MAESTRO_CONFIG_CHILD").is_none() {
+            let root = Directory::new("native_helpers_work_inside_running_runtime");
+            return child_test("native_helpers_work_inside_running_runtime", &root.0);
+        }
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()
@@ -564,7 +576,10 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn native_helpers_timeout_without_fallback() {
-        let _creation = PROCESS_CREATION.write().unwrap();
+        if std::env::var_os("MAESTRO_CONFIG_CHILD").is_none() {
+            let root = Directory::new("native_helpers_timeout_without_fallback");
+            return child_test("native_helpers_timeout_without_fallback", &root.0);
+        }
         let root = Directory::new("timeout");
         let ready = root.0.join("ready");
         let operations = ProcessConfigValueOperations::new(|| unreachable!());

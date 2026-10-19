@@ -2,7 +2,7 @@
 #[cfg(test)]
 mod tests {
     use crate::oauth_support::{ControlledProvider, Unregister};
-    use crate::support::{PROCESS_CREATION, SERIAL, TempDir, block_on, is_child, run_child};
+    use crate::support::{SERIAL, TempDir, block_on, is_child, run_child};
     use maestro_credentials::{
         AuthStorage, AuthStorageBackend, ConfigValueOperations, InMemoryAuthStorageBackend,
         ProcessConfigValueOperations, clear_config_value_cache,
@@ -145,8 +145,15 @@ mod tests {
 
     #[test]
     fn stored_key_values_keep_resolution_semantics() {
+        if !is_child() {
+            let root = TempDir::new("stored-key-values");
+            return run_child(
+                "credential_key_selection::tests::stored_key_values_keep_resolution_semantics",
+                root.root(),
+                &[],
+            );
+        }
         let _serial = SERIAL.lock().unwrap();
-        let _creation = PROCESS_CREATION.write().unwrap();
         block_on(async {
             configured_values_resolve().await;
             native_commands_resolve().await;

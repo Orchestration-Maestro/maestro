@@ -1,6 +1,5 @@
 //! Temporary directories, isolated child test processes and stored credential fixtures
 //! shared by the storage tests.
-#![allow(dead_code)] // each test binary uses a different part of these helpers
 use maestro_credentials::{
     ApiKeyCredential, AuthCredential, AuthStorageBackend, InMemoryAuthStorageBackend,
 };
