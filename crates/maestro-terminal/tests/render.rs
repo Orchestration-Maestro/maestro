@@ -119,7 +119,7 @@ fn reverse_video_reset_invalidates_the_screen() {
 }
 
 #[test]
-fn styled() {
+fn snapshot_cells_resolve_packed_styles() {
     let mut t = terminal("\x1b[41m\x1b#8");
     let mut state = RenderState::default();
     state.update(&mut t);
@@ -169,7 +169,7 @@ fn bg_color_cells() {
 }
 
 #[test]
-fn grapheme() {
+fn snapshot_cells_preserve_unicode_clusters() {
     let mut t = terminal("A👨\u{200d}");
     let mut state = RenderState::default();
     state.update(&mut t);
@@ -246,7 +246,7 @@ fn update() {
 }
 
 #[test]
-fn colors() {
+fn snapshot_resolves_terminal_default_colors() {
     let mut t = terminal("");
     let mut state = RenderState::default();
     state.update(&mut t);
@@ -717,4 +717,19 @@ fn keyboard_color_cursor_reset_invalidates() {
         "\x1b]21;cursor=\x1b\\",
         true,
     );
+}
+
+#[test]
+fn rendered_cells_preserve_combining_and_emoji_sequences() {
+    const PAYLOAD: &str = "README 👨‍👩‍👧‍👦 🧑‍💻 ✅ ⚡ 漢字 café e\u{301} 🏳️‍🌈 🚀";
+    let mut terminal = Terminal::new(80, 3, 100_000).unwrap();
+    terminal
+        .modes
+        .set(maestro_terminal::Mode::GraphemeCluster, true);
+    terminal.write(format!("{PAYLOAD}\r\n").as_bytes());
+    let mut state = RenderState::default();
+    state.update(&mut terminal);
+    let row = state.rows().next().unwrap();
+    let text: String = row.cells().map(|cell| cell.graphemes_utf8()).collect();
+    assert_eq!(text, PAYLOAD);
 }

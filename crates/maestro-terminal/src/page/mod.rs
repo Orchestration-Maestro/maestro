@@ -110,6 +110,23 @@ impl Page {
         }
     }
 
+    /// Resolve packed background content or the page-local text style.
+    pub(crate) fn cell_style(&self, cell: Cell) -> crate::Style {
+        use crate::style::{Color, Style};
+        match cell.content() {
+            cell::Content::BgColorPalette(index) => Style {
+                bg_color: Color::Palette(index),
+                ..Style::default()
+            },
+            cell::Content::BgColorRgb(rgb) => Style {
+                bg_color: Color::Rgb(rgb),
+                ..Style::default()
+            },
+            _ if cell.style_id() != 0 => *self.styles.get(cell.style_id()),
+            _ => Style::default(),
+        }
+    }
+
     /// Borrow row metadata at the supplied row index.
     #[must_use]
     pub fn get_row(&self, y: u16) -> &Row {

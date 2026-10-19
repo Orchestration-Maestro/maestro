@@ -3,7 +3,7 @@
 use crate::{
     Style,
     color::{Palette, Rgb},
-    page::{Cell, CellPosition, Page, cell::Content},
+    page::{Cell, CellPosition, Page},
     style::{BoldColor, Fg},
 };
 
@@ -21,22 +21,10 @@ pub(super) struct CellData {
 impl CellData {
     /// Copy managed contents while the page is borrowed.
     pub fn new(page: &Page, pos: CellPosition, raw: Cell) -> Self {
-        let style = match raw.content() {
-            Content::BgColorPalette(index) => Style {
-                bg_color: crate::style::Color::Palette(index),
-                ..Style::default()
-            },
-            Content::BgColorRgb(rgb) => Style {
-                bg_color: crate::style::Color::Rgb(rgb),
-                ..Style::default()
-            },
-            _ if raw.style_id() != 0 => *page.styles.get(raw.style_id()),
-            _ => Style::default(),
-        };
         Self {
             raw,
             grapheme: page.lookup_grapheme(pos).unwrap_or_default().to_vec(),
-            style,
+            style: page.cell_style(raw),
         }
     }
 }

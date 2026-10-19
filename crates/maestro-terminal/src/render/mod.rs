@@ -2,6 +2,8 @@
 
 mod cell;
 mod row;
+#[cfg(test)]
+mod tests;
 pub use cell::RenderCell;
 pub use row::RenderRow;
 
@@ -186,22 +188,7 @@ impl RenderState {
         self.cursor.visual_style = screen.cursor.cursor_style;
         self.cursor.visible = terminal.modes.get(Mode::CursorVisible);
         self.cursor.blinking = terminal.modes.get(Mode::CursorBlinking);
-        self.cursor.viewport = pin.and_then(|pin| {
-            let pos = screen.pages.point_from_pin(Tag::Viewport, pin)?.coord();
-            if pos.y >= u32::from(self.rows) {
-                return None;
-            }
-            let wide_tail = pin.x > 0
-                && pin
-                    .left(1)
-                    .row_and_cell(&screen.pages)
-                    .is_some_and(|(_, cell)| cell.wide() == crate::page::cell::Wide::Wide);
-            Some(CursorViewport {
-                x: pos.x,
-                y: pos.y,
-                wide_tail,
-            })
-        });
+        self.cursor.viewport = None;
     }
 
     /// Refresh cheap defaults, copying the palette only when globally invalidated.
@@ -236,7 +223,9 @@ impl RenderState {
 
     /// Rebuild dirty rows in contiguous page chunks, consuming each page flag once.
     fn update_rows(&mut self, terminal: &mut Terminal, origin: Pin, redraw: bool) -> bool {
-        let pages = &mut terminal.screens.active_mut().pages;
+        let screen = terminal.screens.active_mut();
+        let cursor_pin = screen.pages.tracked_pin(screen.cursor.page_pin).copied();
+        let pages = &mut screen.pages;
         let mut chunks = origin.page_iterator(crate::page_list::Direction::RightDown, None);
         let mut y = 0;
         let mut changed = false;
@@ -250,6 +239,19 @@ impl RenderState {
             let page_dirty = page.dirty;
             page.dirty = false;
             let take = usize::from(chunk.end - chunk.start).min(self.row_data.len() - y);
+            if let Some(pin) = cursor_pin.filter(|pin| {
+                pin.node == chunk.node
+                    && pin.y >= chunk.start
+                    && usize::from(pin.y - chunk.start) < take
+            }) {
+                self.cursor.viewport = Some(CursorViewport {
+                    x: pin.x,
+                    y: u32::try_from(y).unwrap_or_default() + u32::from(pin.y - chunk.start),
+                    wide_tail: pin.x > 0
+                        && page.get_cells(pin.y)[usize::from(pin.x - 1)].wide()
+                            == crate::page::cell::Wide::Wide,
+                });
+            }
             for (offset, py) in (chunk.start..chunk.end).take(take).enumerate() {
                 let data = &mut self.row_data[y + offset];
                 changed |= data.update(page, py, redraw || page_dirty);

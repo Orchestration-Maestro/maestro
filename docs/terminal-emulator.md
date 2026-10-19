@@ -465,7 +465,9 @@ reversed. `read_text_screen` joins soft wraps and trims trailing blanks over
 retained screen coordinates. `read_ansi_screen` uses the same origin and lets
 the caller choose soft-wrap joining. `read_ansi_viewport` uses viewport-relative
 coordinates and preserves physical line breaks. Styled reads trim empty trailing
-cells but retain authored spaces. Invalid endpoints return `None`.
+cells but retain authored spaces and background-filled rows, including trailing
+filled rows. Unstyled trailing rows are omitted. Plain-text trimming is unchanged.
+Invalid endpoints return `None`.
 
 `screen_cell` returns a retained cell's `Wide` value and Unicode scalars.
 `screen_text_rows` copies all retained physical rows; `screen_text_rows_range`

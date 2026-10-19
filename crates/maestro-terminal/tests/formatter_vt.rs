@@ -334,3 +334,58 @@ fn vt_wide_graphemes_and_soft_wrap_preserve_styles() {
         "\x1b[0m\x1b[1m界e\u{301}XY\x1b[0m"
     );
 }
+
+#[test]
+fn styled_extraction_replays_background_only_rows() {
+    use maestro_terminal::render::RenderState;
+    for input in [
+        "A\r\n\x1b[44m\x1b[K\x1b[0m\r\nB",
+        "A\r\nB\r\n\x1b[44m\x1b[K\x1b[0m",
+    ] {
+        let mut source = Terminal::new(4, 3, 100_000).unwrap();
+        source.write(input.as_bytes());
+        let mut output = String::new();
+        TerminalFormatter::init(&source, vt())
+            .format(&mut output)
+            .unwrap();
+        assert!(output.contains("\x1b[48;5;4m"), "{output:?}");
+        let mut replay = Terminal::new(4, 3, 100_000).unwrap();
+        replay.write(output.as_bytes());
+        let mut expected = RenderState::default();
+        let mut actual = RenderState::default();
+        expected.update(&mut source);
+        actual.update(&mut replay);
+        for (expected, actual) in expected.rows().zip(actual.rows()) {
+            for (expected, actual) in expected.cells().zip(actual.cells()) {
+                assert_eq!(expected.background(), actual.background());
+                assert_eq!(expected.foreground(), actual.foreground());
+                // A replayed space and an erased blank paint the same cell.
+                assert_eq!(
+                    expected.graphemes_utf8().trim_end(),
+                    actual.graphemes_utf8().trim_end()
+                );
+            }
+        }
+        let mut plain = String::new();
+        TerminalFormatter::init(&source, Options::default())
+            .format(&mut plain)
+            .unwrap();
+        assert_eq!(
+            plain,
+            if input.ends_with('B') {
+                "A\n\nB"
+            } else {
+                "A\nB"
+            }
+        );
+    }
+    assert_eq!(page_output(4, "A\r\n\r\n", vt()), "A");
+}
+
+#[test]
+fn page_vt_emits_background_only_content() {
+    assert_eq!(
+        page_output(4, "\x1b[44m\x1b[K\x1b[0m", vt()),
+        "\x1b[0m\x1b[48;5;4m    \x1b[0m"
+    );
+}

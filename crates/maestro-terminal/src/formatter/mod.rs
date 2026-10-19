@@ -71,7 +71,7 @@ impl Default for Options<'_> {
 /// Deferred blanks carried between consecutive pages.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct TrailingState {
-    /// Pending line breaks, omitted if no later text appears.
+    /// Pending line breaks, omitted if no later text or styled content appears.
     pub rows: usize,
     /// Pending spaces, retained only across a soft-wrap continuation.
     pub cells: usize,
@@ -80,7 +80,7 @@ pub struct TrailingState {
 /// Format an inclusive range within one page.
 ///
 /// A start on a wide character's tail includes its leading cell.
-/// Trailing blank rows are always omitted.
+/// Trailing unstyled blank rows are omitted; VT output retains background fills.
 pub struct PageFormatter<'a> {
     /// Borrowed page containing cells and graphemes.
     pub page: &'a Page,

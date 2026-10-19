@@ -1,10 +1,7 @@
 //! Styled emission shared by the content walk and keyboard-state formatters.
 
 use super::{Format, PageFormatter, ScreenFormatter, TerminalFormatter};
-use crate::{
-    Style,
-    page::{Cell, cell::Content},
-};
+use crate::{Style, page::Cell};
 use std::fmt::{self, Write};
 
 /// Optional screen keyboard state.
@@ -65,23 +62,6 @@ impl PageFormatter<'_> {
         Ok(())
     }
 
-    /// Resolve packed background cells or a page-local text style.
-    pub(super) fn cell_style(&self, cell: Cell) -> Style {
-        use crate::style::Color;
-        match cell.content() {
-            Content::BgColorPalette(index) => Style {
-                bg_color: Color::Palette(index),
-                ..Style::default()
-            },
-            Content::BgColorRgb(rgb) => Style {
-                bg_color: Color::Rgb(rgb),
-                ..Style::default()
-            },
-            _ if cell.has_styling() => *self.page.styles.get(cell.style_id()),
-            _ => Style::default(),
-        }
-    }
-
     /// Change styles only when the cell's resolved style differs.
     pub(super) fn format_style(
         &self,
@@ -92,7 +72,7 @@ impl PageFormatter<'_> {
         if self.opts.emit != Format::Vt {
             return Ok(());
         }
-        let next = self.cell_style(cell);
+        let next = self.page.cell_style(cell);
         if next != *style {
             next.format_vt(writer, self.opts.palette)?;
             *style = next;

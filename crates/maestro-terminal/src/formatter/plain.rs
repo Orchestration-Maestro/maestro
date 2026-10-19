@@ -2,7 +2,7 @@
 
 use super::{Format, PageFormatter, TrailingState};
 use crate::Style;
-use crate::page::{Cell, CellPosition, cell::Wide};
+use crate::page::{CellPosition, cell::Wide};
 use std::fmt::{self, Write};
 
 impl PageFormatter<'_> {
@@ -80,7 +80,7 @@ impl PageFormatter<'_> {
         (start <= stop).then_some(start..stop)
     }
 
-    /// Emit a nonempty row, retaining only blanks needed by subsequent text.
+    /// Emit text or styled content, deferring unstyled blank rows.
     fn write_row(
         &self,
         writer: &mut impl Write,
@@ -93,7 +93,13 @@ impl PageFormatter<'_> {
             return Ok(());
         };
         let cells = self.page.get_cells(y);
-        if !Cell::has_text_any(&cells[usize::from(columns.start)..usize::from(columns.end)]) {
+        if !cells[usize::from(columns.start)..usize::from(columns.end)]
+            .iter()
+            .any(|cell| {
+                cell.has_text()
+                    || (self.opts.emit == Format::Vt && (!cell.is_empty() || cell.has_styling()))
+            })
+        {
             state.rows += 1;
             return Ok(());
         }
