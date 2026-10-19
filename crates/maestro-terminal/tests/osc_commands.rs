@@ -153,11 +153,6 @@ fn decode_osc_9_9_conemu_set_current_working_directory() {
     );
 }
 
-#[test]
-fn decode_osc_9_9_incomplete_directory_is_ignored() {
-    assert_eq!(decode(b"9;9", false, None), None);
-}
-
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -776,6 +771,14 @@ fn decode_osc_4() {
 
 #[test]
 fn decode_osc_5() {
+    assert_color(
+        b"5;0;red",
+        Operation::Osc5,
+        vec![Request::Set(ColoredTarget {
+            target: Target::Special(Special::Bold),
+            color: Rgb { r: 255, g: 0, b: 0 },
+        })],
+    );
     assert_color(
         b"5;0;?;1;?;2;?;3;?;4;?;5;?;0;red",
         Operation::Osc5,

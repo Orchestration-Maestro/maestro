@@ -28,13 +28,7 @@ impl Handler<'_> {
                     .int();
                 let _ = write!(self.terminal.effects.pty_reply, "\x1b[?{flags}u");
             }
-            QueryAction::SizeReport(SizeReportStyle::Csi21T) => {
-                let title = self.terminal.get_title().unwrap_or_default().to_vec();
-                let bytes = &mut self.terminal.effects.pty_reply;
-                bytes.extend_from_slice(b"\x1b]l");
-                bytes.extend_from_slice(&title);
-                bytes.extend_from_slice(b"\x1b\\");
-            }
+            QueryAction::SizeReport(SizeReportStyle::Csi21T) => self.terminal.report_title(),
             QueryAction::SizeReport(style) => self.size_report(style),
             QueryAction::Enquiry | QueryAction::TitlePush(_) | QueryAction::TitlePop(_) => {}
         }
