@@ -1,7 +1,10 @@
 //! Canonical JSON text: object keys in canonical order and every number as the double it
 //! rounds to, in shortest ECMAScript spelling.
 
-use std::io::{self, Write};
+use std::{
+    borrow::Cow,
+    io::{self, Write},
+};
 
 use serde::ser::{SerializeMap, SerializeSeq};
 use serde::{Serialize, Serializer};
@@ -29,6 +32,21 @@ pub enum BorrowedJson<'a> {
 /// Returns the serializer failure.
 pub fn compact_json(value: &Value) -> Result<String, serde_json::Error> {
     write(&Canonical(value), CompactFormatter)
+}
+
+/// Display a selected truthy value without changing strings.
+///
+/// Absent and falsy values have no display; other values use compact JSON.
+/// # Errors
+/// Returns the compact writer's serialization failure.
+pub fn display_truthy(value: Option<&Value>) -> Result<Option<Cow<'_, str>>, serde_json::Error> {
+    let Some(value) = value.filter(|value| crate::is_truthy(value)) else {
+        return Ok(None);
+    };
+    if let Some(text) = value.as_str() {
+        return Ok(Some(Cow::Borrowed(text)));
+    }
+    compact_json(value).map(|text| Some(Cow::Owned(text)))
 }
 
 /// Write an object exactly as [`compact_json`] writes a value holding it.

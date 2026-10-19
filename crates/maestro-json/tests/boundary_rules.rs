@@ -344,3 +344,32 @@ fn generic_pretty_json_preserves_canonical_numbers_and_keys() {
         assert_eq!(maestro_json::pretty_json(&value).unwrap(), query.expected);
     }
 }
+
+#[test]
+fn truthy_display_borrows_strings_and_formats_other_values_once() {
+    use maestro_json::display_truthy;
+    use std::borrow::Cow;
+    assert!(display_truthy(None).unwrap().is_none());
+    for value in [json!(null), json!(false), json!(0), json!(-0.0), json!("")] {
+        assert!(display_truthy(Some(&value)).unwrap().is_none());
+    }
+    for text in ["literal <&> 雪", " \t\u{feff}\u{85} "] {
+        let value = json!(text);
+        assert!(
+            matches!(display_truthy(Some(&value)).unwrap(), Some(Cow::Borrowed(found)) if found == text)
+        );
+    }
+    for (value, expected) in [
+        (json!(true), "true"),
+        (json!(1.25), "1.25"),
+        (json!({}), "{}"),
+        (json!([]), "[]"),
+        (json!({"z":1,"a":2}), "{\"z\":1,\"a\":2}"),
+        (json!(["b", "a", "b"]), "[\"b\",\"a\",\"b\"]"),
+        (json!(1e21), "1e+21"),
+    ] {
+        assert!(
+            matches!(display_truthy(Some(&value)).unwrap(), Some(Cow::Owned(found)) if found == expected)
+        );
+    }
+}

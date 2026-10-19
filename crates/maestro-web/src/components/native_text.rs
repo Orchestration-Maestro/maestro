@@ -25,6 +25,8 @@ struct TextActionState {
 pub(crate) enum TextKind {
     /// Shared header caption.
     Caption,
+    /// Literal section summary with native activation.
+    Summary,
     /// Input or output label.
     Label,
     /// Normal-weight small detail text.
@@ -240,6 +242,7 @@ fn update(mounted: &Mounted, text: &str, kind: TextKind) {
     use attachment_content::browser::set_text_if_changed;
     let class = match kind {
         TextKind::Caption => "maestro-tool-caption",
+        TextKind::Summary => "maestro-tool-caption maestro-text-action",
         TextKind::Label => "maestro-tool-label",
         TextKind::Detail => "maestro-tool-detail",
         TextKind::Usage(false) => "maestro-message-usage",

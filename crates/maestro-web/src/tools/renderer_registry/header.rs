@@ -160,17 +160,8 @@ impl Header {
         if let Some(caption) = &retained.caption {
             caption.set_hovered(self.expanded.is_some() && response.hovered())?;
         }
-        if self.expanded.is_some() && response.has_focus() {
-            ui.painter().rect_stroke(
-                response.rect,
-                0.,
-                egui::Stroke::new(
-                    1.,
-                    attachment_content::color(view.presentation, "accent")
-                        .map_err(|error| ToolUiError::Presentation(error.to_string()))?,
-                ),
-                egui::StrokeKind::Inside,
-            );
+        if self.expanded.is_some() {
+            attachment_content::reading::controls::focus_border(ui, response, view.presentation)?;
         }
         Ok(())
     }

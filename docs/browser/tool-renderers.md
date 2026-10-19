@@ -95,3 +95,52 @@ Console output shares `components::code_block::ReadingUiError`; its outer-style
 Presentation variant retains the original I/O error. Native console and header
 factories return `AttachmentHostError`. Rust callers must update return types
 and matches; dispatch, rendering, resource ownership and recovery are unchanged.
+
+## Command, calculation and time cards
+
+`BashRenderer` is registered as `bash` once per browser thread. Replacing or
+removing it stays effective; JSON mode bypasses it without altering the registry.
+`CalculateRenderer` and `GetCurrentTimeRenderer` are SDK exports for explicit
+registration. They display results, not executable calculation or clock tools.
+
+The three renderers accept borrowed model objects and ignore result details,
+without requiring those details to be serializable or cloneable. The built-in
+bash binding also admits JSON-value arguments: falsy values mean absent
+parameters; truthy non-objects mean present parameters without a command field.
+Explicit registrations retain their original operand checks.
+
+Bash shows the literal command and ordered text output in a console, without an
+expansion toggle. Calculation and time put successful output in their captions
+and show errors as plain destructive text below. All three use result status
+when present and pending status otherwise, regardless of the streaming flag.
+Only fixed caption keys are translated. Selected strings remain unchanged;
+other truthy field values use the shared compact JSON display. Recipes own their
+selected text. An unchanged native body survives updates; disappearing bodies
+release their owners.
+
+## Expandable sections
+
+[`ExpandableSection`](../../crates/maestro-web/src/components/expandable_section.rs)
+captures its owned children once. Collapsing detaches their native placement
+without losing child state; reopening restores the same roots. The first render
+applies `default_expanded`. Reconnection reapplies the latest default without
+recapturing generated controls. Changing the setting alone leaves expansion
+unchanged. Dropping the section releases its children and native summary.
+
+```rust,ignore
+use maestro_web::ExpandableSection;
+
+let mut section = ExpandableSection::new(host.clone(), children);
+section.summary = "Details".into();
+section.default_expanded = true;
+section.render(ui, view)?;
+// Reattach the same section with its original children.
+section.connected_callback();
+section.render(ui, view)?;
+```
+
+The literal summary has a leading right/down chevron, an 8-point icon gap and
+an 8-point expanded-body gap. Visible pointer activation, Enter and Space toggle
+it. Keyboard focus is outlined and scrolled into view. Presentation comes from
+the selected brand pack, with native text and clipped canvas controls using the
+same retained host as tool rows.
