@@ -443,26 +443,40 @@ fn keyboard_operations_reuse_screen_local_history() {
     assert_eq!(t.kitty_keyboard_flags().int(), 0);
 }
 
+fn alternate_screen_transitions(t: &mut Terminal) {
+    use maestro_terminal::screen_set::Key;
+    t.write(b"P");
+    for n in [47, 1047, 1049] {
+        t.write(format!("\x1b[?{n}h").as_bytes());
+        assert_eq!(t.active_screen(), Key::Alternate);
+        let (x, y) = position(t);
+        t.write(b"abc");
+        t.write(format!("\x1b[?{n}h").as_bytes());
+        if n == 1049 {
+            assert_text(t, "");
+        } else {
+            assert_eq!(cell(t, x, u32::from(y)).codepoint(), 'a', "{n}");
+        }
+        t.write(format!("\x1b[?{n}l\x1b[?{n}l").as_bytes());
+        assert_eq!(t.active_screen(), Key::Primary);
+        assert_eq!(cell(t, 0, 0).codepoint(), 'P', "{n}");
+        t.write(format!("\x1b[?{n}h").as_bytes());
+        let kept = cell(t, x, u32::from(y)).codepoint() == 'a';
+        assert_eq!(kept, n == 47, "{n}");
+        t.write(format!("\x1b[?{n}l").as_bytes());
+    }
+}
+
 #[test]
 fn mode_actions_apply_existing_terminal_owners() {
-    use maestro_terminal::{Mode, screen_set::Key};
+    use maestro_terminal::Mode;
     let mut t = origin_terminal();
     assert!(t.modes.get(Mode::Origin));
     t.write(b"\x1b[?6l");
     assert_eq!(position(&t), (0, 0));
     t.write(b"\x1b[?69l");
     assert_eq!((t.scrolling_region.left, t.scrolling_region.right), (0, 11));
-    for n in [47, 1047, 1049] {
-        t.write(format!("\x1b[?{n}h").as_bytes());
-        assert_eq!(t.active_screen(), Key::Alternate);
-        t.write(b"abc");
-        t.write(format!("\x1b[?{n}h").as_bytes());
-        if n == 1049 {
-            assert_text(&t, "");
-        }
-        t.write(format!("\x1b[?{n}l\x1b[?{n}l").as_bytes());
-        assert_eq!(t.active_screen(), Key::Primary);
-    }
+    alternate_screen_transitions(&mut t);
     t.write(b"\x1b[2;3H\x1b[?1048h\x1b[H\x1b[?1048l");
     assert_eq!(position(&t), (2, 1));
     t.write(b"\x1b[?3h");

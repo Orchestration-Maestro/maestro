@@ -7,6 +7,8 @@ use maestro_terminal::stream::{
 
 use maestro_terminal::stream::{Action, Handler, Stream};
 
+use super::support::terminal::assert_text;
+
 #[derive(Default)]
 struct Recorder(Vec<char>);
 
@@ -34,6 +36,20 @@ fn expect(bytes: &[u8], actions: &[Action]) {
     let mut expected = Expected { actions, seen: 0 };
     Stream::new(false).next_slice(bytes, &mut expected);
     assert_eq!(expected.seen, actions.len());
+}
+
+fn numeric_mode_terminal() -> maestro_terminal::Terminal {
+    let mut t = maestro_terminal::Terminal::new(10, 2, 0).unwrap();
+    t.write(b"ab\x1b[>4;2m");
+    assert!(t.modify_other_keys_enabled());
+    t
+}
+
+fn numeric_mode_after(bytes: &[u8]) -> bool {
+    let mut t = numeric_mode_terminal();
+    t.write(bytes);
+    assert_text(&t, "ab");
+    t.modify_other_keys_enabled()
 }
 
 #[test]
@@ -403,21 +419,30 @@ fn modifier_requests_keep_the_numeric_mode_distinction() {
         ("1;2", F::CursorKeys),
         ("2;2", F::FunctionKeys),
     ] {
+        let bytes = format!("\x1b[>{params}m");
         expect(
-            format!("\x1b[>{params}m").as_bytes(),
+            bytes.as_bytes(),
             &[Action::Keyboard(KeyboardAction::ModifyKeyFormat(format))],
+        );
+        assert_eq!(
+            numeric_mode_after(bytes.as_bytes()),
+            format == F::OtherKeysNumeric,
+            "{params}"
         );
     }
     for params in ["", "4", "4;2;9", "65535"] {
+        let bytes = format!("\x1b[>{params}n");
         expect(
-            format!("\x1b[>{params}n").as_bytes(),
+            bytes.as_bytes(),
             &[Action::Keyboard(KeyboardAction::ModifyKeyFormat(
                 F::OtherKeysNumericExcept,
             ))],
         );
+        assert!(!numeric_mode_after(bytes.as_bytes()), "{params}");
     }
     for bytes in [b"\x1b[>3m".as_slice(), b"\x1b[>4;2;9m", b"\x1b[?4m"] {
         expect(bytes, &[]);
+        assert!(numeric_mode_after(bytes));
     }
 }
 
@@ -729,6 +754,13 @@ fn apc_and_dcs_keep_payload_and_exit_order() {
             stream.next_slice(&bytes[..split], &mut recorder);
             stream.next_slice(&bytes[split..], &mut recorder);
             assert_eq!(recorder.seen, actions.len());
+            if matches!(actions[0], Action::Payload(PayloadAction::DcsHook(_))) {
+                let mut t = numeric_mode_terminal();
+                t.write(&bytes[..split]);
+                t.write(&bytes[split..]);
+                assert!(t.modify_other_keys_enabled());
+                assert_text(&t, "abx");
+            }
         }
     }
 }

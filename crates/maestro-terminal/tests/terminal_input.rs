@@ -206,9 +206,12 @@ fn larger_byte_budgets_retain_more_history() {
 fn negative_scroll_saturates_at_the_oldest_row() {
     let mut t = Terminal::new(80, 3, 1_000_000).unwrap();
     numbered_lines(&mut t, 1000);
-    let len = t.scrollbar().len;
+    let bar = t.scrollbar();
+    assert!(bar.offset > 0 && bar.total > bar.len);
+    let (len, newest) = (bar.len, viewport(&t));
     t.scroll_viewport(ScrollViewport::Top);
     let oldest = viewport(&t);
+    assert_ne!(oldest, newest);
     t.scroll_viewport(ScrollViewport::Bottom);
     t.scroll_viewport(ScrollViewport::Delta(-10_000));
     let bar = t.scrollbar();
@@ -222,6 +225,7 @@ fn absolute_scroll_positions_round_trip_and_saturate() {
     numbered_lines(&mut t, 1000);
     let bar = t.scrollbar();
     let max = bar.total - bar.len;
+    assert!(max > 1, "retained history: {max}");
     for row in [0, max / 2, max, usize::MAX] {
         t.scroll_viewport(ScrollViewport::Row(row));
         let current = t.scrollbar();
