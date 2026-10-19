@@ -142,8 +142,9 @@ impl<C: CustomAgentMessages + 'static> StreamingMessageContainer<C> {
         if !show_cursor {
             self.cursor = None;
         }
+        let rem = self.host.root_rem()?;
         let row = ui.vertical(|ui| -> Result<(), ToolUiError> {
-            ui.spacing_mut().item_spacing.y = 12.;
+            ui.spacing_mut().item_spacing.y = 0.75 * rem;
             if let Some(AgentMessage::Assistant(message)) = &published {
                 let message = message
                     .read()
@@ -180,7 +181,7 @@ impl<C: CustomAgentMessages + 'static> StreamingMessageContainer<C> {
                 return Ok(());
             }
             if published.is_none() || matches!(published, Some(AgentMessage::Assistant(_))) {
-                // Item spacing already supplies the twelve-pixel bottom margin.
+                // Item spacing already supplies the trailing margin.
                 ui.add_space(0.);
             }
             Ok(())

@@ -319,6 +319,36 @@ impl AttachmentHost for BrowserAttachmentHost {
     fn reading_scroll(&self, id: egui::Id) -> Result<super::ReadingScroll, AttachmentHostError> {
         self.scroll(id)
     }
+    fn root_rem(&self) -> Result<f32, AttachmentHostError> {
+        let root = self
+            .document
+            .document_element()
+            .ok_or_else(|| AttachmentHostError::Host("Document has no root".into()))?;
+        let style = self
+            .document
+            .default_view()
+            .ok_or_else(|| AttachmentHostError::Host("Document has no window".into()))?
+            .get_computed_style(&root)
+            .map_err(|error| host_error(&error))?
+            .ok_or_else(|| AttachmentHostError::Host("Missing root style".into()))?;
+        let value = style
+            .get_property_value("font-size")
+            .map_err(|error| host_error(&error))?;
+        let rem: f32 = value.trim_end_matches("px").parse().map_err(|error| {
+            AttachmentHostError::Host(format!("Invalid root font size: {error}"))
+        })?;
+        if !rem.is_finite() || rem <= 0. {
+            return Err(AttachmentHostError::Host("Invalid root font size".into()));
+        }
+        Ok(rem)
+    }
+    fn take_reading_apertures(&self, id: egui::Id) -> Vec<egui::Rect> {
+        self.surfaces
+            .borrow_mut()
+            .get_mut(&id)
+            .and_then(|surface| surface.reading.as_mut())
+            .map_or_else(Vec::new, |reading| std::mem::take(&mut reading.apertures))
+    }
     fn set_reading_scroll(&self, id: egui::Id, top: f64) -> Result<(), AttachmentHostError> {
         self.set_scroll(id, top)
     }

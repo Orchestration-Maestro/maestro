@@ -35,6 +35,10 @@ pub(super) struct TranscriptViewport {
     positions: HashMap<egui::Id, usize>,
     /// Native placement from the previous successful publication.
     placement: Option<(egui::Rect, egui::Rect, u32)>,
+    /// Last successfully reconciled native presentation properties.
+    presentation: String,
+    /// Last successfully resolved document rem.
+    rem: f32,
     /// Reader-follow transitions.
     pub(super) follow: FollowState,
 }
@@ -48,6 +52,8 @@ impl TranscriptViewport {
             rows: vec![],
             positions: HashMap::new(),
             placement: None,
+            presentation: String::new(),
+            rem: 0.,
             follow: FollowState::default(),
         }
     }
@@ -63,7 +69,7 @@ impl TranscriptViewport {
         let placement = (rect, ui.clip_rect(), ui.ctx().pixels_per_point().to_bits());
         let moved = self.placement != Some(placement);
         if moved {
-            self.place(ui, rect, &[], view)?;
+            self.place(ui, rect, (&[], vec![]), view)?;
             self.placement = Some(placement);
         }
         let changes = attachment_content::browser::invalidation::take(ui.ctx(), self.id);
@@ -71,36 +77,45 @@ impl TranscriptViewport {
         if changes.scrolled {
             self.follow.observe(Some(scroll));
         }
-        let refresh = refresh || moved || changes.canvas_resized;
+        let mut presentation = String::new();
+        crate::browser::append_brand_properties(&mut presentation, view.presentation);
+        let rem = self.host.root_rem()?;
+        let refresh = refresh
+            || moved
+            || changes.canvas_resized
+            || self.presentation != presentation
+            || self.rem.to_bits() != rem.to_bits();
         if self.rows.len() != count {
             self.resize(count)?;
         }
-        let width = rect.width().min(768.) - 32.;
+        let width = (rect.width().min(48. * rem) - 2. * rem).max(0.);
         let origin = egui::pos2(
             rect.center().x - width / 2.,
-            rect.top() + 16. - attachment_content::points(scroll.top),
+            rect.top() + rem - attachment_content::points(scroll.top),
         );
         let visible = egui::Rect::from_min_size(rect.min, rect.size());
+        drop(self.host.take_reading_apertures(self.id));
         let sizes = self.draw_rows(
             ui,
-            (origin, width, visible),
+            (origin, width, visible, rem),
             (refresh, &changes.slots, extra_dirty),
             draw,
         )?;
-        if !sizes.is_empty() {
-            self.place(ui, rect, &sizes, view)?;
-        }
+        let apertures = self.host.take_reading_apertures(self.id);
+        self.place(ui, rect, (&sizes, apertures), view)?;
         if self.follow.enabled && (refresh || !sizes.is_empty()) {
             self.host
                 .set_reading_scroll(self.id, self.host.reading_scroll(self.id)?.height)?;
         }
+        self.presentation = presentation;
+        self.rem = rem;
         Ok(ui.allocate_rect(rect, egui::Sense::hover()))
     }
     /// Visit visible canvas rows plus explicitly invalidated native rows, never all clean rows.
     fn draw_rows(
         &mut self,
         ui: &mut egui::Ui,
-        (origin, width, visible): (egui::Pos2, f32, egui::Rect),
+        (origin, width, visible, rem): (egui::Pos2, f32, egui::Rect, f32),
         (refresh, dirty_slots, extra_dirty): (bool, &HashSet<egui::Id>, Option<usize>),
         mut draw: impl FnMut(usize, &mut egui::Ui) -> Result<(), ToolUiError>,
     ) -> Result<Vec<(egui::Id, egui::Vec2)>, ToolUiError> {
@@ -141,7 +156,7 @@ impl TranscriptViewport {
                     (row.id, row_origin, width),
                     |ui| draw(position, ui),
                 )?;
-                let gap = f32::from(u8::from(position + 1 < count)) * 12.;
+                let gap = f32::from(u8::from(position + 1 < count)) * 0.75 * rem;
                 sizes.extend(row.resize(width, height + gap, dirty));
             }
             row.top = top;
@@ -155,6 +170,7 @@ impl TranscriptViewport {
         self.rows.clear();
         self.positions.clear();
         self.placement = None;
+        self.presentation.clear();
     }
     /// Publish positional additions before admitting children; factories run outside registry borrows.
     fn resize(&mut self, count: usize) -> Result<(), ToolUiError> {
@@ -188,7 +204,7 @@ impl TranscriptViewport {
         &self,
         ui: &egui::Ui,
         rect: egui::Rect,
-        sizes: &[(egui::Id, egui::Vec2)],
+        (sizes, apertures): (&[(egui::Id, egui::Vec2)], Vec<egui::Rect>),
         view: ToolRenderView<'_>,
     ) -> Result<(), ToolUiError> {
         for phase in [ReadingPhase::Measure, ReadingPhase::Publish] {
@@ -199,7 +215,7 @@ impl TranscriptViewport {
                     clip_rect: ui.clip_rect(),
                     pixels_per_point: ui.ctx().pixels_per_point(),
                     opacity: 1.,
-                    occluders: vec![],
+                    occluders: apertures.clone(),
                     content: AttachmentContent::Reading(ReadingPlacement {
                         content: Rc::clone(&self.content),
                         phase,

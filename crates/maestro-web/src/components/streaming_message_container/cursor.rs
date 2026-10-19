@@ -37,14 +37,15 @@ impl Cursor {
         {
             self.content = Some((color.to_owned(), factory(color)));
         }
+        let rem = self.host.root_rem()?;
         if let Some((_, content)) = &self.content {
             ui.allocate_ui_with_layout(
-                egui::vec2(0., 16.),
+                egui::vec2(0., rem),
                 egui::Layout::left_to_right(egui::Align::Min),
                 |ui| {
                     ui.spacing_mut().item_spacing.x = 0.;
-                    ui.add_space(16.);
-                    let (_, rect) = ui.allocate_space(egui::vec2(8., 16.));
+                    ui.add_space(rem);
+                    let (_, rect) = ui.allocate_space(egui::vec2(0.5 * rem, rem));
                     attachment_content::reading::present(
                         self.host.as_ref(),
                         ui,

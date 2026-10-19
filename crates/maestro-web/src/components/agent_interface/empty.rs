@@ -80,7 +80,7 @@ fn content(color: &str, text: String) -> Rc<ReadingContent> {
             root.set_text_content(Some(&text));
             root.set_attribute(
                 "style",
-                &format!("box-sizing:border-box;padding:16px;text-align:center;color:{color};"),
+                &format!("box-sizing:border-box;padding:1rem;text-align:center;color:{color};"),
             )
             .map_err(|error| host_error(&error))?;
             Ok(ReadingRoot {

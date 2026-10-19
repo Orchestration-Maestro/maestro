@@ -241,3 +241,46 @@ fn markdown_block_copies_current_native_listing_after_replacement() {
     assert_eq!(canvas.host.removed.borrow().len(), 1);
     assert_eq!(canvas.host.live(), 0);
 }
+
+#[test]
+fn copy_button_projects_pointer_events_into_transformed_layers() {
+    for offset in [egui::Vec2::ZERO, egui::vec2(0., -250.)] {
+        transformed_copy(offset);
+    }
+}
+
+/// Exercise both pointer endpoints on a real translated toolkit layer.
+fn transformed_copy(offset: egui::Vec2) {
+    let mut canvas = Canvas::new();
+    canvas.button.text = "transformed copy".into();
+    let layer = egui::LayerId::new(egui::Order::Middle, egui::Id::new("translated copy"));
+    let transform = egui::emath::TSTransform::from_translation(offset);
+    let mut point = egui::Pos2::ZERO;
+    for frame in 0..4 {
+        let events = if frame < 2 {
+            vec![]
+        } else {
+            pointer(point, frame == 2)
+        };
+        let (response, _) = copy_button_support::draw(
+            &canvas.context,
+            &mut canvas.paint,
+            events,
+            (egui::Rect::EVERYTHING, true),
+            |ui, i18n, presentation| {
+                let response = egui::Area::new(layer.id)
+                    .order(layer.order)
+                    .fixed_pos(egui::pos2(20., 300.))
+                    .constrain(false)
+                    .show(ui.ctx(), |ui| {
+                        canvas.button.render(ui, i18n, presentation).unwrap()
+                    })
+                    .inner;
+                ui.ctx().set_transform_layer(layer, transform);
+                response
+            },
+        );
+        point = transform * response.rect.center();
+    }
+    assert_eq!(&*canvas.host.copies.borrow(), &["transformed copy"]);
+}

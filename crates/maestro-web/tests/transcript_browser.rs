@@ -430,3 +430,7 @@ pub fn transcript_registry_publication_keeps_reader_scroll_after_programmatic_fo
 
 #[path = "transcript_browser/actions.rs"]
 mod actions;
+#[path = "transcript_browser/invalidation.rs"]
+mod invalidation;
+#[path = "transcript_browser/pointer.rs"]
+mod pointer;

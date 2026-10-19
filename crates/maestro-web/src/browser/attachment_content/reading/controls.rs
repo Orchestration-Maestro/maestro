@@ -19,8 +19,10 @@ pub(crate) fn pointer_actions<A: Copy + PartialEq>(
                 .iter()
                 // Completed clicks use stale geometry; keep only toolkit layer admission.
                 .find(|(_, rect, layer)| {
-                    rect.contains(*canvas_points)
-                        && context.layer_id_at(*canvas_points) == Some(*layer)
+                    let local = context
+                        .layer_transform_from_global(*layer)
+                        .map_or(*canvas_points, |transform| transform * *canvas_points);
+                    rect.contains(local) && context.layer_id_at(*canvas_points) == Some(*layer)
                 })
                 .map(|(action, _, _)| *action);
             if *down {

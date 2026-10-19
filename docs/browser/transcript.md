@@ -69,8 +69,8 @@ widgets retain disclosure state through updates. Clearing releases those childre
 so the next response starts collapsed. Keep returned overlays separately: a later
 child failure does not consume an already-opened overlay.
 
-The native cursor is 8 by 16 pixels, inset 16 pixels, with a two-second pulse in
-the selected pack's muted color. Cursor rows have a 12-pixel gap and bottom
+The native cursor is 0.5 by 1rem, inset 1rem, with a two-second pulse in
+the selected pack's muted color. Cursor rows have a 0.75rem gap and bottom
 margin, without an extra interactive-row minimum height. Editor input, send/abort
 actions and conversation statistics belong to the separate editor interface.
 
@@ -84,9 +84,10 @@ Tool execution events do not directly refresh the transcript. The final agent
 event retires the streaming row before the Agent settles idle.
 
 Without a session, the view shows the localized native text `No session set`,
-centered with 16-pixel padding. Binding removes that literal. The transcript is
-centered at a maximum width of 48rem, with 16-pixel side/top padding and no bottom
-padding. Browser Find and keyboard focus can reveal attached offscreen text;
+centered with 1rem padding. Binding removes that literal. The transcript is
+centered at a maximum width of 48rem, with 1rem side/top padding and no bottom
+padding. Canvas allocation uses `AttachmentHost::root_rem`, resolved from the
+canvas document's computed root font size by the browser host. Browser Find and keyboard focus can reveal attached offscreen text;
 the next canvas frame draws the revealed rows.
 
 The application facade exports `AgentOptions` and `PromptInput` for constructing
@@ -106,7 +107,9 @@ remain errors in the Agent's terminal assistant outcome, not successful empty
 requests. Disabled proxy settings skip the URL read, including its failures.
 
 The containing native viewport keeps every row's text attached while clean scroll
-frames draw only intersecting canvas rows. A history refresh prepares the result
+frames draw only intersecting canvas rows. Frame placement is republished when
+rendered, including after canvas movement; presentation changes also reconcile
+offscreen native rows. A history refresh prepares the result
 index once for both stable and streaming rows. Native resize notifications identify
 the affected positional slot; offscreen image growth updates its height before
 later rows are revealed. Rows use their planned canvas origin while native slot
@@ -132,8 +135,10 @@ while drawing its children. Its optional canvas origin places a child against th
 planned row position before new native slot heights are published. Without that
 operand, placement uses the slot's current native bounds. The containing viewport
 supplies scrolling and clipping; contained reading bodies do not add independent
-scrollers. Standalone reading views
-keep their existing fixed frames and bounded viewports.
+scrollers. Child canvas-control apertures are also published on the containing
+frame through `take_reading_apertures`, so native ancestors do not intercept
+canvas pointer events. Standalone reading views keep their existing fixed frames
+and bounded viewports.
 
 On browser hosts, `resize_reading_slots` grows or truncates positional slots without
 replacing the containing root or untouched slots. Its factory receives the actual
@@ -218,7 +223,8 @@ links, which retain their separate 1500 ms policy. Dropping the control revokes
 its timer and prevents pending work from delivering new UI feedback; it does not
 claim to cancel native copying already started. Pointer activation requires both
 primary endpoints in the enabled, visible slot on the admitted toolkit layer.
-Keyboard activation remains available through the returned response.
+The shared admission owner projects pointer coordinates into that layer before
+checking the slot. Keyboard activation remains available through the returned response.
 
 ## Native Markdown and code
 

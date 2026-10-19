@@ -1,7 +1,7 @@
 .maestro-transcript-cursor {
     display: block;
-    width: 8px;
-    height: 16px;
+    width: 0.5rem;
+    height: 1rem;
     background: var(--transcript-muted);
     animation: maestro-transcript-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
@@ -14,7 +14,7 @@
     width: 100%;
     max-width: 48rem;
     margin: 0 auto;
-    padding: 16px 16px 0;
+    padding: 1rem 1rem 0;
 }
 .maestro-transcript-slot {
     position: relative;

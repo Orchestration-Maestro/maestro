@@ -115,12 +115,13 @@ impl BrowserAttachmentHost {
             "auto".into()
         };
         Ok(Some(format!(
-            "position:absolute;left:{}px;top:{}px;width:{}px;height:{};opacity:{};overflow:visible;transform-origin:0 0;transform:scale(1,1);clip-path:none;",
+            "position:absolute;left:{}px;top:{}px;width:{}px;height:{};opacity:{};overflow:visible;transform-origin:0 0;transform:scale(1,1);clip-path:{};",
             (left - parent_left) / scale.0,
             (top - parent_top) / scale.1,
             surface.rect.width(),
             height,
             surface.opacity,
+            super::super::super::placement::frame_clip_path(surface, surface.clip_rect),
         )))
     }
     /// Release the registry borrow before invoking a caller's native factory.

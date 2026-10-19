@@ -125,8 +125,9 @@ impl<C: CustomAgentMessages + 'static> MessageList<C> {
         (view, overlays): (ToolRenderView<'_>, &mut Vec<crate::AttachmentOverlay>),
     ) -> Result<egui::Response, ToolUiError> {
         self.refresh(props.messages)?;
+        let rem = self.host.root_rem()?;
         let row = ui.vertical(|ui| {
-            ui.spacing_mut().item_spacing.y = 12.;
+            ui.spacing_mut().item_spacing.y = 0.75 * rem;
             let mut emitted = 0;
             for position in 0..self.items.len() {
                 self.draw_row(ui, position, &props, (view, overlays))?;

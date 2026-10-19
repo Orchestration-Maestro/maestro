@@ -136,34 +136,49 @@ pub(crate) fn draw_in_rect(
     i18n: &I18n,
     rect: egui::Rect,
 ) -> Result<(), ToolUiError> {
+    draw_frame(scene, interface, i18n, rect, vec![]).map(|mut output| {
+        output.textures_delta.clear();
+    })
+}
+/// Return the painted frame after delivering actual canvas pointer events.
+pub(super) fn draw_frame(
+    scene: &Slots,
+    interface: &mut AgentInterface,
+    i18n: &I18n,
+    rect: egui::Rect,
+    events: Vec<egui::Event>,
+) -> Result<egui::FullOutput, ToolUiError> {
     let mut response = Ok(());
     let host: Rc<dyn maestro_web::browser::attachment_content::AttachmentHost> = scene.host.clone();
     let p = scene.pack.presentation(scene.mode).unwrap();
-    scene
-        .context
-        .run_ui(
-            egui::RawInput {
-                screen_rect: Some(rect),
-                ..Default::default()
-            },
-            |ui| {
-                let output = interface.render(
-                    ui,
-                    ToolRenderView::new(
-                        &host,
-                        i18n,
-                        &p,
-                        &crate::highlighter_support::NoHighlight,
-                        None,
-                    ),
-                );
-                assert!(output.overlays.is_empty());
-                response = output.response.map(|_| ());
-            },
-        )
-        .textures_delta
-        .clear();
-    response
+    let mut output = scene.context.run_ui(
+        egui::RawInput {
+            screen_rect: Some(rect),
+            events,
+            ..Default::default()
+        },
+        |ui| {
+            let output = interface.render(
+                ui,
+                ToolRenderView::new(
+                    &host,
+                    i18n,
+                    &p,
+                    &crate::highlighter_support::NoHighlight,
+                    None,
+                ),
+            );
+            assert!(output.overlays.is_empty());
+            response = output.response.map(|_| ());
+        },
+    );
+    match response {
+        Ok(()) => Ok(output),
+        Err(error) => {
+            output.textures_delta.clear();
+            Err(error)
+        }
+    }
 }
 /// Every text root stays searchable while actual canvas invocation follows the native scroll.
 /// # Panics
