@@ -41,13 +41,7 @@ impl ExpandableSection {
         children: Vec<Box<dyn ToolContent>>,
     ) -> Self {
         let expanded = Rc::new(Cell::new(false));
-        let weak = Rc::downgrade(&expanded);
-        let mut header = NativeText::new(Rc::clone(&host));
-        header.set_action(Some(Rc::new(move || {
-            if let Some(expanded) = weak.upgrade() {
-                expanded.set(!expanded.get());
-            }
-        })));
+        let header = NativeText::new(Rc::clone(&host));
         Self {
             summary: String::new(),
             default_expanded: false,
@@ -92,6 +86,13 @@ impl ExpandableSection {
         } else {
             vec![]
         };
+        let weak = Rc::downgrade(&self.expanded);
+        let native_header = header.clone();
+        self.header.set_action(Some(Rc::new(move || {
+            if let Some(expanded) = weak.upgrade() {
+                activate_toggle(&native_header, visible, &expanded);
+            }
+        })));
         let events = ui.input(|input| input.events.clone());
         let pointer = !browser::attachment_content::reading::controls::pointer_actions(
             &events,
@@ -101,7 +102,7 @@ impl ExpandableSection {
         )
         .is_empty();
         if pointer || (header.clicked() && !header.clicked_by(egui::PointerButton::Primary)) {
-            self.expanded.set(!self.expanded.get());
+            activate_toggle(&header, visible, &self.expanded);
         }
         if self.expanded.get() {
             let _active = self.host.enter_placement_scope(self.child_scope);
@@ -122,34 +123,41 @@ impl ExpandableSection {
     ) -> Result<egui::Response, ToolUiError> {
         browser::attachment_content::style(ui, view.presentation)
             .map_err(|error| ToolUiError::Presentation(error.to_string()))?;
-        let row = ui.horizontal(|ui| -> Result<(), ToolUiError> {
+        let row = ui.horizontal(|ui| {
             ui.spacing_mut().item_spacing.x = 8.;
-            let node = browser::attachment_content::glyph_node(if self.expanded.get() {
-                "ChevronDown"
-            } else {
-                "ChevronRight"
-            })
-            .map_err(ToolUiError::Control)?;
             let rect = ui.allocate_space(egui::vec2(16., 16.)).1;
-            let role = if ui.rect_contains_pointer(ui.max_rect()) {
-                "text"
-            } else {
-                "muted"
-            };
-            let color = browser::attachment_content::color(view.presentation, role)
-                .map_err(|error| ToolUiError::Presentation(error.to_string()))?;
-            browser::attachment_content::paint_icon(
-                ui,
-                rect,
-                &node,
-                (crate::icons::IconSize::Sm, color, 0.),
-            )
-            .map_err(ToolUiError::Control)?;
             self.header
                 .render(ui, (&self.summary, TextKind::Summary), view)?;
-            Ok(())
+            Ok::<_, ToolUiError>(rect)
         });
-        row.inner?;
+        let rect = row.inner?;
+        let node = browser::attachment_content::glyph_node(if self.expanded.get() {
+            "ChevronDown"
+        } else {
+            "ChevronRight"
+        })
+        .map_err(ToolUiError::Control)?;
+        let role = if ui.rect_contains_pointer(row.response.rect) {
+            "text"
+        } else {
+            "muted"
+        };
+        let color = browser::attachment_content::color(view.presentation, role)
+            .map_err(|error| ToolUiError::Presentation(error.to_string()))?;
+        let first = ui.ctx().graphics_mut(|g| g.entry(ui.layer_id()).next_idx());
+        browser::attachment_content::paint_icon(
+            ui,
+            rect,
+            &node,
+            (crate::icons::IconSize::Sm, color, 0.),
+        )
+        .map_err(ToolUiError::Control)?;
+        let last = ui.ctx().graphics_mut(|g| g.entry(ui.layer_id()).next_idx());
+        crate::tools::renderer_registry::header::center_leading(
+            ui,
+            Some((first, last, rect.center().y)),
+            row.response.rect.center().y,
+        );
         let response = ui.interact(
             row.response.rect,
             self.header.id().with("toggle"),
@@ -171,5 +179,17 @@ impl ExpandableSection {
 impl Drop for ExpandableSection {
     fn drop(&mut self) {
         self.host.hide_placement_scope(self.child_scope);
+    }
+}
+
+/// Admit a disclosure activation through its visible button and focus owner.
+pub(crate) fn activate_toggle(
+    response: &egui::Response,
+    visible: egui::Rect,
+    expanded: &Cell<bool>,
+) {
+    if response.enabled() && visible.is_positive() {
+        response.request_focus();
+        expanded.set(!expanded.get());
     }
 }

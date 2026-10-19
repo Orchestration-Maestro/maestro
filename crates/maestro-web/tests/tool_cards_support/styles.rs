@@ -9,6 +9,7 @@ use maestro_app::JsonObject;
 use maestro_web::{
     BashRenderer, CalculateRenderer, ExpandableSection, ToolRenderer, tools::types::ToolRenderState,
 };
+use num_traits::ToPrimitive as _;
 use std::rc::Rc;
 
 pub fn styles() {
@@ -125,4 +126,50 @@ fn narrow(surface: &mut Surface, presentation: &maestro_theme::BrandPresentation
             "[...document.querySelectorAll('.maestro-reading-frame')].every(n=>n.getBoundingClientRect().width<=availableWidth)",
         );
     }
+}
+
+pub fn wrapped_summary() {
+    let mut surface = Surface::new();
+    let pack = surface.pack.clone();
+    let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
+    let host = surface.host();
+    let mut section = ExpandableSection::new(host.clone(), vec![]);
+    section.summary = "A summary with enough words to wrap over several lines".into();
+    let mut draw = |surface: &mut Surface| {
+        surface.draw_with(&presentation, (120., 400.), None, |ui, frame| {
+            section.render(ui, view(&host, frame)).unwrap()
+        })
+    };
+    let response = draw(&mut surface);
+    let bounds = crate::markdown_support::js(
+        "(()=>{const r=document.querySelector('.maestro-tool-caption').getBoundingClientRect();return [r.left,r.top,r.width,r.height]})()",
+    );
+    let bounds = js_sys::Array::from(&bounds);
+    let height = bounds.get(3).as_f64().unwrap();
+    assert!(height > 32., "summary did not wrap");
+    let center = bounds.get(1).as_f64().unwrap() + height / 2.;
+    let painted: Vec<_> = crate::canvas_paint::points(&surface.context, response.rect)
+        .into_iter()
+        .zip(browser::pixels(&surface, response.rect))
+        .filter(|(point, pixel)| point.x < response.rect.left() + 16. && pixel[3] > 100)
+        .map(|(point, _)| f64::from(point.y))
+        .collect();
+    let painted_center = (painted.first().unwrap() + painted.last().unwrap()) / 2.;
+    assert!(
+        (painted_center - center).abs() <= 1.5,
+        "chevron paint center {painted_center} differs from measured summary center {center}"
+    );
+    surface.events = vec![egui::Event::PointerMoved(egui::pos2(
+        bounds.get(0).as_f64().unwrap().to_f32().unwrap() + 8.,
+        (bounds.get(1).as_f64().unwrap() + height - 3.)
+            .to_f32()
+            .unwrap(),
+    ))];
+    draw(&mut surface);
+    browser::has_role(
+        &surface,
+        browser::glyphs(&surface)[0],
+        "text",
+        &presentation,
+    );
 }

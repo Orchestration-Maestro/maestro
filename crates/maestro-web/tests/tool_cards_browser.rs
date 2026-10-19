@@ -91,8 +91,8 @@ mod tests {
         tool_cards_support::disclosure::lifecycle();
     }
     #[wasm_bindgen]
-    pub fn expandable_sections_admit_visible_pointer_and_keyboard_activation() {
-        tool_cards_support::disclosure::activation();
+    pub async fn expandable_sections_admit_visible_pointer_and_keyboard_activation() {
+        tool_cards_support::disclosure::activation().await;
     }
     #[wasm_bindgen]
     pub fn tool_cards_reach_the_composed_message_consumer() {
@@ -101,6 +101,10 @@ mod tests {
     #[wasm_bindgen]
     pub fn tool_cards_release_only_disappearing_native_bodies() {
         tool_cards_support::lifetimes::lifetimes();
+    }
+    #[wasm_bindgen]
+    pub fn expandable_sections_center_wrapped_summary_and_hover_lower_line() {
+        tool_cards_support::styles::wrapped_summary();
     }
     #[wasm_bindgen]
     pub fn tool_cards_and_sections_follow_selected_brand_and_final_clip() {

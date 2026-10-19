@@ -296,7 +296,7 @@ fn catalog_icon(
 }
 
 /// Centre the already painted leading glyphs without moving native content or its clip.
-fn center_leading(
+pub(crate) fn center_leading(
     ui: &egui::Ui,
     leading: Option<(egui::layers::ShapeIdx, egui::layers::ShapeIdx, f32)>,
     center: f32,

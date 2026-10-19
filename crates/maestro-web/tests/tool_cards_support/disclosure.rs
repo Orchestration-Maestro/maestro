@@ -14,6 +14,7 @@ use std::{
     cell::{Cell, RefCell},
     rc::Rc,
 };
+use wasm_bindgen::JsCast as _;
 
 pub struct Child {
     pub calls: Rc<Cell<usize>>,
@@ -77,6 +78,10 @@ pub fn toggle(surface: &mut Surface, section: &mut ExpandableSection) {
     });
 }
 fn observe(surface: &mut Surface, section: &mut ExpandableSection, expected: &Moment) {
+    let response = draw(surface, section);
+    surface
+        .context
+        .memory_mut(|memory| memory.surrender_focus(response.id));
     draw(surface, section);
     publish("summaryExpected", &expected.text.clone().into());
     check("document.querySelector('.maestro-tool-caption').textContent === summaryExpected");
@@ -176,7 +181,7 @@ pub fn lifecycle() {
         check("document.querySelectorAll('.maestro-console,.maestro-tool-caption').length===0");
     }
 }
-pub fn activation() {
+pub async fn activation() {
     let mut surface = Surface::new();
     let calls = Rc::new(Cell::new(0));
     let mut section = ExpandableSection::new(
@@ -193,47 +198,8 @@ pub fn activation() {
     assert!(calls.get() > 0);
     toggle(&mut surface, &mut section);
     pointer_rejections(&mut surface, &mut section, &calls, &header);
-    let header = draw(&mut surface, &mut section);
-    surface
-        .context
-        .memory_mut(|memory| memory.surrender_focus(header.id));
-    surface.events = vec![egui::Event::Key {
-        key: egui::Key::Tab,
-        physical_key: None,
-        pressed: true,
-        repeat: false,
-        modifiers: egui::Modifiers::NONE,
-    }];
-    draw(&mut surface, &mut section);
-    assert!(
-        draw(&mut surface, &mut section).has_focus(),
-        "Tab did not reach disclosure"
-    );
-    for key in [egui::Key::Enter, egui::Key::Space] {
-        surface.events = vec![egui::Event::Key {
-            key,
-            physical_key: None,
-            pressed: true,
-            repeat: false,
-            modifiers: egui::Modifiers::NONE,
-        }];
-        let response = draw(&mut surface, &mut section);
-        assert!(response.has_focus());
-        surface.events = vec![egui::Event::Key {
-            key,
-            physical_key: None,
-            pressed: false,
-            repeat: false,
-            modifiers: egui::Modifiers::NONE,
-        }];
-        draw(&mut surface, &mut section);
-        assert_eq!(
-            js("document.querySelector('.maestro-console')!==null")
-                .as_bool()
-                .unwrap(),
-            key == egui::Key::Enter
-        );
-    }
+    keyboard_activation(&mut surface, &mut section);
+    native_activation(&mut surface, &mut section).await;
     independent(&mut surface, &mut section);
     focus_reveal();
 }
@@ -330,4 +296,87 @@ fn focus_reveal() {
         draw(&mut surface).state.offset.y > 0.,
         "focused header was not revealed"
     );
+}
+
+async fn native_activation(surface: &mut Surface, section: &mut ExpandableSection) {
+    let host = surface.host();
+    surface.draw(|ui, frame| {
+        ui.add_enabled_ui(false, |ui| section.render(ui, view(&host, frame)).unwrap())
+    });
+    wasm_bindgen_futures::JsFuture::from(
+        js("globalThis.clickNativeSummary ? globalThis.clickNativeSummary() : Promise.resolve(document.querySelector('.maestro-tool-caption').click())").unchecked_into::<js_sys::Promise>(),
+    )
+    .await
+    .unwrap();
+    surface.draw(|ui, frame| {
+        ui.add_enabled_ui(false, |ui| section.render(ui, view(&host, frame)).unwrap())
+    });
+    check("document.querySelector('.maestro-console')===null");
+    let response = draw(surface, section);
+    surface
+        .context
+        .memory_mut(|memory| memory.surrender_focus(response.id));
+    wasm_bindgen_futures::JsFuture::from(
+        js("globalThis.clickNativeSummary ? globalThis.clickNativeSummary() : Promise.resolve(document.querySelector('.maestro-tool-caption').click())").unchecked_into::<js_sys::Promise>(),
+    )
+    .await
+    .unwrap();
+    draw(surface, section);
+    check("document.querySelector('.maestro-console')!==null");
+    surface.events = vec![egui::Event::Key {
+        key: egui::Key::Space,
+        physical_key: None,
+        pressed: true,
+        repeat: false,
+        modifiers: egui::Modifiers::NONE,
+    }];
+    assert!(
+        draw(surface, section).has_focus(),
+        "native click did not focus toggle"
+    );
+    check("document.querySelector('.maestro-console')===null");
+}
+
+fn keyboard_activation(surface: &mut Surface, section: &mut ExpandableSection) {
+    let header = draw(surface, section);
+    surface
+        .context
+        .memory_mut(|memory| memory.surrender_focus(header.id));
+    surface.events = vec![egui::Event::Key {
+        key: egui::Key::Tab,
+        physical_key: None,
+        pressed: true,
+        repeat: false,
+        modifiers: egui::Modifiers::NONE,
+    }];
+    draw(surface, section);
+    assert!(
+        draw(surface, section).has_focus(),
+        "Tab did not reach disclosure"
+    );
+    for key in [egui::Key::Enter, egui::Key::Space] {
+        surface.events = vec![egui::Event::Key {
+            key,
+            physical_key: None,
+            pressed: true,
+            repeat: false,
+            modifiers: egui::Modifiers::NONE,
+        }];
+        let response = draw(surface, section);
+        assert!(response.has_focus());
+        surface.events = vec![egui::Event::Key {
+            key,
+            physical_key: None,
+            pressed: false,
+            repeat: false,
+            modifiers: egui::Modifiers::NONE,
+        }];
+        draw(surface, section);
+        assert_eq!(
+            js("document.querySelector('.maestro-console')!==null")
+                .as_bool()
+                .unwrap(),
+            key == egui::Key::Enter
+        );
+    }
 }

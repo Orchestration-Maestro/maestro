@@ -140,7 +140,9 @@ section.render(ui, view)?;
 ```
 
 The literal summary has a leading right/down chevron, an 8-point icon gap and
-an 8-point expanded-body gap. Visible pointer activation, Enter and Space toggle
-it. Keyboard focus is outlined and scrolled into view. Presentation comes from
-the selected brand pack, with native text and clipped canvas controls using the
-same retained host as tool rows.
+an 8-point expanded-body gap. The chevron stays centered beside wrapped summaries,
+and hovering any summary line highlights it. Native summary clicks and canvas
+activation respect the enabled, visible button and focus it; Enter and Space
+toggle the focused button. Keyboard focus is outlined and scrolled into view.
+Presentation comes from the selected brand pack, with native text and clipped
+canvas controls using the same retained host as tool rows.
