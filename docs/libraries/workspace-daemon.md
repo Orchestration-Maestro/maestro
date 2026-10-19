@@ -22,3 +22,52 @@ on another domain crate. Native tests use the existing checked test-process owne
 the native feature-unifier dependency remains API-free.
 
 See [workspace sockets](../workspace-daemon.md#sockets) for the public operations.
+
+## Detection manifests
+
+`maestro-detection` directly uses the existing locked `regex =1.13.1` (default
+features), `toml =1.1.6` (default features), inherited `serde =1.0.229` with
+`derive`, inherited `serde_json =1.0.151` with `preserve_order` and
+`float_roundtrip`, and `tracing =0.1.44` with default features disabled and `std`
+enabled. It reuses the lock crate for durable byte publication. No HTTP client,
+async runtime or process-based fetcher is added.
+
+The host-resolved external closure of these five direct dependencies is listed
+below. Every package was already locked; this change adds no third-party package
+identity or version. Native process recognition and its existing feature unifier
+and test support retain their own closures.
+
+| Package | Version | Licence |
+|---|---|---|
+| aho-corasick | 1.1.5 | Unlicense OR MIT |
+| allocator-api2 | 0.2.21 | MIT OR Apache-2.0 |
+| equivalent | 1.0.2 | Apache-2.0 OR MIT |
+| foldhash | 0.2.0 | Zlib |
+| hashbrown | 0.17.1 | MIT OR Apache-2.0 |
+| indexmap | 2.14.2 | Apache-2.0 OR MIT |
+| itoa | 1.0.18 | MIT OR Apache-2.0 |
+| memchr | 2.8.3 | Unlicense OR MIT |
+| once_cell | 1.21.4 | MIT OR Apache-2.0 |
+| pin-project-lite | 0.2.17 | Apache-2.0 OR MIT |
+| proc-macro2 | 1.0.107 | MIT OR Apache-2.0 |
+| quote | 1.0.47 | MIT OR Apache-2.0 |
+| regex | 1.13.1 | MIT OR Apache-2.0 |
+| regex-automata | 0.4.18 | MIT OR Apache-2.0 |
+| regex-syntax | 0.8.11 | MIT OR Apache-2.0 |
+| serde | 1.0.229 | MIT OR Apache-2.0 |
+| serde_core | 1.0.229 | MIT OR Apache-2.0 |
+| serde_derive | 1.0.229 | MIT OR Apache-2.0 |
+| serde_json | 1.0.151 | MIT OR Apache-2.0 |
+| serde_spanned | 1.1.1 | MIT OR Apache-2.0 |
+| syn | 3.0.6 | MIT OR Apache-2.0 |
+| syn | 2.0.119 | MIT OR Apache-2.0 |
+| toml | 1.1.6+spec-1.1.0 | MIT OR Apache-2.0 |
+| toml_datetime | 1.1.1+spec-1.1.0 | MIT OR Apache-2.0 |
+| toml_parser | 1.1.3+spec-1.1.0 | MIT OR Apache-2.0 |
+| toml_writer | 1.1.2+spec-1.1.0 | MIT OR Apache-2.0 |
+| tracing | 0.1.44 | MIT |
+| tracing-attributes | 0.1.31 | MIT |
+| tracing-core | 0.1.36 | MIT |
+| unicode-ident | 1.0.24 | (MIT OR Apache-2.0) AND Unicode-3.0 |
+| winnow | 1.0.4 | MIT |
+| zmij | 1.0.23 | MIT |

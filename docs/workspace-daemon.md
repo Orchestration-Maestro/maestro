@@ -142,8 +142,9 @@ symbolic-link targets. Inline code and module operands do not become script name
 `AgentState` reuses the protocol's four-state `PaneAgentState`. `AgentDetection`
 carries screen confidence, with independent indicators grouped in
 `AgentVisibility`. The catalogue distinguishes lifecycle-authoritative integration
-pairs from identity-only pairs; it does not evaluate screens or derive completion
-state. Authority predicates accept canonical `maestro:` provenance. Call
+pairs from identity-only pairs. Screen rules provide live evidence; completion
+state remains a daemon decision. Authority predicates accept canonical `maestro:`
+provenance. Call
 `normalize_agent_source` at a retained report boundary to translate a legacy
 provenance prefix without changing other source text.
 
@@ -198,3 +199,40 @@ does not match its agent. Resume plans contain the external executable and liter
 argument strings, never a shell command. Their deduplication key separates source,
 agent, reference kind and value with NUL bytes. Planning starts no process and
 performs no filesystem lookup.
+
+## Detection manifests
+
+[`ManifestCache`](../crates/maestro-detection/src/manifest/cache.rs) loads the
+20 embedded detection documents. Callers supply optional override and catalog
+folders; detection does not discover global configuration paths. A valid local
+`<agent>.toml` override takes precedence over a compatible download in
+`remote/<agent>.toml`. Downloads older than the bundled version are ignored.
+Invalid external documents fall back with an explain warning.
+
+Detection uses retained compiled rules until `reload_manifests` is called.
+Separate cache instances keep separate source roots. Rules select screen, title
+or progress regions and combine substring and regex gates by priority.
+`detect_agent_with_osc` returns state, live visibility and the transcript
+suppression flag. `explain_with_input` also returns source versions, evaluated
+rules and the first 240 characters of each evidence region, with `...` when
+truncated. Explain JSON preserves
+absent fields as null. A known agent without a matching rule falls back to idle
+without live-state confidence; an absent agent returns unknown.
+
+## Detection catalog
+
+[`manifest_update`](../crates/maestro-detection/src/manifest_update.rs) checks a
+caller-supplied catalog URL through a supplied fetch operation. Requests carry a
+256 KiB response limit, two retries, a five-second connection timeout and a
+15-second total timeout for the transport adapter to enforce. The engine rejects
+oversized or non-UTF-8 responses before parsing them. It creates no network
+client or background worker.
+
+The catalog resolves safe relative document paths against its own URL directory.
+Each agent updates independently: newer versions publish through the shared
+atomic replacement owner, identical equal-version bytes are left alone, and
+downgrades or changed bytes at the same version are rejected. `status.toml`
+records outcomes under the supplied catalog folder. `auto_update` reloads the
+supplied cache after a commit, before invoking the result callback. Daemon path
+composition, scheduling, offline admission and the catalog-check setting remain
+with the daemon caller.

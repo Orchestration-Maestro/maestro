@@ -234,6 +234,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Terminal emulator:** The pure-Rust engine in `maestro-terminal` that parses a pane terminal's output, keeps its screens and byte-bounded scrollback, and encodes its keyboard, mouse and focus input; see the [terminal emulator specification](docs/specs/terminal-emulator.md).
 - **Pane terminal:** A PTY child with its terminal emulator, scrollback and metadata.
 - **Pane agent:** A coding agent recognized in, or reporting from, a pane, with status idle, working, blocked, done or unknown; distinct from **Agent**, the conversation runner.
+- **Detection catalog:** The downloaded, version-checked cache of detection manifests, used ahead of the bundled set when newer.
 - **Detection manifest:** Bundled or downloaded data rules recognizing an agent and its status from a pane's screen, title or progress reports.
 - **Workspace action:** A declarative command, pane or hook delivered as package content and run by the daemon's command runner.
 - **Multiplexer:** The full-screen frontend attaching to a workspace daemon to show its frames.

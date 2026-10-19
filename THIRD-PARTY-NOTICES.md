@@ -723,7 +723,11 @@ Snapshot records and supplied-path storage derive from the persistence modules;
 the byte-replacement helper in `crates/maestro-lock/` derives from persistence
 and detection-manifest publication.
 The agent catalogue and foreground-job recognition in `crates/maestro-detection/`
-derive from the agent detection module under the same license.
+derive from the agent detection module under the same license. Detection
+manifest evaluation, catalog updates and the 20 embedded TOML documents derive
+from its manifest and manifest-update modules. Detection changes include
+caller-owned caches, supplied source roots, a supplied bounded transport and
+result callback, fallible bundled loading and reuse of atomic publication.
 The host colour query builders and reply parsing in
 `crates/maestro-tui/src/terminal_theme.rs` derive from the terminal theme module
 under the same license. Changes include shared framing, three-channel RGBA reply

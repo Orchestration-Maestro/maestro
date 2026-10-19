@@ -15,7 +15,8 @@ pub struct AgentDetection {
 }
 
 /// Independently recognized live-screen indicators.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Deserialize)]
+#[serde(default)]
 pub struct AgentVisibility {
     /// Whether live idle chrome is visible.
     pub visible_idle: bool,

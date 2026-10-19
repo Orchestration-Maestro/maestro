@@ -6,6 +6,12 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+maestro-lock = { path = "../maestro-lock" }
+regex = "=1.13.1"
+toml = "=1.1.6"
+tracing = { version = "=0.1.44", default-features = false, features = ["std"] }
+serde_json.workspace = true
+serde = { workspace = true, features = ["derive"] }
 maestro-protocol = { path = "../maestro-protocol" }
 
 [target.'cfg(target_os = "linux")'.dependencies]
