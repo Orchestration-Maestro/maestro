@@ -232,13 +232,54 @@ storage error and earlier changes; reset the screen before reusing its content.
 
 `ScreenSet` initializes the primary screen immediately and creates an alternate
 screen only through `get_init`. `get` and `get_mut` borrow initialized screens
-without allocating. `switch_to` selects an initialized key. Each screen retains
+without allocating. `active` and `active_mut` borrow the selected resident
+screen; `active_key()` reports its identity. `switch_to` returns a typed error
+for an uninitialized alternate screen. Each screen retains
 its own content and protocol state. Remove alternate storage while the primary
 is active; removal advances only the alternate generation, and removing an absent
 alternate is a no-op. Recreating it keeps that generation. The primary cannot be
-removed.
+removed. Removing the active alternate screen also returns a typed error;
+select the primary first.
 
 `kitty::key::FlagStack` retains eight keyboard-protocol flag sets. Push evicts the
 oldest entry when full; pop clears removed entries, and a count of eight or more
 resets the history. Set replaces, enables or disables the five supported bits
 without changing the stack position.
+
+
+## Terminal operations
+
+`Terminal::new(cols, rows, scrollback_limit)` constructs a blank terminal and
+rejects either zero dimension with `SizeError`. The history limit is in bytes.
+Pixel dimensions start at zero. The palette and clear dirty flags start clear.
+Grapheme clustering is enabled in both the current and reset-default modes;
+the saved value remains the catalogue default until explicitly saved.
+
+`modes::ModeState` retains 41 modes, current values, saved values and reset
+defaults. `Mode::from_number` distinguishes ANSI and private numbers and returns
+`None` for an unsupported number. `get_report` and `Report::encode` produce
+mode reports, including unknown-number responses.
+
+`horizontal_tab` stops at the next tab destination or the right margin.
+`horizontal_tab_back` stops at the preceding destination, bounded by the left
+margin in origin mode or column zero otherwise. `tab_set` sets the current
+column; `tab_clear` clears that column or every stop. Clearing an absent stop
+never creates one. `tab_reset` restores interval-eight stops, excluding the
+final column. The private storage retains positions across width changes;
+growth does not add interval stops.
+
+Screen identity, retained row count, keyboard flags and viewport scrolling use
+the selected screen. `scroll_viewport` accepts top, bottom, signed delta or
+absolute row destinations. `scrollbar` reports the selected screen's visible
+interval. `cols`, `rows` and `max_scrollback` return the configured dimensions
+and history byte limit.
+
+`set_default_palette` preserves explicit index overrides and marks the palette
+dirty. `default_palette` reads defaults without those overrides. The three
+dynamic-colour default setters also retain overrides and mark the palette dirty.
+`effective_foreground_color` and `effective_cursor_color` independently select
+the override before the default, returning `None` when neither is set. An unset
+cursor colour does not fall back to the foreground.
+
+Text printing, cluster-width effects and terminal cursor/line operations are
+not exposed by this constructor and state interface yet.

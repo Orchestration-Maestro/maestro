@@ -1,0 +1,190 @@
+//! Direct operations on terminal screens and retained protocol state.
+
+mod colors;
+mod lines;
+mod reads;
+pub use reads::ScrollViewport;
+
+use std::num::NonZeroU16;
+
+use crate::{
+    Mode, ScreenSet,
+    color::{DynamicPalette, DynamicRgb},
+    modes::ModeState,
+    mouse,
+    screen::Options,
+    tabstops::Tabstops,
+};
+
+/// Default interval between tab destinations.
+const TABSTOP_INTERVAL: usize = 8;
+
+/// A terminal dimension was zero.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SizeError;
+
+impl std::fmt::Display for SizeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("terminal dimensions must be nonzero")
+    }
+}
+
+impl std::error::Error for SizeError {}
+
+/// Renderer invalidation for terminal-wide state.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct Dirty {
+    /// Palette or dynamic colours changed.
+    pub palette: bool,
+    /// The screen requires a full redraw.
+    pub clear: bool,
+}
+
+/// Inclusive boundaries of the scrolling region, in zero-based cells.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ScrollingRegion {
+    /// First scrolling row.
+    pub top: u16,
+    /// Last scrolling row.
+    pub bottom: u16,
+    /// First scrolling column.
+    pub left: u16,
+    /// Last scrolling column.
+    pub right: u16,
+}
+
+/// Independently retained terminal colours.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Colors {
+    /// Background default and override.
+    pub background: DynamicRgb,
+    /// Foreground default and override.
+    pub foreground: DynamicRgb,
+    /// Cursor default and override.
+    pub cursor: DynamicRgb,
+    /// Indexed palette defaults and overrides.
+    pub palette: DynamicPalette,
+}
+
+impl Default for Colors {
+    fn default() -> Self {
+        Self {
+            background: DynamicRgb::UNSET,
+            foreground: DynamicRgb::UNSET,
+            cursor: DynamicRgb::UNSET,
+            palette: DynamicPalette::DEFAULT,
+        }
+    }
+}
+
+/// Terminal-wide input and renderer state.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Flags {
+    /// Whether the window has focus.
+    pub focused: bool,
+    /// Whether modified keys use the extended encoding.
+    pub modify_other_keys_2: bool,
+    /// The last selected mouse event mode.
+    pub mouse_event: mouse::Event,
+    /// The last selected mouse encoding.
+    pub mouse_format: mouse::Format,
+    /// Terminal-wide renderer invalidation.
+    pub dirty: Dirty,
+}
+
+impl Default for Flags {
+    fn default() -> Self {
+        Self {
+            focused: true,
+            modify_other_keys_2: false,
+            mouse_event: mouse::Event::None,
+            mouse_format: mouse::Format::X10,
+            dirty: Dirty::default(),
+        }
+    }
+}
+
+/// Retained terminal screens with direct text and cursor operations.
+pub struct Terminal {
+    /// Screen storage and selection.
+    pub screens: ScreenSet,
+    /// Current, saved and reset-default mode values.
+    pub modes: ModeState,
+    /// Terminal input and renderer flags.
+    pub flags: Flags,
+    /// Current scrolling boundaries.
+    pub scrolling_region: ScrollingRegion,
+    /// Dynamic colour state.
+    pub colors: Colors,
+    /// Last printed scalar used for repetition.
+    pub previous_char: Option<char>,
+    /// Screen width in pixels; zero until supplied by the host.
+    pub width_px: u32,
+    /// Screen height in pixels; zero until supplied by the host.
+    pub height_px: u32,
+    /// Retained tab destinations.
+    tabstops: Tabstops,
+    /// Configured grid width.
+    cols: u16,
+    /// Configured grid height.
+    rows: u16,
+    /// Configured history byte limit, before storage rounding.
+    max_scrollback: usize,
+}
+
+impl Terminal {
+    /// Construct a blank terminal with grapheme clustering enabled.
+    ///
+    /// # Errors
+    /// Returns `SizeError` if either dimension is zero.
+    pub fn new(cols: u16, rows: u16, scrollback_limit: usize) -> Result<Self, SizeError> {
+        let opts = Options {
+            cols: NonZeroU16::new(cols).ok_or(SizeError)?,
+            rows: NonZeroU16::new(rows).ok_or(SizeError)?,
+            max_scrollback: scrollback_limit,
+        };
+        let mut modes = ModeState::default();
+        modes.set(Mode::GraphemeCluster, true);
+        modes.defaults[Mode::GraphemeCluster as usize] = true;
+        Ok(Self {
+            screens: ScreenSet::init(opts),
+            modes,
+            flags: Flags::default(),
+            scrolling_region: ScrollingRegion {
+                top: 0,
+                bottom: rows - 1,
+                left: 0,
+                right: cols - 1,
+            },
+            colors: Colors::default(),
+            previous_char: None,
+            tabstops: Tabstops::init(usize::from(cols), TABSTOP_INTERVAL),
+            width_px: 0,
+            height_px: 0,
+            cols,
+            rows,
+            max_scrollback: scrollback_limit,
+        })
+    }
+
+    /// Configured grid width.
+    #[must_use]
+    pub fn cols(&self) -> u16 {
+        self.cols
+    }
+
+    /// Configured grid height.
+    #[must_use]
+    pub fn rows(&self) -> u16 {
+        self.rows
+    }
+
+    /// Configured history limit in bytes.
+    #[must_use]
+    pub fn max_scrollback(&self) -> usize {
+        self.max_scrollback
+    }
+}
+
+#[cfg(test)]
+mod tests;

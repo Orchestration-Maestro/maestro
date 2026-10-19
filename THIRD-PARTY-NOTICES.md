@@ -714,6 +714,11 @@ SOFTWARE.
 
 ## herdr workspace daemon
 
+Terminal construction, state reads, palette updates and effective-colour rules in
+`crates/maestro-terminal/` derive from the terminal wrapper in herdr v0.8.2
+under Apache-2.0. The implementation uses owned Rust screen storage instead of
+foreign-library handles.
+
 The daemon protocol records, schema and tests in `crates/maestro-protocol/` and
 `docs/daemon-protocol.schema.json`, the socket transport and path selection in
 `crates/maestro-ipc/`, and the topology in `crates/maestro-workspace/` derive from

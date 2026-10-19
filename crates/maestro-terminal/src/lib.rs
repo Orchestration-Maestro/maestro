@@ -52,3 +52,11 @@ pub use point::{Coordinate, Point};
 
 pub mod page_list;
 pub use page_list::{PageList, Pin, Scrollbar};
+
+pub mod mouse;
+pub mod terminal;
+pub use terminal::{SizeError, Terminal};
+
+mod tabstops;
+
+pub mod csi;
