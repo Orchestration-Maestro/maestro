@@ -64,3 +64,6 @@ pub use components::{
 pub use maestro_cancellation::Cancellation;
 
 pub use text::expand_tabs;
+
+/// Host terminal colour queries and OSC reply parsing.
+pub mod terminal_theme;

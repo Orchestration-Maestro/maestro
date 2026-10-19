@@ -258,17 +258,27 @@ fn normalized_agent_lookup_name(name: &str) -> String {
 #[cfg(test)]
 mod tests;
 
+/// Canonicalizes the legacy provenance prefix, preserving all other text.
+#[must_use]
+pub fn normalize_agent_source(source: String) -> String {
+    if let Some(suffix) = source.strip_prefix("herdr:") {
+        format!("maestro:{suffix}")
+    } else {
+        source
+    }
+}
+
 /// Returns whether the source and canonical label have lifecycle authority.
 #[must_use]
 pub fn full_lifecycle_hook_authority(source: &str, agent_label: &str) -> bool {
     matches!(
         (source, agent_label),
-        ("herdr:pi", "pi")
-            | ("herdr:omp", "omp")
-            | ("herdr:mastracode", "mastracode")
-            | ("herdr:opencode", "opencode")
-            | ("herdr:kilo", "kilo")
-            | ("herdr:kimi", "kimi")
+        ("maestro:pi", "pi")
+            | ("maestro:omp", "omp")
+            | ("maestro:mastracode", "mastracode")
+            | ("maestro:opencode", "opencode")
+            | ("maestro:kilo", "kilo")
+            | ("maestro:kimi", "kimi")
     )
 }
 
@@ -277,7 +287,9 @@ pub fn full_lifecycle_hook_authority(source: &str, agent_label: &str) -> bool {
 pub fn session_identity_only_integration(source: &str, agent_label: &str) -> bool {
     matches!(
         (source, agent_label),
-        ("herdr:hermes", "hermes") | ("herdr:qwen", "qwen") | ("herdr:antigravity_cli", "agy")
+        ("maestro:hermes", "hermes")
+            | ("maestro:qwen", "qwen")
+            | ("maestro:antigravity_cli", "agy")
     )
 }
 

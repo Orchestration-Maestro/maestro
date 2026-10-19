@@ -145,7 +145,7 @@ fn process_label_lookup_ignores_case() {
 #[test]
 fn hook_only_agent_has_no_screen_manifest() {
     assert!(full_lifecycle_hook_authority(
-        "herdr:mastracode",
+        "maestro:mastracode",
         "mastracode"
     ));
     assert!(!Agent::SCREEN_MANIFEST_AGENTS.contains(&Agent::Mastracode));
@@ -154,12 +154,61 @@ fn hook_only_agent_has_no_screen_manifest() {
 #[test]
 fn identity_integrations_keep_screen_state_authority() {
     for (source, label, agent) in [
-        ("herdr:hermes", "hermes", Agent::Hermes),
-        ("herdr:qwen", "qwen", Agent::Qwen),
-        ("herdr:antigravity_cli", "agy", Agent::Antigravity),
+        ("maestro:hermes", "hermes", Agent::Hermes),
+        ("maestro:qwen", "qwen", Agent::Qwen),
+        ("maestro:antigravity_cli", "agy", Agent::Antigravity),
     ] {
         assert!(!full_lifecycle_hook_authority(source, label));
         assert!(session_identity_only_integration(source, label));
         assert!(Agent::SCREEN_MANIFEST_AGENTS.contains(&agent));
+    }
+}
+
+#[test]
+fn canonical_authority_pairs_retain_all_catalogue_classes() {
+    for (suffix, label, lifecycle) in [
+        ("pi", "pi", true),
+        ("omp", "omp", true),
+        ("mastracode", "mastracode", true),
+        ("opencode", "opencode", true),
+        ("kilo", "kilo", true),
+        ("kimi", "kimi", true),
+        ("hermes", "hermes", false),
+        ("qwen", "qwen", false),
+        ("antigravity_cli", "agy", false),
+    ] {
+        let canonical = format!("maestro:{suffix}");
+        for source in [canonical.clone(), format!("herdr:{suffix}")] {
+            let normalized = normalize_agent_source(source);
+            assert_eq!(full_lifecycle_hook_authority(&normalized, label), lifecycle);
+            assert_eq!(
+                session_identity_only_integration(&normalized, label),
+                !lifecycle
+            );
+        }
+        for wrong_source in [format!("herdr:{suffix}"), format!("custom:{suffix}")] {
+            assert!(!full_lifecycle_hook_authority(&wrong_source, label));
+            assert!(!session_identity_only_integration(&wrong_source, label));
+        }
+        assert!(!full_lifecycle_hook_authority(&canonical, "unknown"));
+        assert!(!session_identity_only_integration(&canonical, "unknown"));
+    }
+}
+
+#[test]
+fn agent_source_normalization_preserves_exact_domains() {
+    for (source, expected) in [
+        ("maestro:pi", "maestro:pi"),
+        ("herdr:pi", "maestro:pi"),
+        ("herdr:", "maestro:"),
+        ("herdr:unknown", "maestro:unknown"),
+        ("herdr:herdr:pi", "maestro:herdr:pi"),
+        ("Herdr:pi", "Herdr:pi"),
+        (" herdr:pi", " herdr:pi"),
+        ("custom:pi", "custom:pi"),
+        ("herdr", "herdr"),
+        ("", ""),
+    ] {
+        assert_eq!(normalize_agent_source(source.to_owned()), expected);
     }
 }

@@ -76,3 +76,5 @@ mod widget_rendering;
 mod widget_state;
 
 mod fallible_input;
+
+mod terminal_theme;
