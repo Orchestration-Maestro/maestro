@@ -840,8 +840,12 @@ fn abandoned_hyperlink_releases_string_budget() {
         uri: vec![b'u'; 2048],
     };
     let retained = page.insert_hyperlink(link.clone()).unwrap();
+    let distinct = Hyperlink {
+        id: HyperlinkId::Implicit(2),
+        ..link.clone()
+    };
     assert_eq!(
-        page.insert_hyperlink(link.clone()),
+        page.insert_hyperlink(distinct),
         Err(StorageError::StringsOutOfMemory)
     );
     page.release_hyperlink(retained);
@@ -882,8 +886,12 @@ fn refused_hyperlink_releases_string_budget() {
     );
     assert!(!page.get_cells(0)[usize::from(count)].hyperlink());
     assert_eq!(page.hyperlink_count(), usize::from(count));
+    let distinct = Hyperlink {
+        id: HyperlinkId::Implicit(3),
+        ..incoming.clone()
+    };
     assert_eq!(
-        page.insert_hyperlink(incoming.clone()),
+        page.insert_hyperlink(distinct),
         Err(StorageError::StringsOutOfMemory)
     );
     page.release_hyperlink(id);

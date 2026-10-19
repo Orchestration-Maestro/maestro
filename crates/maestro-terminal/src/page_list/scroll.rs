@@ -54,6 +54,11 @@ impl Scrollbar {
 }
 
 impl PageList {
+    /// Whether the viewport follows the active region rather than retained history.
+    pub(crate) fn viewport_is_active(&self) -> bool {
+        self.viewport == Viewport::Active
+    }
+
     /// Move the viewport without allocating pages or creating history.
     pub fn scroll(&mut self, behavior: Scroll) {
         if self.explicit_max_size == Some(0) {

@@ -31,8 +31,11 @@ impl<const CHUNK: usize> BitmapAllocator<CHUNK> {
         }
     }
 
-    /// Reserve a contiguous range of chunk indices for a positive byte count.
+    /// Reserve contiguous chunks, or an empty range without storage for zero bytes.
     pub(crate) fn alloc(&mut self, bytes: usize) -> Result<Range<usize>, StorageError> {
+        if bytes == 0 {
+            return Ok(0..0);
+        }
         let count = bytes.div_ceil(CHUNK);
         let start = find_free_chunks(&mut self.bitmap, count).ok_or(StorageError::OutOfMemory)?;
         Ok(start..start + count)

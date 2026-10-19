@@ -3,6 +3,7 @@
 mod arena;
 mod erase;
 mod resize;
+mod row_rotation;
 pub use resize::{Cursor, Resize};
 mod grow;
 mod reflow;
@@ -305,6 +306,14 @@ impl PageList {
             current = node.next;
         }
         None
+    }
+
+    /// Retain the always-present origin of a newly initialized screen.
+    pub(crate) fn track_origin(&mut self) -> TrackedPin {
+        TrackedPin(
+            self.tracked
+                .insert(self.get_top_left(crate::point::Tag::Active)),
+        )
     }
 
     /// Register a position until explicit release.

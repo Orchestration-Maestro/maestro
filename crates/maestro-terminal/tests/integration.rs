@@ -101,3 +101,10 @@ mod sgr_attributes;
 mod osc_commands;
 
 mod support;
+
+mod screens_keyboard;
+
+mod screens;
+mod screens_resize;
+
+mod screen_set;
