@@ -196,3 +196,5 @@ mod formatter_plain;
 mod formatter_vt;
 
 mod render;
+
+mod terminal_read;

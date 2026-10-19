@@ -11,9 +11,11 @@ mod margins;
 mod print;
 mod prompt;
 mod pwd_title;
+mod read;
 mod reads;
 mod resize;
 mod screens;
+pub use read::{ScreenTextCell, ScreenTextRow, TextRange, TextShape};
 pub use reads::ScrollViewport;
 pub use resize::ResizeError;
 pub use screens::{DeccolmMode, SwitchScreenMode};
@@ -165,6 +167,8 @@ pub struct Terminal {
     pub(crate) write_state: Option<crate::stream_terminal::WriteState>,
     /// Configured history byte limit, before storage rounding.
     max_scrollback: usize,
+    /// Previous viewport row anchor with its owning screen lifetime.
+    tracked_row: Option<(crate::screen_set::Key, usize, crate::page_list::TrackedPin)>,
 }
 
 impl Terminal {
@@ -211,6 +215,7 @@ impl Terminal {
             cols,
             rows,
             max_scrollback: scrollback_limit,
+            tracked_row: None,
             write_state: None,
         })
     }
