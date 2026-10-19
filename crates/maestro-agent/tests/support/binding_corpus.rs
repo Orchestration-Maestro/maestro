@@ -65,23 +65,9 @@ fn event(v: &AgentEvent) -> &'static str {
         _ => panic!("unexpected control event"),
     }
 }
-/// Ordered common roles without casting custom payloads.
+/// Ordered common roles of the retained history.
 fn roles(agent: &Agent) -> Vec<&'static str> {
-    agent
-        .state()
-        .read()
-        .unwrap()
-        .messages()
-        .read()
-        .unwrap()
-        .iter()
-        .map(|v| match v {
-            AgentMessage::User(_) => "user",
-            AgentMessage::Assistant(_) => "assistant",
-            AgentMessage::ToolResult(_) => "toolResult",
-            AgentMessage::Custom(_) => unreachable!(),
-        })
-        .collect()
+    super::observable::roles(&agent.state().read().unwrap().messages().read().unwrap())
 }
 /// Pause the first credential request without retaining an internal guard.
 fn key_gate(

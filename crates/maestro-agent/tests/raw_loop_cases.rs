@@ -776,16 +776,3 @@ fn assert_artifacts_before_interrupt(events: &[AgentEvent]) {
     assert_eq!(artifacts.len(), 4);
     assert!(artifacts.iter().all(|i| *i < interrupt));
 }
-
-/// Select role tags without losing sequence or repeated occurrences.
-fn roles(messages: &[AgentMessage]) -> Vec<&'static str> {
-    messages
-        .iter()
-        .map(|m| match m {
-            AgentMessage::User(_) => "user",
-            AgentMessage::Assistant(_) => "assistant",
-            AgentMessage::ToolResult(_) => "toolResult",
-            AgentMessage::Custom(_) => unreachable!(),
-        })
-        .collect()
-}
