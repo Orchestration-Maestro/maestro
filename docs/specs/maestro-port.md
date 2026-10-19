@@ -458,7 +458,8 @@ dev-dependency checks, still applies. The guest authoring crate
 (`maestro-extensions-wasmtime`), terminal scenario harness
 (`maestro-test-terminal`), checked test-process owner (`maestro-test-process`), cancellation leaf (`maestro-cancellation`), shared
 request owner (`maestro-request`), watch leaf (`maestro-watch`), lock leaf
-(`maestro-lock`), process leaf (`maestro-process`), file-pattern owner (`maestro-pattern`), text leaf (`maestro-text`),
+(`maestro-lock`), process leaf (`maestro-process`), file-pattern owner (`maestro-pattern`),
+Markdown parser (`maestro-markdown`), text leaf (`maestro-text`),
 JSON leaf (`maestro-json`), entry and tool record contracts (`maestro-entry`,
 `maestro-tool`) and brand projection (`maestro-brand`) are excluded from this
 permission, so being a text consumer does not authorize the utility. Shared path helpers
