@@ -108,3 +108,5 @@ mod screens;
 mod screens_resize;
 
 mod screen_set;
+
+mod terminal_modes;

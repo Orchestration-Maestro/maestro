@@ -2,6 +2,9 @@
 
 pub mod unicode;
 
+pub mod modes;
+pub use modes::Mode;
+
 pub mod ansi;
 pub mod cursor;
 pub mod screen;
