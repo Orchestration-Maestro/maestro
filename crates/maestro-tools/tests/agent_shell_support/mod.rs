@@ -589,9 +589,9 @@ pub fn environment_sequence() {
         .find(|value| value["id"] == "fresh_spawn_context_per_call")
         .unwrap();
     if std::env::var_os("MAESTRO_SHELL_SEQUENCE_CHILD").is_none() {
-        let test = crate::child_process::selector(SEQUENCE_TEST).unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test, "--nocapture"])
+        let output = maestro_test_process::TestProcess::current(SEQUENCE_TEST)
+            .unwrap()
+            .nocapture()
             .env("MAESTRO_SHELL_SEQUENCE_CHILD", "1")
             .env_remove("ADDED")
             .envs(
@@ -604,7 +604,6 @@ pub fn environment_sequence() {
             .output()
             .unwrap();
         assert!(output.status.success());
-        crate::child_process::assert_executed(&output, &test).unwrap();
         return;
     }
     assert_eq!(sequence.as_object().unwrap().len(), 3);

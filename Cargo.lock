@@ -3929,6 +3929,7 @@ dependencies = [
  "maestro-markdown",
  "maestro-path",
  "maestro-process",
+ "maestro-test-process",
  "maestro-text",
  "rand 0.10.3",
  "regress",
