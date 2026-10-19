@@ -2,7 +2,7 @@
 
 The [daemon specification](specs/workspace-daemon.md) defines the application.
 The transport leaf described here provides synchronous Unix sockets; application
-wiring and environment selection are tracked in [path composition](https://github.com/Orchestration-Maestro/maestro/issues/1441).
+wiring remains separate from its supplied-path and owned selection interfaces.
 The common command records live in [daemon protocol](daemon-protocol.md).
 
 ## Sockets
@@ -270,3 +270,23 @@ Host pixel coordinates are one-based; cells and pane rectangles are zero-based.
 Pane pixel results are one-based and scaled with integer arithmetic. Report
 parsing requires a complete numeric SGR report. Relocation preserves the button
 text and terminator without imposing parsing's stricter numeric validation.
+
+## Named daemons
+
+`maestro_daemon::instances::Selection` observes supplied attach arguments, an
+explicit daemon-command target and inherited environment values. It never
+rewrites argv or changes process environment. `attach --daemon <name>` and
+`attach --daemon=<name>` select explicitly; chat `--session` arguments and
+arguments after `--` remain untouched. Help stays with command dispatch.
+
+Names contain 1–64 ASCII letters, digits, dots, underscores or hyphens; `.` and
+`..` are rejected. `default` selects the agent root. Listing returns default once,
+then valid named directories in lexical order. Deletion refuses default and live
+daemons, tolerates a missing directory and leaves other folders alone.
+
+Explicit selection ignores inherited socket overrides. Implicit API overrides
+win over client-only overrides; either avoids validating an unused inherited
+name. Attach, stop and restart guidance names the selected daemon and warns that
+stopping exits pane processes. A custom API socket is retained in restart
+guidance. Selection does not dispatch commands, launch a process or implement
+graceful stop.

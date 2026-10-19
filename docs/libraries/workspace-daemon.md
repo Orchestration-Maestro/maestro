@@ -117,3 +117,12 @@ The subscriber adds these approved locked identities:
 
 Other selected subscriber dependencies reuse the detection closure above, plus
 `smallvec =1.16.2` (MIT OR Apache-2.0) and `log =0.4.34` (MIT OR Apache-2.0).
+
+## Action path components
+
+`maestro-daemon` reuses the already-locked `sha2 =0.11.0`, with default features
+disabled, for the six-byte SHA-256 suffix on long action path components. This is
+the same approved dependency used by the model and package owners; it adds no
+package identity or version. SHA-2 is licensed under MIT OR Apache-2.0. The shared
+native feature unifier is unchanged. Windows device-stem recognition reuses
+`maestro-path::win32::is_reserved`; the daemon keeps no second reserved-name list.

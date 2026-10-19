@@ -766,6 +766,11 @@ and `settings/io/`, annotated defaults in `settings/defaults.jsonc` and their
 settings tests derive from the configuration, configuration I/O, model, sidebar,
 sound, theme, tab-bar, window-title and default configuration sources under the
 same license.
+The supplied paths and named-daemon operations in `crates/maestro-daemon/src/paths.rs`
+and `instances.rs` derive from the session, persistence I/O, detection catalog,
+action paths, announcement and remote path sources. The action component encoder
+and its hash and reserved-stem helpers derive from the action paths and API
+schema helpers under the same license. Their tests retain the source cases.
 
 The pane terminal, shell and foreground process code in `crates/maestro-process/`
 also derives from herdr v0.8.2 under Apache-2.0. Its process sources include the

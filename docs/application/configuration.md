@@ -98,3 +98,29 @@ global `multiplexer`, `daemon` and `update` members are projected; project chat
 settings retain their existing merge. The loader does not discover another root,
 create another manager or read another configuration file. See the
 [workspace defaults and reload contract](../settings.md#global-workspace-projection-and-reload).
+
+## Daemon paths
+
+`maestro_daemon::paths::DaemonPaths` retains the supplied agent directory and a
+validated optional daemon name. Construction creates no files and does not
+normalize the root. The reserved `default` name uses the agent root; other names
+use `<agent dir>/daemons/<name>/`.
+
+| Resource | Relative path | Root |
+|---|---|---|
+| API and client sockets | `daemon.sock`, `daemon-client.sock` | Selected daemon |
+| Topology and history snapshots | `daemon-snapshot.json`, `daemon-snapshot-history.json` | Selected daemon |
+| Role logs | `maestro-in-process.log`, `maestro-client.log`, `maestro-daemon.log` | Selected daemon |
+| Detection overrides | `detection/<agent>.toml` | Agent directory |
+| Detection catalog | `detection/catalog/` | Agent directory |
+| Catalog status and remote manifests | `detection/catalog/status.toml`, `detection/catalog/remote/<agent>.toml` | Agent directory |
+| Action configuration and state | `workspace-actions/<encoded id>/config`, `workspace-actions/<encoded id>/state` | Agent directory |
+| Announcement state | `announcements.json` | Agent directory |
+| Remote resources | `remote/` | Agent directory |
+
+Detection paths use canonical agent labels. `paths::action_path_component` encodes
+arbitrary action identities into one component, including separators, percent
+signs, Windows reserved stems and trailing dots. Long components keep a prefix
+and a SHA-256 suffix within 120 ASCII bytes. Action configuration and state share
+this encoder. Socket overrides are supplied to the existing native IPC selector;
+settings and package roots stay with their existing owners.

@@ -14,3 +14,9 @@ pub mod terminal;
 
 /// Host theme state and colour sequence emission.
 pub mod terminal_theme;
+
+/// Supplied agent roots and daemon resource paths.
+pub mod paths;
+
+/// Owned named-daemon selection and lifecycle information.
+pub mod instances;
