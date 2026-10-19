@@ -34,8 +34,8 @@ fn mouse_event_defaults_and_disabled_encoder_emit_nothing() {
     assert!(event.mods.empty());
     assert_eq!(event.pos, Pos { x: 0.0, y: 0.0 });
     let mut encoder = encoder();
-    assert_eq!(encoder.event, Event::None);
-    assert_eq!(encoder.format, Format::X10);
+    assert_eq!(encoder.event(), Event::None);
+    assert_eq!(encoder.format(), Format::X10);
     assert!(!encoder.any_button_pressed);
     assert_eq!(encoder.last_cell, None);
     assert!(encoder.encode(&event).is_empty());
@@ -52,8 +52,8 @@ fn mouse_event_fields_roundtrip_to_motion_bytes() {
     assert_eq!(event.pos, Pos { x: 12.5, y: -4.0 });
     assert_eq!(event.mods, Mods::SHIFT.union(Mods::CTRL));
     let mut encoder = encoder();
-    encoder.event = Event::Any;
-    encoder.format = Format::Sgr;
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::Sgr);
     encoder.any_button_pressed = true;
     assert_eq!(encoder.encode(&event), b"\x1b[<52;2;1M");
     event.button = None;
@@ -64,8 +64,8 @@ fn mouse_event_fields_roundtrip_to_motion_bytes() {
 #[test]
 fn mouse_sgr_press_left_and_motion_dedupe_reset() {
     let mut encoder = encoder();
-    encoder.event = Event::Any;
-    encoder.format = Format::Sgr;
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::Sgr);
     encoder.last_cell = Some(None);
     let mut event = MouseEvent {
         button: Some(MouseButton::Left),

@@ -34,8 +34,8 @@ fn event() -> MouseEvent {
 #[test]
 fn x10_press_left() {
     let mut encoder = encoder();
-    encoder.event = Event::X10;
-    encoder.format = Format::X10;
+    encoder.set_event(Event::X10);
+    encoder.set_format(Format::X10);
     let event = MouseEvent {
         action: MouseAction::Press,
         button: Some(MouseButton::Left),
@@ -48,8 +48,8 @@ fn x10_press_left() {
 #[test]
 fn x10_ignores_release() {
     let mut encoder = encoder();
-    encoder.event = Event::X10;
-    encoder.format = Format::X10;
+    encoder.set_event(Event::X10);
+    encoder.set_format(Format::X10);
     let event = MouseEvent {
         action: MouseAction::Release,
         button: Some(MouseButton::Left),
@@ -62,8 +62,8 @@ fn x10_ignores_release() {
 #[test]
 fn normal_ignores_motion() {
     let mut encoder = encoder();
-    encoder.event = Event::Normal;
-    encoder.format = Format::Sgr;
+    encoder.set_event(Event::Normal);
+    encoder.set_format(Format::Sgr);
     let event = MouseEvent {
         action: MouseAction::Motion,
         button: Some(MouseButton::Left),
@@ -76,8 +76,8 @@ fn normal_ignores_motion() {
 #[test]
 fn button_mode_requires_button() {
     let mut encoder = encoder();
-    encoder.event = Event::Button;
-    encoder.format = Format::Sgr;
+    encoder.set_event(Event::Button);
+    encoder.set_format(Format::Sgr);
     let event = MouseEvent {
         action: MouseAction::Motion,
         button: None,
@@ -90,8 +90,8 @@ fn button_mode_requires_button() {
 #[test]
 fn sgr_release_keeps_button_identity() {
     let mut encoder = encoder();
-    encoder.event = Event::Any;
-    encoder.format = Format::Sgr;
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::Sgr);
     let event = MouseEvent {
         action: MouseAction::Release,
         button: Some(MouseButton::Right),
@@ -104,8 +104,8 @@ fn sgr_release_keeps_button_identity() {
 #[test]
 fn sgr_motion_with_no_button() {
     let mut encoder = encoder();
-    encoder.event = Event::Any;
-    encoder.format = Format::Sgr;
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::Sgr);
     let event = MouseEvent {
         action: MouseAction::Motion,
         button: None,
@@ -118,8 +118,8 @@ fn sgr_motion_with_no_button() {
 #[test]
 fn urxvt_with_modifiers() {
     let mut encoder = encoder();
-    encoder.event = Event::Any;
-    encoder.format = Format::Urxvt;
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::Urxvt);
     let event = MouseEvent {
         action: MouseAction::Press,
         button: Some(MouseButton::Left),
@@ -132,8 +132,8 @@ fn urxvt_with_modifiers() {
 #[test]
 fn utf8_encodes_large_coordinates() {
     let mut encoder = encoder();
-    encoder.event = Event::Any;
-    encoder.format = Format::Utf8;
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::Utf8);
     let event = MouseEvent {
         action: MouseAction::Press,
         button: Some(MouseButton::Left),
@@ -146,8 +146,8 @@ fn utf8_encodes_large_coordinates() {
 #[test]
 fn x10_coordinate_limit() {
     let mut encoder = encoder();
-    encoder.event = Event::X10;
-    encoder.format = Format::X10;
+    encoder.set_event(Event::X10);
+    encoder.set_format(Format::X10);
     let event = MouseEvent {
         action: MouseAction::Press,
         button: Some(MouseButton::Left),
@@ -160,8 +160,8 @@ fn x10_coordinate_limit() {
 #[test]
 fn urxvt_release_uses_legacy_button_3_encoding() {
     let mut encoder = encoder();
-    encoder.event = Event::Any;
-    encoder.format = Format::Urxvt;
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::Urxvt);
     let event = MouseEvent {
         action: MouseAction::Release,
         button: Some(MouseButton::Right),
@@ -174,8 +174,8 @@ fn urxvt_release_uses_legacy_button_3_encoding() {
 #[test]
 fn unsupported_button_is_ignored() {
     let mut encoder = encoder();
-    encoder.event = Event::Any;
-    encoder.format = Format::Sgr;
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::Sgr);
     let event = MouseEvent {
         action: MouseAction::Press,
         button: Some(MouseButton::Ten),
@@ -188,8 +188,8 @@ fn unsupported_button_is_ignored() {
 #[test]
 fn sgr_pixels_uses_terminal_space_cursor_coordinates() {
     let mut encoder = encoder();
-    encoder.event = Event::Any;
-    encoder.format = Format::SgrPixels;
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::SgrPixels);
     let event = MouseEvent {
         action: MouseAction::Press,
         button: Some(MouseButton::Left),
@@ -202,8 +202,8 @@ fn sgr_pixels_uses_terminal_space_cursor_coordinates() {
 #[test]
 fn sgr_pixels_release_keeps_button_identity() {
     let mut encoder = encoder();
-    encoder.event = Event::Any;
-    encoder.format = Format::SgrPixels;
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::SgrPixels);
     let event = MouseEvent {
         action: MouseAction::Release,
         button: Some(MouseButton::Right),
@@ -216,9 +216,9 @@ fn sgr_pixels_release_keeps_button_identity() {
 #[test]
 fn position_exactly_at_viewport_boundary_is_encoded_in_final_cell() {
     let mut encoder = encoder();
-    encoder.event = Event::Any;
-    encoder.format = Format::Sgr;
-    encoder.size = Size {
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::Sgr);
+    encoder.set_size(Size {
         screen: ScreenSize {
             width: 10,
             height: 10,
@@ -228,7 +228,7 @@ fn position_exactly_at_viewport_boundary_is_encoded_in_final_cell() {
             height: 2,
         },
         padding: Padding::default(),
-    };
+    });
     let event = MouseEvent {
         action: MouseAction::Press,
         button: Some(MouseButton::Left),
@@ -241,8 +241,8 @@ fn position_exactly_at_viewport_boundary_is_encoded_in_final_cell() {
 #[test]
 fn outside_viewport_motion_with_no_pressed_button_is_ignored() {
     let mut encoder = encoder();
-    encoder.event = Event::Any;
-    encoder.format = Format::Sgr;
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::Sgr);
     let event = MouseEvent {
         action: MouseAction::Motion,
         button: Some(MouseButton::Left),
@@ -255,8 +255,8 @@ fn outside_viewport_motion_with_no_pressed_button_is_ignored() {
 #[test]
 fn outside_viewport_motion_with_pressed_button_is_reported() {
     let mut encoder = encoder();
-    encoder.event = Event::Any;
-    encoder.format = Format::Sgr;
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::Sgr);
     encoder.any_button_pressed = true;
     let event = MouseEvent {
         action: MouseAction::Motion,
@@ -270,8 +270,8 @@ fn outside_viewport_motion_with_pressed_button_is_reported() {
 #[test]
 fn sgr_wheel_button_mappings() {
     let mut encoder = encoder();
-    encoder.event = Event::Any;
-    encoder.format = Format::Sgr;
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::Sgr);
     for (button, code) in [
         (MouseButton::Four, 64),
         (MouseButton::Five, 65),
@@ -293,8 +293,8 @@ fn sgr_wheel_button_mappings() {
 #[test]
 fn motion_is_deduped_by_last_cell_except_sgr_pixels() {
     let mut encoder = encoder();
-    encoder.event = Event::Any;
-    encoder.format = Format::Sgr;
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::Sgr);
     encoder.last_cell = Some(None);
     let event = MouseEvent {
         action: MouseAction::Motion,
@@ -303,17 +303,17 @@ fn motion_is_deduped_by_last_cell_except_sgr_pixels() {
     };
     assert_eq!(encoder.encode(&event), b"\x1b[<32;6;7M");
     assert!(encoder.encode(&event).is_empty());
-    encoder.format = Format::SgrPixels;
+    encoder.set_format(Format::SgrPixels);
     assert_eq!(encoder.encode(&event), b"\x1b[<32;5;6M");
-    encoder.format = Format::Sgr;
+    encoder.set_format(Format::Sgr);
     encoder.last_cell = Some(None);
     assert_eq!(encoder.encode(&event), b"\x1b[<32;6;7M");
 }
 
 fn reporting(mode: Event, actions: [bool; 3], button: Option<MouseButton>) {
     let mut encoder = encoder();
-    encoder.event = mode;
-    encoder.format = Format::Sgr;
+    encoder.set_event(mode);
+    encoder.set_format(Format::Sgr);
     for (action, expected) in [
         MouseAction::Press,
         MouseAction::Release,
@@ -365,4 +365,52 @@ fn button_mode_requires_a_button() {
 fn any_mode_reports_everything() {
     reporting(Event::Any, [true, true, true], Some(MouseButton::Left));
     reporting(Event::Any, [true, true, true], None);
+}
+
+fn tracked_motion() -> (MouseEncoder, MouseEvent) {
+    let mut encoder = encoder();
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::Sgr);
+    encoder.last_cell = Some(None);
+    let event = MouseEvent {
+        action: MouseAction::Motion,
+        pos: Pos { x: 1.0, y: 1.0 },
+        ..event()
+    };
+    assert_eq!(encoder.encode(&event), b"\x1b[<32;2;2M");
+    assert!(encoder.encode(&event).is_empty());
+    (encoder, event)
+}
+
+#[test]
+fn changing_format_invalidates_the_motion_cell() {
+    let (mut encoder, event) = tracked_motion();
+    encoder.set_format(Format::Sgr);
+    assert!(encoder.encode(&event).is_empty());
+    encoder.set_format(Format::Urxvt);
+    assert_eq!(encoder.encode(&event), b"\x1b[64;2;2M");
+    assert!(encoder.encode(&event).is_empty());
+}
+
+#[test]
+fn changing_reporting_class_invalidates_the_motion_cell() {
+    let (mut encoder, event) = tracked_motion();
+    encoder.set_event(Event::Any);
+    assert!(encoder.encode(&event).is_empty());
+    encoder.set_event(Event::Button);
+    assert_eq!(encoder.encode(&event), b"\x1b[<32;2;2M");
+    assert!(encoder.encode(&event).is_empty());
+}
+
+#[test]
+fn setting_size_invalidates_the_motion_cell_even_when_equal() {
+    let (mut encoder, event) = tracked_motion();
+    let mut size = encoder.size();
+    size.screen.width += 1;
+    encoder.set_size(size);
+    assert_eq!(encoder.encode(&event), b"\x1b[<32;2;2M");
+    assert!(encoder.encode(&event).is_empty());
+    encoder.set_size(size);
+    assert_eq!(encoder.encode(&event), b"\x1b[<32;2;2M");
+    assert!(encoder.encode(&event).is_empty());
 }

@@ -135,9 +135,9 @@ fn mouse_snapshot_defaults_disable_reports_and_tracking() {
     };
     let terminal = Terminal::new(80, 24, 0).unwrap();
     let mut encoder = MouseEncoder::from_terminal(&terminal, size(), None);
-    assert_eq!(encoder.event, Event::None);
-    assert_eq!(encoder.format, Format::X10);
-    assert_eq!(encoder.size, size());
+    assert_eq!(encoder.event(), Event::None);
+    assert_eq!(encoder.format(), Format::X10);
+    assert_eq!(encoder.size(), size());
     assert!(!encoder.any_button_pressed);
     assert_eq!(encoder.last_cell, None);
     assert!(encoder.encode(&MouseEvent::default()).is_empty());
@@ -158,7 +158,7 @@ fn mouse_snapshot_reads_event_and_format_modes() {
     ] {
         terminal.write(format!("\x1b[?{mode}h").as_bytes());
         assert_eq!(
-            MouseEncoder::from_terminal(&terminal, size(), None).event,
+            MouseEncoder::from_terminal(&terminal, size(), None).event(),
             expected
         );
         terminal.write(format!("\x1b[?{mode}l").as_bytes());
@@ -171,7 +171,7 @@ fn mouse_snapshot_reads_event_and_format_modes() {
     ] {
         terminal.write(format!("\x1b[?{mode}h").as_bytes());
         assert_eq!(
-            MouseEncoder::from_terminal(&terminal, size(), None).format,
+            MouseEncoder::from_terminal(&terminal, size(), None).format(),
             expected
         );
         terminal.write(format!("\x1b[?{mode}l").as_bytes());
@@ -202,7 +202,7 @@ fn mouse_snapshot_allows_size_and_format_overrides_without_borrowing() {
         }),
         b"\x1b[<0;4;6M"
     );
-    encoder.format = Format::Sgr;
+    encoder.set_format(Format::Sgr);
     assert_eq!(
         encoder.encode(&MouseEvent {
             button: Some(MouseButton::Left),

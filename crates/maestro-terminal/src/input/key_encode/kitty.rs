@@ -3,6 +3,7 @@
 use std::fmt::Write as _;
 
 use super::KeyEncoder;
+use crate::input::function_keys::modifier_code;
 use crate::input::key::{Key, KeyAction, KeyEvent};
 use crate::input::key_mods::Mods;
 use crate::input::kitty::{Entry, entry};
@@ -95,11 +96,7 @@ impl<'a> Sequence<'a> {
     /// Prepare the protocol fields from the caller's event.
     fn new(event: &'a KeyEvent, opts: &KeyEncoder, entry: Entry) -> Self {
         let mods = event.mods;
-        let wire_mods = (mods.int() & 1)
-            | ((mods.int() & 4) >> 1)
-            | ((mods.int() & 2) << 1)
-            | (mods.int() & 8)
-            | ((mods.int() & 0x30) << 2);
+        let wire_mods = modifier_code(mods) + ((mods.int() & 0x30) << 2);
         let action = if enabled(opts, Flags::REPORT_EVENTS) {
             match event.action {
                 KeyAction::Press => 1,
@@ -114,7 +111,7 @@ impl<'a> Sequence<'a> {
             || (mods.contains(Mods::ALT) && opts.macos_option_as_alt.active(mods));
         Self {
             entry,
-            mods: wire_mods + 1,
+            mods: wire_mods,
             event: action,
             alternates: if enabled(opts, Flags::REPORT_ALTERNATES) {
                 alternates(event, entry.code)

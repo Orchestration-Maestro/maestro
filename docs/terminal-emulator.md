@@ -43,7 +43,7 @@ borrowed-buffer defect where changing the caller's text changed a stored event.
 
 `input::mouse::MouseEvent` carries an action, optional button, keyboard modifiers
 and surface-space pixel position. `input::mouse_encode::MouseEncoder::new(size)`
-starts with reporting disabled. Its `event` and `format` fields select press-only,
+starts with reporting disabled. Its `set_event` and `set_format` methods select press-only,
 normal, button-motion or all-motion reporting and byte, UTF-8, SGR, urxvt or SGR
 pixel output. `encode` returns owned bytes.
 
@@ -57,7 +57,10 @@ reportable; other off-surface events require motion tracking with
 Mouse motion tracking is optional: set `last_cell` to `Some(None)` to start or
 reset cell deduplication, or to `None` to disable it. Accepted events update the
 tracked cell before wire-format limits or unsupported buttons are checked.
-SGR pixel reports bypass cell deduplication.
+SGR pixel reports bypass cell deduplication. Changing the reporting class or
+format clears the tracked cell; setting either to its current value preserves
+it. `set_size` clears the tracked cell even when the geometry is unchanged.
+Read the current settings with `event()`, `format()` and `size()`.
 
 `MouseEncoder::from_terminal(&terminal, size, format)` snapshots the terminal's
 reporting class and format with supplied renderer geometry. Pass `None` to use

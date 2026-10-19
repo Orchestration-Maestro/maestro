@@ -18,11 +18,11 @@ use size::{Coordinate as Position, Size, Space};
 #[derive(Clone, Debug)]
 pub struct MouseEncoder {
     /// Activities the application requested.
-    pub event: Event,
+    event: Event,
     /// Wire format requested by the application.
-    pub format: Format,
+    format: Format,
     /// Stable renderer size for position conversion.
-    pub size: Size,
+    size: Size,
     /// Whether a button is held, including the current event's press.
     pub any_button_pressed: bool,
     /// Outer none disables deduplication; inner none tracks without a prior cell.
@@ -52,6 +52,53 @@ impl MouseEncoder {
             event: terminal.flags.mouse_event,
             format: format.unwrap_or(terminal.flags.mouse_format),
             ..Self::new(size)
+        }
+    }
+
+    /// Current reporting class.
+    #[must_use]
+    pub fn event(&self) -> Event {
+        self.event
+    }
+
+    /// Select a reporting class, clearing the tracked cell when it changes.
+    pub fn set_event(&mut self, event: Event) {
+        if self.event != event {
+            self.reset_cell();
+            self.event = event;
+        }
+    }
+
+    /// Current wire format.
+    #[must_use]
+    pub fn format(&self) -> Format {
+        self.format
+    }
+
+    /// Select a wire format, clearing the tracked cell when it changes.
+    pub fn set_format(&mut self, format: Format) {
+        if self.format != format {
+            self.reset_cell();
+            self.format = format;
+        }
+    }
+
+    /// Current renderer geometry.
+    #[must_use]
+    pub fn size(&self) -> Size {
+        self.size
+    }
+
+    /// Set renderer geometry, clearing the tracked cell even for equal geometry.
+    pub fn set_size(&mut self, size: Size) {
+        self.size = size;
+        self.reset_cell();
+    }
+
+    /// Clear a retained cell without enabling or disabling tracking.
+    fn reset_cell(&mut self) {
+        if let Some(last) = &mut self.last_cell {
+            *last = None;
         }
     }
 

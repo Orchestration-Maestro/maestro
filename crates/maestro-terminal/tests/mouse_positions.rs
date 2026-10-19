@@ -28,8 +28,8 @@ fn encoder() -> MouseEncoder {
             bottom: 1,
         },
     });
-    encoder.event = Event::Any;
-    encoder.format = Format::Sgr;
+    encoder.set_event(Event::Any);
+    encoder.set_format(Format::Sgr);
     encoder
 }
 
@@ -45,7 +45,7 @@ fn event() -> MouseEvent {
 fn cell_and_pixel_reports_remove_padding() {
     let mut encoder = encoder();
     assert_eq!(encoder.encode(&event()), b"\x1b[<0;2;2M");
-    encoder.format = Format::SgrPixels;
+    encoder.set_format(Format::SgrPixels);
     assert_eq!(encoder.encode(&event()), b"\x1b[<0;10;20M");
     let event = MouseEvent {
         pos: Pos { x: 6.5, y: 8.5 },
@@ -61,15 +61,15 @@ fn viewport_releases_are_unconditional_but_presses_require_drag_tracking() {
         pos: Pos { x: 101.0, y: -1.0 },
         ..event()
     };
-    encoder.event = Event::Normal;
+    encoder.set_event(Event::Normal);
     encoder.any_button_pressed = true;
     assert!(encoder.encode(&event).is_empty());
     event.action = MouseAction::Release;
     assert_eq!(encoder.encode(&event), b"\x1b[<0;9;1m");
-    encoder.format = Format::SgrPixels;
+    encoder.set_format(Format::SgrPixels);
     assert_eq!(encoder.encode(&event), b"\x1b[<0;94;-10m");
     event.action = MouseAction::Press;
-    encoder.event = Event::Button;
+    encoder.set_event(Event::Button);
     assert_eq!(encoder.encode(&event), b"\x1b[<0;94;-10M");
     encoder.any_button_pressed = false;
     assert!(encoder.encode(&event).is_empty());
@@ -97,10 +97,10 @@ fn motion_dedupe_tracks_cells_not_fractional_pixels() {
 fn rejected_format_still_updates_enabled_cell_tracking() {
     let mut encoder = encoder();
     encoder.last_cell = Some(None);
-    encoder.event = Event::None;
+    encoder.set_event(Event::None);
     assert!(encoder.encode(&event()).is_empty());
     assert_eq!(encoder.last_cell, Some(None));
-    encoder.event = Event::Any;
+    encoder.set_event(Event::Any);
     let event = MouseEvent {
         button: Some(MouseButton::Unknown),
         ..event()
@@ -129,7 +129,7 @@ fn all_formats_keep_release_and_modifier_semantics() {
         (Format::Urxvt, b"\x1b[63;2;2M"),
         (Format::SgrPixels, b"\x1b[<30;10;20m"),
     ] {
-        encoder.format = format;
+        encoder.set_format(format);
         assert_eq!(encoder.encode(&event), expected);
     }
 }
@@ -137,17 +137,19 @@ fn all_formats_keep_release_and_modifier_semantics() {
 #[test]
 fn x10_accepts_the_last_encodable_cell_and_tracks_rejected_cells() {
     let mut encoder = encoder();
-    encoder.size.screen = ScreenSize {
+    let mut size = encoder.size();
+    size.screen = ScreenSize {
         width: 1000,
         height: 1000,
     };
-    encoder.size.padding = Padding::default();
-    encoder.size.cell = CellSize {
+    size.padding = Padding::default();
+    size.cell = CellSize {
         width: 1,
         height: 1,
     };
+    encoder.set_size(size);
     encoder.last_cell = Some(None);
-    encoder.format = Format::X10;
+    encoder.set_format(Format::X10);
     let mut event = MouseEvent {
         pos: Pos { x: 222.0, y: 222.0 },
         ..event()
