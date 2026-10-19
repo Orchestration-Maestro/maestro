@@ -1,11 +1,7 @@
 //! Owned repeating callbacks through the controlled terminal runtime.
+use crate::support::manual_runtime::{ManualRuntime, ms};
 use maestro_tui::tui::RepeatingTimer;
 use std::{cell::Cell, rc::Rc};
-#[allow(dead_code)]
-mod support {
-    pub mod manual_runtime;
-}
-use support::manual_runtime::{ManualRuntime, ms};
 
 #[test]
 fn repeating_timer_repeats_until_owner_drop() {

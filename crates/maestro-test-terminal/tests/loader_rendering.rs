@@ -5,18 +5,8 @@ use std::rc::Rc;
 use maestro_tui::{Component, Loader, LoaderIndicatorOptions, TUI};
 use serde::Deserialize;
 
-#[allow(
-    dead_code,
-    reason = "Support items are shared by several test targets."
-)]
-mod support {
-    pub mod checks;
-    pub mod manual_runtime;
-    pub mod recording_terminal;
-    pub mod writer;
-}
-use support::checks::{parse, succeeds};
-use support::writer::writer;
+use crate::support::checks::{parse, succeeds};
+use crate::support::writer::writer;
 
 /// One distinct rendering query and its complete observations.
 #[derive(Deserialize)]

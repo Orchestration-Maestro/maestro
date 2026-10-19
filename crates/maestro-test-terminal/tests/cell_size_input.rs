@@ -8,24 +8,12 @@ use maestro_tui::tui::{InputListener, InputListenerResult};
 use maestro_tui::{Component, Container, TUI, TerminalImage};
 use serde::Deserialize;
 
-#[allow(
-    dead_code,
-    reason = "Support items are shared by several test targets."
-)]
-mod support {
-    pub mod checks;
-    pub mod components;
-    pub mod manual_runtime;
-    pub mod recording_terminal;
-    pub mod scene;
-    pub mod virtual_terminal;
-}
-use support::checks::parse;
-use support::checks::succeeds;
-use support::components::{Capabilities, Probe};
-use support::manual_runtime::ManualRuntime;
-use support::recording_terminal::RecordingTerminal;
-use support::scene::Scene;
+use crate::support::checks::parse;
+use crate::support::checks::succeeds;
+use crate::support::components::{Capabilities, Probe};
+use crate::support::manual_runtime::ManualRuntime;
+use crate::support::recording_terminal::RecordingTerminal;
+use crate::support::scene::Scene;
 
 /// The pixel size of a cell before any reply.
 const DEFAULT_CELLS: CellDimensions = CellDimensions {
@@ -51,6 +39,7 @@ fn focused_scene(images: TerminalImage) -> Scene {
 
 #[test]
 fn maestro_frames_forwards_bare_escape_even_when_a_cell_size_query_was_sent_at_startup() {
+    let _input = crate::input_support::globals();
     let scene = focused_scene(ghostty());
     succeeds(scene.tui.start());
     scene.terminal.send_input("\x1b");
@@ -61,6 +50,7 @@ fn maestro_frames_forwards_bare_escape_even_when_a_cell_size_query_was_sent_at_s
 
 #[test]
 fn maestro_frames_consumes_cell_size_responses_and_still_forwards_later_user_input() {
+    let _input = crate::input_support::globals();
     let images = ghostty();
     let scene = focused_scene(images.clone());
     succeeds(scene.tui.start());
@@ -160,6 +150,7 @@ impl Rig {
 
 #[test]
 fn cell_replies_consume_only_recognized_chunks() {
+    let _input = crate::input_support::globals();
     for case in routing().cell_replies {
         let rig = Rig::new();
         rig.terminal.send_input(&case.data);
@@ -184,6 +175,7 @@ fn cell_replies_consume_only_recognized_chunks() {
 
 #[test]
 fn debug_and_release_routing_preserve_order() {
+    let _input = crate::input_support::globals();
     for case in routing().debug_release {
         let rig = Rig::new();
         rig.probe.wants_release.set(case.wants_release);
@@ -277,6 +269,7 @@ fn listener_cases() -> Vec<ListenerCase> {
 
 #[test]
 fn listeners_mutate_live_order_before_routing() {
+    let _input = crate::input_support::globals();
     for case in listener_cases() {
         let rig = Rig::new();
         let seen: Seen = Rc::default();
@@ -330,6 +323,7 @@ fn assert_listener_disposal_between_inputs() {
 
 #[test]
 fn focus_transitions_update_capability_flags() {
+    let _input = crate::input_support::globals();
     let rig = Rig::new();
     let other = Probe::shared(&[]);
     other.capabilities.set(Capabilities::FocusOnly);
@@ -562,6 +556,7 @@ fn assert_focus_positions_cursor() {
 
 #[test]
 fn missing_input_capability_ignores_input() {
+    let _input = crate::input_support::globals();
     let rig = Rig::new();
     succeeds(rig.runtime.settle());
     rig.tui.set_focus(None);

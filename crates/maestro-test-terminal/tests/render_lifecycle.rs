@@ -7,20 +7,10 @@ use maestro_tui::images::terminal_image::{ImageProtocol, TerminalCapabilities};
 use maestro_tui::tui::{ChildArray, ComponentHandle};
 use maestro_tui::{CURSOR_MARKER, Component, Container, TUI, TerminalImage};
 
-#[allow(
-    dead_code,
-    reason = "Support items are shared by several test targets."
-)]
-mod support {
-    pub mod checks;
-    pub mod components;
-    pub mod manual_runtime;
-    pub mod recording_terminal;
-}
-use support::checks::succeeds;
-use support::components::{Cached, Probe};
-use support::manual_runtime::{ManualRuntime, ms};
-use support::recording_terminal::RecordingTerminal;
+use crate::support::checks::succeeds;
+use crate::support::components::{Cached, Probe};
+use crate::support::manual_runtime::{ManualRuntime, ms};
+use crate::support::recording_terminal::RecordingTerminal;
 
 /// A writer over a recording terminal whose terminal supports `protocol` images.
 fn writer(protocol: Option<ImageProtocol>) -> (TUI, RecordingTerminal, ManualRuntime) {
