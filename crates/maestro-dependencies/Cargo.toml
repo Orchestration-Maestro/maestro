@@ -46,6 +46,7 @@ stable_deref_trait = { version = "1.2.1", default-features = false, features = [
 syn-7b89eefb6aaa9bf3 = { package = "syn", version = "3.0.6", features = ["extra-traits", "fold", "full", "visit", "visit-mut"] }
 tinystr = { version = "0.8.4", default-features = false, features = ["alloc", "zerovec"] }
 tokio = { version = "1.53.2", default-features = false, features = ["test-util"] }
+tracing-core = { version = "0.1.36" }
 unicode-width = { version = "0.2.2" }
 writeable = { version = "0.6.4", default-features = false, features = ["alloc"] }
 yoke = { version = "0.8.3", features = ["derive"] }
@@ -71,6 +72,7 @@ syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", features = ["full
 [target.x86_64-unknown-linux-gnu.dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 bytes = { version = "1.12.1", features = ["serde"] }
+deranged = { version = "0.5.8", features = ["serde"] }
 digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
 fastrand = { version = "2.5.0" }
 form_urlencoded = { version = "1.2.2" }
@@ -91,6 +93,7 @@ rustix = { version = "1.1.5", features = ["event", "net", "pipe", "process", "pt
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
+time = { version = "0.3.55", features = ["formatting", "parsing", "serde"] }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
 tracing = { version = "0.1.44" }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
@@ -104,6 +107,7 @@ syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features 
 [target.aarch64-unknown-linux-gnu.dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 bytes = { version = "1.12.1", features = ["serde"] }
+deranged = { version = "0.5.8", features = ["serde"] }
 digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
 fastrand = { version = "2.5.0" }
 form_urlencoded = { version = "1.2.2" }
@@ -124,6 +128,7 @@ rustix = { version = "1.1.5", features = ["event", "net", "pipe", "process", "pt
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
+time = { version = "0.3.55", features = ["formatting", "parsing", "serde"] }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
 tracing = { version = "0.1.44" }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
@@ -137,6 +142,7 @@ syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features 
 [target.x86_64-apple-darwin.dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 bytes = { version = "1.12.1", features = ["serde"] }
+deranged = { version = "0.5.8", features = ["serde"] }
 digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
 errno = { version = "0.3.14" }
 fastrand = { version = "2.5.0" }
@@ -156,6 +162,7 @@ rustix = { version = "1.1.5", features = ["event", "pipe", "process", "pty", "sh
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
+time = { version = "0.3.55", features = ["formatting", "parsing", "serde"] }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
 tracing = { version = "0.1.44" }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
@@ -170,6 +177,7 @@ syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features 
 [target.aarch64-apple-darwin.dependencies]
 bitflags = { version = "2.13.2", default-features = false, features = ["std"] }
 bytes = { version = "1.12.1", features = ["serde"] }
+deranged = { version = "0.5.8", features = ["serde"] }
 digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
 errno = { version = "0.3.14" }
 fastrand = { version = "2.5.0" }
@@ -189,6 +197,7 @@ rustix = { version = "1.1.5", features = ["event", "pipe", "process", "pty", "sh
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
+time = { version = "0.3.55", features = ["formatting", "parsing", "serde"] }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread", "signal"] }
 tracing = { version = "0.1.44" }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
@@ -202,6 +211,7 @@ syn-f595c2ba2a3f28df = { package = "syn", version = "2.0.119", default-features 
 
 [target.x86_64-pc-windows-msvc.dependencies]
 bytes = { version = "1.12.1", features = ["serde"] }
+deranged = { version = "0.5.8", features = ["serde"] }
 digest = { version = "0.11.3", features = ["alloc", "mac", "oid"] }
 fastrand = { version = "2.5.0" }
 form_urlencoded = { version = "1.2.2" }
@@ -215,6 +225,7 @@ percent-encoding = { version = "2.3.2" }
 ryu = { version = "1.0.23", default-features = false, features = ["small"] }
 sha2 = { version = "0.11.0" }
 slab = { version = "0.4.12" }
+time = { version = "0.3.55", features = ["formatting", "parsing", "serde"] }
 tokio = { version = "1.53.2", features = ["fs", "io-util", "macros", "net", "process", "rt-multi-thread"] }
 tracing = { version = "0.1.44" }
 uuid = { version = "1.27.0", features = ["v4", "v7"] }
