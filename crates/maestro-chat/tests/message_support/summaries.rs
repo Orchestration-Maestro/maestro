@@ -70,6 +70,9 @@ fn assert_clean(rows: &str, name: &str) {
 
 /// Checks source-backed case-specific content and renderer-owned output.
 fn assert_body(rows: &str, name: &str, hyperlinks: bool) {
+    let prose = rows
+        .split_once("before ")
+        .map_or("", |(_, body)| body.split_once(" after").unwrap().0);
     match name {
         "safe styles" => {
             assert!(
@@ -77,29 +80,48 @@ fn assert_body(rows: &str, name: &str, hyperlinks: bool) {
                     .any(|line| line.contains("before") && line.contains("\x1b[1m")),
                 "{name}: body bold lost"
             );
-            assert_destination(rows, "https://safe.example", name, hyperlinks);
+            assert_destination(prose, "https://safe.example", name, hyperlinks);
         }
-        "entity destination" => assert_destination(rows, "https://safe.example/", name, hyperlinks),
-        "entity label" => assert_destination(rows, "https://safe.example", name, hyperlinks),
+        "entity destination" => {
+            assert_destination(prose, "https://safe.example/", name, hyperlinks);
+        }
+        "entity label" => assert_destination(prose, "https://safe.example", name, hyperlinks),
         "numeric entity" => assert!(
             rows.contains("code &#27;]52;c;b3duZWQ=&#7; end"),
             "{name}: code entities changed"
         ),
         "split entity" => assert!(
-            rows.contains("&#27;]52;c;b3duZWQ="),
+            prose.contains("&#27;]52;c;b3duZWQ="),
             "{name}: reparsed entity"
         ),
         "link" => assert_eq!(rows.matches("docs.example").count(), 2, "{name}"),
         "title" => assert!(!rows.contains("owned"), "{name}: command payload displayed"),
         "binary" => assert_eq!(rows.matches("leftright").count(), 2, "{name}"),
         "unicode" => assert_eq!(rows.matches("café 中文 👩‍💻").count(), 2, "{name}"),
-        "whitespace" => {
-            for word in ["tab", "value", "line", "next"] {
-                assert_eq!(rows.matches(word).count(), 2, "{name}: {word}");
-            }
-            assert!(rows.lines().count() > 8, "{name}: logical lines lost");
-        }
+        "whitespace" => assert_payload_lines(rows, name),
         _ => {}
+    }
+}
+
+/// Checks payload row boundaries independently of headers, spacers and fences.
+fn assert_payload_lines(rows: &str, name: &str) {
+    for word in ["tab", "value", "line", "next"] {
+        assert_eq!(rows.matches(word).count(), 2, "{name}: {word}");
+    }
+    let lines: Vec<_> = rows.lines().collect();
+    for (prefix, suffix) in [("before tab", "next after"), ("code tab", "next end")] {
+        let start = lines.iter().position(|line| line.contains(prefix)).unwrap();
+        assert!(lines[start].contains("value"), "{name}: tab value row");
+        assert!(
+            !lines[start].contains("line"),
+            "{name}: first boundary lost"
+        );
+        assert!(lines[start + 1].contains("line"), "{name}: line row");
+        assert!(
+            !lines[start + 1].contains("next"),
+            "{name}: second boundary lost"
+        );
+        assert!(lines[start + 2].contains(suffix), "{name}: next row");
     }
 }
 
