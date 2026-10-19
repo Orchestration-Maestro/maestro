@@ -186,7 +186,10 @@ A full redraw deletes every image of the previous frame before clearing the scre
 
 `request_render(false)` queues a frame at least 16 ms after the previous one starts
 and merges any further request until then. `request_render(true)` forgets the
-retained frame and queues an immediate redraw of everything. The host always defers
+retained frame and queues an immediate redraw of everything. Both routes defer
+composition while the terminal reports more than 256 KiB of pending output, retrying
+after 10 ms without consuming redraw intent or advancing frame cadence. The retry
+composes the latest state. The host always defers
 the callback, even for a zero delay, and the callback's `io::Result` is returned to
 whoever drives the host. A component may request another frame while it renders; the
 request is kept and queued after the current frame. `stop` cancels the pending frame,

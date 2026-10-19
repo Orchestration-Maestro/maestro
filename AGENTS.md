@@ -150,9 +150,10 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   production lines with matching moved/deleted counts, not claimed savings.
 - `maestro-process` is a declared core leaf below layer 0 with no workspace
   dependencies, including the path and cancellation leaves. Only tools, packages,
-  credentials, detection, the application, the daemon and the toolkit may depend on it, on native targets. It owns native child-process
+  credentials, detection, the application, the daemon, the toolkit and the terminal adapter may depend on it, on native targets. It owns native child-process
   lifecycles; the callers keep cancellation, termination and settlement policy and
-  all output handling. Synchronous capture follows the timeout handling in
+  all output handling. Its retained-front byte queue is shared by pane-process input
+  and native terminal output; callers own readiness and lifecycle policy. Synchronous capture follows the timeout handling in
   [the spec](docs/specs/maestro-port.md#crates-and-delivery-order).
 - `maestro-cancellation` owns cooperative cancellation below layer 0, with no
   internal dependencies. Only models and the toolkit may depend directly on it.

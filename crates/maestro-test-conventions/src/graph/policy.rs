@@ -124,7 +124,10 @@ pub(crate) const POLICY: &[(&str, &[&str])] = &[
             "maestro-brand",
         ],
     ),
-    ("maestro-tui-crossterm", &["maestro-tui", "maestro-text"]),
+    (
+        "maestro-tui-crossterm",
+        &["maestro-tui", "maestro-text", "maestro-process"],
+    ),
     (
         "maestro-catalog",
         &[
@@ -367,6 +370,8 @@ pub(crate) fn required(name: &str) -> &'static [&'static str] {
         "maestro-cli" | "maestro-chat" | "maestro-rpc" | "maestro-web" | "maestro-multiplexer"
     ) {
         &["maestro-app"]
+    } else if name == "maestro-tui-crossterm" {
+        &["maestro-tui", "maestro-text"]
     } else if exact(name) {
         rule(name).map_or(&[], |rule| rule.dependencies)
     } else {

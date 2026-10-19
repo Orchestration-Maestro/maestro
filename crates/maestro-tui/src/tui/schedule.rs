@@ -9,6 +9,12 @@ use super::{RenderTimer, TUI};
 /// The least time between two ordinary frames.
 const MIN_RENDER_INTERVAL: Duration = Duration::from_millis(16);
 
+/// Output bytes above which composing another frame is deferred.
+const MAX_PENDING_OUTPUT_BYTES: usize = 256 * 1024;
+
+/// Delay before checking a backed-up terminal again.
+const OUTPUT_BACKLOG_RETRY: Duration = Duration::from_millis(10);
+
 /// Whether a frame is wanted and when the next one is due.
 #[derive(Default)]
 pub(super) struct Schedule {
@@ -50,7 +56,8 @@ impl Schedule {
 
 impl TUI {
     /// Asks for a frame. Ordinary requests coalesce under a minimum interval; a forced
-    /// request forgets the retained frame and draws from scratch at once.
+    /// request forgets the retained frame and queues a full redraw. Backed-up output
+    /// defers either route without consuming its intent.
     pub fn request_render(&self, force: bool) {
         if force {
             self.request_forced_render();
@@ -82,7 +89,9 @@ impl TUI {
                     None => Ok(()),
                 }),
             );
-            self.shared.schedule.borrow_mut().forced_timer = Some(timer);
+            let schedule = &self.shared.schedule;
+            let expired = schedule.borrow_mut().forced_timer.replace(timer);
+            drop(expired);
         }
     }
 
@@ -104,18 +113,47 @@ impl TUI {
                 None => Ok(()),
             }),
         );
-        self.shared.schedule.borrow_mut().render_timer = Some(timer);
+        let schedule = &self.shared.schedule;
+        let expired = schedule.borrow_mut().render_timer.replace(timer);
+        drop(expired);
     }
 
     /// Claims the pending request for a frame that starts now; false when none is pending.
     fn claim_frame(&self) -> bool {
-        let now = self.shared.runtime.now();
-        let mut schedule = self.shared.schedule.borrow_mut();
-        if schedule.stopped || !schedule.render_requested {
+        {
+            let schedule = self.shared.schedule.borrow();
+            if schedule.stopped || !schedule.render_requested {
+                return false;
+            }
+        }
+        if self.defer_for_output_backlog() {
             return false;
         }
+        let now = self.shared.runtime.now();
+        let mut schedule = self.shared.schedule.borrow_mut();
         schedule.render_requested = false;
         schedule.last_render_at = now;
+        true
+    }
+
+    /// Keeps render intent and cadence untouched while output remains backed up.
+    fn defer_for_output_backlog(&self) -> bool {
+        if self.shared.terminal.borrow().pending_output_bytes() <= MAX_PENDING_OUTPUT_BYTES {
+            return false;
+        }
+        if self.shared.schedule.borrow().render_timer.is_none() {
+            let weak = Rc::downgrade(&self.shared);
+            let timer = self.shared.runtime.schedule(
+                OUTPUT_BACKLOG_RETRY,
+                Box::new(move || match weak.upgrade() {
+                    Some(shared) => TUI { shared }.run_scheduled_render(),
+                    None => Ok(()),
+                }),
+            );
+            let schedule = &self.shared.schedule;
+            let expired = schedule.borrow_mut().render_timer.replace(timer);
+            drop(expired);
+        }
         true
     }
 

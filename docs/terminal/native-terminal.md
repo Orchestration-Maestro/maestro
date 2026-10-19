@@ -33,7 +33,7 @@ runtime.block_on(local.run_until(async {
 ## The runtime it needs
 
 The terminal starts no runtime and no thread. It is given a `LocalSet`, and every task it
-creates runs there: the input reader, the progress keepalive and every callback. Tasks run
+creates runs there: the input reader, the output writer, the progress keepalive and every callback. Tasks run
 only while the caller drives that set inside a Tokio runtime whose I/O, time and signal
 drivers are enabled; a runtime built without one of them is a caller error, which Tokio
 reports itself. The standalone one-input wait validates the I/O driver before changing
@@ -74,7 +74,7 @@ host; callers release any strong handle their callbacks capture.
 `new` reads the size of standard output and the write-log setting and does nothing else.
 `start` puts standard input in raw mode when it is a terminal, makes its reads nonblocking,
 subscribes to window-change signals, writes the bracketed-paste enable and the keyboard
-query, and spawns the input task.
+query, registers nonblocking output and spawns the input and output tasks.
 
 Raw mode is applied to the device standard input refers to. It clears echo, line editing,
 signal keys, extended input processing, break handling, parity marking, stripping, newline
@@ -96,7 +96,7 @@ acquisition ends, and progress is unchanged.
 
 `stop` retires the input task before it writes anything, so no callback starts after it
 returns (a callback that called `stop` finishes, and the events it had left are not
-delivered). It then writes, in order: the progress clear when progress was active, the
+delivered). It drains queued output before writing, in order: the progress clear when progress was active, the
 bracketed-paste disable, and the keyboard disables for the modes this terminal enabled
 (enhanced protocol first); finally it restores the attributes and status flags it saved, as
 described below. Every step is attempted even when an earlier one fails, and `stop` returns
@@ -111,7 +111,9 @@ that `stop` ends. An acquisition begins with a `start` that finds the terminal s
 succeeds keeps it; one that fails, other than outside a runtime, restores and ends it, so the
 next `start` saves standard input as it is then. Because the saved state is written whole,
 restoration also replaces any change another party made to standard input while the terminal
-was started. Standard input that was not a terminal has no attributes to restore.
+was started. Standard input that was not a terminal has no attributes to restore. Output status flags
+are saved when its writer is acquired and restored after the queue drains. When
+input and output share an open file description, input restoration runs last.
 
 ## Input
 
@@ -171,23 +173,40 @@ which a `usize` cannot hold.
 
 ## Output
 
-A command that returns `Ok` has written all of its bytes to standard output, waiting on the
-calling thread while the output is full: the status flag that makes reads nonblocking lives
-on the open file description, which standard output usually shares with standard input. A
-write that fails is returned as it is, and part of the bytes may already have been written.
+While started, output commands accept owned UTF-8 bytes into one ordered queue and
+return without waiting for the terminal reader. One task writes at most 16 KiB per
+syscall and waits on descriptor readiness when output is full, leaving input runnable.
+A permanent write failure drops the remaining queue, refuses further accumulation
+and is reported by the next `stop`. Regular files and `/dev/null`, which the reactor
+refuses, stay synchronous; commands while stopped also write synchronously and
+return the original write error. Stopping or dropping a started terminal cancels
+the writer and drains its retained partial buffer before restoring modes. This final
+drain has no deadline and can wait indefinitely for a live reader that never resumes.
+
 `move_by` writes nothing for zero. The title is written unchanged between `ESC ] 0 ;` and a
-bell. `set_progress(true)` writes the indeterminate-progress sequence at once and, when no
+bell. `set_progress(true)` writes the indeterminate-progress sequence to the same queue and, when no
 keepalive is running, starts one that writes it again every 1000 ms from then on; asking
 again writes it again but never adds or restarts a running keepalive. `set_progress(false)`
-always writes the clear sequence and stops the keepalive. A keepalive write that fails ends
+always submits the clear sequence and stops the keepalive. A synchronous keepalive write that fails ends
 that keepalive and is returned by the next `stop`; the next `set_progress(true)` then starts
-a new keepalive.
+a new keepalive. A queued writer failure is retained for `stop`, which cancels the
+keepalive even when the failed queue has already been discarded.
+
+## Output backlog
+
+`Terminal::pending_output_bytes()` reports accepted bytes not yet written, including
+the remainder of a partially written buffer. The default is zero for adapters that
+do not report a backlog. The toolkit defers composition while more than 256 KiB
+are pending and retries after 10 ms. It draws the latest component state after the
+backlog drains, preserving forced-redraw and clear-on-shrink intent. Ordinary and
+forced renders share this gate; stopping cancels its retry.
 
 ## Write log
 
 When `MAESTRO_TUI_WRITE_LOG` is set to a nonempty value, the data passed to `write` is also
-appended to a file once standard output has accepted it; a write that standard output
-refuses returns its error and appends nothing. A value naming an existing directory selects
+appended to a file at queue admission while the terminal is started. Synchronous
+writes append only after standard output accepts them; a refused synchronous write
+returns its error and appends nothing. A value naming an existing directory selects
 `tui-YYYY-MM-DD_HH-MM-SS-PID.log` in it, with the local time when the terminal was created
 and the process id; any other value is the file path. Directories are never created, and a
 failure to append is ignored. Cursor, title, protocol and progress output is not logged.

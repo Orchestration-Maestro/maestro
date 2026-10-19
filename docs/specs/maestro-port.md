@@ -312,7 +312,7 @@ from the optional foundation utility described below.
 | `maestro-packages` | manage package sources | `maestro-settings`, `maestro-resources`, `maestro-pattern`, `maestro-text`, `maestro-json`, `maestro-process` | 1 |
 | `maestro-test-terminal` | exercise terminal scenarios | `maestro-tui` | 1 |
 | `maestro-theme` | resolve presentation styles | `maestro-tui`, `maestro-request`, `maestro-watch`, `maestro-text`, `maestro-json`, `maestro-brand` | 1 |
-| `maestro-tui-crossterm` | connect a real terminal | `maestro-tui`, `maestro-text` | 1 |
+| `maestro-tui-crossterm` | connect a real terminal | `maestro-tui`, `maestro-text`, `maestro-process` | 1 |
 | `maestro-daemon` | run the workspace daemon | `maestro-protocol`, `maestro-ipc`, `maestro-process`, `maestro-terminal`, `maestro-workspace`, `maestro-detection`, `maestro-settings`, `maestro-tui`, `maestro-json`, `maestro-text` | 1 |
 | `maestro-catalog` | resolve the usable model catalog | `maestro-models`, `maestro-credentials`, `maestro-pattern`, `maestro-request`, `maestro-text`, `maestro-json` | 2 |
 | `maestro-session` | own conversation history and transcript bytes through native file access | `maestro-models`, `maestro-agent`, `maestro-request`, `maestro-entry`, `maestro-text`, `maestro-json` | 2 |
@@ -423,12 +423,16 @@ deleted lines; moving lines is not a code saving.
 `maestro-process` is a core leaf below layer 0 with no workspace dependencies,
 including the path and cancellation leaves. It owns native child-process lifecycles:
 captured-child creation, raw pipe transfer and collection, child-exit and
-pipe-completion observation, termination (including a caller-selected post-exit grace and TERM-then-KILL escalation) and reaping. Only tools, packages, credentials, detection, the application,
-the terminal toolkit and the daemon may depend on it, and only on native targets; callers keep their
+pipe-completion observation, termination (including a caller-selected post-exit grace and TERM-then-KILL escalation) and reaping. Only tools, packages, credentials, detection, the application and the
+terminal toolkit, terminal adapter and the daemon may depend on it, and only on native targets; callers keep their
 cancellation, termination and settlement policies. Shell discovery, environment
 construction, command prefixes, tool definitions, output decoding, sanitization and
 truncation, artifact files, presentation, result mapping and user-facing errors stay
-with their feature owners. The shared launch contract includes synchronous capture
+with their feature owners. The process leaf also owns the retained-front byte queue
+shared by pane-process input and native terminal output: ordered admission, partial
+write advancement and failure cleanup. Callers choose the write chunk bound and
+keep descriptor readiness, lifecycle and error-reporting policy.
+The shared launch contract includes synchronous capture
 with optional raw stdin, an optional caller-supplied timeout and an optional
 combined captured-byte bound, inherited standard
 descriptors without a timeout, and background input transfer and direct-child

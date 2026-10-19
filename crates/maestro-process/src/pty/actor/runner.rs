@@ -4,7 +4,8 @@ use super::{
     controls::{Admission, Control},
     unix::{ReadCallback, ReaderExitCallback},
 };
-use std::{collections::VecDeque, fs::File, io, sync::Arc};
+pub(super) use crate::byte_queue::{WriteStatus, Writes};
+use std::{fs::File, io, sync::Arc};
 use tokio::{
     io::{Interest, unix::AsyncFd},
     sync::mpsc,
@@ -293,82 +294,5 @@ impl Runner {
             tokio::task::consume_budget().await;
         }
         Ok(())
-    }
-}
-
-/// Retains ordered buffers and the offset of a partially written front buffer.
-#[derive(Default)]
-pub(super) struct Writes {
-    /// Complete buffers, including the partially written front.
-    pending: VecDeque<Vec<u8>>,
-    /// Native bytes accepted from the front buffer.
-    offset: usize,
-}
-
-/// Result of one nonblocking flush attempt.
-pub(super) enum WriteStatus {
-    /// All retained bytes were accepted.
-    Complete,
-    /// Readiness or an interrupted call requires another attempt.
-    Blocked,
-    /// The native writer accepted zero bytes.
-    Zero,
-    /// A permanent failure discarded pending bytes.
-    Failed(io::Error),
-}
-
-impl Writes {
-    /// Appends only nonempty writes.
-    pub(super) fn enqueue(&mut self, bytes: Vec<u8>) {
-        if !bytes.is_empty() {
-            self.pending.push_back(bytes);
-        }
-    }
-
-    /// Reports whether the terminal has retained output.
-    pub(super) fn is_empty(&self) -> bool {
-        self.pending.is_empty()
-    }
-
-    /// Retires the front buffer after its last accepted byte.
-    fn advance(&mut self, length: usize) {
-        self.offset += length;
-        if self
-            .pending
-            .front()
-            .is_some_and(|bytes| self.offset == bytes.len())
-        {
-            self.pending.pop_front();
-            self.offset = 0;
-        }
-    }
-
-    /// Advances offsets without copying a remaining buffer prefix.
-    pub(super) fn flush(
-        &mut self,
-        mut write: impl FnMut(&[u8]) -> io::Result<usize>,
-    ) -> WriteStatus {
-        while let Some(bytes) = self.pending.front() {
-            match write(&bytes[self.offset..]) {
-                Ok(0) => return WriteStatus::Zero,
-                Ok(length) => {
-                    self.advance(length);
-                }
-                Err(error)
-                    if matches!(
-                        error.kind(),
-                        io::ErrorKind::WouldBlock | io::ErrorKind::Interrupted
-                    ) =>
-                {
-                    return WriteStatus::Blocked;
-                }
-                Err(error) => {
-                    self.pending.clear();
-                    self.offset = 0;
-                    return WriteStatus::Failed(error);
-                }
-            }
-        }
-        WriteStatus::Complete
     }
 }

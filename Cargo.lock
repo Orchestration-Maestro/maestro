@@ -3920,6 +3920,7 @@ dependencies = [
  "maestro-brand",
  "maestro-dependencies",
  "maestro-path",
+ "maestro-process",
  "maestro-test-process",
  "maestro-text",
  "maestro-tui",

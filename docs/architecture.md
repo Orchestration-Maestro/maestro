@@ -123,11 +123,13 @@ teardown semantics; it introduces no generic executor or scheduling policy.
 
 The process leaf `maestro-process` is declared core below layer 0 with no workspace
 dependencies, including path and cancellation. Only tools, packages, credentials,
-detection, the application, the daemon and the toolkit may consume it, on native targets. It owns child-process lifecycles through its `child_process` module
+detection, the application, the daemon, the toolkit and the terminal adapter may consume it, on native targets. It owns child-process lifecycles through its `child_process` module
 (captured spawn, raw pipe collection, exit and EOF observation, termination and
 reaping, with a caller-selected post-exit grace and TERM-then-KILL escalation); callers keep cancellation, termination, settlement and output policy.
 Linux pane terminals use the separate `pty` module, with setup, foreground facts
-and an owned I/O actor; see [pane processes](workspace-daemon.md#pane-processes).
+and an owned I/O actor. The `byte_queue` module owns ordered buffers and partial-write
+offsets shared by that actor and native terminal output; callers keep readiness and
+shutdown policy. See [pane processes](workspace-daemon.md#pane-processes).
 Synchronous capture follows the timeout handling in the
 [contract](specs/maestro-port.md#crates-and-delivery-order). The checker verifies
 dependency ownership, not target predicates.

@@ -1,68 +1,19 @@
 //! The input task of one started generation: it reads standard input, decodes it, frames it
 //! with the buffer, and delivers the events to the callbacks.
 
-use std::fs::File;
 use std::future::pending;
-use std::io::{self, Read};
-use std::os::fd::OwnedFd;
+use std::io;
 use std::rc::Rc;
 
 use maestro_tui::{StdinBuffer, StdinBufferEventMap, StdinBufferInput, StdinBufferOptions};
-use rustix::stdio::stdin;
-use tokio::io::Interest;
-use tokio::io::unix::AsyncFd;
 use tokio::signal::unix::Signal;
 use tokio::time::{Instant, sleep_until};
 
-use super::Shared;
+use super::{Shared, descriptor::Source};
 use maestro_text::Utf8Stream;
 
 /// The most bytes one read takes.
 pub(super) const READ_SIZE: usize = 4096;
-
-/// Where the bytes of standard input come from.
-pub(super) enum Source {
-    /// A descriptor the reactor can wait on: a terminal, pipe or socket.
-    Reactor(AsyncFd<OwnedFd>),
-    /// A descriptor the reactor refuses with a permission error, such as a regular file or
-    /// `/dev/null`, which a read does not wait on.
-    File(File),
-}
-
-impl Source {
-    /// Opens a duplicate of standard input for reading.
-    pub(super) fn open() -> io::Result<Self> {
-        let duplicate = rustix::io::dup(stdin())?;
-        match AsyncFd::try_with_interest(duplicate, Interest::READABLE) {
-            Ok(descriptor) => Ok(Self::Reactor(descriptor)),
-            Err(refused) => match refused.into_parts() {
-                (descriptor, error) if error.kind() == io::ErrorKind::PermissionDenied => {
-                    Ok(Self::File(File::from(descriptor)))
-                }
-                (_, error) => Err(error),
-            },
-        }
-    }
-
-    /// Reads the next available bytes; `Ok(0)` is the end of input.
-    pub(super) async fn read(&mut self, buffer: &mut [u8]) -> io::Result<usize> {
-        match self {
-            Self::Reactor(descriptor) => loop {
-                let mut ready = descriptor.readable().await?;
-                let attempt = ready.try_io(|inner| {
-                    rustix::io::read(inner.get_ref(), &mut *buffer).map_err(io::Error::from)
-                });
-                if let Ok(result) = attempt {
-                    return result;
-                }
-            },
-            Self::File(file) => {
-                tokio::task::yield_now().await;
-                file.read(buffer)
-            }
-        }
-    }
-}
 
 /// What woke the input task.
 enum Wake {

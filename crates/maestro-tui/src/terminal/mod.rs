@@ -41,6 +41,11 @@ pub trait Terminal {
     /// Returns the device error when the effect cannot be carried out.
     fn write(&mut self, data: &str) -> io::Result<()>;
 
+    /// Bytes accepted by the terminal but not yet written; zero without backlog support.
+    fn pending_output_bytes(&self) -> usize {
+        0
+    }
+
     /// Width in columns.
     fn columns(&self) -> usize;
 
