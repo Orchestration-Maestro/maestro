@@ -1,13 +1,14 @@
 //! Summary emission and unchanged authored user styling through public widgets.
-use super::{REGISTRY, Restore, TERMINAL_CONTROL_CASES, Widget, bind, palette, published};
-use maestro_theme::LiveTheme;
-use maestro_tui::{Component, MarkdownTheme, TerminalCapabilities, TerminalImage, get_keybindings};
+use super::{
+    REGISTRY, Restore, TERMINAL_CONTROL_CASES, Widget, bind, markdown, palette, published,
+};
+use maestro_tui::{Component, TerminalCapabilities, TerminalImage, get_keybindings};
 use std::rc::Rc;
 
 /// Constructs either public summary with the same controlled rendering inputs.
 fn summary(kind: &str, text: &str, hyperlinks: bool) -> Widget {
     let (_, live) = published::published(&palette::palette("a"));
-    let markdown = markdown(live.clone());
+    let markdown = Rc::new(markdown(live.clone(), true));
     let terminal = TerminalImage::new(|_| None, || 1);
     terminal.set_capabilities(TerminalCapabilities {
         hyperlinks,
@@ -19,15 +20,6 @@ fn summary(kind: &str, text: &str, hyperlinks: bool) -> Widget {
     }))
     .unwrap();
     Widget::with_terminal(&input, live, markdown, terminal).0
-}
-
-/// Uses the existing controlled palette and real Markdown callbacks.
-fn markdown(live: LiveTheme) -> Rc<MarkdownTheme> {
-    Rc::new(maestro_theme::get_markdown_theme(
-        live,
-        Rc::new(maestro_theme::SyntectHighlighter::new().unwrap()),
-        true,
-    ))
 }
 
 /// Observes each retained-state transition separately, including same-state rebuilds.
@@ -190,7 +182,7 @@ pub fn user_styles() {
     let component = maestro_chat::UserMessageComponent::new(
         "before \x1b[31mred\x1b[0m after".into(),
         live.clone(),
-        markdown(live),
+        Rc::new(markdown(live, true)),
         TerminalImage::new(|_| None, || 1),
     );
     let rows = component.render(160).join("\n");
