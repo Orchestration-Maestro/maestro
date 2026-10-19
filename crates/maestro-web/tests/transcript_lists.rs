@@ -293,3 +293,126 @@ fn override_recipe(
     };
     Box::new(renderer_recipes::Caption(caption.into()))
 }
+
+/// Appending, replacing and truncating retain only the unaffected positional owners.
+#[test]
+fn stable_rows_keep_positional_widget_lifetimes() {
+    let recorded = Rc::new(crate::attachment_support::Host::default());
+    let host: Rc<dyn AttachmentHost> = recorded.clone();
+    let mut list = MessageList::<message_renderer_support::NativeMessage>::new(Rc::clone(&host));
+    let mut frame = Frame::default();
+    let mut messages = vec![lifetime_user("first"), lifetime_user("second")];
+    let mut refresh = |messages: &[_]| {
+        recorded.surfaces.borrow_mut().clear();
+        draw(
+            &mut frame,
+            &host,
+            &mut list,
+            MessageListProps {
+                messages,
+                ..Default::default()
+            },
+            &crate::highlighter_support::NoHighlight,
+        );
+        published_roots(&recorded)
+    };
+    let initial = refresh(&messages);
+    assert_eq!(initial.len(), 4);
+    messages.push(lifetime_user("third"));
+    let appended = refresh(&messages);
+    assert_eq!(appended.len(), 6);
+    assert_same_roots(&initial, &appended[..4]);
+    assert!(recorded.effects.borrow().is_empty());
+    // Repeated publication must still draw every completed row.
+    assert_same_roots(&appended, &refresh(&messages));
+    register_message_renderer(
+        "transcript-replacement",
+        Rc::new(message_renderer_support::Renderer::<
+            BrowserMessages<message_renderer_support::NativeMessage>,
+        >(Rc::new(|_| {
+            Ok(Box::new(renderer_recipes::Caption("replacement".into())))
+        }))),
+    );
+    messages[1] = AgentMessage::Custom(Arc::new(RwLock::new(BrowserMessages::Other(
+        message_renderer_support::NativeMessage {
+            role: "transcript-replacement".into(),
+            handle: Arc::new(AtomicU32::new(0)),
+        },
+    ))));
+    let replaced = refresh(&messages);
+    assert_same_roots(&appended[..2], &replaced[..2]);
+    assert_same_roots(&appended[4..], &replaced[2..]);
+    assert_removed_roots(&recorded, &appended[2..4]);
+    messages.truncate(2);
+    let truncated = refresh(&messages);
+    assert_same_roots(&initial[..2], &truncated);
+    assert_removed_roots(&recorded, &appended[4..]);
+    drop(list);
+    assert_removed_roots(&recorded, &initial[..2]);
+}
+
+/// Create ordinary builtin content without registering a role override.
+fn lifetime_user(
+    text: &str,
+) -> AgentMessage<BrowserMessages<message_renderer_support::NativeMessage>> {
+    AgentMessage::User(Arc::new(RwLock::new(maestro_app::UserMessage {
+        content: maestro_app::UserContent::Text(text.into()),
+        timestamp: 0.,
+    })))
+}
+
+/// Compare both the stable component identity and its owned native mount recipe.
+fn assert_same_roots(
+    before: &[(
+        egui::Id,
+        Rc<maestro_web::browser::attachment_content::ReadingContent>,
+    )],
+    after: &[(
+        egui::Id,
+        Rc<maestro_web::browser::attachment_content::ReadingContent>,
+    )],
+) {
+    assert_eq!(before.len(), after.len());
+    for ((old_id, old_root), (new_id, new_root)) in before.iter().zip(after) {
+        assert_eq!(old_id, new_id);
+        assert!(Rc::ptr_eq(old_root, new_root));
+    }
+}
+
+/// Consume lifecycle observations so an unrelated row release cannot pass unnoticed.
+fn assert_removed_roots(
+    host: &crate::attachment_support::Host,
+    roots: &[(
+        egui::Id,
+        Rc<maestro_web::browser::attachment_content::ReadingContent>,
+    )],
+) {
+    let mut actual = host.effects.take();
+    let mut expected = roots
+        .iter()
+        .map(|(id, _)| format!("remove:{id:?}"))
+        .collect::<Vec<_>>();
+    actual.sort();
+    expected.sort();
+    assert_eq!(actual, expected);
+}
+
+/// Read only actually published native owners, excluding hidden measurement candidates.
+fn published_roots(
+    host: &crate::attachment_support::Host,
+) -> Vec<(
+    egui::Id,
+    Rc<maestro_web::browser::attachment_content::ReadingContent>,
+)> {
+    host.surfaces
+        .borrow()
+        .iter()
+        .filter_map(|surface| match &surface.content {
+            crate::attachment_support::Content::Reading(
+                content,
+                maestro_web::browser::attachment_content::ReadingPhase::Publish,
+            ) => Some((surface.id, Rc::clone(content))),
+            _ => None,
+        })
+        .collect()
+}

@@ -146,8 +146,40 @@ pub enum ClipboardMode {
     /// Try temporary selection when native writing fails.
     Fallback,
 }
+/// Factory for one positional slot in the canvas's actual document.
+#[cfg(target_arch = "wasm32")]
+pub type ReadingSlotMount<'a> = dyn Fn(&web_sys::Document, usize) -> Result<(egui::Id, web_sys::Element), AttachmentHostError>
+    + 'a;
 /// Replaceable browser content, download and clipboard effects.
 pub trait AttachmentHost {
+    /// Position nested native reading frames beneath a retained root or row slot.
+    /// # Errors
+    /// Returns unsupported-host or missing-container/slot failures.
+    fn enter_reading_container(
+        &self,
+        _id: egui::Id,
+        _slot: Option<egui::Id>,
+    ) -> Result<PlacementScope, AttachmentHostError> {
+        Err(AttachmentHostError::Host(
+            "Reading viewport unavailable".into(),
+        ))
+    }
+
+    /// Grow or truncate positional slots without replacing untouched native nodes.
+    /// # Errors
+    /// Returns unsupported-host, missing-container or native mounting failures.
+    #[cfg(target_arch = "wasm32")]
+    fn resize_reading_slots(
+        &self,
+        _id: egui::Id,
+        _count: usize,
+        _mount: &ReadingSlotMount<'_>,
+    ) -> Result<(), AttachmentHostError> {
+        Err(AttachmentHostError::Host(
+            "Reading slots unavailable".into(),
+        ))
+    }
+
     /// Activate a row's placement lifetime, restoring nested activation on drop.
     /// Hosts without retained native surfaces can keep the empty default.
     fn enter_placement_scope(&self, _scope: egui::Id) -> PlacementScope {

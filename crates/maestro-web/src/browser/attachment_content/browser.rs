@@ -9,10 +9,14 @@ use std::{cell::RefCell, rc::Rc};
 use web_sys::{Document, Element, HtmlCanvasElement};
 mod dialog;
 mod reading;
+/// Active native parent with its independent canvas-to-CSS axis scales.
+type ReadingContainer = (Element, (f64, f64));
 /// Browser objects scoped to the supplied canvas's document.
 pub struct BrowserAttachmentHost {
     /// Canvas coordinate frame.
     canvas: HtmlCanvasElement,
+    /// Nested reading placement restored by each activation lease.
+    containers: Rc<RefCell<Vec<ReadingContainer>>>,
     /// Owning document.
     document: Document,
     /// Independently retained content elements.
@@ -104,6 +108,7 @@ impl BrowserAttachmentHost {
             .ok_or_else(|| AttachmentHostError::Host("Canvas has no document".into()))?;
         Ok(Self {
             canvas,
+            containers: Rc::default(),
             document,
             surfaces: RefCell::new(HashMap::new()),
             scopes: Rc::default(),
@@ -140,6 +145,9 @@ impl BrowserAttachmentHost {
     /// Map canvas points to viewport CSS pixels without resizing for clipping.
     /// `bounds` is in CSS pixels, `r` in canvas points; `x`/`y` are CSS pixels per point.
     fn placement(&self, s: &AttachmentSurface<'_>) -> Result<String, AttachmentHostError> {
+        if let Some(style) = self.contained_style(s)? {
+            return Ok(style);
+        }
         let transform = self.transform(s.pixels_per_point)?;
         let (x, y) = transform.scale;
         let [left, top] = transform.position(s.rect.min);
@@ -278,10 +286,7 @@ impl BrowserAttachmentHost {
                 }
                 other => other,
             })?;
-        let body = self
-            .document
-            .body()
-            .ok_or_else(|| AttachmentHostError::Host("Document has no body".into()))?;
+        let body = self.placement_parent()?;
         if !surface.wrapper.is_connected() {
             body.append_child(&surface.wrapper)
                 .map_err(|error| host_error(&error))?;
@@ -291,6 +296,23 @@ impl BrowserAttachmentHost {
 }
 
 impl AttachmentHost for BrowserAttachmentHost {
+    fn enter_reading_container(
+        &self,
+        id: egui::Id,
+        slot: Option<egui::Id>,
+    ) -> Result<super::PlacementScope, AttachmentHostError> {
+        self.contain(id, slot)
+    }
+
+    fn resize_reading_slots(
+        &self,
+        id: egui::Id,
+        count: usize,
+        mount: &super::ReadingSlotMount<'_>,
+    ) -> Result<(), AttachmentHostError> {
+        self.resize_slots(id, count, mount)
+    }
+
     fn enter_placement_scope(&self, scope: egui::Id) -> super::PlacementScope {
         let depth = self.scopes.borrow().len();
         self.scopes.borrow_mut().push(scope);

@@ -48,7 +48,23 @@ row. Repeated messages remain repeated and in order.
 Artifacts are filtered before custom-role dispatch. Other registered roles take
 precedence over builtin rows, including user and tool-result roles. Custom
 recipes keep native callback handles without a serialization bound; an empty
-recipe still occupies its emitted position.
+recipe still occupies its emitted position. Appending retains existing row owners;
+a component-kind replacement retires only that position, and truncating releases
+only the removed rows. Refreshing the same history still publishes completed rows.
+
+## Contained native reading
+
+`AttachmentHost::enter_reading_container` positions nested native frames inside a
+retained reading root or one of its slots. Keep the returned placement scope alive
+while drawing its children. The containing viewport supplies scrolling and clipping;
+contained reading bodies do not add independent scrollers. Standalone reading views
+keep their existing fixed frames and bounded viewports.
+
+On browser hosts, `resize_reading_slots` grows or truncates positional slots without
+replacing the containing root or untouched slots. Its factory receives the actual
+canvas document and returns owned nodes. Factories run without a registry borrow,
+and all additions are prepared before publication. A factory or native append
+failure leaves existing nodes, selection and scroll intact.
 
 ## Custom message roles
 

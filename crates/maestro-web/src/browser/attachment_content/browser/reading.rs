@@ -12,12 +12,15 @@ use maestro_theme::BrandPresentation;
 use std::{cell::RefCell, fmt::Write as _, rc::Rc};
 use wasm_bindgen::{JsCast as _, closure::Closure};
 use web_sys::{Element, ResizeObserver};
+mod container;
 mod transaction;
 use transaction::{Scroll, decoration_border, size_slots, transaction};
 /// Retained root/viewport lifetime with staged frame and viewport placements.
 pub(super) struct NativeReading {
     /// Stable feature identity.
     content: Rc<ReadingContent>,
+    /// Constant-time placement lookup independent of transcript length.
+    slot_index: std::collections::HashMap<egui::Id, Element>,
     /// Whole feature-owned root.
     root: ReadingRoot,
     /// Host-created bounded scroll owner beneath the placement frame.
@@ -69,6 +72,7 @@ impl NativeReading {
         observer.observe(&root.element);
         observer.observe(&host.canvas);
         Ok(Self {
+            slot_index: root.slots.iter().cloned().collect(),
             content,
             root,
             viewport,
@@ -89,9 +93,14 @@ impl NativeReading {
         s: &AttachmentSurface<'_>,
         style: String,
         placement: &ReadingPlacement<'_>,
+        contained: bool,
     ) {
-        self.viewport_style =
-            "width:100%;height:100%;box-sizing:border-box;overflow:auto;clip-path:inset(0);".into();
+        self.viewport_style = if contained {
+            "width:100%;height:100%;box-sizing:border-box;overflow:visible;"
+        } else {
+            "width:100%;height:100%;box-sizing:border-box;overflow:auto;clip-path:inset(0);"
+        }
+        .into();
         self.viewport_measurement = self.viewport_style.clone() + "height:auto;";
         self.measurement = style + "visibility:hidden;pointer-events:none;height:auto;";
         if placement.intrinsic_width {
@@ -195,6 +204,10 @@ impl BrowserAttachmentHost {
         s: &AttachmentSurface<'_>,
         p: &BrandPresentation<'_>,
     ) -> Result<String, AttachmentHostError> {
+        if let Some(mut style) = self.contained_style(s)? {
+            crate::browser::append_brand_properties(&mut style, p);
+            return Ok(style);
+        }
         let transform = self.transform(s.pixels_per_point)?;
         let [left, top] = transform.position(s.rect.min);
         let mut style = format!(
@@ -263,9 +276,7 @@ impl BrowserAttachmentHost {
             &candidate.wrapper,
             &(style.to_owned() + "visibility:hidden;pointer-events:none;"),
         )?;
-        self.document
-            .body()
-            .ok_or_else(|| AttachmentHostError::Host("Document has no body".into()))?
+        self.placement_parent()?
             .append_child(&candidate.wrapper)
             .map_err(|e| host_error(&e))?;
         Ok(candidate)
@@ -325,7 +336,7 @@ impl BrowserAttachmentHost {
             .filter(|r| Rc::ptr_eq(&r.content, &placement.content))
             .ok_or_else(|| AttachmentHostError::Host("Reading content was not measured".into()))?;
         if placement.phase == ReadingPhase::Measure {
-            reading.stage(s, style, placement);
+            reading.stage(s, style, placement, !self.containers.borrow().is_empty());
             return Ok(());
         }
         let style = style + reading.root.frame_style;
