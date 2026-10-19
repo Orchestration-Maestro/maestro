@@ -170,13 +170,7 @@ impl<P: 'static, D> ToolRenderer<P, D> for DetailsAdapter<P, D> {
                 let value = any.downcast_ref::<Value>().ok_or_else(|| {
                     ToolUiError::Presentation("Renderer operand types do not match".into())
                 })?;
-                Ok(if let Some(object) = value.as_object() {
-                    Some(object)
-                } else if maestro_app::is_truthy(value) {
-                    Some(&empty)
-                } else {
-                    None
-                })
+                Ok(super::json_params(Some(value), &empty))
             })
             .transpose()?
             .flatten();

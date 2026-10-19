@@ -1,0 +1,748 @@
+[
+  {
+    "input": {
+      "phase": "pending"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "phase": "success"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "phase": "error"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Processing artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "An error occurred"
+      ],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": null,
+      "phase": "pending"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": null,
+      "phase": "success"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": null,
+      "phase": "error"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Processing artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "An error occurred"
+      ],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": "literal",
+      "phase": "pending"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": "literal",
+      "phase": "success"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Processed artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": "literal",
+      "phase": "error"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Processing artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "An error occurred"
+      ],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": "",
+      "phase": "pending"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": "",
+      "phase": "success"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": "",
+      "phase": "error"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Processing artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "An error occurred"
+      ],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": 1.25,
+      "phase": "pending"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": 1.25,
+      "phase": "success"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Processed artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": 1.25,
+      "phase": "error"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Processing artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "An error occurred"
+      ],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": 0,
+      "phase": "pending"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": 0,
+      "phase": "success"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": 0,
+      "phase": "error"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Processing artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "An error occurred"
+      ],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": -0.0,
+      "phase": "pending"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": -0.0,
+      "phase": "success"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": -0.0,
+      "phase": "error"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Processing artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "An error occurred"
+      ],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": false,
+      "phase": "pending"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": false,
+      "phase": "success"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": false,
+      "phase": "error"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Processing artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "An error occurred"
+      ],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": true,
+      "phase": "pending"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": true,
+      "phase": "success"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Processed artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": true,
+      "phase": "error"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Processing artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "An error occurred"
+      ],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {},
+      "phase": "pending"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {},
+      "phase": "success"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Processed artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {},
+      "phase": "error"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Processing artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "An error occurred"
+      ],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "z": 1,
+        "a": 2
+      },
+      "phase": "pending"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "z": 1,
+        "a": 2
+      },
+      "phase": "success"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Processed artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": {
+        "z": 1,
+        "a": 2
+      },
+      "phase": "error"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Processing artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "An error occurred"
+      ],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": [],
+      "phase": "pending"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": [],
+      "phase": "success"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Processed artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": [],
+      "phase": "error"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Processing artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "An error occurred"
+      ],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": [
+        "b",
+        "a",
+        "b"
+      ],
+      "phase": "pending"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Preparing artifact...",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": [
+        "b",
+        "a",
+        "b"
+      ],
+      "phase": "success"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "complete",
+      "caption": "Processed artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [],
+      "diff": []
+    }
+  },
+  {
+    "input": {
+      "params": [
+        "b",
+        "a",
+        "b"
+      ],
+      "phase": "error"
+    },
+    "expected": {
+      "isCustom": false,
+      "status": "error",
+      "caption": "Processing artifact",
+      "pill": null,
+      "collapsible": false,
+      "initiallyCollapsed": null,
+      "code": [],
+      "console": [],
+      "errors": [
+        "An error occurred"
+      ],
+      "diff": []
+    }
+  }
+]

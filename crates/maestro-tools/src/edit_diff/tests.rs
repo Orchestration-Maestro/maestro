@@ -1,8 +1,6 @@
 //! Recorded line sequences and numbered output.
-use super::{
-    generate_diff_string,
-    text_diff::{Change, diff_lines},
-};
+use super::generate_diff_string;
+use crate::diff::text_diff::{Change, diff_lines};
 use serde::Deserialize;
 use std::collections::{BTreeMap, HashSet};
 

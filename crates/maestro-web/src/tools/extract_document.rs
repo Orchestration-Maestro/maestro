@@ -165,6 +165,9 @@ fn prepare<D>(
             } else {
                 Phase::Pending
             },
+            diff: None,
+            error: None,
+            fallback: None,
             url,
             code,
             console,
@@ -176,6 +179,8 @@ fn prepare<D>(
         caption: Caption::Literal(caption),
         body,
         attachments: Vec::new(),
+        plain_phase: None,
+        error: None,
     }
     .result::<ExtractDocumentRenderer>()
 }

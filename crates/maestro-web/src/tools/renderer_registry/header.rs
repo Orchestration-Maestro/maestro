@@ -7,7 +7,50 @@ use crate::{
     tools::types::{ToolContent, ToolContentOutput, ToolRenderState, ToolRenderView},
 };
 use maestro_app::ToolRendererState;
-use std::{cell::Cell, rc::Rc};
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
+
+/// Per-header nested action admission, shared only with its rich caption.
+#[derive(Default)]
+pub(crate) struct InlineActions {
+    /// Bounds consumed by the current nested action.
+    pub(crate) excluded: Cell<Option<egui::Rect>>,
+    /// The containing disclosure's single native activation route.
+    pub(crate) activation: RefCell<Option<Rc<dyn Fn()>>>,
+}
+impl InlineActions {
+    /// Weak native activation route, with no callback invoked under a borrow.
+    pub(crate) fn action(owner: &Rc<Self>) -> Rc<dyn Fn()> {
+        let weak = Rc::downgrade(owner);
+        Rc::new(move || {
+            let action = weak
+                .upgrade()
+                .and_then(|owner| owner.activation.borrow().clone());
+            if let Some(action) = action {
+                action();
+            }
+        })
+    }
+}
+/// Compose a rich card caption with the existing header action owner.
+pub(crate) fn render_inline_header(
+    state: ToolHeaderState,
+    tool_icon: IconNode,
+    text: ToolHeaderText,
+    expanded: Option<Rc<Cell<bool>>>,
+    actions: Rc<InlineActions>,
+) -> Box<dyn ToolContent> {
+    Box::new(Header {
+        state,
+        tool_icon,
+        text,
+        expanded,
+        actions: Some(actions),
+    })
+}
+
 pub(crate) mod browser;
 use browser::{NativeText, TextKind};
 
@@ -30,6 +73,7 @@ pub fn render_header(
         tool_icon,
         text,
         expanded: None,
+        actions: None,
     })
 }
 /// Build a toggle header sharing the caller's expansion handle.
@@ -45,6 +89,7 @@ pub fn render_collapsible_header(
         tool_icon,
         text,
         expanded: Some(expanded),
+        actions: None,
     })
 }
 /// Immutable recipe; animation and mounted content belong to each rendered row.
@@ -57,10 +102,14 @@ struct Header {
     text: ToolHeaderText,
     /// Optional caller-owned toggle state.
     expanded: Option<Rc<Cell<bool>>>,
+    /// Optional nested rich-caption action admission.
+    actions: Option<Rc<InlineActions>>,
 }
 /// State of one continuously mounted header.
 #[derive(Default)]
 struct Retained {
+    /// Plain template identity; collapsible headers share one template across statuses.
+    plain_state: Option<ToolHeaderState>,
     /// Stable button identity for this retained header state.
     button_id: Option<egui::Id>,
     /// Start of the current pending interval.
@@ -81,6 +130,14 @@ impl ToolContent for Header {
     ) -> ToolContentOutput {
         let slot = state.state::<Retained>();
         let mut retained = std::mem::take(&mut *slot.borrow_mut());
+        let plain_state = self.expanded.is_none().then_some(self.state);
+        if plain_state.is_some()
+            && retained.plain_state.is_some()
+            && retained.plain_state != plain_state
+        {
+            retained = Retained::default();
+        }
+        retained.plain_state = plain_state;
         let time = ui.input(|input| input.time);
         let angle = if self.state == ToolHeaderState::Inprogress {
             let start = *retained.pending_since.get_or_insert(time);
@@ -101,8 +158,30 @@ impl ToolContent for Header {
     }
 }
 impl Header {
-    /// Compose icon order, caption and optional trailing control.
+    /// Resolve inherited caption foreground after the complete header has been measured.
     fn draw(
+        &self,
+        ui: &mut egui::Ui,
+        view: ToolRenderView<'_>,
+        retained: &mut Retained,
+        paint: (f32, &mut Vec<crate::AttachmentOverlay>),
+    ) -> Result<egui::Response, ToolUiError> {
+        #[cfg(target_arch = "wasm32")]
+        let captions = RefCell::new(Vec::new());
+        #[cfg(target_arch = "wasm32")]
+        let view = ToolRenderView {
+            captions: Some(&captions),
+            ..view
+        };
+        let response = self.draw_row(ui, view, retained, paint)?;
+        #[cfg(target_arch = "wasm32")]
+        for node in captions.into_inner() {
+            NativeText::set_target_hovered(&node, self.expanded.is_some() && response.hovered())?;
+        }
+        Ok(response)
+    }
+    /// Compose icon order, caption and optional trailing control.
+    fn draw_row(
         &self,
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
@@ -110,6 +189,9 @@ impl Header {
         (angle, overlays): (f32, &mut Vec<crate::AttachmentOverlay>),
     ) -> Result<egui::Response, ToolUiError> {
         let collapsible = self.expanded.is_some();
+        if let Some(actions) = &self.actions {
+            actions.excluded.set(None);
+        }
         let row = self.row(ui, view, retained, (angle, overlays))?;
         let response = if collapsible {
             let id = *retained
@@ -121,19 +203,14 @@ impl Header {
         };
         if let Some(expanded) = &self.expanded {
             let visible = response.rect.intersect(ui.clip_rect());
-            let slots = if response.enabled() && visible.is_positive() {
-                vec![((), visible, response.layer_id)]
-            } else {
-                vec![]
-            };
-            let events = ui.input(|input| input.events.clone());
-            let pointer = !attachment_content::reading::controls::pointer_actions(
-                &events,
-                &mut retained.pressed,
-                &slots,
-                ui.ctx(),
-            )
-            .is_empty();
+            let pointer = self.pointer(ui, retained, &response);
+            if let Some(actions) = &self.actions {
+                let next = crate::components::expandable_section::toggle_action(
+                    &response, visible, expanded,
+                );
+                let old = actions.activation.replace(Some(next));
+                drop(old);
+            }
             if pointer || (response.clicked() && !response.clicked_by(egui::PointerButton::Primary))
             {
                 crate::components::expandable_section::activate_toggle(
@@ -161,6 +238,32 @@ impl Header {
             return Ok(response.on_hover_cursor(egui::CursorIcon::PointingHand));
         }
         Ok(response)
+    }
+    /// Reuse shared two-endpoint admission outside nested rich action bounds.
+    fn pointer(&self, ui: &egui::Ui, retained: &mut Retained, response: &egui::Response) -> bool {
+        let visible = response.rect.intersect(ui.clip_rect());
+        let slots = if response.enabled() && visible.is_positive() {
+            vec![((), visible, response.layer_id)]
+        } else {
+            vec![]
+        };
+        let mut pointer = false;
+        for event in ui.input(|input| input.events.clone()) {
+            let excluded = matches!(&event, egui::Event::PointerButton { pos, .. }
+                if self.actions.as_ref().and_then(|a| a.excluded.get()).is_some_and(|rect| rect.contains(*pos)));
+            if excluded {
+                retained.pressed = None;
+                continue;
+            }
+            pointer |= !attachment_content::reading::controls::pointer_actions(
+                &[event],
+                &mut retained.pressed,
+                &slots,
+                ui.ctx(),
+            )
+            .is_empty();
+        }
+        pointer
     }
     /// Keep literal hover color and keyboard focus paint inside the caller's clip.
     fn decorate(

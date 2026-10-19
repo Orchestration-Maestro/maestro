@@ -1,4 +1,6 @@
 //! Retained artifact panels using application-owned filename policy.
+pub mod artifact_pill;
+pub mod artifacts_tool_renderer;
 mod presentation_cause;
 pub use presentation_cause::PresentationCause;
 mod ui_error;

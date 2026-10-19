@@ -258,13 +258,7 @@ fn default_object_input_keeps_canonical_json_spelling() {
             recipe
                 .render(
                     ui,
-                    ToolRenderView {
-                        host: &host,
-                        i18n: &i18n,
-                        presentation: &presentation,
-                        highlighter: &highlighter,
-                        modal: None,
-                    },
+                    ToolRenderView::new(&host, &i18n, &presentation, &highlighter, None),
                     &mut row,
                 )
                 .assert_no_overlays()

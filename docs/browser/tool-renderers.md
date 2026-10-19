@@ -45,9 +45,8 @@ let params = serde_json::json!({"path": "src"});
 let recipe = render_tool::<serde_json::Value, serde_json::Value>(
     "inspect", Some(ToolParams::json(&params)), None, false,
 )?;
-let output = recipe.render(ui, ToolRenderView {
-    host, i18n, presentation, highlighter, modal: None,
-}, row);
+let view = ToolRenderView::new(host, i18n, presentation, highlighter, None);
+let output = recipe.render(ui, view, row);
 overlays.extend(output.overlays);
 output.response?;
 ```
@@ -73,8 +72,10 @@ behavior.
 Pending headers use the frame clock for their spinner; no timer is allocated.
 Plain captions stay muted, including when a retained collapsible header becomes
 plain. Collapsible headers use a pointer cursor, foreground hover text and an accent
-keyboard-focus outline. Rich captions retain their own colors and executable
-content with independent widget state.
+keyboard-focus outline. Labels without their own foreground inside rich captions
+inherit the containing header's hover foreground. Nested headers start their own
+foreground scope. Independently styled children, including file pills and code
+blocks, retain their colors and independent widget state.
 
 [`ConsoleBlock`](../../crates/maestro-web/src/components/console_block.rs) owns
 literal preformatted output, an optional error variant, and a copy control.
@@ -180,3 +181,53 @@ activation respect the enabled, visible button and focus it; Enter and Space
 toggle the focused button. Keyboard focus is outlined and scrolled into view.
 Presentation comes from the selected brand pack, with native text and clipped
 canvas controls using the same retained host as tool rows.
+
+## Artifact cards
+
+`ArtifactsToolRenderer::new(panel)` captures an optional application artifact
+panel when preparing a card. It is not registered automatically. Register a
+`ToolRendererBinding::from_raw` handle under `artifacts`, adding the caller's
+other parameter/detail pairs with `with_raw`. The renderer accepts model objects,
+explicit JSON values and native `ArtifactsParams`; it does not read result
+details. Partial JSON arguments are rendered without execution-schema decoding.
+
+```rust,ignore
+use maestro_app::{JsonObject, browser::tools::artifacts::ArtifactsParams};
+use maestro_web::{ArtifactsToolRenderer, register_tool_renderer,
+    tools::types::ToolRendererBinding};
+use serde_json::Value;
+use std::rc::Rc;
+
+let renderer = Rc::new(ArtifactsToolRenderer::new(panel));
+let binding = ToolRendererBinding::from_raw::<JsonObject, Value>(renderer.clone())
+    .with_raw::<Value, Value>(renderer.clone())
+    .with_raw::<ArtifactsParams, Value>(renderer);
+register_tool_renderer("artifacts", binding);
+```
+
+Register each native details type the caller supplies in place of `Value`.
+`ToolMessage` and `AssistantMessage` use this registration through the ordinary
+shared output path. Replacing or removing the binding takes effect on the next
+render; JSON mode bypasses it without changing the registration.
+
+Create and rewrite cards show literal highlighted content. Updates show a line
+diff. Successful get and logs cards show file content and console output,
+respectively, with a localized empty-output fallback. Edit errors retain their
+code or diff; lowercase `.html` filenames select an error console, while other
+filenames show plain error text. Non-edit errors have no disclosure or file pill.
+The ordinary outer tool card remains in use.
+
+A filename pill captures its literal filename and panel during preparation.
+With a panel, its action consumes the click and opens an existing artifact;
+unknown filenames do not change selection. Without a panel, clicking the pill
+activates its containing disclosure.
+The standalone `artifact_pill` helper uses the same retained native filename
+owner. Formatted non-string fields are display-only, never artifact identities.
+
+`components::diff::diff` accepts literal old/new text, an optional title and
+caller-supplied native CSS classes through `DiffProps`. The optional header shows
+added/removed line counts in the selected success/error colors. Its selectable
+rows preserve line order and carriage returns, with a local scrolling body capped
+at 384 CSS pixels. Text updates retain the native root, local scroll and
+unchanged rows, including when rows grow or shrink or the title appears or
+disappears. Failed native insertion leaves the published diff unchanged.
