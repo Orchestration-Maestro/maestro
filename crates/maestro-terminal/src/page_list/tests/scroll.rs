@@ -267,3 +267,54 @@ fn scroll_clear_scans_across_page_boundary() {
             .is_empty()
     }));
 }
+
+#[test]
+fn last_nonempty_active_row_uses_one_reverse_walk() {
+    let small = prompt_selection_work(64);
+    let large = prompt_selection_work(128);
+    eprintln!(
+        "prompt selection N64={} N128={}; repeated N64={} N128={}",
+        small.0, large.0, small.1, large.1
+    );
+    assert!(large.0 < small.0 * 3);
+    assert!(large.1 > small.1 * 3);
+}
+
+/// Measure real arena reads against repeated active-origin lookup on the same rows.
+fn prompt_selection_work(rows: u16) -> (usize, usize) {
+    let mut list = screen(5, rows);
+    for y in (16..rows).step_by(16) {
+        let pin = list.pin_at_row(usize::from(y), 0).unwrap();
+        list.split(pin).unwrap();
+    }
+    let first = list.pin(Point::Active(Coordinate::default())).unwrap();
+    first
+        .row_and_cell_mut(&mut list)
+        .unwrap()
+        .1
+        .set_content(crate::page::cell::Content::Codepoint('$'));
+    list.nodes.queries.set(0);
+    let (selected, count) = list.last_nonempty_active_row().unwrap();
+    assert_eq!((selected.node, selected.y), (first.node, first.y));
+    assert_eq!(count, 1);
+    let monotone = list.nodes.queries.get();
+    list.nodes.queries.set(0);
+    for y in (0..rows).rev() {
+        let pin = list
+            .pin(Point::Active(Coordinate {
+                x: 0,
+                y: u32::from(y),
+            }))
+            .unwrap();
+        if pin
+            .cells(&list, crate::page_list::CellSubset::All)
+            .unwrap()
+            .iter()
+            .any(|cell| !cell.is_empty())
+        {
+            assert_eq!((pin.node, pin.y), (first.node, first.y));
+            break;
+        }
+    }
+    (monotone, list.nodes.queries.get())
+}

@@ -124,6 +124,15 @@ impl ScreenSet {
         }
     }
 
+    /// Borrow both resident screens in source/destination order without cloning a cursor.
+    pub(crate) fn pair_mut(&mut self, from: Key) -> Option<(&mut Screen, &mut Screen)> {
+        let alternate = &mut self.alternate.as_mut()?.screen;
+        Some(match from {
+            Key::Primary => (&mut self.primary, alternate),
+            Key::Alternate => (alternate, &mut self.primary),
+        })
+    }
+
     /// Read the lifetime counter for a screen key.
     #[must_use]
     pub fn generation(&self, key: Key) -> usize {

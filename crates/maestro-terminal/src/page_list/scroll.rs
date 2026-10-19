@@ -89,6 +89,14 @@ impl PageList {
 
     /// Move nonempty active rows into history, leaving the new active area blank.
     pub fn scroll_clear(&mut self) {
+        let non_empty = self.last_nonempty_active_row().map_or(0, |(_, rows)| rows);
+        for _ in 0..non_empty {
+            self.grow();
+        }
+    }
+
+    /// Find the last nonempty active row and its inclusive count from the active top.
+    pub(crate) fn last_nonempty_active_row(&self) -> Option<(Pin, usize)> {
         let mut rows = self.row_iterator(
             super::Direction::LeftUp,
             crate::Point::Active(crate::Coordinate::default()),
@@ -100,13 +108,11 @@ impl PageList {
                 .cells(self, super::CellSubset::All)
                 .is_some_and(|cells| cells.iter().any(|cell| !cell.is_empty()))
             {
-                break;
+                return Some((pin, non_empty));
             }
             non_empty -= 1;
         }
-        for _ in 0..non_empty {
-            self.grow();
-        }
+        None
     }
 
     /// Set an absolute historical position and cache its known offset.

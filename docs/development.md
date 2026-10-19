@@ -268,11 +268,17 @@ descriptor or shell setting. `shell_setup` (Unix) runs shell text before the
 executable replaces the shell. `capture`, `rerun` and `assert_executed` remain for
 launches still built outside the builder.
 
-Every owner launch holds one process-wide lock while it forks, and a live child
-holds it until it is waited for, so no sibling test in the same program forks
-while a live pipe transaction is open (a forked child inherits open pipe ends
-until it execs). Do not start another owner launch on the same thread while a
-live child is unwaited; launches built outside the owner are not covered.
+Captured child-test suites use `TestProcess::current` for the running test or
+`TestProcess::named` for a supplied complete identity. `output()` checks that the
+selected test starts; callers still check its exit status and scenario output.
+`env_clear()` preserves the inherited coverage profile destination, and later
+caller edits can override or remove it.
+
+Credential tests acquire `SERIAL` before `PROCESS_CREATION` when both are needed.
+Configure the builder first, hold the creation guard only around checked `spawn`,
+and release it before waiting for completion. Pipe both output streams explicitly;
+`spawn` otherwise retains inherited stdin. Live pipe-closure transactions use the
+single-test isolation described above, not a process-wide owner lock.
 
 ## Package commands and roles
 

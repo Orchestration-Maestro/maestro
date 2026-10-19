@@ -152,23 +152,23 @@ fn native_adapter_forwards_launches_without_clipboard_access() {
             .unwrap();
         return;
     }
-    let test =
-        crate::child_process::selector("native_adapter_forwards_launches_without_clipboard_access")
-            .unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test, "--nocapture"])
-        .env("MAESTRO_CLIPBOARD_CHILD", "1")
-        .env_remove("SSH_CONNECTION")
-        .env_remove("SSH_CLIENT")
-        .env_remove("MOSH_CONNECTION")
-        .env_remove("TERMUX_VERSION")
-        .env_remove("DISPLAY")
-        .env_remove("WAYLAND_DISPLAY")
-        .env_remove("XDG_SESSION_TYPE")
-        .output()
-        .unwrap();
+    let output = maestro_test_process::TestProcess::current(
+        "native_adapter_forwards_launches_without_clipboard_access",
+    )
+    .unwrap()
+    .nocapture()
+    .env("MAESTRO_CLIPBOARD_CHILD", "1")
+    .env_remove("SSH_CONNECTION")
+    .env_remove("SSH_CLIENT")
+    .env_remove("MOSH_CONNECTION")
+    .env_remove("TERMUX_VERSION")
+    .env_remove("DISPLAY")
+    .env_remove("WAYLAND_DISPLAY")
+    .env_remove("XDG_SESSION_TYPE")
+    .output()
+    .unwrap();
     assert!(output.status.success());
-    crate::child_process::assert_executed(&output, &test).unwrap();
+
     let frame = b"\x1b]52;c;YQDDqfCfmYI=\x07";
     assert_eq!(
         output

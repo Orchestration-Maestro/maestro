@@ -99,21 +99,16 @@ fn directory_link_collision_removes_only_source_entry() {
     fs::write(root.join("original/payload"), b"retained").unwrap();
     symlink_dir("../original", root.join("tools/fd")).unwrap();
     fs::write(root.join("bin/fd"), b"destination").unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            &format!(
-                "{}::directory_link_collision_removes_only_source_entry",
-                module_path!().split_once("::").unwrap().1
-            ),
-            "--nocapture",
-        ])
-        .env("MAESTRO_LINK_COLLISION_CHILD", "1")
-        .env("MAESTRO_CODING_AGENT_DIR", &root)
-        .output()
-        .unwrap();
+    let output = maestro_test_process::TestProcess::current(
+        "directory_link_collision_removes_only_source_entry",
+    )
+    .unwrap()
+    .nocapture()
+    .env("MAESTRO_LINK_COLLISION_CHILD", "1")
+    .env("MAESTRO_CODING_AGENT_DIR", &root)
+    .output()
+    .unwrap();
     assert!(output.status.success(), "{output:?}");
-    assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed"));
     assert!(fs::symlink_metadata(root.join("tools/fd")).is_err());
     assert_eq!(fs::read(root.join("bin/fd")).unwrap(), b"destination");
     assert_eq!(

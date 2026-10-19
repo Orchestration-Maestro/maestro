@@ -9,25 +9,19 @@ fn maestro_response_refresh_keeps_stderr_clean() {
     if std::env::var_os("MAESTRO_RESPONSE_STDERR_CHILD").is_none() {
         run(async {
             let _permit = PORT.acquire().await.unwrap();
-            let output = std::process::Command::new(std::env::current_exe().unwrap())
-                .args([
-                    "--exact",
-                    "response_account_authorization::maestro_response_refresh_keeps_stderr_clean",
-                    "--nocapture",
-                ])
-                .env("MAESTRO_RESPONSE_STDERR_CHILD", "1")
-                .output()
-                .unwrap();
+            let output = maestro_test_process::TestProcess::current(
+                "maestro_response_refresh_keeps_stderr_clean",
+            )
+            .unwrap()
+            .nocapture()
+            .env("MAESTRO_RESPONSE_STDERR_CHILD", "1")
+            .output()
+            .unwrap();
             assert!(
                 output.status.success(),
                 "{}",
                 String::from_utf8_lossy(&output.stdout)
             );
-            crate::child_process::assert_executed(
-                &output,
-                "response_account_authorization::maestro_response_refresh_keeps_stderr_clean",
-            )
-            .unwrap();
             assert!(
                 output.stderr.is_empty(),
                 "{}",

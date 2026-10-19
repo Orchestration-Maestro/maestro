@@ -259,9 +259,18 @@ impl ReflowCursor {
             .iter_mut()
             .filter(|(_, p)| p.node == origin.node && p.y == origin.y)
         {
-            if Some(handle) != cursor_key && pin.x >= len {
+            if Some(handle) == cursor_key {
+                continue;
+            }
+            if pin.x >= len {
                 pin.x = pin.x.min(remaining);
             }
+            len = len.max(pin.x + 1);
+        }
+        if let Some(pin) = cursor.and_then(|handle| list.tracked_pin(handle))
+            && pin.node == origin.node
+            && pin.y == origin.y
+        {
             len = len.max(pin.x + 1);
         }
         len
@@ -296,6 +305,52 @@ impl ReflowCursor {
                 garbage: pin.garbage,
                 ..self.pin
             };
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn meaningful_columns_adjusts_saved_pins_before_extending_for_cursor() {
+        for cursor_first in [true, false] {
+            let mut list = PageList::init(
+                NonZeroU16::new(10).unwrap(),
+                NonZeroU16::new(5).unwrap(),
+                None,
+            );
+            let origin = list
+                .pin(crate::Point::Active(crate::Coordinate::default()))
+                .unwrap();
+            for _ in 0..2 {
+                list.track_pin(Pin { x: 9, ..origin }).unwrap();
+            }
+            // Assign cursor roles to the first and last occupied slots.
+            let handles: Vec<_> = list.tracked.iter().map(|(key, _)| key).collect();
+            let cursor = if cursor_first {
+                handles[0]
+            } else {
+                *handles.last().unwrap()
+            };
+            for pin in list.tracked.values_mut() {
+                pin.x = 9;
+            }
+            let source = Page::init(crate::page::layout::Capacity {
+                cols: 10,
+                rows: 1,
+                ..crate::page::layout::Capacity::default()
+            });
+            list.cols = NonZeroU16::new(5).unwrap();
+            let output = ReflowCursor::new(origin.node);
+            assert_eq!(
+                output.meaningful_columns(&mut list, &source, origin, Some(TrackedPin(cursor))),
+                10
+            );
+            for (handle, pin) in list.tracked.iter() {
+                assert_eq!(pin.x, if handle == cursor { 9 } else { 4 });
+            }
         }
     }
 }

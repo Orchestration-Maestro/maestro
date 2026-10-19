@@ -6,15 +6,7 @@ use std::ops::Range;
 impl Page {
     /// Clear a selected range and release its page-owned suffixes and styles.
     pub fn clear_cells(&mut self, y: u16, columns: Range<u16>) {
-        for x in columns.clone() {
-            let position = CellPosition { x, y };
-            self.clear_grapheme(position);
-            self.clear_hyperlink(position);
-            let style = self.get_cells(y)[usize::from(x)].style_id();
-            if style != 0 {
-                self.styles.release_multiple(style, 1);
-            }
-        }
+        self.release_cells(y, columns.clone());
         if columns.end - columns.start == self.size.cols {
             let has_placeholder = self
                 .get_cells(y)
@@ -34,6 +26,26 @@ impl Page {
         }
         self.get_cells_mut(y)[usize::from(columns.start)..usize::from(columns.end)]
             .fill(Cell::default());
+    }
+
+    /// Release managed ownership before replacing cells; the caller refreshes row metadata.
+    pub(crate) fn release_cells(&mut self, y: u16, columns: Range<u16>) {
+        for x in columns {
+            let position = CellPosition { x, y };
+            self.clear_grapheme(position);
+            self.clear_hyperlink(position);
+            let style = self.get_cells(y)[usize::from(x)].style_id();
+            if style != 0 {
+                self.styles.release_multiple(style, 1);
+            }
+        }
+    }
+
+    /// Refresh managed flags once after a batch of partial cell replacements.
+    pub(crate) fn refresh_row_metadata(&mut self, y: u16) {
+        self.update_row_grapheme_flag(y);
+        self.update_row_styled_flag(y);
+        self.update_row_hyperlink_flag(y);
     }
 
     /// Clear the styled flag when no addressable cell has a style ID.

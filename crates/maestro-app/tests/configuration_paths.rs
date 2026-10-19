@@ -478,3 +478,53 @@ fn native_agent_root_reads_disposable_environment() {
         assert_eq!(output, ["agent-directory-ok", env!("CARGO_PKG_VERSION")]);
     }
 }
+
+/// A zero-match child must not qualify as an executed probe.
+#[cfg(unix)]
+#[test]
+fn native_probe_rejects_missing_selection() {
+    let scratch = child::Scratch::new();
+    assert!(
+        std::panic::catch_unwind(|| {
+            child::probe("configuration_paths::missing_probe", &scratch.0, &[], &[])
+        })
+        .is_err(),
+        "unselected probe returned success"
+    );
+}
+
+/// The shared probe keeps cwd, ordered edits and record framing.
+#[cfg(unix)]
+#[test]
+fn native_probe_preserves_cwd_and_environment_order() {
+    const KEY: &str = "MAESTRO_PROBE_ORDER";
+    if let Ok(expected) = std::env::var("MAESTRO_PROBE_CWD") {
+        assert_eq!(
+            std::env::current_dir().unwrap(),
+            std::path::Path::new(&expected)
+        );
+        assert_eq!(std::env::var(KEY).unwrap(), "replacement");
+        assert_eq!(
+            std::env::var("PATH").ok(),
+            std::env::var("MAESTRO_PROBE_PATH").ok()
+        );
+        println!("\nPROBE first");
+        println!("unrelated output");
+        println!("PROBE second");
+        return;
+    }
+    let before = std::env::var_os(KEY);
+    let scratch = child::Scratch::new();
+    let records = child::probe(
+        "configuration_paths::native_probe_preserves_cwd_and_environment_order",
+        &scratch.0,
+        &[
+            ("MAESTRO_PROBE_CWD", scratch.0.to_str().unwrap()),
+            (KEY, "replacement"),
+            ("MAESTRO_PROBE_PATH", &std::env::var("PATH").unwrap()),
+        ],
+        &[KEY],
+    );
+    assert_eq!(records, ["first", "second"]);
+    assert_eq!(std::env::var_os(KEY), before);
+}
