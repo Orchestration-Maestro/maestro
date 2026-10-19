@@ -726,8 +726,6 @@ fn verify_immediate_after_flush(
     assert_eq!(seen.borrow().len(), 1);
 }
 
-#[path = "support/context_actions.rs"]
-mod context_actions;
+use crate::context_actions;
 
-#[path = "support/model.rs"]
-mod model_support;
+use crate::model_support;

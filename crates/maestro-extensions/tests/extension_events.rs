@@ -1,11 +1,8 @@
 //! Shared event contracts through native records and stored typed handlers.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[path = "support/model.rs"]
-mod model_support;
-#[allow(dead_code, reason = "Shared local fixture.")]
-#[path = "support/local.rs"]
-mod support;
+use crate::local_support as support;
+use crate::model_support;
 use maestro_extensions::{ExtensionHandler, types::*};
 use maestro_models::{Local, extension_events as shared};
 use maestro_session::Presence;

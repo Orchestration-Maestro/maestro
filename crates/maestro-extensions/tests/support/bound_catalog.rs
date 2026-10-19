@@ -1,6 +1,6 @@
 //! Real catalog consumers reached through the action runtime.
 #![cfg(test)]
-use crate as tests;
+use crate::extension_actions as tests;
 use maestro_extensions::{ExtensionExecution, create_extension_runtime, types::ProviderActions};
 use maestro_models::*;
 use std::{

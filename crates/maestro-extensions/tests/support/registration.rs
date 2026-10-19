@@ -18,8 +18,7 @@ use std::{
 };
 
 /// Real in-memory session operands.
-#[path = "session.rs"]
-pub mod session;
+pub(crate) use crate::session;
 
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]

@@ -2,8 +2,7 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 #[allow(dead_code, reason = "Shared local fixture.")]
-#[path = "support/local.rs"]
-mod support;
+use crate::local_support as support;
 use maestro_extensions::*;
 use std::rc::Rc;
 
@@ -44,12 +43,11 @@ fn handler_presence_observes_live_known_and_open_registration_names() {
     });
 }
 
+use crate::model_support;
 use maestro_extensions::runner::RunnerEmitEvent;
 use maestro_session::Presence;
 use serde_json::{Value, json};
 use std::cell::RefCell;
-#[path = "support/model.rs"]
-mod model_support;
 
 fn register_notifications<V: RunnerEmitEvent<Result = ()>>(
     loaded: &support::Loaded,

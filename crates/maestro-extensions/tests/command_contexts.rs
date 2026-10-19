@@ -2,12 +2,9 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 #[allow(dead_code, reason = "Shared local fixture.")]
-#[path = "support/local.rs"]
-mod local_support;
-#[path = "support/model.rs"]
-mod model_support;
-#[path = "support/ui_host.rs"]
-mod ui_host;
+use crate::local_support;
+use crate::model_support;
+use crate::ui_host;
 use local_support::runner;
 use maestro_extensions::ExtensionContextActions;
 use std::{rc::Rc, sync::RwLock};
@@ -657,8 +654,7 @@ fn assert_stale_base(ctx: &maestro_extensions::ExtensionCommandContext) {
     assert!(ctx.get_system_prompt().is_err());
 }
 
-#[path = "support/error.rs"]
-mod error_support;
+use crate::error_support;
 use error_support::Marker;
 /// Returns a typed marker without reconstructing it.
 fn failure<T: 'static>(index: usize) -> TestFuture<T> {
