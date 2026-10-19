@@ -157,3 +157,41 @@ fn byte_decode_well_formed_utf_8() {
 fn byte_decode_partially_invalid_utf_8() {
     decode(b"\xf0\x9f\xf0\x9f\x98\x84\xed\xa0\x80", "�😄���");
 }
+
+#[test]
+fn write_splits_keep_text_and_escape_state() {
+    use super::support::terminal::cell;
+    use maestro_terminal::Terminal;
+    let bytes = "é界😀\u{feff}\x1b[2;3H!\x1b[0m".as_bytes();
+    decode(bytes, "é界😀\u{feff}!");
+    let mut whole = Terminal::new(20, 3, 0).unwrap();
+    whole.write(bytes);
+    for split in 0..=bytes.len() {
+        let mut partial = Terminal::new(20, 3, 0).unwrap();
+        partial.write(&bytes[..split]);
+        partial.write(b"");
+        partial.write(&bytes[split..]);
+        assert_same_cells(&whole, &partial);
+    }
+    let mut scalar = Terminal::new(20, 3, 0).unwrap();
+    for byte in bytes {
+        scalar.write(&[*byte]);
+    }
+    assert_same_cells(&whole, &scalar);
+    assert_eq!(cell(&whole, 2, 1).codepoint(), '!');
+}
+
+fn assert_same_cells(a: &maestro_terminal::Terminal, b: &maestro_terminal::Terminal) {
+    use super::support::terminal::cell;
+    for y in 0..u32::from(a.rows()) {
+        for x in 0..a.cols() {
+            assert_eq!(cell(a, x, y), cell(b, x, y));
+        }
+    }
+    let left = &a.screens.active().cursor;
+    let right = &b.screens.active().cursor;
+    assert_eq!(
+        (left.x, left.y, left.pending_wrap),
+        (right.x, right.y, right.pending_wrap)
+    );
+}

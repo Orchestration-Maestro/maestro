@@ -7,7 +7,10 @@ mod csi;
 mod esc;
 mod osc_dispatch;
 
-pub use action::Action;
+pub use action::{
+    Action, CharsetAction, CursorAction, EditAction, EraseAction, KeyboardAction, ModeAction,
+    OscAction, PayloadAction, ProtectionAction, QueryAction, TabAction,
+};
 
 /// Synchronous consumer of decoded terminal operations.
 pub trait Handler {
@@ -62,12 +65,20 @@ impl Stream {
             crate::parser::Action::OscDispatch(command) => {
                 osc_dispatch::dispatch(command, handler);
             }
-            crate::parser::Action::DcsHook(input) => handler.vt(Action::DcsHook(input)),
-            crate::parser::Action::DcsPut(byte) => handler.vt(Action::DcsPut(byte)),
-            crate::parser::Action::DcsUnhook => handler.vt(Action::DcsUnhook),
-            crate::parser::Action::ApcStart => handler.vt(Action::ApcStart),
-            crate::parser::Action::ApcPut(byte) => handler.vt(Action::ApcPut(byte)),
-            crate::parser::Action::ApcEnd => handler.vt(Action::ApcEnd),
+            crate::parser::Action::DcsHook(input) => {
+                handler.vt(Action::Payload(PayloadAction::DcsHook(input)));
+            }
+            crate::parser::Action::DcsPut(byte) => {
+                handler.vt(Action::Payload(PayloadAction::DcsPut(byte)));
+            }
+            crate::parser::Action::DcsUnhook => {
+                handler.vt(Action::Payload(PayloadAction::DcsUnhook));
+            }
+            crate::parser::Action::ApcStart => handler.vt(Action::Payload(PayloadAction::ApcStart)),
+            crate::parser::Action::ApcPut(byte) => {
+                handler.vt(Action::Payload(PayloadAction::ApcPut(byte)));
+            }
+            crate::parser::Action::ApcEnd => handler.vt(Action::Payload(PayloadAction::ApcEnd)),
         }
     }
 
@@ -108,13 +119,13 @@ impl Stream {
             return;
         }
         let action = match byte {
-            5 => Action::Enquiry,
+            5 => Action::Query(QueryAction::Enquiry),
             7 => Action::Bell,
-            8 => Action::Backspace,
-            9 => Action::HorizontalTab(1),
-            10..=12 => Action::Linefeed,
-            13 => Action::CarriageReturn,
-            14 | 15 => Action::InvokeCharset {
+            8 => Action::Cursor(CursorAction::Backspace),
+            9 => Action::Tab(TabAction::HorizontalTab(1)),
+            10..=12 => Action::Cursor(CursorAction::Linefeed),
+            13 => Action::Cursor(CursorAction::CarriageReturn),
+            14 | 15 => Action::Charset(CharsetAction::InvokeCharset {
                 bank: crate::CharsetActiveSlot::Gl,
                 charset: if byte == 14 {
                     crate::CharsetSlot::G1
@@ -122,7 +133,7 @@ impl Stream {
                     crate::CharsetSlot::G0
                 },
                 locking: false,
-            },
+            }),
             _ => return,
         };
         handler.vt(action);

@@ -1,5 +1,7 @@
 //! Mode lists resolved in their original protocol namespace and order.
 
+use crate::stream::{KeyboardAction, ModeAction, ProtectionAction, QueryAction};
+
 use super::super::{Action, Handler};
 
 /// Resolve supported mode numbers without removing repeated entries.
@@ -22,10 +24,10 @@ pub(super) fn dispatch(input: &crate::parser::Csi<'_>, handler: &mut impl Handle
             continue;
         };
         let action = match input.r#final {
-            b'h' => Action::SetMode(mode),
-            b'l' => Action::ResetMode(mode),
-            b's' => Action::SaveMode(mode),
-            b'r' => Action::RestoreMode(mode),
+            b'h' => Action::Mode(ModeAction::SetMode(mode)),
+            b'l' => Action::Mode(ModeAction::ResetMode(mode)),
+            b's' => Action::Mode(ModeAction::SaveMode(mode)),
+            b'r' => Action::Mode(ModeAction::RestoreMode(mode)),
             _ => return,
         };
         handler.vt(action);
@@ -38,7 +40,7 @@ pub(super) fn request(input: &crate::parser::Csi<'_>, handler: &mut impl Handler
     let action = match (input.r#final, &*input.intermediates, &*input.params) {
         (b'p', [b'$'], [value]) => mode_request(*value, true),
         (b'p', [b'?', b'$'], [value]) => mode_request(*value, false),
-        (b'q', [b'>'], _) => Action::Xtversion,
+        (b'q', [b'>'], _) => Action::Query(QueryAction::Xtversion),
         (b'q', [b' '], [] | [0]) => Action::CursorStyle(C::Default),
         (b'q', [b' '], [1]) => Action::CursorStyle(C::BlinkingBlock),
         (b'q', [b' '], [2]) => Action::CursorStyle(C::SteadyBlock),
@@ -46,8 +48,8 @@ pub(super) fn request(input: &crate::parser::Csi<'_>, handler: &mut impl Handler
         (b'q', [b' '], [4]) => Action::CursorStyle(C::SteadyUnderline),
         (b'q', [b' '], [5]) => Action::CursorStyle(C::BlinkingBar),
         (b'q', [b' '], [6]) => Action::CursorStyle(C::SteadyBar),
-        (b'q', [b'"'], [] | [0 | 2]) => Action::ProtectedModeOff,
-        (b'q', [b'"'], [1]) => Action::ProtectedModeDec,
+        (b'q', [b'"'], [] | [0 | 2]) => Action::Protection(ProtectionAction::ProtectedModeOff),
+        (b'q', [b'"'], [1]) => Action::Protection(ProtectionAction::ProtectedModeDec),
         _ => return,
     };
     handler.vt(action);
@@ -56,8 +58,11 @@ pub(super) fn request(input: &crate::parser::Csi<'_>, handler: &mut impl Handler
 /// Preserve unknown mode numbers with the original namespace.
 fn mode_request(value: u16, ansi: bool) -> Action<'static> {
     crate::Mode::from_number(value, ansi).map_or(
-        Action::RequestModeUnknown(crate::modes::ModeTag { value, ansi }),
-        Action::RequestMode,
+        Action::Query(QueryAction::RequestModeUnknown(crate::modes::ModeTag {
+            value,
+            ansi,
+        })),
+        |value| Action::Query(QueryAction::RequestMode(value)),
     )
 }
 
@@ -65,7 +70,7 @@ fn mode_request(value: u16, ansi: bool) -> Action<'static> {
 pub(super) fn modifier(input: &crate::parser::Csi<'_>, handler: &mut impl Handler) {
     use crate::ansi::ModifyKeyFormat as F;
     let action = match (input.r#final, &*input.intermediates, &*input.params) {
-        (b'm', [b'>'], []) => Action::ModifyKeyFormat(F::Legacy),
+        (b'm', [b'>'], []) => Action::Keyboard(KeyboardAction::ModifyKeyFormat(F::Legacy)),
         (b'm', [b'>'], [selector] | [selector, _]) => {
             let format = match selector {
                 0 => F::Legacy,
@@ -75,20 +80,22 @@ pub(super) fn modifier(input: &crate::parser::Csi<'_>, handler: &mut impl Handle
                 4 => F::OtherKeysNone,
                 _ => return,
             };
-            Action::ModifyKeyFormat(format)
+            Action::Keyboard(KeyboardAction::ModifyKeyFormat(format))
         }
-        (b'n', [b'>'], _) => Action::ModifyKeyFormat(F::OtherKeysNumericExcept),
+        (b'n', [b'>'], _) => {
+            Action::Keyboard(KeyboardAction::ModifyKeyFormat(F::OtherKeysNumericExcept))
+        }
         (b'n', [], [value]) => {
             let Some(req) = crate::device_status::req_from_int(*value, false) else {
                 return;
             };
-            Action::DeviceStatus(req)
+            Action::Query(QueryAction::DeviceStatus(req))
         }
         (b'n', [b'?'], [value]) => {
             let Some(req) = crate::device_status::req_from_int(*value, true) else {
                 return;
             };
-            Action::DeviceStatus(req)
+            Action::Query(QueryAction::DeviceStatus(req))
         }
         _ => return,
     };

@@ -1,5 +1,9 @@
 //! Escape controls and character-set selection.
 
+use crate::stream::{
+    CharsetAction, CursorAction, EditAction, ModeAction, ProtectionAction, QueryAction, TabAction,
+};
+
 use super::{Action, Handler};
 use crate::{
     Charset, CharsetActiveSlot as Bank, CharsetSlot as Slot, Mode, device_attributes::Req,
@@ -22,22 +26,22 @@ pub(super) fn dispatch(input: &Esc<'_>, handler: &mut impl Handler) {
                 b'A' => Charset::British,
                 _ => Charset::DecSpecial,
             };
-            Action::ConfigureCharset { slot, charset }
+            Action::Charset(CharsetAction::ConfigureCharset { slot, charset })
         }
-        (b'8', [b'#']) => Action::Decaln,
+        (b'8', [b'#']) => Action::Edit(EditAction::Decaln),
         (code, []) => match code {
-            b'7' => Action::SaveCursor,
-            b'8' => Action::RestoreCursor,
-            b'D' => Action::Index,
-            b'E' => Action::NextLine,
-            b'H' => Action::TabSet,
-            b'M' => Action::ReverseIndex,
-            b'V' => Action::ProtectedModeIso,
-            b'W' => Action::ProtectedModeOff,
-            b'Z' => Action::DeviceAttributes(Req::Primary),
+            b'7' => Action::Cursor(CursorAction::SaveCursor),
+            b'8' => Action::Cursor(CursorAction::RestoreCursor),
+            b'D' => Action::Cursor(CursorAction::Index),
+            b'E' => Action::Cursor(CursorAction::NextLine),
+            b'H' => Action::Tab(TabAction::TabSet),
+            b'M' => Action::Cursor(CursorAction::ReverseIndex),
+            b'V' => Action::Protection(ProtectionAction::ProtectedModeIso),
+            b'W' => Action::Protection(ProtectionAction::ProtectedModeOff),
+            b'Z' => Action::Query(QueryAction::DeviceAttributes(Req::Primary)),
             b'c' => Action::FullReset,
-            b'=' => Action::SetMode(Mode::KeypadKeys),
-            b'>' => Action::ResetMode(Mode::KeypadKeys),
+            b'=' => Action::Mode(ModeAction::SetMode(Mode::KeypadKeys)),
+            b'>' => Action::Mode(ModeAction::ResetMode(Mode::KeypadKeys)),
             _ => {
                 shift(code, handler);
                 return;
@@ -60,9 +64,9 @@ fn shift(code: u8, handler: &mut impl Handler) {
         b'|' => (Bank::Gr, Slot::G3, false),
         _ => return,
     };
-    handler.vt(Action::InvokeCharset {
+    handler.vt(Action::Charset(CharsetAction::InvokeCharset {
         bank,
         charset,
         locking,
-    });
+    }));
 }

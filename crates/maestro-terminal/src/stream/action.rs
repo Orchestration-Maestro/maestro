@@ -10,16 +10,65 @@ use crate::{CharsetActiveSlot, CharsetSlot};
 pub enum Action<'a> {
     /// Print one Unicode scalar.
     Print(char),
-    /// Advance one row, scrolling at the lower margin.
-    Index,
-    /// Request the terminal's answerback.
-    Enquiry,
     /// Signal an audible or visual bell.
     Bell,
+    /// Restore terminal defaults.
+    FullReset,
+    /// Select the active text display.
+    ActiveStatusDisplay(crate::ansi::StatusDisplay),
+    /// Choose whether mouse handling captures the shift modifier.
+    MouseShiftCapture(bool),
+    /// Select cursor appearance.
+    CursorStyle(crate::ansi::CursorStyle),
+    /// Apply an attribute borrowed from the current parameter list.
+    SetAttribute(crate::sgr::Attribute<'a>),
+    /// Set vertical scrolling margins.
+    TopAndBottomMargin {
+        /// First margin operand.
+        top_left: u16,
+        /// Second margin operand.
+        bottom_right: u16,
+    },
+    /// Set horizontal scrolling margins.
+    LeftAndRightMargin {
+        /// First margin operand.
+        top_left: u16,
+        /// Second margin operand.
+        bottom_right: u16,
+    },
+    /// Save the cursor or reset horizontal margins according to terminal mode.
+    LeftAndRightMarginAmbiguous,
+    /// Decoded cursor operations.
+    Cursor(CursorAction),
+    /// Decoded edit operations.
+    Edit(EditAction),
+    /// Decoded tab operations.
+    Tab(TabAction),
+    /// Decoded erase operations.
+    Erase(EraseAction),
+    /// Decoded mode operations.
+    Mode(ModeAction),
+    /// Decoded keyboard operations.
+    Keyboard(KeyboardAction),
+    /// Decoded query operations.
+    Query(QueryAction),
+    /// Decoded charset operations.
+    Charset(CharsetAction),
+    /// Decoded protection operations.
+    Protection(ProtectionAction),
+    /// Decoded osc operations.
+    Osc(OscAction),
+    /// Decoded payload operations.
+    Payload(PayloadAction<'a>),
+}
+
+/// Decoded cursor operations.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CursorAction {
+    /// Advance one row, scrolling at the lower margin.
+    Index,
     /// Move one column backward.
     Backspace,
-    /// Advance through the specified number of tab destinations.
-    HorizontalTab(u16),
     /// Advance to the following line.
     Linefeed,
     /// Move to the first column.
@@ -47,8 +96,19 @@ pub enum Action<'a> {
     CursorColRelative(u16),
     /// Advance the row by the specified count.
     CursorRowRelative(u16),
-    /// Move backward through tab destinations.
-    HorizontalTabBack(u16),
+    /// Advance a row and return to the first column.
+    NextLine,
+    /// Move upward, scrolling at the top margin.
+    ReverseIndex,
+    /// Save the active cursor.
+    SaveCursor,
+    /// Restore the saved cursor.
+    RestoreCursor,
+}
+
+/// Decoded edit operations.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EditAction {
     /// Insert blank lines.
     InsertLines(u16),
     /// Delete lines.
@@ -65,6 +125,17 @@ pub enum Action<'a> {
     ScrollDown(u16),
     /// Repeat the previous printed character.
     PrintRepeat(u16),
+    /// Fill the active screen with alignment characters.
+    Decaln,
+}
+
+/// Decoded tab operations.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TabAction {
+    /// Advance through the specified number of tab destinations.
+    HorizontalTab(u16),
+    /// Move backward through tab destinations.
+    HorizontalTabBack(u16),
     /// Set a tab destination at the current column.
     TabSet,
     /// Clear the current column's tab destination.
@@ -73,6 +144,11 @@ pub enum Action<'a> {
     TabClearAll,
     /// Restore the default tab destinations.
     TabReset,
+}
+
+/// Decoded erase operations.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EraseAction {
     /// Erase the display below the cursor, respecting protection when requested.
     EraseDisplayBelow(bool),
     /// Erase the display above the cursor, respecting protection when requested.
@@ -89,31 +165,11 @@ pub enum Action<'a> {
     EraseLineLeft(bool),
     /// Erase the complete row, respecting protection when requested.
     EraseLineComplete(bool),
-    /// Configure a character-set slot.
-    ConfigureCharset {
-        /// Destination slot.
-        slot: CharsetSlot,
-        /// Character mapping to install.
-        charset: crate::Charset,
-    },
-    /// Save the active cursor.
-    SaveCursor,
-    /// Restore the saved cursor.
-    RestoreCursor,
-    /// Fill the active screen with alignment characters.
-    Decaln,
-    /// Advance a row and return to the first column.
-    NextLine,
-    /// Move upward, scrolling at the top margin.
-    ReverseIndex,
-    /// Enable ISO character protection.
-    ProtectedModeIso,
-    /// Disable character protection.
-    ProtectedModeOff,
-    /// Request a device-attribute report.
-    DeviceAttributes(crate::device_attributes::Req),
-    /// Restore terminal defaults.
-    FullReset,
+}
+
+/// Decoded mode operations.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ModeAction {
     /// Enable a terminal mode.
     SetMode(crate::Mode),
     /// Disable a terminal mode.
@@ -122,14 +178,13 @@ pub enum Action<'a> {
     SaveMode(crate::Mode),
     /// Restore a terminal mode's saved value.
     RestoreMode(crate::Mode),
-    /// Request a supported terminal mode's status.
-    RequestMode(crate::Mode),
-    /// Request the status of an unrecognized numeric mode.
-    RequestModeUnknown(crate::modes::ModeTag),
+}
+
+/// Decoded keyboard operations.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum KeyboardAction {
     /// Select keyboard escape-sequence encoding.
     ModifyKeyFormat(crate::ansi::ModifyKeyFormat),
-    /// Query current keyboard protocol flags.
-    KittyKeyboardQuery,
     /// Push keyboard protocol flags.
     KittyKeyboardPush(crate::kitty::key::Flags),
     /// Pop keyboard protocol history entries.
@@ -140,54 +195,68 @@ pub enum Action<'a> {
     KittyKeyboardSetOr(crate::kitty::key::Flags),
     /// Disable keyboard protocol flags.
     KittyKeyboardSetNot(crate::kitty::key::Flags),
+}
+
+/// Decoded query operations.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum QueryAction {
+    /// Request the terminal's answerback.
+    Enquiry,
+    /// Request a device-attribute report.
+    DeviceAttributes(crate::device_attributes::Req),
+    /// Request a supported terminal mode's status.
+    RequestMode(crate::Mode),
+    /// Request the status of an unrecognized numeric mode.
+    RequestModeUnknown(crate::modes::ModeTag),
+    /// Query current keyboard protocol flags.
+    KittyKeyboardQuery,
     /// Request device status.
     DeviceStatus(crate::device_status::Request),
     /// Request terminal version information.
     Xtversion,
     /// Request window information.
     SizeReport(crate::csi::SizeReportStyle),
-    /// Select the active text display.
-    ActiveStatusDisplay(crate::ansi::StatusDisplay),
-    /// Choose whether mouse handling captures the shift modifier.
-    MouseShiftCapture(bool),
-    /// Select cursor appearance.
-    CursorStyle(crate::ansi::CursorStyle),
-    /// Enable DEC character protection.
-    ProtectedModeDec,
-    /// Apply an attribute borrowed from the current parameter list.
-    SetAttribute(crate::sgr::Attribute<'a>),
-    /// Set vertical scrolling margins.
-    TopAndBottomMargin {
-        /// First margin operand.
-        top_left: u16,
-        /// Second margin operand.
-        bottom_right: u16,
-    },
-    /// Set horizontal scrolling margins.
-    LeftAndRightMargin {
-        /// First margin operand.
-        top_left: u16,
-        /// Second margin operand.
-        bottom_right: u16,
-    },
-    /// Save the cursor or reset horizontal margins according to terminal mode.
-    LeftAndRightMarginAmbiguous,
     /// Push a window-title index.
     TitlePush(u16),
     /// Pop a window-title index.
     TitlePop(u16),
-    /// Begin a device-control payload with a callback-borrowed header.
-    DcsHook(crate::parser::Dcs<'a>),
-    /// Deliver one device-control payload byte.
-    DcsPut(u8),
-    /// End the device-control payload.
-    DcsUnhook,
-    /// Begin an application-command payload.
-    ApcStart,
-    /// Deliver one application-command payload byte.
-    ApcPut(u8),
-    /// End the application-command payload.
-    ApcEnd,
+}
+
+/// Decoded charset operations.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CharsetAction {
+    /// Configure a character-set slot.
+    ConfigureCharset {
+        /// Destination slot.
+        slot: CharsetSlot,
+        /// Character mapping to install.
+        charset: crate::Charset,
+    },
+    /// Select a character-set bank.
+    InvokeCharset {
+        /// Left or right bank.
+        bank: CharsetActiveSlot,
+        /// Character-set slot to invoke.
+        charset: CharsetSlot,
+        /// Whether to use the one-character shift.
+        locking: bool,
+    },
+}
+
+/// Decoded protection operations.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ProtectionAction {
+    /// Enable ISO character protection.
+    ProtectedModeIso,
+    /// Disable character protection.
+    ProtectedModeOff,
+    /// Enable DEC character protection.
+    ProtectedModeDec,
+}
+
+/// Decoded osc operations.
+#[derive(Debug, PartialEq, Eq)]
+pub enum OscAction {
     /// Apply an owned semantic prompt command.
     SemanticPrompt(crate::osc::SemanticPrompt),
     /// Set a UTF-8-validated window title.
@@ -221,13 +290,21 @@ pub enum Action<'a> {
     },
     /// Deliver owned color-protocol requests.
     KittyColorReport(crate::kitty::color::Osc),
-    /// Select a character-set bank.
-    InvokeCharset {
-        /// Left or right bank.
-        bank: CharsetActiveSlot,
-        /// Character-set slot to invoke.
-        charset: CharsetSlot,
-        /// Whether to use the one-character shift.
-        locking: bool,
-    },
+}
+
+/// Decoded payload operations.
+#[derive(Debug, PartialEq, Eq)]
+pub enum PayloadAction<'a> {
+    /// Begin a device-control payload with a callback-borrowed header.
+    DcsHook(crate::parser::Dcs<'a>),
+    /// Deliver one device-control payload byte.
+    DcsPut(u8),
+    /// End the device-control payload.
+    DcsUnhook,
+    /// Begin an application-command payload.
+    ApcStart,
+    /// Deliver one application-command payload byte.
+    ApcPut(u8),
+    /// End the application-command payload.
+    ApcEnd,
 }

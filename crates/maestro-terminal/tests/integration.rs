@@ -146,3 +146,5 @@ mod terminal_rows;
 
 mod stream_dispatch;
 mod stream_utf8;
+
+mod terminal_bytes;
