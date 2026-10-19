@@ -173,6 +173,11 @@ Ordinary and command contexts expose `session_manager()`, which acquires the cur
 bound `ReadonlySessionManager` on each call. Its thirteen queries forward the host's
 strings, optional records and ordered lists without guest-side trimming, sorting or
 path resolution. Entry records use [the existing data boundary](#events-and-results).
+The `data` in custom entries and `details` in compaction, branch-summary and custom-message
+entries use `JsonText`. It holds compact JSON text while the wire carries the JSON value,
+including objects and arrays. It preserves key order and number values; missing and null
+remain distinct. Borrow it as `&str`, or convert owned text with `.into()`. Authored text
+must be valid JSON when serialized. The same conversion applies to entries in events.
 
 `get_tree()` returns independently owned `SessionTreeNode` handles. Read a node's
 `entry()`, `children()`, `label()` or `label_timestamp()` to traverse the captured tree;

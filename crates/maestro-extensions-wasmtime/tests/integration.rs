@@ -9,3 +9,6 @@ mod startup;
 #[path = "../../maestro-extensions/tests/support/session.rs"]
 mod session;
 mod support;
+
+#[path = "../../maestro-extensions/tests/support/model.rs"]
+mod model_support;

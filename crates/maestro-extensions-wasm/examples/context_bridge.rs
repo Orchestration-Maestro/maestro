@@ -12,6 +12,10 @@ use maestro_extensions_wasm::{
 #[cfg(target_arch = "wasm32")]
 use std::rc::Rc;
 
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/reads.rs"]
+mod reads;
+
 /// Registers callbacks whose errors expose the actual supplied context operands.
 #[cfg(target_arch = "wasm32")]
 fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
@@ -115,6 +119,9 @@ fn command(
     context: maestro_extensions_wasm::ExtensionCommandContext,
 ) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if args == "imports" {
+            return Err(reads::observe(&context)?.to_string());
+        }
         if args == "trap" || args == "pending" {
             context.get_system_prompt()?;
             context.wait_for_idle().await?;
@@ -140,6 +147,9 @@ fn session_start(
         let ExtensionEvent::Session(SessionEvent::Start(_)) = event else {
             return Err("session-start callback received another event".into());
         };
+        if context.get_system_prompt()? == "canonical imports" {
+            return Err(reads::observe(&context)?.to_string());
+        }
         Err(format!(
             "hook:{}|{}",
             context.cwd()?,

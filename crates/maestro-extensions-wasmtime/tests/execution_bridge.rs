@@ -126,3 +126,214 @@ async fn observe_callbacks(
     assert_eq!(errors[0].1, "session_start");
     assert_eq!(errors[0].2, "hook:/hook-domain|hook prompt");
 }
+
+#[test]
+fn canonical_imports_reach_real_domain_owners() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, canonical_reads());
+}
+
+/// Runs both canonical context identities against populated native owners.
+async fn canonical_reads() {
+    use serde_json::json;
+    let bus = create_event_bus_for::<Local>(
+        Rc::new(|_| panic!("no tails")),
+        Rc::new(|_| panic!("no reports")),
+    );
+    let (registration, _, _) = super::retained_components::loaded_on(bus.for_extension()).await;
+    let (session, history) = session::runner_session("/canonical-reads");
+    let root = seed_history(&mut history.borrow_mut());
+    let model = super::model_support::model("literal model");
+    *session.model_registry.get_all().write().unwrap() = vec![model.clone()];
+    let runner = ExtensionRunner::<Local>::new(
+        Rc::new(RwLock::new(vec![registration])),
+        create_extension_runtime::<Local>(),
+        session,
+        Rc::new(|_| {}),
+        maestro_theme::LiveTheme::default(),
+    );
+    let effects = Rc::new(RefCell::new(Vec::new()));
+    bind_reads(&runner, model.clone(), &effects);
+    let descriptor = model.read().unwrap().clone();
+    let expected = json!({
+        "cwd": "/canonical-reads", "prompt": "canonical imports", "hasUi": false,
+        "idle": false, "pending": true, "aborted": true,
+        "usage": {"tokens": 12.5, "contextWindow": 100.0, "percent": 12.5},
+        "model": descriptor, "history": expected_history(&*history.borrow(), &root),
+        "catalog": {"all": [descriptor.clone()], "available": [], "found": descriptor, "missing": null},
+    });
+    observe_reads(&runner, &expected).await;
+    assert_eq!(
+        *effects.borrow(),
+        ["abort", "shutdown", "abort", "shutdown"]
+    );
+}
+
+/// Publishes a labeled root and populated arbitrary entry payloads.
+fn seed_history(history: &mut maestro_session::SessionManager) -> String {
+    let root = history
+        .append_custom_entry(
+            "literal root",
+            Presence::Present(serde_json::json!({"n": 2.5})),
+        )
+        .unwrap();
+    history
+        .append_label_change(&root, Presence::Present("literal label"))
+        .unwrap();
+    seed_payloads(history);
+    history.append_session_info("literal name").unwrap();
+    root
+}
+
+/// Binds visible effects and nondefault values to the actual runner.
+fn bind_reads(
+    runner: &ExtensionRunner<Local>,
+    model: std::sync::Arc<RwLock<maestro_models::Model>>,
+    effects: &Rc<RefCell<Vec<&'static str>>>,
+) {
+    use maestro_extensions::{ExtensionContextActions, ExtensionExecution, types::ProviderActions};
+    let signal = maestro_models::Cancellation::new();
+    signal.abort();
+    let aborted = effects.clone();
+    let shutdown = effects.clone();
+    runner
+        .bind_core(
+            Local::unbound_actions(),
+            ExtensionContextActions {
+                get_model: Rc::new(move || Ok(Some(model.clone()))),
+                is_idle: Rc::new(|| Ok(false)),
+                get_signal: Rc::new(move || Ok(Some(signal.clone()))),
+                abort: Rc::new(move || {
+                    aborted.borrow_mut().push("abort");
+                    Ok(())
+                }),
+                has_pending_messages: Rc::new(|| Ok(true)),
+                shutdown: Rc::new(move || {
+                    shutdown.borrow_mut().push("shutdown");
+                    Ok(())
+                }),
+                get_context_usage: Rc::new(|| {
+                    Ok(Some(maestro_extensions::ContextUsage {
+                        tokens: Some(12.5),
+                        context_window: 100.0,
+                        percent: Some(12.5),
+                    }))
+                }),
+                get_system_prompt: Rc::new(|| Ok("canonical imports".into())),
+                ..Default::default()
+            },
+            ProviderActions::default(),
+        )
+        .unwrap();
+}
+
+/// Reads the populated owner directly, independently of the component conversions.
+fn expected_history(
+    reader: &dyn maestro_session::session_manager::ReadonlySessionManager,
+    root: &str,
+) -> serde_json::Value {
+    use serde_json::json;
+    let mut expected_history = json!({
+        "cwd": "/canonical-reads", "dir": reader.get_session_dir(),
+        "id": reader.get_session_id(), "file": null,
+        "leafId": reader.get_leaf_id(), "leaf": reader.get_leaf_entry(),
+        "entry": reader.get_entry(root), "missingEntry": null,
+        "label": "literal label", "missingLabel": null,
+        "branch": reader.get_branch(None).unwrap(),
+        "rootBranch": reader.get_branch(Some(root)).unwrap(),
+        "header": reader.get_header(), "entries": reader.get_entries(),
+        "name": "literal name", "tree": native_tree(reader.get_tree()),
+    });
+    // The shared header represents its numeric version as f64.
+    expected_history["header"]["version"] = json!(3.0);
+    expected_history
+}
+
+/// Verifies command and event delivery share values without sharing resource identities.
+async fn observe_reads(runner: &ExtensionRunner<Local>, expected: &serde_json::Value) {
+    let command = runner
+        .get_command("bridge-observe")
+        .unwrap()
+        .command
+        .handler;
+    let response = command("imports".into(), runner.create_command_context())
+        .await
+        .unwrap_err()
+        .to_string();
+    let observed: serde_json::Value = serde_json::from_str(&response)
+        .unwrap_or_else(|_| panic!("expected canonical read report, got {response}"));
+    assert_eq!(&observed, expected);
+    let errors = Rc::new(RefCell::new(Vec::new()));
+    let reports = errors.clone();
+    let _subscription = runner.on_error(Rc::new(move |error| {
+        reports.borrow_mut().push(error.error.clone());
+        Ok(())
+    }));
+    let mut event = SessionStartEvent {
+        reason: SessionStartReason::Startup,
+        previous_session_file: Presence::Missing,
+    };
+    runner.emit(&mut event).await.unwrap();
+    assert_eq!(errors.borrow().len(), 1);
+    let observed: serde_json::Value = serde_json::from_str(&errors.borrow()[0]).unwrap();
+    assert_eq!(&observed, expected);
+}
+
+/// Projects borrowed native tree data independently of the component resource traversal.
+fn native_tree(
+    nodes: Vec<maestro_session::session_manager::SessionTreeNode<'_>>,
+) -> Vec<serde_json::Value> {
+    nodes
+        .into_iter()
+        .map(|mut node| {
+            serde_json::json!({
+                "entry": node.entry, "label": node.label, "labelTimestamp": node.label_timestamp,
+                "children": native_tree(std::mem::take(&mut node.children)),
+            })
+        })
+        .collect()
+}
+
+/// Populates all opaque entry fields through their native writer, not a synthetic reader.
+fn seed_payloads(history: &mut maestro_session::SessionManager) {
+    use maestro_session::session_manager::{CompactionOptions, ReadonlySessionManager};
+    use serde_json::json;
+    for payload in [
+        Presence::Present(json!({"z": {"b": [false, null, "Ω"]}, "a": 1})),
+        Presence::Present(json!([null, true, {"z": 1, "a": 2}])),
+        Presence::Present(json!(2.5)),
+        Presence::Present(json!(9_007_199_254_740_993_u64)),
+        Presence::Present(json!("literal \"text\"")),
+        Presence::Null,
+        Presence::Missing,
+    ] {
+        history
+            .append_custom_entry("payload", payload.clone())
+            .unwrap();
+        history
+            .append_compaction(
+                "summary",
+                "keep",
+                2.5,
+                CompactionOptions {
+                    details: payload.clone(),
+                    ..Default::default()
+                },
+            )
+            .unwrap();
+        let parent = history.get_leaf_id().unwrap().to_owned();
+        history
+            .branch_with_summary(Some(&parent), "summary", payload.clone(), Presence::Missing)
+            .unwrap();
+        history
+            .append_custom_message_entry(
+                "payload",
+                maestro_models::UserContent::Text("content".into()),
+                true,
+                payload,
+            )
+            .unwrap();
+    }
+}
