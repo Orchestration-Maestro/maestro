@@ -148,7 +148,7 @@ fn copy_button_clips_pointer_but_keeps_keyboard_action() {
     assert!(canvas.host.copies.borrow().is_empty());
 }
 
-mod highlighter_support;
+use crate::highlighter_support;
 
 /// Activate one native reading slot and settle its exact clipboard operand.
 /// # Panics
