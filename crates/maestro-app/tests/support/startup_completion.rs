@@ -251,7 +251,9 @@ fn replay(name: &str, case: Case<Input, Expected>) {
     assert_eq!(case.expected.calls.len(), 2);
     for expected in case.expected.calls {
         let lines = child::probe(
-            &crate::child_process::selector(name).unwrap(),
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .name(),
             &scratch.0,
             &[
                 ("COMPLETION_OPERATION", "1"),

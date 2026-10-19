@@ -2,11 +2,7 @@
 
 //! Controlled option calls and exact request/stream observations.
 
-use crate::{
-    chat::TestResult,
-    child_process::{child_case, rerun},
-    messages,
-};
+use crate::{chat::TestResult, messages};
 use maestro_models::providers::messages::anthropic::{AnthropicEffort, stream_simple_anthropic};
 use maestro_models::{
     AnthropicOptions, AnthropicThinkingDisplay, HttpResponse, SimpleStreamOptions, StreamOptions,
@@ -585,14 +581,21 @@ pub async fn assert_rows(test: &str) -> TestResult {
     }
     let owned: Vec<_> = rows.iter().filter(|row| row.test == test).collect();
     assert!(!owned.is_empty());
-    if let Some(selected) = child_case() {
+    if let Ok(selected) = std::env::var("MAESTRO_CHILD_CASE") {
         for row in owned.iter().filter(|row| {
             (selected == "*" && row.input.env.is_empty()) || selected == row.id.to_string()
         }) {
             run(row).await?;
         }
     } else {
-        rerun(test, "*", &[])?;
+        {
+            let output = maestro_test_process::TestProcess::current(test)?
+                .nocapture()
+                .env_clear()
+                .env("MAESTRO_CHILD_CASE", "*")
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
         for row in owned.into_iter().filter(|row| !row.input.env.is_empty()) {
             let env: Vec<_> = row
                 .input
@@ -600,7 +603,15 @@ pub async fn assert_rows(test: &str) -> TestResult {
                 .iter()
                 .map(|(k, v)| (k.as_str(), v.as_str()))
                 .collect();
-            rerun(test, &row.id.to_string(), &env)?;
+            {
+                let output = maestro_test_process::TestProcess::current(test)?
+                    .nocapture()
+                    .env_clear()
+                    .envs(env.iter().copied())
+                    .env("MAESTRO_CHILD_CASE", row.id.to_string())
+                    .output()?;
+                assert!(output.status.success(), "{output:?}");
+            };
         }
     }
     Ok(())

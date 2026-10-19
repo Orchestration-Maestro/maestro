@@ -3,7 +3,6 @@ use crate::bedrock;
 use crate::bedrock_cases as cases;
 use crate::bundled;
 use crate::chat;
-use crate::child_process;
 use crate::transport;
 use bedrock::diagnostic as error;
 use chat::{TestResult, block_on};
@@ -18,12 +17,23 @@ const ENDPOINT: &str = "https://bedrock-runtime.us-east-1.amazonaws.com";
 fn bedrock_generic_routes_reach_the_default_pair() -> TestResult {
     let _registry = bundled::registry();
     let _restore = Restore;
-    if child_process::child_case().is_none() {
-        return child_process::rerun(
-            "bedrock_generic_routes_reach_the_default_pair",
-            "routes",
-            &[("AWS_BEARER_TOKEN_BEDROCK", "fixture-token")],
-        );
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "bedrock_generic_routes_reach_the_default_pair",
+            )?
+            .nocapture()
+            .env_clear()
+            .envs(
+                [("AWS_BEARER_TOKEN_BEDROCK", "fixture-token")]
+                    .iter()
+                    .copied(),
+            )
+            .env("MAESTRO_CHILD_CASE", "routes")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     block_on(false, async {
         explicit_routes().await?;
@@ -164,19 +174,30 @@ fn bedrock_override_setup_failures_settle() -> TestResult {
 fn bedrock_raw_options_reach_their_consumers() -> TestResult {
     let _registry = bundled::registry();
     let _restore = Restore;
-    if child_process::child_case().is_none() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
         profile_options()?;
-        return child_process::rerun(
-            "bedrock_raw_options_reach_their_consumers",
-            "raw-options",
-            &[
-                ("AWS_ACCESS_KEY_ID", "controlled-access"),
-                ("AWS_SECRET_ACCESS_KEY", "controlled-secret"),
-                ("AWS_EC2_METADATA_DISABLED", "true"),
-            ],
-        );
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "bedrock_raw_options_reach_their_consumers",
+            )?
+            .nocapture()
+            .env_clear()
+            .envs(
+                [
+                    ("AWS_ACCESS_KEY_ID", "controlled-access"),
+                    ("AWS_SECRET_ACCESS_KEY", "controlled-secret"),
+                    ("AWS_EC2_METADATA_DISABLED", "true"),
+                ]
+                .iter()
+                .copied(),
+            )
+            .env("MAESTRO_CHILD_CASE", "raw-options")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
-    if child_process::child_case().as_deref() == Some("profile") {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("profile") {
         return block_on(
             false,
             bedrock::corpus(include_str!("fixtures/cloud_conversation/profile.json")),
@@ -451,11 +472,18 @@ fn profile_options() -> TestResult {
         .iter()
         .map(|(key, value)| (key.as_str(), value.as_str()))
         .collect::<Vec<_>>();
-    child_process::rerun(
-        "bedrock_raw_options_reach_their_consumers",
-        "profile",
-        &environment,
-    )
+    {
+        let output = maestro_test_process::TestProcess::current(
+            "bedrock_raw_options_reach_their_consumers",
+        )?
+        .nocapture()
+        .env_clear()
+        .envs(environment.iter().copied())
+        .env("MAESTRO_CHILD_CASE", "profile")
+        .output()?;
+        assert!(output.status.success(), "{output:?}");
+        Ok(())
+    }
 }
 
 /// Default-adapter validation rejects wrong shapes before request effects, including sequence records.

@@ -3879,6 +3879,7 @@ version = "0.1.0"
 dependencies = [
  "cargo_metadata",
  "maestro-dependencies",
+ "maestro-test-process",
  "serde",
  "serde_json",
  "toml",
@@ -3928,6 +3929,7 @@ dependencies = [
  "maestro-markdown",
  "maestro-path",
  "maestro-process",
+ "maestro-test-process",
  "maestro-text",
  "rand 0.10.3",
  "regress",

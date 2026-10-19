@@ -11,7 +11,6 @@ use maestro_models::{
 use serde_json::{Value, json};
 
 use crate::chat::{TestResult, context, model, rows};
-use crate::child_process::{child_case, rerun};
 use crate::json::canonical;
 
 /// What a case observed.
@@ -326,10 +325,25 @@ fn environment(row: &Value) -> Vec<(&str, &str)> {
 pub async fn assert_rows(fixture: &str, test: &str) -> TestResult {
     let owned = rows(fixture, test)?;
     assert!(!owned.is_empty(), "{test} has fixture rows");
-    let Some(selected) = child_case() else {
-        rerun(test, "*", &[])?;
+    let Ok(selected) = std::env::var("MAESTRO_CHILD_CASE") else {
+        {
+            let output = maestro_test_process::TestProcess::current(test)?
+                .nocapture()
+                .env_clear()
+                .env("MAESTRO_CHILD_CASE", "*")
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
         for row in owned.iter().filter(|row| row["case"].get("env").is_some()) {
-            rerun(test, row["id"].as_str().ok_or("row id")?, &environment(row))?;
+            {
+                let output = maestro_test_process::TestProcess::current(test)?
+                    .nocapture()
+                    .env_clear()
+                    .envs(environment(row).iter().copied())
+                    .env("MAESTRO_CHILD_CASE", row["id"].as_str().ok_or("row id")?)
+                    .output()?;
+                assert!(output.status.success(), "{output:?}");
+            };
         }
         return Ok(());
     };

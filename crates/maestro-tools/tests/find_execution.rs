@@ -581,7 +581,9 @@ fn find_acquisition_is_silent_and_abort_prevents_launch() {
 fn assert_silent_child(test: &str, output: std::process::Output) {
     let success = format!(
         "test {} ... ok",
-        crate::child_process::selector(test).unwrap()
+        maestro_test_process::TestProcess::current(test)
+            .unwrap()
+            .name()
     );
     assert!(output.stderr.is_empty(), "{:?}", output.stderr);
     let stdout = String::from_utf8(output.stdout).unwrap();

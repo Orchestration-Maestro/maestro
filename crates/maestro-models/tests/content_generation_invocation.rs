@@ -4,7 +4,7 @@
     reason = "shared chat support serves multiple test binaries"
 )]
 
-use crate::{bundled, chat, child_process, response_output};
+use crate::{bundled, chat, response_output};
 use chat::TestResult;
 
 #[test]
@@ -446,12 +446,18 @@ fn root_and_registered_entries_invoke_the_content_provider() -> TestResult {
 
 #[test]
 fn registered_simple_missing_key_becomes_a_terminal_error() -> TestResult {
-    if child_process::child_case().is_none() {
-        return child_process::rerun(
-            "registered_simple_missing_key_becomes_a_terminal_error",
-            "missing-key",
-            &[],
-        );
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "registered_simple_missing_key_becomes_a_terminal_error",
+            )?
+            .nocapture()
+            .env_clear()
+            .env("MAESTRO_CHILD_CASE", "missing-key")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     chat::block_on(false, async {
         for (aborted, generic) in [(false, false), (false, true), (true, false), (true, true)] {

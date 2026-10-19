@@ -269,7 +269,9 @@ fn relocated_referent(name: &str, alias_first: bool) {
         .expect("the directory enumerates the wanted role first");
     for _ in 0..2 {
         child::probe(
-            &crate::child_process::selector(name).unwrap(),
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .name(),
             &scratch.0,
             &[
                 ("STARTUP_OPERATION", "sessions"),
@@ -316,7 +318,9 @@ fn relative_session_link_replaces_a_dangling_destination() {
     symlink("missing.data", directory.join("alias.jsonl")).unwrap();
     for _ in 0..2 {
         child::probe(
-            &crate::child_process::selector(name).unwrap(),
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .name(),
             &scratch.0,
             &[
                 ("STARTUP_OPERATION", "sessions"),
@@ -364,7 +368,9 @@ fn unchanged_absolute_session_link_moves_by_rename() {
     let destination = scratch.0.join("sessions/--work--/alias.jsonl");
     for _ in 0..2 {
         child::probe(
-            &crate::child_process::selector(name).unwrap(),
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .name(),
             &scratch.0,
             &[
                 ("STARTUP_OPERATION", "sessions"),
@@ -512,7 +518,9 @@ fn check_resolution_chain(
     let authored = fs::read_link(&paths[0]).unwrap();
     for _ in 0..2 {
         child::probe(
-            &crate::child_process::selector("session_link_resolution_matrix").unwrap(),
+            maestro_test_process::TestProcess::current("session_link_resolution_matrix")
+                .unwrap()
+                .name(),
             &scratch.0,
             &[
                 ("STARTUP_OPERATION", "sessions"),
@@ -577,10 +585,11 @@ fn blocked_intermediate_retry_keeps_migrated_alias_readable() {
             fs::remove_file(paths[1].with_extension("jsonl.migrating")).unwrap();
         }
         child::probe(
-            &crate::child_process::selector(
+            maestro_test_process::TestProcess::current(
                 "blocked_intermediate_retry_keeps_migrated_alias_readable",
             )
-            .unwrap(),
+            .unwrap()
+            .name(),
             &scratch.0,
             &[
                 ("STARTUP_OPERATION", "sessions"),

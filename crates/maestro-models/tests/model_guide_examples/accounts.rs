@@ -3,12 +3,15 @@
 use crate::{
     bundled,
     chat::{TestResult, block_on},
-    child_process::{child_case, rerun},
 };
 use maestro_models::oauth::{OAuthCallbacks, OAuthLoginCallbacks, OAuthProviderInterface};
 use maestro_models::{
     BoxFuture, Fetch, OAuthAuthInfo, OAuthCredentials, OAuthError, OAuthPrompt, get_oauth_api_key,
     register_oauth_provider,
+};
+use maestro_models::{
+    clear_api_providers, get_api_provider, get_api_providers, register_api_provider,
+    reset_api_providers, unregister_api_providers,
 };
 use std::sync::{
     Arc,
@@ -96,12 +99,16 @@ fn credentials(expires: f64) -> OAuthCredentials {
 
 #[test]
 fn maestro_guide_refreshes_supplied_account_credentials() -> TestResult {
-    if child_case().is_none() {
-        return rerun(
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        let output = maestro_test_process::TestProcess::current(
             "maestro_guide_refreshes_supplied_account_credentials",
-            "account",
-            &[],
-        );
+        )?
+        .nocapture()
+        .env_clear()
+        .env("MAESTRO_CHILD_CASE", "account")
+        .output()?;
+        assert!(output.status.success(), "{output:?}");
+        return Ok(());
     }
     block_on(false, async {
         let refreshes = Arc::new(AtomicUsize::new(0));
@@ -163,16 +170,16 @@ fn api_provider(text: &'static str) -> maestro_models::ApiProvider {
 
 #[test]
 fn maestro_guide_registration_keeps_existing_handles() -> TestResult {
-    use maestro_models::{
-        clear_api_providers, get_api_provider, get_api_providers, register_api_provider,
-        reset_api_providers, unregister_api_providers,
-    };
-    if child_case().is_none() {
-        return rerun(
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        let output = maestro_test_process::TestProcess::current(
             "maestro_guide_registration_keeps_existing_handles",
-            "registrations",
-            &[],
-        );
+        )?
+        .nocapture()
+        .env_clear()
+        .env("MAESTRO_CHILD_CASE", "registrations")
+        .output()?;
+        assert!(output.status.success(), "{output:?}");
+        return Ok(());
     }
     let _registry = bundled::registry();
     block_on(false, async {

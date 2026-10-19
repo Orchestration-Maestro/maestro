@@ -1,7 +1,7 @@
 //! Public cloud conversations over controlled SOCKS transports.
 #![cfg(not(target_arch = "wasm32"))]
 
-use crate::{bedrock, chat, child_process, loopback, socks, transport};
+use crate::{bedrock, chat, loopback, socks, transport};
 
 use chat::TestResult;
 use maestro_models::providers::cloud::amazon_bedrock::{
@@ -78,7 +78,7 @@ fn converse_peer(
 
 #[test]
 fn bedrock_socks_routes_reach_conversation_stream() -> TestResult {
-    if child_process::child_case().is_some() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
         return chat::block_on(false, async {
             let (labels, message) = conversation(StreamOptions::default()).await?;
             completed(&labels, &message)
@@ -107,13 +107,20 @@ fn bedrock_socks_routes_reach_conversation_stream() -> TestResult {
             if simple {
                 vars.push(("MAESTRO_SIMPLE", "1"));
             }
-            let result = child_process::rerun(
+            let result = maestro_test_process::TestProcess::current(
                 "bedrock_socks_routes_reach_conversation_stream",
-                scheme,
-                &vars,
-            );
+            )
+            .and_then(|process| {
+                process
+                    .nocapture()
+                    .env_clear()
+                    .envs(vars.iter().copied())
+                    .env("MAESTRO_CHILD_CASE", scheme)
+                    .output()
+            });
             server.finish()?;
-            result?;
+            let output = result?;
+            assert!(output.status.success(), "{output:?}");
             check_destination(scheme, &received.try_iter().collect::<Vec<_>>());
         }
     }
@@ -192,7 +199,7 @@ fn cancellation_peer(
 
 #[test]
 fn socks_cancel_closes_inflight_connection() -> TestResult {
-    if child_process::child_case().is_some() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
         return chat::block_on(false, cancel_conversation());
     }
     for after_request in [false, true] {
@@ -221,18 +228,27 @@ fn socks_cancel_closes_inflight_connection() -> TestResult {
             ("AWS_BEARER_TOKEN_BEDROCK", "controlled-bearer"),
             ("AWS_MAX_ATTEMPTS", "1"),
         ];
-        let result = child_process::rerun(
-            "socks_cancel_closes_inflight_connection",
-            if after_request {
-                "request"
-            } else {
-                "handshake"
-            },
-            &vars,
-        );
+        let result =
+            maestro_test_process::TestProcess::current("socks_cancel_closes_inflight_connection")
+                .and_then(|process| {
+                    process
+                        .nocapture()
+                        .env_clear()
+                        .envs(vars.iter().copied())
+                        .env(
+                            "MAESTRO_CHILD_CASE",
+                            if after_request {
+                                "request"
+                            } else {
+                                "handshake"
+                            },
+                        )
+                        .output()
+                });
         server.finish()?;
         gate_server.finish()?;
-        result?;
+        let output = result?;
+        assert!(output.status.success(), "{output:?}");
         let observations: Vec<_> = received.try_iter().collect();
         assert_eq!(observations.len(), 1);
         assert_eq!(!observations[0].0.is_empty(), after_request);
@@ -263,7 +279,7 @@ async fn bypass_conversation(case: &str) -> TestResult {
 
 #[test]
 fn bedrock_socks_bypass_and_replacement_avoid_invalid_proxy() -> TestResult {
-    if let Some(case) = child_process::child_case() {
+    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
         return chat::block_on(false, bypass_conversation(&case));
     }
     for case in ["selected", "bypass", "replacement"] {
@@ -289,13 +305,20 @@ fn bedrock_socks_bypass_and_replacement_avoid_invalid_proxy() -> TestResult {
         if case == "bypass" {
             vars.push(("NO_PROXY", "*"));
         }
-        let result = child_process::rerun(
+        let result = maestro_test_process::TestProcess::current(
             "bedrock_socks_bypass_and_replacement_avoid_invalid_proxy",
-            case,
-            &vars,
-        );
+        )
+        .and_then(|process| {
+            process
+                .nocapture()
+                .env_clear()
+                .envs(vars.iter().copied())
+                .env("MAESTRO_CHILD_CASE", case)
+                .output()
+        });
         origin.finish()?;
-        result?;
+        let output = result?;
+        assert!(output.status.success(), "{output:?}");
         let requests: Vec<_> = received.try_iter().collect();
         if case == "bypass" {
             assert_eq!(

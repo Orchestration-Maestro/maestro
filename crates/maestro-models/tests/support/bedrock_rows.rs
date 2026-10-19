@@ -16,7 +16,6 @@ use url::Url;
 
 use crate::bedrock;
 use crate::chat::{TestResult, block_on};
-use crate::child_process;
 use crate::json::canonical;
 use crate::transport;
 
@@ -231,7 +230,7 @@ fn rows(fixture: &str, test: &str) -> TestResult<Vec<Row>> {
 pub fn check_rows(fixture: &str, test: &str) -> TestResult {
     let owned = rows(fixture, test)?;
     assert!(!owned.is_empty(), "{test} owns no rows");
-    if let Some(case) = child_process::child_case() {
+    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
         let row = owned
             .iter()
             .find(|row| row.id == case)
@@ -241,7 +240,15 @@ pub fn check_rows(fixture: &str, test: &str) -> TestResult {
     for row in &owned {
         let env = environment(row);
         let env: Vec<(&str, &str)> = env.iter().map(|(k, v)| (*k, *v)).collect();
-        child_process::rerun(test, &row.id, &env)?;
+        {
+            let output = maestro_test_process::TestProcess::current(test)?
+                .nocapture()
+                .env_clear()
+                .envs(env.iter().copied())
+                .env("MAESTRO_CHILD_CASE", &row.id)
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
     }
     Ok(())
 }

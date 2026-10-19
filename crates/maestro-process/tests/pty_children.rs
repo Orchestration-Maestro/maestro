@@ -308,22 +308,22 @@ fn assert_launch_policies() {
             _ => PtyEnvironment::Inherit(edits),
         };
         let before = descriptor_count();
-        let command = PtyCommand {
-            program: std::env::current_exe().unwrap().into_os_string(),
-            args: vec![
-                "--exact".into(),
-                "pty_children::target_facts".into(),
-                "--nocapture".into(),
-                "--test-threads=1".into(),
-                "--skip".into(),
-                "decoy one ' quote".into(),
-                "--skip".into(),
-                format!("case:{mode}").into(),
-            ],
-            cwd: Some("/".into()),
-            environment,
-        };
-        let output = checked_target(command, size(), |_| Ok(()));
+        let output = TestProcess::named("pty_children::target_facts")
+            .unwrap()
+            .nocapture()
+            .single_threaded()
+            .skip("decoy one ' quote")
+            .skip(format!("case:{mode}"))
+            .output_with(|harness| {
+                let command = PtyCommand {
+                    program: std::env::current_exe()?.into_os_string(),
+                    args: harness.iter().map(OsString::from).collect(),
+                    cwd: Some("/".into()),
+                    environment,
+                };
+                Ok::<_, io::Error>(checked_target(command, size(), |_| Ok(())))
+            })
+            .unwrap();
         assert!(output.status.success(), "{mode}: {output:?}");
         assert!(
             String::from_utf8(output.stdout)

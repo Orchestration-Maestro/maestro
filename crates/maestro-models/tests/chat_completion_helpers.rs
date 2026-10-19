@@ -1,8 +1,6 @@
 //! Gateway and account helpers shared by chat-completion adapters.
 
-use crate::child_process;
-
-use child_process::{TestResult, child_case, rerun};
+use crate::chat::TestResult;
 use indexmap::IndexMap;
 use maestro_models::providers::chat::cloudflare::{
     CLOUDFLARE_AI_GATEWAY_ANTHROPIC_BASE_URL, CLOUDFLARE_AI_GATEWAY_COMPAT_BASE_URL,
@@ -65,7 +63,7 @@ const TEST: &str = "maestro_cloudflare_resolves_account_urls";
 
 #[test]
 fn maestro_cloudflare_resolves_account_urls() -> TestResult {
-    if let Some(case) = child_case() {
+    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
         let index: usize = case.parse()?;
         let (url, _, expected) = SUBSTITUTIONS[index];
         let actual = resolve_cloudflare_base_url(&model_at(url)?).map_err(|error| error.message);
@@ -95,7 +93,15 @@ fn maestro_cloudflare_resolves_account_urls() -> TestResult {
         assert_eq!(is_cloudflare_provider(provider), expected, "{provider}");
     }
     for (index, (_, variables, _)) in SUBSTITUTIONS.iter().enumerate() {
-        rerun(TEST, &index.to_string(), variables)?;
+        {
+            let output = maestro_test_process::TestProcess::current(TEST)?
+                .nocapture()
+                .env_clear()
+                .envs(variables.iter().copied())
+                .env("MAESTRO_CHILD_CASE", index.to_string())
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
     }
     Ok(())
 }

@@ -1,6 +1,5 @@
 //! Controlled public response invocations with finite producers and consumed observations.
 use crate::chat::{TestResult, context, model};
-use crate::child_process::{child_case, rerun};
 use maestro_models::providers::responses::openai_responses::{
     OpenAIResponsesReasoningSummary, OpenAIResponsesServiceTier, stream_openai_responses,
     stream_simple_openai_responses,
@@ -340,14 +339,29 @@ pub async fn assert_rows(test: &str) -> TestResult {
     let decoded = crate::response_cases::rows(FIXTURE)?;
     let rows = crate::chat::rows(&serde_json::to_string(&decoded)?, test)?;
     assert!(!rows.is_empty(), "{test} owns cases");
-    let Some(selected) = child_case() else {
-        rerun(test, "*", &[])?;
+    let Ok(selected) = std::env::var("MAESTRO_CHILD_CASE") else {
+        {
+            let output = maestro_test_process::TestProcess::current(test)?
+                .nocapture()
+                .env_clear()
+                .env("MAESTRO_CHILD_CASE", "*")
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
         for (index, row) in rows
             .iter()
             .enumerate()
             .filter(|(_, row)| row["case"].get("env").is_some())
         {
-            rerun(test, &index.to_string(), &environment(&row["case"])?)?;
+            {
+                let output = maestro_test_process::TestProcess::current(test)?
+                    .nocapture()
+                    .env_clear()
+                    .envs(environment(&row["case"])?.iter().copied())
+                    .env("MAESTRO_CHILD_CASE", index.to_string())
+                    .output()?;
+                assert!(output.status.success(), "{output:?}");
+            };
         }
         return Ok(());
     };

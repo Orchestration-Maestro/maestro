@@ -265,8 +265,7 @@ file. Nonempty files or nonzero cursors are rejected before launch, including
 append-mode files containing earlier output. `output_with` hands the final
 argument list to production code under test and accepts no environment, directory,
 descriptor or shell setting. `shell_setup` (Unix) runs shell text before the
-executable replaces the shell. `capture`, `rerun` and `assert_executed` remain for
-launches still built outside the builder.
+executable replaces the shell.
 
 Child-test suites use `TestProcess::current` for the running test or
 `TestProcess::named` for a supplied complete identity. `output()` checks that the

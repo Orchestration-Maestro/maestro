@@ -1102,17 +1102,16 @@ fn metadata_queries_leave_compiler_wrappers_to_builds() {
     let failing =
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/metadata-command.sh");
     let missing = workspace.root.join("missing-wrapper");
-    let selector =
-        crate::child_process::selector("metadata_queries_leave_compiler_wrappers_to_builds")
-            .unwrap();
     for wrapper in [None, Some(failing), Some(missing)] {
-        let mut command = std::process::Command::new(std::env::current_exe().unwrap());
-        command
-            .args(["--exact", &selector, "--nocapture"])
-            .env(PROBE, "1")
-            .env_remove("RUSTC_WRAPPER");
+        let mut command = maestro_test_process::TestProcess::current(
+            "metadata_queries_leave_compiler_wrappers_to_builds",
+        )
+        .unwrap()
+        .nocapture()
+        .env(PROBE, "1")
+        .env_remove("RUSTC_WRAPPER");
         if let Some(wrapper) = wrapper {
-            command.env("RUSTC_WRAPPER", wrapper);
+            command = command.env("RUSTC_WRAPPER", wrapper);
         }
         let output = command.output().unwrap();
         assert!(
@@ -1121,7 +1120,6 @@ fn metadata_queries_leave_compiler_wrappers_to_builds() {
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
-        crate::child_process::assert_executed(&output, &selector).unwrap();
     }
 }
 

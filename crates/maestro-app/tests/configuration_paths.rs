@@ -464,8 +464,11 @@ fn native_agent_root_reads_disposable_environment() {
         ("../raw/./agent", "../raw/./agent".to_owned()),
     ] {
         let output = child::probe(
-            &crate::child_process::selector("native_agent_root_reads_disposable_environment")
-                .unwrap(),
+            maestro_test_process::TestProcess::current(
+                "native_agent_root_reads_disposable_environment",
+            )
+            .unwrap()
+            .name(),
             &scratch.0,
             &[
                 ("MAESTRO_CONFIGURATION_CHILD", "1"),

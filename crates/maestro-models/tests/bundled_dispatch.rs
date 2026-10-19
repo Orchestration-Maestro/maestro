@@ -6,7 +6,6 @@
 
 use crate::bundled;
 use crate::chat;
-use crate::child_process;
 use crate::key_selection;
 
 use bundled::{PROTOCOLS, Protocol};
@@ -269,8 +268,17 @@ fn registered() -> Vec<String> {
 
 #[test]
 fn maestro_initial_registry_is_ready() -> TestResult {
-    if child_process::child_case().is_none() {
-        return child_process::rerun("maestro_initial_registry_is_ready", "fresh", &[]);
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output =
+                maestro_test_process::TestProcess::current("maestro_initial_registry_is_ready")?
+                    .nocapture()
+                    .env_clear()
+                    .env("MAESTRO_CHILD_CASE", "fresh")
+                    .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     assert_eq!(registered(), bundled::registered_apis());
     Ok(())
@@ -1223,12 +1231,18 @@ fn maestro_injected_client_bypasses_default_setup() -> TestResult {
 
 #[test]
 fn maestro_first_access_is_safe_across_threads() -> TestResult {
-    if child_process::child_case().is_none() {
-        return child_process::rerun(
-            "maestro_first_access_is_safe_across_threads",
-            "threads",
-            &[],
-        );
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "maestro_first_access_is_safe_across_threads",
+            )?
+            .nocapture()
+            .env_clear()
+            .env("MAESTRO_CHILD_CASE", "threads")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     let readers = 8;
     let start = Arc::new(std::sync::Barrier::new(readers + 1));

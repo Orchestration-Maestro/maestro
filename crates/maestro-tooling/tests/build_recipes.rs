@@ -202,19 +202,10 @@ fn maestro_test_recipes_forward_literal_arguments() {
         ),
     ] {
         let workspace = Workspace::new();
-        let args = [
-            "",
-            "a space",
-            "'quoted'",
-            "\"double quoted\"",
-            "selected_behavior",
-            "--",
-            "--ignored",
-            "--exact",
-            "wrapped_ignored",
-            "--nocapture",
-        ];
-        let output = workspace.command(recipe).args(args).output().unwrap();
+        let args: Vec<_> = include_str!("fixtures/literal-test-arguments.txt")
+            .lines()
+            .collect();
+        let output = workspace.command(recipe).args(&args).output().unwrap();
         assert!(output.status.success(), "{recipe}");
         let suffix = args.join("|");
         let expected = if doctests {
@@ -858,6 +849,16 @@ fn prepare_tooling_owner(workspace: &Workspace) {
     )
     .unwrap();
     fs::copy(source.join("Cargo.toml"), root.join("Cargo.toml")).unwrap();
+    let test_process = workspace.0.join("crates/maestro-test-process");
+    copy_tree(
+        &source.join("../maestro-test-process/src"),
+        &test_process.join("src"),
+    );
+    fs::copy(
+        source.join("../maestro-test-process/Cargo.toml"),
+        test_process.join("Cargo.toml"),
+    )
+    .unwrap();
     fs::copy(
         source.join("../../Cargo.toml"),
         workspace.0.join("Cargo.toml"),
@@ -1305,12 +1306,7 @@ fn assert_terminal_test_selection(workspace: &Workspace) {
     assert!(stderr.contains("1 passed, 2 skipped"), "{stderr}");
     let output = workspace
         .command("tui-test")
-        .args([
-            "--",
-            "--ignored",
-            "--exact",
-            "ansi_wrapping::wrapped_ignored",
-        ])
+        .args(include_str!("fixtures/ignored-test-arguments.txt").lines())
         .output()
         .unwrap();
     assert!(output.status.success());

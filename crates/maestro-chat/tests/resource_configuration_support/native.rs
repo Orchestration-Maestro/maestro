@@ -21,10 +21,11 @@ pub fn paths() {
     let scratch = crate::scratch::Scratch::new().unwrap();
     assert_eq!(
         crate::session_picker_support::native_child::probe(
-            &crate::child_process::selector(
+            maestro_test_process::TestProcess::current(
                 "resource_relative_paths_observe_live_directory_and_preserve_failures"
             )
-            .unwrap(),
+            .unwrap()
+            .name(),
             &scratch.0,
             &[("MAESTRO_RESOURCE_DIRECTORY_CHILD", "1")],
             &[]

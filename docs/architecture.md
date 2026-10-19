@@ -353,6 +353,15 @@ application dependency passes. Other listed frontend edges are permitted, not
 required, and are declared only when used. Source failures include the offending
 file and line.
 
+Exact test selection belongs to `maestro-test-process`. The conventions checker
+rejects Rust string tokens whose decoded value is `--exact` outside that exact
+Cargo package, reporting the source path and first violating line. It scans all
+loaded Rust sources, including macro tokens, disabled configurations and source
+fragments. Comments, larger fixture strings, byte strings and C strings are not
+selector tokens. This bounded rule does not expand macros, resolve constructed
+strings, interpret data files or infer process launches; review still checks
+those cases.
+
 Crates whose `Cargo.toml` sets `autotests = false` build their integration
 tests as one program from `tests/integration.rs`. Add new `tests/*.rs` files as
 unconditional out-of-line modules in that root; support modules stay in their

@@ -265,7 +265,9 @@ fn invoke(name: &str, cwd: &Path, envs: &[(&str, &str)], limit: Option<u64>) -> 
             .collect()
     } else {
         child::probe(
-            &crate::child_process::selector(name).unwrap(),
+            maestro_test_process::TestProcess::current(name)
+                .unwrap()
+                .name(),
             cwd,
             envs,
             &[],

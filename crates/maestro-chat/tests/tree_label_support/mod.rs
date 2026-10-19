@@ -126,7 +126,9 @@ pub fn group(name: &str) {
     if std::env::var_os("MAESTRO_DYNAMIC_CHILD").is_none() {
         for tz in ["UTC", "America/New_York", "Asia/Kathmandu"] {
             subprocess::run_child(
-                &crate::child_process::selector(name).unwrap(),
+                maestro_test_process::TestProcess::current(name)
+                    .unwrap()
+                    .name(),
                 &[("TZ", Some(tz))],
             );
         }

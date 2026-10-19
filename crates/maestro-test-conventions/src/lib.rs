@@ -4,6 +4,8 @@ use std::path::Path;
 
 /// Declaration ownership and extension interface checks.
 mod boundaries;
+/// Exact test-selection ownership.
+mod child_tests;
 /// Rust comment content checks.
 mod comments;
 /// Binding manifest lint exceptions and generated extension source checks.
@@ -63,6 +65,7 @@ mod time_limits;
 pub fn check_workspace(root: &Path) -> Result<(), String> {
     let metadata = graph::check(root)?;
     let members = source::load(&metadata)?;
+    child_tests::check(&members)?;
     integration_tests::check(&members)?;
     boundaries::check(&members)?;
     comments::check(&members)?;

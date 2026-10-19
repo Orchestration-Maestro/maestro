@@ -60,16 +60,15 @@ fn native_filesystem_errors_and_home_expansion_follow_the_same_provider_path() {
             .expect("provider succeeds")
             .is_none()
     );
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            "native_completion::native_filesystem_errors_and_home_expansion_follow_the_same_provider_path",
-        ])
-        .env("MAESTRO_COMPLETION_HOME_CHILD", "1")
-        .env("HOME", &tree.0)
-        .env("USERPROFILE", &tree.0)
-        .output()
-        .unwrap();
+    let output = maestro_test_process::TestProcess::current(
+        "native_filesystem_errors_and_home_expansion_follow_the_same_provider_path",
+    )
+    .unwrap()
+    .env("MAESTRO_COMPLETION_HOME_CHILD", "1")
+    .env("HOME", &tree.0)
+    .env("USERPROFILE", &tree.0)
+    .output()
+    .unwrap();
     assert!(
         output.status.success(),
         "{}",
