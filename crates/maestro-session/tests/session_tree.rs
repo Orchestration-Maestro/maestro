@@ -290,9 +290,9 @@ fn tree_local_dates_use_the_native_local_zone() {
         return;
     }
     for zone in ["UTC", "America/New_York"] {
-        let test = crate::child_process::selector(name).unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test, "--nocapture"])
+        let output = maestro_test_process::TestProcess::current(name)
+            .unwrap()
+            .nocapture()
             .env("TZ", zone)
             .env("MAESTRO_TREE_ZONE", zone)
             .output()
@@ -303,7 +303,6 @@ fn tree_local_dates_use_the_native_local_zone() {
             String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
-        crate::child_process::assert_executed(&output, &test).unwrap();
     }
 }
 

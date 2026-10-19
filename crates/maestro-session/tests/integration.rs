@@ -2,9 +2,6 @@
 #![cfg(test)]
 
 mod branch_summary;
-#[path = "../../maestro-catalog/tests/support/subprocess.rs"]
-mod subprocess;
-use subprocess::child_process;
 mod compaction_preparation;
 mod context_projection;
 mod converter_binding;
@@ -17,6 +14,8 @@ mod session_extraction;
 mod session_files;
 mod session_history;
 mod session_tree;
+#[path = "../../maestro-catalog/tests/support/subprocess.rs"]
+mod subprocess;
 mod summary_generation;
 mod summary_text;
 /// Recorded corpus support shared by the test modules.

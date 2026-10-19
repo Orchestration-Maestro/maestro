@@ -212,9 +212,9 @@ fn projected_context_reaches_the_shared_converter() {
 fn context_timestamps_use_local_time_only_for_offsetless_datetimes() {
     let name = "context_timestamps_use_local_time_only_for_offsetless_datetimes";
     if std::env::var("MAESTRO_CONTEXT_DATE_CHILD").as_deref() != Ok(name) {
-        let test = crate::child_process::selector(name).unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test, "--nocapture"])
+        let output = maestro_test_process::TestProcess::current(name)
+            .unwrap()
+            .nocapture()
             .env("TZ", "America/New_York")
             .env("MAESTRO_CONTEXT_DATE_CHILD", name)
             .output()
@@ -224,7 +224,7 @@ fn context_timestamps_use_local_time_only_for_offsetless_datetimes() {
             "{}",
             String::from_utf8_lossy(&output.stdout)
         );
-        crate::child_process::assert_executed(&output, &test).unwrap();
+
         return;
     }
     support::session_context::group(name);

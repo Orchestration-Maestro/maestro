@@ -1528,11 +1528,11 @@ mod tests {
                 "settings_behavior::tests::environment_fallback_distinguishes_null",
                 "env",
             );
-            child
+            child = child
                 .env_remove(CLEAR_ON_SHRINK_ENV)
                 .env_remove(HARDWARE_CURSOR_ENV);
             if let Some(env) = env {
-                child
+                child = child
                     .env(CLEAR_ON_SHRINK_ENV, env)
                     .env(HARDWARE_CURSOR_ENV, env);
             }
@@ -1541,8 +1541,10 @@ mod tests {
                 "clear": {"missing": enabled, "null": false, "false": false, "true": true, "wrong": enabled},
                 "cursor": {"missing": enabled, "null": enabled, "false": false, "true": true, "wrong": enabled},
             });
+            let output = child.output().unwrap();
+            assert!(output.status.success());
             assert_eq!(
-                support::child_report(&child.output().unwrap()),
+                support::child_report(&output),
                 expected,
                 "environment {env:?}"
             );
@@ -1627,16 +1629,15 @@ mod tests {
             "settings_behavior::tests::session_dir_expands_only_home_prefix",
             "paths",
         );
-        child.env(home::VARIABLE, home::PATH);
+        child = child.env(home::VARIABLE, home::PATH);
         let mut expected: Vec<Option<String>> = session_dir_cases()
             .into_iter()
             .map(|(_, expected)| expected)
             .collect();
         expected.extend([Some("./sessions".to_owned()), None]);
-        assert_eq!(
-            support::child_report(&child.output().unwrap()),
-            json!(expected)
-        );
+        let output = child.output().unwrap();
+        assert!(output.status.success());
+        assert_eq!(support::child_report(&output), json!(expected));
     }
 
     /// Runs one setter batch against storage seeded with `seed` text and returns the saved text.
