@@ -1,11 +1,13 @@
 //! Shared integration-test executable.
 #![cfg(test)]
 
+pub mod artifact_card_support;
 mod artifact_elements;
 mod artifact_elements_browser;
 mod artifact_panel;
 mod artifact_panel_browser;
 mod artifact_tool_cards;
+mod artifact_tool_cards_browser;
 mod attachment_exports;
 mod attachment_overlay;
 mod attachment_surfaces;

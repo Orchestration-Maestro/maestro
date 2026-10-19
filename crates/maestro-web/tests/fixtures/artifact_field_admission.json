@@ -1,0 +1,6812 @@
+[
+  {
+    "key": "command",
+    "kind": "missing",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "missing",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "missing",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "null",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": null,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "null",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": null,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "null",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": null,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "string",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "literal",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "string",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "literal",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "string",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "literal",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "empty",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "empty",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "empty",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "number",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": 1.25,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "number",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": 1.25,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "number",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": 1.25,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "zero",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": 0,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "zero",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": 0,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "zero",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": 0,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "negative-zero",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": -0.0,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "negative-zero",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": -0.0,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "negative-zero",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": -0.0,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "false",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": false,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "false",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": false,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "false",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": false,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "true",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": true,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "true",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": true,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "true",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": true,
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "empty-object",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": {},
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "empty-object",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": {},
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "empty-object",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": {},
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "object",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": {
+        "z": 1,
+        "a": 2
+      },
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "object",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": {
+        "z": 1,
+        "a": 2
+      },
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "object",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": {
+        "z": 1,
+        "a": 2
+      },
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "empty-array",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": [],
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "empty-array",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": [],
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "empty-array",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": [],
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "array",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": [
+        "b",
+        "a",
+        "b"
+      ],
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "array",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": [
+        "b",
+        "a",
+        "b"
+      ],
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "command",
+    "kind": "array",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": [
+        "b",
+        "a",
+        "b"
+      ],
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "pending",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "pending",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "pending",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "pending",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "pending",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "success",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "success",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "success",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "success",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "success",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "error",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "error",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "error",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "error",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "missing",
+    "phase": "error",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "pending",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "pending",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "pending",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "pending",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "pending",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "success",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "success",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "success",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "success",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "success",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "error",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "error",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "error",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "error",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "null",
+    "phase": "error",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": null,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "pending",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "pending",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "pending",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "pending",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "pending",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "success",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "success",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "success",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "success",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "success",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "error",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "error",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "error",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "error",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "string",
+    "phase": "error",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": "literal",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "pending",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "pending",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "pending",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "pending",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "pending",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "success",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "success",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "success",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "success",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "success",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "error",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "error",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "error",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "error",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty",
+    "phase": "error",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": "",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "pending",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "pending",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "pending",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "pending",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "pending",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "success",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "success",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "success",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "success",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "success",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "error",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "error",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "error",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "error",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "number",
+    "phase": "error",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": 1.25,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "pending",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "pending",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "pending",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "pending",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "pending",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "success",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "success",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "success",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "success",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "success",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "error",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "error",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "error",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "error",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "zero",
+    "phase": "error",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": 0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "pending",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "pending",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "pending",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "pending",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "pending",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "success",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "success",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "success",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "success",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "success",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "error",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "error",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "error",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "error",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "negative-zero",
+    "phase": "error",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": -0.0,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "pending",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "pending",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "pending",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "pending",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "pending",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "success",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "success",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "success",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "success",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "success",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "error",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "error",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "error",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "error",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "false",
+    "phase": "error",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": false,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "pending",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "pending",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "pending",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "pending",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "pending",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "success",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "success",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "success",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "success",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "success",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "error",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "error",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "error",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "error",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "true",
+    "phase": "error",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": true,
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "pending",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "pending",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "pending",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "pending",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "pending",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "success",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "success",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "success",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "success",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "success",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "error",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "error",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "error",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "error",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-object",
+    "phase": "error",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": {},
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "pending",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "pending",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "pending",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "pending",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "pending",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "success",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "success",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "success",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "success",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "success",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "error",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "error",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "error",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "error",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "object",
+    "phase": "error",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": {
+        "z": 1,
+        "a": 2
+      },
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "pending",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "pending",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "pending",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "pending",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "pending",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "success",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "success",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "success",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "success",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "success",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "error",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "error",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "error",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "error",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "empty-array",
+    "phase": "error",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": [],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "pending",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "pending",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "pending",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "pending",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "pending",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "success",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "success",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "success",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "success",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "success",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "error",
+    "context": "create",
+    "input": {
+      "command": "create",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "error",
+    "context": "rewrite",
+    "input": {
+      "command": "rewrite",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "error",
+    "context": "get",
+    "input": {
+      "command": "get",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "error",
+    "context": "logs",
+    "input": {
+      "command": "logs",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "filename",
+    "kind": "array",
+    "phase": "error",
+    "context": "delete",
+    "input": {
+      "command": "delete",
+      "filename": [
+        "b",
+        "a",
+        "b"
+      ],
+      "content": "x",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "missing",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "missing",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "missing",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "null",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": null,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "null",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": null,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "null",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": null,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "string",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "literal",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "string",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "literal",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "string",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "literal",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "empty",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "empty",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "empty",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "",
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "number",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": 1.25,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "number",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": 1.25,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "number",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": 1.25,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "zero",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": 0,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "zero",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": 0,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "zero",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": 0,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "negative-zero",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": -0.0,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "negative-zero",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": -0.0,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "negative-zero",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": -0.0,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "false",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": false,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "false",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": false,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "false",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": false,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "true",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": true,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "true",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": true,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "true",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": true,
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "empty-object",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": {},
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "empty-object",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": {},
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "empty-object",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": {},
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "object",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": {
+        "z": 1,
+        "a": 2
+      },
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "object",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": {
+        "z": 1,
+        "a": 2
+      },
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "object",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": {
+        "z": 1,
+        "a": 2
+      },
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "empty-array",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": [],
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "empty-array",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": [],
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "empty-array",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": [],
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "array",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": [
+        "b",
+        "a",
+        "b"
+      ],
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "array",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": [
+        "b",
+        "a",
+        "b"
+      ],
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "content",
+    "kind": "array",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": [
+        "b",
+        "a",
+        "b"
+      ],
+      "old_str": "old",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "missing",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "missing",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "missing",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "null",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": null,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "null",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": null,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "null",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": null,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "string",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "literal",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "string",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "literal",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "string",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "literal",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "empty",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "empty",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "empty",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "",
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "number",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": 1.25,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "number",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": 1.25,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "number",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": 1.25,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "zero",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": 0,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "zero",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": 0,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "zero",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": 0,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "negative-zero",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": -0.0,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "negative-zero",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": -0.0,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "negative-zero",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": -0.0,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "false",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": false,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "false",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": false,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "false",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": false,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "true",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": true,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "true",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": true,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "true",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": true,
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "empty-object",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": {},
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "empty-object",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": {},
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "empty-object",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": {},
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "object",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": {
+        "z": 1,
+        "a": 2
+      },
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "object",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": {
+        "z": 1,
+        "a": 2
+      },
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "object",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": {
+        "z": 1,
+        "a": 2
+      },
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "empty-array",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": [],
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "empty-array",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": [],
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "empty-array",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": [],
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "array",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": [
+        "b",
+        "a",
+        "b"
+      ],
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "array",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": [
+        "b",
+        "a",
+        "b"
+      ],
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "old_str",
+    "kind": "array",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": [
+        "b",
+        "a",
+        "b"
+      ],
+      "new_str": "new"
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "missing",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "missing",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "missing",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "null",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": null
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "null",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": null
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "null",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": null
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "string",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "literal"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "string",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "literal"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "string",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": "literal"
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "empty",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": ""
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "empty",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": ""
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "empty",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": ""
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "number",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": 1.25
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "number",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": 1.25
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "number",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": 1.25
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "zero",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": 0
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "zero",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": 0
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "zero",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": 0
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "negative-zero",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": -0.0
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "negative-zero",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": -0.0
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "negative-zero",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": -0.0
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "false",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": false
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "false",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": false
+    },
+    "expected": {
+      "branch": "prepared",
+      "isCustom": false
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "false",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": false
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "true",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": true
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "true",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": true
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "true",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": true
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "empty-object",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": {}
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "empty-object",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": {}
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "empty-object",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": {}
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "object",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": {
+        "z": 1,
+        "a": 2
+      }
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "object",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": {
+        "z": 1,
+        "a": 2
+      }
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "object",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": {
+        "z": 1,
+        "a": 2
+      }
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "empty-array",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": []
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "empty-array",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": []
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "empty-array",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": []
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "array",
+    "phase": "pending",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": [
+        "b",
+        "a",
+        "b"
+      ]
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "array",
+    "phase": "success",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": [
+        "b",
+        "a",
+        "b"
+      ]
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  },
+  {
+    "key": "new_str",
+    "kind": "array",
+    "phase": "error",
+    "context": "update",
+    "input": {
+      "command": "update",
+      "filename": "a.html",
+      "content": "x",
+      "old_str": "old",
+      "new_str": [
+        "b",
+        "a",
+        "b"
+      ]
+    },
+    "expected": {
+      "branch": "error",
+      "kind": "TypeError"
+    }
+  }
+]
