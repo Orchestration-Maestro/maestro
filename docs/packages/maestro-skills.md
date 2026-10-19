@@ -2,7 +2,8 @@
 
 `packages/maestro-skills/` is a content-only package of development skills and
 shared reference documents. It uses conventional package discovery and the
-existing [skill loader](../resources/skills.md); it contains no executable code.
+existing [skill loader](../resources/skills.md). It adds no runtime component; loading
+does not execute the included Bash wizard-authoring template.
 The `maestro-ask` router is the skill list and explains when to use each skill.
 
 ## Load from a local checkout
@@ -32,16 +33,12 @@ Use an object-form package entry to exclude a delivered skill:
     {
       "source": "/path/to/maestro/packages/maestro-skills",
       "skills": [
-        "!skills/maestro-retro"
+        "!skills/maestro-teach"
       ]
     }
   ]
 }
 ```
-
-When `maestro-teach` is present in a later delivery, the same filter can use
-`"skills": ["!skills/maestro-teach"]`. That example does not imply it is present
-in this delivery.
 
 A user or project skill with the same name overrides the packaged skill under
 [configured resource precedence](../packages.md#configured-resource-resolution).

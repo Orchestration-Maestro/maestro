@@ -28,7 +28,8 @@ specific change will make better, worse or unchanged. Their domain knowledge may
 
 Test one variable at a time. Prefer a debugger or targeted instrumentation at the seam distinguishing hypotheses.
 Tag every temporary probe with a unique prefix so cleanup can find all of it. Do not log everything.
-For performance, measure a baseline and bisect before changing code. Independent failure domains may use
+For performance, measure a baseline and bisect before changing code, then use `/skill:maestro-performance`
+for the measured bottleneck and keep-or-revert loop. Independent failure domains may use
 separate `subagent` investigations with [bounded briefs](../../references/subagents.md).
 
 ## Fix at the origin
