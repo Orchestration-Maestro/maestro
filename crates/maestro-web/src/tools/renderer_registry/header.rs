@@ -169,13 +169,9 @@ impl Header {
         #[cfg(target_arch = "wasm32")]
         let captions = RefCell::new(Vec::new());
         #[cfg(target_arch = "wasm32")]
-        let view = if matches!(self.text, ToolHeaderText::Content(_)) {
-            ToolRenderView {
-                captions: Some(&captions),
-                ..view
-            }
-        } else {
-            view
+        let view = ToolRenderView {
+            captions: Some(&captions),
+            ..view
         };
         let response = self.draw_row(ui, view, retained, paint)?;
         #[cfg(target_arch = "wasm32")]

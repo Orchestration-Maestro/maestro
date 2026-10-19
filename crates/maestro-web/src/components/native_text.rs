@@ -141,7 +141,7 @@ impl NativeText {
             self.shown = Some((text.0.into(), text.1));
         }
         #[cfg(target_arch = "wasm32")]
-        if matches!(text.1, TextKind::Caption | TextKind::InlineCaption)
+        if matches!(text.1, TextKind::InlineCaption)
             && let Some(captions) = view.captions
             && let Some(node) = self.node.borrow().as_ref()
         {

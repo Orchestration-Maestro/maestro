@@ -72,9 +72,10 @@ behavior.
 Pending headers use the frame clock for their spinner; no timer is allocated.
 Plain captions stay muted, including when a retained collapsible header becomes
 plain. Collapsible headers use a pointer cursor, foreground hover text and an accent
-keyboard-focus outline. Labels inside rich captions inherit the containing
-header's hover foreground. Independently styled children, including file pills
-and code blocks, retain their colors and independent widget state.
+keyboard-focus outline. Labels without their own foreground inside rich captions
+inherit the containing header's hover foreground. Nested headers start their own
+foreground scope. Independently styled children, including file pills and code
+blocks, retain their colors and independent widget state.
 
 [`ConsoleBlock`](../../crates/maestro-web/src/components/console_block.rs) owns
 literal preformatted output, an optional error variant, and a copy control.
