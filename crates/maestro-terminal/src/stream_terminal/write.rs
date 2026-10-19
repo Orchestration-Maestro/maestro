@@ -31,6 +31,8 @@ impl Terminal {
     ///
     /// The stream is temporarily taken out of the terminal while its handler borrows
     /// the screen state, then restored without cloning parser or cursor state.
+    /// APC image commands use `apc_handler` limits and enablement; execution is
+    /// disabled, so completed image commands cause no screen changes or replies.
     pub fn write(&mut self, bytes: &[u8]) {
         let mut state = self.write_state.take().unwrap_or_default();
         let mut handler = Handler {

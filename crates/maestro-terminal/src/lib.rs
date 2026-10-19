@@ -43,6 +43,7 @@ pub mod parser;
 
 pub mod x11_color;
 
+pub mod apc;
 pub mod osc;
 
 pub use parser::{Csi, Dcs, Parser};

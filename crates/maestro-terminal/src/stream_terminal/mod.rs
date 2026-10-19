@@ -18,7 +18,7 @@ use crate::{
 /// Terminal consumer with retained cursor appearance defaults.
 ///
 /// Applies screen state synchronously and captures replies and bells for draining.
-/// Application payload execution remains separate from the byte consumer.
+/// APC strings are parsed with image execution disabled; DCS has no effects.
 /// Each storage refusal ends only the current action; later input remains usable.
 pub struct Handler<'a> {
     /// Terminal updated by each callback.
@@ -59,7 +59,7 @@ impl crate::stream::Handler for Handler<'_> {
             Action::Protection(action) => self.protection(action),
             Action::Osc(action) => self.osc(action),
             Action::Query(action) => self.query(action),
-            Action::Payload(action) => Self::payload(&action),
+            Action::Payload(action) => self.payload(&action),
             Action::SetAttribute(attr) => {
                 let _ = self.terminal.set_attribute(attr);
             }
@@ -307,17 +307,22 @@ impl Handler<'_> {
         }
     }
 
-    /// Consume DCS without terminal modification; APC execution is a separate consumer.
-    fn payload(action: &PayloadAction<'_>) {
+    /// Route APC strings while consuming DCS without terminal modification.
+    fn payload(&mut self, action: &PayloadAction<'_>) {
         match action {
-            PayloadAction::DcsHook(_)
-            | PayloadAction::DcsPut(_)
-            | PayloadAction::DcsUnhook
-            | PayloadAction::ApcStart
-            | PayloadAction::ApcPut(_)
-            | PayloadAction::ApcEnd => {}
+            PayloadAction::ApcStart => self.terminal.apc_handler.start(),
+            PayloadAction::ApcPut(byte) => self.terminal.apc_handler.feed(*byte),
+            PayloadAction::ApcEnd => {
+                if let Some(command) = self.terminal.apc_handler.end() {
+                    Self::execute_apc(command);
+                }
+            }
+            PayloadAction::DcsHook(_) | PayloadAction::DcsPut(_) | PayloadAction::DcsUnhook => {}
         }
     }
+
+    /// Consume parsed image commands without execution or replies while images are disabled.
+    fn execute_apc(_command: crate::kitty::graphics::command::Command) {}
 
     /// Resolve the parameterless horizontal-margin and cursor-save ambiguity.
     fn margin_or_save(&mut self) {

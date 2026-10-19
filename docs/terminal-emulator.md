@@ -404,9 +404,10 @@ action, not later input. `mouse_tracking_enabled` reads the tracking mode bits;
 `modify_other_keys_enabled` reads numeric extended modifier-key mode. Tracking
 bits and the selected mouse event or format remain independent.
 
-Query and window requests are observable as typed stream actions. Colour effects,
-APC routing and image execution are pending. The terminal handler consumes DCS
-without changing the screen. Input decoding continues after these commands.
+Query and window requests are observable as typed stream actions. The terminal
+handler captures replies and colour effects, routes APC strings and consumes DCS
+without changing the screen. Image execution remains disabled. Input decoding
+continues after these commands.
 
 ## Replies and effects
 
@@ -464,4 +465,14 @@ channels and reports supported unset values as empty fields without a cursor
 fallback. Unsupported targets produce no query field. Each reply uses the
 query's BEL or ST terminator.
 
-APC routing is not connected yet.
+APC strings beginning with `G` enter the existing image command parser. Other
+protocols are ignored. `apc::Handler` supports byte and slice feeding, drops
+malformed or over-budget commands and returns an owned command at `end`.
+`Terminal::apc_handler` retains this routing across writes. Its `max_bytes` limits
+the encoded image payload, not the control fields; the default is 65 MiB.
+Changing the limit or protocol enablement affects future strings, not a parser
+already selected by `G`. A new `start` releases an unfinished command.
+
+Image execution is disabled: parsed commands change no screen state and produce
+no replies. APC payloads never print as text; normal text resumes after the
+string terminator.
