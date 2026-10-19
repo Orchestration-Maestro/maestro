@@ -1,5 +1,6 @@
 //! Synchronous application of decoded operations to retained terminal state.
 
+mod colors;
 mod cursor;
 mod modes;
 mod replies;
@@ -281,7 +282,14 @@ impl Handler<'_> {
                 self.terminal.set_title(&value);
             }
             OscAction::ClipboardContents { kind, data } => self.clipboard_contents(kind, &data),
-            OscAction::ColorOperation { .. } | OscAction::KittyColorReport(_) => {}
+            OscAction::ColorOperation {
+                requests,
+                terminator,
+                ..
+            } => {
+                self.color_operation(&requests, terminator);
+            }
+            OscAction::KittyColorReport(request) => self.kitty_color_operation(&request),
         }
     }
 

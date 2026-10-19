@@ -4,6 +4,36 @@ use super::Terminal;
 use crate::color::{Palette, Rgb};
 
 impl Terminal {
+    /// Resolve a colour query, falling back from an unset cursor to foreground.
+    #[must_use]
+    pub fn color_for_xterm(&self, target: crate::osc::color::Target) -> Option<Rgb> {
+        use crate::{color::Dynamic, osc::color::Target};
+        match target {
+            Target::Palette(index) => Some(self.colors.palette.current[usize::from(index)]),
+            Target::Dynamic(Dynamic::Foreground) => self.colors.foreground.get(),
+            Target::Dynamic(Dynamic::Background) => self.colors.background.get(),
+            Target::Dynamic(Dynamic::Cursor) => self
+                .colors
+                .cursor
+                .get()
+                .or_else(|| self.colors.foreground.get()),
+            _ => None,
+        }
+    }
+
+    /// Resolve a keyboard-protocol colour query without a cursor fallback.
+    #[must_use]
+    pub fn color_for_kitty(&self, key: crate::kitty::color::Kind) -> Option<Rgb> {
+        use crate::kitty::color::{Kind, Special};
+        match key {
+            Kind::Palette(index) => Some(self.colors.palette.current[usize::from(index)]),
+            Kind::Special(Special::Foreground) => self.colors.foreground.get(),
+            Kind::Special(Special::Background) => self.colors.background.get(),
+            Kind::Special(Special::Cursor) => self.colors.cursor.get(),
+            Kind::Special(_) => None,
+        }
+    }
+
     /// Replace the foreground default while retaining its explicit override.
     pub fn set_default_foreground_color(&mut self, color: Option<Rgb>) {
         self.colors.foreground.default = color;

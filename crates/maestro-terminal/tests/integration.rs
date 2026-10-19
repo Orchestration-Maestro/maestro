@@ -155,3 +155,5 @@ mod stream_links;
 mod stream_tracked_rows;
 
 mod device_attributes;
+
+mod terminal_color_effects;

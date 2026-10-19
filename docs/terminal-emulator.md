@@ -419,6 +419,8 @@ version, mode, keyboard-protocol and title queries. Cursor reports are relative
 to the scrolling origin when origin mode is enabled. Title reports use the stored
 title, including an empty title. The default enquiry answer is empty.
 `set_color_scheme` selects light or dark status replies; `None` suppresses them.
+With mode 2031 enabled, changing between two known schemes queues a report.
+Initial discovery, removal and unchanged values do not produce unsolicited reports.
 Directory changes and accepted clipboard writes are owned byte vectors, queued
 in input order. Repeated directory reports each produce a notification, including
 reports that clear the directory.
@@ -437,5 +439,19 @@ nothing. Other targets select the standard clipboard. Only nonempty decoded
 writes of at most 192 KiB are queued; no system clipboard access occurs.
 The stream ignores control bytes such as tabs and newlines inside OSC strings
 before payload decoding. Spaces reach the decoder and are rejected.
+
+OSC 4, 10, 11 and 12 set palette, foreground, background and cursor overrides.
+OSC 104 resets selected palette entries or the entire palette; OSC 110, 111 and
+112 restore the dynamic defaults. OSC 21 accesses the same retained colours with
+named or indexed keys. Unsupported special and dynamic targets change nothing.
+Palette mutations mark the palette dirty; dynamic mutations retain their
+independent defaults.
+
+Colour queries observe preceding operations in the same command. OSC 4 and
+10 through 12 report replicated sixteen-bit RGB channels; an unset cursor falls
+back to the foreground. OSC 21 combines query fields in one reply, uses eight-bit
+channels and reports supported unset values as empty fields without a cursor
+fallback. Unsupported targets produce no query field. Each reply uses the
+query's BEL or ST terminator.
 
 APC routing is not connected yet.

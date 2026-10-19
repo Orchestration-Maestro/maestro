@@ -46,7 +46,17 @@ impl ColorScheme {
 
 impl crate::Terminal {
     /// Set the scheme used to answer colour-scheme queries; `None` suppresses replies.
+    ///
+    /// A change between two known schemes also queues a report when mode 2031
+    /// is enabled. Initial discovery, removal and unchanged values do not.
     pub fn set_color_scheme(&mut self, scheme: Option<ColorScheme>) {
+        let previous = self.color_scheme;
         self.color_scheme = scheme;
+        if let (Some(previous), Some(current)) = (previous, scheme)
+            && previous != current
+            && self.modes.get(crate::Mode::ReportColorScheme)
+        {
+            let _ = current.encode(&mut self.effects.pty_reply);
+        }
     }
 }
