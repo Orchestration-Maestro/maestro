@@ -348,3 +348,96 @@ fn equal_download_and_bundle_versions_select_download() {
     assert!(matches!(equal.source, Some(ManifestSource::Remote { .. })));
     assert_eq!(equal.state, AgentState::Blocked);
 }
+
+#[test]
+fn newline_region_slices_preserve_original_bytes() {
+    for ending in ["\n", "\r\n"] {
+        let screen = format!("a{ending}b{ending}界{ending} [BUILD]");
+        let start = if ending == "\r\n" { 11 } else { 8 };
+        let input = DetectionInput {
+            screen: &screen,
+            osc_title: "",
+            osc_progress: "",
+        };
+        assert_eq!(region(input, "bottom_non_empty_lines(1)"), &screen[start..]);
+        let prompt = format!("界{ending}› live");
+        assert_eq!(
+            region(
+                DetectionInput {
+                    screen: &prompt,
+                    osc_title: "",
+                    osc_progress: ""
+                },
+                "before_current_prompt_marker"
+            ),
+            format!("界{ending}")
+        );
+        let border = format!("界{ending}───{ending}body");
+        assert_eq!(
+            region(
+                DetectionInput {
+                    screen: &border,
+                    osc_title: "",
+                    osc_progress: ""
+                },
+                "after_last_horizontal_rule"
+            ),
+            "body"
+        );
+    }
+}
+
+#[test]
+fn mixed_newline_regions_preserve_borders_and_final_lines() {
+    let mixed = "界\r\n───\nbody\r\n───\n› live";
+    let input = DetectionInput {
+        screen: mixed,
+        osc_title: "",
+        osc_progress: "",
+    };
+    assert_eq!(region(input, "prompt_box_body"), "body\r\n");
+    assert_eq!(region(input, "above_prompt_box"), "界\r\n");
+    assert_eq!(region(input, "after_last_prompt_marker"), "");
+    assert_eq!(region(input, "top_non_empty_lines(2)"), "界\r\n───\n");
+    assert_eq!(
+        region(
+            DetectionInput {
+                screen: "───\r\n",
+                osc_title: "",
+                osc_progress: ""
+            },
+            "after_last_horizontal_rule"
+        ),
+        ""
+    );
+    assert_eq!(
+        region(
+            DetectionInput {
+                screen: "───",
+                osc_title: "",
+                osc_progress: ""
+            },
+            "after_last_horizontal_rule"
+        ),
+        ""
+    );
+}
+
+#[test]
+fn explain_maki_accepts_crlf_and_mixed_unicode_input() {
+    let cache = ManifestCache::new(None, None).unwrap();
+    for screen in [
+        "a\r\nb\r\n界\r\n [BUILD]",
+        "a\nb\n界\n [BUILD]",
+        "a\r\nb\n界\r\n [BUILD]",
+    ] {
+        let result = cache.explain(Agent::Maki, screen);
+        let rule = result
+            .evaluated_rules
+            .iter()
+            .find(|rule| rule.evidence.region_preview == " [BUILD]")
+            .unwrap();
+        assert_eq!(rule.evidence.region_bytes, 8);
+        assert_eq!(result.state, AgentState::Idle);
+    }
+}
