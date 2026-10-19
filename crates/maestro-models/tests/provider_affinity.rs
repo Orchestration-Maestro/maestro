@@ -218,6 +218,7 @@ async fn direct_local_case(protocol: &str, simple: bool) -> crate::TestResult {
     use crate::{chat, transport};
     use serde_json::json;
     use std::cell::RefCell;
+    let policy = crate::bundled::policy(protocol);
     let transport = transport::transport(vec![direct_response(protocol)]);
     let phases = Rc::new(RefCell::new(Vec::new()));
     let tasks = Rc::new(RefCell::new(Vec::new()));
@@ -246,24 +247,25 @@ async fn direct_local_case(protocol: &str, simple: bool) -> crate::TestResult {
     assert_eq!(result.error_message, None);
     assert_eq!(events, ["start", "done"]);
     assert_eq!(result.stop_reason, maestro_models::StopReason::Stop);
-    let expected: &[&str] = if matches!(
-        protocol,
-        "mistral-conversations" | "google-generative-ai" | "google-vertex"
-    ) {
-        &["payload-before", "payload-after"]
-    } else {
+    assert_eq!(*phases.borrow(), hook_phases(policy));
+    let (_, body) = transport.first_request()?;
+    let body: serde_json::Value = serde_json::from_slice(&body)?;
+    assert_sent_temperature(protocol, &body);
+    Ok(())
+}
+
+/// The closed hook transcript one protocol's response-hook policy produces.
+fn hook_phases(policy: &crate::bundled::ProtocolPolicy) -> &'static [&'static str] {
+    if policy.response_hook {
         &[
             "payload-before",
             "payload-after",
             "response-before",
             "response-after",
         ]
-    };
-    assert_eq!(*phases.borrow(), expected);
-    let (_, body) = transport.first_request()?;
-    let body: serde_json::Value = serde_json::from_slice(&body)?;
-    assert_sent_temperature(protocol, &body);
-    Ok(())
+    } else {
+        &["payload-before", "payload-after"]
+    }
 }
 
 /// Inspect the protocol's actual post-hook wire field.
