@@ -10,11 +10,11 @@ pub fn view<'a>(
     host: &'a Rc<dyn AttachmentHost>,
     frame: CodeBlockView<'a, TranslationFunction>,
 ) -> ToolRenderView<'a> {
-    ToolRenderView {
+    ToolRenderView::new(
         host,
-        i18n: frame.i18n,
-        presentation: frame.presentation,
-        highlighter: frame.highlighter,
-        modal: frame.modal,
-    }
+        frame.i18n,
+        frame.presentation,
+        frame.highlighter,
+        frame.modal,
+    )
 }

@@ -81,11 +81,20 @@ impl NativeText {
     #[cfg(target_arch = "wasm32")]
     pub(crate) fn set_hovered(&self, hovered: bool) -> Result<(), AttachmentHostError> {
         if let Some(node) = self.node.borrow().as_ref() {
-            node.class_list()
-                .toggle_with_force("maestro-text-hover", hovered)
-                .map_err(|error| attachment_content::browser::host_error(&error))?;
+            Self::set_target_hovered(node, hovered)?;
         }
         Ok(())
+    }
+    /// Apply inherited foreground to one native caption, not its independently styled siblings.
+    #[cfg(target_arch = "wasm32")]
+    pub(crate) fn set_target_hovered(
+        node: &web_sys::Element,
+        hovered: bool,
+    ) -> Result<(), AttachmentHostError> {
+        node.class_list()
+            .toggle_with_force("maestro-text-hover", hovered)
+            .map(|_| ())
+            .map_err(|error| attachment_content::browser::host_error(&error))
     }
     /// Replace the current action without a guard spanning user-owned release.
     pub(crate) fn set_action(&mut self, action: Option<Rc<dyn Fn()>>) {
@@ -130,6 +139,13 @@ impl NativeText {
         if let Some(content) = candidate {
             self.content = Some(content);
             self.shown = Some((text.0.into(), text.1));
+        }
+        #[cfg(target_arch = "wasm32")]
+        if matches!(text.1, TextKind::Caption | TextKind::InlineCaption)
+            && let Some(captions) = view.captions
+            && let Some(node) = self.node.borrow().as_ref()
+        {
+            captions.borrow_mut().push(node.clone());
         }
         Ok(layout.response)
     }

@@ -45,9 +45,8 @@ let params = serde_json::json!({"path": "src"});
 let recipe = render_tool::<serde_json::Value, serde_json::Value>(
     "inspect", Some(ToolParams::json(&params)), None, false,
 )?;
-let output = recipe.render(ui, ToolRenderView {
-    host, i18n, presentation, highlighter, modal: None,
-}, row);
+let view = ToolRenderView::new(host, i18n, presentation, highlighter, None);
+let output = recipe.render(ui, view, row);
 overlays.extend(output.overlays);
 output.response?;
 ```
@@ -73,8 +72,9 @@ behavior.
 Pending headers use the frame clock for their spinner; no timer is allocated.
 Plain captions stay muted, including when a retained collapsible header becomes
 plain. Collapsible headers use a pointer cursor, foreground hover text and an accent
-keyboard-focus outline. Rich captions retain their own colors and executable
-content with independent widget state.
+keyboard-focus outline. Labels inside rich captions inherit the containing
+header's hover foreground. Independently styled children, including file pills
+and code blocks, retain their colors and independent widget state.
 
 [`ConsoleBlock`](../../crates/maestro-web/src/components/console_block.rs) owns
 literal preformatted output, an optional error variant, and a copy control.

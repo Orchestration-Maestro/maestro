@@ -6,7 +6,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [],
       "rows": [],
       "title": null,
       "counts": null,
@@ -21,7 +20,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [],
       "rows": [],
       "title": null,
       "counts": null,
@@ -36,7 +34,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [],
       "rows": [],
       "title": "Change <&>",
       "counts": "+0 / -0",
@@ -50,13 +47,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "+ a",
@@ -76,13 +66,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "+ a",
@@ -102,13 +85,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "+ a",
@@ -127,13 +103,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a",
-          "added": false,
-          "removed": true
-        }
-      ],
       "rows": [
         {
           "text": "- a",
@@ -153,13 +122,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a",
-          "added": false,
-          "removed": true
-        }
-      ],
       "rows": [
         {
           "text": "- a",
@@ -179,13 +141,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a",
-          "added": false,
-          "removed": true
-        }
-      ],
       "rows": [
         {
           "text": "- a",
@@ -204,13 +159,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a",
-          "added": false,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "  a",
@@ -230,13 +178,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a",
-          "added": false,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "  a",
@@ -256,13 +197,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a",
-          "added": false,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "  a",
@@ -281,18 +215,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "a",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a",
@@ -316,18 +238,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "a",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a",
@@ -351,18 +261,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "a",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a",
@@ -385,18 +283,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "a\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a",
@@ -420,18 +306,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "a\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a",
@@ -455,18 +329,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "a\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a",
@@ -489,13 +351,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "\n",
-          "added": false,
-          "removed": true
-        }
-      ],
       "rows": [
         {
           "text": "- ",
@@ -515,13 +370,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "\n",
-          "added": false,
-          "removed": true
-        }
-      ],
       "rows": [
         {
           "text": "- ",
@@ -541,13 +389,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "\n",
-          "added": false,
-          "removed": true
-        }
-      ],
       "rows": [
         {
           "text": "- ",
@@ -566,13 +407,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "+ ",
@@ -592,13 +426,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "+ ",
@@ -618,13 +445,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "+ ",
@@ -643,18 +463,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a\r\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "a\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a\r",
@@ -678,18 +486,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a\r\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "a\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a\r",
@@ -713,18 +509,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a\r\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "a\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a\r",
@@ -747,18 +531,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a\rb",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "a\rc",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a\rb",
@@ -782,18 +554,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a\rb",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "a\rc",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a\rb",
@@ -817,18 +577,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a\rb",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "a\rc",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a\rb",
@@ -851,28 +599,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a\n",
-          "added": false,
-          "removed": false
-        },
-        {
-          "value": "b\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "c\n",
-          "added": true,
-          "removed": false
-        },
-        {
-          "value": "a\n",
-          "added": false,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "  a",
@@ -904,28 +630,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a\n",
-          "added": false,
-          "removed": false
-        },
-        {
-          "value": "b\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "c\n",
-          "added": true,
-          "removed": false
-        },
-        {
-          "value": "a\n",
-          "added": false,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "  a",
@@ -957,28 +661,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a\n",
-          "added": false,
-          "removed": false
-        },
-        {
-          "value": "b\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "c\n",
-          "added": true,
-          "removed": false
-        },
-        {
-          "value": "a\n",
-          "added": false,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "  a",
@@ -1009,23 +691,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "b\n",
-          "added": false,
-          "removed": false
-        },
-        {
-          "value": "a\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a",
@@ -1053,23 +718,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "b\n",
-          "added": false,
-          "removed": false
-        },
-        {
-          "value": "a\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a",
@@ -1097,23 +745,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "b\n",
-          "added": false,
-          "removed": false
-        },
-        {
-          "value": "a\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a",
@@ -1140,18 +771,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "same\n",
-          "added": false,
-          "removed": false
-        },
-        {
-          "value": "same\n",
-          "added": false,
-          "removed": true
-        }
-      ],
       "rows": [
         {
           "text": "  same",
@@ -1175,18 +794,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "same\n",
-          "added": false,
-          "removed": false
-        },
-        {
-          "value": "same\n",
-          "added": false,
-          "removed": true
-        }
-      ],
       "rows": [
         {
           "text": "  same",
@@ -1210,18 +817,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "same\n",
-          "added": false,
-          "removed": false
-        },
-        {
-          "value": "same\n",
-          "added": false,
-          "removed": true
-        }
-      ],
       "rows": [
         {
           "text": "  same",
@@ -1244,18 +839,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "<a>&雪\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "<b>\t雪\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- <a>&雪",
@@ -1279,18 +862,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "<a>&雪\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "<b>\t雪\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- <a>&雪",
@@ -1314,18 +885,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "<a>&雪\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "<b>\t雪\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- <a>&雪",
@@ -1348,23 +907,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "one\n\n",
-          "added": false,
-          "removed": false
-        },
-        {
-          "value": "three\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "next\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "  one",
@@ -1396,23 +938,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "one\n\n",
-          "added": false,
-          "removed": false
-        },
-        {
-          "value": "three\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "next\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "  one",
@@ -1444,23 +969,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "one\n\n",
-          "added": false,
-          "removed": false
-        },
-        {
-          "value": "three\n",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "next\n",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "  one",
@@ -1491,18 +999,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a b",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "a c",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a b",
@@ -1526,18 +1022,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a b",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "a c",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a b",
@@ -1561,18 +1045,6 @@
       "className": "custom-token"
     },
     "expected": {
-      "parts": [
-        {
-          "value": "a b",
-          "added": false,
-          "removed": true
-        },
-        {
-          "value": "a c",
-          "added": true,
-          "removed": false
-        }
-      ],
       "rows": [
         {
           "text": "- a b",

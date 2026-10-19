@@ -248,6 +248,34 @@ pub fn literal() {
     assert_eq!(card.presentation.opened.get(), 0);
 }
 
+/// Hovering an actionable filename inherits only the containing label's foreground.
+/// # Panics
+/// Panics if native foreground paint or the independent pill color differs.
+pub async fn hover() {
+    let mut card = Card::new("hover.rs".into(), true);
+    let pack = card.surface.pack.clone();
+    let presentation = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
+    publish(
+        "colors",
+        &serde_json::to_string(&presentation.colors).unwrap().into(),
+    );
+    card.surface.events = vec![egui::Event::PointerMoved(card.pill())];
+    card.draw();
+    card.draw();
+    publish("hoverText", &presentation.colors["text"].into());
+    crate::support::reading_paint::observe("tool-header-hover").await;
+    crate::tool_renderer_support::styles::native_color(
+        ".maestro-artifact-pill",
+        "text",
+        &presentation,
+    );
+    card.surface.events = vec![egui::Event::PointerGone];
+    card.draw();
+    card.draw();
+    publish("hoverText", &presentation.colors["muted"].into());
+    crate::support::reading_paint::observe("tool-header-hover").await;
+}
+
 /// Both recorded direct/nested event cases retain their separate observations.
 fn recorded() {
     let cases: Vec<serde_json::Value> =
@@ -264,6 +292,9 @@ fn recorded() {
             card.presentation.opened.get(),
             expected["nested"]["calls"].as_array().unwrap().len()
         );
+        for call in expected["nested"]["calls"].as_array().unwrap() {
+            assert_eq!(call.as_str(), card.panel.active_filename().as_deref());
+        }
         drop(std::mem::take(&mut card.state));
         card.presentation.opened.set(0);
         card.recipe = ToolRenderResult {
@@ -295,5 +326,8 @@ fn recorded() {
             card.presentation.opened.get(),
             expected["calls"].as_array().unwrap().len()
         );
+        for call in expected["calls"].as_array().unwrap() {
+            assert_eq!(call.as_str(), card.panel.active_filename().as_deref());
+        }
     }
 }

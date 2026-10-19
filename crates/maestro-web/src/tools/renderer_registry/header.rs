@@ -158,8 +158,34 @@ impl ToolContent for Header {
     }
 }
 impl Header {
-    /// Compose icon order, caption and optional trailing control.
+    /// Resolve inherited caption foreground after the complete header has been measured.
     fn draw(
+        &self,
+        ui: &mut egui::Ui,
+        view: ToolRenderView<'_>,
+        retained: &mut Retained,
+        paint: (f32, &mut Vec<crate::AttachmentOverlay>),
+    ) -> Result<egui::Response, ToolUiError> {
+        #[cfg(target_arch = "wasm32")]
+        let captions = RefCell::new(Vec::new());
+        #[cfg(target_arch = "wasm32")]
+        let view = if matches!(self.text, ToolHeaderText::Content(_)) {
+            ToolRenderView {
+                captions: Some(&captions),
+                ..view
+            }
+        } else {
+            view
+        };
+        let response = self.draw_row(ui, view, retained, paint)?;
+        #[cfg(target_arch = "wasm32")]
+        for node in captions.into_inner() {
+            NativeText::set_target_hovered(&node, self.expanded.is_some() && response.hovered())?;
+        }
+        Ok(response)
+    }
+    /// Compose icon order, caption and optional trailing control.
+    fn draw_row(
         &self,
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,

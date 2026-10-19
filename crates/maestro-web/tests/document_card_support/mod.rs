@@ -95,13 +95,13 @@ pub fn frame_owner(
         let host: Rc<dyn maestro_web::browser::attachment_content::AttachmentHost> = host.clone();
         draw(
             &mut ui,
-            ToolRenderView {
-                host: &host,
+            ToolRenderView::new(
+                &host,
                 i18n,
                 presentation,
-                highlighter: &maestro_theme::SyntectHighlighter::new().unwrap(),
-                modal: None,
-            },
+                &maestro_theme::SyntectHighlighter::new().unwrap(),
+                None,
+            ),
         )
     })
 }

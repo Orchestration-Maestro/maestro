@@ -224,18 +224,10 @@ pub struct DiffInput {
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct DiffExpected {
-    pub parts: Vec<Part>,
     pub rows: Vec<DiffRow>,
     pub title: Option<String>,
     pub counts: Option<String>,
     pub class_present: bool,
-}
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Part {
-    pub value: String,
-    pub added: bool,
-    pub removed: bool,
 }
 /// Read direct diff title and line cases.
 /// # Panics

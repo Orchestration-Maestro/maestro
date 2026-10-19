@@ -32,8 +32,19 @@ pub async fn run() {
             for error in [false, true] {
                 card(&mut surface, &presentation, error).await;
             }
+            for (command, filename) in [
+                ("create", false),
+                ("create", true),
+                ("update", false),
+                ("update", true),
+                ("get", false),
+                ("get", true),
+            ] {
+                header_hover(&mut surface, &presentation, command, filename).await;
+            }
         }
     }
+    super::pills::hover().await;
 }
 fn draw(
     surface: &mut Surface,
@@ -54,6 +65,7 @@ fn draw(
     });
 }
 async fn card(surface: &mut Surface, presentation: &BrandPresentation<'_>, error: bool) {
+    surface.events = vec![egui::Event::PointerGone];
     let params = if error {
         json!({"command":"create","filename":"literal.rs","content":"literal code"})
     } else {
@@ -121,6 +133,46 @@ async fn card(surface: &mut Surface, presentation: &BrandPresentation<'_>, error
     check(
         "document.querySelectorAll('.maestro-artifact-pill,.maestro-diff,.maestro-message-error').length===0",
     );
+}
+/// Rich caption labels inherit hover; independently styled pills do not.
+async fn header_hover(
+    surface: &mut Surface,
+    presentation: &BrandPresentation<'_>,
+    command: &str,
+    filename: bool,
+) {
+    let mut params = json!({"command":command,"content":"literal","old_str":"old","new_str":"new"});
+    if filename {
+        params["filename"] = "literal.rs".into();
+    }
+    let recipe = <ArtifactsToolRenderer as ToolRenderer<Value, ()>>::render(
+        &ArtifactsToolRenderer::new(None),
+        Some(&params),
+        None,
+        false,
+    )
+    .unwrap();
+    let mut state = ToolRenderState::default();
+    surface.events = vec![egui::Event::PointerGone];
+    draw(surface, &recipe, &mut state, presentation, None);
+    draw(surface, &recipe, &mut state, presentation, None);
+    native_color(".maestro-tool-caption", "muted", presentation);
+    let at = drawing::glyphs(surface)[0].center();
+    surface.events = vec![egui::Event::PointerMoved(at)];
+    draw(surface, &recipe, &mut state, presentation, None);
+    draw(surface, &recipe, &mut state, presentation, None);
+    publish("hoverText", &presentation.colors["text"].into());
+    reading_paint::observe("tool-header-hover").await;
+    native_color(".maestro-tool-caption", "text", presentation);
+    if filename {
+        native_color(".maestro-artifact-pill", "text", presentation);
+    }
+    surface.events = vec![egui::Event::PointerGone];
+    draw(surface, &recipe, &mut state, presentation, None);
+    draw(surface, &recipe, &mut state, presentation, None);
+    publish("hoverText", &presentation.colors["muted"].into());
+    reading_paint::observe("tool-header-hover").await;
+    native_color(".maestro-tool-caption", "muted", presentation);
 }
 use wasm_bindgen::JsValue;
 /// Compare selected semantic styles independently of the feature's custom properties.

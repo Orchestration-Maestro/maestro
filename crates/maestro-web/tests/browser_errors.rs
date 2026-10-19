@@ -352,13 +352,7 @@ fn tool_rendering_failures_keep_the_original_reading_cause() {
         let error = prepared
             .render(
                 &mut ui,
-                ToolRenderView {
-                    host: &host,
-                    i18n,
-                    presentation,
-                    highlighter: &highlighter,
-                    modal: None,
-                },
+                ToolRenderView::new(&host, i18n, presentation, &highlighter, None),
                 &mut state,
             )
             .assert_no_overlays()
