@@ -190,3 +190,5 @@ mod input_terminal;
 mod mouse_events;
 
 mod selection;
+
+mod formatter_plain;

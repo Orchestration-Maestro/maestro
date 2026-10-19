@@ -74,3 +74,6 @@ pub mod stream;
 pub mod stream_terminal;
 
 pub mod selection;
+
+/// Text output from terminal-owned pages.
+pub mod formatter;
