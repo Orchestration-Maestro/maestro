@@ -9,5 +9,14 @@
     50% { opacity: 0.5; }
 }
 
-.maestro-transcript{box-sizing:border-box;width:100%;max-width:48rem;margin:0 auto;padding:16px 16px 0;}
-.maestro-transcript-slot{position:relative;flex-shrink:0;}
+.maestro-transcript {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 48rem;
+    margin: 0 auto;
+    padding: 16px 16px 0;
+}
+.maestro-transcript-slot {
+    position: relative;
+    flex-shrink: 0;
+}

@@ -18,6 +18,8 @@ mod lifecycle;
 mod publication;
 #[path = "transcript_session/requests.rs"]
 mod requests;
+#[path = "transcript_session/retention.rs"]
+mod retention;
 #[path = "transcript_session/retry.rs"]
 mod retry;
 #[path = "transcript_session/tools.rs"]

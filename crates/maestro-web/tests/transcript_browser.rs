@@ -407,6 +407,8 @@ mod layout;
 mod placeholder;
 #[path = "transcript_browser/reveal.rs"]
 mod reveal;
+#[path = "transcript_browser/work.rs"]
+mod work;
 
 /// Later publication must not undo a reader scroll after an earlier programmatic assignment.
 /// # Panics

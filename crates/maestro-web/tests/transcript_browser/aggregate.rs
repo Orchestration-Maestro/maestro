@@ -122,6 +122,20 @@ pub(super) fn draw_at_height(
     i18n: &I18n,
     height: f32,
 ) -> Result<(), ToolUiError> {
+    draw_in_rect(
+        scene,
+        interface,
+        i18n,
+        egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(800., height)),
+    )
+}
+/// Supply fractional canvas placement independently of the browser canvas's two CSS axes.
+pub(crate) fn draw_in_rect(
+    scene: &Slots,
+    interface: &mut AgentInterface,
+    i18n: &I18n,
+    rect: egui::Rect,
+) -> Result<(), ToolUiError> {
     let mut response = Ok(());
     let host: Rc<dyn maestro_web::browser::attachment_content::AttachmentHost> = scene.host.clone();
     let p = scene.pack.presentation(scene.mode).unwrap();
@@ -129,10 +143,7 @@ pub(super) fn draw_at_height(
         .context
         .run_ui(
             egui::RawInput {
-                screen_rect: Some(egui::Rect::from_min_size(
-                    egui::Pos2::ZERO,
-                    egui::vec2(800., height),
-                )),
+                screen_rect: Some(rect),
                 ..Default::default()
             },
             |ui| {
@@ -329,14 +340,14 @@ pub async fn transcript_registry_resize_reflows_only_the_changed_offscreen_slot(
 }
 
 /// Count only persistent sizing of native transcript slots, not child reading publication.
-fn begin_slot_writes() {
+pub(super) fn begin_slot_writes() {
     js(
         &JsValue::NULL,
-        "globalThis.slotWrites=0;globalThis.slotSetter=Element.prototype.setAttribute;Element.prototype.setAttribute=function(k,v){if(k==='style' && this.classList.contains('maestro-transcript-slot'))slotWrites++;return slotSetter.call(this,k,v)}",
+        "globalThis.slotWrites=0;globalThis.slotMounts=0;globalThis.slotSetter=Element.prototype.setAttribute;Element.prototype.setAttribute=function(k,v){if(k==='class' && v==='maestro-transcript-slot')slotMounts++;if(k==='style' && this.classList.contains('maestro-transcript-slot'))slotWrites++;return slotSetter.call(this,k,v)}",
     );
 }
 /// Restore the native method even when the caller needs further frames.
-fn end_slot_writes() -> usize {
+pub(super) fn end_slot_writes() -> usize {
     js(
         &JsValue::NULL,
         "Element.prototype.setAttribute=slotSetter;delete globalThis.slotSetter;return slotWrites.toString()",
@@ -365,7 +376,7 @@ fn last_row_top(root: &JsValue) -> f64 {
 }
 
 /// Locate the public containing native root in the actual runner document.
-pub(super) fn transcript_root() -> JsValue {
+pub(crate) fn transcript_root() -> JsValue {
     js(
         &JsValue::NULL,
         "return document.querySelector('.maestro-transcript')",

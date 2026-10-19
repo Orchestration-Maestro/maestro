@@ -71,8 +71,8 @@ child failure does not consume an already-opened overlay.
 
 The native cursor is 8 by 16 pixels, inset 16 pixels, with a two-second pulse in
 the selected pack's muted color. Cursor rows have a 12-pixel gap and bottom
-margin, without an extra interactive-row minimum height. Editor input, send/abort actions and conversation
-statistics belong to the separate editor interface.
+margin, without an extra interactive-row minimum height. Editor input, send/abort
+actions and conversation statistics belong to the separate editor interface.
 
 ## Session transcript view
 
@@ -113,6 +113,9 @@ later rows are revealed. Rows use their planned canvas origin while native slot
 sizes are published together, so a preceding row's growth does not offset a child
 twice. A reached render failure keeps the session refresh pending, so a later
 frame retries preparation and native slot sizing without another Agent event.
+Unrelated streaming updates and repeated publication preserve stable native roots,
+selection endpoints and the reader's scroll offset. Clearing a response retires only
+its streaming subtree; the next response gets fresh children.
 
 `set_auto_scroll` overrides whether later content growth follows the bottom. A
 nonzero upward scroll disables following only beyond 50 pixels from the bottom;
@@ -128,8 +131,8 @@ retained reading root or one of its slots. Keep the returned placement scope ali
 while drawing its children. Its optional canvas origin places a child against the
 planned row position before new native slot heights are published. Without that
 operand, placement uses the slot's current native bounds. The containing viewport
-supplies scrolling and clipping;
-contained reading bodies do not add independent scrollers. Standalone reading views
+supplies scrolling and clipping; contained reading bodies do not add independent
+scrollers. Standalone reading views
 keep their existing fixed frames and bounded viewports.
 
 On browser hosts, `resize_reading_slots` grows or truncates positional slots without
