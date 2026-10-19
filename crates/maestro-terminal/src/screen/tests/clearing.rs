@@ -345,7 +345,7 @@ fn selective_clear_refreshes_metadata_once() {
             stored.get_cells_mut(0)[usize::from(x)].set_protected(x % 2 == 0);
         }
         stored
-            .append_grapheme(crate::page::CellPosition { x: 0, y: 0 }, '\u{301}')
+            .append_grapheme(crate::page::CellPosition { x: cols - 2, y: 0 }, '\u{301}')
             .unwrap();
         stored.row_shift_work = 0;
         if per_run {
@@ -370,8 +370,8 @@ fn selective_clear_refreshes_metadata_once() {
         "selective refresh N8={} N16={}; per-run N8={} N16={}",
         small.0, large.0, repeated_small.0, repeated_large.0
     );
-    assert_eq!(large.0, small.0 * 2);
-    assert!(repeated_large.0 > repeated_small.0 * 2);
+    assert_eq!(large.0 + 1, (small.0 + 1) * 2);
+    assert!(repeated_large.0 > repeated_small.0 * 3);
     assert_eq!((&small.1, small.2), (&repeated_small.1, repeated_small.2));
     assert_eq!((&large.1, large.2), (&repeated_large.1, repeated_large.2));
 }
