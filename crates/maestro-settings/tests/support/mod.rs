@@ -354,7 +354,7 @@ pub struct Holder {
 impl Holder {
     /// Starts a child that locks `path` and waits until it reports.
     pub fn start(test: &str, path: &std::path::Path) -> Self {
-        use std::io::{BufRead, BufReader};
+        use std::io::BufReader;
         let command = child_command(test, "hold");
         let mut child = command
             .env(CHILD_PATH, path)
@@ -363,15 +363,7 @@ impl Holder {
             .spawn()
             .unwrap();
         let mut output = BufReader::new(child.stdout.take().unwrap());
-        let mut line = String::new();
-        while line.trim_end() != "REPORT:\"locked\"" {
-            line.clear();
-            assert!(
-                output.read_line(&mut line).unwrap() > 0,
-                "the child never locked {}",
-                path.display()
-            );
-        }
+        read_marker(&mut output, "REPORT:\"locked\"");
         Self {
             child,
             _output: output,
@@ -437,19 +429,12 @@ impl Backend {
         }
     }
 
-    fn file(root: &TempDir, scope: SettingsScope) -> std::path::PathBuf {
-        match scope {
-            SettingsScope::Global => root.path().join("agent/settings.json"),
-            SettingsScope::Project => root.path().join("work/.maestro/settings.json"),
-        }
-    }
-
     /// Replaces a scope's text as another process would.
     pub fn write(&self, scope: SettingsScope, text: &str) {
         match self {
             Self::Memory(storage) => put(&**storage, scope, text),
             Self::Native(root, _) => {
-                let file = Self::file(root, scope);
+                let file = settings_file(root.path(), scope);
                 std::fs::create_dir_all(file.parent().unwrap()).unwrap();
                 std::fs::write(file, text).unwrap();
             }
@@ -461,7 +446,9 @@ impl Backend {
     pub fn text(&self, scope: SettingsScope) -> Option<String> {
         match self {
             Self::Memory(storage) => raw(&**storage, scope),
-            Self::Native(root, _) => std::fs::read_to_string(Self::file(root, scope)).ok(),
+            Self::Native(root, _) => {
+                std::fs::read_to_string(settings_file(root.path(), scope)).ok()
+            }
             Self::Controlled(storage) => storage.text(scope),
         }
     }
@@ -477,4 +464,24 @@ impl Backend {
 #[cfg(unix)]
 pub fn shell_child_command(test: &str, case: &str, setup: &str) -> TestProcess {
     child_command(test, case).shell_setup(setup)
+}
+
+/// The settings document for one scope below the supplied temporary root.
+pub fn settings_file(root: &std::path::Path, scope: SettingsScope) -> std::path::PathBuf {
+    root.join(match scope {
+        SettingsScope::Global => "agent/settings.json",
+        SettingsScope::Project => "work/.maestro/settings.json",
+    })
+}
+
+/// Reads until the child reports its completion marker, rejecting an early exit.
+pub fn read_marker(output: &mut impl std::io::BufRead, marker: &str) {
+    let mut line = String::new();
+    while line.trim_end() != marker {
+        line.clear();
+        assert!(
+            output.read_line(&mut line).unwrap() > 0,
+            "child did not report {marker}"
+        );
+    }
 }

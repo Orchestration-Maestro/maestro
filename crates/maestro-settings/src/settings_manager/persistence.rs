@@ -201,7 +201,7 @@ fn persist(
     snapshot: &Map<String, Value>,
     edits: &[Captured],
 ) -> Result<(), SettingsStorageError> {
-    storage.with_lock(scope, &mut |current| {
+    storage.with_write_lock(scope, &mut |current| {
         let mut fresh = parse_document(current.unwrap_or_default())?;
         for (edit, _) in edits {
             apply_edit(&mut fresh, snapshot, edit);

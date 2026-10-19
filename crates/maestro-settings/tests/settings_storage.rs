@@ -400,7 +400,15 @@ mod tests {
             scope: SettingsScope,
             update: &mut dyn FnMut(Option<&str>) -> maestro_settings::SettingsUpdate,
         ) -> Result<(), SettingsStorageError> {
-            self.inner.with_lock(scope, &mut |current| {
+            self.inner.with_lock(scope, update)
+        }
+
+        fn with_write_lock(
+            &self,
+            scope: SettingsScope,
+            update: &mut dyn FnMut(Option<&str>) -> maestro_settings::SettingsUpdate,
+        ) -> Result<(), SettingsStorageError> {
+            self.inner.with_write_lock(scope, &mut |current| {
                 let next = update(current)?;
                 self.observe_write(scope, next.is_some());
                 Ok(next)
