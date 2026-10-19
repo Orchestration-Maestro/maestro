@@ -234,6 +234,7 @@ including leaves and exact sets. The unifier itself has no workspace dependencie
 - **Pane:** One leaf of a tab's layout, showing one pane terminal.
 - **Terminal emulator:** The pure-Rust engine in `maestro-terminal` that parses a pane terminal's output, keeps its screens and byte-bounded scrollback, and encodes its keyboard, mouse and focus input; see the [terminal emulator specification](docs/specs/terminal-emulator.md).
 - **Terminal effects:** PTY reply bytes, bell counts, directory changes and clipboard writes captured by the terminal emulator for its caller to drain after a write.
+- **Render state:** The emulator's retained viewport snapshot with whole-screen and per-row dirty flags.
 - **Scrollback limit:** The bytes of page storage a pane terminal keeps beyond its active screen; zero disables history.
 - **Pane terminal:** A PTY child with its terminal emulator, scrollback and metadata.
 - **Pane agent:** A coding agent recognized in, or reporting from, a pane, with status idle, working, blocked, done or unknown; distinct from **Agent**, the conversation runner.

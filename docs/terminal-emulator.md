@@ -445,6 +445,66 @@ option selects False, True or Last: resize preserves prompts, clears the full
 prompt region or clears its last row respectively. Alternate resize never uses
 this primary prompt-redraw policy.
 
+## Reading text
+
+`selection::Selection` holds inclusive checked pins and a rectangle flag. It
+orders endpoints, finds corners and tests containment against the owning page
+list. Invalid or expired pins return `None` from geometry reads; containment
+returns false. Per-row ranges clamp to each page's stored width.
+
+`formatter::{TerminalFormatter, ScreenFormatter, PageListFormatter, PageFormatter}`
+write plain text or styled VT text to a `std::fmt::Write` destination. Their
+options select soft-wrap joining, trailing-blank trimming and codepoint
+substitutions. The shared walk preserves wide characters and grapheme suffixes.
+Styled output emits SGR and CRLF line endings; it does not emit per-cell
+hyperlink sequences. Read links separately with `viewport_hyperlink_uri`.
+
+Terminal selection reads take a `terminal::TextRange` with zero-based,
+inclusive endpoints and `TextShape::Linear` or `Rectangle`. Endpoints may be
+reversed. `read_text_screen` joins soft wraps and trims trailing blanks over
+retained screen coordinates. `read_ansi_screen` uses the same origin and lets
+the caller choose soft-wrap joining. `read_ansi_viewport` uses viewport-relative
+coordinates and preserves physical line breaks. Styled reads trim empty trailing
+cells but retain authored spaces. Invalid endpoints return `None`.
+
+`screen_cell` returns a retained cell's `Wide` value and Unicode scalars.
+`screen_text_rows` copies all retained physical rows; `screen_text_rows_range`
+copies a clamped, half-open row interval. Each row has cells across the current
+terminal width, soft-wrap and continuation flags. These checked reads return
+`None` if a requested cell cannot be resolved. `viewport_hyperlink_uri` returns
+`Some(None)` for a valid unlinked cell and `None` for invalid coordinates;
+invalid URI UTF-8 becomes replacement characters.
+
+`track_row` replaces the viewport row anchor and returns the previous anchor's
+current retained row, or `None` if no previous anchor survives.
+`kitty_keyboard_state_ansi` emits the enabled extended modifier-key and keyboard
+protocol state as replayable text without screen content.
+
+## Render state
+
+`render::RenderState` retains the viewport's rows, cells, styles and graphemes.
+Call `update(&mut Terminal)` to refresh it and consume terminal, page and visible
+row dirty flags. This is the production dirty-bit reader and clearer. The
+snapshot owns its contents; no terminal borrow survives the update.
+
+`dirty` is `Dirty::Full`, `Partial` or `Clean`. Geometry, screen, viewport,
+palette or effective default-colour changes require a full redraw; changed rows
+otherwise produce a partial update. Reverse-video and dynamic-colour transitions
+invalidate the viewport even without a terminal dirty bit. Unhandled snapshot
+flags persist across updates. After rendering, clear each handled row with
+`RenderRow::clear_dirty` and set the overall `dirty` field to `Dirty::Clean`
+separately. Clearing one row changes neither other rows nor the overall flag.
+
+`rows(&mut self)` yields borrowed `RenderRow` views whose `cells` and `cell`
+methods yield borrowed `RenderCell` views. Cells expose UTF-8 graphemes and
+resolve background, bold-aware foreground and underline colours against the
+snapshot palette. Background-only content takes precedence over style colour.
+
+Cursor state refreshes even when no row changes. It includes visibility,
+blinking, visual style, active position and an optional viewport position with
+wide-tail information. Colours include the effective background, foreground,
+optional cursor colour and indexed palette, with reverse video already applied.
+
 ## Byte input
 
 `Terminal::write(&[u8])` updates the screen synchronously. It retains incomplete
