@@ -2,6 +2,7 @@
 
 mod arena;
 mod erase;
+mod line_edit;
 mod resize;
 mod row_rotation;
 pub use resize::{Cursor, Resize};

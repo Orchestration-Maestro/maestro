@@ -46,3 +46,16 @@ impl Terminal {
         self.colors.cursor.get()
     }
 }
+
+impl super::Terminal {
+    /// Apply a decoded rendition attribute to the active screen.
+    ///
+    /// # Errors
+    /// Returns the screen's typed capacity error if the style cannot be admitted.
+    pub fn set_attribute(
+        &mut self,
+        attribute: crate::sgr::Attribute<'_>,
+    ) -> Result<(), crate::page_list::IncreaseCapacityError> {
+        self.screens.active_mut().set_attribute(attribute)
+    }
+}

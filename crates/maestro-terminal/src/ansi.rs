@@ -11,3 +11,13 @@ pub enum ProtectedMode {
     /// DEC protection selected by control sequences.
     Dec,
 }
+
+/// Selected terminal text display.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum StatusDisplay {
+    /// Normal screen content.
+    #[default]
+    Main,
+    /// Separately addressed status line.
+    StatusLine,
+}

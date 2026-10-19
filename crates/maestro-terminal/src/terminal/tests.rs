@@ -30,3 +30,5 @@ fn terminal_tab_set_and_reset_keep_custom_positions() {
     assert!(!terminal.tabstops.get(80));
     assert!(!terminal.tabstops.get(88));
 }
+
+mod printing;

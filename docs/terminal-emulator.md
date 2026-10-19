@@ -200,6 +200,10 @@ retain their bytes. `cursor_set_hyperlink` gives the current cell its own link
 reference, and `end_hyperlink` releases only the cursor's reference. Reusing a full
 live hyperlink identity needs no additional string storage. Page replacement
 restores cursor references without changing the references held by copied cells.
+`append_grapheme(column, scalar)` appends a suffix to a textual cell on the cursor
+row. If suffix storage fills, it grows the page through the same retained cursor
+owner and retries at the original column. Capacity failures remain typed; cursor
+style and hyperlink ownership survive replacement.
 
 Clearing releases page-owned styles, hyperlinks and grapheme suffixes before
 applying background-only blanks. `clear_rows` uses inclusive endpoints and each
@@ -281,5 +285,23 @@ dynamic-colour default setters also retain overrides and mark the palette dirty.
 the override before the default, returning `None` when neither is set. An unset
 cursor colour does not fall back to the foreground.
 
-Text printing, cluster-width effects and terminal cursor/line operations are
-not exposed by this constructor and state interface yet.
+`print`, `print_string`, `print_slice` and `print_repeat` share scalar printing,
+charset translation, pending wrap, insert mode and cluster-width effects.
+`print_string` treats newline as carriage return followed by linefeed. Selecting
+`StatusDisplay::StatusLine` suppresses scalar text, but not that newline handling.
+Rows containing image placeholders are marked for renderer lookup.
+
+Cursor moves clamp to the current margins or screen edge. `set_cursor_pos`
+uses one-based coordinates and applies scrolling offsets in origin mode.
+`save_cursor` and `restore_cursor` retain position, style, protection, wrap,
+origin and charset state independently for each screen. `set_attribute`
+delegates rendition changes to the active screen.
+
+`carriage_return`, `linefeed`, `backspace`, `index` and `reverse_index` provide
+line control. `scroll_up`, `scroll_down`, `insert_lines`, `delete_lines` and
+`insert_blanks` respect the scrolling region and preserve the current background
+in cleared cells. Managed transfers and printing return typed capacity errors;
+changes applied before an error remain visible.
+
+Margin setters, terminal resizing, erasure and screen-switching facades are not
+provided by these direct text and cursor operations.

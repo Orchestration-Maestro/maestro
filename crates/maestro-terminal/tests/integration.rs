@@ -114,3 +114,7 @@ mod terminal_modes;
 mod terminal_state;
 
 mod terminal_lines;
+
+mod terminal_print;
+
+mod terminal_cursor;

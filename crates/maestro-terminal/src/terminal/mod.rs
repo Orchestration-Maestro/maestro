@@ -1,7 +1,10 @@
 //! Direct operations on terminal screens and retained protocol state.
 
 mod colors;
+mod cursor;
+mod line_edit;
 mod lines;
+mod print;
 mod reads;
 pub use reads::ScrollViewport;
 
@@ -116,6 +119,8 @@ pub struct Terminal {
     pub scrolling_region: ScrollingRegion,
     /// Dynamic colour state.
     pub colors: Colors,
+    /// Selected text display.
+    pub status_display: crate::ansi::StatusDisplay,
     /// Last printed scalar used for repetition.
     pub previous_char: Option<char>,
     /// Screen width in pixels; zero until supplied by the host.
@@ -158,6 +163,7 @@ impl Terminal {
             },
             colors: Colors::default(),
             previous_char: None,
+            status_display: crate::ansi::StatusDisplay::Main,
             tabstops: Tabstops::init(usize::from(cols), TABSTOP_INTERVAL),
             width_px: 0,
             height_px: 0,

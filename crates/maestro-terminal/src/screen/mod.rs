@@ -4,6 +4,7 @@ mod attributes;
 mod capacity;
 mod clearing;
 mod cursor;
+mod grapheme;
 mod hyperlink;
 mod resize;
 mod scrolling;
