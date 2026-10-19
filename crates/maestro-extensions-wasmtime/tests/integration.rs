@@ -1,6 +1,7 @@
 //! Native component execution and retained context integration tests.
 #![cfg(all(test, not(target_arch = "wasm32")))]
 
+mod canonical_commands;
 mod execution_bridge;
 mod listener_prefixes;
 mod retained_components;

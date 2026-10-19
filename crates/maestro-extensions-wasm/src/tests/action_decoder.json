@@ -48,7 +48,17 @@
     "name": "parameters-object",
     "input": "{\"name\":\"x\",\"description\":\"\",\"parameters\":{},\"sourceInfo\":{\"path\":\"/x\",\"source\":\"custom Ω\",\"scope\":\"temporary\",\"origin\":\"top-level\"}}",
     "result": {
-      "error": "invalid type: map, expected a string at line 1 column 42"
+      "ok": {
+        "name": "x",
+        "description": "",
+        "parameters": {},
+        "sourceInfo": {
+          "path": "/x",
+          "source": "custom Ω",
+          "scope": "temporary",
+          "origin": "top-level"
+        }
+      }
     }
   },
   {
@@ -256,7 +266,14 @@
     "name": "details-wrong",
     "input": "{\"summary\":\"s\",\"firstKeptEntryId\":\"cut\",\"tokensBefore\":-0.0,\"details\":{\"a\":1}}",
     "result": {
-      "error": "invalid type: map, expected a string at line 1 column 70"
+      "ok": {
+        "summary": "s",
+        "firstKeptEntryId": "cut",
+        "tokensBefore": -0.0,
+        "details": {
+          "a": 1
+        }
+      }
     }
   },
   {

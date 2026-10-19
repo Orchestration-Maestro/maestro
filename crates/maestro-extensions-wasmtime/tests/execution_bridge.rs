@@ -142,6 +142,15 @@ async fn canonical_reads() {
         Rc::new(|_| panic!("no tails")),
         Rc::new(|_| panic!("no reports")),
     );
+    let compactions = Rc::new(RefCell::new(Vec::new()));
+    let received = compactions.clone();
+    let _compaction_subscription = bus.for_extension().on(
+        "canonical-compaction",
+        Rc::new(move |data, _| {
+            received.borrow_mut().push((*data).clone());
+            Ok(None)
+        }),
+    );
     let (registration, _, _) = super::retained_components::loaded_on(bus.for_extension()).await;
     let (session, history) = session::runner_session("/canonical-reads");
     let root = seed_history(&mut history.borrow_mut());
@@ -155,7 +164,7 @@ async fn canonical_reads() {
         maestro_theme::LiveTheme::default(),
     );
     let effects = Rc::new(RefCell::new(Vec::new()));
-    bind_reads(&runner, model.clone(), &effects);
+    let compact = bind_reads(&runner, model.clone(), &effects);
     let descriptor = model.read().unwrap().clone();
     let expected = json!({
         "cwd": "/canonical-reads", "prompt": "canonical imports", "hasUi": false,
@@ -165,6 +174,8 @@ async fn canonical_reads() {
         "catalog": {"all": [descriptor.clone()], "available": [], "found": descriptor, "missing": null},
     });
     observe_reads(&runner, &expected).await;
+    complete_compactions(&compact, &compactions);
+    super::canonical_commands::observe(&runner).await;
     assert_eq!(
         *effects.borrow(),
         ["abort", "shutdown", "abort", "shutdown"]
@@ -192,17 +203,23 @@ fn bind_reads(
     runner: &ExtensionRunner<Local>,
     model: std::sync::Arc<RwLock<maestro_models::Model>>,
     effects: &Rc<RefCell<Vec<&'static str>>>,
-) {
+) -> Rc<RefCell<Vec<maestro_extensions::CompactOptions>>> {
     use maestro_extensions::{ExtensionContextActions, ExtensionExecution, types::ProviderActions};
     let signal = maestro_models::Cancellation::new();
     signal.abort();
     let aborted = effects.clone();
     let shutdown = effects.clone();
+    let compactions = Rc::new(RefCell::new(Vec::new()));
+    let received = compactions.clone();
     runner
         .bind_core(
             Local::unbound_actions(),
             ExtensionContextActions {
                 get_model: Rc::new(move || Ok(Some(model.clone()))),
+                compact: Rc::new(move |options| {
+                    received.borrow_mut().push(options.unwrap());
+                    Ok(())
+                }),
                 is_idle: Rc::new(|| Ok(false)),
                 get_signal: Rc::new(move || Ok(Some(signal.clone()))),
                 abort: Rc::new(move || {
@@ -222,11 +239,34 @@ fn bind_reads(
                     }))
                 }),
                 get_system_prompt: Rc::new(|| Ok("canonical imports".into())),
-                ..Default::default()
             },
             ProviderActions::default(),
         )
         .unwrap();
+    compactions
+}
+
+/// Calls actual retained guest notifications after the originating command and hook end.
+fn complete_compactions(
+    options: &Rc<RefCell<Vec<maestro_extensions::CompactOptions>>>,
+    received: &Rc<RefCell<Vec<serde_json::Value>>>,
+) {
+    let options = std::mem::take(&mut *options.borrow_mut());
+    assert_eq!(options.len(), 2);
+    let payload = serde_json::json!({"summary":"literal completion", "firstKeptEntryId":"literal kept", "tokensBefore":12.5, "details":{"z":[false,null], "a":2.5}});
+    for option in options {
+        assert_eq!(
+            option.custom_instructions.as_deref(),
+            Some("literal compact instructions")
+        );
+        option.on_complete.unwrap()(serde_json::from_value(payload.clone()).unwrap()).unwrap();
+        option.on_error.unwrap()("literal compact failure".into()).unwrap();
+    }
+    let error = serde_json::json!({"error":"literal compact failure"});
+    assert_eq!(
+        *received.borrow(),
+        [payload.clone(), error.clone(), payload, error]
+    );
 }
 
 /// Reads the populated owner directly, independently of the component conversions.

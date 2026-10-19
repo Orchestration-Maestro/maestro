@@ -439,9 +439,9 @@ When such a crate has top-level integration-test sources, the check requires
 target at `tests/integration.rs`.
 
 Tool metadata has one generic record owner, `maestro-request::tool_info::ToolInfo<P>`.
-Native callers use its default JSON schema through models; guest authoring keeps
-its existing `ToolInfo<String>` alias. Identity-deduplicated live callback storage
-belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions
+Native callers use its default JSON schema through models; guest authoring uses
+`ToolInfo<JsonText>` to retain schema text with semantic JSON serialization.
+Identity-deduplicated live callback storage belongs to `maestro-models::records::listeners::Listeners<P>`. Agent subscriptions
 and extension error delivery reuse it; dispatch and lifecycle policy remain with
 their callers. The collection returns removed ownership for release outside guards.
 

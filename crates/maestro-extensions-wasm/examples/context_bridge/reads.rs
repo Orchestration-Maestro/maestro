@@ -17,6 +17,18 @@ pub(super) fn observe(context: &ExtensionContext) -> Result<Value, String> {
     let found = catalog.find(&model.provider, &model.id)?;
     let missing = catalog.find(&model.provider, "missing model")?;
     let signal = context.signal()?.ok_or("missing canonical signal")?;
+    context.compact(Some(maestro_extensions_wasm::CompactOptions {
+        custom_instructions: Some("literal compact instructions".into()),
+        on_complete: Some(std::rc::Rc::new(|result, emitter| {
+            emitter.emit(
+                "canonical-compaction",
+                serde_json::to_value(result).map_err(|error| error.to_string())?,
+            )
+        })),
+        on_error: Some(std::rc::Rc::new(|error, emitter| {
+            emitter.emit("canonical-compaction", json!({"error": error}))
+        })),
+    }))?;
     context.abort()?;
     context.shutdown()?;
     let usage = context.get_context_usage()?.map(|usage| {

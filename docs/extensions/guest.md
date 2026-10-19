@@ -110,7 +110,7 @@ For shared content and JSON conventions, see [the data boundary](#events-and-res
 `toolName`, including overrides of built-in names. Their `ToolInput` / `ToolDetails`
 carrier offers `decode::<T>()` for an on-demand typed view and `from_value()` for
 finite-checked authored replacements. Named aliases expose the built-in typed views;
-name predicates compare the name alone. Result input remains an opaque string.
+name predicates compare the name alone. Result input uses `JsonText`.
 `UserBashEventResult` may independently return custom `BashOperations` and an
 already-produced `BashResult`. Operations travel as a typed capability, outside the
 [event/result document](#events-and-results).
@@ -276,7 +276,7 @@ the guest does not discover resources or build the prompt.
 | `session_before_fork` | `SessionBeforeForkResult` | `cancel?`, `skipConversationRestore?` |
 | `session_before_compact` | `SessionBeforeCompactResult` | `cancel?`, `compaction?` |
 | `session_before_tree` | `SessionBeforeTreeResult` | `cancel?`, `summary?`, `customInstructions?`, `replaceInstructions?`, `label?` |
-| `before_provider_request` | `BeforeProviderRequestEventResult` | a string holding the replacement request |
+| `before_provider_request` | `BeforeProviderRequestEventResult` | the replacement JSON value, held as `JsonText` |
 | `input` | `InputEventResult` | `action` is `continue`, `handled` or `transform`; a transform has `text` and `images?` |
 
 Returned `compaction` holds `summary`, `firstKeptEntryId`, `tokensBefore` and `details?`.
@@ -342,7 +342,7 @@ records without sorting or deduplication. `set_active_tools` forwards the reques
 names. [`ToolInfo`](../../crates/maestro-extensions-wasm/src/types/actions.rs) and
 [`SlashCommandInfo`](../../crates/maestro-extensions-wasm/src/slash_commands.rs)
 retain host-supplied provenance. See the [data boundary](#how-an-event-travels) for
-opaque schema and details text.
+schema and details text with semantic JSON serialization.
 
 ## Model selection and action errors
 
@@ -400,12 +400,12 @@ Other extension-assigned Infinity or NaN fails encoding with
 `extension wrote a non-finite number (Infinity or NaN)`; the independent callback
 failure or other encoded part is retained. Numeric-looking text remains text.
 
-The request body of `before_provider_request`, its replacement, tool-execution notification arguments and
-partial/final notification results, and application-message or compaction `details` are opaque text
-carried as a string. The adapter never parses or reformats it, so
-duplicate keys, spacing, exponents and any nesting depth reach the handler as authored. A
-replacement `null` is text and differs from returning no result; `details` text `null` differs
-from `details` null.
+The request body of `before_provider_request`, its replacement, tool-execution arguments
+and results, tool-result input, tool schemas and arbitrary `details` use `JsonText`.
+It exposes compact JSON text to Rust while serializing the semantic JSON value on the wire.
+Object key order and numbers are preserved; whitespace and duplicate keys are not retained.
+Construct authored values from valid JSON text with `.into()`. A replacement `null` differs
+from returning no result. Optional details retain missing and null as distinct states.
 
 The event's `type` tag must be a JSON string, not a single-property object. The reason fields
 of resource discovery, session start, session switch and session shutdown, the fork position

@@ -34,7 +34,7 @@ pub struct ToolMetadata {
     /// Prompt guidelines.
     pub prompt_guidelines: Presence<Vec<String>>,
     /// Parameters.
-    pub parameters: String,
+    pub parameters: crate::JsonText,
     #[serde(default, skip_serializing_if = "Presence::is_missing")]
     /// Render shell.
     pub render_shell: Presence<RenderShell>,

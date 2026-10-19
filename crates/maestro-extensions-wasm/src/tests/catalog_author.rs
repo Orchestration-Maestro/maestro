@@ -339,7 +339,9 @@ fn register_compaction(api: &ExtensionAPI) -> ExtensionResult<()> {
                     && let Presence::Present(compaction) = &mut result.compaction
                 {
                     compaction.details = Presence::Present(
-                        json!({"leaf":leaf,"models":names,"branchEntries":branch}).to_string(),
+                        json!({"leaf":leaf,"models":names,"branchEntries":branch})
+                            .to_string()
+                            .into(),
                     );
                 }
                 Ok(Some(result))

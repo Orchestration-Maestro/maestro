@@ -13,6 +13,9 @@ use maestro_extensions_wasm::{
 use std::rc::Rc;
 
 #[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/commands.rs"]
+mod commands;
+#[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/reads.rs"]
 mod reads;
 
@@ -119,6 +122,9 @@ fn command(
     context: maestro_extensions_wasm::ExtensionCommandContext,
 ) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if let Some(path) = args.strip_prefix("command imports:") {
+            return Err(commands::observe(&context, path.into()).await?.to_string());
+        }
         if args == "imports" {
             return Err(reads::observe(&context)?.to_string());
         }

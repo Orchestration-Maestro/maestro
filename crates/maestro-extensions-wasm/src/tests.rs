@@ -47,6 +47,7 @@ mod guest_family;
 pub(crate) mod host;
 mod host_family;
 mod join;
+mod json_payloads;
 mod observed;
 pub(crate) mod reader_host;
 mod registration_callbacks;

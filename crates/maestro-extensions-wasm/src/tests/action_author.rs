@@ -84,12 +84,7 @@ pub async fn dispatch(api: &ExtensionAPI, request: &str) -> ExtensionResult<()> 
 
 /// Execute the sendMessage authored branch.
 fn send_custom(api: &ExtensionAPI, input: &Value) -> ExtensionResult<()> {
-    let mut message = input["message"].clone();
-    if let Some(details) = message.get_mut("details")
-        && !details.is_null()
-    {
-        *details = json!(details.to_string());
-    }
+    let message = input["message"].clone();
     api.send_message(
         serde_json::from_value(message).map_err(|e| e.to_string())?,
         custom_options(&input["options"])?,
@@ -123,12 +118,7 @@ fn tools(api: &ExtensionAPI, input: &Value) -> ExtensionResult<Value> {
     if input["raw"] == true {
         return serde_json::to_value(api.get_all_tools()?).map_err(|e| e.to_string());
     }
-    let mut value = serde_json::to_value(api.get_all_tools()?).map_err(|e| e.to_string())?;
-    for tool in value.as_array_mut().unwrap() {
-        tool["parameters"] = serde_json::from_str(tool["parameters"].as_str().unwrap())
-            .map_err(|e| e.to_string())?;
-    }
-    Ok(value)
+    serde_json::to_value(api.get_all_tools()?).map_err(|e| e.to_string())
 }
 
 /// Execute the getCommands authored branch.
