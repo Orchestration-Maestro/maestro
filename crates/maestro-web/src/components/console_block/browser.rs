@@ -126,6 +126,7 @@ fn mount(
                     mounted.update(&prepared);
                     *target.borrow_mut() = Rc::downgrade(mounted);
                 }
+                Ok(())
             }
         })),
     })

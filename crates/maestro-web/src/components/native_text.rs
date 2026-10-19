@@ -244,6 +244,7 @@ fn mount(
                     *target.borrow_mut() = Some(mounted.node.clone());
                 }
             }
+            Ok(())
         })),
     })
 }

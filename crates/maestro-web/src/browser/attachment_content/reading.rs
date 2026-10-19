@@ -60,14 +60,14 @@ pub struct ReadingRoot {
     /// Mounted feature lifetime; factories must not retain this owner.
     pub owner: Option<Box<dyn std::any::Any>>,
     /// Reconcile staged content into the previous root after successful placement.
-    /// The callback is infallible and retains that root, its slots and native state.
+    /// The callback retains that root, its slots and native state, or returns an error.
     /// Publication releases the callback rather than retaining obsolete preparations.
     pub commit: Option<Box<ReadingCommit>>,
 }
 
 /// Commit a staged update into the root retained under the same surface identity.
 #[cfg(target_arch = "wasm32")]
-pub type ReadingCommit = dyn Fn(&ReadingRoot);
+pub type ReadingCommit = dyn Fn(&ReadingRoot) -> Result<(), AttachmentHostError>;
 
 /// Publish a full native body through the existing two-phase transaction.
 pub(crate) fn present(

@@ -7,6 +7,8 @@ use crate::{
     tools::types::{ToolContent, ToolContentOutput, ToolRenderView},
 };
 use maestro_app::{Change, ToolRendererState, diff_lines};
+#[cfg(target_arch = "wasm32")]
+use std::cell::RefCell;
 use std::rc::Rc;
 
 /// Literal operands for a line difference view.
@@ -106,17 +108,11 @@ impl ToolContent for DiffContent {
             .shown
             .as_ref()
             .is_none_or(|(lines, _)| **lines != *self.0);
-        let content = retained.shown.as_ref().filter(|_| !changed).map_or_else(
-            || {
-                // shortcut: growing row lists need fallible native commits to retain their nodes.
-                let reconcile = retained.shown.as_ref().is_some_and(|(lines, _)| {
-                    lines.title.is_some() == self.0.title.is_some()
-                        && lines.rows.len() == self.0.rows.len()
-                });
-                content(&self.0, reconcile)
-            },
-            |(_, content)| Rc::clone(content),
-        );
+        let content = retained
+            .shown
+            .as_ref()
+            .filter(|_| !changed)
+            .map_or_else(|| content(&self.0), |(_, content)| Rc::clone(content));
         let response = ControlledReading {
             intrinsic_width: false,
             height: ReadingHeight::Flow,
@@ -141,17 +137,17 @@ impl ToolContent for DiffContent {
     }
 }
 /// Build an owned literal native factory without retaining a mounted owner.
-fn content(lines: &Rc<Lines>, reconcile: bool) -> Rc<ReadingContent> {
+fn content(lines: &Rc<Lines>) -> Rc<ReadingContent> {
     #[cfg(target_arch = "wasm32")]
     {
         let lines = Rc::clone(lines);
         Rc::new(ReadingContent {
-            mount: Rc::new(move |document| mount(document, &lines, reconcile)),
+            mount: Rc::new(move |document| mount(document, &lines)),
         })
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        let _ = (lines, reconcile);
+        let _ = lines;
         Rc::new(ReadingContent {})
     }
 }
@@ -160,7 +156,6 @@ fn content(lines: &Rc<Lines>, reconcile: bool) -> Rc<ReadingContent> {
 fn mount(
     document: &web_sys::Document,
     lines: &Rc<Lines>,
-    reconcile: bool,
 ) -> Result<attachment_content::ReadingRoot, attachment_content::AttachmentHostError> {
     use attachment_content::browser::{append, element};
     let root = element(
@@ -173,39 +168,39 @@ fn mount(
     append(&root, &style)?;
     let mut mounted = Mounted {
         root: root.clone(),
+        header: None,
+        scroll: element(document, "div", "maestro-diff-scroll")?,
         title: None,
         counts: None,
         rows: Vec::new(),
     };
     mount_header(document, lines, &mut mounted)?;
-    let scroll = element(document, "div", "maestro-diff-scroll")?;
+
     for _ in &lines.rows {
         let line = element(document, "pre", "")?;
-        append(&scroll, &line)?;
+        append(&mounted.scroll, &line)?;
         mounted.rows.push(line);
     }
-    append(&root, &scroll)?;
+    append(&root, &mounted.scroll)?;
     mounted.update(lines);
     let lines = Rc::clone(lines);
+    let mounted = Rc::new(RefCell::new(mounted));
     Ok(attachment_content::ReadingRoot {
         frame_style: "",
         decoration: None,
         element: root,
         slots: vec![],
-        owner: Some(Box::new(mounted)),
-        commit: if reconcile {
-            Some(Box::new(move |previous| {
-                if let Some(mounted) = previous
-                    .owner
-                    .as_ref()
-                    .and_then(|owner| owner.downcast_ref::<Mounted>())
-                {
-                    mounted.update(&lines);
-                }
-            }))
-        } else {
-            None
-        },
+        owner: Some(Box::new(Rc::clone(&mounted))),
+        commit: Some(Box::new(move |previous| {
+            if let Some(previous) = previous
+                .owner
+                .as_ref()
+                .and_then(|owner| owner.downcast_ref::<Rc<RefCell<Mounted>>>())
+            {
+                previous.borrow_mut().reconcile(&mounted.borrow(), &lines)?;
+            }
+            Ok(())
+        })),
     })
 }
 
@@ -234,6 +229,7 @@ fn mount_header(
         mounted.counts = Some((added, removed));
         append(&header, &counts)?;
         append(&mounted.root, &header)?;
+        mounted.header = Some(header);
     }
     Ok(())
 }
@@ -243,6 +239,10 @@ fn mount_header(
 struct Mounted {
     /// Bordered container with caller-selected classes.
     root: web_sys::Element,
+    /// Locally scrolling row container.
+    scroll: web_sys::Element,
+    /// Optional title/count header.
+    header: Option<web_sys::Element>,
     /// Optional caller-authored title.
     title: Option<web_sys::Element>,
     /// Optional added and removed counts.
@@ -252,7 +252,60 @@ struct Mounted {
 }
 #[cfg(target_arch = "wasm32")]
 impl Mounted {
-    /// Commit prepared values into an already admitted equal-sized subtree.
+    /// Admit complete row growth before changing retained values or removing rows.
+    fn reconcile(
+        &mut self,
+        staged: &Self,
+        lines: &Lines,
+    ) -> Result<(), attachment_content::AttachmentHostError> {
+        use attachment_content::browser::host_error;
+        let document = self.root.owner_document().ok_or_else(|| {
+            attachment_content::AttachmentHostError::Host("Diff has no document".into())
+        })?;
+        let growth = document.create_document_fragment();
+        for row in staged.rows.iter().skip(self.rows.len()) {
+            growth.append_child(row).map_err(|e| host_error(&e))?;
+        }
+        let inserted = self
+            .header
+            .is_none()
+            .then_some(staged.header.as_ref())
+            .flatten();
+        if let Some(header) = inserted {
+            self.root
+                .insert_before(header, Some(&self.scroll))
+                .map_err(|e| host_error(&e))?;
+        }
+        if let Err(error) = self
+            .scroll
+            .append_child(&growth)
+            .map_err(|e| host_error(&e))
+        {
+            if let Some(header) = inserted {
+                header.remove();
+            }
+            return Err(error);
+        }
+        self.rows
+            .extend(staged.rows.iter().skip(self.rows.len()).cloned());
+        for row in self.rows.drain(lines.rows.len()..) {
+            row.remove();
+        }
+        if staged.header.is_none() {
+            if let Some(header) = self.header.take() {
+                header.remove();
+            }
+            self.title = None;
+            self.counts = None;
+        } else if self.header.is_none() {
+            self.header.clone_from(&staged.header);
+            self.title.clone_from(&staged.title);
+            self.counts.clone_from(&staged.counts);
+        }
+        self.update(lines);
+        Ok(())
+    }
+    /// Commit prepared values without replacing unchanged text nodes.
     fn update(&self, lines: &Lines) {
         use attachment_content::browser::set_text_if_changed;
         self.root

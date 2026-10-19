@@ -468,7 +468,7 @@ impl NativeReading {
     }
 }
 
-/// Publish staged geometry before an infallible feature commit into retained native nodes.
+/// Publish staged geometry with a fallible feature commit into retained native nodes.
 fn reconcile(
     surface: &mut DomSurface,
     candidate: &DomSurface,
@@ -487,10 +487,10 @@ fn reconcile(
         |_| {
             size_slots(&previous.root.slots, &next.sizes)?;
             attr(&surface.wrapper, projected)?;
-            attr(&previous.viewport, &next.viewport_style)
+            attr(&previous.viewport, &next.viewport_style)?;
+            commit(&previous.root)
         },
     )?;
-    commit(&previous.root);
     if let Some(scroll) = &next.scroll {
         scroll.commit(&previous.viewport);
     }

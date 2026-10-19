@@ -227,4 +227,6 @@ owner. Formatted non-string fields are display-only, never artifact identities.
 caller-supplied native CSS classes through `DiffProps`. The optional header shows
 added/removed line counts in the selected success/error colors. Its selectable
 rows preserve line order and carriage returns, with a local scrolling body capped
-at 384 CSS pixels.
+at 384 CSS pixels. Text updates retain the native root, local scroll and
+unchanged rows, including when rows grow or shrink or the title appears or
+disappears. Failed native insertion leaves the published diff unchanged.
