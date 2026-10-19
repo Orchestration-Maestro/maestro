@@ -423,8 +423,8 @@ deleted lines; moving lines is not a code saving.
 `maestro-process` is a core leaf below layer 0 with no workspace dependencies,
 including the path and cancellation leaves. It owns native child-process lifecycles:
 captured-child creation, raw pipe transfer and collection, child-exit and
-pipe-completion observation, termination (including a caller-selected post-exit grace and TERM-then-KILL escalation) and reaping. Only tools, packages, credentials, the application and the
-terminal toolkit and the daemon may depend on it, and only on native targets; callers keep their
+pipe-completion observation, termination (including a caller-selected post-exit grace and TERM-then-KILL escalation) and reaping. Only tools, packages, credentials, detection, the application,
+the terminal toolkit and the daemon may depend on it, and only on native targets; callers keep their
 cancellation, termination and settlement policies. Shell discovery, environment
 construction, command prefixes, tool definitions, output decoding, sanitization and
 truncation, artifact files, presentation, result mapping and user-facing errors stay
