@@ -1,6 +1,7 @@
 //! Owned target selection without process-global state.
 use super::*;
 
+#[cfg(unix)]
 fn select(args: &[&str], env: SelectionEnvironment<'_>) -> Selection {
     let args: Vec<String> = args.iter().map(|arg| (*arg).to_owned()).collect();
     let original = args.clone();
@@ -10,6 +11,7 @@ fn select(args: &[&str], env: SelectionEnvironment<'_>) -> Selection {
 }
 
 #[test]
+#[cfg(unix)]
 fn attach_daemon_option_selects_an_owned_name() {
     let selected = select(
         &["maestro", "attach", "--daemon", "work", "--session", "chat"],
@@ -19,6 +21,7 @@ fn attach_daemon_option_selects_an_owned_name() {
     assert!(selected.explicit);
 }
 #[test]
+#[cfg(unix)]
 fn attach_daemon_equals_form_selects_the_same_name() {
     let selected = select(
         &["maestro", "attach", "--daemon=work"],
@@ -28,6 +31,7 @@ fn attach_daemon_equals_form_selects_the_same_name() {
     assert!(selected.explicit);
 }
 #[test]
+#[cfg(unix)]
 fn child_session_option_remains_after_separator() {
     let selected = select(
         &[
@@ -45,6 +49,7 @@ fn child_session_option_remains_after_separator() {
     assert!(!selected.explicit);
 }
 #[test]
+#[cfg(unix)]
 fn child_session_equals_form_remains_after_separator() {
     let selected = select(
         &[
@@ -59,6 +64,7 @@ fn child_session_equals_form_remains_after_separator() {
     assert_eq!(selected.paths.name(), None);
 }
 #[test]
+#[cfg(unix)]
 fn named_attach_selects_without_rewriting_dispatch() {
     let selected = select(
         &["maestro", "attach", "--daemon", "work"],
@@ -72,6 +78,7 @@ fn named_attach_selects_without_rewriting_dispatch() {
     assert_eq!(named_help.paths.name(), Some("help"));
 }
 #[test]
+#[cfg(unix)]
 fn attach_help_remains_for_command_dispatch() {
     for help in ["help", "--help", "-h"] {
         let selected = select(
@@ -86,6 +93,7 @@ fn attach_help_remains_for_command_dispatch() {
     }
 }
 #[test]
+#[cfg(unix)]
 fn explicit_default_daemon_uses_root_paths() {
     let selected = select(
         &["maestro", "attach", "--daemon=default"],
@@ -95,6 +103,7 @@ fn explicit_default_daemon_uses_root_paths() {
     assert_eq!(selected.paths.data_dir(), "agent");
 }
 #[test]
+#[cfg(unix)]
 fn inherited_daemon_name_is_not_explicit() {
     let selected = select(
         &["maestro"],
@@ -107,6 +116,7 @@ fn inherited_daemon_name_is_not_explicit() {
     assert_eq!(selected.paths.name(), Some("work"));
 }
 #[test]
+#[cfg(unix)]
 fn inherited_default_daemon_uses_root_paths() {
     let selected = select(
         &["maestro"],
@@ -155,6 +165,7 @@ fn named_stop_guidance_includes_daemon_name() {
     );
 }
 #[test]
+#[cfg(unix)]
 fn restart_guidance_keeps_stop_warning_and_reattach() {
     let selection = select(
         &["maestro", "attach", "--daemon=work"],
@@ -166,6 +177,7 @@ fn restart_guidance_keeps_stop_warning_and_reattach() {
     );
 }
 #[test]
+#[cfg(unix)]
 fn restart_guidance_keeps_socket_override() {
     let selection = select(
         &["maestro"],
@@ -180,6 +192,7 @@ fn restart_guidance_keeps_socket_override() {
     );
 }
 #[test]
+#[cfg(unix)]
 fn explicit_daemon_ignores_inherited_socket_override() {
     let selection = select(
         &["maestro", "attach", "--daemon=work"],
@@ -196,6 +209,7 @@ fn explicit_daemon_ignores_inherited_socket_override() {
     );
 }
 #[test]
+#[cfg(unix)]
 fn socket_override_wins_for_implicit_selection() {
     let selection = select(
         &["maestro"],
@@ -212,6 +226,7 @@ fn socket_override_wins_for_implicit_selection() {
     );
 }
 #[test]
+#[cfg(unix)]
 fn socket_override_avoids_invalid_inherited_name() {
     for env in [
         SelectionEnvironment {
@@ -253,6 +268,7 @@ fn default_target_normalizes_to_root_daemon() {
     assert_eq!(parse_target_name("work").unwrap().as_deref(), Some("work"));
 }
 #[test]
+#[cfg(unix)]
 fn default_daemon_cannot_be_deleted() {
     assert_eq!(
         delete_session("unused", "default").unwrap_err(),
@@ -260,6 +276,7 @@ fn default_daemon_cannot_be_deleted() {
     );
 }
 #[test]
+#[cfg(unix)]
 fn daemon_listing_skips_reserved_default_directory() {
     let root = std::env::temp_dir().join(format!("maestro-instance-list-{}", std::process::id()));
     std::fs::create_dir_all(&root).unwrap();
@@ -290,6 +307,7 @@ fn daemon_listing_skips_reserved_default_directory() {
 }
 
 #[test]
+#[cfg(unix)]
 fn selection_keeps_chat_arguments_and_reports_target_errors() {
     let selected = select(
         &["maestro", "--session", "chat", "--daemon=unused"],
