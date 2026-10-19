@@ -546,3 +546,5 @@ fn assert_raw_key_text_and_mouse() {
         }
     ));
 }
+
+mod host_sequences;

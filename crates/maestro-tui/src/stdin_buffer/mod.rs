@@ -1,6 +1,17 @@
 #![doc = include_str!("../../../../docs/terminal/input.md")]
 
 mod framing;
+mod mouse;
+mod raw_input;
+mod tails;
+
+pub use framing::host_frame_length;
+pub use raw_input::RawInputByteFramer;
+pub use tails::{
+    HostColorScheme, host_cell_size as parse_host_cell_size_report, parse_host_color_scheme_report,
+};
+
+pub use mouse::{HostMouse, SgrMouseFields, parse_host_mouse, scan_sgr_mouse_fields};
 
 use std::borrow::Cow;
 use std::mem;
@@ -85,7 +96,7 @@ pub struct StdinBuffer {
     /// How long a fragment waits.
     timeout: Duration,
     /// The incomplete escape sequence, which is empty during a paste.
-    buffer: String,
+    framer: RawInputByteFramer,
     /// Whether a paste is open, with its text so far.
     mode: Mode,
     /// When the fragment is released, if one waits and the deadline is representable.
@@ -101,7 +112,7 @@ impl StdinBuffer {
     pub fn new(options: StdinBufferOptions) -> Self {
         Self {
             timeout: options.timeout,
-            buffer: String::new(),
+            framer: RawInputByteFramer::default(),
             mode: Mode::Normal,
             deadline: None,
             printable: None,
@@ -120,13 +131,13 @@ impl StdinBuffer {
         self.deadline = None;
         let text = data.decode();
         let mut events = Vec::new();
-        if text.is_empty() && self.buffer.is_empty() {
+        if text.is_empty() && self.framer.chat_buffer.is_empty() {
             if matches!(self.mode, Mode::Normal) {
                 self.emit_data("", &mut events);
             }
             return events;
         }
-        self.buffer.push_str(&text);
+        self.framer.chat_buffer.push_str(&text);
         while self.consume(now, &mut events) {}
         events
     }
@@ -155,18 +166,18 @@ impl StdinBuffer {
     /// deadline. The text of a paste in progress is not part of it.
     pub fn flush(&mut self) -> Vec<String> {
         self.deadline = None;
-        if self.buffer.is_empty() {
+        if self.framer.chat_buffer.is_empty() {
             return Vec::new();
         }
         self.printable = None;
-        vec![mem::take(&mut self.buffer)]
+        vec![mem::take(&mut self.framer.chat_buffer)]
     }
 
     /// Discards the fragment, the paste in progress, the deadline and the duplicate
     /// memory.
     pub fn clear(&mut self) {
         self.deadline = None;
-        self.buffer.clear();
+        self.framer.chat_buffer.clear();
         self.mode = Mode::Normal;
         self.printable = None;
     }
@@ -174,7 +185,7 @@ impl StdinBuffer {
     /// The fragment that waits for more input; never the text of a paste in progress.
     #[must_use]
     pub fn get_buffer(&self) -> &str {
-        &self.buffer
+        &self.framer.chat_buffer
     }
 
     /// Clears the buffer, which stays usable.
@@ -194,15 +205,15 @@ impl StdinBuffer {
     /// Frames the buffered input, keeping the incomplete rest and arming its deadline
     /// when representable, or opens a paste when a start marker is found.
     fn frame_input(&mut self, now: Instant, events: &mut Vec<StdinBufferEventMap>) -> bool {
-        let mut text = mem::take(&mut self.buffer);
+        let mut text = mem::take(&mut self.framer.chat_buffer);
         if let Some(start) = text.find(PASTE_START) {
             self.begin_paste(text, start, events);
             return true;
         }
         let kept = self.emit_sequences(&text, events).len();
         text.drain(..text.len() - kept);
-        self.buffer = text;
-        if !self.buffer.is_empty() {
+        self.framer.chat_buffer = text;
+        if !self.framer.chat_buffer.is_empty() {
             self.deadline = now.checked_add(self.timeout);
         }
         false
@@ -223,7 +234,7 @@ impl StdinBuffer {
         self.printable = None;
         self.mode = Mode::Paste(String::new());
         text.drain(..start + PASTE_START.len());
-        self.buffer = text;
+        self.framer.chat_buffer = text;
     }
 
     /// Adds the buffered text to the open paste `content`. Emits the paste if its end
@@ -234,15 +245,15 @@ impl StdinBuffer {
         mut content: String,
         events: &mut Vec<StdinBufferEventMap>,
     ) -> bool {
-        content.push_str(&mem::take(&mut self.buffer));
+        content.push_str(&mem::take(&mut self.framer.chat_buffer));
         let Some(end) = content.find(PASTE_END) else {
             self.mode = Mode::Paste(content);
             return false;
         };
-        self.buffer = content.split_off(end + PASTE_END.len());
+        self.framer.chat_buffer = content.split_off(end + PASTE_END.len());
         content.truncate(end);
         events.push(StdinBufferEventMap::Paste(content));
-        !self.buffer.is_empty()
+        !self.framer.chat_buffer.is_empty()
     }
 
     /// Emits the complete sequences of `text` as data and returns the incomplete rest.

@@ -746,8 +746,17 @@ canonical source spelling; state arbitration retains the source's session and
 process-generation ownership rules.
 The input model and mouse geometry derive from the input model and mouse
 modules; decoded input events derive from the raw input module. Structured key
-conversions derive from the client input and protocol wire modules. These reuse
-the existing protocol vocabulary rather than terminal-library records.
+conversions derive from the client input and protocol wire modules. The structured
+host key decoder in `crates/maestro-tui/src/keys/` derives from the input parser;
+shared SGR fields and admitted host mouse records in
+`crates/maestro-tui/src/stdin_buffer/mouse.rs` derive from the mouse and raw input
+modules. The retained byte framer, reply windows and mouse-tail handling in
+`crates/maestro-tui/src/stdin_buffer/` derive from the raw input module. The daemon projections in
+`crates/maestro-daemon/src/input/{parse,raw_input}.rs` derive from those input
+modules and reuse the toolkit decoders. Chat and
+host input share sequence recognition while retaining their different byte and
+paste policies. These reuse the existing protocol vocabulary rather than
+terminal-library records.
 
 The pane terminal, shell and foreground process code in `crates/maestro-process/`
 also derives from herdr v0.8.2 under Apache-2.0. Its process sources include the

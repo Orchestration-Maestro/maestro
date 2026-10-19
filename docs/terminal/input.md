@@ -112,3 +112,82 @@ a start marker inside it is part of the text. A fragment kept before the start m
 `Paste`.
 Empty input while a paste is open produces nothing. `get_buffer` and `flush` never
 return the text of a paste in progress, and `clear` discards it.
+
+## Raw host bytes
+
+`stdin_buffer::RawInputByteFramer` retains original bytes across chunks. It shares
+sequence recognition with `StdinBuffer`, but does not use chat byte decoding or
+suppress duplicate characters. Split UTF-8 scalars wait for continuation bytes;
+invalid lead bytes are dropped at timeout. Default mouse frames consume exactly
+six bytes, including non-UTF-8 coordinates. A complete UTF-8 bracketed paste is
+returned with its markers as one frame, even when its terminator arrives in pieces.
+An incomplete paste is not released by a timeout.
+
+```rust
+use maestro_tui::stdin_buffer::RawInputByteFramer;
+
+let mut input = RawInputByteFramer::default();
+assert!(input.push(&[0xc3]).is_empty());
+assert!(input.flush_timeout().is_empty());
+assert_eq!(input.push(&[0xa9]), ["é".as_bytes()]);
+```
+
+The framer owns no timer. Host callers use a 10 ms idle flush, or 150 ms only
+while `has_pending_incomplete_mouse_sequence` is true. `flush_timeout` releases
+a lone Escape, keeps partial UTF-8, and discards incomplete control sequences.
+After a mouse timeout it recognizes orphaned SGR tails up to 32 bytes and bounds
+continued tail disposal at 128 bytes, preserving following input.
+
+OSC strings end at the first BEL or ST; DCS, APC, PM and SOS strings end only at
+ST. An incomplete OSC 10 or 11 colour reply keeps waiting. Other timed-out
+strings enter bounded tail disposal rather than becoming Alt keys.
+
+`host_color_query_sent` arms 258 colour replies, and `host_cell_size_query_sent`
+arms one cell-size reply. While a query is outstanding, an Escape or expected
+CSI prefix gets at most one extra idle flush. Complete replies settle their own
+windows. Appearance tracking can rearm colour replies; the focus-query opt-in
+arms an appearance reply on focus gain. Neither opt-in delays an unrelated
+Escape before the triggering event.
+
+`Default` preserves legacy doubled-Escape Alt input. `for_host_input` preserves
+it on macOS and separates the Escapes on other hosts. Tests and supplied host
+policies can select either behavior with `with_host_input_policy` without
+changing the process environment. No terminal reader or query writer is started.
+
+## Shared mouse fields
+
+`stdin_buffer::scan_sgr_mouse_fields` borrows the button, column, row and any
+extra fields from one complete SGR mouse report. `SgrMouseFields::release` records
+whether its terminator is `m` rather than `M`. The scanner checks the framing and
+field count, leaving numeric admission to each caller.
+
+The daemon's geometry parser requires exactly three nonempty ASCII u32 fields,
+permits zero coordinates and rejects extra fields. The scanner itself retains
+plus signs, empty fields and extra text without normalizing them.
+`parse_host_mouse` applies the host event domain over that scanner: u8 button
+values, positive u16 coordinates converted to zero-based cells, and admitted
+button classes. It accepts extra fields. Its `HostMouse` result retains the
+button byte and release terminator for projection without a wire dependency.
+
+## Daemon event projection
+
+`maestro_daemon::input::raw_input::RawInputFramer` projects the toolkit's complete
+frames into the daemon's existing key, paste, mouse, focus and host-reply events.
+`parse_raw_input_bytes_sync` decodes a supplied buffer with one idle flush.
+Neither function reads the terminal. The multiplexer input loop supplies bytes
+and uses `input_flush_timeout` to select a 10 ms idle timeout, or 150 ms while a
+mouse report is incomplete.
+
+The toolkit's `parse_host_color_scheme_report` admits only the exact dark and
+light reports. `parse_host_cell_size_report` reads `CSI 6;height;width t`, returning
+positive u32 dimensions in width, height order. The same admission settles the
+retained query windows and produces daemon events. Default and palette colours
+use the existing toolkit colour parsers.
+
+Structured keys keep their shifted alternate locally. Wire-supported fields keep
+the phase, associated text and original VT bytes; releases clear generated text.
+Direct key parsing produces a synthesized key without invented VT evidence.
+Native functional categories remain available in the toolkit and are filtered
+only when the daemon's wire vocabulary cannot carry them. Mouse projection keeps
+button modifiers, drag events and all four scroll directions; extended-button
+drags become motion.

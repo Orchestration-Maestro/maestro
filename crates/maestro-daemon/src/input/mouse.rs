@@ -6,15 +6,11 @@ mod tests;
 /// Parse exactly three ASCII decimal fields in a complete SGR mouse report.
 #[must_use]
 pub fn parse_report(data: &[u8]) -> Option<(u32, u32)> {
-    let body = data.strip_prefix(b"\x1b[<")?;
-    let body = body
-        .strip_suffix(b"M")
-        .or_else(|| body.strip_suffix(b"m"))?;
-    let mut fields = body.split(|byte| *byte == b';');
-    parse_number(fields.next()?)?;
-    let x = parse_number(fields.next()?)?;
-    let y = parse_number(fields.next()?)?;
-    fields.next().is_none().then_some((x, y))
+    let fields = maestro_tui::stdin_buffer::scan_sgr_mouse_fields(data)?;
+    parse_number(fields.cb)?;
+    let x = parse_number(fields.column)?;
+    let y = parse_number(fields.row)?;
+    fields.extra.is_none().then_some((x, y))
 }
 
 /// Decode a nonempty unsigned ASCII decimal value.

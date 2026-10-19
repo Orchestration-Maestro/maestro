@@ -51,7 +51,7 @@ enum Form {
 }
 
 /// The fields of one enhanced key report as written, before any value is checked.
-struct Report<'a> {
+pub(super) struct Report<'a> {
     /// How the report names its key.
     form: Form,
     /// The code point of a CSI-u report or the key number of a tilde report; empty otherwise.
@@ -63,12 +63,14 @@ struct Report<'a> {
     /// The modifier field, one more than the modifier bits.
     modifier: Option<&'a str>,
     /// The event field.
-    event: Option<&'a str>,
+    pub(super) event: Option<&'a str>,
+    /// Associated text code points, admitted only for structured host input.
+    pub(super) associated: Option<&'a str>,
 }
 
 impl<'a> Report<'a> {
     /// Splits `data` into the fields of a complete report, or `None` when it is not one.
-    fn scan(data: &'a str) -> Option<Self> {
+    pub(super) fn scan(data: &'a str, host: bool) -> Option<Self> {
         let body = data.strip_prefix("\x1b[")?;
         let end = body.chars().next_back()?;
         let mut cursor = Cursor(body.strip_suffix(end)?);
@@ -81,6 +83,9 @@ impl<'a> Report<'a> {
             'D' => Form::Final(Named::Left),
             'H' => Form::Final(Named::Home),
             'F' => Form::Final(Named::End),
+            'P'..='S' if host => Form::Final(Named::Function(
+                u8::try_from(u32::from(end) - u32::from('P') + 1).ok()?,
+            )),
             _ => return None,
         };
         let mut report = Self {
@@ -90,7 +95,11 @@ impl<'a> Report<'a> {
             base: None,
             modifier: None,
             event: None,
+            associated: None,
         };
+        if host {
+            return report.scan_host(cursor.0);
+        }
         match report.form {
             Form::CodePoint => {
                 report.first = Some(cursor.digits()).filter(|digits| !digits.is_empty())?;
@@ -113,6 +122,50 @@ impl<'a> Report<'a> {
             }
         }
         cursor.0.is_empty().then_some(report)
+    }
+
+    /// Splits host report fields with source-specific numeric admission.
+    fn scan_host(mut self, body: &'a str) -> Option<Self> {
+        if matches!(self.form, Form::CodePoint) {
+            return self.scan_host_codepoint(body);
+        }
+        let (first, modifier) = body.split_once(';')?;
+        if matches!(self.form, Form::Final(_)) && first != "1" {
+            return None;
+        }
+        self.first = first;
+        self.host_modifier(modifier);
+        Some(self)
+    }
+
+    /// Reads the host's original code point before keypad normalization.
+    pub(super) fn codepoint(&self) -> Option<u32> {
+        self.first.parse().ok()
+    }
+
+    /// Splits host code-point fields while retaining their caller-specific admission.
+    fn scan_host_codepoint(mut self, body: &'a str) -> Option<Self> {
+        let mut fields = body.split(';');
+        let mut key = fields.next()?.split(':');
+        self.first = key.next()?;
+        self.shifted = key.next().filter(|field| !field.is_empty());
+        let modifier = fields.next().filter(|field| !field.is_empty());
+        if let Some(modifier) = modifier {
+            self.host_modifier(modifier);
+        }
+        self.associated = fields.next();
+        fields.next().is_none().then_some(self)
+    }
+
+    /// Splits the host modifier and optional event without normalizing either field.
+    fn host_modifier(&mut self, modifier: &'a str) {
+        let (modifier, event) = modifier
+            .split_once(':')
+            .map_or((modifier, None), |(modifier, event)| {
+                (modifier, Some(event))
+            });
+        self.modifier = Some(modifier);
+        self.event = event;
     }
 
     /// The phase the event field reports; absent or unknown numbers mean a press.
@@ -151,9 +204,18 @@ const fn tilde_key(number: u32) -> Option<Named> {
     }
 }
 
+/// The modified host key numbered by a tilde report.
+fn host_tilde_key(number: &str) -> Option<Named> {
+    if matches!(number, "2" | "3" | "5" | "6") {
+        return tilde_key(decimal(number)?);
+    }
+    super::legacy::host_special(&format!("\x1b[{number}~"))
+        .filter(|key| matches!(key, Named::Function(5..=12)))
+}
+
 /// The phase of `data` when it is one complete enhanced report.
 pub(super) fn event_type(data: &str) -> Option<KeyEventType> {
-    Report::scan(data).map(|report| report.event_type())
+    Report::scan(data, false).map(|report| report.event_type())
 }
 
 /// Names a logical key held with `modifier`; a base-layout key stands in for any key that
@@ -168,26 +230,63 @@ fn format_key(code: Code, modifier: u32, base: Option<char>) -> Option<KeyId> {
 }
 
 /// A key the terminal reported with an enhanced sequence.
-pub(super) struct Sequence {
-    /// The logical key as written, before keypad codes are mapped.
-    pub(super) code: Code,
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Sequence {
+    /// The logical key; structured host reports normalize keypad codes.
+    pub code: Code,
     /// The base-layout key of the physical key.
     pub(super) base: Option<char>,
     /// The key with shift held, when the terminal says so.
-    pub(super) shifted: Option<char>,
+    pub shifted: Option<u32>,
     /// The modifier bits held, lock bits included.
-    pub(super) modifier: u32,
+    pub modifier: u32,
+    /// The reported key phase.
+    pub event_type: KeyEventType,
+    /// Associated committed text supplied by the terminal.
+    pub generated_text: Option<String>,
 }
 
 impl Sequence {
+    /// Creates a host key without alternate points or associated text.
+    pub(super) const fn host(code: Code, modifier: u32) -> Self {
+        Self {
+            code,
+            modifier,
+            base: None,
+            shifted: None,
+            event_type: KeyEventType::Press,
+            generated_text: None,
+        }
+    }
+
     /// Reads a complete report. A code point, shifted or base field that is not a Unicode
     /// scalar value, a tilde number that names no navigation key and a modifier field of
     /// zero reject it, as does any of those numbers that does not fit in 32 bits. The event
     /// field is never read as a number, so it cannot reject a report.
     pub(super) fn parse(data: &str) -> Option<Self> {
-        let report = Report::scan(data)?;
-        let modifier = report.modifier.map_or(Some(1), decimal)?.checked_sub(1)?;
+        Self::from_report(&Report::scan(data, false)?, false)
+    }
+
+    /// Converts scanned fields using the selected caller's key vocabulary.
+    pub(super) fn from_report(report: &Report<'_>, host: bool) -> Option<Self> {
+        let modifier = if host {
+            u32::from(
+                report
+                    .modifier
+                    .unwrap_or("1")
+                    .parse::<u8>()
+                    .ok()?
+                    .checked_sub(1)?,
+            )
+        } else {
+            report.modifier.map_or(Some(1), decimal)?.checked_sub(1)?
+        };
         let (code, shifted, base) = match report.form {
+            Form::CodePoint if host => (
+                Code::host(report.first.parse().ok()?)?,
+                report.shifted.and_then(|field| field.parse::<u32>().ok()),
+                None,
+            ),
             Form::CodePoint => {
                 let alternates = (report.shifted.map(scalar), report.base.map(scalar));
                 if matches!(alternates, (Some(None), _) | (_, Some(None))) {
@@ -195,11 +294,18 @@ impl Sequence {
                 }
                 (
                     Code::Char(scalar(report.first)?),
-                    alternates.0.flatten(),
+                    alternates.0.flatten().map(u32::from),
                     alternates.1.flatten(),
                 )
             }
-            Form::Tilde => (Code::Key(tilde_key(decimal(report.first)?)?), None, None),
+            Form::Tilde => {
+                let key = if host {
+                    host_tilde_key(report.first)?
+                } else {
+                    tilde_key(decimal(report.first)?)?
+                };
+                (Code::Key(key), None, None)
+            }
             Form::Final(key) => (Code::Key(key), None, None),
         };
         Some(Self {
@@ -207,6 +313,8 @@ impl Sequence {
             base,
             shifted,
             modifier,
+            event_type: report.event_type(),
+            generated_text: None,
         })
     }
 
@@ -244,14 +352,27 @@ impl ModifyOtherKeys {
     /// Reads `CSI 27 ; modifier ; code ~`. A code that is not a Unicode scalar value and a
     /// modifier field of zero reject it, as does either number that does not fit in 32 bits.
     pub(super) fn parse(data: &str) -> Option<Self> {
+        let (modifier, key) = Self::fields(data, false)?;
+        Some(Self {
+            key: char::from_u32(key)?,
+            modifier,
+        })
+    }
+
+    /// Scans the shared modifyOtherKeys fields with caller-specific numeric admission.
+    pub(super) fn fields(data: &str, host: bool) -> Option<(u32, u32)> {
         let (modifier, key) = data
             .strip_prefix("\x1b[27;")?
             .strip_suffix('~')?
             .split_once(';')?;
-        Some(Self {
-            key: scalar(key)?,
-            modifier: decimal(modifier)?.checked_sub(1)?,
-        })
+        if host {
+            Some((
+                u32::from(modifier.parse::<u8>().ok()?.checked_sub(1)?),
+                key.parse().ok()?,
+            ))
+        } else {
+            Some((decimal(modifier)?.checked_sub(1)?, decimal(key)?))
+        }
     }
 
     /// Whether the report is exactly `key` held with exactly `modifier`, lock bits included.

@@ -3,13 +3,16 @@
 mod kitty;
 mod legacy;
 mod names;
+mod parse;
 mod printable;
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use kitty::{ModifyOtherKeys, Sequence};
-use names::{ALT, CTRL, Code, Identifier, KEYPAD_ENTER, Named, SHIFT, Target, raw_ctrl_char};
-pub use names::{Key, KeyId};
+use kitty::ModifyOtherKeys;
+pub use kitty::Sequence;
+use names::{ALT, CTRL, Identifier, KEYPAD_ENTER, SHIFT, Target, raw_ctrl_char};
+pub use names::{Code, Key, KeyId, Named};
+pub use parse::parse_terminal_key_sequence;
 
 /// The phase of an enhanced key report: the key going down, repeating or going up.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
