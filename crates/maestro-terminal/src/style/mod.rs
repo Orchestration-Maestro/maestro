@@ -1,5 +1,7 @@
 //! Cell styling and colour resolution.
 
+mod vt;
+
 use crate::{
     color::{Palette, Rgb},
     page::{Cell, cell::Content},

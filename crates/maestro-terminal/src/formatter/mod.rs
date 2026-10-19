@@ -1,6 +1,9 @@
 //! Text formatting over terminal-owned storage.
 
 mod plain;
+mod vt;
+
+pub use vt::{ScreenExtra, TerminalExtra};
 
 use crate::Page;
 
@@ -22,9 +25,27 @@ pub struct CodepointMap<'a> {
     pub replacement: Replacement<'a>,
 }
 
+/// Output encoding for retained terminal content.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Format {
+    /// Unicode text without control sequences.
+    #[default]
+    Plain,
+    /// Replayable text with SGR styling and carriage-return line feeds.
+    Vt,
+}
+
 /// Common text encoding options.
 #[derive(Clone, Copy, Debug)]
 pub struct Options<'a> {
+    /// Output encoding.
+    pub emit: Format,
+    /// Default background emitted before styled content.
+    pub background: Option<crate::color::Rgb>,
+    /// Default foreground emitted before styled content.
+    pub foreground: Option<crate::color::Rgb>,
+    /// Resolve indexed style colours when supplied.
+    pub palette: Option<&'a crate::color::Palette>,
     /// Join soft-wrapped rows instead of emitting physical line breaks.
     pub unwrap: bool,
     /// Omit trailing space characters on nonempty rows.
@@ -36,6 +57,10 @@ pub struct Options<'a> {
 impl Default for Options<'_> {
     fn default() -> Self {
         Self {
+            emit: Format::Plain,
+            background: None,
+            foreground: None,
+            palette: None,
             unwrap: false,
             trim: true,
             codepoint_map: &[],
@@ -111,6 +136,8 @@ pub enum Content {
 
 /// Format the active screen of a terminal.
 pub struct TerminalFormatter<'a> {
+    /// Optional keyboard state emitted after content.
+    pub extra: TerminalExtra,
     /// Terminal supplying its active screen.
     pub terminal: &'a crate::Terminal,
     /// Text encoding options.
@@ -124,6 +151,7 @@ impl<'a> TerminalFormatter<'a> {
     #[must_use]
     pub fn init(terminal: &'a crate::Terminal, opts: Options<'a>) -> Self {
         Self {
+            extra: TerminalExtra::default(),
             terminal,
             opts,
             content: Content::Selection(None),
@@ -139,13 +167,17 @@ impl<'a> TerminalFormatter<'a> {
             screen: self.terminal.screens.active(),
             opts: self.opts,
             content: self.content,
+            extra: self.extra.screen,
         }
-        .format(writer)
+        .format(writer)?;
+        self.format_keyboard(writer)
     }
 }
 
 /// Format a screen's retained content without copying its cells.
 pub struct ScreenFormatter<'a> {
+    /// Optional keyboard protocol state emitted after content.
+    pub extra: ScreenExtra,
     /// Borrowed screen.
     pub screen: &'a crate::Screen,
     /// Text encoding options.
@@ -159,6 +191,7 @@ impl<'a> ScreenFormatter<'a> {
     #[must_use]
     pub fn init(screen: &'a crate::Screen, opts: Options<'a>) -> Self {
         Self {
+            extra: ScreenExtra::default(),
             screen,
             opts,
             content: Content::Selection(None),
@@ -170,9 +203,18 @@ impl<'a> ScreenFormatter<'a> {
     /// # Errors
     /// Returns the destination's formatting error.
     pub fn format(&self, writer: &mut impl std::fmt::Write) -> std::fmt::Result {
-        let Content::Selection(selection) = self.content else {
-            return Ok(());
-        };
+        if let Content::Selection(selection) = self.content {
+            self.format_content(writer, selection)?;
+        }
+        self.format_keyboard(writer)
+    }
+
+    /// Write the selected cells without optional screen state.
+    fn format_content(
+        &self,
+        writer: &mut impl std::fmt::Write,
+        selection: Option<crate::selection::Selection>,
+    ) -> std::fmt::Result {
         let mut formatter = PageListFormatter::init(&self.screen.pages, self.opts);
         if let Some(selection) = selection {
             let (Some(tl), Some(br)) = (

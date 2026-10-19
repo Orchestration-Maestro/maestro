@@ -1,6 +1,7 @@
 //! Shared row walk and plain-text cell emission.
 
-use super::{PageFormatter, TrailingState};
+use super::{Format, PageFormatter, TrailingState};
+use crate::Style;
 use crate::page::{Cell, CellPosition, cell::Wide};
 use std::fmt::{self, Write};
 
@@ -21,8 +22,13 @@ impl PageFormatter<'_> {
         let Some((end_x, end_y)) = self.bounds() else {
             return Ok(state);
         };
+        self.format_defaults(writer)?;
+        let mut style = Style::default();
         for y in self.start_y..=end_y {
-            self.write_row(writer, y, (end_x, end_y), &mut state)?;
+            self.write_row(writer, y, (end_x, end_y), (&mut state, &mut style))?;
+        }
+        if !style.is_default() {
+            writer.write_str("\x1b[0m")?;
         }
         Ok(state)
     }
@@ -80,8 +86,9 @@ impl PageFormatter<'_> {
         writer: &mut impl Write,
         y: u16,
         end: (u16, u16),
-        state: &mut TrailingState,
+        state: (&mut TrailingState, &mut Style),
     ) -> fmt::Result {
+        let (state, style) = state;
         let Some(columns) = self.columns(y, end) else {
             return Ok(());
         };
@@ -90,8 +97,16 @@ impl PageFormatter<'_> {
             state.rows += 1;
             return Ok(());
         }
+        if state.rows > 0 && !style.is_default() {
+            writer.write_str("\x1b[0m")?;
+            *style = Style::default();
+        }
         for _ in 0..state.rows {
-            writer.write_char('\n')?;
+            writer.write_str(if self.opts.emit == Format::Vt {
+                "\r\n"
+            } else {
+                "\n"
+            })?;
         }
         let row = self.page.get_row(y);
         state.rows = usize::from(!row.wrap() || !self.opts.unwrap);
@@ -99,7 +114,7 @@ impl PageFormatter<'_> {
             state.cells = 0;
         }
         for x in columns {
-            self.write_cell(writer, CellPosition { x, y }, state)?;
+            self.write_cell(writer, CellPosition { x, y }, state, style)?;
         }
         Ok(())
     }
@@ -127,12 +142,14 @@ impl PageFormatter<'_> {
         writer: &mut impl Write,
         position: CellPosition,
         state: &mut TrailingState,
+        style: &mut Style,
     ) -> fmt::Result {
         let cell = self.page.get_cells(position.y)[usize::from(position.x)];
         if matches!(cell.wide(), Wide::SpacerHead | Wide::SpacerTail) {
             return Ok(());
         }
-        if !cell.has_text() || (cell.codepoint() == ' ' && self.opts.trim) {
+        let styled = self.opts.emit == Format::Vt && (!cell.is_empty() || cell.has_styling());
+        if !styled && (!cell.has_text() || (cell.codepoint() == ' ' && self.opts.trim)) {
             state.cells += 1;
             return Ok(());
         }
@@ -140,6 +157,10 @@ impl PageFormatter<'_> {
             writer.write_char(' ')?;
         }
         state.cells = 0;
+        self.format_style(writer, cell, style)?;
+        if !cell.has_text() {
+            return writer.write_char(' ');
+        }
         self.write_codepoint(writer, cell.codepoint())?;
         if let Some(suffix) = self.page.lookup_grapheme(position) {
             for cp in suffix {
