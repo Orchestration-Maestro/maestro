@@ -3356,6 +3356,8 @@ dependencies = [
  "maestro-protocol",
  "maestro-tui",
  "maestro-workspace",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

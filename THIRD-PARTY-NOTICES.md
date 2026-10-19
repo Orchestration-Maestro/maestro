@@ -739,6 +739,10 @@ the agent resume, terminal state, terminal metadata, terminal title and terminal
 theme modules under the same license. Retained provenance uses Maestro's
 canonical source spelling; state arbitration retains the source's session and
 process-generation ownership rules.
+The input model and mouse geometry derive from the input model and mouse
+modules; decoded input events derive from the raw input module. Structured key
+conversions derive from the client input and protocol wire modules. These reuse
+the existing protocol vocabulary rather than terminal-library records.
 
 The pane terminal, shell and foreground process code in `crates/maestro-process/`
 also derives from herdr v0.8.2 under Apache-2.0. Its process sources include the

@@ -30,6 +30,26 @@ pub const MAX_CLIPBOARD_IMAGE_PAYLOAD: usize = 16 * 1024 * 1024;
 /// Length of the u32 little-endian length prefix in bytes.
 const LENGTH_PREFIX_BYTES: usize = 4;
 
+/// Named modifier bits carried by structured input events.
+pub struct KeyModifiers;
+
+impl KeyModifiers {
+    /// No modifier keys.
+    pub const NONE: u8 = 0;
+    /// Shift key.
+    pub const SHIFT: u8 = 1;
+    /// Control key.
+    pub const CONTROL: u8 = 2;
+    /// Alt key.
+    pub const ALT: u8 = 4;
+    /// Super key.
+    pub const SUPER: u8 = 8;
+    /// Hyper key.
+    pub const HYPER: u8 = 16;
+    /// Meta key.
+    pub const META: u8 = 32;
+}
+
 // ---------------------------------------------------------------------------
 // Client → Server messages
 // ---------------------------------------------------------------------------

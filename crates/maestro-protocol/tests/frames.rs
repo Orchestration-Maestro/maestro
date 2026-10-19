@@ -1031,3 +1031,24 @@ fn hello_message() -> ClientMessage {
         launch_mode: ClientLaunchMode::App,
     }
 }
+
+/// Named modifier values preserve the existing wire bit layout.
+#[test]
+fn modifier_bits_match_wire_layout() {
+    assert_eq!(
+        [
+            KeyModifiers::NONE,
+            KeyModifiers::SHIFT,
+            KeyModifiers::CONTROL,
+            KeyModifiers::ALT,
+            KeyModifiers::SUPER,
+            KeyModifiers::HYPER,
+            KeyModifiers::META
+        ],
+        [0, 1, 2, 4, 8, 16, 32]
+    );
+    assert_eq!(
+        KeyModifiers::SHIFT | KeyModifiers::ALT | KeyModifiers::META,
+        37
+    );
+}
