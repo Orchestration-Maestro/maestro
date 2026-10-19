@@ -47,12 +47,11 @@ impl TerminalState {
         now: Instant,
     ) -> TerminalStateMutation {
         let previous = self.previous_effective_state_at(now);
-        let previous_session = self.current_session_identity_for_persistence();
+        let previous_session = self.session_identity_snapshot();
         let agent_released = self.apply_detected_state_at(update, now);
         TerminalStateMutation {
             effective_state_change: self.recompute_effective_state(previous, now),
-            session_ref_changed: previous_session
-                != self.current_session_identity_for_persistence(),
+            session_ref_changed: self.session_identity_changed_since(previous_session.as_ref()),
             agent_released,
         }
     }

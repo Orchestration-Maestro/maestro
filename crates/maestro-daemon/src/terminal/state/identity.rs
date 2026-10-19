@@ -116,7 +116,7 @@ impl TerminalState {
 
         let now = Instant::now();
         let previous = self.previous_effective_state_at(now);
-        let previous_session = self.current_session_identity_for_persistence();
+        let had_session = self.current_session_identity_for_persistence().is_some();
         self.suppress_current_full_lifecycle_hook_authority(
             FullLifecycleHookSuppressionReason::HookClear,
         );
@@ -124,7 +124,7 @@ impl TerminalState {
         self.persisted_agent_session = None;
         Some(TerminalStateMutation {
             effective_state_change: self.recompute_effective_state(previous, now),
-            session_ref_changed: previous_session.is_some(),
+            session_ref_changed: had_session,
             agent_released: false,
         })
     }
@@ -163,7 +163,7 @@ impl TerminalState {
 
         let now = Instant::now();
         let previous = self.previous_effective_state_at(now);
-        let previous_session = self.current_session_identity_for_persistence();
+        let previous_session = self.session_identity_snapshot();
         self.suppress_full_lifecycle_hook_report(
             source,
             agent_label,
@@ -180,10 +180,9 @@ impl TerminalState {
         if !preserve_foreign_persisted_session {
             self.persisted_agent_session = None;
         }
-        let current_session = self.current_session_identity_for_persistence();
         Some(TerminalStateMutation {
             effective_state_change: self.recompute_effective_state(previous, now),
-            session_ref_changed: previous_session != current_session,
+            session_ref_changed: self.session_identity_changed_since(previous_session.as_ref()),
             agent_released: !process_owns_agent,
         })
     }

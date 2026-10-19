@@ -4,33 +4,45 @@ use super::{
     SuppressedFullLifecycleHookReport, TerminalState, TerminalStateMutation,
 };
 impl TerminalState {
-    /// Copy the live session identity, falling back to the restored identity.
+    /// Borrow the live session identity, falling back to the restored identity.
     pub(in crate::terminal) fn current_session_identity_for_persistence(
         &self,
-    ) -> Option<(
-        String,
-        String,
-        crate::agent_resume::AgentSessionRefKind,
-        String,
-    )> {
+    ) -> Option<(&str, &str, &crate::agent_resume::AgentSessionRef)> {
         if let Some(authority) = self.hook_authority.as_ref()
             && let Some(session_ref) = authority.session_ref.as_ref()
         {
             return Some((
-                authority.source.clone(),
-                authority.agent_label.clone(),
-                session_ref.kind,
-                session_ref.value.clone(),
+                authority.source.as_str(),
+                authority.agent_label.as_str(),
+                session_ref,
             ));
         }
         self.persisted_agent_session.as_ref().map(|session| {
             (
-                session.source.clone(),
-                session.agent.clone(),
-                session.session_ref.kind,
-                session.session_ref.value.clone(),
+                session.source.as_str(),
+                session.agent.as_str(),
+                &session.session_ref,
             )
         })
+    }
+
+    /// Retain identity only when it must survive a mutation.
+    pub(in crate::terminal) fn session_identity_snapshot(
+        &self,
+    ) -> Option<(String, String, crate::agent_resume::AgentSessionRef)> {
+        self.current_session_identity_for_persistence()
+            .map(|(source, agent, session_ref)| {
+                (source.to_owned(), agent.to_owned(), session_ref.clone())
+            })
+    }
+
+    /// Compare the current borrowed identity with the retained before-state.
+    pub(in crate::terminal) fn session_identity_changed_since(
+        &self,
+        before: Option<&(String, String, crate::agent_resume::AgentSessionRef)>,
+    ) -> bool {
+        before.map(|(source, agent, session_ref)| (source.as_str(), agent.as_str(), session_ref))
+            != self.current_session_identity_for_persistence()
     }
 
     /// Whether a retained session belongs to a different source or agent.
@@ -40,7 +52,7 @@ impl TerminalState {
         agent_label: &str,
     ) -> bool {
         self.current_session_identity_for_persistence().is_some_and(
-            |(current_source, current_agent, _, _)| {
+            |(current_source, current_agent, _)| {
                 current_source != source || current_agent != agent_label
             },
         )
@@ -53,23 +65,20 @@ impl TerminalState {
         agent_label: &str,
         session_ref: &crate::agent_resume::AgentSessionRef,
         session_start_source: Option<&str>,
-    ) -> Option<crate::agent_resume::AgentSessionRef> {
+    ) -> Option<&crate::agent_resume::AgentSessionRef> {
         self.current_session_identity_for_persistence().and_then(
-            |(current_source, current_agent, current_kind, current_value)| {
+            |(current_source, current_agent, current_ref)| {
                 (current_source == source
                     && current_agent == agent_label
-                    && current_kind == crate::agent_resume::AgentSessionRefKind::Id
+                    && current_ref.kind == crate::agent_resume::AgentSessionRefKind::Id
                     && session_ref.kind == crate::agent_resume::AgentSessionRefKind::Id
-                    && current_value != session_ref.value
+                    && current_ref.value != session_ref.value
                     && !Self::session_report_allows_session_replacement(
                         source,
                         agent_label,
                         session_start_source,
                     ))
-                .then_some(crate::agent_resume::AgentSessionRef {
-                    kind: current_kind,
-                    value: current_value,
-                })
+                .then_some(current_ref)
             },
         )
     }
@@ -301,7 +310,7 @@ impl TerminalState {
         }
         let now = Instant::now();
         let previous = self.previous_effective_state_at(now);
-        let previous_session = self.current_session_identity_for_persistence();
+        let previous_session = self.session_identity_snapshot();
         let known_agent = maestro_detection::agents::parse_agent_label(&session.agent);
         let suppressed = self
             .suppressed_full_lifecycle_hook_reports
@@ -331,10 +340,9 @@ impl TerminalState {
             return None;
         }
         self.clear_full_lifecycle_hook_suppression_for_detected_agent(None, known_agent);
-        let current_session = self.current_session_identity_for_persistence();
         Some(TerminalStateMutation {
             effective_state_change: self.recompute_effective_state(previous, now),
-            session_ref_changed: previous_session != current_session,
+            session_ref_changed: self.session_identity_changed_since(previous_session.as_ref()),
             agent_released: false,
         })
     }
@@ -359,12 +367,12 @@ impl TerminalState {
             maestro_detection::agents::session_identity_only_integration(source, agent_label)
                 && session_replacement_allowed
                 && self.current_session_identity_for_persistence().is_some_and(
-                    |(current_source, current_agent, current_kind, current_value)| {
-                        current_source == *source
-                            && current_agent == *agent_label
-                            && current_kind == crate::agent_resume::AgentSessionRefKind::Id
+                    |(current_source, current_agent, current_ref)| {
+                        current_source == source
+                            && current_agent == agent_label
+                            && current_ref.kind == crate::agent_resume::AgentSessionRefKind::Id
                             && session_ref.kind == crate::agent_resume::AgentSessionRefKind::Id
-                            && current_value != session_ref.value
+                            && current_ref.value != session_ref.value
                     },
                 );
         if replacing_identity_only_session && !self.session_process_present(agent_label) {
@@ -430,7 +438,7 @@ impl TerminalState {
             self.admit_session_start(&session, session_start_source)?;
         let now = Instant::now();
         let previous = self.previous_effective_state_at(now);
-        let previous_session = self.current_session_identity_for_persistence();
+        let previous_session = self.session_identity_snapshot();
         if session_replacement_allowed || foreground_takeover_allowed {
             self.forget_stale_full_lifecycle_hook_session(
                 &session.source,
@@ -453,10 +461,9 @@ impl TerminalState {
         }
         self.reconcile_agent_name_owner(&session.agent, Some(&session.session_ref));
         self.persisted_agent_session = Some(session);
-        let current_session = self.current_session_identity_for_persistence();
         Some(TerminalStateMutation {
             effective_state_change: self.recompute_effective_state(previous, now),
-            session_ref_changed: previous_session != current_session,
+            session_ref_changed: self.session_identity_changed_since(previous_session.as_ref()),
             agent_released: false,
         })
     }

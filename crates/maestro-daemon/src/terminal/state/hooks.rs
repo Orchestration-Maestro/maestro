@@ -39,7 +39,7 @@ impl TerminalState {
             ..
         } = report;
         let previous = self.previous_effective_state_at(now);
-        let previous_session = self.current_session_identity_for_persistence();
+        let previous_session = self.session_identity_snapshot();
         self.reconcile_agent_name_owner(&agent_label, session_ref.as_ref());
         if foreground_takeover_allowed {
             self.suppress_current_full_lifecycle_hook_authority(
@@ -65,10 +65,9 @@ impl TerminalState {
             reported_at: now,
             session_ref,
         });
-        let current_session = self.current_session_identity_for_persistence();
         Some(TerminalStateMutation {
             effective_state_change: self.recompute_effective_state(previous, now),
-            session_ref_changed: previous_session != current_session,
+            session_ref_changed: self.session_identity_changed_since(previous_session.as_ref()),
             agent_released: false,
         })
     }
@@ -123,7 +122,7 @@ impl TerminalState {
                 session_ref
             } else {
                 self.conflicting_same_owner_session_ref(source, agent_label, &session_ref, None)
-                    .unwrap_or(session_ref)
+                    .map_or(session_ref, Clone::clone)
             }
         });
         if self.live_full_lifecycle_hook_authority_conflicts_with_session(

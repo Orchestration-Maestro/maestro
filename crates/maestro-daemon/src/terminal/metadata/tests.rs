@@ -293,9 +293,26 @@ fn pane_partial_update_does_not_refresh_unchanged_field_precedence() {
     assert_eq!(presentation.display_agent, None);
 }
 
+fn prompt_metadata_report() -> AgentMetadataReport {
+    AgentMetadataReport {
+        source: "user:status".into(),
+        agent_label: Some("claude".into()),
+        applies_to_source: Some("maestro:claude".into()),
+        title: None,
+        display_agent: None,
+        state_labels: HashMap::new(),
+        clear_title: false,
+        clear_display_agent: false,
+        clear_state_labels: false,
+        ttl: None,
+        seq: None,
+    }
+}
+
 #[test]
 fn pane_metadata_clear_plus_set_without_ttl_does_not_keep_old_ttl() {
     let mut terminal = test_terminal();
+    let now = Instant::now().checked_sub(Duration::from_secs(1)).unwrap();
     terminal.set_hook_authority(HookReport {
         source: "maestro:claude".into(),
         agent_label: "claude".into(),
@@ -304,37 +321,39 @@ fn pane_metadata_clear_plus_set_without_ttl_does_not_keep_old_ttl() {
         session_ref: None,
         seq: None,
     });
-    terminal.set_agent_metadata(AgentMetadataReport {
-        source: "user:status".into(),
-        agent_label: Some("claude".into()),
-        applies_to_source: Some("maestro:claude".into()),
-        title: Some("Old title".into()),
-        display_agent: None,
-        state_labels: HashMap::new(),
-        clear_title: false,
-        clear_display_agent: false,
-        clear_state_labels: false,
-        ttl: Some(Duration::from_millis(1)),
-        seq: None,
-    });
-    let old_deadline = terminal.next_agent_metadata_expiry().unwrap();
+    terminal.replace_agent_metadata(
+        AgentMetadataReport {
+            title: Some("Old title".into()),
+            ttl: Some(Duration::from_millis(1)),
+            ..prompt_metadata_report()
+        },
+        now,
+    );
+    assert_eq!(terminal.agent_metadata["user:status"].reported_at, now);
+    let old_deadline =
+        TerminalState::agent_metadata_expiry(&terminal.agent_metadata["user:status"]).unwrap();
 
-    terminal.set_agent_metadata(AgentMetadataReport {
-        source: "user:status".into(),
-        agent_label: Some("claude".into()),
-        applies_to_source: Some("maestro:claude".into()),
-        title: Some("Fresh title".into()),
-        display_agent: None,
-        state_labels: HashMap::new(),
-        clear_title: false,
-        clear_display_agent: false,
-        clear_state_labels: false,
-        ttl: None,
-        seq: None,
-    });
+    terminal.update_agent_metadata_fields(
+        AgentMetadataReport {
+            title: Some("Fresh title".into()),
+            clear_title: true,
+            ttl: None,
+            ..prompt_metadata_report()
+        },
+        now + Duration::from_micros(500),
+    );
 
-    assert_eq!(terminal.next_agent_metadata_expiry(), None);
-    assert_eq!(terminal.effective_title().as_deref(), Some("Fresh title"));
+    assert_eq!(
+        TerminalState::agent_metadata_expiry(&terminal.agent_metadata["user:status"]),
+        None
+    );
+    assert_eq!(
+        terminal
+            .effective_presentation_for_state_at(terminal.state, now + Duration::from_micros(500))
+            .title
+            .as_deref(),
+        Some("Fresh title")
+    );
     assert!(
         terminal
             .expire_agent_metadata_at(
@@ -343,12 +362,19 @@ fn pane_metadata_clear_plus_set_without_ttl_does_not_keep_old_ttl() {
             )
             .is_none()
     );
-    assert_eq!(terminal.effective_title().as_deref(), Some("Fresh title"));
+    assert_eq!(
+        terminal
+            .effective_presentation_for_state_at(terminal.state, now + Duration::from_micros(500))
+            .title
+            .as_deref(),
+        Some("Fresh title")
+    );
 }
 
 #[test]
 fn pane_metadata_clear_only_without_ttl_does_not_extend_old_ttl() {
     let mut terminal = test_terminal();
+    let now = Instant::now().checked_sub(Duration::from_secs(1)).unwrap();
     terminal.set_hook_authority(HookReport {
         source: "maestro:claude".into(),
         agent_label: "claude".into(),
@@ -357,47 +383,55 @@ fn pane_metadata_clear_only_without_ttl_does_not_extend_old_ttl() {
         session_ref: None,
         seq: None,
     });
-    terminal.set_agent_metadata(AgentMetadataReport {
-        source: "user:status".into(),
-        agent_label: Some("claude".into()),
-        applies_to_source: Some("maestro:claude".into()),
-        title: Some("Prompt title".into()),
-        display_agent: Some("Old display".into()),
-        state_labels: HashMap::new(),
-        clear_title: false,
-        clear_display_agent: false,
-        clear_state_labels: false,
-        ttl: Some(Duration::from_millis(1)),
-        seq: None,
-    });
-    let old_deadline = terminal.next_agent_metadata_expiry().unwrap();
-
-    terminal.set_agent_metadata(AgentMetadataReport {
-        source: "user:status".into(),
-        agent_label: None,
-        applies_to_source: None,
-        title: None,
-        display_agent: None,
-        state_labels: HashMap::new(),
-        clear_title: false,
-        clear_display_agent: true,
-        clear_state_labels: false,
-        ttl: None,
-        seq: None,
-    });
-
-    assert_eq!(terminal.next_agent_metadata_expiry(), Some(old_deadline));
-    assert_eq!(
-        terminal.effective_presentation().title.as_deref(),
-        Some("Prompt title")
+    terminal.replace_agent_metadata(
+        AgentMetadataReport {
+            title: Some("Prompt title".into()),
+            display_agent: Some("Old display".into()),
+            ttl: Some(Duration::from_millis(1)),
+            ..prompt_metadata_report()
+        },
+        now,
     );
-    assert_eq!(terminal.effective_presentation().display_agent, None);
+    assert_eq!(terminal.agent_metadata["user:status"].reported_at, now);
+    let old_deadline =
+        TerminalState::agent_metadata_expiry(&terminal.agent_metadata["user:status"]).unwrap();
+
+    terminal.update_agent_metadata_fields(
+        AgentMetadataReport {
+            source: "user:status".into(),
+            agent_label: None,
+            applies_to_source: None,
+            title: None,
+            display_agent: None,
+            state_labels: HashMap::new(),
+            clear_title: false,
+            clear_display_agent: true,
+            clear_state_labels: false,
+            ttl: None,
+            seq: None,
+        },
+        now + Duration::from_micros(500),
+    );
+
+    assert_eq!(
+        TerminalState::agent_metadata_expiry(&terminal.agent_metadata["user:status"]),
+        Some(old_deadline)
+    );
+    let presentation = terminal
+        .effective_presentation_for_state_at(terminal.state, now + Duration::from_micros(500));
+    assert_eq!(presentation.title.as_deref(), Some("Prompt title"));
+    assert_eq!(presentation.display_agent, None);
 
     let mutation = terminal
         .expire_agent_metadata_at(old_deadline, old_deadline)
         .unwrap();
     assert!(mutation.effective_state_change.is_some());
-    assert_eq!(terminal.effective_presentation().title, None);
+    assert_eq!(
+        terminal
+            .effective_presentation_for_state_at(terminal.state, old_deadline)
+            .title,
+        None
+    );
 }
 
 #[test]

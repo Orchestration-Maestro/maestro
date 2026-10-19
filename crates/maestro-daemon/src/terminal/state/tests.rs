@@ -496,14 +496,23 @@ fn pane_path_agent_session_replacement_reports_reanchor_full_lifecycle_authority
         let old_session = test_session_path(&format!("pi-{reason}-old.jsonl"));
         let new_session = test_session_path(&format!("pi-{reason}-new.jsonl"));
         terminal.set_detected_state(Some(Agent::Pi), AgentState::Idle);
-        terminal.set_hook_authority_with_session_ref(HookReport {
-            source: "maestro:pi".into(),
-            agent_label: "pi".into(),
-            state: AgentState::Idle,
-            message: None,
-            session_ref: crate::agent_resume::AgentSessionRef::path(old_session),
-            seq: Some(10),
-        });
+        anchor_full_lifecycle_session(
+            &mut terminal,
+            Agent::Pi,
+            "maestro:pi",
+            "pi",
+            crate::agent_resume::AgentSessionRef::path(old_session.clone()).unwrap(),
+        );
+        terminal
+            .set_hook_authority_with_session_ref(HookReport {
+                source: "maestro:pi".into(),
+                agent_label: "pi".into(),
+                state: AgentState::Idle,
+                message: None,
+                session_ref: crate::agent_resume::AgentSessionRef::path(old_session),
+                seq: Some(10),
+            })
+            .expect("initial lifecycle report must be admitted");
 
         let session_report = terminal.set_agent_session_ref_for_session_start(SessionStartReport {
             source: "maestro:pi".into(),
@@ -546,31 +555,57 @@ fn pane_path_agent_resume_reactivates_a_previously_stale_session() {
     let session_a = test_session_path("pi-session-a.jsonl");
     let session_b = test_session_path("pi-session-b.jsonl");
     terminal.set_detected_state(Some(Agent::Pi), AgentState::Idle);
-    terminal.set_hook_authority_with_session_ref(HookReport {
-        source: "maestro:pi".into(),
-        agent_label: "pi".into(),
-        state: AgentState::Idle,
-        message: None,
-        session_ref: crate::agent_resume::AgentSessionRef::path(session_a.clone()),
-        seq: Some(10),
-    });
+    anchor_full_lifecycle_session(
+        &mut terminal,
+        Agent::Pi,
+        "maestro:pi",
+        "pi",
+        crate::agent_resume::AgentSessionRef::path(session_a.clone()).unwrap(),
+    );
+    terminal
+        .set_hook_authority_with_session_ref(HookReport {
+            source: "maestro:pi".into(),
+            agent_label: "pi".into(),
+            state: AgentState::Idle,
+            message: None,
+            session_ref: crate::agent_resume::AgentSessionRef::path(session_a.clone()),
+            seq: Some(10),
+        })
+        .expect("initial lifecycle report must be admitted");
 
-    terminal.set_agent_session_ref_for_session_start(SessionStartReport {
-        source: "maestro:pi".into(),
-        agent_label: "pi".into(),
-        session_ref: crate::agent_resume::AgentSessionRef::path(session_b.clone()),
-        seq: Some(11),
-        session_start_source: Some("new".into()),
-    });
-    terminal.set_hook_authority_with_session_ref(HookReport {
-        source: "maestro:pi".into(),
-        agent_label: "pi".into(),
-        state: AgentState::Idle,
-        message: None,
-        session_ref: crate::agent_resume::AgentSessionRef::path(session_b.clone()),
-        seq: Some(12),
-    });
+    terminal
+        .set_agent_session_ref_for_session_start(SessionStartReport {
+            source: "maestro:pi".into(),
+            agent_label: "pi".into(),
+            session_ref: crate::agent_resume::AgentSessionRef::path(session_b.clone()),
+            seq: Some(11),
+            session_start_source: Some("new".into()),
+        })
+        .expect("session B must replace session A");
+    terminal
+        .set_hook_authority_with_session_ref(HookReport {
+            source: "maestro:pi".into(),
+            agent_label: "pi".into(),
+            state: AgentState::Idle,
+            message: None,
+            session_ref: crate::agent_resume::AgentSessionRef::path(session_b.clone()),
+            seq: Some(12),
+        })
+        .expect("session B must acquire authority");
+    assert!(terminal.full_lifecycle_hook_report_matches_stale_session(
+        "maestro:pi",
+        "pi",
+        crate::agent_resume::AgentSessionRef::path(session_a.clone()).as_ref(),
+    ));
 
+    assert_path_session_reactivation(&mut terminal, session_a, session_b);
+}
+
+fn assert_path_session_reactivation(
+    terminal: &mut TerminalState,
+    session_a: String,
+    session_b: String,
+) {
     let resumed = terminal.set_agent_session_ref_for_session_start(SessionStartReport {
         source: "maestro:pi".into(),
         agent_label: "pi".into(),
@@ -629,13 +664,14 @@ fn pane_path_agent_startup_adopts_persisted_session_without_live_authority() {
     });
 
     assert!(startup.is_some());
+    let identity: Option<(&str, &str, &crate::agent_resume::AgentSessionRef)> =
+        terminal.current_session_identity_for_persistence();
     assert_eq!(
-        terminal.current_session_identity_for_persistence(),
+        identity,
         Some((
-            "maestro:pi".into(),
-            "pi".into(),
-            crate::agent_resume::AgentSessionRefKind::Path,
-            new_session,
+            "maestro:pi",
+            "pi",
+            &crate::agent_resume::AgentSessionRef::path(new_session).unwrap(),
         ))
     );
 }
@@ -696,14 +732,23 @@ fn pane_alternate_path_agent_resume_session_report_reanchors_full_lifecycle_auth
     let old_session = test_session_path("omp-old.jsonl");
     let new_session = test_session_path("omp-new.jsonl");
     terminal.set_detected_state(Some(Agent::Omp), AgentState::Idle);
-    terminal.set_hook_authority_with_session_ref(HookReport {
-        source: "maestro:omp".into(),
-        agent_label: "omp".into(),
-        state: AgentState::Working,
-        message: None,
-        session_ref: crate::agent_resume::AgentSessionRef::path(old_session.clone()),
-        seq: Some(10),
-    });
+    anchor_full_lifecycle_session(
+        &mut terminal,
+        Agent::Omp,
+        "maestro:omp",
+        "omp",
+        crate::agent_resume::AgentSessionRef::path(old_session.clone()).unwrap(),
+    );
+    terminal
+        .set_hook_authority_with_session_ref(HookReport {
+            source: "maestro:omp".into(),
+            agent_label: "omp".into(),
+            state: AgentState::Working,
+            message: None,
+            session_ref: crate::agent_resume::AgentSessionRef::path(old_session.clone()),
+            seq: Some(10),
+        })
+        .expect("initial lifecycle report must be admitted");
 
     let session_report = terminal.set_agent_session_ref_for_session_start(SessionStartReport {
         source: "maestro:omp".into(),
@@ -740,6 +785,13 @@ fn pane_alternate_path_agent_resume_session_report_reanchors_full_lifecycle_auth
         crate::agent_resume::AgentSessionRef::path(new_session)
     );
 
+    assert_alternate_path_rejects_previous_session(&mut terminal, old_session);
+}
+
+fn assert_alternate_path_rejects_previous_session(
+    terminal: &mut TerminalState,
+    old_session: String,
+) {
     let stale = terminal.set_hook_authority_with_session_ref(HookReport {
         source: "maestro:omp".into(),
         agent_label: "omp".into(),
@@ -760,14 +812,23 @@ fn pane_late_full_lifecycle_hook_with_same_session_after_process_exit_does_not_r
     let mut terminal = test_terminal();
     let session_path = test_session_path("pi.jsonl");
     terminal.set_detected_state(Some(Agent::Pi), AgentState::Working);
-    terminal.set_hook_authority_with_session_ref(HookReport {
-        source: "maestro:pi".into(),
-        agent_label: "pi".into(),
-        state: AgentState::Working,
-        message: None,
-        session_ref: crate::agent_resume::AgentSessionRef::path(session_path.clone()),
-        seq: Some(20),
-    });
+    anchor_full_lifecycle_session(
+        &mut terminal,
+        Agent::Pi,
+        "maestro:pi",
+        "pi",
+        crate::agent_resume::AgentSessionRef::path(session_path.clone()).unwrap(),
+    );
+    terminal
+        .set_hook_authority_with_session_ref(HookReport {
+            source: "maestro:pi".into(),
+            agent_label: "pi".into(),
+            state: AgentState::Working,
+            message: None,
+            session_ref: crate::agent_resume::AgentSessionRef::path(session_path.clone()),
+            seq: Some(20),
+        })
+        .expect("initial lifecycle report must be admitted");
 
     terminal.set_detected_state_with_screen_signals_at(
         idle_detection(Some(Agent::Pi), true),
@@ -834,14 +895,23 @@ fn pane_fresh_detected_process_keeps_old_session_suppressed_after_process_exit()
     let old_session = test_session_path("old-process-exit.jsonl");
     let new_session = test_session_path("new-process-exit.jsonl");
     terminal.set_detected_state(Some(Agent::Pi), AgentState::Idle);
-    terminal.set_hook_authority_with_session_ref(HookReport {
-        source: "maestro:pi".into(),
-        agent_label: "pi".into(),
-        state: AgentState::Working,
-        message: None,
-        session_ref: crate::agent_resume::AgentSessionRef::path(old_session.clone()),
-        seq: Some(1000),
-    });
+    anchor_full_lifecycle_session(
+        &mut terminal,
+        Agent::Pi,
+        "maestro:pi",
+        "pi",
+        crate::agent_resume::AgentSessionRef::path(old_session.clone()).unwrap(),
+    );
+    terminal
+        .set_hook_authority_with_session_ref(HookReport {
+            source: "maestro:pi".into(),
+            agent_label: "pi".into(),
+            state: AgentState::Working,
+            message: None,
+            session_ref: crate::agent_resume::AgentSessionRef::path(old_session.clone()),
+            seq: Some(1000),
+        })
+        .expect("initial lifecycle report must be admitted");
     let process_exit_seen_at = Instant::now() + Duration::from_secs(1);
     terminal.set_detected_state_with_screen_signals_at(
         idle_detection(Some(Agent::Pi), true),
@@ -856,6 +926,14 @@ fn pane_fresh_detected_process_keeps_old_session_suppressed_after_process_exit()
         fresh_process_seen_at + Duration::from_millis(1),
     );
 
+    assert_fresh_path_session_requires_startup(&mut terminal, old_session, new_session);
+}
+
+fn assert_fresh_path_session_requires_startup(
+    terminal: &mut TerminalState,
+    old_session: String,
+    new_session: String,
+) {
     let late_old = terminal.set_hook_authority_with_session_ref(HookReport {
         source: "maestro:pi".into(),
         agent_label: "pi".into(),
@@ -890,17 +968,26 @@ fn pane_fresh_detected_process_keeps_old_session_suppressed_after_process_exit()
 
 fn start_then_exit_path_agent(terminal: &mut TerminalState, session_path: &str, now: Instant) {
     terminal.set_detected_state(Some(Agent::Pi), AgentState::Idle);
-    terminal.set_hook_authority_at(
-        HookReport {
-            source: "maestro:pi".into(),
-            agent_label: "pi".into(),
-            state: AgentState::Working,
-            message: None,
-            session_ref: crate::agent_resume::AgentSessionRef::path(session_path),
-            seq: Some(1000),
-        },
-        now,
+    anchor_full_lifecycle_session(
+        terminal,
+        Agent::Pi,
+        "maestro:pi",
+        "pi",
+        crate::agent_resume::AgentSessionRef::path(session_path).unwrap(),
     );
+    terminal
+        .set_hook_authority_at(
+            HookReport {
+                source: "maestro:pi".into(),
+                agent_label: "pi".into(),
+                state: AgentState::Working,
+                message: None,
+                session_ref: crate::agent_resume::AgentSessionRef::path(session_path),
+                seq: Some(1000),
+            },
+            now,
+        )
+        .expect("initial lifecycle report must be admitted");
     terminal.set_detected_state_with_screen_signals_at(
         idle_detection(Some(Agent::Pi), true),
         now + Duration::from_millis(1),
@@ -1041,19 +1128,28 @@ fn pane_queued_fresh_process_evidence_uses_process_exit_observation_time() {
     let session_path = test_session_path("queued-after-process-exit.jsonl");
     let process_exit_at = Instant::now().checked_sub(Duration::from_secs(1)).unwrap();
     terminal.set_detected_state(Some(Agent::Pi), AgentState::Idle);
-    terminal.set_hook_authority_at(
-        HookReport {
-            source: "maestro:pi".into(),
-            agent_label: "pi".into(),
-            state: AgentState::Working,
-            message: None,
-            session_ref: crate::agent_resume::AgentSessionRef::path(session_path.clone()),
-            seq: Some(1000),
-        },
-        process_exit_at
-            .checked_sub(Duration::from_millis(1))
-            .unwrap(),
+    anchor_full_lifecycle_session(
+        &mut terminal,
+        Agent::Pi,
+        "maestro:pi",
+        "pi",
+        crate::agent_resume::AgentSessionRef::path(session_path.clone()).unwrap(),
     );
+    terminal
+        .set_hook_authority_at(
+            HookReport {
+                source: "maestro:pi".into(),
+                agent_label: "pi".into(),
+                state: AgentState::Working,
+                message: None,
+                session_ref: crate::agent_resume::AgentSessionRef::path(session_path.clone()),
+                seq: Some(1000),
+            },
+            process_exit_at
+                .checked_sub(Duration::from_millis(1))
+                .unwrap(),
+        )
+        .expect("initial lifecycle report must be admitted");
     terminal.set_detected_state_with_screen_signals_at(
         idle_detection(Some(Agent::Pi), true),
         process_exit_at,
@@ -1085,17 +1181,26 @@ fn pane_different_session_after_process_exit_waits_for_fresh_process_evidence() 
     let new_session = test_session_path("new-after-process-exit.jsonl");
     let now = Instant::now();
     terminal.set_detected_state(Some(Agent::Pi), AgentState::Idle);
-    terminal.set_hook_authority_at(
-        HookReport {
-            source: "maestro:pi".into(),
-            agent_label: "pi".into(),
-            state: AgentState::Working,
-            message: None,
-            session_ref: crate::agent_resume::AgentSessionRef::path(old_session),
-            seq: Some(1000),
-        },
-        now,
+    anchor_full_lifecycle_session(
+        &mut terminal,
+        Agent::Pi,
+        "maestro:pi",
+        "pi",
+        crate::agent_resume::AgentSessionRef::path(old_session.clone()).unwrap(),
     );
+    terminal
+        .set_hook_authority_at(
+            HookReport {
+                source: "maestro:pi".into(),
+                agent_label: "pi".into(),
+                state: AgentState::Working,
+                message: None,
+                session_ref: crate::agent_resume::AgentSessionRef::path(old_session),
+                seq: Some(1000),
+            },
+            now,
+        )
+        .expect("initial lifecycle report must be admitted");
     terminal.set_detected_state_with_screen_signals_at(
         idle_detection(Some(Agent::Pi), true),
         now + Duration::from_millis(1),
@@ -1250,17 +1355,26 @@ fn pane_alternate_path_agent_reacquires_full_lifecycle_hook_after_process_exit_w
     let now = Instant::now();
     let mut terminal = test_terminal();
     terminal.set_detected_state(Some(Agent::Omp), AgentState::Idle);
-    terminal.set_hook_authority_at(
-        HookReport {
-            source: "maestro:omp".into(),
-            agent_label: "omp".into(),
-            state: AgentState::Working,
-            message: None,
-            session_ref: crate::agent_resume::AgentSessionRef::id("omp-old"),
-            seq: Some(1000),
-        },
-        now,
+    anchor_full_lifecycle_session(
+        &mut terminal,
+        Agent::Omp,
+        "maestro:omp",
+        "omp",
+        crate::agent_resume::AgentSessionRef::id("omp-old").unwrap(),
     );
+    terminal
+        .set_hook_authority_at(
+            HookReport {
+                source: "maestro:omp".into(),
+                agent_label: "omp".into(),
+                state: AgentState::Working,
+                message: None,
+                session_ref: crate::agent_resume::AgentSessionRef::id("omp-old"),
+                seq: Some(1000),
+            },
+            now,
+        )
+        .expect("initial lifecycle report must be admitted");
     terminal.set_detected_state_with_screen_signals_at(
         idle_detection(Some(Agent::Omp), true),
         now + Duration::from_millis(1),
@@ -1277,6 +1391,10 @@ fn pane_alternate_path_agent_reacquires_full_lifecycle_hook_after_process_exit_w
     assert!(stale.is_none());
     assert!(terminal.hook_authority.is_none());
 
+    assert_alternate_path_reacquires_fresh_session(&mut terminal, now);
+}
+
+fn assert_alternate_path_reacquires_fresh_session(terminal: &mut TerminalState, now: Instant) {
     terminal.set_detected_state_with_screen_signals_at(
         unknown_detection(None),
         now + Duration::from_millis(2),
@@ -3229,10 +3347,9 @@ fn pane_foreground_agent_session_replaces_stale_different_owner_hook_authority()
     assert_eq!(
         terminal.current_session_identity_for_persistence(),
         Some((
-            "maestro:codex".into(),
-            "codex".into(),
-            crate::agent_resume::AgentSessionRefKind::Id,
-            "codex-session".into()
+            "maestro:codex",
+            "codex",
+            &crate::agent_resume::AgentSessionRef::id("codex-session").unwrap()
         ))
     );
     assert_old_owner_requires_fresh_selection(&mut terminal);
@@ -3924,23 +4041,36 @@ fn pane_stale_clear_all_sequence_is_checked_against_current_authority_source() {
 fn pane_same_sequence_from_different_sources_is_independent() {
     let mut terminal = test_terminal();
     terminal.set_detected_state(Some(Agent::Pi), AgentState::Idle);
-    terminal.set_hook_authority(HookReport {
-        source: "maestro:pi".into(),
-        agent_label: "pi".into(),
-        state: AgentState::Working,
-        message: None,
-        session_ref: None,
-        seq: Some(20),
-    });
+    anchor_full_lifecycle_session(
+        &mut terminal,
+        Agent::Pi,
+        "maestro:pi",
+        "pi",
+        crate::agent_resume::AgentSessionRef::id("sequence-owner").unwrap(),
+    );
+    terminal
+        .set_hook_authority(HookReport {
+            source: "maestro:pi".into(),
+            agent_label: "pi".into(),
+            state: AgentState::Working,
+            message: None,
+            session_ref: None,
+            seq: Some(20),
+        })
+        .expect("initial lifecycle report must be admitted");
 
-    terminal.set_hook_authority(HookReport {
-        source: "custom:pi".into(),
-        agent_label: "pi".into(),
-        state: AgentState::Idle,
-        message: None,
-        session_ref: None,
-        seq: Some(19),
-    });
+    assert_eq!(terminal.hook_report_sequences.get("maestro:pi"), Some(&20));
+    terminal
+        .set_hook_authority(HookReport {
+            source: "custom:pi".into(),
+            agent_label: "pi".into(),
+            state: AgentState::Idle,
+            message: None,
+            session_ref: None,
+            seq: Some(20),
+        })
+        .expect("equal sequence from a different source must be admitted");
+    assert_eq!(terminal.hook_report_sequences.get("custom:pi"), Some(&20));
 
     assert_eq!(terminal.state, AgentState::Idle);
     assert_eq!(
