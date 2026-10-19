@@ -8,16 +8,18 @@ pub(super) fn decode_png_rgba(bytes: &[u8]) -> Result<Image, ImageError> {
     let mut decoder = png::Decoder::new(Cursor::new(bytes));
     decoder.set_transformations(png::Transformations::EXPAND | png::Transformations::STRIP_16);
     let mut reader = decoder.read_info().map_err(|_| ImageError::InvalidData)?;
+    // The header sizes the output buffer, and no frame exceeds its canvas: check the
+    // four-byte RGBA pixels before allocating.
+    let (width, height) = reader.info().size();
+    if u64::from(width) * u64::from(height) > MAX_SIZE / 4 {
+        return Err(ImageError::InvalidData);
+    }
     let mut data = vec![0; reader.output_buffer_size()];
     let info = reader
         .next_frame(&mut data)
         .map_err(|_| ImageError::InvalidData)?;
     data.truncate(info.buffer_size());
     if info.bit_depth != png::BitDepth::Eight {
-        return Err(ImageError::InvalidData);
-    }
-    let pixels = u64::from(info.width) * u64::from(info.height);
-    if pixels * 4 > MAX_SIZE {
         return Err(ImageError::InvalidData);
     }
     let data = match info.color_type {

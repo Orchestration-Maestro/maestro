@@ -599,6 +599,19 @@ fn png_bit_depths_expand_and_strip_exactly() {
 }
 
 #[test]
+fn png_geometry_is_limited_before_decoding() {
+    // The one-pixel fixture with a header claiming 1,000,000 x 1,000,000 pixels.
+    let mut bytes = include_bytes!("fixtures/images/rgba8.png").to_vec();
+    bytes[16..24].copy_from_slice(&[0, 0x0f, 0x42, 0x40, 0, 0x0f, 0x42, 0x40]);
+    let mut crc = flate2::Crc::new();
+    crc.update(&bytes[12..29]);
+    bytes[29..33].copy_from_slice(&crc.sum().to_be_bytes());
+    let mut cmd = command(&bytes);
+    transmission_mut(&mut cmd).format = Format::Png;
+    assert_error(&cmd, ImageError::InvalidData);
+}
+
+#[test]
 #[cfg(target_os = "linux")]
 fn shared_memory_pixels_trim_alignment_padding() {
     for slash in [true, false] {
