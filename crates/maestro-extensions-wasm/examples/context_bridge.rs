@@ -27,6 +27,9 @@ mod reads;
 #[cfg(target_arch = "wasm32")]
 #[path = "context_bridge/registrations.rs"]
 mod registrations;
+#[cfg(target_arch = "wasm32")]
+#[path = "context_bridge/retained.rs"]
+mod retained;
 
 /// Registers callbacks whose errors expose the actual supplied context operands.
 #[cfg(target_arch = "wasm32")]
@@ -133,6 +136,12 @@ fn command(
     api: ExtensionAPI,
 ) -> ExtensionFuture<'static, ()> {
     Box::pin(async move {
+        if args == "retain-suspended" {
+            return retained::observe(api, context).await;
+        }
+        if args == "healthy-admitted" {
+            return retained::healthy(context).await;
+        }
         if let Some(root) = args.strip_prefix("api imports:") {
             return Err(api::observe(&api, &context, root).await?.to_string());
         }

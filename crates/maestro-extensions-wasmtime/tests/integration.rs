@@ -6,8 +6,10 @@ mod canonical_callbacks;
 mod canonical_commands;
 mod canonical_json;
 mod execution_bridge;
+mod lifetimes;
 mod listener_prefixes;
 mod retained_components;
+mod retained_contexts;
 mod startup;
 
 #[path = "../../maestro-extensions/tests/support/session.rs"]

@@ -381,3 +381,35 @@ fn seed_payloads(history: &mut maestro_session::SessionManager) {
             .unwrap();
     }
 }
+
+#[test]
+fn retained_command_context_resumes_then_reports_stale() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, super::retained_contexts::retained(false));
+}
+
+#[test]
+fn caught_import_error_keeps_same_store_work_usable() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, super::retained_contexts::retained(true));
+}
+
+#[test]
+fn failed_factory_initialization_releases_admissions() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, super::startup::failed());
+}
+
+#[test]
+fn retained_capabilities_release_after_their_final_consumer() {
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    tokio::task::LocalSet::new().block_on(&runtime, super::lifetimes::release());
+}
