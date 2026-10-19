@@ -33,3 +33,58 @@ pub fn scan_sgr_mouse_fields(data: &[u8]) -> Option<SgrMouseFields<'_>> {
         release,
     })
 }
+
+/// Admitted host mouse fields, independent of any wire representation.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct HostMouse {
+    /// Button and modifier byte.
+    pub cb: u8,
+    /// Zero-based column.
+    pub column: u16,
+    /// Zero-based row.
+    pub row: u16,
+    /// Release terminator rather than press or motion.
+    pub release: bool,
+}
+
+/// Admit a complete SGR or six-byte default mouse frame in the host numeric domain.
+#[must_use]
+pub fn parse_host_mouse(data: &[u8]) -> Option<HostMouse> {
+    let (cb, column, row, release) = if let [27, b'[', b'M', cb, column, row] = *data {
+        (
+            cb.checked_sub(32)?,
+            u16::from(column).checked_sub(33)?,
+            u16::from(row).checked_sub(33)?,
+            false,
+        )
+    } else {
+        let fields = scan_sgr_mouse_fields(data)?;
+        (
+            std::str::from_utf8(fields.cb).ok()?.parse().ok()?,
+            std::str::from_utf8(fields.column)
+                .ok()?
+                .parse::<u16>()
+                .ok()?
+                .checked_sub(1)?,
+            std::str::from_utf8(fields.row)
+                .ok()?
+                .parse::<u16>()
+                .ok()?
+                .checked_sub(1)?,
+            fields.release,
+        )
+    };
+    let button = (cb & 3) | ((cb & 0xc0) >> 4);
+    let dragging = cb & 32 != 0;
+    let admitted = if dragging {
+        matches!(button, 0..=5 | 8 | 9)
+    } else {
+        button <= 7
+    };
+    admitted.then_some(HostMouse {
+        cb,
+        column,
+        row,
+        release,
+    })
+}

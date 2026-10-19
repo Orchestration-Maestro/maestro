@@ -655,3 +655,98 @@ fn assert_scalar_and_default_modifiers() {
         assert_eq!(key.event_type, KeyEventType::Press);
     }
 }
+
+#[test]
+fn shared_byte_framing_keeps_chat_and_host_policies_independent() {
+    assert_chat_framing_policy();
+    assert_host_framing_policy();
+    assert_host_mouse_framing();
+}
+
+/// Historical chat outputs for mixed text, paste, mouse, byte and duplicate input.
+fn assert_chat_framing_policy() {
+    use maestro_tui::{
+        StdinBuffer, StdinBufferEventMap as Event, StdinBufferInput, StdinBufferOptions,
+    };
+    use std::time::{Duration, Instant};
+
+    let now = Instant::now();
+    let mut chat = StdinBuffer::new(StdinBufferOptions::default());
+    assert_eq!(
+        chat.process(StdinBufferInput::Text(""), now),
+        [Event::Data(String::new())]
+    );
+    assert_eq!(
+        chat.process(
+            StdinBufferInput::Text("é\x1b[200~你好\x1b[201~\x1b[M é界"),
+            now
+        ),
+        [
+            Event::Data("é".into()),
+            Event::Paste("你好".into()),
+            Event::Data("\x1b[M é界".into())
+        ]
+    );
+    assert_eq!(
+        chat.process(StdinBufferInput::Bytes(&[0xe9]), now),
+        [Event::Data("\x1bi".into())]
+    );
+    assert_eq!(
+        chat.process(StdinBufferInput::Text("\x1b[97ua"), now),
+        [Event::Data("\x1b[97u".into())]
+    );
+    assert!(
+        chat.process(StdinBufferInput::Text("\x1b["), now)
+            .is_empty()
+    );
+    assert_eq!(chat.deadline(), now.checked_add(Duration::from_millis(10)));
+    assert_eq!(
+        chat.expire(now + Duration::from_millis(10)),
+        [Event::Data("\x1b[".into())]
+    );
+}
+
+/// Host bytes retain split UTF-8 and binary mouse without chat duplicate filtering.
+fn assert_host_framing_policy() {
+    use maestro_tui::stdin_buffer::RawInputByteFramer;
+    let mut host = RawInputByteFramer::default();
+    assert!(host.push(&[]).is_empty());
+    assert_eq!(
+        host.push(b"\x1b[97ua"),
+        [b"\x1b[97u".to_vec(), b"a".to_vec()]
+    );
+    assert!(host.push(&[0xc3]).is_empty());
+    assert!(!host.has_pending_incomplete_mouse_sequence());
+    assert!(host.flush_timeout().is_empty());
+    assert_eq!(host.push(&[0xa9]), ["é".as_bytes()]);
+    assert!(host.push(b"\x1b[M").is_empty());
+    assert!(host.has_pending_incomplete_mouse_sequence());
+    assert_eq!(host.push(&[32, 0xff, 33]), [vec![27, 91, 77, 32, 255, 33]]);
+    assert!(!host.has_pending_incomplete_mouse_sequence());
+    assert!(host.push(b"\x1b[200~paste").is_empty());
+    assert!(host.has_pending_bracketed_paste());
+    assert!(host.flush_timeout().is_empty());
+    assert_eq!(
+        host.push(b"\x1b[201~"),
+        [b"\x1b[200~paste\x1b[201~".to_vec()]
+    );
+}
+
+/// Mouse validity is shared by doubled-Escape splitting and orphaned-tail disposal.
+fn assert_host_mouse_framing() {
+    use maestro_tui::stdin_buffer::RawInputByteFramer;
+    for report in [
+        b"\x1b[<35;10;20M".as_slice(),
+        b"\x1b[<35;10;20m",
+        b"\x1b[MCN1",
+    ] {
+        let mut host = RawInputByteFramer::default();
+        assert!(host.push(b"\x1b").is_empty());
+        assert_eq!(host.push(report), [b"\x1b".to_vec(), report.to_vec()]);
+        assert!(host.flush_timeout().is_empty());
+    }
+    let mut host = RawInputByteFramer::default();
+    assert!(host.push(b"\x1b").is_empty());
+    assert_eq!(host.flush_timeout(), [b"\x1b".to_vec()]);
+    assert_eq!(host.push(b"[<35;10;20Mx"), [b"x".to_vec()]);
+}
