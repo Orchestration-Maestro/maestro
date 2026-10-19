@@ -118,3 +118,5 @@ mod terminal_lines;
 mod terminal_print;
 
 mod terminal_cursor;
+
+mod terminal_clusters;

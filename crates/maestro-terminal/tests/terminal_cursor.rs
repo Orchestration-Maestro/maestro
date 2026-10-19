@@ -1,6 +1,6 @@
 //! Cursor moves with retained printing and wrap observations.
 
-use super::support::terminal::plain;
+use super::support::terminal::assert_text;
 use maestro_terminal::{Mode, Terminal};
 
 #[test]
@@ -13,7 +13,7 @@ fn cursor_state_cursorup_basic() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), " X\n\nA");
+        assert_text(&t, " X\n\nA");
     }
 }
 
@@ -30,7 +30,7 @@ fn cursor_state_cursorup_below_top_scroll_margin() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "\n X\nA");
+        assert_text(&t, "\n X\nA");
     }
 }
 
@@ -48,7 +48,7 @@ fn cursor_state_cursorup_above_top_scroll_margin() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "X\n\nA");
+        assert_text(&t, "X\n\nA");
     }
 }
 
@@ -63,7 +63,7 @@ fn cursor_state_cursorup_resets_wrap() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "ABCDX");
+        assert_text(&t, "ABCDX");
     }
 }
 
@@ -78,7 +78,7 @@ fn cursor_state_cursorleft_no_wrap() {
     t.cursor_left(10);
 
     {
-        assert_eq!(plain(&t), "A\nB");
+        assert_text(&t, "A\nB");
     }
 }
 
@@ -93,7 +93,7 @@ fn cursor_state_cursorleft_unsets_pending_wrap_state() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "ABCXE");
+        assert_text(&t, "ABCXE");
     }
 }
 
@@ -108,7 +108,7 @@ fn cursor_state_cursorleft_unsets_pending_wrap_state_with_longer_jump() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "AXCDE");
+        assert_text(&t, "AXCDE");
     }
 }
 
@@ -126,7 +126,7 @@ fn cursor_state_cursorleft_reverse_wrap_with_pending_wrap_state() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "ABCDX");
+        assert_text(&t, "ABCDX");
     }
 }
 
@@ -144,7 +144,7 @@ fn cursor_state_cursorleft_reverse_wrap_extended_with_pending_wrap_state() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "ABCDX");
+        assert_text(&t, "ABCDX");
     }
 }
 
@@ -161,7 +161,7 @@ fn cursor_state_cursorleft_reverse_wrap() {
     assert!(t.screens.active().cursor.pending_wrap);
 
     {
-        assert_eq!(plain(&t), "ABCDX\n1");
+        assert_text(&t, "ABCDX\n1");
     }
 }
 
@@ -180,7 +180,7 @@ fn cursor_state_cursorleft_reverse_wrap_with_no_soft_wrap() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "ABCDE\nX");
+        assert_text(&t, "ABCDE\nX");
     }
 }
 
@@ -197,7 +197,7 @@ fn cursor_state_cursorleft_reverse_wrap_before_left_margin() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "\n\nX");
+        assert_text(&t, "\n\nX");
     }
 }
 
@@ -216,7 +216,7 @@ fn cursor_state_cursorleft_extended_reverse_wrap() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "ABCDX\n1");
+        assert_text(&t, "ABCDX\n1");
     }
 }
 
@@ -235,7 +235,7 @@ fn cursor_state_cursorleft_extended_reverse_wrap_bottom_wraparound() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "ABCDE\n1\n    X");
+        assert_text(&t, "ABCDE\n1\n    X");
     }
 }
 
@@ -255,7 +255,7 @@ fn cursor_state_cursorleft_extended_reverse_wrap_is_priority_if_both_set() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "ABCDE\n1\n    X");
+        assert_text(&t, "ABCDE\n1\n    X");
     }
 }
 
@@ -302,7 +302,7 @@ fn cursor_state_cursordown_basic() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "A\n\n\n\n X");
+        assert_text(&t, "A\n\n\n\n X");
     }
 }
 
@@ -318,7 +318,7 @@ fn cursor_state_cursordown_above_bottom_scroll_margin() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "A\n\n X");
+        assert_text(&t, "A\n\n X");
     }
 }
 
@@ -335,7 +335,7 @@ fn cursor_state_cursordown_below_bottom_scroll_margin() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "A\n\n\n\nX");
+        assert_text(&t, "A\n\n\n\nX");
     }
 }
 
@@ -350,7 +350,7 @@ fn cursor_state_cursordown_resets_wrap() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "ABCDE\n    X");
+        assert_text(&t, "ABCDE\n    X");
     }
 }
 
@@ -365,7 +365,7 @@ fn cursor_state_cursorright_resets_wrap() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "ABCDX");
+        assert_text(&t, "ABCDX");
     }
 }
 
@@ -378,7 +378,7 @@ fn cursor_state_cursorright_left_of_right_margin() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "  X");
+        assert_text(&t, "  X");
     }
 }
 
@@ -392,6 +392,6 @@ fn cursor_state_cursorright_right_of_right_margin() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "    X");
+        assert_text(&t, "    X");
     }
 }

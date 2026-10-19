@@ -1,6 +1,6 @@
 //! Direct printing entry points and retained cell ownership.
 
-use super::support::terminal::{cell, clear_dirty, dirty, plain, row};
+use super::support::terminal::{assert_text, cell, clear_dirty, dirty, row};
 use maestro_terminal::page::cell::Wide;
 use maestro_terminal::sgr::Attribute;
 use maestro_terminal::{Coordinate, Mode, Point, Terminal, ansi::StatusDisplay};
@@ -96,7 +96,7 @@ fn screen_input_with_no_control_characters() {
     assert_eq!(t.screens.active().cursor.y, 0);
     assert_eq!(t.screens.active().cursor.x, 5);
     {
-        assert_eq!(plain(&t), "hello");
+        assert_text(&t, "hello");
     }
 
     assert!(dirty(&t, 0));
@@ -112,7 +112,7 @@ fn screen_input_with_basic_wraparound() {
     assert_eq!(t.screens.active().cursor.x, 4);
     assert!(t.screens.active().cursor.pending_wrap);
     {
-        assert_eq!(plain(&t), "hello\nworld\nabc12");
+        assert_text(&t, "hello\nworld\nabc12");
     }
 }
 
@@ -137,7 +137,7 @@ fn screen_input_that_forces_scroll() {
     assert_eq!(t.screens.active().cursor.y, 4);
     assert_eq!(t.screens.active().cursor.x, 0);
     {
-        assert_eq!(plain(&t), "b\nc\nd\ne\nf");
+        assert_text(&t, "b\nc\nd\ne\nf");
     }
 }
 
@@ -308,7 +308,7 @@ fn screen_render_over_wide_spacer_tail() {
     }
 
     {
-        assert_eq!(plain(&t), " X");
+        assert_text(&t, " X");
     }
 
     assert!(dirty(&t, 0));
@@ -352,7 +352,7 @@ fn screen_insert_mode_with_space() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "hXello");
+        assert_text(&t, "hXello");
     }
 }
 
@@ -366,7 +366,7 @@ fn screen_insert_mode_does_not_wrap_pushed_characters() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "hXell");
+        assert_text(&t, "hXell");
     }
 }
 
@@ -379,7 +379,7 @@ fn screen_insert_mode_does_nothing_at_the_end_of_the_line() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "hello\nX");
+        assert_text(&t, "hello\nX");
     }
 }
 
@@ -393,7 +393,7 @@ fn screen_insert_mode_with_wide_characters() {
     t.print('😀').unwrap();
 
     {
-        assert_eq!(plain(&t), "h😀el");
+        assert_text(&t, "h😀el");
     }
 }
 
@@ -406,7 +406,7 @@ fn screen_insert_mode_with_wide_characters_at_end() {
     t.print('😀').unwrap();
 
     {
-        assert_eq!(plain(&t), "well\n😀");
+        assert_text(&t, "well\n😀");
     }
 }
 
@@ -421,6 +421,6 @@ fn screen_insert_mode_pushing_off_wide_character() {
     t.print('X').unwrap();
 
     {
-        assert_eq!(plain(&t), "X123");
+        assert_text(&t, "X123");
     }
 }

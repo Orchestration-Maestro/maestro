@@ -37,38 +37,37 @@ pub(crate) fn clear_dirty(t: &mut Terminal) {
     }
 }
 
-pub(crate) fn plain(t: &Terminal) -> String {
+pub(crate) fn assert_text(t: &Terminal, expected: &str) {
     let screen = t.screens.active();
-    let mut lines = Vec::new();
+    let mut lines = expected.split('\n');
     for y in 0..u32::from(t.rows()) {
+        let mut chars = lines.next().unwrap_or_default().chars();
         let pin = screen
             .pages
             .pin(Point::Active(Coordinate { x: 0, y }))
             .unwrap();
         let page = screen.pages.page(pin.node).unwrap();
-        let mut line = String::new();
         for (x, cell) in page.get_cells(pin.y).iter().enumerate() {
             if matches!(cell.wide(), Wide::SpacerTail | Wide::SpacerHead) {
                 continue;
             }
             let cp = cell.codepoint();
-            line.push(if cp == '\0' { ' ' } else { cp });
-            if cell.has_grapheme() {
-                line.extend(
-                    page.lookup_grapheme(CellPosition {
-                        x: u16::try_from(x).unwrap(),
-                        y: pin.y,
-                    })
-                    .unwrap(),
-                );
+            if let Some(expected) = chars.next() {
+                assert_eq!(if cp == '\0' { ' ' } else { cp }, expected, "cell {x},{y}");
+            } else {
+                assert!(matches!(cp, '\0' | ' '), "unexpected cell {x},{y}: {cp:?}");
+            }
+            let position = CellPosition {
+                x: u16::try_from(x).unwrap(),
+                y: pin.y,
+            };
+            for &scalar in page.lookup_grapheme(position).unwrap_or_default() {
+                assert_eq!(chars.next(), Some(scalar), "suffix at {x},{y}");
             }
         }
-        lines.push(line.trim_end_matches(' ').to_owned());
+        assert_eq!(chars.next(), None, "unmatched text on row {y}");
     }
-    while lines.last().is_some_and(String::is_empty) {
-        lines.pop();
-    }
-    lines.join("\n")
+    assert_eq!(lines.next(), None, "expected text exceeds active rows");
 }
 
 pub(crate) fn row(t: &Terminal, y: u32) -> maestro_terminal::page::row::Row {
@@ -78,4 +77,17 @@ pub(crate) fn row(t: &Terminal, y: u32) -> maestro_terminal::page::row::Row {
         .pin(Point::Active(Coordinate { x: 0, y }))
         .unwrap();
     *pin.row_and_cell(&screen.pages).unwrap().0
+}
+
+pub(crate) fn suffix(t: &Terminal, x: u16, y: u32) -> Option<&[char]> {
+    let screen = t.screens.active();
+    let pin = screen
+        .pages
+        .pin(Point::Active(Coordinate { x, y }))
+        .unwrap();
+    screen
+        .pages
+        .page(pin.node)
+        .unwrap()
+        .lookup_grapheme(CellPosition { x, y: pin.y })
 }
