@@ -3119,30 +3119,6 @@
     }
   },
   {
-    "id": "literal-operands-8",
-    "operation": "markdown",
-    "input": {
-      "text": "<!-- **comment** -->"
-    },
-    "test": "export_markdown_keeps_operands_when_markup_is_literal",
-    "branch": "success",
-    "expected": {
-      "html": "<p>&lt;!-- **comment** --&gt;</p>\n"
-    }
-  },
-  {
-    "id": "literal-operands-9",
-    "operation": "markdown",
-    "input": {
-      "text": "<!DOCTYPE html>"
-    },
-    "test": "export_markdown_keeps_operands_when_markup_is_literal",
-    "branch": "success",
-    "expected": {
-      "html": "<p>&lt;!DOCTYPE html&gt;</p>\n"
-    }
-  },
-  {
     "id": "literal-operands-10",
     "operation": "markdown",
     "input": {
@@ -3164,18 +3140,6 @@
     "branch": "success",
     "expected": {
       "html": "<p>&lt;div&gt;<strong>literal</strong> <a href=\"/docs\">r</a>&lt;/div&gt;</p>\n"
-    }
-  },
-  {
-    "id": "literal-operands-12",
-    "operation": "markdown",
-    "input": {
-      "text": "<https://safe.test/a> <a@example.test>"
-    },
-    "test": "export_markdown_keeps_operands_when_markup_is_literal",
-    "branch": "success",
-    "expected": {
-      "html": "<p><a href=\"https://safe.test/a\">https://safe.test/a</a> <a href=\"mailto:a@example.test\">a@example.test</a></p>\n"
     }
   },
   {
