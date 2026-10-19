@@ -373,7 +373,7 @@ fn mapped_links_share_one_policy_aware_scanner() {
 
 #[test]
 fn quotes_keep_lazy_continuations_and_nested_extents() {
-    observations::check("quote", 9);
+    observations::check("quote", 11);
     for input in ["> one\n> https://frame.test\n", "> https://frame.test\n"] {
         let mut document = parse(input.into());
         maestro_markdown::autolinks(&mut document);
@@ -389,6 +389,22 @@ fn quotes_keep_lazy_continuations_and_nested_extents() {
             .unwrap();
         assert_eq!(&document.source[link.range.clone()], "https://frame.test");
         assert_eq!(link.authored, "https://frame.test");
+    }
+    // A definition chunk adds no node, so the list it follows continues only after it.
+    for options in [
+        MarkedOptions::Terminal,
+        MarkedOptions::Browser { escape_html: false },
+        MarkedOptions::Browser { escape_html: true },
+        MarkedOptions::Export,
+    ] {
+        let document = parse_with_options("> - a\n      p\n> [s]: /y\ne\n".into(), options);
+        let Kind::Quote(children, _) = &document.nodes[0].kind else {
+            panic!("quote")
+        };
+        assert!(matches!(children[0].kind, Kind::List(..)), "{options:?}");
+        let last = children.last().unwrap();
+        assert!(matches!(last.kind, Kind::Paragraph(_)), "{options:?}");
+        assert_eq!(&document.source[last.range.clone()], "e\n", "{options:?}");
     }
 }
 

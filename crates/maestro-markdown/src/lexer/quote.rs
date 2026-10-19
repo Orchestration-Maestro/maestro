@@ -35,8 +35,13 @@ impl<E> Lexer<'_, E> {
                 let old = children.pop()?;
                 let local = body.local(&old.range)?;
                 self.forget(&old);
-                let (_, node) = self.container(&body.view(local.start..body.text.len()))?;
-                cursor = source.local(&node.range)?.end;
+                // Continue the container with its own text and only the lines no chunk consumed.
+                let end =
+                    local.end + usize::from(body.text.as_bytes().get(local.end) == Some(&b'\n'));
+                let mut input = body.select(std::iter::once(local.start..end));
+                input.append(source.select(std::iter::once(cursor..limit)));
+                let (_, node) = self.container(&input.view(0..input.text.len()))?;
+                cursor = cursor.max(source.local(&node.range)?.end);
                 cursor += usize::from(source.text.as_bytes().get(cursor) == Some(&b'\n'));
                 children.push(node);
             }
