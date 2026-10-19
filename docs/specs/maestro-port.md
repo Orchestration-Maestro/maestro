@@ -201,7 +201,10 @@ Shared-workflow changes require one separate issue and clone in maestro-rust-wor
 content. Feature modules prepare literal native text; the shared browser host
 owns admission, placement, live natural-height readback, modal visibility and
 teardown. Reading factories receive the canvas's actual document and return the
-native root with identified empty canvas-control slots. Placements supply actual
+native root with identified empty canvas-control slots. A contained reading frame
+is positioned within its retained native row slot; the containing registry
+viewport supplies scrolling and clipping. Positional slots grow and truncate
+without replacing the containing root or untouched rows. Placements supply actual
 control sizes by identity; live readback returns full slot rectangles in frame-local
 canvas points alongside unclipped natural height. The retained native tree is
 frame → viewport → feature root. The outer frame owns position, size, separate-axis
