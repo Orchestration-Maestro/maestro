@@ -255,6 +255,7 @@ pub(crate) const DEVELOPMENT: &[(&str, &str)] = &[
     ("maestro-extensions-wasmtime", "maestro-models"),
     ("maestro-extensions-wasmtime", "maestro-session"),
     ("maestro-extensions-wasmtime", "maestro-theme"),
+    ("maestro-extensions-wasmtime", "maestro-tui"),
 ];
 
 /// Foundation utility that native crates may use beyond their table row.
