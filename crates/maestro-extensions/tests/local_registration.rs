@@ -20,8 +20,7 @@ use std::{
 };
 use tokio::{sync::oneshot, task::yield_now};
 
-#[path = "support/local.rs"]
-mod local_support;
+use crate::local_support;
 use local_support::{
     Loaded, LocalBus, Released, STALE, Trace, listener, loaded, local, mark, runner, source,
 };

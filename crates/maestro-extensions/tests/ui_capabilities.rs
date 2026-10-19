@@ -1,21 +1,12 @@
 //! Retained UI capabilities, headless results and typed message renderers.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[path = "support/limited_host.rs"]
-mod limited_host;
-#[path = "support/local.rs"]
-mod local_support;
-#[allow(dead_code, reason = "Shared terminal fixture.")]
-#[path = "../../maestro-test-terminal/tests/support/manual_runtime.rs"]
-mod manual_runtime;
+use crate::limited_host;
+use crate::local_support;
 #[allow(dead_code, reason = "Shared theme publication fixture.")]
 #[path = "../../maestro-theme/tests/published/mod.rs"]
 mod published;
-#[allow(dead_code, reason = "Shared terminal fixture.")]
-#[path = "../../maestro-test-terminal/tests/support/recording_terminal.rs"]
-mod recording_terminal;
-#[path = "support/ui_host.rs"]
-mod ui_host;
+use crate::ui_host;
 #[path = "support/ui_toolkit.rs"]
 mod ui_toolkit;
 use ui_host::Named;

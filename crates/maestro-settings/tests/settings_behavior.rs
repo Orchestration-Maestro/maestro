@@ -1,12 +1,9 @@
 //! Accessor, default, conversion and merge behavior of the settings manager.
 
 #[cfg(test)]
-mod support;
-
-#[cfg(test)]
 mod tests {
-    use super::support;
-    use super::support::{
+    use crate::support;
+    use crate::support::{
         block_on, manager, manager_with, manager_with_both, raw_json, settings, text_entries,
     };
     use maestro_settings::{
@@ -1527,8 +1524,10 @@ mod tests {
             return report_environment_matrix();
         }
         for env in [None, Some(""), Some("0"), Some("1"), Some("true")] {
-            let mut child =
-                support::child_command("environment_fallback_distinguishes_null", "env");
+            let mut child = support::child_command(
+                "settings_behavior::tests::environment_fallback_distinguishes_null",
+                "env",
+            );
             child
                 .env_remove(CLEAR_ON_SHRINK_ENV)
                 .env_remove(HARDWARE_CURSOR_ENV);
@@ -1624,7 +1623,10 @@ mod tests {
         if support::child_case().is_some() {
             return report_session_dirs();
         }
-        let mut child = support::child_command("session_dir_expands_only_home_prefix", "paths");
+        let mut child = support::child_command(
+            "settings_behavior::tests::session_dir_expands_only_home_prefix",
+            "paths",
+        );
         child.env(home::VARIABLE, home::PATH);
         let mut expected: Vec<Option<String>> = session_dir_cases()
             .into_iter()

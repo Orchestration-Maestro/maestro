@@ -1,7 +1,6 @@
 #![cfg(test)]
 
-#[path = "fixtures/toolchain_support.rs"]
-mod toolchain_support;
+use crate::toolchain_support;
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -22,7 +21,7 @@ fn child_toolchain_uses_declared_pin() {
             command
                 .args([
                     "--exact",
-                    "child_toolchain_uses_declared_pin",
+                    "tooling_commands::child_toolchain_uses_declared_pin",
                     "--nocapture",
                 ])
                 .env("MAESTRO_TOOLCHAIN_CONTROL", "1")
@@ -39,6 +38,9 @@ fn child_toolchain_uses_declared_pin() {
                 "{}\n{}",
                 String::from_utf8_lossy(&output.stdout),
                 String::from_utf8_lossy(&output.stderr)
+            );
+            assert!(
+                String::from_utf8_lossy(&output.stdout).contains("parent environment unchanged")
             );
             print!("{}", String::from_utf8_lossy(&output.stdout));
         }
@@ -216,7 +218,7 @@ fn child_toolchain_preserves_parent_profile_destination() {
         .current_dir(std::env::temp_dir())
         .args([
             "--exact",
-            "child_toolchain_preserves_parent_profile_destination",
+            "tooling_commands::child_toolchain_preserves_parent_profile_destination",
             "--nocapture",
         ])
         .env(PROBE, "1")
@@ -236,6 +238,7 @@ fn child_toolchain_preserves_parent_profile_destination() {
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
+    assert!(String::from_utf8_lossy(&output.stdout).contains("test result: ok. 1 passed;"));
 }
 
 #[test]
@@ -410,7 +413,11 @@ fn main() {
                     .into_iter()
                     .filter_map(|name| std::env::var_os(name).map(|value| (name, value))),
             )
-            .args(["--exact", test, "--nocapture"])
+            .args([
+                "--exact",
+                &format!("tooling_commands::{test}"),
+                "--nocapture",
+            ])
             .env("MAESTRO_DRIVER", operation)
             .env("MAESTRO_FIXTURE_CARGO", &self.child)
             .env("MAESTRO_FIXTURE_ROOT", &self.root)

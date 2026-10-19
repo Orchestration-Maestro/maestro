@@ -1,7 +1,5 @@
 //! Owned registration and current query behavior.
 #![cfg(not(target_arch = "wasm32"))]
-#[path = "support/limited_host.rs"]
-mod limited_host;
 #[path = "support/registration.rs"]
 mod support;
 use maestro_extensions::types::RegisteredCommandOptions;
@@ -334,7 +332,7 @@ mod tests {
         ExtensionRunner::<maestro_models::Threaded>::new(
             Arc::new(RwLock::new(Vec::new())),
             maestro_extensions::create_extension_runtime::<maestro_models::Threaded>(),
-            crate::support::session::runner_session("/workspace").0,
+            crate::session::runner_session("/workspace").0,
             Arc::new(|_| {}),
             maestro_theme::LiveTheme::default(),
         )

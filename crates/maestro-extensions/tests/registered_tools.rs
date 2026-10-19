@@ -1,17 +1,14 @@
 //! Retained registration through real facades and runner consumers.
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
-#[allow(dead_code, reason = "Shared local fixture.")]
-#[path = "support/local.rs"]
-mod support;
+use crate::local_support as support;
 use maestro_extensions::{ExtensionExecution, types::*};
 use maestro_models::{Local, Tool};
 use maestro_tools::ToolDefinitionRecord;
 use serde_json::{Value, json};
 use std::{rc::Rc, sync::RwLock};
 
-#[path = "support/tool.rs"]
-mod tool_support;
+use crate::tool_support;
 use tool_support::definition;
 
 #[test]
@@ -171,12 +168,7 @@ fn registered_tools_forward_preparation_context_progress_and_errors() {
     });
 }
 
-#[allow(
-    dead_code,
-    reason = "This program uses part of the tools display support."
-)]
-#[path = "../../maestro-tools/tests/display_support/mod.rs"]
-mod display_support;
+use crate::display_support;
 use maestro_tools::{
     ToolRenderResult, ToolRenderResultOptions, ToolRendererState,
     output::render_utils::ToolRenderResultLike,
@@ -824,8 +816,7 @@ fn check_raw_names_and_plural_order() {
     }
 }
 
-#[path = "support/model.rs"]
-mod model_support;
+use crate::model_support;
 
 /// A pending invocation retains the old model reader, while the next gets the rebinding.
 async fn check_suspended_context_rebinding() {

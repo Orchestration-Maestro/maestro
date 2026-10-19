@@ -17,8 +17,7 @@ use std::{
 use tokio::task::JoinHandle;
 
 /// Real in-memory session operands.
-#[path = "session.rs"]
-pub mod session;
+pub(crate) use crate::session;
 
 /// The complete default stale-context guidance.
 pub const STALE: &str = "This extension ctx is stale after session replacement or reload. Do not use a captured maestro or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().";
