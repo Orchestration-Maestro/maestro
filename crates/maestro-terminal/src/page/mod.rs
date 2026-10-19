@@ -47,6 +47,9 @@ mod hyperlinks;
 
 /// Owned rows, cells and the storage used by their managed content.
 pub struct Page {
+    /// Cell visits made by row movement and suffix-flag refreshes in tests.
+    #[cfg(test)]
+    pub(crate) row_shift_work: usize,
     /// Current addressable dimensions, bounded by capacity.
     pub size: Size,
     /// Fixed storage budgets chosen at initialization.
@@ -84,6 +87,8 @@ impl Page {
     pub fn init(capacity: Capacity) -> Self {
         assert!(capacity.rows > 0);
         Self {
+            #[cfg(test)]
+            row_shift_work: 0,
             size: Size {
                 cols: capacity.cols,
                 rows: capacity.rows,
@@ -169,6 +174,14 @@ impl Page {
         self.row_offsets[usize::from(position.y)] + usize::from(position.x)
     }
 
+    /// Exchange logical rows without touching their physical cells or managed maps.
+    pub(crate) fn swap_rows(&mut self, source: u16, destination: u16) {
+        self.rows
+            .swap(usize::from(source), usize::from(destination));
+        self.row_offsets
+            .swap(usize::from(source), usize::from(destination));
+    }
+
     /// Rotate logical rows together with their physical cell ownership.
     pub(crate) fn rotate_rows(&mut self, rows: std::ops::Range<u16>, amount: usize) {
         let rows = usize::from(rows.start)..usize::from(rows.end);
@@ -183,6 +196,8 @@ mod tests;
 impl Clone for Page {
     fn clone(&self) -> Self {
         Self {
+            #[cfg(test)]
+            row_shift_work: self.row_shift_work,
             size: self.size,
             capacity: self.capacity,
             dirty: self.dirty,

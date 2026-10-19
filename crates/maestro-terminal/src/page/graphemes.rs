@@ -103,6 +103,10 @@ impl Page {
 
     /// Clear the row's suffix flag when no addressable cell retains one.
     pub fn update_row_grapheme_flag(&mut self, y: u16) {
+        #[cfg(test)]
+        {
+            self.row_shift_work += usize::from(self.size.cols);
+        }
         if !self.get_cells(y).iter().any(|cell| cell.has_grapheme()) {
             self.rows[usize::from(y)].set_grapheme(false);
         }

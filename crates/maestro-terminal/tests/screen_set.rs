@@ -209,3 +209,20 @@ fn screen_set_active_transitions_refuse_invalid_lifetimes() {
     set.remove(Key::Alternate).unwrap();
     assert_eq!(set.generation(Key::Alternate), 1);
 }
+
+#[test]
+fn active_removal_preserves_selected_residency() {
+    use maestro_terminal::screen_set::ScreenSetError;
+    let mut set = ScreenSet::init(Options::default());
+    set.get_init(Key::Alternate, Options::default());
+    set.switch_to(Key::Alternate).unwrap();
+    assert!(set.get(set.active_key()).is_some());
+    assert_eq!(
+        set.remove(Key::Alternate),
+        Err(ScreenSetError::ActiveRemoval)
+    );
+    assert!(std::ptr::eq(
+        set.active(),
+        set.get(set.active_key()).unwrap()
+    ));
+}

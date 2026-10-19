@@ -22,13 +22,7 @@ impl PageList {
         }
         let page = self.page_mut(src.node).ok_or(StorageError::OutOfMemory)?;
         if columns.start == 0 && columns.end == page.size.cols {
-            for x in columns {
-                page.swap_cells(CellPosition { x, y: src.y }, CellPosition { x, y: dst.y });
-            }
-            let source = *page.get_row(src.y);
-            let destination = *page.get_row(dst.y);
-            *page.get_row_mut(src.y) = destination;
-            *page.get_row_mut(dst.y) = source;
+            page.swap_rows(src.y, dst.y);
         } else {
             page.move_cells(
                 CellPosition {

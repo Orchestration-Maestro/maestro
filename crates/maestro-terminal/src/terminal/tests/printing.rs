@@ -425,3 +425,65 @@ fn screen_overwrite_hyperlink() {
     }
     assert!(dirty(&t, 0));
 }
+
+#[test]
+fn row_shifts_retain_traversal_across_destination_growth() {
+    for insert in [false, true] {
+        let mut t = Terminal::new(600, 100, 0).unwrap();
+        let pages = &t.screens.active().pages;
+        let origin = pages.get_top_left(crate::point::Tag::Active);
+        let boundary = (2..98)
+            .find(|y| origin.down(pages, *y).unwrap().y == 0)
+            .unwrap();
+        let source = if insert { boundary - 1 } else { boundary };
+        let destination = if insert { boundary } else { boundary - 1 };
+        t.screens
+            .active_mut()
+            .cursor_absolute(0, u16::try_from(source).unwrap());
+        t.set_attribute(Attribute::Bold).unwrap();
+        for _ in 0..600 {
+            t.print_string("a\u{301}").unwrap();
+        }
+        let pages = &t.screens.active().pages;
+        let old = pages
+            .get_top_left(crate::point::Tag::Active)
+            .down(pages, destination)
+            .unwrap()
+            .node;
+        let tracked_count = t.screens.active().pages.tracked_pins().count();
+        t.scrolling_region.top = u16::try_from(boundary - 2).unwrap();
+        t.scrolling_region.bottom = u16::try_from(boundary + 2).unwrap();
+        t.screens
+            .active_mut()
+            .cursor_absolute(0, t.scrolling_region.top);
+        if insert {
+            t.insert_lines(1).unwrap();
+        } else {
+            t.delete_lines(1).unwrap();
+        }
+        let pages = &t.screens.active().pages;
+        assert!(pages.page(old).is_none(), "destination must have grown");
+        assert_eq!(pages.tracked_pins().count(), tracked_count);
+        let pin = pages
+            .pin(Point::Active(Coordinate {
+                x: 0,
+                y: u32::try_from(destination).unwrap(),
+            }))
+            .unwrap();
+        let page = pages.page(pin.node).unwrap();
+        for x in 0..600 {
+            assert_eq!(page.get_cells(pin.y)[usize::from(x)].codepoint(), 'a');
+            assert_eq!(
+                page.lookup_grapheme(crate::page::CellPosition { x, y: pin.y }),
+                Some(&['\u{301}'][..])
+            );
+            assert!(
+                page.styles
+                    .get(page.get_cells(pin.y)[usize::from(x)].style_id())
+                    .flags
+                    .bold()
+            );
+        }
+        assert!(pin.is_dirty(pages).unwrap());
+    }
+}

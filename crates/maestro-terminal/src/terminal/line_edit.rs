@@ -7,7 +7,7 @@ use crate::{
         CellPosition, StorageError,
         cell::{Content, Wide},
     },
-    page_list::{IncreaseCapacity, IncreaseCapacityError as Error, Pin},
+    page_list::{IncreaseCapacity, IncreaseCapacityError as Error, Pin, TrackedPin},
 };
 
 impl Terminal {
@@ -99,46 +99,78 @@ impl Terminal {
     /// Visit rows in the direction that preserves every source until consumed.
     fn shift_rows(&mut self, start: u16, count: u16, insert: bool) -> Result<(), Error> {
         let bottom = self.scrolling_region.bottom;
-        for offset in 0..=bottom - start {
-            let y = if insert {
-                bottom - offset
+        let pin = self.row_pin(if insert { bottom } else { start })?;
+        let tracked = self
+            .screens
+            .active_mut()
+            .pages
+            .track_pin(pin)
+            .ok_or(Error::InvalidNode)?;
+        let result = self.shift_pinned_rows(tracked, bottom - start, count, insert);
+        self.screens.active_mut().pages.untrack_pin(tracked);
+        result
+    }
+
+    /// Advance a retained destination monotonically, including after page growth.
+    fn shift_pinned_rows(
+        &mut self,
+        tracked: TrackedPin,
+        distance: u16,
+        count: u16,
+        insert: bool,
+    ) -> Result<(), Error> {
+        let advance = if insert { Pin::up } else { Pin::down };
+        for offset in 0..=distance {
+            let dst = self.shift_pin(tracked)?;
+            let source = if offset < distance + 1 - count {
+                let pages = &self.screens.active().pages;
+                Some(advance(dst, pages, usize::from(count)).ok_or(Error::InvalidNode)?)
             } else {
-                start + offset
+                None
             };
-            let source = if insert {
-                y.checked_sub(count).filter(|v| *v >= start)
-            } else {
-                y.checked_add(count).filter(|v| *v <= bottom)
-            };
-            self.shift_row(y, source)?;
+            self.shift_row(tracked, source)?;
+            if offset < distance {
+                let dst = self.shift_pin(tracked)?;
+                let pages = &mut self.screens.active_mut().pages;
+                let next = advance(dst, pages, 1).ok_or(Error::InvalidNode)?;
+                *pages.tracked_pin_mut(tracked).ok_or(Error::InvalidNode)? = next;
+            }
         }
         Ok(())
     }
 
+    /// Resolve a traversal handle after any destination page replacement.
+    fn shift_pin(&self, tracked: TrackedPin) -> Result<Pin, Error> {
+        self.screens
+            .active()
+            .pages
+            .tracked_pin(tracked)
+            .copied()
+            .ok_or(Error::InvalidNode)
+    }
+
     /// Prepare and move one row, retrying after destination capacity growth.
-    fn shift_row(&mut self, y: u16, source: Option<u16>) -> Result<(), Error> {
-        self.row_will_be_shifted(y)?;
+    fn shift_row(&mut self, destination: TrackedPin, source: Option<Pin>) -> Result<(), Error> {
+        let dst = self.shift_pin(destination)?;
+        self.row_will_be_shifted(dst)?;
         let r = self.scrolling_region;
         if let Some(source) = source {
             self.row_will_be_shifted(source)?;
-            self.transfer_row(source, y)?;
+            self.transfer_row(source, dst)?;
         } else {
-            let pin = self.row_pin(y)?;
             self.screens
                 .active_mut()
-                .clear_cells(pin.node, pin.y, r.left..r.right + 1);
+                .clear_cells(dst.node, dst.y, r.left..r.right + 1);
         }
-        let pin = self.row_pin(y)?;
-        pin.mark_dirty(&mut self.screens.active_mut().pages);
+        self.shift_pin(destination)?
+            .mark_dirty(&mut self.screens.active_mut().pages);
         Ok(())
     }
 
     /// Retry only the current cross-page transfer after growing its exhausted owner.
-    fn transfer_row(&mut self, source: u16, destination: u16) -> Result<(), Error> {
+    fn transfer_row(&mut self, src: Pin, mut dst: Pin) -> Result<(), Error> {
         let r = self.scrolling_region;
         loop {
-            let src = self.row_pin(source)?;
-            let dst = self.row_pin(destination)?;
             let Err(error) =
                 self.screens
                     .active_mut()
@@ -147,7 +179,8 @@ impl Terminal {
             else {
                 return Ok(());
             };
-            self.screens
+            dst.node = self
+                .screens
                 .active_mut()
                 .increase_capacity(dst.node, Some(copy_adjustment(error)))?;
         }
@@ -166,8 +199,7 @@ impl Terminal {
     }
 
     /// Remove split-wide boundaries and full-width wrap metadata before shifting.
-    fn row_will_be_shifted(&mut self, y: u16) -> Result<(), Error> {
-        let pin = self.row_pin(y)?;
+    fn row_will_be_shifted(&mut self, pin: Pin) -> Result<(), Error> {
         let r = self.scrolling_region;
         let page = self
             .screens
@@ -187,13 +219,15 @@ impl Terminal {
             .into_iter()
             .flatten()
         {
-            page.clear_grapheme(CellPosition { x, y: pin.y });
+            if page.get_cells(pin.y)[usize::from(x)].has_grapheme() {
+                page.clear_grapheme(CellPosition { x, y: pin.y });
+                page.update_row_grapheme_flag(pin.y);
+            }
             let cells = page.get_cells_mut(pin.y);
             cells[usize::from(x)].set_content(Content::Codepoint('\0'));
             cells[usize::from(x)].set_wide(Wide::Narrow);
             cells[usize::from(x + 1)].set_wide(Wide::Narrow);
         }
-        page.update_row_grapheme_flag(pin.y);
         if r.left == 0 && r.right == self.cols - 1 {
             page.get_row_mut(pin.y).set_wrap(false);
             page.get_row_mut(pin.y).set_wrap_continuation(false);
