@@ -57,6 +57,8 @@ mod storage_exports;
 mod text_image_artifacts;
 mod text_image_artifacts_browser;
 mod thinking_blocks_browser;
+mod tool_cards;
+mod tool_cards_browser;
 mod tool_renderers;
 mod tool_renderers_browser;
 
@@ -94,7 +96,12 @@ pub mod session_links_support;
 pub mod support;
 #[path = "artifact_support/text_image.rs"]
 pub mod text_image_support;
+#[cfg(target_arch = "wasm32")]
+pub mod tool_cards_support;
 pub mod tool_renderer_support;
+use tool_renderer_support as recipes;
+#[cfg(target_arch = "wasm32")]
+use tool_renderer_support::browser as tool_renderer_browser;
 
 mod message_renderer_support;
 use tool_renderer_support as renderer_recipes;

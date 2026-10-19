@@ -283,7 +283,7 @@ from the optional foundation utility described below.
 | Crate | One job | Allowed internal dependencies | Layer |
 |---|---|---|---|
 | `maestro-text` | implement common text operations (whitespace, lexical comparison, markup escaping, CSS string serialization, locale construction and number formatting) | — | below 0 |
-| `maestro-json` | implement JSON boundary semantics (object acceptance, canonical keys, truth, compact and pretty text, JSONL line framing) | — | below 0 |
+| `maestro-json` | implement JSON boundary semantics (object acceptance, canonical keys, truth, selected-value display, compact and pretty text, JSONL line framing) | — | below 0 |
 | `maestro-cancellation` | signal cooperative cancellation | — | below 0 |
 | `maestro-request` | define shared message and model-request records | `maestro-json` | below 0 |
 | `maestro-entry` | define session interchange records | `maestro-request` | below 0 |
@@ -337,7 +337,7 @@ internal dependencies. Only models and the terminal toolkit may depend on it.
 dependencies, including `maestro-path`. Text owns common text operations: whitespace,
 lexical comparison, markup escaping, CSS string serialization, locale construction and optional locale-number
 formatting shared by transcript components. JSON owns JSON boundary
-semantics: object acceptance, canonical keys, truth, compact and pretty text, and JSONL line framing.
+semantics: object acceptance, canonical keys, truth, selected-value display, compact and pretty text, and JSONL line framing.
 `maestro-entry` and `maestro-tool` are core record contracts below layer 0 that depend
 only on `maestro-request`: entry defines session interchange records, including the
 `ForkPosition`, `NavigateTreeOptions` and generic `CompactionResult<T>` shared by native generation and guest authoring; tool defines
@@ -356,7 +356,9 @@ summaries enable it. User-authored Markdown leaves it disabled.
 
 `maestro-tools` may depend directly on `maestro-text`, the
 single owner of newline normalization shared by the edit tool, frontmatter and the editor.
-Tool renderer field selection reuses `maestro-json` for JSON truth.
+Tool renderer field selection reuses `maestro-json` for JSON truth and selected-value
+display. Callers keep field lookup and defaults; the leaf borrows truthy strings and
+writes other truthy values with its compact JSON writer.
 
 `maestro-request` defines shared message and model-request records: model
 descriptors, messages, content, usage, stream events and diagnostics, plus

@@ -120,7 +120,7 @@ This includes leaves, exact sets and the core-to-dedicated prohibition; the unif
   no workspace dependencies. Text owns common text operations (whitespace,
   lexical comparison, markup escaping, CSS string serialization, locale construction, streaming UTF-8, terminal control cleaning, newline
   normalization shared with `maestro-tools`); JSON owns JSON
-  boundary semantics (object acceptance, canonical keys, truth, compact and
+  boundary semantics (object acceptance, canonical keys, truth, selected-value display, compact and
   pretty text, JSONL line framing). `maestro-entry` and `maestro-tool` define session (including generic compaction results) and tool
   interchange records (entry includes `ForkPosition` and `NavigateTreeOptions`) and depend only on `maestro-request`; `maestro-brand`
   projects a brand pack and depends on text and JSON. Text, JSON, entry, tool and brand exist; add no `common`, `utils` or

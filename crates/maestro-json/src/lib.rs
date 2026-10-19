@@ -17,7 +17,7 @@ mod truth;
 
 pub use json_text::{
     BorrowedJson, compact_json, compact_members, compact_members_with_default, compact_object,
-    pretty_json, pretty_object,
+    display_truthy, pretty_json, pretty_object,
 };
 pub use keys::{array_index, canonical_entries};
 pub use truth::{is_raw_truthy, is_truthy};

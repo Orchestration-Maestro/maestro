@@ -29,3 +29,5 @@ pub mod markdown_block;
 pub mod console_block;
 /// Retained preview/source selection.
 pub mod preview_code_toggle;
+
+pub mod expandable_section;

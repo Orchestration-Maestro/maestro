@@ -3,7 +3,18 @@ use super::types::{ToolRenderer, ToolRendererBinding, ToolResultMessageView};
 use std::{cell::RefCell, rc::Rc};
 thread_local! {
     /// Browser-thread registrations, exposed for ordered enumeration and removal.
-    pub static TOOL_RENDERERS: RefCell<indexmap::IndexMap<String, ToolRendererBinding>> = RefCell::default();
+    pub static TOOL_RENDERERS: RefCell<indexmap::IndexMap<String, ToolRendererBinding>> = RefCell::new(default_renderers());
+}
+/// Install the command callback once; explicit replacement and removal stay effective.
+fn default_renderers() -> indexmap::IndexMap<String, ToolRendererBinding> {
+    let mut renderers = indexmap::IndexMap::new();
+    renderers.insert(
+        "bash".into(),
+        ToolRendererBinding::from_details_agnostic(Rc::new(
+            super::renderers::bash_renderer::BashRenderer,
+        )),
+    );
+    renderers
 }
 /// Register a name, retaining its original position on replacement.
 pub fn register_tool_renderer(tool_name: &str, renderer: ToolRendererBinding) {

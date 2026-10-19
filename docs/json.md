@@ -11,6 +11,9 @@ framing to this leaf.
   the empty string are false; every other string, array and object is true. A number
   beyond the range of a double is an infinity and so true, and one below it is zero and
   so false. Absence and nullish defaults stay with the caller.
+- **Selected values.** `display_truthy` returns no text for absent or falsy values,
+  borrows nonempty strings unchanged, and owns the compact JSON spelling of other
+  truthy values. Callers choose the field and fallback.
 - **Keys.** `array_index` accepts ASCII decimal spellings with no sign and no leading
   zero, from `0` to `4294967294`. `canonical_entries` stably places those keys first in
   ascending numeric order and leaves every other entry in the order given; it never drops

@@ -53,10 +53,28 @@ impl ToolRendererBinding {
         }
         binding
     }
+    /// Retain an output-only callback without restricting callers' native details.
+    pub(crate) fn from_details_agnostic(renderer: Rc<dyn ToolRenderer<JsonObject, ()>>) -> Self {
+        let binding = Self::from_raw(Rc::clone(&renderer));
+        binding.owner.state::<DetailsAgnostic>().borrow_mut().0 = Some(renderer);
+        binding
+    }
     /// Clone the renderer handle for these concrete operand types.
     #[must_use]
     pub fn renderer<P: 'static, D: 'static>(&self) -> Option<Rc<dyn ToolRenderer<P, D>>> {
         let slot = self.owner.state::<RendererSlot<P, D>>();
+        if slot.borrow().0.is_none()
+            && (TypeId::of::<P>() == TypeId::of::<JsonObject>()
+                || TypeId::of::<P>() == TypeId::of::<Value>())
+        {
+            let callback = self.owner.state::<DetailsAgnostic>().borrow().0.clone();
+            if let Some(renderer) = callback {
+                slot.borrow_mut().0 = Some(Rc::new(DetailsAdapter::<P, D> {
+                    renderer,
+                    marker: std::marker::PhantomData,
+                }));
+            }
+        }
         slot.borrow().0.clone()
     }
 }
@@ -116,6 +134,50 @@ impl<P, D: DeserializeOwned> DecodedRenderer<P, D> {
             .transpose()
             .map_err(|e| ToolUiError::Presentation(e.to_string()))?;
         let projected = result.map(|result| result.with_details(details.as_ref()));
+        self.renderer.render(params, projected, is_streaming)
+    }
+}
+
+/// The existing typed owner also retains output-only callbacks.
+#[derive(Default)]
+struct DetailsAgnostic(Option<Rc<dyn ToolRenderer<JsonObject, ()>>>);
+/// One cached native-operand adapter; original message fields remain borrowed.
+struct DetailsAdapter<P, D> {
+    /// Callback which never reads native details.
+    renderer: Rc<dyn ToolRenderer<JsonObject, ()>>,
+    /// Operand types retained only in the adapter's type identity.
+    marker: std::marker::PhantomData<fn(&P, &D)>,
+}
+impl<P: 'static, D> ToolRenderer<P, D> for DetailsAdapter<P, D> {
+    fn render(
+        &self,
+        params: Option<&P>,
+        result: Option<ToolResultMessageView<'_, D>>,
+        is_streaming: bool,
+    ) -> Result<ToolRenderResult, ToolUiError> {
+        let empty = JsonObject::new();
+        let params = params
+            .map(|params| -> Result<Option<&JsonObject>, ToolUiError> {
+                let any = params as &dyn std::any::Any;
+                if let Some(object) = any.downcast_ref::<JsonObject>() {
+                    return Ok(Some(object));
+                }
+                let value = any.downcast_ref::<Value>().ok_or_else(|| {
+                    ToolUiError::Presentation("Renderer operand types do not match".into())
+                })?;
+                Ok(if let Some(object) = value.as_object() {
+                    Some(object)
+                } else if maestro_app::is_truthy(value) {
+                    Some(&empty)
+                } else {
+                    None
+                })
+            })
+            .transpose()?
+            .flatten();
+        let projected = result
+            .as_ref()
+            .map(|result| result.with_details::<()>(None));
         self.renderer.render(params, projected, is_streaming)
     }
 }
