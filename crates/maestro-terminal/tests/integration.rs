@@ -166,3 +166,9 @@ mod focus_encoding;
 mod input_modifiers;
 
 mod input_events;
+
+mod legacy_encoding;
+
+mod legacy_controls;
+
+mod legacy_tables;

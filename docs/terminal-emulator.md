@@ -16,6 +16,15 @@ consumed-modifier masks, composition state, generated text and the unshifted
 codepoint. `Mods` keeps pressed keys, lock states and observed modifier sides
 separate. Consumed modifiers are removed only when the event has text.
 
+`input::key_encode::KeyEncoder::encode` returns the bytes for a key event.
+Its `modes` snapshot selects application cursor/keypad sequences, backarrow
+behavior, numeric-keypad handling and the alt escape prefix. The default encoder
+leaves these modes off; callers can change them through `modes.set`.
+`modify_other_keys_state_2` enables extended modified-character sequences.
+The encoder handles traditional control bytes, unambiguous control-key escapes
+and committed composition text; releases and intermediate composition emit nothing.
+`macos_option_as_alt` selects which option keys act as alt on macOS.
+
 Key text is owned. `KeyEvent::set_utf8` copies the supplied text, fixing the
 borrowed-buffer defect where changing the caller's text changed a stored event.
 

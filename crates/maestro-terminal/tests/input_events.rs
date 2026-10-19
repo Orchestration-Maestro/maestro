@@ -2,6 +2,7 @@
 
 use maestro_terminal::input::{
     key::{Key, KeyAction, KeyEvent},
+    key_encode::KeyEncoder,
     key_mods::Mods,
 };
 
@@ -46,6 +47,7 @@ fn key_events_keep_the_text_supplied_by_the_caller() {
     assert_eq!(event.utf8, "b");
     drop(text);
     assert_eq!(event.utf8, "b");
+    assert_eq!(KeyEncoder::default().encode(&event), b"b");
     event.set_utf8("é🦀");
     assert_eq!(event.utf8, "é🦀");
     event.set_utf8("");

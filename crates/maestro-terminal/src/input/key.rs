@@ -412,3 +412,85 @@ impl KeyEvent {
         }
     }
 }
+
+impl Key {
+    /// Return the base-layout codepoint, including numeric keypad characters.
+    #[must_use]
+    pub fn codepoint(self) -> Option<char> {
+        match self {
+            Self::KeyA => Some('a'),
+            Self::KeyB => Some('b'),
+            Self::KeyC => Some('c'),
+            Self::KeyD => Some('d'),
+            Self::KeyE => Some('e'),
+            Self::KeyF => Some('f'),
+            Self::KeyG => Some('g'),
+            Self::KeyH => Some('h'),
+            Self::KeyI => Some('i'),
+            Self::KeyJ => Some('j'),
+            Self::KeyK => Some('k'),
+            Self::KeyL => Some('l'),
+            Self::KeyM => Some('m'),
+            Self::KeyN => Some('n'),
+            Self::KeyO => Some('o'),
+            Self::KeyP => Some('p'),
+            Self::KeyQ => Some('q'),
+            Self::KeyR => Some('r'),
+            Self::KeyS => Some('s'),
+            Self::KeyT => Some('t'),
+            Self::KeyU => Some('u'),
+            Self::KeyV => Some('v'),
+            Self::KeyW => Some('w'),
+            Self::KeyX => Some('x'),
+            Self::KeyY => Some('y'),
+            Self::KeyZ => Some('z'),
+            Self::Digit0 => Some('0'),
+            Self::Digit1 => Some('1'),
+            Self::Digit2 => Some('2'),
+            Self::Digit3 => Some('3'),
+            Self::Digit4 => Some('4'),
+            Self::Digit5 => Some('5'),
+            Self::Digit6 => Some('6'),
+            Self::Digit7 => Some('7'),
+            Self::Digit8 => Some('8'),
+            Self::Digit9 => Some('9'),
+            Self::Semicolon => Some(';'),
+            Self::Space => Some(' '),
+            Self::Quote => Some('\''),
+            Self::Comma => Some(','),
+            Self::Backquote => Some('`'),
+            Self::Period => Some('.'),
+            Self::Slash => Some('/'),
+            Self::Minus => Some('-'),
+            Self::Equal => Some('='),
+            Self::BracketLeft => Some('['),
+            Self::BracketRight => Some(']'),
+            Self::Backslash => Some('\\'),
+            Self::Tab => Some('\t'),
+            _ => self.keypad_codepoint(),
+        }
+    }
+
+    /// Return the base codepoint for a numeric keypad key.
+    fn keypad_codepoint(self) -> Option<char> {
+        match self {
+            Self::Numpad0 => Some('0'),
+            Self::Numpad1 => Some('1'),
+            Self::Numpad2 => Some('2'),
+            Self::Numpad3 => Some('3'),
+            Self::Numpad4 => Some('4'),
+            Self::Numpad5 => Some('5'),
+            Self::Numpad6 => Some('6'),
+            Self::Numpad7 => Some('7'),
+            Self::Numpad8 => Some('8'),
+            Self::Numpad9 => Some('9'),
+            Self::NumpadDecimal => Some('.'),
+            Self::NumpadDivide => Some('/'),
+            Self::NumpadMultiply => Some('*'),
+            Self::NumpadSubtract => Some('-'),
+            Self::NumpadAdd => Some('+'),
+            Self::NumpadEqual => Some('='),
+            _ => None,
+        }
+    }
+}
