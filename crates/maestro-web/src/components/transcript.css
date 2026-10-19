@@ -1,0 +1,10 @@
+.maestro-transcript-cursor {
+    display: block;
+    width: 8px;
+    height: 16px;
+    background: var(--transcript-muted);
+    animation: maestro-transcript-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+@keyframes maestro-transcript-pulse {
+    50% { opacity: 0.5; }
+}

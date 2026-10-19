@@ -296,6 +296,22 @@ impl BrowserAttachmentHost {
 }
 
 impl AttachmentHost for BrowserAttachmentHost {
+    fn animation_frame(
+        &self,
+        callback: Rc<dyn Fn()>,
+    ) -> Result<crate::browser::timer::Timer, AttachmentHostError> {
+        let window = self
+            .document
+            .default_view()
+            .ok_or_else(|| AttachmentHostError::Host("Document has no window".into()))?;
+        crate::browser::timer::frame(window, callback).map_err(|error| host_error(&error))
+    }
+    fn reading_scroll(&self, id: egui::Id) -> Result<super::ReadingScroll, AttachmentHostError> {
+        self.scroll(id)
+    }
+    fn set_reading_scroll(&self, id: egui::Id, top: f64) -> Result<(), AttachmentHostError> {
+        self.set_scroll(id, top)
+    }
     fn enter_reading_container(
         &self,
         id: egui::Id,

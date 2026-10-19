@@ -44,6 +44,7 @@ pub fn transcript_registry_appends_and_retires_slots_without_replacing_native_ro
     let slots = Slots::new();
     slots.publish(egui::vec2(300., 80.), &Slots::sizes([(30., 20.); 3]));
     select_and_scroll(&slots.root());
+    assert_scroll_observations(&slots);
     let saved = snapshot(&slots.root());
     let calls = Cell::new(0);
     let unrelated = egui::Id::new("unrelated transcript owner");
@@ -94,6 +95,45 @@ pub fn transcript_registry_appends_and_retires_slots_without_replacing_native_ro
     assert_append_rollback(&slots);
     slots.host.remove(unrelated);
     assert_independent_release(slots, &roots);
+}
+
+/// Fractional read/write uses the actual viewport and survives repeated publication.
+fn assert_scroll_observations(slots: &Slots) {
+    let viewport = slots.wrapper();
+    slots.host.set_reading_scroll(slots.id, 42.5).unwrap();
+    let observed = slots.host.reading_scroll(slots.id).unwrap();
+    let native = js(
+        &viewport,
+        "return [value.scrollTop,value.scrollHeight,value.clientHeight,value.scrollLeft]",
+    );
+    let values = js_sys::Float64Array::new(&native);
+    assert_eq!(observed.top.to_bits(), values.get_index(0).to_bits());
+    assert_eq!(observed.height.to_bits(), values.get_index(1).to_bits());
+    assert_eq!(
+        observed.client_height.to_bits(),
+        values.get_index(2).to_bits()
+    );
+    let saved = snapshot(&slots.root());
+    slots.publish(egui::vec2(300., 80.), &Slots::sizes([(30., 20.); 3]));
+    unchanged(&saved);
+    assert_eq!(slots.host.reading_scroll(slots.id).unwrap(), observed);
+    assert!(slots.host.reading_scroll(egui::Id::new("absent")).is_err());
+    assert!(
+        slots
+            .host
+            .set_reading_scroll(egui::Id::new("absent"), 0.)
+            .is_err()
+    );
+    js(
+        &viewport,
+        "Object.defineProperty(value,'scrollTop',{configurable:true,set(){throw Error('scroll failure')}})",
+    );
+    assert!(matches!(
+        slots.host.set_reading_scroll(slots.id, 1.),
+        Err(AttachmentHostError::Host(_))
+    ));
+    js(&viewport, "delete value.scrollTop");
+    unchanged(&saved);
 }
 
 /// Releasing one containing tree detaches its descendants without releasing another instance.

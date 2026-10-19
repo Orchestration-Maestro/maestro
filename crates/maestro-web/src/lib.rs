@@ -18,6 +18,9 @@ pub use components::messages::{
     AbortedMessage, AssistantMessage, AssistantMessageProps, ToolMessage, ToolMessageDebugView,
     ToolMessageProps, UserMessage, UserMessageInput,
 };
+pub use components::streaming_message_container::{
+    StreamingMessageContainer, StreamingMessageProps,
+};
 pub use components::thinking_block::ThinkingBlock;
 pub use dialogs::attachment_overlay::AttachmentOverlay;
 pub mod export_html;

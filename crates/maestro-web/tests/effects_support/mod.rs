@@ -102,6 +102,9 @@ impl Host {
     }
 }
 impl AttachmentHost for Host {
+    fn animation_frame(&self, callback: Rc<dyn Fn()>) -> Result<Timer, AttachmentHostError> {
+        self.timer(1, false, callback)
+    }
     fn copy_to_clipboard(
         &self,
         text: &str,

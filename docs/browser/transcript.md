@@ -52,6 +52,27 @@ recipe still occupies its emitted position. Appending retains existing row owner
 a component-kind replacement retires only that position, and truncating releases
 only the removed rows. Refreshing the same history still publishes completed rows.
 
+## Streaming transcript row
+
+`StreamingMessageContainer::new(host)` starts empty. Call `set_message(message,
+immediate)` to update it, then render with `StreamingMessageProps`. Deferred
+updates coalesce on the next native animation frame. That publication snapshots
+nested assistant content; later edits to the source cannot change it. Immediate
+updates keep the supplied shared handle, so subsequent edits appear on rendering.
+Clearing is synchronous and revokes only this instance's pending frame. A new
+response can publish on its first frame after a clear.
+
+Only assistant messages render in the streaming row. Empty streaming state shows
+a cursor; empty idle state and other roles show nothing. The assistant receives
+the supplied tools, pending IDs, completed result map and cost action. Its child
+widgets retain disclosure state through updates. Clearing releases those children,
+so the next response starts collapsed. Keep returned overlays separately: a later
+child failure does not consume an already-opened overlay.
+
+The native cursor is 8 by 16 pixels, inset 16 pixels, with a two-second pulse in
+the selected pack's muted color. Editor input, send/abort actions and conversation
+statistics belong to the separate editor interface.
+
 ## Contained native reading
 
 `AttachmentHost::enter_reading_container` positions nested native frames inside a
@@ -65,6 +86,12 @@ replacing the containing root or untouched slots. Its factory receives the actua
 canvas document and returns owned nodes. Factories run without a registry borrow,
 and all additions are prepared before publication. A factory or native append
 failure leaves existing nodes, selection and scroll intact.
+
+`reading_scroll` reads the actual viewport's fractional top offset, full content
+height and client height in CSS pixels. `set_reading_scroll` assigns its vertical
+offset without moving the horizontal axis; normal browser clamping still applies.
+Unsupported hosts return a host error for these effects and for `animation_frame`,
+rather than successful empty observations.
 
 ## Custom message roles
 

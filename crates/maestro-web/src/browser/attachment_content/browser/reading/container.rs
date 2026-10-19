@@ -5,6 +5,36 @@ use std::rc::Rc;
 use web_sys::Element;
 
 impl BrowserAttachmentHost {
+    /// Observe native offsets and dimensions through the existing surface owner.
+    pub(crate) fn scroll(
+        &self,
+        id: egui::Id,
+    ) -> Result<crate::browser::attachment_content::ReadingScroll, AttachmentHostError> {
+        let surfaces = self.surfaces.borrow();
+        let reading = surfaces
+            .get(&id)
+            .and_then(|surface| surface.reading.as_ref())
+            .ok_or_else(|| AttachmentHostError::Host("Missing reading viewport".into()))?;
+        let viewport = &reading.viewport;
+        Ok(crate::browser::attachment_content::ReadingScroll {
+            top: super::transaction::offset(viewport, "scrollTop")?,
+            height: super::transaction::offset(viewport, "scrollHeight")?,
+            client_height: super::transaction::offset(viewport, "clientHeight")?,
+        })
+    }
+    /// Retain an explicit scroll write across the next placement transaction.
+    pub(crate) fn set_scroll(&self, id: egui::Id, top: f64) -> Result<(), AttachmentHostError> {
+        let mut surfaces = self.surfaces.borrow_mut();
+        let reading = surfaces
+            .get_mut(&id)
+            .and_then(|surface| surface.reading.as_mut())
+            .ok_or_else(|| AttachmentHostError::Host("Missing reading viewport".into()))?;
+        js_sys::Reflect::set(&reading.viewport, &"scrollTop".into(), &top.into())
+            .map_err(|error| host_error(&error))?;
+        reading.scroll = Some(super::transaction::Scroll::read(&reading.viewport)?);
+        reading.context.borrow().request_repaint();
+        Ok(())
+    }
     /// Mount standalone surfaces under the body and contained frames under their slot.
     pub(crate) fn placement_parent(&self) -> Result<Element, AttachmentHostError> {
         self.containers

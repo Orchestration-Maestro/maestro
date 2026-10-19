@@ -34,7 +34,7 @@ impl Scroll {
     }
 }
 /// Read a fractional native offset before any publication mutation.
-fn offset(viewport: &Element, name: &str) -> Result<f64, AttachmentHostError> {
+pub(super) fn offset(viewport: &Element, name: &str) -> Result<f64, AttachmentHostError> {
     Reflect::get(viewport, &name.into())
         .map_err(|e| host_error(&e))?
         .as_f64()

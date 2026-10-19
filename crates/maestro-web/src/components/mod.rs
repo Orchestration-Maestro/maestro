@@ -9,6 +9,8 @@ pub mod message_renderer_registry;
 /// Retained transcript message rows.
 pub mod messages;
 pub(crate) mod native_text;
+/// Deferred assistant transcript publication.
+pub mod streaming_message_container;
 /// Retained reasoning disclosure.
 pub mod thinking_block;
 

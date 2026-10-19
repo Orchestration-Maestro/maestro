@@ -150,8 +150,45 @@ pub enum ClipboardMode {
 #[cfg(target_arch = "wasm32")]
 pub type ReadingSlotMount<'a> = dyn Fn(&web_sys::Document, usize) -> Result<(egui::Id, web_sys::Element), AttachmentHostError>
     + 'a;
+/// Fractional native viewport observations in CSS pixels.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ReadingScroll {
+    /// Current vertical offset.
+    pub top: f64,
+    /// Full scrollable content height.
+    pub height: f64,
+    /// Visible viewport height.
+    pub client_height: f64,
+}
 /// Replaceable browser content, download and clipboard effects.
 pub trait AttachmentHost {
+    /// Admit one cancellable next-frame publication.
+    /// # Errors
+    /// Returns unsupported-host or native registration failures.
+    fn animation_frame(
+        &self,
+        _callback: Rc<dyn Fn()>,
+    ) -> Result<crate::browser::timer::Timer, AttachmentHostError> {
+        Err(AttachmentHostError::Host(
+            "Animation frame unavailable".into(),
+        ))
+    }
+    /// Observe the real native viewport without rounding its offsets.
+    /// # Errors
+    /// Returns unsupported-host, missing-viewport or native observation failures.
+    fn reading_scroll(&self, _id: egui::Id) -> Result<ReadingScroll, AttachmentHostError> {
+        Err(AttachmentHostError::Host(
+            "Reading viewport unavailable".into(),
+        ))
+    }
+    /// Assign the native vertical offset, preserving the horizontal position.
+    /// # Errors
+    /// Returns unsupported-host, missing-viewport or native assignment failures.
+    fn set_reading_scroll(&self, _id: egui::Id, _top: f64) -> Result<(), AttachmentHostError> {
+        Err(AttachmentHostError::Host(
+            "Reading viewport unavailable".into(),
+        ))
+    }
     /// Position nested native reading frames beneath a retained root or row slot.
     /// # Errors
     /// Returns unsupported-host or missing-container/slot failures.
