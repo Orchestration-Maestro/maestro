@@ -19,6 +19,57 @@ use support::{
     pty_output,
 };
 
+/// An exec child must not retain either terminal pipe after its standard streams change.
+#[cfg(target_os = "linux")]
+#[test]
+fn native_terminal_descriptors_do_not_survive_exec() {
+    const PROBE: &str = "MAESTRO_TERMINAL_DESCRIPTOR_PROBE";
+    if let Ok(targets) = std::env::var(PROBE) {
+        let targets: Vec<_> = targets.lines().map(PathBuf::from).collect();
+        for entry in fs::read_dir("/proc/self/fd").unwrap() {
+            if let Ok(target) = fs::read_link(entry.unwrap().path()) {
+                assert!(
+                    !targets.contains(&target),
+                    "inherited terminal pipe: {target:?}"
+                );
+            }
+        }
+        return;
+    }
+    isolated!(&[], || {
+        use rustix::io::{FdFlags, fcntl_setfd};
+        use std::process::Stdio;
+        let rig = Rig::paused();
+        let input = pipe_input();
+        let output = pipe_output();
+        fcntl_setfd(&input.0, FdFlags::CLOEXEC).unwrap();
+        fcntl_setfd(&output.0, FdFlags::CLOEXEC).unwrap();
+        let targets =
+            ["/proc/self/fd/0", "/proc/self/fd/1"].map(|path| fs::read_link(path).unwrap());
+        rig.run(async {
+            let mut terminal = queued_terminal(&rig, &output).await;
+            let child = maestro_test_process::TestProcess::current(
+                "native_terminal_descriptors_do_not_survive_exec",
+            )
+            .unwrap()
+            .env(
+                PROBE,
+                format!("{}\n{}", targets[0].display(), targets[1].display()),
+            )
+            .stdin(Stdio::null())
+            .output()
+            .unwrap();
+            terminal.stop().unwrap();
+            assert!(
+                child.status.success(),
+                "{}\n{}",
+                String::from_utf8_lossy(&child.stdout),
+                String::from_utf8_lossy(&child.stderr)
+            );
+        });
+    });
+}
+
 /// Collects exact bytes, including scalars split across kernel reads.
 fn collect_bytes(capture: Capture, length: usize) -> JoinHandle<Vec<u8>> {
     std::thread::spawn(move || {

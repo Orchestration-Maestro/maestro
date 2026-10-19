@@ -28,7 +28,7 @@ enum Kind {
 impl Source {
     /// Duplicates a descriptor, saving output flags before enabling nonblocking writes.
     pub(super) fn open(fd: impl AsFd, interest: Interest) -> io::Result<Self> {
-        let duplicate = rustix::io::dup(fd)?;
+        let duplicate = rustix::io::fcntl_dupfd_cloexec(fd, 3)?;
         let flags = interest
             .is_writable()
             .then(|| fcntl_getfl(&duplicate))
@@ -99,5 +99,29 @@ impl AsFd for Source {
 impl Drop for Source {
     fn drop(&mut self) {
         let _ = self.restore();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Source;
+    use rustix::io::{FdFlags, fcntl_getfd};
+    use tokio::io::Interest;
+
+    #[test]
+    fn descriptor_interests_are_close_on_exec() {
+        let runtime = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+        let _entered = runtime.enter();
+        let (socket, _peer) = std::os::unix::net::UnixStream::pair().unwrap();
+        let file = std::fs::File::open("/dev/null").unwrap();
+        for fd in [&socket as &dyn std::os::fd::AsFd, &file] {
+            for interest in [Interest::READABLE, Interest::WRITABLE] {
+                let source = Source::open(fd, interest).unwrap();
+                assert!(fcntl_getfd(&source).unwrap().contains(FdFlags::CLOEXEC));
+            }
+        }
     }
 }
