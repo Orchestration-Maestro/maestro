@@ -48,6 +48,12 @@ fn key_events_keep_the_text_supplied_by_the_caller() {
     drop(text);
     assert_eq!(event.utf8, "b");
     assert_eq!(KeyEncoder::default().encode(&event), b"b");
+    event.unshifted_codepoint = u32::from('b');
+    let protocol = KeyEncoder {
+        kitty_flags: maestro_terminal::kitty::key::Flags::TRUE,
+        ..KeyEncoder::default()
+    };
+    assert_eq!(protocol.encode(&event), b"\x1b[98;;98u");
     event.set_utf8("é🦀");
     assert_eq!(event.utf8, "é🦀");
     event.set_utf8("");

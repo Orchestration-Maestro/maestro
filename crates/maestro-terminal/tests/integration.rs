@@ -172,3 +172,9 @@ mod legacy_encoding;
 mod legacy_controls;
 
 mod legacy_tables;
+
+mod protocol_encoding;
+
+mod protocol_fields;
+
+mod protocol_tables;

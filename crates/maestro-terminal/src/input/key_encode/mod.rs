@@ -1,5 +1,6 @@
 //! Keyboard bytes selected by the terminal's input modes.
 
+mod kitty;
 mod legacy;
 
 use super::key::KeyEvent;
@@ -40,6 +41,8 @@ impl OptionAsAlt {
 pub struct KeyEncoder {
     /// An owned terminal-mode snapshot; later terminal changes do not affect it.
     pub modes: ModeState,
+    /// Enhanced keyboard protocol flags; disabled for legacy encoding.
+    pub kitty_flags: crate::kitty::key::Flags,
     /// Encode modified characters using extended modifier mode 2.
     pub modify_other_keys_state_2: bool,
     /// Caller-supplied macOS option policy; not determined by terminal modes.
@@ -50,7 +53,11 @@ impl KeyEncoder {
     /// Encode one event; releases and intermediate composition may produce no bytes.
     #[must_use]
     pub fn encode(&self, event: &KeyEvent) -> Vec<u8> {
-        legacy::encode(event, self)
+        if self.kitty_flags == crate::kitty::key::Flags::DISABLED {
+            legacy::encode(event, self)
+        } else {
+            kitty::encode(event, self)
+        }
     }
 }
 
@@ -61,6 +68,7 @@ impl Default for KeyEncoder {
         modes.set(Mode::AltEscPrefix, false);
         Self {
             modes,
+            kitty_flags: crate::kitty::key::Flags::DISABLED,
             modify_other_keys_state_2: false,
             macos_option_as_alt: OptionAsAlt::default(),
         }

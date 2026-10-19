@@ -5,3 +5,4 @@ pub mod key_mods;
 
 mod function_keys;
 pub mod key_encode;
+mod kitty;

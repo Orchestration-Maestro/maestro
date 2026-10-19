@@ -21,9 +21,17 @@ Its `modes` snapshot selects application cursor/keypad sequences, backarrow
 behavior, numeric-keypad handling and the alt escape prefix. The default encoder
 leaves these modes off; callers can change them through `modes.set`.
 `modify_other_keys_state_2` enables extended modified-character sequences.
-The encoder handles traditional control bytes, unambiguous control-key escapes
-and committed composition text; releases and intermediate composition emit nothing.
-`macos_option_as_alt` selects which option keys act as alt on macOS.
+With protocol flags disabled, the encoder handles traditional control bytes,
+unambiguous control-key escapes and committed composition text; releases and
+intermediate composition emit nothing. `macos_option_as_alt` selects which option
+keys act as alt on macOS.
+
+`kitty_flags` enables enhanced keyboard encoding with the existing
+`kitty::key::Flags` values. The flags select escape-code disambiguation, event
+reporting, alternate key codes, all-key reporting and associated text. Functional
+keys use their protocol codes; printable keys use the supplied unshifted
+codepoint. Release events require event reporting. Associated text excludes
+ASCII controls and is omitted for releases or modifiers that prevent text.
 
 Key text is owned. `KeyEvent::set_utf8` copies the supplied text, fixing the
 borrowed-buffer defect where changing the caller's text changed a stored event.

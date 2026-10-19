@@ -39,7 +39,7 @@ pub(super) fn encode(event: &KeyEvent, opts: &KeyEncoder) -> Vec<u8> {
 }
 
 /// A single control character is not committed composition text.
-fn control_text(text: &str) -> bool {
+pub(super) fn control_text(text: &str) -> bool {
     text.len() == 1 && text.as_bytes()[0].is_ascii_control()
 }
 
