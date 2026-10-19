@@ -1,4 +1,5 @@
 [package]
+autotests = false
 name = "maestro-tui-crossterm"
 version = "0.1.0"
 edition.workspace = true
@@ -32,3 +33,7 @@ tokio = { version = "=1.53.2", default-features = false, features = ["net", "sig
 base64 = { version = "=0.23.1", default-features = false, features = ["std"] }
 maestro-brand = { path = "../maestro-brand" }
 rustix = { version = "=1.1.5", default-features = false, features = ["pipe", "pty", "process"] }
+
+[[test]]
+name = "integration"
+path = "tests/integration.rs"

@@ -3,21 +3,20 @@
 #![cfg(test)]
 #![cfg(unix)]
 
-#[macro_use]
-mod support;
+use crate::{isolated, support};
 
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::thread::JoinHandle;
 
+use crate::support::{
+    Capture, Inputs, Resizes, Rig, START_BYTES, elapse, is_child, pipe_input, pipe_output,
+    pty_output,
+};
 use maestro_tui::Terminal;
 use maestro_tui_crossterm::ProcessTerminal;
 use rustix::fs::{OFlags, fcntl_getfl, fcntl_setfl};
 use rustix::stdio::stdout;
-use support::{
-    Capture, Inputs, Resizes, Rig, START_BYTES, elapse, is_child, pipe_input, pipe_output,
-    pty_output,
-};
 
 /// An exec child must not retain either terminal pipe after its standard streams change.
 #[cfg(target_os = "linux")]
