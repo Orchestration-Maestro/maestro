@@ -1,8 +1,8 @@
 //! Public identity drawing through the replaceable native reading boundary.
 #![cfg(test)]
-pub mod attachment_support;
-mod session_header_support;
-mod support;
+use crate::attachment_support;
+use crate::session_header_support;
+use crate::support;
 use base64::Engine as _;
 use maestro_theme::BrandMode;
 use maestro_web::browser::attachment_content::AttachmentHostError;

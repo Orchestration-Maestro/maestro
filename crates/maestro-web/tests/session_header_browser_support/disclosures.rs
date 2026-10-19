@@ -1,6 +1,6 @@
 //! Public native disclosure interactions and mounted lifetime.
 use super::js;
-use crate::Header;
+use crate::session_header_browser::Header;
 use wasm_bindgen::prelude::*;
 
 fn header() -> Header {
@@ -26,7 +26,9 @@ fn header() -> Header {
     header
 }
 fn root() -> web_sys::Element {
-    crate::panel().parent_element().unwrap()
+    crate::session_header_browser::panel()
+        .parent_element()
+        .unwrap()
 }
 fn expanded(root: &web_sys::Element) -> Vec<bool> {
     serde_json::from_str(&js(root, "return JSON.stringify([...value.querySelectorAll('.expandable,.tool-item:has(.tool-params-hint)')].map(e=>e.classList.contains('expanded')||e.classList.contains('params-expanded')))").as_string().unwrap()).unwrap()
@@ -228,9 +230,10 @@ fn factory_for(
     let host = std::rc::Rc::new(crate::session_header_support::Host::default());
     host.height.set(120.);
     let mut state = maestro_web::export_html::template::HeaderState::new(host.clone());
-    let pack = maestro_theme::load_brand_pack("brand.json", &crate::Pack).unwrap();
+    let pack =
+        maestro_theme::load_brand_pack("brand.json", &crate::session_header_browser::Pack).unwrap();
     use base64::Engine as _;
-    let doc = crate::load_document(
+    let doc = crate::session_header_browser::load_document(
         &base64::engine::general_purpose::STANDARD.encode(data.to_string()),
         "",
         None,
@@ -318,7 +321,7 @@ fn redraw(
                 &mut header.state,
                 maestro_web::export_html::template::HeaderView {
                     presentation: &presentation,
-                    localize_date: &crate::localize_header_date,
+                    localize_date: &crate::session_header_browser::localize_header_date,
                 },
             ));
         },
@@ -388,7 +391,8 @@ async fn style_corpus() {
         ("signal.json", maestro_theme::BrandMode::Dark),
     ] {
         let mut slots = super::Slots::new();
-        slots.pack = maestro_theme::load_brand_pack(pack, &crate::Pack).unwrap();
+        slots.pack =
+            maestro_theme::load_brand_pack(pack, &crate::session_header_browser::Pack).unwrap();
         slots.mode = mode;
         let mut count = 0;
         for row in cases.iter().filter(|r| r["branch"] == "success") {

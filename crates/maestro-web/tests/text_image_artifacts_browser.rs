@@ -1,13 +1,6 @@
 //! Actual-document source and image artifacts through the retained panel boundary.
 #![cfg(all(test, target_arch = "wasm32"))]
 #[cfg(test)]
-pub mod reading_browser_support;
-#[cfg(test)]
-pub mod support;
-#[path = "artifact_support/text_image.rs"]
-#[cfg(test)]
-pub mod text_image_support;
-#[cfg(test)]
 mod tests {
     use crate::reading_browser_support::{View, check, event, js, quoted, run};
     use crate::text_image_support::corpus;

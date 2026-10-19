@@ -1,7 +1,6 @@
 //! Hidden execution through the retained native browser adapter.
 #![cfg(all(test, target_arch = "wasm32"))]
-#[path = "sandbox_loading_support/placement.rs"]
-mod placement;
+use crate::placement;
 use maestro_app::Cancellation;
 use placement::adapter;
 
@@ -56,7 +55,7 @@ pub async fn execution_preflight_avoids_all_effects() {
     end();
 }
 
-mod sandbox_execution_support;
+use crate::sandbox_execution_support;
 use maestro_app::SharedHandle;
 use sandbox_execution_support::*;
 use std::{cell::RefCell, rc::Rc};

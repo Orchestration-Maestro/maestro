@@ -1,10 +1,9 @@
 //! Retained artifact panel through its public application and native host seams.
 #![cfg(test)]
-pub mod artifact_support;
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-pub mod session_header_support;
-pub mod support;
+use crate::artifact_support;
+use crate::canvas_paint;
+use crate::session_header_support;
+use crate::support;
 use artifact_support::panel::{Harness, Input, control, corpus, tab, text};
 use canvas_paint::Paint;
 use std::rc::Rc;
@@ -1239,5 +1238,3 @@ fn assert_first_frame_controls(harness: &Harness, output: &egui::FullOutput) {
         "long-artifact-name-12.zip"
     );
 }
-
-pub mod highlighter_support;

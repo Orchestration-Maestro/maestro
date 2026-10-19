@@ -1,21 +1,6 @@
 //! Actual document witnesses for retained Markdown and SVG artifact branches.
 #![cfg(all(test, target_arch = "wasm32"))]
 #[cfg(test)]
-pub mod highlighter_support;
-#[cfg(test)]
-pub mod markdown_svg_support;
-#[cfg(test)]
-mod panel_browser_support;
-#[path = "artifact_support/presentation.rs"]
-#[cfg(test)]
-pub mod presentation;
-#[cfg(test)]
-pub mod reading_browser_support;
-#[cfg(test)]
-pub mod session_header_support;
-#[cfg(test)]
-pub mod support;
-#[cfg(test)]
 mod tests {
     use crate::markdown_svg_support::{corpus, key};
     use crate::reading_browser_support::{View, check, event, js, quoted, run};

@@ -1,6 +1,6 @@
 //! Real browser qualification of the generic file view.
 #![cfg(all(test, target_arch = "wasm32"))]
-pub mod support;
+use crate::support;
 use maestro_web::{
     ArtifactElement, I18n,
     browser::attachment_content::BrowserAttachmentHost,
@@ -208,5 +208,3 @@ pub fn generic_download_saves_original_blob_bytes() {
             .unwrap()
     );
 }
-
-pub mod highlighter_support;

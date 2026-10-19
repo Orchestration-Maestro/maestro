@@ -1,9 +1,14 @@
 [package]
+autotests = false
 name = "maestro-web"
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
+
+[[test]]
+name = "integration"
+path = "tests/integration.rs"
 
 [dependencies]
 tokio = { version = "=1.53.2", default-features = false, features = ["sync"] }

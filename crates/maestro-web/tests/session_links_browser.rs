@@ -1,10 +1,10 @@
 //! Real-document clipboard effects and native message-slot composition.
 #![cfg(test)]
 #![cfg(target_arch = "wasm32")]
+use crate::reading_slots_support;
+use crate::support;
 use maestro_web::browser::attachment_content::{AttachmentHost, BrowserAttachmentHost};
 use wasm_bindgen::{JsCast as _, prelude::*};
-pub mod reading_slots_support;
-pub mod support;
 
 #[wasm_bindgen(inline_js = r#"
 let active;

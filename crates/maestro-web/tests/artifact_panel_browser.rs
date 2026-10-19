@@ -1,14 +1,12 @@
 //! Real browser retained-panel and existing native-registry qualification.
 #![cfg(all(test, target_arch = "wasm32"))]
-#[path = "artifact_support/presentation.rs"]
-mod presentation;
-pub mod support;
+use crate::presentation;
 use maestro_theme::BrandMode;
 use maestro_web::browser::attachment_content::AttachmentHost;
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
 
-mod panel_browser_support;
+use crate::panel_browser_support;
 use panel_browser_support::Panel;
 /// Execute observation-only native DOM operations in the runner's actual document.
 fn js(code: &str) -> JsValue {
@@ -453,5 +451,3 @@ pub fn artifact_panel_browser_body_leaves_shell_dividers_visible() {
         assert_ne!(body.tag_name(), "CANVAS");
     }
 }
-
-pub mod highlighter_support;

@@ -1,8 +1,7 @@
 //! Public generic artifact composition.
 #![cfg(test)]
-pub mod artifact_support;
-pub mod session_header_support;
-pub mod support;
+use crate::artifact_support;
+use crate::session_header_support;
 use maestro_web::tools::artifacts::create_artifact_element;
 use std::{
     cell::{Cell, RefCell},
@@ -294,5 +293,3 @@ fn edit_cases() -> [(serde_json::Value, Vec<u8>); 3] {
         ),
     ]
 }
-
-pub mod highlighter_support;

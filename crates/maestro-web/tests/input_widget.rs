@@ -1,9 +1,9 @@
 //! Browser Input operands at the native presentation boundary.
 #![cfg(test)]
 /// Shared drawing conformance support.
-pub mod attachment_support;
-mod input_support;
-mod support;
+use crate::attachment_support;
+use crate::input_support;
+use crate::support;
 use maestro_theme::BrandPresentation;
 use maestro_web::{
     I18n, Input,

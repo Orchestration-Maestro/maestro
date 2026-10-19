@@ -6,7 +6,7 @@ use super::{
 };
 use crate::{
     markdown_support::{check, first_slot_center, settle},
-    surface,
+    tool_renderers_browser::surface,
 };
 use maestro_web::{
     render_collapsible_header, render_header,

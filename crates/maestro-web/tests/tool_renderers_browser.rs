@@ -1,13 +1,9 @@
 //! Real-browser tool recipes using the retained native reading host.
 #![cfg(all(test, target_arch = "wasm32"))]
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-pub mod markdown_support;
-pub mod support;
-#[cfg(test)]
-pub mod tool_renderer_support;
+use crate::markdown_support;
+use crate::tool_renderer_support;
 
-use tests::{Aliased, surface};
+pub(crate) use tests::{Aliased, surface};
 
 #[cfg(test)]
 mod tests {
@@ -20,7 +16,7 @@ mod tests {
     use serde_json::Value;
     use wasm_bindgen::prelude::*;
 
-    pub(super) fn surface() -> Surface {
+    pub(crate) fn surface() -> Surface {
         let _ = js(
             "if (!document.getElementById('canvas')) { const canvas = document.createElement('canvas'); canvas.id = 'canvas'; canvas.width=800; canvas.height=600; document.body.appendChild(canvas); }",
         );
@@ -215,9 +211,9 @@ mod tests {
     }
 
     /// Keep an explicit alias of the same typed owner passed to native child recipes.
-    pub(super) struct Aliased {
-        pub(super) inner: Box<dyn maestro_web::tools::types::ToolContent>,
-        pub(super) alias: std::rc::Rc<std::cell::RefCell<Option<maestro_app::ToolRendererState>>>,
+    pub(crate) struct Aliased {
+        pub(crate) inner: Box<dyn maestro_web::tools::types::ToolContent>,
+        pub(crate) alias: std::rc::Rc<std::cell::RefCell<Option<maestro_app::ToolRendererState>>>,
     }
     impl maestro_web::tools::types::ToolContent for Aliased {
         fn render(

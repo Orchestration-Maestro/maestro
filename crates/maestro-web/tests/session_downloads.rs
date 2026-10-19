@@ -1,6 +1,6 @@
 //! Complete-history downloads through the public operation and supplied host.
 #![cfg(test)]
-mod session_download_support;
+use crate::session_download_support;
 use maestro_web::export_html::template::download_session_json;
 use session_download_support::{Host, cases, document, replay};
 

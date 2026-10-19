@@ -1,10 +1,6 @@
 #![cfg(test)]
-#[path = "support/brand.rs"]
-mod brand;
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-mod effects_support;
-mod support;
+use crate::effects_support;
+use crate::support;
 use maestro_web::{I18n, components::copy_button::CopyButton};
 use std::rc::Rc;
 
@@ -43,7 +39,7 @@ fn copy_button_keeps_titles_glyphs_and_optional_success_text() {
         }
     }
 }
-mod copy_button_support;
+use crate::copy_button_support;
 use copy_button_support::{Canvas, copied, pointer};
 
 #[test]

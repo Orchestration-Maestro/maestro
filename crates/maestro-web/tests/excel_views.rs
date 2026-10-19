@@ -1,9 +1,8 @@
 //! Spreadsheet artifacts through their public native platform boundary.
 #![cfg(test)]
-pub mod artifact_support;
-pub mod attachment_support;
-pub mod session_header_support;
-pub mod support;
+use crate::artifact_support;
+use crate::attachment_support;
+use crate::session_header_support;
 use maestro_web::{
     ArtifactElement,
     tools::artifacts::{create_artifact_element, excel_artifact::ExcelArtifact},
@@ -310,8 +309,6 @@ fn excel_tool_commands_retain_and_update_live_view() {
     .unwrap();
     assert!(harness.host.published.borrow().is_empty());
 }
-
-pub mod highlighter_support;
 
 #[test]
 fn excel_mixed_workbooks_do_not_latch_workbook_failure() {

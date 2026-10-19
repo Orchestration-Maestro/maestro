@@ -1,6 +1,6 @@
 //! Real browser PDF pages, native errors and surface transitions.
 #![cfg(all(test, target_arch = "wasm32"))]
-pub mod support;
+use crate::support;
 use maestro_web::{
     AttachmentOverlay, browser::attachment_content::*, tools::artifacts::create_artifact_element,
 };
@@ -20,7 +20,7 @@ fn encoded(multi: bool) -> String {
     use base64::Engine as _;
     base64::engine::general_purpose::STANDARD.encode(bytes(multi))
 }
-mod reading_browser_support;
+use crate::reading_browser_support;
 use reading_browser_support::{View, check, click, js, run};
 /// Original aliased PDF attachment.
 fn record() -> Rc<RefCell<maestro_web::Attachment>> {

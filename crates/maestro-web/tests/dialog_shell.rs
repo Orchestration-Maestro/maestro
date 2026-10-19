@@ -1,10 +1,8 @@
 //! Owned dialog lifecycle through the replaceable content host.
 #![cfg(test)]
-pub mod attachment_support;
-#[path = "support/brand.rs"]
-mod brand;
-pub mod input_support;
-mod support;
+use crate::attachment_support;
+use crate::brand;
+use crate::input_support;
 use maestro_web::{
     browser::attachment_content::ReadingContent,
     dialogs::{

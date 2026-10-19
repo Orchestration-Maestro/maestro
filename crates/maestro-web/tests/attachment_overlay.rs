@@ -1,8 +1,8 @@
 //! Attachment overlay behaviour through retained public rendering.
 #![cfg(test)]
 /// Shared attachment drawing fixtures.
-pub mod attachment_support;
-mod support;
+use crate::attachment_support;
+use crate::support;
 use attachment_support::*;
 use maestro_web::AttachmentOverlay;
 use std::rc::Rc;
