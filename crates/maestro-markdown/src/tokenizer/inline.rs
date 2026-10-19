@@ -88,9 +88,13 @@ impl<'a> Tokenizer<'a> {
                 .or_else(|| self.line_break(text))
                 .or_else(|| self.deletion(cursor..extent.end, atoms, in_link));
             if let Some((size, kind)) = token.filter(|(size, kind)| {
+                // A span may contain whole atoms but never end inside one.
+                let end = cursor + size;
+                let enclosing = atoms.get(atoms.partition_point(|range| range.end <= end));
                 *size > 0
-                    && (cursor + size <= limit
-                        || matches!(kind, Kind::Emphasis(_) | Kind::Strong(_) | Kind::Strike(_)))
+                    && (end <= limit
+                        || matches!(kind, Kind::Emphasis(_) | Kind::Strong(_) | Kind::Strike(_))
+                            && enclosing.is_none_or(|range| range.start >= end))
             }) {
                 output.push(node(self.source, cursor..cursor + size, kind));
                 cursor += size;

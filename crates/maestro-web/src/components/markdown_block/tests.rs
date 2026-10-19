@@ -529,3 +529,59 @@ fn native_math_preparation_keeps_errors_and_container_boundaries() {
     assert!(!code.html.contains("katex"));
     assert_eq!(code.code[0].code, "$x$\n");
 }
+
+/// Spans that close inside a would-be formula, with the document HTML that keeps the span.
+const SPAN_FIRST: [(&str, &str); 7] = [
+    ("~~$~~$", "<p><del>$</del>$</p>\n"),
+    ("~~old $5~~ new $3", "<p><del>old $5</del> new $3</p>\n"),
+    ("~~a $b~~ c$ d", "<p><del>a $b</del> c$ d</p>\n"),
+    ("~~$x~~$ y", "<p><del>$x</del>$ y</p>\n"),
+    ("**$**$", "<p><strong>$</strong>$</p>\n"),
+    ("**a $b** c$", "<p><strong>a $b</strong> c$</p>\n"),
+    ("*a $*$ b*", "<p><em>a $</em>$ b*</p>\n"),
+];
+
+#[test]
+fn spans_closing_inside_a_formula_keep_their_markup() {
+    for (source, html) in SPAN_FIRST {
+        assert_eq!(prepare(source, true).html, html, "{source}");
+    }
+    let resumed = prepare("~~$~~$ and $y$", true).html;
+    assert!(resumed.starts_with("<p><del>$</del><span class=\"katex\""));
+    assert!(resumed.ends_with("y$</p>\n"));
+    let inside = prepare("$a ~~$ b $c~~ d$", true).html;
+    assert_eq!(inside.matches("<span class=\"katex\">").count(), 2);
+    assert!(!inside.contains("<del>"));
+}
+
+#[test]
+fn admission_skips_a_formula_that_a_span_closes_inside() {
+    let document = escaped_document("~~a $b~~ c$ d".to_owned());
+    let context = markdown::InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    assert!(super::admission::scan(scope, scope.content_range(), false).is_empty());
+}
+
+#[test]
+fn strike_emphasis_and_dollar_mixtures_never_panic() {
+    // A strike opening after a formula that swallowed an earlier strike opener.
+    prepare("$a ~~$ ~~b $c~~ d$", true);
+    let pieces = [
+        "~~", "~", "*", "**", "_", "$", "$", "a", " ", "`", "\\", "5", "\n",
+    ];
+    let mut state = 0x9E37_79B9_7F4A_7C15_u64;
+    let mut next = || {
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
+        usize::try_from(state % 1_000).unwrap()
+    };
+    for _ in 0..1_000 {
+        let length = next() % 14 + 1;
+        let source: String = (0..length).map(|_| pieces[next() % pieces.len()]).collect();
+        for escape in [true, false] {
+            // A panic fails the test; rendered HTML is compared by the exact cases above.
+            prepare(&source, escape);
+        }
+    }
+}

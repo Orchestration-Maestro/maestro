@@ -100,6 +100,31 @@ fn typed_atoms_keep_surrounding_delimiters_and_original_operands() {
 }
 
 #[test]
+fn spans_never_end_inside_a_caller_atom() {
+    let document = parse("~~$~~$".into());
+    let context = InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    let start = scope.text().find("$~~$").unwrap();
+    let run = scope.interpret(
+        0..scope.text().trim_end_matches('\n').len(),
+        std::slice::from_ref(&(start..start + 4)),
+    );
+    let Kind::Paragraph(children) = &run.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    assert!(
+        !children
+            .iter()
+            .any(|node| matches!(node.kind, Kind::Strike(_)))
+    );
+    assert!(
+        children
+            .iter()
+            .any(|node| matches!(node.kind, Kind::Atom(0)))
+    );
+}
+
+#[test]
 fn inline_tags_preserve_link_and_raw_block_state() {
     observations::check("inline-html", 6);
     for options in [
