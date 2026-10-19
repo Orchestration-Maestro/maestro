@@ -399,6 +399,8 @@ pub fn transcript_registry_positions_rows_before_publishing_their_new_heights() 
 
 #[path = "transcript_browser/aggregate.rs"]
 pub(crate) mod aggregate;
+#[path = "transcript_browser/growth.rs"]
+mod growth;
 #[path = "transcript_browser/layout.rs"]
 mod layout;
 #[path = "transcript_browser/placeholder.rs"]

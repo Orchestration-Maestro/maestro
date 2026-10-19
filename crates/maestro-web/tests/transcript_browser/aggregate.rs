@@ -113,6 +113,15 @@ pub(crate) fn try_draw(
     interface: &mut AgentInterface,
     i18n: &I18n,
 ) -> Result<(), ToolUiError> {
+    draw_at_height(scene, interface, i18n, 180.)
+}
+/// Relayout the containing view when the separately owned editor consumes vertical space.
+pub(super) fn draw_at_height(
+    scene: &Slots,
+    interface: &mut AgentInterface,
+    i18n: &I18n,
+    height: f32,
+) -> Result<(), ToolUiError> {
     let mut response = Ok(());
     let host: Rc<dyn maestro_web::browser::attachment_content::AttachmentHost> = scene.host.clone();
     let p = scene.pack.presentation(scene.mode).unwrap();
@@ -122,7 +131,7 @@ pub(crate) fn try_draw(
             egui::RawInput {
                 screen_rect: Some(egui::Rect::from_min_size(
                     egui::Pos2::ZERO,
-                    egui::vec2(800., 180.),
+                    egui::vec2(800., height),
                 )),
                 ..Default::default()
             },
