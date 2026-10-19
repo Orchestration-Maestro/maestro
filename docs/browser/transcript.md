@@ -92,12 +92,18 @@ the next canvas frame draws the revealed rows.
 The application facade exports `AgentOptions` and `PromptInput` for constructing
 and prompting the bound Agent. Its scripted model registration and response
 constructors support controlled application sessions without live provider calls.
+Scripted response factories receive the original model and request options;
+the facade exports their input and execution types. `AgentToolRecord` and `Tool`
+construct executable declarations for the bound Agent.
 
 Binding fills only missing stream and credential callbacks. The default stream
 reads the current proxy-enabled setting per request, then reads the current URL
 only when enabled. Credential lookup reads the current application key store.
 Caller-supplied callbacks stay unchanged, and each reached storage read resolves
-the current application store separately.
+the current application store separately. Missing and null keys stay absent;
+an empty key stays empty at lookup. Reached storage and typed-value failures
+remain errors in the Agent's terminal assistant outcome, not successful empty
+requests. Disabled proxy settings skip the URL read, including its failures.
 
 The containing native viewport keeps every row's text attached while clean scroll
 frames draw only intersecting canvas rows. A history refresh prepares the result

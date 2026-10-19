@@ -12,6 +12,13 @@ use maestro_web::{AgentInterface, I18n};
 use std::{cell::RefCell, rc::Rc};
 use wasm_bindgen::prelude::*;
 
+#[path = "transcript_session/lifecycle.rs"]
+mod lifecycle;
+#[path = "transcript_session/requests.rs"]
+mod requests;
+#[path = "transcript_session/tools.rs"]
+mod tools;
+
 /// Real execution family used by the public browser view.
 type Session = Agent<BrowserMessages<NoCustomMessages>>;
 /// A scripted provider unregisters even after its owning scene is retired.
@@ -146,32 +153,22 @@ pub async fn session_event_branches_publish_history_and_clear_streaming_once() {
         .borrow_mut()
         .set_session(Some(agent.clone()))
         .unwrap();
-    let observed = Rc::new(RefCell::new(Vec::new()));
-    let events = observed.clone();
-    let weak = Rc::downgrade(&agent);
-    let view = interface.clone();
-    let (canvas, language) = (scene.clone(), i18n.clone());
-    let subscription = agent.subscribe(Rc::new(move |event, _| {
-        let agent = weak.upgrade().unwrap();
-        let state = agent.state().read().unwrap();
-        let name = event_name(&event.read().unwrap());
-        assert!(state.is_streaming());
-        drop(state);
-        assert!(agent.state().try_write().is_ok());
-        draw(&canvas, &mut view.borrow_mut(), &language);
-        if name == "agent_end" {
-            assert_eq!(
-                js(
-                    &JsValue::NULL,
-                    "return document.querySelectorAll('.maestro-transcript-slot').length"
-                )
-                .as_f64(),
-                Some(2.)
-            );
-        }
-        events.borrow_mut().push((name, text()));
-        Box::pin(std::future::ready(Ok(())))
+    let marker = std::sync::Arc::new(std::sync::RwLock::new(maestro_app::UserMessage {
+        content: maestro_app::UserContent::Text("initial history".into()),
+        timestamp: 0.,
     }));
+    history
+        .write()
+        .unwrap()
+        .push(maestro_app::AgentMessage::User(marker.clone()));
+    draw(&scene, &mut interface.borrow_mut(), &i18n);
+    let observed = Rc::new(RefCell::new(Vec::new()));
+    let subscription = observe_events(
+        &agent,
+        (scene, i18n, interface.clone()),
+        marker,
+        observed.clone(),
+    );
     model.prompt(&agent, "completed history once").await;
     subscription.unsubscribe();
     assert!(std::sync::Arc::ptr_eq(
@@ -179,6 +176,54 @@ pub async fn session_event_branches_publish_history_and_clear_streaming_once() {
         agent.state().read().unwrap().messages()
     ));
     assert_completed(&observed.borrow());
+}
+
+/// Wait for native frame delivery without imposing a delay.
+async fn frame() {
+    let promise = js(
+        &JsValue::NULL,
+        "return new Promise(resolve=>requestAnimationFrame(resolve))",
+    );
+    wasm_bindgen_futures::JsFuture::from(js_sys::Promise::from(promise))
+        .await
+        .unwrap();
+}
+/// Count the actual retained native rows.
+fn slots() -> usize {
+    js(
+        &JsValue::NULL,
+        "return document.querySelectorAll('.maestro-transcript-slot').length.toString()",
+    )
+    .as_string()
+    .unwrap()
+    .parse()
+    .unwrap()
+}
+/// Runtime reduction releases guards and publishes authoritative state before observation.
+fn assert_reduced(agent: &Session, event: &AgentEvent<BrowserMessages<NoCustomMessages>>) {
+    let state = agent.state().read().unwrap();
+    assert!(state.is_streaming());
+    match event {
+        AgentEvent::MessageStart { .. } | AgentEvent::MessageUpdate { .. } => {
+            assert!(state.streaming_message().is_some());
+        }
+        AgentEvent::MessageEnd { message } => {
+            assert!(state.streaming_message().is_none());
+            let history = state.messages().read().unwrap();
+            match (history.last().unwrap(), message) {
+                (maestro_app::AgentMessage::User(left), maestro_app::AgentMessage::User(right)) => {
+                    assert!(std::sync::Arc::ptr_eq(left, right));
+                }
+                (
+                    maestro_app::AgentMessage::Assistant(left),
+                    maestro_app::AgentMessage::Assistant(right),
+                ) => assert!(std::sync::Arc::ptr_eq(left, right)),
+                _ => panic!("completed entry must be the reduced message"),
+            }
+        }
+        AgentEvent::AgentEnd { .. } => assert!(state.streaming_message().is_none()),
+        _ => {}
+    }
 }
 
 /// Close the admitted producer set explicitly instead of classifying unknown events as refreshes.
@@ -215,4 +260,116 @@ fn assert_completed(events: &[(&str, String)]) {
         "one user and one completed assistant, no streaming duplicate"
     );
     assert!(!final_text.contains("Working"));
+}
+
+/// Recorded native text after each admitted runtime event.
+type Events = Rc<RefCell<Vec<(&'static str, String)>>>;
+/// Observe from after the view subscription, releasing every runtime guard before drawing.
+fn observe_events(
+    agent: &Rc<Session>,
+    (canvas, language, view): (Rc<Slots>, Rc<I18n>, Rc<RefCell<AgentInterface>>),
+    marker: std::sync::Arc<std::sync::RwLock<maestro_app::UserMessage>>,
+    events: Events,
+) -> maestro_app::Subscription<BrowserMessages<NoCustomMessages>> {
+    let weak = Rc::downgrade(agent);
+    agent.subscribe(Rc::new(move |event, _| {
+        let agent = weak.upgrade().unwrap();
+        let name = event_name(&event.read().unwrap());
+        assert_reduced(&agent, &event.read().unwrap());
+        assert!(agent.state().try_write().is_ok());
+        marker.write().unwrap().content =
+            maestro_app::UserContent::Text(format!("refreshed {name}"));
+        draw(&canvas, &mut view.borrow_mut(), &language);
+        assert_event_frame(&agent, name, &events.borrow());
+        let partial = partial_text(&event.read().unwrap());
+        let (canvas, language, view, events) = (
+            canvas.clone(),
+            language.clone(),
+            view.clone(),
+            events.clone(),
+        );
+        Box::pin(async move {
+            if name == "message_update" {
+                frame().await;
+                draw(&canvas, &mut view.borrow_mut(), &language);
+                assert!(
+                    js(
+                        &JsValue::NULL,
+                        "return document.querySelectorAll('.maestro-transcript-slot').length"
+                    )
+                    .as_f64()
+                    .unwrap()
+                        >= 3.
+                );
+                assert!(
+                    text().contains(partial.trim()),
+                    "published partial: {partial:?}"
+                );
+            }
+            events.borrow_mut().push((name, text()));
+            Ok(())
+        })
+    }))
+}
+
+/// Every admitted event refreshes history; completed rows clear only the stream.
+fn assert_event_frame(agent: &Session, name: &str, events: &[(&str, String)]) {
+    assert!(
+        text().contains(&format!("refreshed {name}")),
+        "{name} must refresh history"
+    );
+    if name == "agent_end" {
+        assert_eq!(slots(), 3, "completed history only, no stream slot");
+    }
+    if name == "message_end" {
+        assert_eq!(
+            slots(),
+            agent
+                .state()
+                .read()
+                .unwrap()
+                .messages()
+                .read()
+                .unwrap()
+                .len()
+                + 1
+        );
+        assert_eq!(
+            js(
+                &JsValue::NULL,
+                "return document.querySelectorAll('.maestro-transcript-cursor').length"
+            )
+            .as_f64(),
+            Some(1.)
+        );
+    }
+    let first_update =
+        name == "message_update" && !events.iter().any(|(name, _)| *name == "message_update");
+    if first_update {
+        assert_eq!(
+            text().matches("completed history once").count(),
+            1,
+            "stream is deferred, only user is published"
+        );
+    }
+}
+
+/// Read the actual partial text without assuming the producer emits a nonempty first update.
+fn partial_text(event: &AgentEvent<BrowserMessages<NoCustomMessages>>) -> String {
+    match event {
+        AgentEvent::MessageUpdate { message, .. } => message
+            .read()
+            .unwrap()
+            .content
+            .iter()
+            .filter_map(|content| {
+                if let maestro_app::AssistantContent::Text(text) = content {
+                    Some(text.text.as_str())
+                } else {
+                    None
+                }
+            })
+            .collect::<String>(),
+        _ => String::new(),
+    }
 }

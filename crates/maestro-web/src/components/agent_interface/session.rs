@@ -31,8 +31,6 @@ struct Observation<C: CustomAgentMessages> {
     refresh: bool,
     /// Latest streaming replacement; absent means unchanged.
     stream: StreamObservation<C>,
-    /// Whether the latest stream replacement is already completed.
-    immediate: bool,
     /// Repaint owner learned on connection.
     context: Option<egui::Context>,
 }
@@ -74,7 +72,6 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
             observation: Rc::new(RefCell::new(Observation {
                 refresh: true,
                 stream: StreamObservation::Unchanged,
-                immediate: true,
                 context: None,
             })),
             list: MessageList::new(Rc::clone(&host)),
@@ -139,12 +136,11 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
     }
     /// Refresh operands without retaining Agent/message guards across user callbacks.
     fn refresh(&mut self) -> Result<bool, ToolUiError> {
-        let (refresh, stream, immediate) = {
+        let (refresh, stream) = {
             let mut observation = self.observation.borrow_mut();
             (
                 std::mem::take(&mut observation.refresh),
                 std::mem::replace(&mut observation.stream, StreamObservation::Unchanged),
-                observation.immediate,
             )
         };
         let ended = matches!(&stream, StreamObservation::End);
@@ -154,7 +150,7 @@ impl<C: CustomAgentMessages + 'static> AgentInterface<C> {
                 self.stream.set_message(None, true)?;
             }
             StreamObservation::Message(message) => {
-                self.stream.set_message(Some(message), immediate)?;
+                self.stream.set_message(Some(message), false)?;
             }
         }
         if refresh && let Some(session) = &self.session {
@@ -259,25 +255,20 @@ fn subscribe<C: CustomAgentMessages + 'static>(
     let weak_session = Rc::downgrade(session);
     let weak_observation = Rc::downgrade(observation);
     session.subscribe(Rc::new(move |event, _| {
-        if let (Some(session), Some(observation)) =
+        if let (Some(_session), Some(observation)) =
             (weak_session.upgrade(), weak_observation.upgrade())
         {
-            let streaming = session
-                .state()
-                .read()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .is_streaming();
             let event = event
                 .read()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
-            observation.borrow_mut().apply(&event, streaming);
+            observation.borrow_mut().apply(&event);
         }
         Box::pin(std::future::ready(Ok(())))
     }))
 }
 impl<C: CustomAgentMessages> Observation<C> {
     /// Admit transcript-producing events only, after the runtime reducer.
-    fn apply(&mut self, event: &AgentEvent<BrowserMessages<C>>, streaming: bool) {
+    fn apply(&mut self, event: &AgentEvent<BrowserMessages<C>>) {
         match event {
             AgentEvent::ToolExecutionStart { .. }
             | AgentEvent::ToolExecutionUpdate { .. }
@@ -290,7 +281,6 @@ impl<C: CustomAgentMessages> Observation<C> {
             _ => {}
         }
         self.refresh = true;
-        self.immediate = !streaming;
         if let Some(context) = &self.context {
             context.request_repaint();
         }

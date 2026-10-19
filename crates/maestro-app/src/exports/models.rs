@@ -10,6 +10,16 @@ pub use maestro_agent::{
 /// Construction options and prompt operands for application-owned agents.
 pub use maestro_agent::{AgentOptions, PromptInput};
 
+/// Executable tool construction and its model-facing declaration.
+pub use maestro_agent::AgentToolRecord;
+pub use maestro_models::Tool;
+
+/// Execution representations required by caller-owned scripted response factories.
+pub use maestro_models::{Execution, Invoke, Local, ProviderExecution, Threaded};
+
+/// Scripted response factory input and retained callback ownership.
+pub use maestro_models::{FauxResponseFactory, FauxResponseInput, StreamOptionsInput};
+
 /// Scripted model registration and owned response construction for controlled applications.
 pub use maestro_models::{
     FauxAssistantMessageOptions, FauxProviderRegistration, FauxResponseStep,
