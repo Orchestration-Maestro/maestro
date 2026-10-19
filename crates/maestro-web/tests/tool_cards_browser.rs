@@ -1,14 +1,6 @@
 //! Tool cards and disclosures through the real browser host.
 #![cfg(all(test, target_arch = "wasm32"))]
-#[path = "attachment_support/canvas_paint.rs"]
-pub mod canvas_paint;
-pub mod markdown_support;
-#[path = "tool_renderer_support/recipes.rs"]
-pub mod recipes;
-pub mod support;
-mod tool_cards_support;
-#[path = "tool_renderer_support/browser.rs"]
-pub mod tool_renderer_browser;
+use crate::tool_cards_support;
 #[cfg(test)]
 mod tests {
     use super::*;

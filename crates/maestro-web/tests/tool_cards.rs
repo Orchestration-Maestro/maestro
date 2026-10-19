@@ -1,7 +1,6 @@
 //! Public card preparation and default registration contracts.
 #![cfg(test)]
-#[path = "tool_renderer_support/recipes.rs"]
-mod recipes;
+use crate::recipes;
 use maestro_app::JsonObject;
 use maestro_web::tools::{
     renderer_registry::TOOL_RENDERERS,
