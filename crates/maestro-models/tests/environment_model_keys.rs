@@ -406,3 +406,89 @@ fn bedrock_run(
         (None, expected),
     )
 }
+
+/// Cleared children preserve native operands and caller profile precedence.
+#[test]
+fn cleared_environment_child_keeps_native_values_and_profile_order() -> TestResult {
+    const NAME: &str = "cleared_environment_child_keeps_native_values_and_profile_order";
+    const PROFILE: &str = "inherited-%p-%m.profraw";
+    const OVERRIDE: &str = "explicit-%p-%m.profraw";
+    if let Ok(stage) = std::env::var("MAESTRO_NATIVE_STAGE") {
+        if stage != "outer" {
+            return native_environment_observations(if stage == "inherited" {
+                PROFILE
+            } else {
+                OVERRIDE
+            });
+        }
+        assert_eq!(std::env::var("LLVM_PROFILE_FILE")?, PROFILE);
+        let directory = Directory::new()?;
+        let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
+        for (stage, profile) in [("inherited", None), ("override", Some(OVERRIDE))] {
+            let mut variables = vars(&[
+                ("MAESTRO_NATIVE_STAGE", stage),
+                ("MAESTRO_NATIVE_EMPTY", ""),
+            ]);
+            variables.extend(profile.map(|value| ("LLVM_PROFILE_FILE".into(), value.into())));
+            #[cfg(unix)]
+            {
+                use std::os::unix::ffi::OsStringExt as _;
+                variables.push((
+                    "MAESTRO_NATIVE_BYTES".into(),
+                    std::ffi::OsString::from_vec(vec![b'a', 0xff]),
+                ));
+            }
+            run(
+                NAME,
+                &directory,
+                &variables,
+                "unknown-native-provider",
+                (None, None),
+            )?;
+        }
+        let unchanged = std::env::vars_os().collect::<std::collections::BTreeMap<_, _>>() == before;
+        assert!(unchanged, "child launches changed the outer environment");
+        return Ok(());
+    }
+    let output = maestro_test_process::TestProcess::current(NAME)?
+        .nocapture()
+        .env("MAESTRO_NATIVE_STAGE", "outer")
+        .env("LLVM_PROFILE_FILE", PROFILE)
+        .env("MAESTRO_NATIVE_SENTINEL", "ambient")
+        .output()?;
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    Ok(())
+}
+
+/// Observe native operands in the actual cleared child before consuming its expectation.
+fn native_environment_observations(profile: &str) -> TestResult {
+    let cwd = std::env::current_dir()?;
+    assert_eq!(std::env::var_os("HOME").as_deref(), Some(cwd.as_os_str()));
+    assert_eq!(
+        std::env::var_os("USERPROFILE").as_deref(),
+        Some(cwd.as_os_str())
+    );
+    assert_eq!(std::env::var("LLVM_PROFILE_FILE")?, profile);
+    assert!(std::env::var_os("MAESTRO_NATIVE_SENTINEL").is_none());
+    assert_eq!(std::env::var_os("MAESTRO_NATIVE_EMPTY"), Some("".into()));
+    #[cfg(unix)]
+    {
+        use std::os::unix::ffi::OsStrExt as _;
+        assert_eq!(
+            std::env::var_os("MAESTRO_NATIVE_BYTES")
+                .ok_or("missing native bytes")?
+                .as_bytes(),
+            &[b'a', 0xff]
+        );
+    }
+    assert_eq!(
+        std::env::var("MAESTRO_ENV_EXPECTATION")?,
+        "[\"unknown-native-provider\",null,null]"
+    );
+    assert!(child()?);
+    Ok(())
+}

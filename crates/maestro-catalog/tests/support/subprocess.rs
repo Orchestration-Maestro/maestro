@@ -10,16 +10,15 @@ pub mod child_process;
 /// # Panics
 /// Panics if the child cannot run or fails its assertions.
 pub fn run_child(name: &str, environment: &[(&str, Option<&str>)]) {
-    let name = child_process::selector(name).unwrap();
-    let mut command = std::process::Command::new(std::env::current_exe().unwrap());
-    command
-        .args(["--exact", &name, "--nocapture"])
+    let mut command = maestro_test_process::TestProcess::current(name)
+        .unwrap()
+        .nocapture()
         .env("MAESTRO_DYNAMIC_CHILD", "1");
     for (key, value) in environment {
         if let Some(value) = value {
-            command.env(key, value);
+            command = command.env(key, value);
         } else {
-            command.env_remove(key);
+            command = command.env_remove(key);
         }
     }
     let output = command.output().unwrap();
@@ -29,5 +28,4 @@ pub fn run_child(name: &str, environment: &[(&str, Option<&str>)]) {
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    child_process::assert_executed(&output, &name).unwrap();
 }

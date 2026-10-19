@@ -3347,6 +3347,7 @@ dependencies = [
  "maestro-models",
  "maestro-path",
  "maestro-process",
+ "maestro-test-process",
  "maestro-text",
  "serde",
  "serde_json",

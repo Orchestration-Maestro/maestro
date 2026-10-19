@@ -231,17 +231,15 @@ fn available_models_keep_order_duplicates_and_shared_descriptors() {
 #[test]
 fn display_table_mutations_are_shared_between_registries() {
     if std::env::var_os("MAESTRO_DISPLAY_CHILD").is_none() {
-        let test = crate::subprocess::child_process::selector(
+        let output = maestro_test_process::TestProcess::current(
             "display_table_mutations_are_shared_between_registries",
         )
+        .unwrap()
+        .env("MAESTRO_DISPLAY_CHILD", "1")
+        .output()
         .unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test])
-            .env("MAESTRO_DISPLAY_CHILD", "1")
-            .output()
-            .unwrap();
         assert!(output.status.success(), "display subprocess failed");
-        crate::subprocess::child_process::assert_executed(&output, &test).unwrap();
+
         return;
     }
     let first = ModelRegistry::in_memory(support::auth()).unwrap();
@@ -386,18 +384,16 @@ fn metadata_empty_environment_and_oauth(operations: &request_support::Operations
 fn metadata_known_environment() {
     // The child runs only the metadata test with a controlled environment.
     if std::env::var_os("MAESTRO_METADATA_CHILD").is_none() {
-        let test = crate::subprocess::child_process::selector(
+        let output = maestro_test_process::TestProcess::current(
             "metadata_preserves_sources_without_helper_or_refresh_effects",
         )
+        .unwrap()
+        .env("MAESTRO_METADATA_CHILD", "1")
+        .env("OPENAI_API_KEY", "ambient-key")
+        .output()
         .unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test])
-            .env("MAESTRO_METADATA_CHILD", "1")
-            .env("OPENAI_API_KEY", "ambient-key")
-            .output()
-            .unwrap();
         assert!(output.status.success(), "metadata subprocess failed");
-        crate::subprocess::child_process::assert_executed(&output, &test).unwrap();
+
         return;
     }
     let registry = ModelRegistry::in_memory(support::auth()).unwrap();

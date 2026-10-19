@@ -4,7 +4,6 @@ use maestro_credentials::{
     ApiKeyCredential, AuthCredential, AuthStorageBackend, InMemoryAuthStorageBackend,
 };
 use std::path::{Path, PathBuf};
-use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Mutex, RwLock, RwLockReadGuard};
 
@@ -67,11 +66,11 @@ pub fn is_child() -> bool {
     std::env::var_os("MAESTRO_AUTH_CHILD").is_some()
 }
 
-/// Rerun one test in this binary with only `envs` set and `cwd` as working directory.
+/// Rerun one test with a cleared environment, inherited profile, supplied edits and cwd.
 pub fn run_child(test: &str, cwd: &Path, envs: &[(&str, &str)]) {
-    let mut command = Command::new(std::env::current_exe().unwrap());
-    command
-        .args(["--exact", test, "--nocapture"])
+    let command = maestro_test_process::TestProcess::named(test)
+        .unwrap()
+        .nocapture()
         .env_clear()
         .env("MAESTRO_AUTH_CHILD", "1")
         .envs(envs.iter().copied())
@@ -86,7 +85,7 @@ pub fn run_child(test: &str, cwd: &Path, envs: &[(&str, &str)]) {
     };
     let output = child.wait_with_output().unwrap();
     assert!(
-        output.status.success() && String::from_utf8_lossy(&output.stdout).contains("1 passed"),
+        output.status.success(),
         "{}\n{}",
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
