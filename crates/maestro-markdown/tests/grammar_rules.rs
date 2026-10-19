@@ -373,7 +373,7 @@ fn mapped_links_share_one_policy_aware_scanner() {
 
 #[test]
 fn quotes_keep_lazy_continuations_and_nested_extents() {
-    observations::check("quote", 9);
+    observations::check("quote", 12);
     for input in ["> one\n> https://frame.test\n", "> https://frame.test\n"] {
         let mut document = parse(input.into());
         maestro_markdown::autolinks(&mut document);

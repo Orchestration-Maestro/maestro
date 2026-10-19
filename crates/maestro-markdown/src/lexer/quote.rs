@@ -11,6 +11,11 @@ impl<E> Lexer<'_, E> {
         let limit =
             (helpers::rtrim(&source.text[matched.range()], '\n').len() + 1).min(matched.end());
         let body = quote_source(source, limit);
+        if body.text.is_empty() {
+            // A lone marker without a line terminator leaves no body to project: an empty quote.
+            let node = source.node(0..limit, Kind::Quote(Vec::new(), String::new()));
+            return Some((limit, node));
+        }
         let mut children = Vec::new();
         let mut cursor = 0;
         while cursor < limit {
