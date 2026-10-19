@@ -482,15 +482,7 @@ fn geometry(filename: &str, mode: maestro_theme::BrandMode) {
         ..Default::default()
     };
     let dialogs = DialogContext::new(frame.ctx.clone(), host);
-    let modal = Rc::new(std::cell::Cell::new(egui::Id::NULL));
-    let id = modal.clone();
-    let mut children = body(Rc::default());
-    children.render_content = Rc::new(move |_, modal, _, _| {
-        id.set(modal);
-        Ok(())
-    });
-    let _owner = dialog(&dialogs, DialogProps::new(true, children)).unwrap();
-    frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    let (_owner, id) = mount_close_dialog(&mut frame, &dialogs);
     assert!(
         frame.shapes.iter().any(
             |shape| matches!(&shape.shape, egui::Shape::Mesh(mesh) if mesh.calc_bounds()==CLOSE)
@@ -508,7 +500,7 @@ fn geometry(filename: &str, mode: maestro_theme::BrandMode) {
     assert_ne!(control_paint(&frame), resting_images);
     frame
         .ctx
-        .memory_mut(|memory| memory.request_focus(modal.get().with("close")));
+        .memory_mut(|memory| memory.request_focus(id.get()));
     frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
     for _ in 0..12 {
         frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
@@ -522,19 +514,9 @@ fn dialog_close_focus_paint_has_whole_control_opacity_and_transition() {
     let host = input_support::Host::new(|_, _| {});
     let mut frame = attachment_support::Frame::default();
     let dialogs = DialogContext::new(frame.ctx.clone(), host);
-    let modal = Rc::new(Cell::new(egui::Id::NULL));
-    let id = modal.clone();
-    let mut children = body(Rc::default());
-    children.render_content = Rc::new(move |_, modal, _, _| {
-        id.set(modal);
-        Ok(())
-    });
-    let _owner = dialog(&dialogs, DialogProps::new(true, children)).unwrap();
-    frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    let (_owner, id) = mount_close_dialog(&mut frame, &dialogs);
     let resting_glyph = frame.images.clone();
-    frame
-        .ctx
-        .memory_mut(|m| m.request_focus(modal.get().with("close")));
+    frame.ctx.memory_mut(|m| m.request_focus(id.get()));
     for _ in 0..12 {
         frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
     }
@@ -573,7 +555,7 @@ fn dialog_close_focus_paint_has_whole_control_opacity_and_transition() {
     }
     assert_ne!(intermediate_glyph, endpoint_glyph);
     assert_eq!(focus_alpha(&frame), 255);
-    focus_fade(&mut frame, &dialogs, modal.get().with("close"));
+    focus_fade(&mut frame, &dialogs, id.get());
 }
 
 /// Read maximum alpha from visible tessellated focus-ring paint.
@@ -941,16 +923,8 @@ fn dialog_unmount_preserves_another_controls_focus() {
     let host = input_support::Host::new(|_, _| {});
     let dialogs = DialogContext::new(frame.ctx.clone(), host);
     let owner = dialog(&dialogs, DialogProps::new(true, body(Rc::default()))).unwrap();
-    let other = Rc::new(Cell::new(egui::Id::NULL));
-    let captured = other.clone();
-    let mut children = body(Rc::default());
-    children.render_content = Rc::new(move |_, modal, _, _| {
-        captured.set(modal.with("close"));
-        Ok(())
-    });
-    let _sibling = dialog(&dialogs, DialogProps::new(true, children)).unwrap();
     frame.time = Some(0.);
-    frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    let (_sibling, other) = mount_close_dialog(&mut frame, &dialogs);
     frame.ctx.memory_mut(|m| m.request_focus(other.get()));
     frame.time = Some(1.);
     frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
