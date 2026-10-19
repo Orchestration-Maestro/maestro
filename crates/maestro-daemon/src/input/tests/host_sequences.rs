@@ -752,6 +752,22 @@ fn host_legacy_doubled_escape_alt_arrow_remains_one_event() {
 }
 
 #[test]
+fn host_native_doubled_escape_left_arrow_follows_platform_policy() {
+    let mut framer = RawInputFramer::for_host_input();
+
+    let mut events = framer.push(b"\x1b\x1b[D").into_iter();
+
+    if cfg!(target_os = "macos") {
+        assert_raw_key(events.next().unwrap(), &KeyCode::Left, KeyModifiers::ALT);
+    } else {
+        assert_raw_key(events.next().unwrap(), &KeyCode::Esc, KeyModifiers::NONE);
+        assert_raw_key(events.next().unwrap(), &KeyCode::Left, KeyModifiers::NONE);
+    }
+    assert!(events.next().is_none());
+    assert!(framer.flush_timeout().is_empty());
+}
+
+#[test]
 fn host_legacy_reader_extends_incomplete_mouse_timeouts() {
     let mut sgr_mouse = RawInputFramer::default();
     assert!(sgr_mouse.push(b"\x1b[<3").is_empty());
