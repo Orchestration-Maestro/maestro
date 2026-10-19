@@ -71,11 +71,11 @@ pub struct Canvas {
     pub input: Input,
     pub rect: egui::Rect,
     pub clip: egui::Rect,
+    pub viewport: egui::Vec2,
     pub hovered: bool,
     pub enabled: bool,
     pub time: f64,
     pub paint: crate::canvas_paint::Paint,
-    pub pixels: Vec<egui::Color32>,
     pub covered: bool,
     pub layout: egui::Layout,
 }
@@ -91,11 +91,11 @@ impl Canvas {
             input: fixture().urls.remove(0).input,
             rect: egui::Rect::from_min_size(egui::pos2(40., 40.), egui::vec2(28., 28.)),
             clip: egui::Rect::EVERYTHING,
+            viewport: egui::vec2(800., 600.),
             hovered: true,
             enabled: true,
             time: 0.,
             paint: crate::canvas_paint::Paint::default(),
-            pixels: vec![],
             covered: false,
             layout: egui::Layout::top_down(egui::Align::Min),
         }
@@ -117,31 +117,29 @@ impl Canvas {
     ) -> (Result<egui::Response, std::io::Error>, egui::FullOutput) {
         let pack = maestro_theme::load_brand_pack(name, &Pack).unwrap();
         let presentation = pack.presentation(mode).unwrap();
+        self.styled_frame(events, &presentation)
+    }
+    /// Draw supplied selected values through the same caller and paint recorder.
+    /// # Panics
+    /// Panics if the controlled frame does not return a draw result.
+    pub fn styled_frame(
+        &mut self,
+        events: Vec<egui::Event>,
+        presentation: &maestro_theme::BrandPresentation<'_>,
+    ) -> (Result<egui::Response, std::io::Error>, egui::FullOutput) {
         let mut result = None;
         let context = self.context.clone();
         let mut output = context.run_ui(
             egui::RawInput {
-                screen_rect: Some(egui::Rect::from_min_size(
-                    egui::Pos2::ZERO,
-                    egui::vec2(800., 600.),
-                )),
+                screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, self.viewport)),
                 time: Some(self.time),
                 events,
                 ..Default::default()
             },
             |ui| {
-                result = Some(self.draw(ui, &presentation));
+                result = Some(self.draw(ui, presentation));
             },
         );
-        self.pixels = output
-            .textures_delta
-            .set
-            .values()
-            .flat_map(|deltas| deltas.iter())
-            .flat_map(|delta| match &delta.image {
-                egui::ImageData::Color(image) => image.pixels.clone(),
-            })
-            .collect();
         self.paint.update(&output);
         output.textures_delta.clear();
         (result.unwrap(), output)
@@ -255,21 +253,93 @@ pub fn settle(canvas: &Canvas, index: usize, success: bool) {
     canvas.host.results.borrow()[index].set(Some(success));
     canvas.host.run_work();
 }
-/// Read the painted check indication from this retained control.
+/// Match the painted success glyph against both independent native producers.
 #[must_use]
-pub fn check(output: &egui::FullOutput) -> bool {
-    output
-        .shapes
-        .iter()
-        .any(|shape| matches!(&shape.shape, egui::Shape::Text(text) if text.galley.text()=="✓"))
+pub fn check(canvas: &Canvas, output: &egui::FullOutput) -> bool {
+    glyph_state(canvas, output) == Some(true)
 }
-/// Read the actual painted catalog glyph bounds.
+/// Classify visible native coverage; background-only paint has no glyph state.
+fn glyph_state(canvas: &Canvas, output: &egui::FullOutput) -> Option<bool> {
+    let region = canvas.rect.shrink(3.);
+    let actual = canvas.paint.region(&canvas.context, &output.shapes, region);
+    let background = canvas.paint.pixel(
+        &canvas.context,
+        &output.shapes,
+        canvas.rect.center_bottom() - egui::vec2(0., 3.),
+    );
+    let signal: Vec<f32> = actual
+        .iter()
+        .map(|pixel| {
+            (0..3)
+                .map(|i| (f32::from(pixel[i]) - background[i]).powi(2))
+                .sum::<f32>()
+                .sqrt()
+        })
+        .collect();
+    let error = |copied| {
+        let (paint, shapes) = native_glyph(canvas, copied, egui::Color32::WHITE);
+        let mask = paint.region(&canvas.context, &shapes, region);
+        let weights: Vec<_> = mask
+            .iter()
+            .map(|pixel| f32::from(pixel[3]) / 255.)
+            .collect();
+        let scale = signal.iter().zip(&weights).map(|(a, b)| a * b).sum::<f32>()
+            / weights.iter().map(|v| v * v).sum::<f32>();
+        signal
+            .iter()
+            .zip(weights)
+            .map(|(a, b)| (a - scale * b).powi(2))
+            .sum::<f32>()
+    };
+    signal
+        .iter()
+        .any(|v| *v > 1.)
+        .then(|| error(true) < error(false))
+}
+/// Prepare the original independent native glyph without composing a control.
 #[must_use]
-pub fn link(output: &egui::FullOutput) -> Option<egui::Rect> {
+pub fn native_glyph(
+    canvas: &Canvas,
+    copied: bool,
+    color: egui::Color32,
+) -> (crate::canvas_paint::Paint, Vec<egui::epaint::ClippedShape>) {
+    if copied {
+        native_text(canvas, "✓", egui::FontId::proportional(16.), color)
+    } else {
+        let (paint, mut shapes) = crate::canvas_paint::icon(
+            &canvas.context,
+            egui::Rect::from_center_size(canvas.rect.center(), egui::vec2(14., 14.)),
+            "Link",
+            color,
+        );
+        shapes[0].clip_rect = canvas.clip;
+        (paint, shapes)
+    }
+}
+impl Canvas {
+    /// Draw an ordinary frame and inspect its painted success glyph.
+    pub fn check_frame(&mut self) -> bool {
+        let output = self.frame(vec![]).1;
+        check(self, &output)
+    }
+}
+/// Return composed bounds only when the native Link glyph contributes painted pixels.
+#[must_use]
+pub fn link(canvas: &Canvas, output: &egui::FullOutput) -> Option<egui::Rect> {
+    if glyph_state(canvas, output) != Some(false) {
+        return None;
+    }
     output.shapes.iter().find_map(|shape| match &shape.shape {
         egui::Shape::Mesh(mesh) => Some(mesh.calc_bounds()),
         _ => None,
     })
+}
+impl Canvas {
+    /// Draw an ordinary frame and inspect its visible native Link glyph.
+    pub fn link_frame(&mut self) -> Option<egui::Rect> {
+        let output = self.frame(vec![]).1;
+        link(self, &output)
+    }
 }
 
 /// Place a real input-owning foreground neighbor.
@@ -286,4 +356,66 @@ impl Default for Canvas {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// Compare a composed interior to the independent native glyph and selected roles.
+/// # Panics
+/// Panics if native glyph pixels or their selected colors differ.
+pub fn assert_glyph(
+    canvas: &Canvas,
+    output: &egui::FullOutput,
+    copied: bool,
+    colors: [egui::Color32; 2],
+    opacity: f32,
+) {
+    let (native, shapes) = native_glyph(canvas, copied, egui::Color32::WHITE);
+    let region = canvas.rect.shrink(7.);
+    let expected = native.region(&canvas.context, &shapes, region);
+    let actual = canvas.paint.region(&canvas.context, &output.shapes, region);
+    assert_eq!(expected.len(), actual.len());
+    let background = colors[0].to_array();
+    let foreground = colors[1].to_array();
+    assert!(expected.iter().any(|p| p[3] > 0));
+    for ((source, actual), point) in expected
+        .iter()
+        .zip(actual)
+        .zip(crate::canvas_paint::points(&canvas.context, region))
+    {
+        if !canvas.clip.contains(point) {
+            assert_eq!(actual, [0; 4]);
+            continue;
+        }
+        let coverage = f32::from(source[3]) / 255.;
+        for i in 0..3 {
+            let expected = (f32::from(foreground[i]) * coverage
+                + f32::from(background[i]) * (1. - coverage))
+                * opacity;
+            assert!(
+                (f32::from(actual[i]) - expected).abs() <= 2.1,
+                "native glyph channel differs"
+            );
+        }
+    }
+}
+
+/// Prepare text through the original native layout and tessellation route.
+#[must_use]
+pub fn native_text(
+    canvas: &Canvas,
+    text: &str,
+    font: egui::FontId,
+    color: egui::Color32,
+) -> (crate::canvas_paint::Paint, Vec<egui::epaint::ClippedShape>) {
+    let galley = canvas
+        .context
+        .fonts_mut(|fonts| fonts.layout_no_wrap(text.into(), font, color));
+    let pos = canvas.rect.center() - galley.size() / 2.;
+    let shape = egui::epaint::TextShape::new(pos, galley, color);
+    (
+        crate::canvas_paint::Paint::native_text(&canvas.context),
+        vec![egui::epaint::ClippedShape {
+            clip_rect: canvas.clip,
+            shape: egui::Shape::Text(shape),
+        }],
+    )
 }

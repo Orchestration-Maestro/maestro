@@ -120,17 +120,17 @@ impl DefaultContent {
         if prepared.output.is_none() {
             retained.output = None;
         }
-        let catalog = crate::icons::icons().map_err(|error| {
+        let icon = crate::icons::icon_node("Code").map_err(|error| {
             ToolUiError::Control(attachment_content::ControlError::Host(error.to_string()))
         })?;
-        let icon = catalog.get("Code").ok_or_else(|| {
+        let icon = icon.ok_or_else(|| {
             ToolUiError::Control(attachment_content::ControlError::Host(
                 "Missing code glyph".into(),
             ))
         })?;
         let header = render_header(
             self.state,
-            icon.clone(),
+            icon,
             ToolHeaderText::Text(prepared.caption.into()),
         );
         let body = ui.vertical(|ui| -> Result<(), ToolUiError> {

@@ -145,8 +145,9 @@ shortened reversals; unchanged destinations keep their existing run. New control
 start at their resolved style and drop their history with their retained state.
 The border switches immediately on hover or successful copy; feedback glyphs
 switch immediately on success and expiry.
-The current painter fades background and glyph separately; overlapping pixels at
-partial opacity remain tracked in [the composition repair](https://github.com/Orchestration-Maestro/maestro/issues/1277).
+The control composes its background, inside border and glyph before applying
+opacity once. Visibility-only animation reuses the retained image; changes to
+reached raster inputs refresh it.
 The copied check uses the selected pack's body typography, independent of the
 parent button style. It owns no text root or viewport.
 

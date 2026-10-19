@@ -8,6 +8,11 @@ impl Paint {
     pub fn update(&mut self, output: &egui::FullOutput) {
         self.0.update(output);
     }
+    /// Raster images actually used by the frame's image meshes.
+    #[must_use]
+    pub fn images(&self, shapes: &[egui::epaint::ClippedShape]) -> Vec<egui::ColorImage> {
+        self.0.images(shapes)
+    }
     #[must_use]
     pub fn ring_uploads(&self, shapes: &[egui::epaint::ClippedShape]) -> usize {
         self.0.uploads(&decoration(shapes))
@@ -69,28 +74,33 @@ impl Paint {
 /// Panics if the painted coverage differs from the spread's coverage.
 pub fn assert_spread(actual: f32, spread: f32, opacity: f32) {
     let progress = spread / 2.;
-    let expected = spread * opacity * 255. * progress * (3. - progress);
+    let opaque = [
+        (255. * progress * (2. - progress)).round(),
+        (255. * progress).round(),
+    ];
+    let vertex = f32::from(egui::Color32::WHITE.gamma_multiply(opacity).a()) / 255.;
+    let expected = spread * vertex * (opaque[0] + opaque[1]);
     assert!(
         (actual - expected).abs() < 3.,
         "painted coverage {actual}, expected {expected} for spread {spread}"
     );
 }
-/// Select the sixteen-point Close glyph meshes.
+/// Select the composed Close texture, including its optional annuli.
 pub fn glyphs(shapes: &[egui::epaint::ClippedShape]) -> impl Iterator<Item = &egui::epaint::Mesh> {
     shapes.iter().filter_map(|s| match &s.shape {
-        egui::Shape::Mesh(mesh) if (mesh.calc_bounds().width() - 16.).abs() < 0.001 => {
+        egui::Shape::Mesh(mesh) if (0.001..40.).contains(&mesh.calc_bounds().width()) => {
             Some(&**mesh)
         }
         _ => None,
     })
 }
-/// Exclude the panel and sixteen-point glyph, retaining the raster ring decoration.
+/// Exclude the panel, retaining the composed Close decoration.
 fn decoration(shapes: &[egui::epaint::ClippedShape]) -> Vec<egui::epaint::ClippedShape> {
     shapes
         .iter()
         .filter(|s| {
             matches!(&s.shape, egui::Shape::Mesh(mesh)
-                if mesh.calc_bounds().width() > 16. && mesh.calc_bounds().width() < 40.)
+                if mesh.calc_bounds().width() > 0. && mesh.calc_bounds().width() < 40.)
         })
         .cloned()
         .collect()

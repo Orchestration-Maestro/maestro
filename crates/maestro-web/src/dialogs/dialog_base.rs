@@ -40,7 +40,8 @@ pub(super) struct State {
     /// Last admitted pointer gesture, independent of stale toolkit clicks.
     pub(super) pressed: RefCell<Option<bool>>,
     /// Retained Close texture, updated only when its painted operands change.
-    pub(super) ring: RefCell<super::dialog::ring::Painter>,
+    pub(super) ring:
+        RefCell<crate::browser::control_paint::Painter<super::dialog::close::CloseKey>>,
     /// Mount identity invalidated before removal effects or caller callbacks.
     pub(super) mount: Cell<u64>,
     /// Mounted Close properties, discarded before any removal effects.

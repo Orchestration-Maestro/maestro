@@ -148,18 +148,18 @@ fn copy_link_success_shows_check_for_1500_ms() {
     paired_feedback_deadlines(true);
     let mut canvas = Canvas::new();
     canvas.activate().unwrap();
-    assert!(!check(&canvas.frame(vec![]).1));
+    assert!(!canvas.check_frame());
     assert_eq!(canvas.host.live(), 0);
     settle(&canvas, 0, true);
     assert_eq!(canvas.host.live(), 1);
     assert_eq!(canvas.host.admissions.get(), 1);
-    assert!(check(&canvas.frame(vec![]).1));
+    assert!(canvas.check_frame());
     canvas.host.advance(1499);
-    assert!(check(&canvas.frame(vec![]).1));
+    assert!(canvas.check_frame());
     canvas.host.advance(1500);
     let frame = canvas.frame(vec![]).1;
-    assert!(!check(&frame));
-    assert!(link(&frame).is_some());
+    assert!(!check(&canvas, &frame));
+    assert!(link(&canvas, &frame).is_some());
     assert_eq!(canvas.host.live(), 0);
 }
 
@@ -178,13 +178,13 @@ fn copy_link_repeated_success_restores_link() {
     assert_eq!(canvas.host.admissions.get(), 3);
     assert_eq!(canvas.host.live(), 1);
     canvas.host.advance(1500);
-    assert!(check(&canvas.frame(vec![]).1));
+    assert!(canvas.check_frame());
     canvas.activate().unwrap();
     settle(&canvas, 3, false);
     canvas.host.advance(2499);
-    assert!(check(&canvas.frame(vec![]).1));
+    assert!(canvas.check_frame());
     canvas.host.advance(2500);
-    assert!(!check(&canvas.frame(vec![]).1));
+    assert!(!canvas.check_frame());
     canvas.host.advance(5000);
     assert_eq!(canvas.host.live(), 0);
 }
@@ -194,17 +194,17 @@ fn copy_link_failure_never_claims_success() {
     let mut canvas = Canvas::new();
     canvas.activate().unwrap();
     settle(&canvas, 0, false);
-    assert!(!check(&canvas.frame(vec![]).1));
+    assert!(!canvas.check_frame());
     assert_eq!(canvas.host.admissions.get(), 0);
     canvas.activate().unwrap();
     settle(&canvas, 1, true);
     canvas.host.advance(1000);
     canvas.activate().unwrap();
     settle(&canvas, 2, false);
-    assert!(check(&canvas.frame(vec![]).1));
+    assert!(canvas.check_frame());
     assert_eq!(canvas.host.admissions.get(), 1);
     canvas.host.advance(1500);
-    assert!(!check(&canvas.frame(vec![]).1));
+    assert!(!canvas.check_frame());
 }
 
 #[test]
@@ -222,20 +222,20 @@ fn copy_link_drop_revokes_pending_feedback() {
     assert_eq!(canvas.host.admissions.get(), 0);
     canvas.activate().unwrap();
     settle(&canvas, 2, true);
-    assert!(check(&canvas.frame(vec![]).1));
+    assert!(canvas.check_frame());
     let old = std::mem::replace(&mut canvas.state, CopyLinkState::new(canvas.host.clone()));
     drop(old);
     assert_eq!(canvas.host.live(), 0);
     canvas.activate().unwrap();
     settle(&canvas, 3, true);
-    assert!(check(&canvas.frame(vec![]).1));
+    assert!(canvas.check_frame());
     settle(&neighbor, 1, true);
     assert_eq!(canvas.host.live(), 2);
     let host = canvas.host.clone();
     let weak = std::rc::Rc::downgrade(&host);
     drop(canvas);
     assert_eq!(host.live(), 1);
-    assert!(check(&neighbor.frame(vec![]).1));
+    assert!(neighbor.check_frame());
     drop(neighbor);
     assert_eq!(host.live(), 0);
     host.run_work();
@@ -251,15 +251,15 @@ fn copy_link_timer_failure_does_not_stick() {
     *canvas.host.failure.borrow_mut() = Some(AttachmentHostError::Host("timer refused".into()));
     settle(&canvas, 0, true);
     assert_eq!(canvas.host.live(), 0);
-    assert!(!check(&canvas.frame(vec![]).1));
+    assert!(!canvas.check_frame());
     canvas.activate().unwrap();
     settle(&canvas, 1, true);
-    assert!(check(&canvas.frame(vec![]).1));
+    assert!(canvas.check_frame());
     canvas.activate().unwrap();
     *canvas.host.failure.borrow_mut() = Some(AttachmentHostError::Host("timer refused".into()));
     settle(&canvas, 2, true);
     assert_eq!(canvas.host.live(), 0);
-    assert!(!check(&canvas.frame(vec![]).1));
+    assert!(!canvas.check_frame());
 }
 
 #[test]
@@ -296,16 +296,16 @@ fn copy_link_control_preserves_geometry_tooltip_and_glyph() {
         let (response, output) = canvas.frame(vec![]);
         let response = response.unwrap();
         assert_eq!(response.rect.size(), egui::vec2(28., 28.));
-        let bounds = link(&output).unwrap();
-        assert_eq!(
-            bounds.size(),
-            egui::vec2(geometry.glyph_width, geometry.glyph_height)
+        let bounds = egui::Rect::from_center_size(
+            response.rect.center(),
+            egui::vec2(geometry.glyph_width, geometry.glyph_height),
         );
-        assert_eq!(bounds.center(), response.rect.center());
+        assert_eq!(bounds.size(), egui::vec2(14., 14.));
         assert!(
             (response.rect.width() - 2. * geometry.padding - bounds.width() - 2.).abs()
                 < f32::EPSILON
         );
+        assert_idle_link(&canvas, &output);
         canvas.frame(pointer(canvas.rect.center(), true)).0.unwrap();
         let (response, output) = canvas.frame(pointer(canvas.rect.center(), false));
         assert!(response.unwrap().clicked());
@@ -322,26 +322,39 @@ fn copy_link_control_preserves_geometry_tooltip_and_glyph() {
     }
 }
 
+/// Compare the measured idle glyph through the original native producer.
+fn assert_idle_link(canvas: &Canvas, output: &egui::FullOutput) {
+    let pack = maestro_theme::load_brand_pack("brand.json", &brand::Pack).unwrap();
+    let p = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
+    assert_glyph(
+        canvas,
+        output,
+        false,
+        [
+            egui::Color32::from_hex(p.colors["panel"]).unwrap(),
+            egui::Color32::from_hex(p.colors["muted"]).unwrap(),
+        ],
+        1.,
+    );
+}
+
 #[test]
 fn copy_link_control_hides_until_message_hover() {
     let mut canvas = Canvas::new();
     canvas.hovered = false;
-    assert!(link(&canvas.frame(vec![]).1).is_none());
+    assert!(canvas.link_frame().is_none());
     canvas.time = 0.01;
     canvas.hovered = true;
     let start = canvas.frame(vec![]).1;
     canvas.time += f64::from(fixture().control.geometry.transition_seconds);
     let settled = canvas.frame(vec![]).1;
-    assert!(link(&settled).is_some());
+    assert!(link(&canvas, &settled).is_some());
     let alpha = |output: &egui::FullOutput| {
-        output
-            .shapes
-            .iter()
-            .find_map(|shape| match &shape.shape {
-                egui::Shape::Rect(frame) if frame.rect == canvas.rect => Some(frame.fill.a()),
-                _ => None,
-            })
-            .unwrap_or(0)
+        canvas.paint.pixel(
+            &canvas.context,
+            &output.shapes,
+            canvas.rect.center_bottom() - egui::vec2(0., 3.),
+        )[3]
     };
     assert!(alpha(&start) < alpha(&settled));
     canvas.activate().unwrap();
@@ -362,7 +375,7 @@ fn copy_link_control_hides_until_message_hover() {
     canvas.hovered = true;
     canvas.frame(vec![]).0.unwrap();
     canvas.time += 0.15;
-    assert!(check(&canvas.frame(vec![]).1));
+    assert!(canvas.check_frame());
     canvas.time = 4.;
     canvas.hovered = false;
     canvas.frame(vec![]).0.unwrap();
@@ -370,7 +383,7 @@ fn copy_link_control_hides_until_message_hover() {
     canvas.hovered = true;
     canvas.frame(vec![]).0.unwrap();
     canvas.time += 0.15;
-    assert!(check(&canvas.frame(vec![]).1));
+    assert!(canvas.check_frame());
 }
 
 #[test]
@@ -480,24 +493,26 @@ fn copy_link_check_uses_selected_typography() {
         });
         canvas.activate().unwrap();
         settle(&canvas, 0, true);
+        canvas
+            .pack_frame(vec![], name, maestro_theme::BrandMode::Dark)
+            .0
+            .unwrap();
+        canvas.time = 1.;
         let output = canvas
             .pack_frame(vec![], name, maestro_theme::BrandMode::Dark)
             .1;
-        let text = output
-            .shapes
-            .iter()
-            .find_map(|shape| match &shape.shape {
-                egui::Shape::Text(text) if text.galley.text() == "✓" => Some(text),
-                _ => None,
-            })
-            .unwrap();
-        let expected_font = egui::FontId::proportional(16.);
-        assert_eq!(text.galley.job.sections[0].format.font_id, expected_font);
-        let expected = canvas.context.fonts_mut(|fonts| {
-            fonts.layout_no_wrap("✓".into(), expected_font, text.fallback_color)
-        });
-        assert_eq!(text.galley.size(), expected.size());
-        assert_eq!(text.pos + text.galley.size() / 2., canvas.rect.center());
+        let pack = maestro_theme::load_brand_pack(name, &brand::Pack).unwrap();
+        let p = pack.presentation(maestro_theme::BrandMode::Dark).unwrap();
+        assert_glyph(
+            &canvas,
+            &output,
+            true,
+            [
+                egui::Color32::from_hex(p.colors["success"]).unwrap(),
+                egui::Color32::from_hex(p.colors["on-accent"]).unwrap(),
+            ],
+            1.,
+        );
     }
 }
 
@@ -521,10 +536,16 @@ fn copy_link_border_switches_on_first_transition_frame() {
                 (vec![egui::Event::PointerMoved(egui::Pos2::ZERO)], "border"),
             ] {
                 let output = canvas.pack_frame(events, name, mode).1;
-                let border = painted_frame(&output, canvas.rect).stroke.color;
+                let border = canvas.paint.pixel(
+                    &canvas.context,
+                    &output.shapes,
+                    egui::pos2(canvas.rect.left() + 0.5, canvas.rect.center().y),
+                );
                 assert_eq!(
-                    border,
-                    egui::Color32::from_hex(presentation.colors[role]).unwrap()
+                    border.map(|value| num_traits::ToPrimitive::to_u8(&value.round()).unwrap()),
+                    egui::Color32::from_hex(presentation.colors[role])
+                        .unwrap()
+                        .to_array()
                 );
                 canvas.time += 0.15;
                 canvas.pack_frame(vec![], name, mode).0.unwrap();
@@ -532,10 +553,16 @@ fn copy_link_border_switches_on_first_transition_frame() {
             canvas.activate().unwrap();
             settle(&canvas, 0, true);
             let output = canvas.pack_frame(vec![], name, mode).1;
-            let border = painted_frame(&output, canvas.rect).stroke.color;
+            let border = canvas.paint.pixel(
+                &canvas.context,
+                &output.shapes,
+                egui::pos2(canvas.rect.left() + 0.5, canvas.rect.center().y),
+            );
             assert_eq!(
-                border,
-                egui::Color32::from_hex(presentation.colors["success"]).unwrap()
+                border.map(|value| num_traits::ToPrimitive::to_u8(&value.round()).unwrap()),
+                egui::Color32::from_hex(presentation.colors["success"])
+                    .unwrap()
+                    .to_array()
             );
         }
     }
@@ -550,23 +577,18 @@ fn copy_link_paints_selected_pack_roles() {
         }
     }
 }
-/// Inspect the actual full control decoration, not its supplied toolkit style.
-fn painted_roles(output: &egui::FullOutput, rect: egui::Rect, colors: [egui::Color32; 2]) {
-    let frame = painted_frame(output, rect);
-    assert_eq!(frame.fill, colors[0]);
-    assert_eq!(frame.stroke.color, colors[1]);
-}
-
-/// Inspect the frame submitted to the painter for the measured control slot.
-fn painted_frame(output: &egui::FullOutput, rect: egui::Rect) -> &egui::epaint::RectShape {
-    output
-        .shapes
-        .iter()
-        .find_map(|shape| match &shape.shape {
-            egui::Shape::Rect(frame) if frame.rect == rect => Some(frame),
-            _ => None,
-        })
-        .unwrap()
+/// Inspect selected decoration through the clipped texture-backed paint.
+fn painted_roles(canvas: &Canvas, output: &egui::FullOutput, colors: [egui::Color32; 2]) {
+    let rect = canvas.rect;
+    for (point, expected) in [
+        (egui::pos2(rect.center().x, rect.bottom() - 3.), colors[0]),
+        (egui::pos2(rect.left() + 0.5, rect.center().y), colors[1]),
+    ] {
+        let actual = canvas.paint.pixel(&canvas.context, &output.shapes, point);
+        for (a, b) in actual.into_iter().zip(expected.to_array()) {
+            assert!((a - f32::from(b)).abs() <= 1.);
+        }
+    }
 }
 
 /// Draw two controls under a clickable containing message.
@@ -626,14 +648,21 @@ fn check_pack(name: &str, mode: maestro_theme::BrandMode) {
     let color = |role: &str| egui::Color32::from_hex(p.colors[role]).unwrap();
     let mut canvas = Canvas::new();
     canvas.hovered = false;
-    assert!(link(&canvas.pack_frame(vec![], name, mode).1).is_none());
+    let hidden = canvas.pack_frame(vec![], name, mode).1;
+    assert!(link(&canvas, &hidden).is_none());
     canvas.time = 1.;
     canvas.hovered = true;
     canvas.pack_frame(vec![], name, mode).0.unwrap();
     canvas.time += 0.15;
     let normal = canvas.pack_frame(vec![], name, mode).1;
-    painted_roles(&normal, canvas.rect, [color("panel"), color("border")]);
-    assert!(canvas.pixels.contains(&color("muted")));
+    painted_roles(&canvas, &normal, [color("panel"), color("border")]);
+    assert_glyph(
+        &canvas,
+        &normal,
+        false,
+        [color("panel"), color("muted")],
+        1.,
+    );
     canvas.time = 2.;
     canvas
         .pack_frame(
@@ -645,8 +674,14 @@ fn check_pack(name: &str, mode: maestro_theme::BrandMode) {
         .unwrap();
     canvas.time += 0.15;
     let hovered = canvas.pack_frame(vec![], name, mode).1;
-    painted_roles(&hovered, canvas.rect, [color("accent"), color("accent")]);
-    assert!(canvas.pixels.contains(&color("on-accent")));
+    painted_roles(&canvas, &hovered, [color("accent"), color("accent")]);
+    assert_glyph(
+        &canvas,
+        &hovered,
+        false,
+        [color("accent"), color("on-accent")],
+        1.,
+    );
     let response = canvas
         .pack_frame(vec![egui::Event::PointerGone], name, mode)
         .0
@@ -655,29 +690,17 @@ fn check_pack(name: &str, mode: maestro_theme::BrandMode) {
     canvas.time = 3.;
     canvas.pack_frame(vec![], name, mode).0.unwrap();
     canvas.time += 0.15;
-    painted_roles(
-        &canvas.pack_frame(vec![], name, mode).1,
-        canvas.rect,
-        [color("accent"), color("accent")],
-    );
+    let focused = canvas.pack_frame(vec![], name, mode).1;
+    painted_roles(&canvas, &focused, [color("accent"), color("accent")]);
     canvas.activate().unwrap();
     settle(&canvas, 0, true);
     canvas.time = 4.;
     canvas.pack_frame(vec![], name, mode).0.unwrap();
     canvas.time += 0.15;
     let copied = canvas.pack_frame(vec![], name, mode).1;
-    painted_roles(&copied, canvas.rect, [color("success"), color("success")]);
-    let text = copied
-        .shapes
-        .iter()
-        .find_map(|shape| match &shape.shape {
-            egui::Shape::Text(text) if text.galley.text() == p.glyphs["passed"].symbol => {
-                Some(text)
-            }
-            _ => None,
-        })
-        .unwrap();
-    assert_eq!(text.fallback_color, color("on-accent"));
+    painted_roles(&canvas, &copied, [color("success"), color("success")]);
+    let selected = [color("success"), color("on-accent")];
+    assert_glyph(&canvas, &copied, true, selected, 1.);
 }
 
 /// Observe the actual tooltip after the toolkit hover delay.
@@ -717,13 +740,13 @@ fn paired_feedback_deadlines(button_first: bool) {
         (1500, 2250)
     };
     button.host.advance(link_deadline - 1);
-    assert!(session_links_support::check(&link.frame(vec![]).1));
+    assert!(link.check_frame());
     assert!(copy_button_support::copied(
         &button.frame(vec![]).1,
         &button
     ));
     button.host.advance(link_deadline);
-    assert!(!session_links_support::check(&link.frame(vec![]).1));
+    assert!(!link.check_frame());
     assert!(
         copy_button_support::copied(&button.frame(vec![]).1, &button),
         "the link deadline must not restore the copy control"

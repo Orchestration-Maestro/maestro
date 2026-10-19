@@ -164,33 +164,23 @@ impl Harness {
             channels(border, rgb, expected.opacity);
         }
         if let Some(rgb) = expected.color {
-            let peak = self.glyph_pixel(&output);
-            assert!(peak[3] > 128., "glyph must contribute visible pixels");
-            channels(peak, rgb, peak[3] / 255.);
+            let [r, g, b] = rgb;
+            let [br, bg, bb] = expected.background.unwrap();
+            session_links_support::assert_glyph(
+                &self.canvas,
+                &output,
+                expected.copied,
+                [
+                    egui::Color32::from_rgb(br, bg, bb),
+                    egui::Color32::from_rgb(r, g, b),
+                ],
+                expected.opacity,
+            );
         }
         assert_eq!(
-            session_links_support::check(&output),
+            session_links_support::check(&self.canvas, &output),
             expected.copied && expected.opacity > 0.
         );
-    }
-    fn glyph_pixel(&self, output: &egui::FullOutput) -> [f32; 4] {
-        let glyphs: Vec<_> = output
-            .shapes
-            .iter()
-            .filter(|s| matches!(s.shape, egui::Shape::Mesh(_) | egui::Shape::Text(_)))
-            .cloned()
-            .collect();
-        (47_u16..61)
-            .flat_map(|y| {
-                (47_u16..61).map(move |x| egui::pos2(f32::from(x) + 0.5, f32::from(y) + 0.5))
-            })
-            .map(|point| {
-                self.canvas
-                    .paint
-                    .pixel(&self.canvas.context, &glyphs, point)
-            })
-            .max_by(|a, b| a[3].total_cmp(&b[3]))
-            .unwrap()
     }
 }
 fn channels(actual: [f32; 4], expected: [u8; 3], opacity: f32) {
@@ -495,7 +485,7 @@ fn copy_link_transition_border_and_feedback_are_immediate() {
     h.canvas.activate().unwrap();
     session_links_support::settle(&h.canvas, 0, true);
     let copied = h.frame(true);
-    assert!(session_links_support::check(&copied));
+    assert!(session_links_support::check(&h.canvas, &copied));
     channels(
         h.canvas
             .paint
@@ -514,8 +504,8 @@ fn copy_link_transition_border_and_feedback_are_immediate() {
     h.frame(true);
     h.canvas.host.advance(1500);
     let expired = h.frame(false);
-    assert!(!session_links_support::check(&expired));
-    assert!(session_links_support::link(&expired).is_some());
+    assert!(!session_links_support::check(&h.canvas, &expired));
+    assert!(session_links_support::link(&h.canvas, &expired).is_some());
     channels(
         h.canvas
             .paint

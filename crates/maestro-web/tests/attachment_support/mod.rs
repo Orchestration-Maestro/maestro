@@ -268,16 +268,7 @@ impl Frame {
         );
         let mut output = self.ctx.end_pass();
         self.paint.update(&output);
-        self.images = output
-            .textures_delta
-            .set
-            .values()
-            .flatten()
-            .filter(|delta| delta.image.size() == [20, 20])
-            .map(|delta| match &delta.image {
-                egui::ImageData::Color(image) => (**image).clone(),
-            })
-            .collect();
+        self.images = self.paint.images(&output.shapes);
         output.textures_delta.clear();
         self.shapes = output.shapes;
         value

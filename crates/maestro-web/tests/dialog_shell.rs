@@ -1,6 +1,8 @@
 //! Owned dialog lifecycle through the replaceable content host.
 #![cfg(test)]
 pub mod attachment_support;
+#[path = "support/brand.rs"]
+mod brand;
 pub mod input_support;
 mod support;
 use maestro_web::{
@@ -617,7 +619,7 @@ fn pointer_frame(
     });
 }
 
-/// Observe both raster tint and the opacity emitted on the glyph mesh.
+/// Observe retained control pixels and submitted group opacity.
 fn control_paint(
     frame: &attachment_support::Frame,
 ) -> (Vec<egui::ColorImage>, Vec<egui::epaint::ClippedShape>) {
@@ -671,8 +673,8 @@ fn dialog_interrupted_hover_paint_is_continuous() {
         frame.time = Some(1. + milliseconds / 1000.);
         frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
         assert_eq!(glyph_alpha(&frame), alpha, "enter at {milliseconds} ms");
-        let tint = glyph_tint(&frame);
-        assert_eq!(tint, rgb);
+        assert_glyph_rgb(&frame, rgb);
+        let tint = frame.paint.images(&frame.shapes);
         let before = glyph_alpha(&frame);
         frame.run(
             vec![egui::Event::PointerMoved(egui::pos2(20., 20.))],
@@ -683,7 +685,12 @@ fn dialog_interrupted_hover_paint_is_continuous() {
             before,
             "same-time reversal must not jump"
         );
-        assert_eq!(glyph_tint(&frame), tint, "same-time colour reversal");
+        assert_eq!(
+            frame.paint.images(&frame.shapes),
+            tint,
+            "same-time colour reversal"
+        );
+        assert_glyph_rgb(&frame, rgb);
         let origin = 1. + milliseconds / 1000.;
         for (elapsed, expected) in [
             (1. / 60., next),
@@ -697,18 +704,24 @@ fn dialog_interrupted_hover_paint_is_continuous() {
     }
 }
 
-/// Read the fully covered glyph pixel from the submitted tinted texture.
-fn glyph_tint(frame: &attachment_support::Frame) -> [u8; 3] {
-    let pixel = frame
-        .images
-        .iter()
-        .flat_map(|image| &image.pixels)
-        .max_by_key(|p| p.a())
-        .unwrap();
-    [pixel.r(), pixel.g(), pixel.b()]
+/// Compare all native glyph pixels using the recorded unpremultiplied tint operand.
+fn assert_glyph_rgb(frame: &attachment_support::Frame, [red, green, blue]: [u8; 3]) {
+    let color = egui::Color32::from_rgb(red, green, blue);
+    let (native, shapes) = attachment_support::canvas_paint::icon(&frame.ctx, CLOSE, "X", color);
+    let vertex = f32::from(glyph_alpha(frame)) / 255.;
+    for point in attachment_support::canvas_paint::points(&frame.ctx, CLOSE) {
+        let expected = native.pixel(&frame.ctx, &shapes, point);
+        let actual = frame.paint.pixel(&frame.ctx, &frame.shapes, point);
+        for (actual, expected) in actual.into_iter().zip(expected) {
+            assert!(
+                (actual.round() - (expected * vertex).round()).abs() <= 1.,
+                "native glyph tint differs"
+            );
+        }
+    }
 }
 
-/// Observe the submitted glyph mesh's group opacity.
+/// Observe the submitted whole-control opacity.
 fn glyph_alpha(frame: &attachment_support::Frame) -> u8 {
     attachment_support::dialog_paint::glyphs(&frame.shapes)
         .filter_map(|mesh| mesh.vertices.iter().map(|v| v.color.a()).max())
@@ -754,7 +767,12 @@ fn dialog_interrupted_focus_paint_is_continuous() {
                 170,
                 "overlap composited before group opacity"
             );
-            assert_eq!(outer_alpha(&frame), 138);
+            let opaque = (255. * spread / 2.).round();
+            let vertex = f32::from(egui::Color32::WHITE.gamma_multiply(0.7).a()) / 255.;
+            assert_eq!(
+                outer_alpha(&frame),
+                (opaque * vertex).round().to_u8().unwrap()
+            );
         }
         let origin = 1. + milliseconds / 1000.;
         for (elapsed, expected) in [(1. / 60., next), (duration / 2., half)] {
@@ -1043,11 +1061,11 @@ fn dialog_fractional_focus_annuli_preserve_pixel_coverage() {
             assert_eq!(
                 uploads,
                 if time < 0.05 {
-                    1
-                } else if time < 0.1 {
                     2
-                } else {
+                } else if time < 0.1 {
                     3
+                } else {
+                    4
                 },
                 "one retained texture updated in place"
             );
@@ -1057,18 +1075,26 @@ fn dialog_fractional_focus_annuli_preserve_pixel_coverage() {
 
 /// Independently integrate circular CSS boundaries over physical pixels, not submitted geometry.
 fn assert_fractional_pixels(frame: &attachment_support::Frame, spread: f32) {
+    let radius = (frame.pack.presentation(frame.mode).unwrap().radii["control"] / 2.)
+        .to_f32()
+        .unwrap()
+        .min(CLOSE.width() / 2.);
     let density = frame.density;
     let left = (462. * density).floor().to_i32().unwrap();
     let top = (112. * density).floor().to_i32().unwrap();
     let extent = (26. * density).ceil().to_i32().unwrap();
+    let (glyph, shapes) =
+        attachment_support::canvas_paint::icon(&frame.ctx, CLOSE, "X", egui::Color32::WHITE);
     for row in top..top + extent {
         for col in left..left + extent {
             let origin = egui::pos2(
                 col.to_f32().unwrap() / density,
                 row.to_f32().unwrap() / density,
             );
-            let expected = expected_pixel_alpha(origin, density, spread);
             let center = origin + egui::vec2(0.5 / density, 0.5 / density);
+            let coverage = glyph.pixel(&frame.ctx, &shapes, center)[3] / 255.;
+            let expected = expected_pixel_alpha(origin, density, spread, radius) * (1. - coverage)
+                + coverage * 0.7 * 255.;
             let actual = frame.paint.alpha(&frame.ctx, &frame.shapes, center);
             assert!(
                 (actual - expected).abs() <= 2.,
@@ -1079,21 +1105,22 @@ fn assert_fractional_pixels(frame: &attachment_support::Frame, spread: f32) {
 }
 
 /// Source shadow alpha and disjoint disk-offset coverage, integrated independently on a 64-square grid.
-fn expected_pixel_alpha(origin: egui::Pos2, density: f32, spread: f32) -> f32 {
+fn expected_pixel_alpha(origin: egui::Pos2, density: f32, spread: f32, radius: f32) -> f32 {
     let mut alpha = 0.;
     let progress = spread / 2.;
     for row in 0_u16..64 {
         for col in 0_u16..64 {
             let point = origin
                 + egui::vec2((f32::from(col) + 0.5) / 64., (f32::from(row) + 0.5) / 64.) / density;
-            let offset = (point - egui::pos2(475., 125.)).abs() - egui::vec2(6., 6.);
+            let offset =
+                (point - CLOSE.center()).abs() - (CLOSE.size() / 2. - egui::Vec2::splat(radius));
             let distance = offset.max(egui::Vec2::ZERO).length();
-            if distance <= 2. {
+            if distance <= radius {
                 continue;
             }
-            alpha += if distance <= 2. + spread {
+            alpha += if distance <= radius + spread {
                 progress * (2. - progress)
-            } else if distance <= 2. + 2. * spread {
+            } else if distance <= radius + 2. * spread {
                 progress
             } else {
                 0.
@@ -1147,4 +1174,135 @@ fn dialog_errors_preserve_sources_and_retained_owners() {
     assert!(host.removed.borrow().is_empty());
     owner.close().unwrap();
     assert_eq!(host.removed.borrow().len(), 1);
+}
+
+/// The glyph and fractional focus annuli retain their native pixels in one image.
+#[test]
+fn dialog_close_composition_keeps_fractional_ring_and_glyph_pixels() {
+    for name in ["brand.json", "packs/signal.json"] {
+        for mode in [
+            maestro_theme::BrandMode::Dark,
+            maestro_theme::BrandMode::Light,
+        ] {
+            for (density, clipped) in [1., 1.25, 2.]
+                .into_iter()
+                .flat_map(|density| [false, true].map(move |clipped| (density, clipped)))
+            {
+                close_composition_case(name, mode, density, clipped);
+            }
+        }
+    }
+}
+
+/// Drive a real containing dialog through each fractional focus frame.
+fn close_composition_case(name: &str, mode: maestro_theme::BrandMode, density: f32, clipped: bool) {
+    let mut frame = attachment_support::Frame {
+        pack: maestro_theme::load_brand_pack(name, &brand::Pack).unwrap(),
+        mode,
+        density,
+        time: Some(0.),
+        ..Default::default()
+    };
+    if clipped {
+        frame.screen.max.x = CLOSE.center().x;
+    }
+    let host = input_support::Host::new(|_, _| {});
+    let dialogs = DialogContext::new(frame.ctx.clone(), host);
+    let id = Rc::new(Cell::new(egui::Id::NULL));
+    let saved = id.clone();
+    let mut children = body(Rc::default());
+    children.render_content = Rc::new(move |_, modal, _, _| {
+        saved.set(modal.with("close"));
+        Ok(())
+    });
+    let _owner = dialog(&dialogs, DialogProps::new(true, children)).unwrap();
+    frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    frame.ctx.memory_mut(|m| m.request_focus(id.get()));
+    frame.time = Some(1.);
+    frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+    for (time, spread) in [(0.0375, 0.473_174), (0.075, 1.551_123), (0.1125, 1.918_735)] {
+        frame.time = Some(1. + time);
+        frame.run(vec![], |_, i, p| dialogs.render(i, p).unwrap());
+        assert_eq!(
+            attachment_support::dialog_paint::glyphs(&frame.shapes).count(),
+            1
+        );
+        assert_close_glyph(&frame);
+        if !clipped {
+            assert_fractional_pixels(&frame, spread);
+        }
+        assert_close_shadow_colors(&frame, spread);
+    }
+}
+
+/// Compare the real composed glyph to the original independent SVG producer.
+fn assert_close_glyph(frame: &attachment_support::Frame) {
+    let p = frame.pack.presentation(frame.mode).unwrap();
+    let color = egui::Color32::from_hex(p.colors["muted"]).unwrap();
+    let (native, shapes) = attachment_support::canvas_paint::icon(&frame.ctx, CLOSE, "X", color);
+    let interior = CLOSE.shrink(2.);
+    let vertex = f32::from(egui::Color32::WHITE.gamma_multiply(0.7).a()) / 255.;
+    for point in attachment_support::canvas_paint::points(&frame.ctx, CLOSE) {
+        if !interior.contains(point) {
+            assert!(
+                native
+                    .pixel(&frame.ctx, &shapes, point)
+                    .iter()
+                    .all(|value| value.abs() < f32::EPSILON)
+            );
+            continue;
+        }
+        let expected = if frame.screen.contains(point) {
+            native.pixel(&frame.ctx, &shapes, point).map(|v| v * vertex)
+        } else {
+            [0.; 4]
+        };
+        let actual = frame.paint.pixel(&frame.ctx, &frame.shapes, point);
+        for (a, b) in actual.into_iter().zip(expected) {
+            assert!(
+                (a.round() - b.round()).abs() <= 1.,
+                "native Close glyph differs at {point:?}: actual={actual:?}, expected={expected:?}, density={}",
+                frame.density
+            );
+        }
+    }
+}
+
+/// Check the two shadow colors independently of their retained raster.
+fn assert_close_shadow_colors(frame: &attachment_support::Frame, spread: f32) {
+    let p = frame.pack.presentation(frame.mode).unwrap();
+    let background = egui::Color32::from_hex(p.colors["background"])
+        .unwrap()
+        .to_array();
+    let accent = egui::Color32::from_hex(p.colors["accent"])
+        .unwrap()
+        .to_array();
+    let progress = spread / 2.;
+    let region = egui::Rect::from_min_max(egui::pos2(474., 112.), egui::pos2(475., 117.));
+    for point in attachment_support::canvas_paint::points(&frame.ctx, region) {
+        let origin = point - egui::vec2(0.5, 0.5) / frame.density;
+        let mut coverage = [0.; 2];
+        for (x, y) in (0_u16..64).flat_map(|y| (0_u16..64).map(move |x| (x, y))) {
+            let sample = origin
+                + egui::vec2((f32::from(x) + 0.5) / 64., (f32::from(y) + 0.5) / 64.)
+                    / frame.density;
+            let distance = CLOSE.top() - sample.y;
+            if distance > 0. && distance <= spread {
+                coverage[0] += 1. / 4096.;
+            } else if distance > spread && distance <= 2. * spread {
+                coverage[1] += 1. / 4096.;
+            }
+        }
+        let actual = frame.paint.pixel(&frame.ctx, &frame.shapes, point);
+        for i in 0..3 {
+            let inner = f32::from(background[i]) * progress
+                + f32::from(accent[i]) * progress * (1. - progress);
+            let outer = f32::from(accent[i]) * progress;
+            let expected = (inner * coverage[0] + outer * coverage[1]) * 0.7;
+            assert!(
+                (actual[i] - expected).abs() <= 2.,
+                "Close shadow color differs"
+            );
+        }
+    }
 }
