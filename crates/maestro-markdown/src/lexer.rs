@@ -114,11 +114,12 @@ impl<'a, E> Lexer<'a, E> {
             .as_ref()
             .and_then(|rule| rule.find(source.text));
         if let Some(gap) = gap.filter(|gap| gap.end() > 0) {
-            if (gap.end() > 1
-                && (!output.is_empty()
-                    || source.text[gap.end()..]
+            // With nothing before it, even one line break is a gap when content follows.
+            if (gap.end() > 1 && !output.is_empty())
+                || (output.is_empty()
+                    && source.text[gap.end()..]
                         .chars()
-                        .any(|scalar| !is_whitespace_scalar(scalar))))
+                        .any(|scalar| !is_whitespace_scalar(scalar)))
                 || output
                     .last()
                     .is_some_and(|node| node.authored.ends_with('\n'))
