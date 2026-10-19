@@ -86,7 +86,7 @@ fn exact_child_selection_exempts_only_the_owner_package() {
             ("maestro-test-process", "renamed", true),
             ("maestro-models", "maestro-test-process", false),
             ("maestro-test-process-extra", "renamed", false),
-            ("maestro-test-proces", "renamed", false),
+            ("maestro-test-proc", "renamed", false),
         ] {
             let package = member(name, directory, path, "run(\"--exact\");");
             assert_eq!(check(&[package]).is_ok(), exempt, "{name}: {path}");
