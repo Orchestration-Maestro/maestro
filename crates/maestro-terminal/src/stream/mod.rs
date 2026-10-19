@@ -6,6 +6,8 @@ mod action;
 mod csi;
 mod esc;
 mod osc_dispatch;
+#[cfg(test)]
+mod tests;
 
 pub use action::{
     Action, CharsetAction, CursorAction, EditAction, EraseAction, KeyboardAction, ModeAction,
@@ -20,6 +22,9 @@ pub trait Handler {
 
 /// Retained byte decoder for successive terminal writes.
 pub struct Stream {
+    /// Input visits made by the adapter's escape search and parser delivery.
+    #[cfg(test)]
+    input_visits: usize,
     /// Incomplete scalar carried between writes.
     utf8: Utf8Stream,
     /// Existing control-sequence parser with its OSC allocation policy.
@@ -33,6 +38,8 @@ impl Stream {
         let mut parser = crate::Parser::init();
         parser.osc_parser.alloc = allocating;
         Self {
+            #[cfg(test)]
+            input_visits: 0,
             utf8: Utf8Stream::default(),
             parser,
         }
@@ -48,6 +55,10 @@ impl Stream {
             let Some((&byte, rest)) = remaining.split_first() else {
                 break;
             };
+            #[cfg(test)]
+            {
+                self.input_visits += 1;
+            }
             for action in self.parser.next(byte).into_iter().flatten() {
                 Self::dispatch(action, handler);
             }
@@ -86,7 +97,13 @@ impl Stream {
     fn ground<'a>(&mut self, bytes: &'a [u8], handler: &mut impl Handler) -> &'a [u8] {
         let end = bytes
             .iter()
-            .position(|&byte| byte == 0x1b)
+            .position(|&byte| {
+                #[cfg(test)]
+                {
+                    self.input_visits += 1;
+                }
+                byte == 0x1b
+            })
             .unwrap_or(bytes.len());
         Self::text(&self.utf8.push(&bytes[..end]), handler);
         if end < bytes.len() {

@@ -849,3 +849,471 @@ fn margin_terminal_consumers() {
     t.write(b"\x1b[s");
     assert_eq!((t.scrolling_region.left, t.scrolling_region.right), (0, 11));
 }
+
+#[test]
+fn dispatch_print_invalid_utf_8() {
+    expect(b"\xff", &[Action::Print('\u{fffd}')]);
+}
+
+#[test]
+fn dispatch_complete_incomplete_utf_8() {
+    let mut stream = Stream::new(false);
+    let mut recorder = Recorder::default();
+    for byte in [0xe0, 0xa0] {
+        stream.next(byte, &mut recorder);
+        assert!(recorder.0.is_empty());
+    }
+    stream.next(0x80, &mut recorder);
+    assert_eq!(recorder.0, ['\u{800}']);
+}
+
+#[test]
+fn dispatch_cursor_right_cuf() {
+    expect(
+        b"\x1b[C\x1b[5C",
+        &[
+            Action::Cursor(CursorAction::CursorRight(1)),
+            Action::Cursor(CursorAction::CursorRight(5)),
+        ],
+    );
+    expect(b"\x1b[5;4C\x1b[?3C", &[]);
+}
+
+#[test]
+fn dispatch_dec_set_mode_sm_and_reset_mode_rm() {
+    use maestro_terminal::Mode;
+    expect(
+        b"\x1b[?6h\x1b[?6l",
+        &[
+            Action::Mode(ModeAction::SetMode(Mode::Origin)),
+            Action::Mode(ModeAction::ResetMode(Mode::Origin)),
+        ],
+    );
+    expect(b"\x1b[6 h", &[]);
+}
+
+#[test]
+fn dispatch_ansi_set_mode_sm_and_reset_mode_rm() {
+    use maestro_terminal::Mode;
+    expect(
+        b"\x1b[4h\x1b[4l",
+        &[
+            Action::Mode(ModeAction::SetMode(Mode::Insert)),
+            Action::Mode(ModeAction::ResetMode(Mode::Insert)),
+        ],
+    );
+    expect(b"\x1b[>5h", &[]);
+}
+
+#[test]
+fn dispatch_ansi_set_mode_sm_and_reset_mode_rm_with_unknown_value() {
+    expect(b"\x1b[6h\x1b[6l", &[]);
+}
+
+#[test]
+fn dispatch_restore_mode() {
+    expect(b"\x1b[?42r", &[]);
+}
+
+#[test]
+fn dispatch_pop_kitty_keyboard_with_no_params_defaults_to_1() {
+    expect(
+        b"\x1b[<u",
+        &[Action::Keyboard(KeyboardAction::KittyKeyboardPop(1))],
+    );
+}
+
+#[test]
+fn dispatch_decsca() {
+    expect(
+        b"\x1b[\"q\x1b[0\"q\x1b[2\"q\x1b[1\"q",
+        &[
+            Action::Protection(ProtectionAction::ProtectedModeOff),
+            Action::Protection(ProtectionAction::ProtectedModeOff),
+            Action::Protection(ProtectionAction::ProtectedModeOff),
+            Action::Protection(ProtectionAction::ProtectedModeDec),
+        ],
+    );
+}
+
+#[test]
+fn dispatch_deced_decsed() {
+    for (marker, protected) in [("", false), ("?", true)] {
+        for (param, action) in [
+            ("", EraseAction::EraseDisplayBelow(protected)),
+            ("0", EraseAction::EraseDisplayBelow(protected)),
+            ("1", EraseAction::EraseDisplayAbove(protected)),
+            ("2", EraseAction::EraseDisplayComplete(protected)),
+            ("3", EraseAction::EraseDisplayScrollback(protected)),
+        ] {
+            expect(
+                format!("\x1b[{marker}{param}J").as_bytes(),
+                &[Action::Erase(action)],
+            );
+        }
+    }
+    expect(b"\x1b[>0J", &[]);
+}
+
+#[test]
+fn dispatch_decel_decsel() {
+    for (marker, protected) in [("", false), ("?", true)] {
+        for (param, action) in [
+            ("", EraseAction::EraseLineRight(protected)),
+            ("0", EraseAction::EraseLineRight(protected)),
+            ("1", EraseAction::EraseLineLeft(protected)),
+            ("2", EraseAction::EraseLineComplete(protected)),
+        ] {
+            expect(
+                format!("\x1b[{marker}{param}K").as_bytes(),
+                &[Action::Erase(action)],
+            );
+        }
+    }
+    expect(b"\x1b[<1K\x1b[4K", &[]);
+}
+
+#[test]
+fn dispatch_decscusr() {
+    use maestro_terminal::ansi::CursorStyle;
+    expect(
+        b"\x1b[ q\x1b[1 q",
+        &[
+            Action::CursorStyle(CursorStyle::Default),
+            Action::CursorStyle(CursorStyle::BlinkingBlock),
+        ],
+    );
+    expect(b"\x1b[?0 q", &[]);
+}
+
+#[test]
+fn dispatch_decscusr_without_space() {
+    expect(b"\x1b[q\x1b[1q", &[]);
+}
+
+#[test]
+fn dispatch_xtshiftescape() {
+    expect(b"\x1b[>2s", &[]);
+    expect(
+        b"\x1b[>s\x1b[>0s\x1b[>1s",
+        &[
+            Action::MouseShiftCapture(false),
+            Action::MouseShiftCapture(false),
+            Action::MouseShiftCapture(true),
+        ],
+    );
+    expect(b"\x1b[1 s", &[]);
+}
+
+#[test]
+fn dispatch_change_window_title_with_invalid_utf_8() {
+    expect(
+        b"\x1b]2;abc\x1b\\",
+        &[Action::Osc(OscAction::WindowTitle(b"abc".to_vec()))],
+    );
+    expect(b"\x1b]2;abc\xc0\x1b\\", &[]);
+}
+
+#[test]
+fn dispatch_insert_characters() {
+    expect(b"\x1b[42@", &[Action::Edit(EditAction::InsertBlanks(42))]);
+    expect(b"\x1b[?42@", &[]);
+}
+
+#[test]
+fn dispatch_insert_characters_explicit_zero_clamps_to_1() {
+    expect(b"\x1b[0@", &[Action::Edit(EditAction::InsertBlanks(1))]);
+}
+
+#[test]
+fn dispatch_scosc() {
+    expect(b"\x1b[s", &[Action::LeftAndRightMarginAmbiguous]);
+}
+
+#[test]
+fn dispatch_scorc() {
+    expect(b"\x1b[u", &[Action::Cursor(CursorAction::RestoreCursor)]);
+}
+
+#[test]
+fn dispatch_too_many_csi_params() {
+    expect(b"\x1b[1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1;1C", &[]);
+}
+
+#[test]
+fn dispatch_csi_param_too_long() {
+    let bytes = format!("\x1b[{}C", "1".repeat(256));
+    expect(
+        bytes.as_bytes(),
+        &[Action::Cursor(CursorAction::CursorRight(65535))],
+    );
+}
+
+#[test]
+fn dispatch_send_report_with_csi_t() {
+    use maestro_terminal::csi::SizeReportStyle;
+    for (n, style) in [
+        (14, SizeReportStyle::Csi14T),
+        (16, SizeReportStyle::Csi16T),
+        (18, SizeReportStyle::Csi18T),
+        (21, SizeReportStyle::Csi21T),
+    ] {
+        expect(
+            format!("\x1b[{n}t").as_bytes(),
+            &[Action::Query(QueryAction::SizeReport(style))],
+        );
+    }
+}
+
+#[test]
+fn dispatch_invalid_csi_t() {
+    expect(b"\x1b[19t", &[]);
+}
+
+#[test]
+fn dispatch_csi_w_clear_tab_stops() {
+    expect(
+        b"\x1b[2W\x1b[5W",
+        &[
+            Action::Tab(TabAction::TabClearCurrent),
+            Action::Tab(TabAction::TabClearAll),
+        ],
+    );
+}
+
+#[test]
+fn dispatch_csi_w_tab_set() {
+    expect(
+        b"\x1b[W\x1b[0W",
+        &[
+            Action::Tab(TabAction::TabSet),
+            Action::Tab(TabAction::TabSet),
+        ],
+    );
+    expect(b"\x1b[>W\x1b[99W", &[]);
+}
+
+#[test]
+fn dispatch_csi_w_reset_tab_stops() {
+    expect(b"\x1b[?5W", &[Action::Tab(TabAction::TabReset)]);
+    expect(b"\x1b[?2W\x1b[?1;2;3W", &[]);
+}
+
+#[test]
+fn dispatch_sgr_with_17_parameters_for_underline_color() {
+    use maestro_terminal::{
+        color::Rgb,
+        sgr::{Attribute as A, Underline},
+    };
+    expect(
+        b"\x1b[4:3;38;2;51;51;51;48;2;170;170;170;58;2;255;97;136;0m",
+        &[
+            Action::SetAttribute(A::Underline(Underline::Curly)),
+            Action::SetAttribute(A::DirectColorFg(Rgb {
+                r: 51,
+                g: 51,
+                b: 51,
+            })),
+            Action::SetAttribute(A::DirectColorBg(Rgb {
+                r: 170,
+                g: 170,
+                b: 170,
+            })),
+            Action::SetAttribute(A::UnderlineColor(Rgb {
+                r: 255,
+                g: 97,
+                b: 136,
+            })),
+            Action::SetAttribute(A::Unset),
+        ],
+    );
+}
+
+#[test]
+fn dispatch_tab_clear_with_overflowing_param() {
+    expect(
+        b"\x1b[388888888888888888888888888888888888g\x1b[0m",
+        &[Action::SetAttribute(
+            maestro_terminal::sgr::Attribute::Unset,
+        )],
+    );
+}
+
+fn apc_actions(payload: &[u8]) -> Vec<Action<'static>> {
+    std::iter::once(Action::Payload(PayloadAction::ApcStart))
+        .chain(
+            payload
+                .iter()
+                .map(|&b| Action::Payload(PayloadAction::ApcPut(b))),
+        )
+        .chain(std::iter::once(Action::Payload(PayloadAction::ApcEnd)))
+        .collect()
+}
+
+#[test]
+fn dispatch_apc_bulk_slice() {
+    expect(
+        b"\x1b_Gf=24,s=10,v=20;aGVsbG8=\x1b\\",
+        &apc_actions(b"Gf=24,s=10,v=20;aGVsbG8="),
+    );
+}
+
+#[test]
+fn dispatch_apc_bulk_slice_split_across_inputs() {
+    let actions = apc_actions(b"Gf=24,s=10,v=20;aGVsbG8=");
+    let mut expected = Expected {
+        actions: &actions,
+        seen: 0,
+    };
+    let mut stream = Stream::new(false);
+    for bytes in [b"\x1b_Gf=24,s=10".as_slice(), b",v=20;aGVs", b"bG8=\x1b\\"] {
+        stream.next_slice(bytes, &mut expected);
+    }
+    assert_eq!(expected.seen, actions.len());
+}
+
+#[test]
+fn dispatch_apc_bulk_slice_keeps_c0_bytes_as_data() {
+    expect(b"\x1b_Gx\x07y\x1b\\", &apc_actions(b"Gx\x07y"));
+}
+
+#[test]
+fn dispatch_apc_aborted_by_can() {
+    let mut actions = apc_actions(b"Gabcdefghijklmnopqrstuvwxyz0123456789");
+    actions.extend("def".chars().map(Action::Print));
+    expect(
+        b"\x1b_Gabcdefghijklmnopqrstuvwxyz0123456789\x18def",
+        &actions,
+    );
+}
+
+#[test]
+fn dispatch_apc_scalar_path_matches() {
+    let actions = apc_actions(b"Gf=24;aGVsbG8=");
+    let mut expected = Expected {
+        actions: &actions,
+        seen: 0,
+    };
+    let mut stream = Stream::new(false);
+    for &byte in b"\x1b_Gf=24;aGVsbG8=\x1b\\" {
+        stream.next(byte, &mut expected);
+    }
+    assert_eq!(expected.seen, actions.len());
+}
+
+#[test]
+fn dispatch_apc_vector_boundaries_match_scalar_path() {
+    for position in [15, 16, 17, 31, 32, 33, 63, 64, 65] {
+        for control in [0x18, 0x1a, 0x1b, 0x80, 0xff] {
+            let mut bytes = b"\x1b_G".to_vec();
+            bytes.extend(vec![b'a'; position]);
+            bytes.extend([control, b'\\']);
+            let mut actions = apc_actions(&[b"G".as_slice(), &vec![b'a'; position]].concat());
+            match control {
+                0x18 | 0x1a | 0x80 => actions.push(Action::Print('\\')),
+                0x1b => {}
+                0xff => {
+                    actions.pop();
+                    actions.push(Action::Payload(PayloadAction::ApcPut(b'\\')));
+                }
+                _ => unreachable!(),
+            }
+            expect(&bytes, &actions);
+            let mut stream = Stream::new(false);
+            let mut expected = Expected {
+                actions: &actions,
+                seen: 0,
+            };
+            for byte in bytes {
+                stream.next(byte, &mut expected);
+            }
+            assert_eq!(expected.seen, actions.len());
+        }
+    }
+}
+
+#[test]
+fn default_tab_clear_emits_current() {
+    expect(
+        b"\x1b[g\x1b[0g\x1b[3g",
+        &[
+            Action::Tab(TabAction::TabClearCurrent),
+            Action::Tab(TabAction::TabClearCurrent),
+            Action::Tab(TabAction::TabClearAll),
+        ],
+    );
+    expect(b"\x1b[2g\x1b[4g\x1b[65535g\x1b[0;3g\x1b[?g\x1b[ g", &[]);
+}
+
+#[test]
+fn relative_zero_counts_emit_one() {
+    for (code, constructor) in [
+        (
+            'a',
+            CursorAction::CursorColRelative as fn(u16) -> CursorAction,
+        ),
+        (
+            'e',
+            CursorAction::CursorRowRelative as fn(u16) -> CursorAction,
+        ),
+    ] {
+        for (param, value) in [("", 1), ("0", 1), ("1", 1), ("65535", 65535)] {
+            expect(
+                format!("\x1b[{param}{code}").as_bytes(),
+                &[Action::Cursor(constructor(value))],
+            );
+        }
+        for param in ["1;2", "?1", "1 "] {
+            expect(format!("\x1b[{param}{code}").as_bytes(), &[]);
+        }
+    }
+}
+
+#[test]
+fn allocation_modes_reuse_the_existing_osc_decoder() {
+    use maestro_terminal::osc::{Command, Parser, Terminator};
+    let data = vec![b'x'; Parser::MAX_BUF * 2];
+    let mut bytes = b"\x1b]52;c;".to_vec();
+    bytes.extend(&data);
+    bytes.push(7);
+    for allocating in [false, true] {
+        let mut parser = Parser::init(allocating);
+        for &byte in &bytes[2..bytes.len() - 1] {
+            parser.next(byte);
+        }
+        let command = parser.end(Some(7));
+        let actions = if allocating {
+            assert_eq!(
+                command,
+                Some(Command::ClipboardContents {
+                    kind: b'c',
+                    data: data.clone()
+                })
+            );
+            vec![Action::Osc(OscAction::ClipboardContents {
+                kind: b'c',
+                data: data.clone(),
+            })]
+        } else {
+            assert_eq!(command, None);
+            vec![]
+        };
+        let mut expected = Expected {
+            actions: &actions,
+            seen: 0,
+        };
+        Stream::new(allocating).next_slice(&bytes, &mut expected);
+        assert_eq!(expected.seen, actions.len());
+    }
+    let mut expected = Expected {
+        actions: &[Action::Osc(OscAction::ColorOperation {
+            op: maestro_terminal::osc::color::Operation::Osc104,
+            requests: vec![maestro_terminal::osc::color::Request::ResetPalette],
+            terminator: Terminator::Bel,
+        })],
+        seen: 0,
+    };
+    Stream::new(true).next_slice(b"\x1b]104;\x07", &mut expected);
+    assert_eq!(expected.seen, 1);
+    expect(b"\x1b]104;\x07", &[]);
+}
