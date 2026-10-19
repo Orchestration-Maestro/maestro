@@ -143,4 +143,6 @@ symbolic-link targets. Inline code and module operands do not become script name
 carries screen confidence, with independent indicators grouped in
 `AgentVisibility`. The catalogue distinguishes lifecycle-authoritative integration
 pairs from identity-only pairs; it does not evaluate screens or derive completion
-state.
+state. Authority predicates accept canonical `maestro:` provenance. Call
+`normalize_agent_source` at a retained report boundary to translate a legacy
+provenance prefix without changing other source text.

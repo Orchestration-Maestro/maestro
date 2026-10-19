@@ -149,3 +149,13 @@ fallible futures. `None`, an empty list and a nonempty list remain distinct cont
 results; a provider without an opinion on explicit file completion returns `None`.
 See [completion](completion.md) for the command, direct-path and attachment
 provider, its host operations and shared fuzzy ranking.
+
+## Host terminal colours
+
+`terminal_theme` builds OSC 10/11 queries for default foreground and background
+colours, optionally followed by OSC 4 queries for the 256 palette entries.
+Its default and palette reply parsers accept BEL or ST termination, `rgb:` or
+three-channel `rgba:` operands, and packed `#` hexadecimal colours. Channels
+contain one to four hexadecimal digits and round to the nearest eight-bit value.
+Malformed replies return `None`, including non-ASCII packed hex operands.
+The module parses supplied replies; it sends no queries and retains no host state.

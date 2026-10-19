@@ -724,6 +724,10 @@ the byte-replacement helper in `crates/maestro-lock/` derives from persistence
 and detection-manifest publication.
 The agent catalogue and foreground-job recognition in `crates/maestro-detection/`
 derive from the agent detection module under the same license.
+The host colour query builders and reply parsing in
+`crates/maestro-tui/src/terminal_theme.rs` derive from the terminal theme module
+under the same license. Changes include shared framing, three-channel RGBA reply
+admission and checked string slicing for malformed non-ASCII hex replies.
 
 
 The pane terminal, shell and foreground process code in `crates/maestro-process/`
