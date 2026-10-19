@@ -161,3 +161,8 @@ mod terminal_color_effects;
 mod terminal_size_reports;
 
 mod apc;
+mod focus_encoding;
+
+mod input_modifiers;
+
+mod input_events;

@@ -5,6 +5,20 @@ pure Rust, inherits the workspace's unsafe-code prohibition and has no build
 script or foreign toolchain. Its full contract is the
 [terminal emulator specification](specs/terminal-emulator.md).
 
+## Input encoding
+
+`focus::encode` returns the three-byte focus-gained (`CSI I`) or focus-lost
+(`CSI O`) report. The caller checks whether focus reporting is enabled before
+sending it to the pane program.
+
+`input::key::KeyEvent` stores a physical `Key`, its `KeyAction`, modifier and
+consumed-modifier masks, composition state, generated text and the unshifted
+codepoint. `Mods` keeps pressed keys, lock states and observed modifier sides
+separate. Consumed modifiers are removed only when the event has text.
+
+Key text is owned. `KeyEvent::set_utf8` copies the supplied text, fixing the
+borrowed-buffer defect where changing the caller's text changed a stored event.
+
 ## Codepoint width
 
 [`maestro_terminal::unicode::codepoint_width`](https://docs.rs/maestro-terminal/latest/maestro_terminal/unicode/fn.codepoint_width.html)
