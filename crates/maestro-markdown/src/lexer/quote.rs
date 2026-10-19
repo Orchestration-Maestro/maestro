@@ -1,5 +1,5 @@
 //! Quoted chunks and nested continuation re-lexing.
-use super::{Lexer, lines};
+use super::{BlockContext, Lexer, lines};
 use crate::{
     Kind, Node, helpers, rules,
     source::{ScopeSource, Source},
@@ -11,13 +11,16 @@ impl<E> Lexer<'_, E> {
         let limit =
             (helpers::rtrim(&source.text[matched.range()], '\n').len() + 1).min(matched.end());
         let body = quote_source(source, limit);
-        let mut children = Vec::new();
+        let mut children: Vec<Node> = Vec::new();
         let mut cursor = 0;
         while cursor < limit {
             let end = quote_chunk(&source.text[cursor..limit]) + cursor;
             let local = body.local(&source.extent(cursor..end))?;
             let chunk = body.select(std::iter::once(local));
-            let mut next = self.blocks(&chunk);
+            let open = children
+                .last()
+                .is_some_and(|node| matches!(node.kind, Kind::Paragraph(_)));
+            let mut next = self.blocks_in(&chunk, BlockContext::TopLevel, open);
             self.join_continuation(&body, &mut children, &mut next);
             children.extend(next);
             cursor = end;
@@ -83,16 +86,23 @@ impl<E> Lexer<'_, E> {
             return;
         }
         let first = next.remove(0);
-        self.scopes
+        let left = self
+            .scopes
             .remove(&(last.range.start, last.range.end, false));
-        self.scopes
+        let right = self
+            .scopes
             .remove(&(first.range.start, first.range.end, false));
+        let between = source.local(&(last.range.end..first.range.start));
         last.range.end = first.range.end;
-        let Some(local) = source.local(&last.range) else {
+        let (Some(mut merged), Some(right), Some(between), Some(local)) =
+            (left, right, between, source.local(&last.range))
+        else {
             return;
         };
-        let merged = source.select(std::iter::once(local));
-        last.authored.clone_from(&merged.text);
+        // Inline text joins both paragraphs' own text, which a continuation may have respelled.
+        merged.append(source.select(std::iter::once(between)));
+        merged.append(right);
+        last.authored = source.select(std::iter::once(local)).text;
         self.scopes
             .insert((last.range.start, last.range.end, false), merged);
     }
@@ -134,20 +144,43 @@ fn quote_chunk(source: &str) -> usize {
 }
 
 /// Strip one quote prefix while keeping every line's native provenance.
+///
+/// A lazy setext underline after another lazy line is indented to four spaces, so it stays
+/// paragraph text instead of turning the lazy lines into a heading.
 fn quote_source(source: &Source<'_>, end: usize) -> ScopeSource {
     let mut pieces = Vec::new();
     let mut lazy = Vec::new();
+    let mut underlines = Vec::new();
     let mut local = 0;
+    let mut previous_lazy = false;
     for range in lines(&source.text[..end]) {
         let line = &source.text[range.clone()];
         let shown = crate::source::strip_quote(line);
-        if shown.len() == line.len() {
+        let is_lazy = shown.len() == line.len();
+        if is_lazy {
+            if previous_lazy && let Some(spaces) = underline(line) {
+                let marker = &line[spaces..=spaces];
+                underlines.push((local..local + spaces + 1, format!("    {marker}")));
+            }
             lazy.push(local);
         }
+        previous_lazy = is_lazy;
         pieces.push(range.start + line.len() - shown.len()..range.end);
         local += shown.len();
     }
     let mut body = source.select(pieces);
     body.lazy_lines = lazy;
-    body
+    body.respell(underlines)
+}
+
+/// Leading spaces of a setext underline line (up to three, then `=` or `-` and spaces).
+fn underline(line: &str) -> Option<usize> {
+    let line = line.strip_suffix('\n').unwrap_or(line);
+    let spaces = line.bytes().take_while(|byte| *byte == b' ').count();
+    let marker = *line
+        .as_bytes()
+        .get(spaces)
+        .filter(|byte| matches!(byte, b'=' | b'-'))?;
+    let rest = line[spaces..].trim_start_matches(char::from(marker));
+    (spaces <= 3 && rest.bytes().all(|byte| byte == b' ')).then_some(spaces)
 }

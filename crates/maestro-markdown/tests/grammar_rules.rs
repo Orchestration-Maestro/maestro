@@ -373,7 +373,7 @@ fn mapped_links_share_one_policy_aware_scanner() {
 
 #[test]
 fn quotes_keep_lazy_continuations_and_nested_extents() {
-    observations::check("quote", 11);
+    observations::check("quote", 15);
     for input in ["> one\n> https://frame.test\n", "> https://frame.test\n"] {
         let mut document = parse(input.into());
         maestro_markdown::autolinks(&mut document);
@@ -405,6 +405,24 @@ fn quotes_keep_lazy_continuations_and_nested_extents() {
         let last = children.last().unwrap();
         assert!(matches!(last.kind, Kind::Paragraph(_)), "{options:?}");
         assert_eq!(&document.source[last.range.clone()], "e\n", "{options:?}");
+    }
+    // A lazy definition line joins the quote paragraph once and defines nothing; a blank
+    // quoted line after continued code still ends the paragraph.
+    for (input, quoted, after) in [
+        ("> q\n[r]: /x\n> y\n\n[r]\n", vec!["q\n[r]: /x\ny"], "[r]"),
+        ("> q\n    code\n>\n> y\n\nz\n", vec!["q\ncode", "y"], "z"),
+    ] {
+        let document = parse(input.into());
+        let Kind::Quote(children, _) = &document.nodes[0].kind else {
+            panic!("quote")
+        };
+        let paragraphs: Vec<String> = children
+            .iter()
+            .filter(|node| matches!(node.kind, Kind::Paragraph(_)))
+            .map(|node| text(std::slice::from_ref(node)))
+            .collect();
+        assert_eq!(paragraphs, quoted, "{input:?}");
+        assert_eq!(text(&document.nodes[2..]), after, "{input:?}");
     }
 }
 

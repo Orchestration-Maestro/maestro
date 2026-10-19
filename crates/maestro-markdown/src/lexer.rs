@@ -72,25 +72,27 @@ impl<'a, E> Lexer<'a, E> {
 
     /// Dispatch blocks with a monotonically advancing authored cursor.
     pub(crate) fn blocks(&mut self, source: &ScopeSource) -> Vec<Node> {
-        self.blocks_in(source, BlockContext::TopLevel)
+        self.blocks_in(source, BlockContext::TopLevel, false)
     }
 
     /// Preserve item text context while sharing the same block dispatcher.
     pub(crate) fn item_blocks(&mut self, source: &ScopeSource) -> Vec<Node> {
-        self.blocks_in(source, BlockContext::ListItem)
+        self.blocks_in(source, BlockContext::ListItem, false)
     }
 
     /// Restore the enclosing grammar context after recursively admitting containers.
-    fn blocks_in(&mut self, source: &ScopeSource, context: BlockContext) -> Vec<Node> {
+    ///
+    /// `open` says the source continues a paragraph that precedes it in the same container.
+    fn blocks_in(&mut self, source: &ScopeSource, context: BlockContext, open: bool) -> Vec<Node> {
         let previous_context = std::mem::replace(&mut self.context, context);
         let mut output = Vec::new();
         let mut cursor = 0;
-        let mut clipped = false;
+        let mut clipped = open;
         while cursor < source.text.len() {
             let previous = output.len();
             self.clipped = false;
             let rest = source.view(cursor..source.text.len());
-            cursor += self.advance(&rest, &mut output);
+            cursor += self.advance(&rest, &mut output, clipped);
             if clipped && output.len() > previous {
                 let mut next = output.split_off(previous);
                 self.join_continuation(source, &mut output, &mut next);
@@ -103,7 +105,7 @@ impl<'a, E> Lexer<'a, E> {
     }
 
     /// Admit one block and return its positive consumed byte count.
-    fn advance(&mut self, source: &Source<'_>, output: &mut Vec<Node>) -> usize {
+    fn advance(&mut self, source: &Source<'_>, output: &mut Vec<Node>, open: bool) -> usize {
         if self.error.is_some() {
             return source.text.len();
         }
@@ -127,7 +129,14 @@ impl<'a, E> Lexer<'a, E> {
             }
             return gap.end();
         }
-        if let Some(block) = tokenizer::block::leaf(source, self.options) {
+        let continued = open
+            .then(|| tokenizer::block::continuation(source, self.options))
+            .flatten();
+        self.clipped = continued.as_ref().is_some_and(|(_, open)| *open);
+        if let Some(block) = continued
+            .map(|(block, _)| block)
+            .or_else(|| tokenizer::block::leaf(source, self.options))
+        {
             if let Some(inline) = block.inline {
                 self.scopes.insert(
                     (block.node.range.start, block.node.range.end, false),

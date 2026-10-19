@@ -164,17 +164,31 @@ impl ScopeSource {
 
     /// Replace native spelling units without rebuilding earlier transformation spans.
     pub(crate) fn replace(&self, from: &str, to: &str) -> Self {
+        self.respell(
+            self.text
+                .match_indices(from)
+                .map(|(offset, _)| (offset..offset + from.len(), to)),
+        )
+    }
+
+    /// Respell ordered, disjoint local ranges as atomic units; a lazy line keeps its mark.
+    pub(crate) fn respell<T: AsRef<str>>(
+        &self,
+        edits: impl IntoIterator<Item = (Range<usize>, T)>,
+    ) -> Self {
         let mut output = self.select(std::iter::empty());
         let mut start = 0;
-        for (offset, _) in self.text.match_indices(from) {
-            self.select_piece(start..offset, &mut output);
+        for (range, to) in edits {
+            self.select_piece(start..range.start, &mut output);
             let begin = output.text.len();
-            output.text.push_str(to);
-            output.units.push((
-                self.extent(offset..offset + from.len()),
-                begin..begin + to.len(),
-            ));
-            start = offset + from.len();
+            if self.lazy_lines.binary_search(&range.start).is_ok() {
+                output.lazy_lines.push(begin);
+            }
+            output.text.push_str(to.as_ref());
+            output
+                .units
+                .push((self.extent(range.clone()), begin..output.text.len()));
+            start = range.end;
         }
         self.select_piece(start..self.text.len(), &mut output);
         output

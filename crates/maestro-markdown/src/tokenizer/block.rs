@@ -12,20 +12,59 @@ pub(crate) fn leaf(source: &Source<'_>, options: MarkedOptions) -> Option<Block>
         .or_else(|| html(source, options))
 }
 
+/// Continue an open paragraph with indented code or a definition, which cannot interrupt it.
+///
+/// Code lines keep their text without one indentation unit. Trailing blank lines are consumed
+/// but stay out of the text, and they close the paragraph; the flag says it stays open.
+pub(crate) fn continuation(source: &Source<'_>, options: MarkedOptions) -> Option<(Block, bool)> {
+    let code = rules::BLOCK_CODE
+        .as_ref()
+        .and_then(|rule| rule.find(source.text));
+    let matched = match &code {
+        Some(matched) => matched.clone(),
+        None => rules::block_def(options)?.find(source.text)?,
+    };
+    let content = crate::lexer::lines(&source.text[..matched.end()])
+        .filter(|line| {
+            !source.text[line.clone()]
+                .bytes()
+                .all(|byte| matches!(byte, b' ' | b'\t' | b'\n'))
+        })
+        .last()?
+        .end;
+    let pieces = crate::lexer::lines(&source.text[..content]).map(|line| {
+        let unit = if code.is_some() {
+            indent(&source.text[line.clone()])
+        } else {
+            0
+        };
+        line.start + unit..line.end
+    });
+    let consumed = matched.end();
+    let block = Block {
+        consumed,
+        node: source.node(0..consumed, Kind::Paragraph(Vec::new())),
+        inline: Some(source.select(pieces)),
+    };
+    Some((block, content == consumed))
+}
+
+/// Bytes of one indentation unit: up to four spaces, or fewer spaces and a tab.
+fn indent(line: &str) -> usize {
+    let spaces = line.bytes().take_while(|byte| *byte == b' ').count().min(4);
+    if spaces < 4 && line.as_bytes().get(spaces) == Some(&b'\t') {
+        spaces + 1
+    } else {
+        spaces
+    }
+}
+
 /// Remove one indentation unit on every indented-code line.
 fn code(source: &Source<'_>) -> Option<Block> {
     let matched = rules::BLOCK_CODE.as_ref()?.find(source.text)?;
     let body: String = source.text[matched.range()]
         .split_inclusive('\n')
-        .map(|line| {
-            let spaces = line.bytes().take_while(|byte| *byte == b' ').count().min(4);
-            let prefix = if spaces < 4 && line.as_bytes().get(spaces) == Some(&b'\t') {
-                spaces + 1
-            } else {
-                spaces
-            };
-            &line[prefix..]
-        })
+        .map(|line| &line[indent(line)..])
         .collect();
     Some(Block {
         consumed: matched.end(),
