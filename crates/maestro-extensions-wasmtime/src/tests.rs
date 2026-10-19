@@ -25,7 +25,7 @@ mod writer;
 pub(super) mod model_support;
 
 #[path = "../../maestro-extensions/tests/support/session.rs"]
-mod session;
+pub(crate) mod session;
 #[path = "../tests/support/mod.rs"]
 pub(super) mod support;
 

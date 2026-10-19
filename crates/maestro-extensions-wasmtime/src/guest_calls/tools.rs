@@ -15,11 +15,11 @@ use serde_json::Value;
 use std::rc::Rc;
 
 /// Typed tool invocations consumed by the original Store driver.
-pub(crate) enum ToolCall {
+pub(crate) enum ToolCall<H = Handle> {
     /// Synchronous argument preparation under the original native callback frame.
     Prepare {
         /// Retains authored closure ownership and admission.
-        handler: Handle,
+        handler: H,
         /// Exact argument document.
         args: String,
         /// Original native bus and deferred deliveries.
@@ -30,7 +30,7 @@ pub(crate) enum ToolCall {
     /// Asynchronous execution with independently retained caller capabilities.
     Execute {
         /// Retains authored closure ownership and admission.
-        handler: Handle,
+        handler: H,
         /// Literal invocation identifier.
         id: String,
         /// Exact serialized arguments.

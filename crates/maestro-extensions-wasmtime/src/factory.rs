@@ -90,3 +90,6 @@ async fn execute(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;

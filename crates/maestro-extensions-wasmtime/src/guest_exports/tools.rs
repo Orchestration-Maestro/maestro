@@ -80,7 +80,7 @@ impl Exports {
     pub(super) async fn invoke<T: WasiView + 'static>(
         &self,
         accessor: &Accessor<T>,
-        call: ToolCall,
+        call: ToolCall<Callback>,
     ) -> wasmtime::Result<()> {
         match call {
             ToolCall::Prepare {
@@ -127,7 +127,7 @@ impl Exports {
     async fn prepared<T: WasiView + 'static>(
         &self,
         accessor: &Accessor<T>,
-        handler: &crate::guest_calls::Handle,
+        handler: &Callback,
         args: String,
         emitter: crate::local_resources::effects::EmitterEndpoint,
     ) -> wasmtime::Result<Result<String, String>> {

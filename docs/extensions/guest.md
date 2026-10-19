@@ -46,6 +46,12 @@ Releasing a callback table entry removes that registration's ownership. Independ
 aliases and admitted futures can retain its captures after release. Entries leave the table
 before captures are destroyed, so a destructor may register another callback.
 
+The native executor releases each invocation's admission operands before reporting completion,
+including when a caller has stopped waiting. A component fault settles all started calls,
+including callback releases, without entering guest code or running guest destructors again.
+The Store remains alive until the last external admission ends; completed invocation records
+do not keep it alive.
+
 `CommandOptions` owns its handler and optional `get_argument_completions` callback.
 Completion receives literal argument text and returns `None`, an empty list or an ordered
 list of `AutocompleteItem` records. The guest forwards each value, label and optional

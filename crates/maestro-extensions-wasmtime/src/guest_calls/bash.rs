@@ -25,9 +25,9 @@ pub(crate) struct BashRequest {
 }
 
 /// One real guest execution consumed by the original Store driver.
-pub(crate) struct BashCall {
+pub(crate) struct BashCall<R = Arc<GuestResource>> {
     /// Retains the guest owner until execution settles, independently of native aliases.
-    pub(crate) owner: Arc<GuestResource>,
+    pub(crate) owner: R,
     /// Unmodified owned operands.
     pub(crate) request: BashRequest,
     /// Per-execution original output frame.

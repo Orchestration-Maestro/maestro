@@ -1,33 +1,60 @@
-//! Once-only completion precedes native settlement and wakes the original Store receiver.
-use crate::guest_calls::Call;
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
+//! Once-only completion releases invocation admissions before native settlement.
+use crate::{
+    guest_calls::{Call, Callback, Handle},
+    lifecycle::GuestResource,
 };
+use std::sync::{Arc, Mutex, MutexGuard};
 use tokio::sync::mpsc::UnboundedSender;
+use wasmtime::component::ResourceAny;
 
 /// One active Store invocation, shared only with its lifecycle reply token.
 #[derive(Clone)]
-pub(crate) struct Completion(Arc<State>);
-/// Completion retains admission until its final notification has been queued.
-struct State {
-    /// Prevents fault cleanup and normal settlement from completing twice.
-    completed: AtomicBool,
+pub(crate) struct Completion(Arc<Mutex<Option<Operands>>>);
+/// Strong operands are releasable even if Wasmtime retains the invocation future.
+struct Operands {
     /// Original Store receiver, not a second release dispatcher.
     calls: UnboundedSender<Call>,
+    /// Native owners remain admitted until completion, including cancelled callers.
+    retained: Vec<Box<dyn Send>>,
 }
 impl Completion {
-    /// Admits completion without retaining a sender in the Store itself.
+    /// Retains admission only until the once-only completion operation.
     pub(crate) fn new(calls: UnboundedSender<Call>) -> Self {
-        Self(Arc::new(State {
-            completed: AtomicBool::new(false),
+        Self(Arc::new(Mutex::new(Some(Operands {
             calls,
-        }))
+            retained: Vec::new(),
+        }))))
     }
-    /// Queues bookkeeping before exposing a reply to native reentry.
+    /// Recovers the operand owner if a previous user abandoned its guard.
+    fn operands(&self) -> MutexGuard<'_, Option<Operands>> {
+        self.0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+    /// Moves callback strength out of the task's actual invocation operands.
+    pub(super) fn callback(&self, handle: Handle) -> Callback {
+        let callback = Callback { id: handle.id() };
+        self.retain(handle);
+        callback
+    }
+    /// Moves resource strength out of the task's actual invocation operands.
+    pub(super) fn resource(&self, resource: Arc<GuestResource>) -> ResourceAny {
+        let operand = resource.resource;
+        self.retain(resource);
+        operand
+    }
+    /// Retains a live call operand in the same once-only release set.
+    pub(super) fn retain(&self, operand: impl Send + 'static) {
+        if let Some(operands) = self.operands().as_mut() {
+            operands.retained.push(Box::new(operand));
+        }
+    }
+    /// Releases all call operands before bookkeeping and native settlement.
     pub(crate) fn finish(&self) {
-        if !self.0.completed.swap(true, Ordering::AcqRel) {
-            let _ = self.0.calls.send(Call::Finished);
+        let operands = self.operands().take();
+        if let Some(Operands { calls, retained }) = operands {
+            drop(retained);
+            let _ = calls.send(Call::Finished);
         }
     }
 }
@@ -36,3 +63,6 @@ impl Drop for Completion {
         self.finish();
     }
 }
+
+#[cfg(test)]
+mod tests;

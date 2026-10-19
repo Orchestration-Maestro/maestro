@@ -70,7 +70,7 @@ impl Exports {
     pub(super) async fn create<T: WasiView + 'static>(
         &self,
         accessor: &Accessor<T>,
-        call: RendererCall,
+        call: RendererCall<Callback>,
     ) -> wasmtime::Result<()> {
         let (callback, theme) = arguments(accessor, &call.handler, call.theme)?;
         let emitter = accessor.with(|mut access| access.get().ctx().table.push(call.emitter))?;
@@ -102,7 +102,7 @@ impl Exports {
     pub(super) async fn component<T: WasiView + 'static>(
         &self,
         accessor: &Accessor<T>,
-        call: ComponentCall,
+        call: ComponentCall<ResourceAny>,
     ) -> wasmtime::Result<()> {
         match call {
             ComponentCall::Render(owner, width, emitter, reply) => {
@@ -111,7 +111,7 @@ impl Exports {
                     .render
                     .call_concurrent(
                         accessor,
-                        (owner.resource, width, Resource::new_borrow(emitter.rep())),
+                        (owner, width, Resource::new_borrow(emitter.rep())),
                     )
                     .await;
                 delete(accessor, emitter)?;
@@ -123,12 +123,12 @@ impl Exports {
                 let result = match method {
                     ComponentMethod::Input(data) => {
                         self.input
-                            .call_concurrent(accessor, (owner.resource, data, borrow))
+                            .call_concurrent(accessor, (owner, data, borrow))
                             .await
                     }
                     ComponentMethod::Invalidate => {
                         self.invalidate
-                            .call_concurrent(accessor, (owner.resource, borrow))
+                            .call_concurrent(accessor, (owner, borrow))
                             .await
                     }
                 };
@@ -139,10 +139,7 @@ impl Exports {
                 let emitter = insert(accessor, emitter)?;
                 let result = self
                     .wants_key_release
-                    .call_concurrent(
-                        accessor,
-                        (owner.resource, Resource::new_borrow(emitter.rep())),
-                    )
+                    .call_concurrent(accessor, (owner, Resource::new_borrow(emitter.rep())))
                     .await;
                 delete(accessor, emitter)?;
                 let _ = reply.send(result?.0);

@@ -76,7 +76,7 @@ impl Exports {
     pub(super) async fn invoke<T: WasiView + 'static>(
         &self,
         accessor: &Accessor<T>,
-        call: RegisteredCall,
+        call: RegisteredCall<Callback>,
     ) -> wasmtime::Result<()> {
         match call {
             RegisteredCall::Command(handler, args, context, reply) => {
@@ -97,7 +97,7 @@ impl Exports {
             }
             RegisteredCall::Completion(handler, prefix, reply) => {
                 let callback = accessor.with(|mut access| {
-                    access.get().ctx().table.push(Callback { id: handler.id() })
+                    access.get().ctx().table.push(Callback { id: handler.id })
                 })?;
                 let result = self
                     .completion

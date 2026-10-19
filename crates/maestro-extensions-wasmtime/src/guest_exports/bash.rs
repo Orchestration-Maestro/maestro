@@ -50,7 +50,7 @@ impl Exports {
     pub(super) async fn invoke<T: WasiView + 'static>(
         &self,
         accessor: &Accessor<T>,
-        call: BashCall,
+        call: BashCall<ResourceAny>,
     ) -> wasmtime::Result<()> {
         let resources = accessor.with(|mut access| {
             let table = access.get().ctx().table;
@@ -61,7 +61,7 @@ impl Exports {
         })?;
         let result = self
             .execute
-            .call_concurrent(accessor, (call.owner.resource, call.request, resources))
+            .call_concurrent(accessor, (call.owner, call.request, resources))
             .await;
         let _ = call.reply.send(result?.0);
         Ok(())

@@ -1,8 +1,8 @@
 //! Actual typed guest exports for retained native callbacks.
-use crate::guest_calls::{Call, Callback, Handle, Synchronous, SynchronousKind};
+use crate::guest_calls::{Call, Callback, Synchronous, SynchronousKind};
 use wasmtime::{
     Store,
-    component::{Accessor, Instance, Resource, TypedFunc},
+    component::{Accessor, Instance, Resource, ResourceAny, TypedFunc},
 };
 use wasmtime_wasi::WasiView;
 
@@ -107,8 +107,8 @@ impl Exports {
     pub(crate) async fn invoke<T: crate::callback_imports::CallbackView + 'static>(
         &self,
         accessor: &Accessor<T>,
-        call: Call,
-    ) -> wasmtime::Result<Option<wasmtime::component::ResourceAny>> {
+        call: Call<Callback, ResourceAny>,
+    ) -> wasmtime::Result<Option<ResourceAny>> {
         match call {
             Call::Start(reply) => {
                 let result = self.start.call_concurrent(accessor, ()).await?.0;
@@ -128,7 +128,7 @@ impl Exports {
             Call::Synchronous(call) => self.prefix(accessor, call).await?,
             Call::Tail(handler, reply) => {
                 let callback = accessor.with(|mut access| {
-                    access.get().ctx().table.push(Callback { id: handler.id() })
+                    access.get().ctx().table.push(Callback { id: handler.id })
                 })?;
                 let result = self
                     .tail
@@ -149,15 +149,19 @@ impl Exports {
             Call::Release(release) => {
                 let retired =
                     accessor.with(|mut access| access.get().callbacks().release(&release));
-                let Some(id) = retired else { return Ok(None) };
-                let handler =
-                    accessor.with(|mut access| access.get().ctx().table.push(Callback { id }))?;
-                let result = self
-                    .release
-                    .call_concurrent(accessor, (Resource::new_borrow(handler.rep()),))
-                    .await;
-                accessor.with(|mut access| access.get().ctx().table.delete(handler))?;
-                result?;
+                if let Some(id) = retired {
+                    let handler = accessor
+                        .with(|mut access| access.get().ctx().table.push(Callback { id }))?;
+                    let result = self
+                        .release
+                        .call_concurrent(accessor, (Resource::new_borrow(handler.rep()),))
+                        .await;
+                    accessor.with(|mut access| access.get().ctx().table.delete(handler))?;
+                    result?;
+                }
+                if let Some(reply) = release.completion {
+                    let _ = reply.send(Ok(()));
+                }
             }
         }
         Ok(None)
@@ -166,7 +170,7 @@ impl Exports {
     async fn prefix<T: crate::callback_imports::CallbackView + 'static>(
         &self,
         accessor: &Accessor<T>,
-        call: Synchronous,
+        call: Synchronous<Callback>,
     ) -> wasmtime::Result<()> {
         let export = match call.kind {
             SynchronousKind::Listener => self.listener,
@@ -177,7 +181,7 @@ impl Exports {
             let table = access.get().ctx().table;
             Ok::<_, wasmtime::Error>((
                 table.push(Callback {
-                    id: call.handler.id(),
+                    id: call.handler.id,
                 })?,
                 table.push(call.emitter)?,
             ))
@@ -207,7 +211,7 @@ impl Exports {
 async fn session<T: WasiView + 'static, V: Send + 'static>(
     accessor: &Accessor<T>,
     export: Session<V>,
-    handler: Handle,
+    handler: Callback,
     value: V,
 ) -> wasmtime::Result<Result<(), String>> {
     let params = arguments(accessor, &handler, value)?;
@@ -221,14 +225,11 @@ async fn session<T: WasiView + 'static, V: Send + 'static>(
 /// Inserts a temporary callback borrow beside the original transferred native capability.
 fn arguments<T: WasiView + 'static, V: Send + 'static>(
     accessor: &Accessor<T>,
-    handler: &Handle,
+    handler: &Callback,
     value: V,
 ) -> wasmtime::Result<(Resource<Callback>, Resource<V>)> {
     accessor.with(|mut access| {
         let table = access.get().ctx().table;
-        Ok((
-            table.push(Callback { id: handler.id() })?,
-            table.push(value)?,
-        ))
+        Ok((table.push(Callback { id: handler.id })?, table.push(value)?))
     })
 }

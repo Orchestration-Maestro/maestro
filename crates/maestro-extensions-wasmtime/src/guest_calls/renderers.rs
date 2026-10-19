@@ -24,9 +24,9 @@ pub(crate) struct RenderRequest {
     pub(crate) theme: wasmtime::component::Resource<ThemeEndpoint>,
 }
 /// Actual native renderer operands, before Store resource insertion.
-pub(crate) struct RendererCall {
+pub(crate) struct RendererCall<H = Handle> {
     /// Original authored renderer.
-    pub(crate) handler: Handle,
+    pub(crate) handler: H,
     /// Complete message document.
     pub(crate) message: String,
     /// Actual expansion choice.
@@ -46,18 +46,13 @@ pub(crate) enum ComponentMethod {
     Invalidate,
 }
 /// Calls on retained guest components use the same Store lifecycle as creation.
-pub(crate) enum ComponentCall {
+pub(crate) enum ComponentCall<R = Arc<GuestResource>> {
     /// Fallible render with the exact viewport width.
-    Render(Arc<GuestResource>, u32, EmitterEndpoint, Reply<Vec<String>>),
+    Render(R, u32, EmitterEndpoint, Reply<Vec<String>>),
     /// Fallible input or cache invalidation.
-    Unit(
-        Arc<GuestResource>,
-        ComponentMethod,
-        EmitterEndpoint,
-        Reply<()>,
-    ),
+    Unit(R, ComponentMethod, EmitterEndpoint, Reply<()>),
     /// Original authored key-release preference.
-    WantsKeyRelease(Arc<GuestResource>, EmitterEndpoint, Reply<bool>),
+    WantsKeyRelease(R, EmitterEndpoint, Reply<bool>),
 }
 impl Handle {
     /// Creates only the Local-family renderer; reporting stays with its future caller.

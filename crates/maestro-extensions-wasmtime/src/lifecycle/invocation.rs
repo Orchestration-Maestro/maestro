@@ -1,18 +1,20 @@
 //! Every guest entry shares the Store's completion and fault owner.
 use super::completion::Completion;
 use crate::{
-    guest_calls::{Call, registrations::RegisteredCall, renderers::ComponentCall, tools::ToolCall},
+    guest_calls::{
+        Call, Callback, registrations::RegisteredCall, renderers::ComponentCall, tools::ToolCall,
+    },
     guest_exports::Exports,
 };
 use std::sync::Arc;
-use wasmtime::component::{Accessor, AccessorTask};
+use wasmtime::component::{Accessor, AccessorTask, ResourceAny};
 
 /// An admitted export call, never a native request poller.
 pub(super) struct Invocation {
     /// Original canonical exports from this instance.
     pub(super) exports: Arc<Exports>,
     /// Actual operands and lifecycle-owned reply token.
-    pub(super) call: Call,
+    pub(super) call: Call<Callback, ResourceAny>,
     /// Marks completion even when an export escapes before settlement.
     pub(super) completion: Completion,
 }
@@ -50,7 +52,12 @@ impl Call {
             Self::Tool(ToolCall::Prepare { reply, .. } | ToolCall::Execute { reply, .. }) => {
                 attach(reply, completion);
             }
-            Self::Release(_) | Self::ReleaseResource(_) | Self::Finished => {}
+            Self::Release(release) => {
+                if let Some(reply) = &release.completion {
+                    attach(reply, completion);
+                }
+            }
+            Self::ReleaseResource(_) | Self::Finished => {}
         }
     }
 }

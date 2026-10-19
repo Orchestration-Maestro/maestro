@@ -16,6 +16,7 @@ mod completion;
 mod endpoint;
 pub(crate) use endpoint::{Endpoint as StoreEndpoint, GuestResource};
 mod invocation;
+mod operands;
 pub(crate) mod replies;
 
 /// Only Store-safe capabilities cross to the dedicated Store thread.
@@ -123,12 +124,13 @@ async fn turn(
             Call::ReleaseResource(resource) => activity.releases.push(resource),
             call => {
                 let sender = match &call {
-                    Call::Release(release) => Some(release.calls.clone()),
+                    Call::Release(release) => release.calls.clone(),
                     _ => calls.upgrade(),
                 }
                 .ok_or_else(|| wasmtime::format_err!("extension Store admission ended"))?;
                 let completion = completion::Completion::new(sender);
                 call.before(&completion);
+                let call = call.admitted(&completion);
                 activity.active += 1;
                 accessor.spawn(invocation::Invocation {
                     exports: exports.clone(),

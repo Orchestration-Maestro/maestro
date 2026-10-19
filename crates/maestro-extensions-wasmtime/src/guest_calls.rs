@@ -30,33 +30,33 @@ pub(crate) struct Callback {
 }
 
 /// Invocations consumed by the single Store driver, not by a replacement executor.
-pub(crate) enum Call {
+pub(crate) enum Call<H = Handle, R = Arc<GuestResource>> {
     /// Invokes the actual Local message renderer.
-    Renderer(renderers::RendererCall),
+    Renderer(renderers::RendererCall<H>),
     /// Calls a retained guest component through the same Store.
-    Component(renderers::ComponentCall),
+    Component(renderers::ComponentCall<R>),
     /// Enters the authored factory once under the same lifecycle as later callbacks.
     Start(Reply<()>),
     /// Marks a started invocation complete before native settlement.
     Finished,
     /// Invokes a concrete native event callback.
-    Event(EventCall),
+    Event(EventCall<H>),
     /// Executes one independently retained guest shell operation.
-    Bash(BashCall),
+    Bash(BashCall<R>),
     /// Queues guest destruction on the Store driver, never the native request pump.
     ReleaseResource(wasmtime::component::ResourceAny),
     /// Invokes setup with the original writable session.
-    Setup(Handle, writer_reads::Endpoint, Reply<()>),
+    Setup(H, writer_reads::Endpoint, Reply<()>),
     /// Invokes a continuation with the actual replacement context.
-    WithSession(Handle, replaced_reads::Endpoint, Reply<()>),
+    WithSession(H, replaced_reads::Endpoint, Reply<()>),
     /// Invokes a registered command, completion or shortcut with original operands.
-    Registered(RegisteredCall),
+    Registered(RegisteredCall<H>),
     /// Invokes the real native tool registration callbacks.
-    Tool(ToolCall),
+    Tool(ToolCall<H>),
     /// Enters one synchronous prefix through the active Store accessor.
-    Synchronous(Synchronous),
+    Synchronous(Synchronous<H>),
     /// Awaits the actual guest tail under its independently retained admission.
-    Tail(Handle, Reply<()>),
+    Tail(H, Reply<()>),
     /// Releases the authored closure after its final native consumer.
     Release(Release),
 }
@@ -130,7 +130,9 @@ impl Callbacks {
 /// A queued final release names its native ownership generation as well as its identity.
 pub(crate) struct Release {
     /// Queued final release retains admission through its actual guest invocation.
-    pub(crate) calls: UnboundedSender<Call>,
+    pub(crate) calls: Option<UnboundedSender<Call>>,
+    /// Healthy releases share the same tracked completion as native invocations.
+    pub(crate) completion: Option<Reply<()>>,
     /// Authored closure identity.
     id: u32,
     /// A stale queued release cannot release a newly retained callback with the same id.
@@ -150,7 +152,12 @@ struct Retained {
 impl Drop for Retained {
     fn drop(&mut self) {
         let _ = self.endpoint.send(Call::Release(Release {
-            calls: self.endpoint.calls.clone(),
+            calls: Some(self.endpoint.calls.clone()),
+            completion: self
+                .endpoint
+                .replies
+                .register(|_: Result<(), String>| {})
+                .ok(),
             id: self.id,
             owner: self.owner.clone(),
         }));
@@ -240,9 +247,9 @@ pub(crate) enum SynchronousKind {
 }
 
 /// Owned canonical operands of one synchronous callback invocation.
-pub(crate) struct Synchronous {
+pub(crate) struct Synchronous<H = Handle> {
     /// Retains the original authored callback and its admission.
-    pub(crate) handler: Handle,
+    pub(crate) handler: H,
     /// Selects the actual canonical guest export.
     pub(crate) kind: SynchronousKind,
     /// Exact encoded value or unmodified error message.

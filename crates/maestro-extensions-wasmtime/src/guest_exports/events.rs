@@ -47,7 +47,7 @@ impl Exports {
     pub(super) async fn invoke<T: WasiView + 'static>(
         &self,
         accessor: &Accessor<T>,
-        call: EventCall,
+        call: EventCall<Callback>,
     ) -> wasmtime::Result<()> {
         let (callback, ctx) = arguments(accessor, &call.handler, Context(call.context))?;
         let signal = accessor.with(|mut access| {

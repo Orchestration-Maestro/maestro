@@ -1,7 +1,7 @@
 //! The generated imports and exports behind the shared adapter logic: single calls into the
 //! bindings, compiled only for the component target.
 
-use std::marker::PhantomData;
+use std::{future::Future, marker::PhantomData};
 
 use super::tools::ToolCapabilities;
 use super::{Capabilities, Exports, Imports, release};
@@ -25,33 +25,7 @@ impl Imports for Generated {
         data: &str,
     ) -> ExtensionResult<()> {
         let (snapshot, tags) = host::callback_emit(emitter, channel, data)?;
-        let result = (|| {
-            let mut index = 0;
-            while index < tags.len() {
-                if let Some(id) = tags[index] {
-                    let local = host::callback_begin_local(
-                        emitter,
-                        snapshot,
-                        u32::try_from(index).map_err(|error| error.to_string())?,
-                    )?;
-                    let result = Exports::new(Generated).invoke_listener(id, data, &local);
-                    host::callback_end_local(&local, result.err().as_deref())?;
-                    index += 1;
-                } else {
-                    let start = index;
-                    while index < tags.len() && tags[index].is_none() {
-                        index += 1;
-                    }
-                    host::callback_segment(
-                        emitter,
-                        snapshot,
-                        u32::try_from(start).map_err(|error| error.to_string())?,
-                        u32::try_from(index).map_err(|error| error.to_string())?,
-                    )?;
-                }
-            }
-            Ok(())
-        })();
+        let result = walk_snapshot(emitter, snapshot, &tags, data);
         let end = host::callback_end_snapshot(emitter, snapshot);
         result.and(end)
     }
@@ -265,6 +239,40 @@ impl Imports for Generated {
     }
 }
 
+/// Walks the retained native snapshot without changing mixed callback order.
+fn walk_snapshot(
+    emitter: &host::CallbackEmitter,
+    snapshot: u32,
+    tags: &[Option<u32>],
+    data: &str,
+) -> ExtensionResult<()> {
+    let mut index = 0;
+    while index < tags.len() {
+        if let Some(id) = tags[index] {
+            let local = host::callback_begin_local(
+                emitter,
+                snapshot,
+                u32::try_from(index).map_err(|error| error.to_string())?,
+            )?;
+            let result = Exports::new(Generated).invoke_listener(id, data, &local);
+            host::callback_end_local(&local, result.err().as_deref())?;
+            index += 1;
+        } else {
+            let start = index;
+            while index < tags.len() && tags[index].is_none() {
+                index += 1;
+            }
+            host::callback_segment(
+                emitter,
+                snapshot,
+                u32::try_from(start).map_err(|error| error.to_string())?,
+                u32::try_from(index).map_err(|error| error.to_string())?,
+            )?;
+        }
+    }
+    Ok(())
+}
+
 /// Entry type of an extension component: serves the generated exports for `E`.
 #[doc(hidden)]
 pub struct Glue<E>(PhantomData<E>);
@@ -272,20 +280,25 @@ pub struct Glue<E>(PhantomData<E>);
 impl<E: Extension> Guest for Glue<E> {
     type ComponentView = RenderedComponent;
     type BashOperations = ReturnedBashOperations;
-    async fn invoke_renderer(
+    fn invoke_renderer(
         handler: &host::Callback,
         request: guest::RenderRequest,
         emitter: &host::CallbackEmitter,
-    ) -> ExtensionResult<Option<guest::ComponentView>> {
+    ) -> impl Future<Output = ExtensionResult<Option<guest::ComponentView>>> {
         let request = super::renderers::RenderRequest {
             message: &request.message,
             expanded: request.expanded,
             theme: request.theme,
             emitter,
         };
-        Ok(Exports::new(Generated)
-            .invoke_renderer(handler.id(), request)?
-            .map(|component| guest::ComponentView::new(RenderedComponent(component))))
+        std::future::ready(
+            Exports::new(Generated)
+                .invoke_renderer(handler.id(), request)
+                .map(|component| {
+                    component
+                        .map(|component| guest::ComponentView::new(RenderedComponent(component)))
+                }),
+        )
     }
 
     async fn invoke_setup(
@@ -296,19 +309,27 @@ impl<E: Extension> Guest for Glue<E> {
             .invoke_setup(handler.id(), writer)
             .await
     }
-    async fn invoke_compaction_complete(
+    fn invoke_compaction_complete(
         handler: &host::Callback,
         result: String,
         emitter: &host::CallbackEmitter,
-    ) -> ExtensionResult<()> {
-        Exports::new(Generated).invoke_compaction_complete(handler.id(), &result, emitter)
+    ) -> impl Future<Output = ExtensionResult<()>> {
+        std::future::ready(Exports::new(Generated).invoke_compaction_complete(
+            handler.id(),
+            &result,
+            emitter,
+        ))
     }
-    async fn invoke_compaction_error(
+    fn invoke_compaction_error(
         handler: &host::Callback,
         error: String,
         emitter: &host::CallbackEmitter,
-    ) -> ExtensionResult<()> {
-        Exports::new(Generated).invoke_compaction_error(handler.id(), error, emitter)
+    ) -> impl Future<Output = ExtensionResult<()>> {
+        std::future::ready(Exports::new(Generated).invoke_compaction_error(
+            handler.id(),
+            error,
+            emitter,
+        ))
     }
 
     async fn start() -> ExtensionResult<()> {
@@ -319,19 +340,19 @@ impl<E: Extension> Guest for Glue<E> {
         release(handler.id());
     }
 
-    async fn invoke_prepare(
+    fn invoke_prepare(
         handler: &host::Callback,
         args: String,
         emitter: &host::CallbackEmitter,
-    ) -> ExtensionResult<String> {
-        Exports::new(Generated).invoke_prepare(handler.id(), &args, emitter)
+    ) -> impl Future<Output = ExtensionResult<String>> {
+        std::future::ready(Exports::new(Generated).invoke_prepare(handler.id(), &args, emitter))
     }
-    async fn invoke_listener(
+    fn invoke_listener(
         handler: &host::Callback,
         data: String,
         emitter: &host::CallbackEmitter,
-    ) -> ExtensionResult<()> {
-        Exports::new(Generated).invoke_listener(handler.id(), &data, emitter)
+    ) -> impl Future<Output = ExtensionResult<()>> {
+        std::future::ready(Exports::new(Generated).invoke_listener(handler.id(), &data, emitter))
     }
     async fn invoke_tail(handler: &host::Callback) -> ExtensionResult<()> {
         Exports::<Generated>::invoke_tail(handler.id()).await
@@ -414,29 +435,47 @@ impl<E: Extension> Guest for Glue<E> {
 #[doc(hidden)]
 pub struct RenderedComponent(crate::Component);
 impl guest::GuestComponentView for RenderedComponent {
-    async fn render(
+    fn render(
         &self,
         width: u32,
         emitter: &host::CallbackEmitter,
-    ) -> ExtensionResult<Vec<String>> {
-        super::renderers::with_emitter(&Generated, emitter, |emitter| self.0.render(width, emitter))
+    ) -> impl Future<Output = ExtensionResult<Vec<String>>> {
+        std::future::ready(super::renderers::with_emitter(
+            &Generated,
+            emitter,
+            |emitter| self.0.render(width, emitter),
+        ))
     }
-    async fn handle_input(
+    fn handle_input(
         &self,
         data: String,
         emitter: &host::CallbackEmitter,
-    ) -> ExtensionResult<()> {
-        super::renderers::with_emitter(&Generated, emitter, |emitter| {
-            self.0.handle_input(&data, emitter)
-        })
+    ) -> impl Future<Output = ExtensionResult<()>> {
+        std::future::ready(super::renderers::with_emitter(
+            &Generated,
+            emitter,
+            |emitter| self.0.handle_input(&data, emitter),
+        ))
     }
-    async fn wants_key_release(&self, emitter: &host::CallbackEmitter) -> ExtensionResult<bool> {
-        super::renderers::with_emitter(&Generated, emitter, |emitter| {
-            self.0.wants_key_release(emitter)
-        })
+    fn wants_key_release(
+        &self,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<bool>> {
+        std::future::ready(super::renderers::with_emitter(
+            &Generated,
+            emitter,
+            |emitter| self.0.wants_key_release(emitter),
+        ))
     }
-    async fn invalidate(&self, emitter: &host::CallbackEmitter) -> ExtensionResult<()> {
-        super::renderers::with_emitter(&Generated, emitter, |emitter| self.0.invalidate(emitter))
+    fn invalidate(
+        &self,
+        emitter: &host::CallbackEmitter,
+    ) -> impl Future<Output = ExtensionResult<()>> {
+        std::future::ready(super::renderers::with_emitter(
+            &Generated,
+            emitter,
+            |emitter| self.0.invalidate(emitter),
+        ))
     }
 }
 

@@ -34,9 +34,9 @@ pub(crate) struct Outcome {
     pub(crate) operations: Option<ResourceAny>,
 }
 /// Original operands retained until one asynchronous event call settles.
-pub(crate) struct EventCall {
+pub(crate) struct EventCall<H = Handle> {
     /// Actual authored callback and original admission.
-    pub(crate) handler: Handle,
+    pub(crate) handler: H,
     /// Complete tagged event document.
     pub(crate) event: String,
     /// Actual native invocation context.

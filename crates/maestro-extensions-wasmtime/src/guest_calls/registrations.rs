@@ -12,13 +12,13 @@ use maestro_extensions::{
 use std::rc::Rc;
 
 /// Typed exports selected by the real command and shortcut registration owners.
-pub(crate) enum RegisteredCall {
+pub(crate) enum RegisteredCall<H = Handle> {
     /// Exact command arguments and original command context.
-    Command(Handle, String, Endpoint, Reply<()>),
+    Command(H, String, Endpoint, Reply<()>),
     /// Exact argument prefix and independently optional ordered candidates.
-    Completion(Handle, String, Reply<Option<Vec<AutocompleteItem>>>),
+    Completion(H, String, Reply<Option<Vec<AutocompleteItem>>>),
     /// Original ordinary context supplied by the shortcut caller.
-    Shortcut(Handle, Endpoint, Reply<()>),
+    Shortcut(H, Endpoint, Reply<()>),
 }
 impl Handle {
     /// Adapts the native command without substituting a loading or current context.

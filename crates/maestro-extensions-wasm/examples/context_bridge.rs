@@ -51,12 +51,18 @@ fn factory(api: ExtensionAPI) -> ExtensionFuture<'static, ()> {
                 })))
             }),
         )?;
+        let release = ReleaseTrap(std::cell::Cell::new(false));
         api.register_command(
             "bridge-observe",
             CommandOptions {
                 description: Some("Observe the supplied context".into()),
                 get_argument_completions: None,
-                handler: Rc::new(command),
+                handler: Rc::new(move |args, context| {
+                    if args == "arm-release-trap" {
+                        release.arm();
+                    }
+                    command(args, context)
+                }),
             },
         )?;
         api.on("session_start", Rc::new(session_start))
@@ -77,12 +83,7 @@ fn register_listeners(api: &ExtensionAPI) -> Result<(), String> {
                     return Err("guest listener failure".into());
                 }
                 if name == "listener-tail" {
-                    let events = events.clone();
-                    return Ok(Some(Box::pin(async move {
-                        events
-                            .emit("trace", serde_json::json!(format!("{label}:tail")))
-                            .await
-                    })));
+                    return Ok(Some(listener_tail(events.clone(), label)));
                 }
                 if label == "g1" && name == "reentry" {
                     emitter.emit("renderer-created", serde_json::json!(["inner", false]))?;
@@ -92,6 +93,19 @@ fn register_listeners(api: &ExtensionAPI) -> Result<(), String> {
         )?;
     }
     Ok(())
+}
+
+/// Creates a separately owned continuation for one listener prefix.
+#[cfg(target_arch = "wasm32")]
+fn listener_tail(
+    events: maestro_extensions_wasm::EventBus,
+    label: &'static str,
+) -> ExtensionFuture<'static, ()> {
+    Box::pin(async move {
+        events
+            .emit("trace", serde_json::json!(format!("{label}:tail")))
+            .await
+    })
 }
 
 /// Uses independently supplied native command contexts and controllable pending operations.
@@ -198,5 +212,24 @@ impl Drop for View {
                 default: Some(maestro_extensions_wasm::FlagValue::Boolean(true)),
             },
         );
+    }
+}
+
+/// Makes a callback-release trap observable through the real lifecycle.
+#[cfg(target_arch = "wasm32")]
+struct ReleaseTrap(std::cell::Cell<bool>);
+#[cfg(target_arch = "wasm32")]
+impl ReleaseTrap {
+    /// Arms only the deliberately selected destructor witness.
+    fn arm(&self) {
+        self.0.set(true);
+    }
+}
+#[cfg(target_arch = "wasm32")]
+impl Drop for ReleaseTrap {
+    fn drop(&mut self) {
+        if self.0.get() {
+            std::arch::wasm32::unreachable();
+        }
     }
 }
