@@ -20,6 +20,109 @@ mod tests {
 
     const BOTH: [SettingsScope; 2] = [SettingsScope::Global, SettingsScope::Project];
 
+    #[test]
+    fn checked_child_rejects_missing_identity() {
+        assert!(
+            support::child_command("settings_storage::tests::missing_child_identity", "missing")
+                .output()
+                .is_err(),
+            "stale selection passed with zero tests"
+        );
+    }
+
+    /// Handles the selected environment control and intentional failure bodies.
+    fn report_checked_environment_child() -> bool {
+        match support::child_case().as_deref() {
+            Some("control") => {
+                let cwd = std::env::current_dir().unwrap();
+                let expected =
+                    std::path::PathBuf::from(std::env::var_os("MAESTRO_EXPECT_CWD").unwrap());
+                assert_eq!(
+                    cwd.canonicalize().unwrap(),
+                    expected.canonicalize().unwrap()
+                );
+                assert_eq!(
+                    std::env::var_os("LLVM_PROFILE_FILE").unwrap(),
+                    expected.join("literal-%p-%m.profraw")
+                );
+                assert_eq!(std::env::var("MAESTRO_ORDER").unwrap(), "replacement");
+                assert!(std::env::var_os("MAESTRO_REMOVE").is_none());
+                support::report(&json!({"selected": true, "value": "replacement"}));
+                true
+            }
+            Some("failure" | "probe") => {
+                support::report(&json!("free"));
+                panic!("report does not establish successful completion");
+            }
+            Some("seed") | None => false,
+            Some(_) => panic!("unexpected child case"),
+        }
+    }
+
+    #[test]
+    fn checked_child_preserves_environment_reports_and_flags() {
+        const NAME: &str =
+            "settings_storage::tests::checked_child_preserves_environment_reports_and_flags";
+        if report_checked_environment_child() {
+            return;
+        }
+        if support::child_case().is_none() {
+            let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
+            let output = support::child_command(NAME, "seed")
+                .env("MAESTRO_REMOVE", "inherited")
+                .env("MAESTRO_ORDER", "original")
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            assert!(
+                before == std::env::vars_os().collect(),
+                "parent environment changed"
+            );
+            return;
+        }
+        assert_eq!(std::env::var("MAESTRO_REMOVE").unwrap(), "inherited");
+        let before: std::collections::BTreeMap<_, _> = std::env::vars_os().collect();
+        let root = TempDir::new();
+        let output = support::child_command(NAME, "control")
+            .current_dir(root.path())
+            .env("MAESTRO_EXPECT_CWD", root.path())
+            .env(
+                "LLVM_PROFILE_FILE",
+                root.path().join("literal-%p-%m.profraw"),
+            )
+            .env_remove("MAESTRO_ORDER")
+            .env("MAESTRO_ORDER", "replacement")
+            .env_remove("MAESTRO_REMOVE")
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        assert_eq!(
+            support::child_report(&output),
+            json!({"selected": true, "value": "replacement"})
+        );
+        let text = String::from_utf8(output.stdout).unwrap();
+        assert!(text.starts_with("\nrunning 1 test\n"));
+        assert!(text.lines().any(|line| line == "."));
+        assert!(!text.contains("test settings_storage::"));
+        assert!(output.stderr.is_empty());
+        let failed = support::child_command(NAME, "failure").output().unwrap();
+        assert!(!failed.status.success());
+        assert_eq!(support::child_report(&failed), json!("free"));
+        assert!(
+            std::panic::catch_unwind(|| support::probe_lock(NAME, &root.path().join("lock")))
+                .is_err(),
+            "failed child report was accepted"
+        );
+        assert!(
+            before == std::env::vars_os().collect(),
+            "parent environment changed"
+        );
+    }
+
     /// Runs `update` against one scope and returns the text it saw.
     fn transact(
         storage: &dyn SettingsStorage,
@@ -247,6 +350,7 @@ mod tests {
         .current_dir(&process_directory)
         .output()
         .unwrap();
+        assert!(output.status.success());
         assert_eq!(
             support::child_report(&output),
             json!(["global seed", "project seed"]),

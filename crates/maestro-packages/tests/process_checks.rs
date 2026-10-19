@@ -283,25 +283,23 @@ fn native_local_repository_installs_checks_out_and_removes() {
             git(&repository, &["tag", "v1"]);
         }
     }
-    let test =
-        crate::child_process::selector("native_local_repository_installs_checks_out_and_removes")
-            .unwrap();
-    let output = Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test])
-        .env(REPOSITORY_CHILD, &root.0)
-        .env("GIT_CONFIG_GLOBAL", "/dev/null")
-        .env("GIT_CONFIG_SYSTEM", "/dev/null")
-        .env("GIT_CONFIG_COUNT", "1")
-        .env("GIT_CONFIG_KEY_0", format!("url.{repository}.insteadOf"))
-        .env("GIT_CONFIG_VALUE_0", "https://example.test/team/repo")
-        .output()
-        .unwrap();
+    let output = maestro_test_process::TestProcess::current(
+        "native_local_repository_installs_checks_out_and_removes",
+    )
+    .unwrap()
+    .env(REPOSITORY_CHILD, &root.0)
+    .env("GIT_CONFIG_GLOBAL", "/dev/null")
+    .env("GIT_CONFIG_SYSTEM", "/dev/null")
+    .env("GIT_CONFIG_COUNT", "1")
+    .env("GIT_CONFIG_KEY_0", format!("url.{repository}.insteadOf"))
+    .env("GIT_CONFIG_VALUE_0", "https://example.test/team/repo")
+    .output()
+    .unwrap();
     assert!(
         output.status.success(),
         "{}",
         String::from_utf8_lossy(&output.stdout)
     );
-    crate::child_process::assert_executed(&output, &test).unwrap();
 }
 
 #[test]

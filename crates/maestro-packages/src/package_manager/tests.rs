@@ -62,6 +62,11 @@ fn home_lookup_uses_truthy_environment_before_platform_fallback() {
 fn native_empty_environment_recovery_reads_procfs() {
     use super::{NativePackageOperations, PackageOperations};
     if std::env::var_os("MAESTRO_ENV_CHILD").is_some() {
+        assert_eq!(
+            std::env::var_os("LLVM_PROFILE_FILE"),
+            std::env::var_os("MAESTRO_EXPECT_PROFILE")
+        );
+        assert!(std::env::var_os("MAESTRO_UNRELATED").is_none());
         let result = recover_environment("linux", BTreeMap::new(), || {
             std::fs::read("/proc/self/environ")
         });
@@ -82,17 +87,22 @@ fn native_empty_environment_recovery_reads_procfs() {
         assert_eq!(output.stdout, "a=b");
         return;
     }
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            "package_manager::tests::native_empty_environment_recovery_reads_procfs",
-            "--nocapture",
-        ])
-        .env_clear()
-        .env("MAESTRO_ENV_CHILD", "1")
-        .env("MAESTRO_ENV_SENTINEL", "a=b")
-        .output()
-        .unwrap();
+    let profile = std::env::var_os("LLVM_PROFILE_FILE");
+    let output = maestro_test_process::TestProcess::current(
+        "package_manager::tests::native_empty_environment_recovery_reads_procfs",
+    )
+    .unwrap()
+    .nocapture()
+    .env_clear()
+    .envs(
+        profile
+            .iter()
+            .map(|value| ("MAESTRO_EXPECT_PROFILE", value)),
+    )
+    .env("MAESTRO_ENV_CHILD", "1")
+    .env("MAESTRO_ENV_SENTINEL", "a=b")
+    .output()
+    .unwrap();
     assert!(
         output.status.success(),
         "{}",

@@ -609,21 +609,19 @@ fn explicit_install_does_not_obey_offline_resolution_policy() {
         assert_eq!(fixture.calls(), [call("npm", &["install", "-g", "pkg"])]);
         return;
     }
-    let test =
-        crate::child_process::selector("explicit_install_does_not_obey_offline_resolution_policy")
-            .unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test])
-        .env(OFFLINE_CHILD, "1")
-        .env("MAESTRO_OFFLINE", "yes")
-        .output()
-        .unwrap();
+    let output = maestro_test_process::TestProcess::current(
+        "explicit_install_does_not_obey_offline_resolution_policy",
+    )
+    .unwrap()
+    .env(OFFLINE_CHILD, "1")
+    .env("MAESTRO_OFFLINE", "yes")
+    .output()
+    .unwrap();
     assert!(
         output.status.success(),
         "{}",
         String::from_utf8_lossy(&output.stdout)
     );
-    crate::child_process::assert_executed(&output, &test).unwrap();
 }
 
 #[test]

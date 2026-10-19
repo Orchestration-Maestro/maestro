@@ -2,8 +2,9 @@
 
 #![allow(dead_code)]
 
+use maestro_test_process::{CheckedChild, CheckedStdout, TestProcess};
 use std::future::Future;
-use std::process::{Command, Output};
+use std::process::Output;
 use std::sync::{Arc, Condvar, Mutex};
 
 use maestro_settings::{
@@ -258,18 +259,13 @@ pub fn child_case() -> Option<String> {
 }
 
 /// Builds a command that re-runs one test of this binary as a child for `case`.
-pub fn child_command(test: &str, case: &str) -> Command {
-    let mut command = Command::new(std::env::current_exe().unwrap());
-    command
-        .args([
-            "--exact",
-            test,
-            "--nocapture",
-            "--quiet",
-            "--test-threads=1",
-        ])
-        .env(CHILD_MARKER, case);
-    command
+pub fn child_command(test: &str, case: &str) -> TestProcess {
+    TestProcess::named(test)
+        .unwrap()
+        .nocapture()
+        .quiet()
+        .single_threaded()
+        .env(CHILD_MARKER, case)
 }
 
 /// The line a child printed with [`report`], parsed as JSON.
@@ -351,15 +347,15 @@ pub fn run_lock_child() -> bool {
 
 /// A child process holding an exclusive lock until it is released.
 pub struct Holder {
-    child: std::process::Child,
-    _output: std::io::BufReader<std::process::ChildStdout>,
+    child: CheckedChild,
+    _output: std::io::BufReader<CheckedStdout>,
 }
 
 impl Holder {
     /// Starts a child that locks `path` and waits until it reports.
     pub fn start(test: &str, path: &std::path::Path) -> Self {
         use std::io::{BufRead, BufReader};
-        let mut command = child_command(test, "hold");
+        let command = child_command(test, "hold");
         let mut child = command
             .env(CHILD_PATH, path)
             .stdin(std::process::Stdio::piped())
@@ -385,7 +381,7 @@ impl Holder {
     /// Lets the child exit and releases its lock.
     pub fn release(mut self) {
         drop(self.child.stdin.take());
-        self.child.wait().unwrap();
+        assert!(self.child.wait().unwrap().success());
     }
 }
 
@@ -395,6 +391,7 @@ pub fn probe_lock(test: &str, path: &std::path::Path) -> String {
         .env(CHILD_PATH, path)
         .output()
         .unwrap();
+    assert!(output.status.success());
     child_report(&output).as_str().unwrap().to_owned()
 }
 
@@ -478,19 +475,6 @@ impl Backend {
 
 /// Like [`child_command`], but starts the child through bash after running `setup`.
 #[cfg(unix)]
-pub fn shell_child_command(test: &str, case: &str, setup: &str) -> Command {
-    let mut command = Command::new("bash");
-    command
-        .arg("-c")
-        .arg(format!("{setup}; exec \"$0\" \"$@\""))
-        .arg(std::env::current_exe().unwrap())
-        .args([
-            "--exact",
-            test,
-            "--nocapture",
-            "--quiet",
-            "--test-threads=1",
-        ])
-        .env(CHILD_MARKER, case);
-    command
+pub fn shell_child_command(test: &str, case: &str, setup: &str) -> TestProcess {
+    child_command(test, case).shell_setup(setup)
 }

@@ -12,20 +12,20 @@ fn memory_session_starts_with_current_header() {
         support::session_history::group("memory_session_starts_with_current_header");
         return;
     }
-    let test = crate::child_process::selector("memory_session_starts_with_current_header").unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test, "--nocapture"])
-        .env("MAESTRO_HISTORY_UTC_CHILD", "1")
-        .env("TZ", "America/New_York")
-        .output()
-        .unwrap();
+    let output =
+        maestro_test_process::TestProcess::current("memory_session_starts_with_current_header")
+            .unwrap()
+            .nocapture()
+            .env("MAESTRO_HISTORY_UTC_CHILD", "1")
+            .env("TZ", "America/New_York")
+            .output()
+            .unwrap();
     assert!(
         output.status.success(),
         "UTC emission child failed: {}\n{}",
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    crate::child_process::assert_executed(&output, &test).unwrap();
 }
 
 #[test]
@@ -151,18 +151,18 @@ fn explicit_cwd_survives_a_missing_process_directory() {
         );
         return;
     }
-    let test = crate::child_process::selector("explicit_cwd_survives_a_missing_process_directory")
-        .unwrap();
-    let output = std::process::Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test, "--nocapture"])
-        .env("MAESTRO_HISTORY_CWD_CHILD", "1")
-        .output()
-        .unwrap();
+    let output = maestro_test_process::TestProcess::current(
+        "explicit_cwd_survives_a_missing_process_directory",
+    )
+    .unwrap()
+    .nocapture()
+    .env("MAESTRO_HISTORY_CWD_CHILD", "1")
+    .output()
+    .unwrap();
     assert!(
         output.status.success(),
         "cwd child failed: {}\n{}",
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    crate::child_process::assert_executed(&output, &test).unwrap();
 }
