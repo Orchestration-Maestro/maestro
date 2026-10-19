@@ -1,7 +1,6 @@
 //! Key input boundary observations.
 
 use super::*;
-use crate::terminal_theme::{DefaultColorKind, HostAppearance, RgbColor};
 use maestro_protocol::frames::{
     ClientInputEvent, ClientKeyCode, ClientKeyKind, ClientKeySource, KeyModifiers,
 };
@@ -398,42 +397,6 @@ fn text_commit_inference_respects_phase_and_modifiers() {
     }
 }
 
-/// Decoded variants retain their owned payloads without alternate record types.
-#[test]
-fn raw_input_events_keep_all_payloads() {
-    assert_raw_key_text_and_mouse();
-    assert!(matches!(
-        RawInputEvent::OuterFocusGained,
-        RawInputEvent::OuterFocusGained
-    ));
-    assert!(matches!(
-        RawInputEvent::OuterFocusLost,
-        RawInputEvent::OuterFocusLost
-    ));
-    assert_raw_host_colors();
-    for appearance in [HostAppearance::Dark, HostAppearance::Light] {
-        let event = RawInputEvent::HostColorSchemeChanged(appearance);
-        assert!(
-            matches!(event, RawInputEvent::HostColorSchemeChanged(actual) if actual == appearance)
-        );
-    }
-    let size = RawInputEvent::HostCellSizeReport {
-        width_px: 9,
-        height_px: 17,
-    };
-    assert!(matches!(
-        size,
-        RawInputEvent::HostCellSizeReport {
-            width_px: 9,
-            height_px: 17
-        }
-    ));
-    assert!(matches!(
-        RawInputEvent::Unsupported,
-        RawInputEvent::Unsupported
-    ));
-}
-
 /// Observe one owning conversion combination through both directions.
 fn assert_key_wire_roundtrip(code: &ClientKeyCode, kind: ClientKeyKind, source: &ClientKeySource) {
     let input = ClientInputEvent::Key {
@@ -476,75 +439,6 @@ fn assert_key_defaults(key: &TerminalKey) {
     assert_eq!(key.vt_bytes(), None);
     assert_eq!(key.windows_record(), None);
     assert_eq!(key.clone().with_repeat_count(0).repeat_count, 1);
-}
-
-/// Observe ordered host palette entries and the default colour selector.
-fn assert_raw_host_colors() {
-    let color = RgbColor {
-        r: 12,
-        g: 34,
-        b: 56,
-    };
-    let default = RawInputEvent::HostDefaultColor {
-        kind: DefaultColorKind::Background,
-        color,
-    };
-    assert!(matches!(
-        default,
-        RawInputEvent::HostDefaultColor {
-            kind: DefaultColorKind::Background,
-            color: RgbColor {
-                r: 12,
-                g: 34,
-                b: 56
-            }
-        }
-    ));
-    let palette = RawInputEvent::HostPaletteColors {
-        colors: vec![
-            (7, color),
-            (
-                2,
-                RgbColor {
-                    r: 98,
-                    g: 76,
-                    b: 54,
-                },
-            ),
-        ],
-    };
-    assert!(
-        matches!(palette, RawInputEvent::HostPaletteColors { colors }
-        if colors == [(7, color), (2, RgbColor { r: 98, g: 76, b: 54 })])
-    );
-}
-
-/// Observe decoded key, text, paste, mouse and focus variants.
-fn assert_raw_key_text_and_mouse() {
-    use maestro_protocol::frames::{ClientMouseButton, ClientMouseKind};
-    let key = RawInputEvent::Key(TerminalKey::new(ClientKeyCode::Char('q'), 4));
-    assert!(
-        matches!(key, RawInputEvent::Key(key) if key.code == ClientKeyCode::Char('q') && key.modifiers == 4)
-    );
-    let text = RawInputEvent::Text(TextCommit::new("é"));
-    assert!(matches!(text, RawInputEvent::Text(text) if text.as_str() == "é"));
-    let paste = RawInputEvent::Paste("a\nb".into());
-    assert!(matches!(paste, RawInputEvent::Paste(text) if text == "a\nb"));
-    let mouse = RawInputEvent::Mouse {
-        kind: ClientMouseKind::Down(ClientMouseButton::Left),
-        column: 9,
-        row: 3,
-        modifiers: 5,
-    };
-    assert!(matches!(
-        mouse,
-        RawInputEvent::Mouse {
-            kind: ClientMouseKind::Down(ClientMouseButton::Left),
-            column: 9,
-            row: 3,
-            modifiers: 5
-        }
-    ));
 }
 
 mod host_sequences;
