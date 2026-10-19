@@ -56,3 +56,24 @@ fn direct_metadata_setters_keep_arbitrary_owned_bytes() {
     t.set_pwd(b"file:///work%20space");
     assert_eq!(t.get_pwd(), Some(b"file:///work%20space".as_slice()));
 }
+
+#[test]
+fn empty_metadata_values_remove_observations() {
+    let mut t = Terminal::new(5, 3, 0).unwrap();
+    assert_eq!((t.get_pwd(), t.get_title()), (None, None));
+    t.set_title(b"");
+    t.set_pwd(b"");
+    assert_eq!((t.get_pwd(), t.get_title()), (None, None));
+    t.set_title(b"title");
+    t.set_pwd(b"file:///raw%20directory");
+    t.set_title(b"replacement");
+    assert_eq!(t.get_pwd(), Some(b"file:///raw%20directory".as_slice()));
+    t.set_pwd(b"next");
+    assert_eq!(t.get_title(), Some(b"replacement".as_slice()));
+    t.set_title(b"");
+    assert_eq!(t.get_title(), None);
+    assert_eq!(t.get_pwd(), Some(b"next".as_slice()));
+    t.set_title(b"title");
+    t.full_reset();
+    assert_eq!((t.get_pwd(), t.get_title()), (None, None));
+}

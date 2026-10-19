@@ -9,9 +9,14 @@ mod line_edit;
 mod lines;
 mod margins;
 mod print;
+mod prompt;
 mod pwd_title;
 mod reads;
+mod resize;
+mod screens;
 pub use reads::ScrollViewport;
+pub use resize::ResizeError;
+pub use screens::{DeccolmMode, SwitchScreenMode};
 
 use std::num::NonZeroU16;
 
@@ -96,6 +101,8 @@ pub struct Flags {
     pub mouse_event: mouse::Event,
     /// The last selected mouse encoding.
     pub mouse_format: mouse::Format,
+    /// Explicit shell permission to clear prompt content when resizing.
+    pub shell_redraws_prompt: crate::osc::semantic_prompt::Redraw,
     /// Terminal-wide renderer invalidation.
     pub dirty: Dirty,
 }
@@ -107,6 +114,7 @@ impl Default for Flags {
             modify_other_keys_2: false,
             mouse_event: mouse::Event::None,
             mouse_format: mouse::Format::X10,
+            shell_redraws_prompt: crate::osc::semantic_prompt::Redraw::False,
             dirty: Dirty::default(),
         }
     }

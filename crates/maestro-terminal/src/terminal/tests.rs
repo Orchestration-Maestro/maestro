@@ -216,3 +216,70 @@ fn alignment_work(cols: u16) -> (usize, usize) {
     }
     (page.row_shift_work, repeated)
 }
+
+#[test]
+fn screen_mode_cursor_copy_retains_page_style_owners() {
+    use crate::{color::Rgb, sgr::Attribute, terminal::SwitchScreenMode};
+    for mode in [SwitchScreenMode::Mode47, SwitchScreenMode::Mode1047] {
+        let mut t = Terminal::new(5, 5, 0).unwrap();
+        for (enabled, color) in [
+            (
+                true,
+                Rgb {
+                    r: 255,
+                    g: 0,
+                    b: 127,
+                },
+            ),
+            (false, Rgb { r: 0, g: 255, b: 0 }),
+        ] {
+            t.screens
+                .active_mut()
+                .set_attribute(Attribute::DirectColorFg(color))
+                .unwrap();
+            t.switch_screen_mode(mode, enabled).unwrap();
+            let screen = t.screens.active();
+            let pin = screen.pages.tracked_pin(screen.cursor.page_pin).unwrap();
+            let page = screen.pages.page(pin.node).unwrap();
+            assert_eq!(page.styles.count(), 1);
+            assert!(page.styles.ref_count(screen.cursor.style_id) > 0);
+        }
+    }
+}
+
+#[test]
+fn resize_resets_tabs_only_when_columns_change() {
+    let mut t = Terminal::new(24, 3, 0).unwrap();
+    t.tabstops.set(3);
+    t.tabstops.unset(8);
+    t.resize(24, 3, 2, 3).unwrap();
+    assert!(t.tabstops.get(3));
+    assert!(!t.tabstops.get(8));
+    t.resize(24, 5, 2, 3).unwrap();
+    assert!(t.tabstops.get(3));
+    assert!(!t.tabstops.get(8));
+    t.resize(25, 5, 2, 3).unwrap();
+    assert!(!t.tabstops.get(3));
+    assert!(t.tabstops.get(8));
+    assert!(t.tabstops.get(16));
+    assert!(!t.tabstops.get(24));
+}
+
+#[test]
+fn reset_restores_custom_mode_defaults_and_primary_keyboard_state() {
+    use crate::{Mode, kitty::key::Flags, terminal::SwitchScreenMode};
+    let mut t = Terminal::new(10, 5, 0).unwrap();
+    t.modes.defaults[Mode::Origin as usize] = true;
+    t.screens.active_mut().kitty_keyboard.push(Flags::TRUE);
+    t.switch_screen_mode(SwitchScreenMode::Mode1049, true)
+        .unwrap();
+    t.screens
+        .active_mut()
+        .kitty_keyboard
+        .push(Flags::REPORT_EVENTS);
+    t.full_reset();
+    assert!(t.modes.get(Mode::Origin));
+    assert!(t.modes.get(Mode::GraphemeCluster));
+    assert_eq!(t.screens.active().kitty_keyboard.current(), Flags::DISABLED);
+    assert!(!t.screens.active().semantic_prompt.seen);
+}

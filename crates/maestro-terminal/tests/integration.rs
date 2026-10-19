@@ -134,3 +134,10 @@ mod terminal_erase_line;
 mod terminal_erase_display;
 
 mod terminal_alignment;
+
+mod terminal_screens;
+
+mod terminal_reset;
+mod terminal_resize;
+
+mod terminal_prompts;

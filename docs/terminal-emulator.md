@@ -343,5 +343,38 @@ resets margins and origin mode, and returns the cursor home. It keeps foreground
 and background colours while clearing other rendition attributes. Cursor
 protection remains selected but does not protect cells from alignment.
 
-Terminal resizing and screen-switching facades are not provided by these direct
-operations.
+`switch_screen` lazily creates alternate storage without history, ends the old
+screen's active hyperlink and carries charset state. Switching to the already
+selected screen changes nothing. It returns the old screen identity on a real
+switch. `switch_screen_mode` applies the protocol ordering: 47 preserves content;
+1047 clears alternate content on exit; 1049 saves on every enable, clears on
+entry and restores the primary cursor on disable. Real switches copy cursor
+state without copying hyperlinks where the selected mode requires it.
+
+`resize(cols, rows, cell_width_px, cell_height_px)` rejects zero grid dimensions
+before mutation. Same-grid calls update effective pixels and end synchronized
+output without resetting margins, tabs or clear flags. Changed columns rebuild
+interval-eight tab stops; changed rows alone retain custom stops. Primary content
+reflows only with wraparound enabled; alternate content never reflows. Cell pixel
+sizes are clamped independently to at least one, and multiplication saturates at
+`u32::MAX`. Managed-storage refusals may leave earlier screen changes applied;
+reset before using content after that refusal.
+
+`deccolm` selects 80 or 132 columns only when mode 40 permits it, clears the active
+display and homes the cursor. Without that permission it only clears mode 3.
+`full_reset` selects primary before removing alternate storage, resets screen and
+keyboard state, restores mode defaults, clears metadata and resets tabs and
+margins. Grid size, pixel dimensions and terminal colours survive. Reset marks
+the terminal clear flag.
+
+`semantic_prompt` applies shell prompt, input and output phases. Prompt and
+continuation marks follow line transitions through the existing line owner.
+Explicit input persists until another shell phase; end-of-line input terminates
+on a line transition. Output beginning at column zero clears the current row's
+prompt mark. `cursor_is_at_prompt` recognizes primary prompt/input state and row
+marks, but always returns false on alternate storage.
+
+Prompt redraw defaults to off, including after full reset. An explicit shell
+option selects False, True or Last: resize preserves prompts, clears the full
+prompt region or clears its last row respectively. Alternate resize never uses
+this primary prompt-redraw policy.
