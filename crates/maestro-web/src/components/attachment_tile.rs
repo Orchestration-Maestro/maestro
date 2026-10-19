@@ -35,6 +35,19 @@ impl AttachmentTile {
             id: identity(),
         }
     }
+    /// Rebind an emitted position without changing its retained widget identity.
+    pub(crate) fn retain_at(
+        tiles: &mut Vec<Self>,
+        position: usize,
+        attachment: Rc<RefCell<Attachment>>,
+        host: &Rc<dyn AttachmentHost>,
+    ) {
+        if let Some(tile) = tiles.get_mut(position) {
+            tile.attachment = attachment;
+        } else {
+            tiles.push(Self::new(attachment, Rc::clone(host)));
+        }
+    }
     /// Draw a tile, returning an independently retained overlay when opened.
     /// # Errors
     /// Propagates localization, glyph, platform and record-borrow failures.
@@ -44,7 +57,12 @@ impl AttachmentTile {
         i: &I18n<F>,
         p: &BrandPresentation<'_>,
     ) -> Result<Option<AttachmentOverlay>, AttachmentUiError> {
-        ui.scope(|ui| self.draw(ui, i, p)).inner
+        ui.allocate_ui_with_layout(
+            egui::vec2(64., 64.),
+            egui::Layout::top_down(egui::Align::Min),
+            |ui| self.draw(ui, i, p),
+        )
+        .inner
     }
     /// Draw without retaining a record borrow across replaceable effects.
     fn draw<F: ?Sized>(

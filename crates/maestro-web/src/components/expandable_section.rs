@@ -2,7 +2,10 @@
 use crate::{
     browser,
     components::native_text::{NativeText, TextKind},
-    tools::types::{ToolContent, ToolRenderResult, ToolRenderState, ToolRenderView, ToolUiError},
+    tools::types::{
+        ToolContent, ToolContentOutput, ToolRenderResult, ToolRenderState, ToolRenderView,
+        ToolUiError,
+    },
 };
 use std::{cell::Cell, rc::Rc};
 /// Captured owned child and its continuously retained state.
@@ -71,10 +74,17 @@ impl ExpandableSection {
     /// Draw the summary and only the currently visible children.
     /// # Errors
     /// Returns reached presentation or native child failures.
-    pub fn render(
+    pub fn render(&mut self, ui: &mut egui::Ui, view: ToolRenderView<'_>) -> ToolContentOutput {
+        let mut overlays = Vec::new();
+        let response = self.draw(ui, view, &mut overlays);
+        ToolContentOutput { response, overlays }
+    }
+    /// Forward opened children independently of later drawing failures.
+    fn draw(
         &mut self,
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
+        overlays: &mut Vec<crate::AttachmentOverlay>,
     ) -> Result<egui::Response, ToolUiError> {
         if !self.connected {
             self.connected_callback();
@@ -86,13 +96,8 @@ impl ExpandableSection {
         } else {
             vec![]
         };
-        let weak = Rc::downgrade(&self.expanded);
-        let native_header = header.clone();
-        self.header.set_action(Some(Rc::new(move || {
-            if let Some(expanded) = weak.upgrade() {
-                activate_toggle(&native_header, visible, &expanded);
-            }
-        })));
+        self.header
+            .set_action(Some(toggle_action(&header, visible, &self.expanded)));
         let events = ui.input(|input| input.events.clone());
         let pointer = !browser::attachment_content::reading::controls::pointer_actions(
             &events,
@@ -108,7 +113,10 @@ impl ExpandableSection {
             let _active = self.host.enter_placement_scope(self.child_scope);
             ui.add_space(8.);
             for child in &mut self.children {
-                child.recipe.render(ui, view, &mut child.state)?;
+                child
+                    .recipe
+                    .render(ui, view, &mut child.state)
+                    .collect(overlays)?;
             }
         } else {
             self.host.hide_placement_scope(self.child_scope);
@@ -192,4 +200,19 @@ pub(crate) fn activate_toggle(
         response.request_focus();
         expanded.set(!expanded.get());
     }
+}
+
+/// Bind native activation weakly to the shared button admission and focus owner.
+pub(crate) fn toggle_action(
+    response: &egui::Response,
+    visible: egui::Rect,
+    expanded: &Rc<Cell<bool>>,
+) -> Rc<dyn Fn()> {
+    let weak = Rc::downgrade(expanded);
+    let response = response.clone();
+    Rc::new(move || {
+        if let Some(expanded) = weak.upgrade() {
+            activate_toggle(&response, visible, &expanded);
+        }
+    })
 }

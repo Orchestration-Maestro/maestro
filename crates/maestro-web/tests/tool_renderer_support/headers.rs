@@ -4,6 +4,7 @@ use super::{
     browser::{self, ListingRecipe},
     cases,
 };
+use crate::support::tool_output::TextOnlyOutput as _;
 use crate::{
     markdown_support::{check, first_slot_center, settle},
     tool_renderers_browser::surface,
@@ -257,9 +258,11 @@ fn independent_sections(surface: &mut crate::markdown_support::Surface) {
         surface.draw(|ui, frame| {
             let top = headers[0]
                 .render(ui, browser::view(&host, frame), &mut rows[0])
+                .assert_no_overlays()
                 .unwrap();
             let bottom = headers[1]
                 .render(ui, browser::view(&host, frame), &mut rows[1])
+                .assert_no_overlays()
                 .unwrap();
             [top, bottom]
         })
@@ -273,9 +276,11 @@ fn independent_sections(surface: &mut crate::markdown_support::Surface) {
         surface.click(responses[index].rect.center(), |ui, frame| {
             headers[0]
                 .render(ui, browser::view(&host, frame), &mut rows[0])
+                .assert_no_overlays()
                 .unwrap();
             headers[1]
                 .render(ui, browser::view(&host, frame), &mut rows[1])
+                .assert_no_overlays()
                 .unwrap()
         });
         assert_eq!((first.get(), second.get()), wanted);

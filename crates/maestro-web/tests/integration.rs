@@ -17,6 +17,9 @@ mod composed_consumer;
 mod copy_buttons;
 mod dialog_shell;
 mod dialog_shell_browser;
+mod document_card_support;
+mod document_tool_cards;
+mod document_tool_cards_browser;
 mod excel_views;
 mod excel_views_browser;
 mod expandable_output_browser;
@@ -77,6 +80,8 @@ pub mod effects_support;
 #[path = "export_support/browser.rs"]
 mod export_mount;
 mod export_support;
+#[path = "highlighter_support/failure.rs"]
+pub mod failing_highlighter;
 pub mod highlighter_support;
 pub mod input_support;
 pub mod markdown_support;

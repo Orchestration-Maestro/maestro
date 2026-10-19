@@ -31,6 +31,8 @@ pub(crate) enum TextKind {
     Label,
     /// Normal-weight small detail text.
     Detail,
+    /// Muted URL text with a bold literal label.
+    Url(usize),
     /// Compact usage, optionally interactive.
     Usage(bool),
     /// Reasoning disclosure, optionally shimmering.
@@ -245,6 +247,7 @@ fn update(mounted: &Mounted, text: &str, kind: TextKind) {
         TextKind::Summary => "maestro-tool-caption maestro-text-action",
         TextKind::Label => "maestro-tool-label",
         TextKind::Detail => "maestro-tool-detail",
+        TextKind::Url(_) => "maestro-tool-url",
         TextKind::Usage(false) => "maestro-message-usage",
         TextKind::Usage(true) => "maestro-message-usage maestro-text-action",
         TextKind::Thinking(false) => "maestro-thinking-header maestro-text-action",
@@ -253,7 +256,7 @@ fn update(mounted: &Mounted, text: &str, kind: TextKind) {
         TextKind::Error(_) => "maestro-message-error",
     };
     mounted.node.set_class_name(class);
-    let prefix = if let TextKind::Error(prefix) = kind {
+    let prefix = if let TextKind::Error(prefix) | TextKind::Url(prefix) = kind {
         prefix
     } else {
         0

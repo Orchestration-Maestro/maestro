@@ -4,21 +4,13 @@ use crate::{
     markdown_support::{Surface, check, js, publish},
     tool_renderer_browser as browser,
 };
-use maestro_app::JsonObject;
 use maestro_web::{
     BashRenderer, CalculateRenderer, GetCurrentTimeRenderer, ToolRenderer,
     tools::types::{ToolRenderResult, ToolRenderState},
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "camelCase")]
-pub struct Input {
-    pub params: Option<JsonObject>,
-    pub result: Option<maestro_app::ToolResultMessage>,
-    pub is_streaming: bool,
-    pub language: Option<String>,
-}
+pub use crate::support::tool_input::Input;
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 pub struct Expected {

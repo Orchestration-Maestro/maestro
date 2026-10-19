@@ -1,6 +1,7 @@
 //! Selected-pack native styles and frame-clock spinner paint.
 #![cfg(test)]
 use super::browser;
+use crate::support::tool_output::TextOnlyOutput as _;
 use crate::{
     markdown_support::{check, first_slot_center, js},
     tool_renderers_browser::surface,
@@ -28,7 +29,7 @@ fn header(state: ToolHeaderState) -> ToolRenderResult {
         is_custom: false,
     }
 }
-fn draw(
+pub(crate) fn draw(
     surface: &mut crate::markdown_support::Surface,
     recipe: &ToolRenderResult,
     row: &mut ToolRenderState,
@@ -36,10 +37,13 @@ fn draw(
 ) {
     let host = surface.host();
     surface.draw_with(presentation, (800., 600.), None, |ui, frame| {
-        recipe.render(ui, browser::view(&host, frame), row).unwrap()
+        recipe
+            .render(ui, browser::view(&host, frame), row)
+            .assert_no_overlays()
+            .unwrap()
     });
 }
-fn native_color(selector: &str, role: &str, presentation: &BrandPresentation<'_>) {
+pub(crate) fn native_color(selector: &str, role: &str, presentation: &BrandPresentation<'_>) {
     let color = egui::Color32::from_hex(presentation.colors[role]).unwrap();
     assert_eq!(
         js(&format!(
@@ -126,9 +130,11 @@ fn spinner_reentry(
     surface.draw(|ui, frame| {
         pending
             .render(ui, browser::view(&host, frame), row)
+            .assert_no_overlays()
             .unwrap();
         pending
             .render(ui, browser::view(&host, frame), &mut other)
+            .assert_no_overlays()
             .unwrap();
     });
     let images = browser::glyphs(surface);

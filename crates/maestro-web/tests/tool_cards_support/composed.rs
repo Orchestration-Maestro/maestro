@@ -1,6 +1,7 @@
 //! Default binding observed through the containing message row.
 #![cfg(test)]
 use super::{Expected, NativeDetail, Registration, ValueRoute, fixture, observe};
+use crate::support::tool_output::TextOnlyOutput as _;
 use crate::{
     markdown_support::{Surface, check, js},
     recipes,
@@ -71,6 +72,7 @@ impl Case {
                 },
                 view(&host, frame),
             )
+            .assert_no_overlays()
             .unwrap()
         });
     }

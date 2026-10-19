@@ -20,7 +20,7 @@ pub mod browser;
 mod headers;
 
 #[cfg(target_arch = "wasm32")]
-mod styles;
+pub(crate) mod styles;
 
 #[cfg(target_arch = "wasm32")]
 mod console_updates;

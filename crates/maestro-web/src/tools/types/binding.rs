@@ -26,8 +26,19 @@ impl ToolRendererBinding {
         let binding = Self {
             owner: ToolRendererState::default(),
         };
-        binding.owner.state::<RendererSlot<P, D>>().borrow_mut().0 = Some(renderer);
-        binding
+        binding.with_raw(renderer)
+    }
+    /// Retain an additional native callback view in this binding.
+    #[must_use]
+    pub fn with_raw<P: 'static, D: 'static>(self, renderer: Rc<dyn ToolRenderer<P, D>>) -> Self {
+        let previous = self
+            .owner
+            .state::<RendererSlot<P, D>>()
+            .borrow_mut()
+            .0
+            .replace(renderer);
+        drop(previous);
+        self
     }
     /// Additionally admit present JSON operands through their selected decoders.
     #[must_use]
@@ -35,21 +46,15 @@ impl ToolRendererBinding {
         renderer: Rc<dyn ToolRenderer<P, D>>,
     ) -> Self {
         let binding = Self::from_raw(Rc::clone(&renderer));
-        if TypeId::of::<(P, D)>() != TypeId::of::<(Value, Value)>() {
+        let binding = if TypeId::of::<(P, D)>() == TypeId::of::<(Value, Value)>() {
             binding
-                .owner
-                .state::<RendererSlot<Value, Value>>()
-                .borrow_mut()
-                .0 = Some(Rc::new(DecodedRenderer {
+        } else {
+            binding.with_raw::<Value, Value>(Rc::new(DecodedRenderer {
                 renderer: Rc::clone(&renderer),
-            }));
-        }
+            }))
+        };
         if TypeId::of::<(P, D)>() != TypeId::of::<(JsonObject, Value)>() {
-            binding
-                .owner
-                .state::<RendererSlot<JsonObject, Value>>()
-                .borrow_mut()
-                .0 = Some(Rc::new(DecodedRenderer { renderer }));
+            return binding.with_raw::<JsonObject, Value>(Rc::new(DecodedRenderer { renderer }));
         }
         binding
     }

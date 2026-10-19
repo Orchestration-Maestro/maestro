@@ -1,6 +1,8 @@
 //! Call-scoped dispatch through a retained tool row.
 use super::color;
-use crate::tools::types::{ToolParams, ToolRenderState, ToolRenderView, ToolUiError};
+use crate::tools::types::{
+    ToolContentOutput, ToolParams, ToolRenderState, ToolRenderView, ToolUiError,
+};
 use maestro_app::{ToolCall, ToolResultMessage};
 
 /// Borrow one tool invocation without narrowing its native result details.
@@ -44,6 +46,18 @@ impl ToolMessage {
         ui: &mut egui::Ui,
         props: ToolMessageProps<'_, D>,
         view: ToolRenderView<'_>,
+    ) -> ToolContentOutput {
+        let mut overlays = Vec::new();
+        let response = self.draw(ui, props, view, &mut overlays);
+        ToolContentOutput { response, overlays }
+    }
+    /// Draw the row while transferring opened owners before any later error.
+    fn draw<D: 'static>(
+        &mut self,
+        ui: &mut egui::Ui,
+        props: ToolMessageProps<'_, D>,
+        view: ToolRenderView<'_>,
+        overlays: &mut Vec<crate::AttachmentOverlay>,
     ) -> Result<egui::Response, ToolUiError> {
         let aborted = if props.aborted {
             #[cfg(target_arch = "wasm32")]
@@ -73,7 +87,9 @@ impl ToolMessage {
             !props.aborted && (props.is_streaming || props.pending),
         )?;
         if rendered.is_custom {
-            return rendered.render(ui, view, &mut self.retained);
+            return rendered
+                .render(ui, view, &mut self.retained)
+                .collect(overlays);
         }
         let frame = egui::Frame::new()
             .fill(color(view, "panel")?)
@@ -86,7 +102,11 @@ impl ToolMessage {
             })
             .stroke(egui::Stroke::new(1., color(view, "border")?))
             .inner_margin(10);
-        let row = frame.show(ui, |ui| rendered.render(ui, view, &mut self.retained));
+        let row = frame.show(ui, |ui| {
+            rendered
+                .render(ui, view, &mut self.retained)
+                .collect(overlays)
+        });
         row.inner?;
         Ok(row.response)
     }

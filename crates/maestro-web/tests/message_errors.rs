@@ -1,5 +1,6 @@
 //! Message composition preserves reached operation failures and their original causes.
 #![cfg(test)]
+use crate::support::tool_output::TextOnlyOutput as _;
 use crate::{attachment_support, effects_support};
 
 use maestro_web::{
@@ -11,29 +12,7 @@ use maestro_web::{
 };
 use std::{error::Error, rc::Rc, sync::Arc};
 
-/// Caller-owned syntax cause with identity independent of its diagnostic text.
-#[derive(Debug)]
-struct Cause(Arc<()>);
-impl std::fmt::Display for Cause {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("original syntax cause")
-    }
-}
-impl Error for Cause {}
-/// Engine returning the supplied cause through the normal highlighting boundary.
-struct FailingEngine(Arc<()>);
-impl maestro_theme::SyntaxHighlighter for FailingEngine {
-    fn supports_language(&self, _: &str) -> bool {
-        true
-    }
-    fn highlight(
-        &self,
-        _: &str,
-        _: &str,
-    ) -> Result<Vec<maestro_theme::SyntaxSpan>, Box<dyn Error + Send + Sync>> {
-        Err(Box::new(Cause(self.0.clone())))
-    }
-}
+use crate::failing_highlighter::{Cause, FailingEngine};
 
 #[test]
 fn message_failures_keep_localization_attachment_and_reading_sources() {
@@ -72,6 +51,7 @@ fn message_failures_keep_localization_attachment_and_reading_sources() {
     let error = render(&mut frame, &host, &engine, |ui, view| {
         assistant.render::<serde_json::Value>(ui, &message, AssistantMessageProps::default(), view)
     })
+    .assert_no_overlays()
     .unwrap_err();
     assert!(matches!(
         error,
@@ -108,6 +88,7 @@ fn attachment_failure(
             view,
         )
     })
+    .assert_no_overlays()
     .err()
     .unwrap();
     assert!(matches!(

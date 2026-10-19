@@ -1,5 +1,6 @@
 //! Captured child ownership, reconnect and activation observations.
 #![cfg(test)]
+use crate::support::tool_output::TextOnlyOutput as _;
 use crate::{
     markdown_support::{Surface, check, js, publish},
     support::reading_view::view,
@@ -7,7 +8,7 @@ use crate::{
 };
 use maestro_web::{
     BashRenderer, ExpandableSection, ToolRenderer,
-    tools::types::{ToolContent, ToolRenderView, ToolUiError},
+    tools::types::{ToolContent, ToolRenderView},
 };
 use serde::Deserialize;
 use std::{
@@ -26,18 +27,23 @@ impl ToolContent for Child {
         ui: &mut egui::Ui,
         frame: ToolRenderView<'_>,
         state: &maestro_app::ToolRendererState,
-    ) -> Result<egui::Response, ToolUiError> {
+    ) -> maestro_web::tools::types::ToolContentOutput {
         self.calls.set(self.calls.get() + 1);
         let params =
             serde_json::from_value(serde_json::json!({"command": *self.value.borrow()})).unwrap();
-        <BashRenderer as ToolRenderer<maestro_app::JsonObject, ()>>::render(
+        let recipe = <BashRenderer as ToolRenderer<maestro_app::JsonObject, ()>>::render(
             &BashRenderer,
             Some(&params),
             None,
             false,
-        )?
-        .content
-        .render(ui, frame, state)
+        );
+        match recipe {
+            Ok(recipe) => recipe.content.render(ui, frame, state),
+            Err(error) => maestro_web::tools::types::ToolContentOutput {
+                response: Err(error),
+                overlays: Vec::new(),
+            },
+        }
     }
 }
 #[derive(Deserialize)]
@@ -68,13 +74,21 @@ struct Moment {
 
 pub fn draw(surface: &mut Surface, section: &mut ExpandableSection) -> egui::Response {
     let host = surface.host();
-    surface.draw(|ui, frame| section.render(ui, view(&host, frame)).unwrap())
+    surface.draw(|ui, frame| {
+        section
+            .render(ui, view(&host, frame))
+            .assert_no_overlays()
+            .unwrap()
+    })
 }
 pub fn toggle(surface: &mut Surface, section: &mut ExpandableSection) {
     let header = draw(surface, section);
     let host = surface.host();
     surface.click(header.rect.center(), |ui, frame| {
-        section.render(ui, view(&host, frame)).unwrap()
+        section
+            .render(ui, view(&host, frame))
+            .assert_no_overlays()
+            .unwrap()
     });
 }
 fn observe(surface: &mut Surface, section: &mut ExpandableSection, expected: &Moment) {
@@ -228,7 +242,12 @@ fn pointer_rejections(
         button(header.rect.center(), false),
     ];
     surface.draw(|ui, frame| {
-        ui.add_enabled_ui(false, |ui| section.render(ui, view(&host, frame)).unwrap())
+        ui.add_enabled_ui(false, |ui| {
+            section
+                .render(ui, view(&host, frame))
+                .assert_no_overlays()
+                .unwrap()
+        })
     });
     assert_eq!(calls.get(), hidden, "disabled header admitted");
     surface.events = vec![
@@ -240,7 +259,10 @@ fn pointer_rejections(
             egui::Pos2::ZERO,
             egui::Vec2::ZERO,
         ));
-        section.render(ui, view(&host, frame)).unwrap()
+        section
+            .render(ui, view(&host, frame))
+            .assert_no_overlays()
+            .unwrap()
     });
     assert_eq!(calls.get(), hidden, "clipped header admitted");
 }
@@ -257,8 +279,14 @@ fn independent(surface: &mut Surface, section: &mut ExpandableSection) {
     other.default_expanded = true;
     let host = surface.host();
     surface.draw(|ui, frame| {
-        section.render(ui, view(&host, frame)).unwrap();
-        other.render(ui, view(&host, frame)).unwrap()
+        section
+            .render(ui, view(&host, frame))
+            .assert_no_overlays()
+            .unwrap();
+        other
+            .render(ui, view(&host, frame))
+            .assert_no_overlays()
+            .unwrap()
     });
     check(
         "document.querySelectorAll('.maestro-console').length===1 && document.querySelector('.maestro-console pre').textContent==='> other'",
@@ -279,7 +307,10 @@ fn focus_reveal() {
                 .max_height(50.)
                 .show(ui, |ui| {
                     ui.add_space(100.);
-                    section.render(ui, view(&host, frame)).unwrap()
+                    section
+                        .render(ui, view(&host, frame))
+                        .assert_no_overlays()
+                        .unwrap()
                 })
         })
     };
@@ -301,7 +332,12 @@ fn focus_reveal() {
 async fn native_activation(surface: &mut Surface, section: &mut ExpandableSection) {
     let host = surface.host();
     surface.draw(|ui, frame| {
-        ui.add_enabled_ui(false, |ui| section.render(ui, view(&host, frame)).unwrap())
+        ui.add_enabled_ui(false, |ui| {
+            section
+                .render(ui, view(&host, frame))
+                .assert_no_overlays()
+                .unwrap()
+        })
     });
     wasm_bindgen_futures::JsFuture::from(
         js("globalThis.clickNativeSummary ? globalThis.clickNativeSummary() : Promise.resolve(document.querySelector('.maestro-tool-caption').click())").unchecked_into::<js_sys::Promise>(),
@@ -309,7 +345,12 @@ async fn native_activation(surface: &mut Surface, section: &mut ExpandableSectio
     .await
     .unwrap();
     surface.draw(|ui, frame| {
-        ui.add_enabled_ui(false, |ui| section.render(ui, view(&host, frame)).unwrap())
+        ui.add_enabled_ui(false, |ui| {
+            section
+                .render(ui, view(&host, frame))
+                .assert_no_overlays()
+                .unwrap()
+        })
     });
     check("document.querySelector('.maestro-console')===null");
     let response = draw(surface, section);

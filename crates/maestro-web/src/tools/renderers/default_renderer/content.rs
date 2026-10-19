@@ -10,7 +10,7 @@ use crate::{
             header::browser::{NativeText, TextKind},
             render_header,
         },
-        types::{ToolContent, ToolRenderView},
+        types::{ToolContent, ToolContentOutput, ToolRenderView},
     },
 };
 use maestro_app::ToolRendererState;
@@ -86,13 +86,17 @@ impl ToolContent for DefaultContent {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         state: &ToolRendererState,
-    ) -> Result<egui::Response, ToolUiError> {
+    ) -> ToolContentOutput {
         let slot = state.state::<Retained>();
         let mut retained = std::mem::take(&mut *slot.borrow_mut());
-        let result = self.draw(ui, view, &mut retained);
+        let mut overlays = Vec::new();
+        let result = self.draw(ui, view, &mut retained, &mut overlays);
         let old = slot.replace(retained);
         drop(old);
-        result
+        ToolContentOutput {
+            response: result,
+            overlays,
+        }
     }
 }
 impl DefaultContent {
@@ -102,6 +106,7 @@ impl DefaultContent {
         ui: &mut egui::Ui,
         view: ToolRenderView<'_>,
         retained: &mut Retained,
+        overlays: &mut Vec<crate::AttachmentOverlay>,
     ) -> Result<egui::Response, ToolUiError> {
         let no_output = if self.output.as_deref() == Some("") {
             view.i18n.text("(no output)")?
@@ -135,7 +140,9 @@ impl DefaultContent {
         );
         let body = ui.vertical(|ui| -> Result<(), ToolUiError> {
             ui.spacing_mut().item_spacing.y = 12.;
-            header.render(ui, view, &retained.header)?;
+            header
+                .render(ui, view, &retained.header)
+                .collect(overlays)?;
             if let Some(input) = &prepared.input {
                 retained
                     .input

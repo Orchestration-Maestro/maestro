@@ -6094,6 +6094,8 @@
   ],
   "registration": {
     "initialNames": [
+      "javascript_repl",
+      "extract_document",
       "bash"
     ],
     "initial": {

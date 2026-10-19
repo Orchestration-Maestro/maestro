@@ -1,5 +1,6 @@
 //! Selected presentation and final clipping of actual native card controls.
 #![cfg(test)]
+use crate::support::tool_output::TextOnlyOutput as _;
 use crate::{
     markdown_support::{Surface, check, publish},
     support::reading_view::view,
@@ -39,7 +40,10 @@ fn cards(surface: &mut Surface, presentation: &maestro_theme::BrandPresentation<
     let mut state = ToolRenderState::default();
     let host = surface.host();
     surface.draw_with(presentation, (400., 400.), None, |ui, frame| {
-        recipe.render(ui, view(&host, frame), &mut state).unwrap()
+        recipe
+            .render(ui, view(&host, frame), &mut state)
+            .assert_no_overlays()
+            .unwrap()
     });
     publish("selectedMuted", &presentation.colors["muted"].into());
     publish("selectedError", &presentation.colors["error"].into());
@@ -54,7 +58,10 @@ fn cards(surface: &mut Surface, presentation: &maestro_theme::BrandPresentation<
         .render(Some(&args), Some((&result).into()), false)
         .unwrap();
     surface.draw_with(presentation, (400., 400.), None, |ui, frame| {
-        recipe.render(ui, view(&host, frame), &mut state).unwrap()
+        recipe
+            .render(ui, view(&host, frame), &mut state)
+            .assert_no_overlays()
+            .unwrap()
     });
     check(
         "(()=>{const p=document.createElement('span');p.style.color=selectedError;document.body.append(p);const matches=getComputedStyle(p).color===getComputedStyle(document.querySelector('.maestro-message-error')).color;p.remove();return matches})()",
@@ -66,7 +73,10 @@ fn section(surface: &mut Surface, presentation: &maestro_theme::BrandPresentatio
     let mut section = ExpandableSection::new(Rc::clone(&host), vec![]);
     section.summary = "literal summary".into();
     let response = surface.draw_with(presentation, (400., 400.), None, |ui, frame| {
-        section.render(ui, view(&host, frame)).unwrap()
+        section
+            .render(ui, view(&host, frame))
+            .assert_no_overlays()
+            .unwrap()
     });
     browser::has_role(surface, browser::glyphs(surface)[0], "muted", presentation);
     check("getComputedStyle(document.querySelector('.maestro-tool-caption')).fontSize==='14px'");
@@ -83,14 +93,20 @@ fn section(surface: &mut Surface, presentation: &maestro_theme::BrandPresentatio
         .context
         .memory_mut(|memory| memory.request_focus(response.id));
     surface.draw_with(presentation, (400., 400.), None, |ui, frame| {
-        section.render(ui, view(&host, frame)).unwrap()
+        section
+            .render(ui, view(&host, frame))
+            .assert_no_overlays()
+            .unwrap()
     });
     browser::has_role(surface, border, "accent", presentation);
     let glyph = browser::glyphs(surface)[0];
     let clip = egui::Rect::from_min_max(egui::pos2(glyph.center().x, 0.), egui::pos2(400., 400.));
     surface.draw_with(presentation, (400., 400.), None, |ui, frame| {
         ui.set_clip_rect(clip);
-        section.render(ui, view(&host, frame)).unwrap()
+        section
+            .render(ui, view(&host, frame))
+            .assert_no_overlays()
+            .unwrap()
     });
     let outside =
         egui::Rect::from_min_max(egui::pos2(0., 0.), egui::pos2(glyph.center().x - 1., 30.));
@@ -112,7 +128,10 @@ fn narrow(surface: &mut Surface, presentation: &maestro_theme::BrandPresentation
     section.summary = "Narrow literal summary".into();
     for width in [20., 60.] {
         surface.draw_with(presentation, (width, 100.), None, |ui, frame| {
-            section.render(ui, view(&host, frame)).unwrap()
+            section
+                .render(ui, view(&host, frame))
+                .assert_no_overlays()
+                .unwrap()
         });
         let outside =
             egui::Rect::from_min_max(egui::pos2(width, 0.), egui::pos2(width + 20., 100.));
@@ -137,7 +156,10 @@ pub fn wrapped_summary() {
     section.summary = "A summary with enough words to wrap over several lines".into();
     let mut draw = |surface: &mut Surface| {
         surface.draw_with(&presentation, (120., 400.), None, |ui, frame| {
-            section.render(ui, view(&host, frame)).unwrap()
+            section
+                .render(ui, view(&host, frame))
+                .assert_no_overlays()
+                .unwrap()
         })
     };
     let response = draw(&mut surface);
