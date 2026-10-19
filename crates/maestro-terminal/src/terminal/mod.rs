@@ -1,10 +1,14 @@
 //! Direct operations on terminal screens and retained protocol state.
 
+mod chars;
 mod colors;
 mod cursor;
+mod erase;
 mod line_edit;
 mod lines;
+mod margins;
 mod print;
+mod pwd_title;
 mod reads;
 pub use reads::ScrollViewport;
 
@@ -127,6 +131,10 @@ pub struct Terminal {
     pub width_px: u32,
     /// Screen height in pixels; zero until supplied by the host.
     pub height_px: u32,
+    /// Directory bytes supplied by the shell.
+    pwd: Vec<u8>,
+    /// Title bytes supplied by the caller.
+    title: Vec<u8>,
     /// Retained tab destinations.
     tabstops: Tabstops,
     /// Configured grid width.
@@ -162,6 +170,8 @@ impl Terminal {
                 right: cols - 1,
             },
             colors: Colors::default(),
+            pwd: Vec::new(),
+            title: Vec::new(),
             previous_char: None,
             status_display: crate::ansi::StatusDisplay::Main,
             tabstops: Tabstops::init(usize::from(cols), TABSTOP_INTERVAL),

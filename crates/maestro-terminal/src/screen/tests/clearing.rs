@@ -291,3 +291,135 @@ fn screen_prompt_redraw_clears_with_default_background() {
     assert!(page(&s).get_cells(0).iter().all(|cell| cell.is_zero()));
     assert_eq!(s.cursor.style.bg_color, Color::Palette(7));
 }
+
+#[test]
+fn selective_clear_keeps_protected_wide_boundaries() {
+    for protected in [false, true] {
+        for range in [0..0, 0..1, 1..2, 0..5] {
+            let mut s = screen(5, 2);
+            s.set_attribute(Attribute::Bold).unwrap();
+            s.start_hyperlink(b"wide", None).unwrap();
+            write_row(&mut s, "AB");
+            let p = pin(&s);
+            {
+                let page = s.pages.page_mut(p.node).unwrap();
+                page.get_cells_mut(0)[0].set_wide(Wide::Wide);
+                page.get_cells_mut(0)[1].set_wide(Wide::SpacerTail);
+                page.get_cells_mut(0)[0].set_protected(protected);
+                page.get_cells_mut(0)[1].set_protected(protected);
+                page.append_grapheme(crate::page::CellPosition { x: 0, y: 0 }, '\u{301}')
+                    .unwrap();
+            }
+            let before = page(&s).get_cells(0).to_vec();
+            let empty = range.is_empty();
+            s.clear_unprotected_cells(p.node, 0, range);
+            if protected || empty {
+                assert_eq!(page(&s).get_cells(0), before);
+                assert!(
+                    page(&s)
+                        .lookup_grapheme(crate::page::CellPosition { x: 0, y: 0 })
+                        .is_some()
+                );
+            } else {
+                assert!(page(&s).get_cells(0)[0..2].iter().all(|c| c.is_zero()));
+                assert!(
+                    page(&s)
+                        .lookup_grapheme(crate::page::CellPosition { x: 0, y: 0 })
+                        .is_none()
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn selective_clear_refreshes_metadata_once() {
+    let measure = |cols, per_run| {
+        let mut s = screen(cols, 1);
+        s.set_attribute(Attribute::Bold).unwrap();
+        s.start_hyperlink(b"batch", None).unwrap();
+        write_row(&mut s, &"A".repeat(usize::from(cols)));
+        let p = pin(&s);
+        let stored = s.pages.page_mut(p.node).unwrap();
+        for x in 0..cols {
+            stored.get_cells_mut(0)[usize::from(x)].set_protected(x % 2 == 0);
+        }
+        stored
+            .append_grapheme(crate::page::CellPosition { x: 0, y: 0 }, '\u{301}')
+            .unwrap();
+        stored.row_shift_work = 0;
+        if per_run {
+            for x in (1..cols).step_by(2) {
+                s.clear_cells(p.node, 0, x..x + 1);
+            }
+        } else {
+            s.clear_unprotected_cells(p.node, 0, 0..cols);
+        }
+        let stored = page(&s);
+        (
+            stored.row_shift_work,
+            stored.get_cells(0).to_vec(),
+            *stored.get_row(0),
+        )
+    };
+    let small = measure(8, false);
+    let large = measure(16, false);
+    let repeated_small = measure(8, true);
+    let repeated_large = measure(16, true);
+    eprintln!(
+        "selective refresh N8={} N16={}; per-run N8={} N16={}",
+        small.0, large.0, repeated_small.0, repeated_large.0
+    );
+    assert_eq!(large.0, small.0 * 2);
+    assert!(repeated_large.0 > repeated_small.0 * 2);
+    assert_eq!((&small.1, small.2), (&repeated_small.1, repeated_small.2));
+    assert_eq!((&large.1, large.2), (&repeated_large.1, repeated_large.2));
+}
+
+#[test]
+fn selective_clear_keeps_wrapped_protected_owners() {
+    for protected in [false, true] {
+        for cross_page in [false, true] {
+            let mut s = screen(4, 3);
+            let p = pin(&s);
+            {
+                let stored = s.pages.page_mut(p.node).unwrap();
+                stored.get_row_mut(0).set_wrap(true);
+                stored.get_cells_mut(0)[3].set_wide(Wide::SpacerHead);
+                stored.get_cells_mut(0)[3].set_protected(protected);
+                stored.get_row_mut(1).set_wrap_continuation(true);
+                stored.get_cells_mut(1)[0] = Cell::init('中');
+                stored.get_cells_mut(1)[0].set_wide(Wide::Wide);
+                stored.get_cells_mut(1)[1].set_wide(Wide::SpacerTail);
+                stored.get_cells_mut(1)[0].set_protected(protected);
+                stored.get_cells_mut(1)[1].set_protected(protected);
+            }
+            if cross_page {
+                super::split_rows(&mut s, 1);
+            }
+            s.cursor_absolute(0, 1);
+            let current = pin(&s);
+            s.clear_unprotected_cells(current.node, current.y, 1..2);
+            assert_eq!(
+                page(&s).get_cells(current.y)[0].codepoint(),
+                if protected { '中' } else { '\0' }
+            );
+            assert_eq!(
+                page(&s).get_cells(current.y)[1].wide(),
+                if protected {
+                    Wide::SpacerTail
+                } else {
+                    Wide::Narrow
+                }
+            );
+            assert_eq!(
+                s.pages.page(p.node).unwrap().get_cells(0)[3].wide(),
+                if protected {
+                    Wide::SpacerHead
+                } else {
+                    Wide::Narrow
+                }
+            );
+        }
+    }
+}

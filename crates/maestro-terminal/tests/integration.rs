@@ -120,3 +120,15 @@ mod terminal_print;
 mod terminal_cursor;
 
 mod terminal_clusters;
+
+mod terminal_margins;
+
+mod terminal_metadata;
+
+mod terminal_delete_chars;
+
+mod terminal_erase_chars;
+
+mod terminal_erase_line;
+
+mod terminal_erase_display;

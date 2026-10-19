@@ -303,5 +303,40 @@ line control. `scroll_up`, `scroll_down`, `insert_lines`, `delete_lines` and
 in cleared cells. Managed transfers and printing return typed capacity errors;
 changes applied before an error remain visible.
 
-Margin setters, terminal resizing, erasure and screen-switching facades are not
-provided by these direct text and cursor operations.
+`set_top_and_bottom_margin` takes one-based bounds; zero selects the corresponding
+screen edge. `set_left_and_right_margin` applies the same rules when mode 69 is
+enabled. Both ignore empty or inverted ranges and home the cursor after an
+accepted change, using origin-relative coordinates when origin mode is enabled.
+
+`delete_chars` shifts cells left within the horizontal margins and fills the
+vacated cells with the cursor background. Zero counts and cursors outside the
+margins do nothing. An admitted deletion clears soft-wrap state and marks its
+row dirty. `set_protected_mode` changes cursor protection; turning protection off
+retains the most recently selected ISO or DEC protocol.
+
+`set_pwd` and `set_title` copy raw bytes without decoding or length limits.
+Their getters borrow the retained bytes and return `None` for an empty value.
+OSC ingress validation is separate from these direct setters.
+
+`erase_chars` erases at least one cell, extending through a wide character's
+other half where needed. It reaches the screen edge, independently of horizontal
+margins. ISO protection remains effective after protection is turned off;
+most-recent DEC protection does not make this operation selective. Protected
+wide pairs, links and cluster suffixes survive selective boundary cleanup.
+
+`erase_line` accepts right, left, complete and conditional-right modes. Right
+erasure resets soft wrapping; left and complete erasure retain it. Supported
+modes clear pending wrap and mark the row dirty. Conditional-right erasure does
+nothing while wrap is pending; unknown modes always do nothing. ISO or an explicit
+selective request preserves protected cells. Selective clearing releases managed
+values in one pass and refreshes row metadata once, not once per unprotected run.
+
+`erase_display` clears below, above, the active area or retained history, or
+moves active content into history. Complete clearing on the primary screen first
+preserves a final nonempty prompt row in history, even with trailing empty rows.
+A later nonempty output row or an alternate screen does not trigger that rule.
+The selector shares scroll-clear's cell-emptiness rules. Complete clearing marks
+the terminal clear flag; partial erasure marks only affected rows.
+
+Terminal resizing and screen-switching facades are not provided by these direct
+operations.
