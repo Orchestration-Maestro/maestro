@@ -275,9 +275,8 @@ fn default_layout(files: &super::Files, location: &str, name: &str) -> (String, 
 
 #[test]
 fn certificate_configuration_uses_explicit_environment_then_default() {
-    use crate::tests::child_process;
     const TEST: &str = "certificate_configuration_uses_explicit_environment_then_default";
-    if let Some(case) = child_process::child_case() {
+    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
         let source: serde_json::Value =
             serde_json::from_str(&std::env::var("SOURCE").unwrap()).unwrap();
         let outcome = CertificateSubjectTokenSupplier::new(&source)
@@ -285,6 +284,11 @@ fn certificate_configuration_uses_explicit_environment_then_default() {
         assert_eq!(outcome.is_ok(), case == "ok");
         return;
     }
+    check_configuration_precedence(TEST);
+}
+
+/// Run every explicit and default certificate-source precedence case.
+fn check_configuration_precedence(test: &str) {
     let files = super::Files::new();
     let location = configuration(&files)["certificate_config_location"]
         .as_str()
@@ -333,7 +337,17 @@ fn certificate_configuration_uses_explicit_environment_then_default() {
         ("err", &default, vec![("HOME", "/nonexistent")]),
     ] {
         variables.push(("SOURCE", source.as_str()));
-        child_process::rerun(TEST, case, &variables).unwrap();
+        {
+            let output = maestro_test_process::TestProcess::current(test)
+                .unwrap()
+                .nocapture()
+                .env_clear()
+                .envs(variables.iter().copied())
+                .env("MAESTRO_CHILD_CASE", case)
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "{output:?}");
+        };
     }
 }
 

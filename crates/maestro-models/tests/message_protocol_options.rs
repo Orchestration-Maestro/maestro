@@ -1,6 +1,5 @@
 //! Authorization and thinking through the public message-protocol entries.
 use crate::chat;
-use crate::child_process;
 use crate::message_options;
 use crate::messages;
 
@@ -56,7 +55,7 @@ fn messages_normalize_subscription_tool_names() -> chat::TestResult {
 fn messages_restore_subscription_tool_names() -> chat::TestResult {
     chat::block_on(false, async {
         message_options::assert_rows("messages_restore_subscription_tool_names").await?;
-        if child_process::child_case().is_none() {
+        if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
             subscription_name_is_visible_at_open().await?;
         }
         Ok(())

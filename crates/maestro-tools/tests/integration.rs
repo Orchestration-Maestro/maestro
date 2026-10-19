@@ -6,12 +6,6 @@ mod agent_shell_progress;
 #[cfg(not(target_arch = "wasm32"))]
 mod agent_shell_support;
 mod cancellable_delay;
-#[allow(
-    dead_code,
-    reason = "This binary uses part of the shared child-process helper."
-)]
-#[path = "../../maestro-models/tests/support/child_process.rs"]
-mod child_process;
 mod command_execution;
 mod diff_rendering;
 mod diff_support;

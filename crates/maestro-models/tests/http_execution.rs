@@ -1,7 +1,6 @@
 //! Request policy shared by HTTP protocols: retries, timeouts, cancellation and failures.
 
 use crate::chat;
-use crate::child_process;
 use crate::loopback;
 use crate::transport;
 
@@ -477,11 +476,20 @@ async fn production_client_failures() -> TestResult {
 
 #[test]
 fn maestro_http_reports_fetch_failures() -> TestResult {
-    if child_process::child_case().is_some() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
         return chat::block_on(false, production_client_failures());
     }
     chat::block_on(true, scripted_failures())?;
-    child_process::rerun("maestro_http_reports_fetch_failures", "production", &[])
+    {
+        let output =
+            maestro_test_process::TestProcess::current("maestro_http_reports_fetch_failures")?
+                .nocapture()
+                .env_clear()
+                .env("MAESTRO_CHILD_CASE", "production")
+                .output()?;
+        assert!(output.status.success(), "{output:?}");
+        Ok(())
+    }
 }
 
 /// One request through the default client against a loopback server.
@@ -517,10 +525,20 @@ async fn default_fetch_exchange() -> TestResult {
 
 #[test]
 fn maestro_http_default_fetch_sends_requests() -> TestResult {
-    if child_process::child_case().is_some() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
         return chat::block_on(false, default_fetch_exchange());
     }
-    child_process::rerun("maestro_http_default_fetch_sends_requests", "default", &[])
+    {
+        let output = maestro_test_process::TestProcess::current(
+            "maestro_http_default_fetch_sends_requests",
+        )?
+        .nocapture()
+        .env_clear()
+        .env("MAESTRO_CHILD_CASE", "default")
+        .output()?;
+        assert!(output.status.success(), "{output:?}");
+        Ok(())
+    }
 }
 
 /// A request to `url` carrying `headers`, as the default client receives it.
@@ -594,13 +612,22 @@ async fn wide_header_values_are_not_sent() -> TestResult {
 
 #[test]
 fn maestro_http_preserves_header_octets() -> TestResult {
-    if child_process::child_case().is_some() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
         return chat::block_on(false, async {
             header_values_are_octets().await?;
             wide_header_values_are_not_sent().await
         });
     }
-    child_process::rerun("maestro_http_preserves_header_octets", "default", &[])
+    {
+        let output =
+            maestro_test_process::TestProcess::current("maestro_http_preserves_header_octets")?
+                .nocapture()
+                .env_clear()
+                .env("MAESTRO_CHILD_CASE", "default")
+                .output()?;
+        assert!(output.status.success(), "{output:?}");
+        Ok(())
+    }
 }
 
 #[test]
@@ -674,14 +701,20 @@ async fn native_header_rejections_are_connection_failures() -> TestResult {
 
 #[test]
 fn maestro_http_retries_native_header_rejections() -> TestResult {
-    if child_process::child_case().is_some() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
         return chat::block_on(true, native_header_rejections_are_connection_failures());
     }
-    child_process::rerun(
-        "maestro_http_retries_native_header_rejections",
-        "native",
-        &[],
-    )
+    {
+        let output = maestro_test_process::TestProcess::current(
+            "maestro_http_retries_native_header_rejections",
+        )?
+        .nocapture()
+        .env_clear()
+        .env("MAESTRO_CHILD_CASE", "native")
+        .output()?;
+        assert!(output.status.success(), "{output:?}");
+        Ok(())
+    }
 }
 
 #[test]

@@ -1,6 +1,6 @@
 //! Strict recorded inputs and full cloud-entry observations.
 #![cfg(test)]
-use crate::{chat, child_process, content_credentials, loopback, response_output};
+use crate::{chat, content_credentials, loopback, response_output};
 use chat::TestResult;
 use maestro_models::{
     Cancellation, Context, DiagnosticErrorInfo, FetchError, HttpRequest, HttpResponse,
@@ -339,7 +339,7 @@ fn check(row: &Row, mut actual: Value) -> TestResult {
 pub fn assert_rows(test: &str) -> TestResult {
     let rows: Vec<Row> =
         serde_json::from_str(include_str!("../fixtures/cloud_content_invocation.json"))?;
-    if let Some(case) = child_process::child_case() {
+    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
         let row = &rows[case.parse::<usize>()?];
         assert_eq!(test, row.test);
         let refreshes = Arc::new(AtomicUsize::new(0));
@@ -384,7 +384,15 @@ pub fn assert_rows(test: &str) -> TestResult {
                     .map(|(key, value)| (key.as_str(), value.as_str())),
             );
         }
-        child_process::rerun(test, &index.to_string(), &env)?;
+        {
+            let output = maestro_test_process::TestProcess::current(test)?
+                .nocapture()
+                .env_clear()
+                .envs(env.iter().copied())
+                .env("MAESTRO_CHILD_CASE", index.to_string())
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
     }
     assert!(count > 0, "no recorded rows");
     Ok(())

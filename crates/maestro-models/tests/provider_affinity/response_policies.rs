@@ -115,15 +115,26 @@ fn watched(case: &Case<'_>, reads: &Reads) -> crate::TestResult<crate::transport
 #[test]
 fn bundled_response_policies_survive_local_submission() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    if crate::child_process::child_case().is_none() {
-        return crate::child_process::rerun(
-            "bundled_response_policies_survive_local_submission",
-            "response-policy",
-            &[
-                ("AWS_BEARER_TOKEN_BEDROCK", "fixture-token"),
-                ("AWS_REGION", "us-east-1"),
-            ],
-        );
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "bundled_response_policies_survive_local_submission",
+            )?
+            .nocapture()
+            .env_clear()
+            .envs(
+                [
+                    ("AWS_BEARER_TOKEN_BEDROCK", "fixture-token"),
+                    ("AWS_REGION", "us-east-1"),
+                ]
+                .iter()
+                .copied(),
+            )
+            .env("MAESTRO_CHILD_CASE", "response-policy")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     reset_api_providers();
     crate::chat::block_on(

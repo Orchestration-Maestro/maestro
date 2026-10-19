@@ -1,8 +1,7 @@
 //! Checks of recorded rows, each in a process holding the environment its row records.
 
+use crate::chat::TestResult;
 use std::collections::{BTreeMap, BTreeSet};
-
-use crate::child_process::{TestResult, child_case, rerun};
 
 /// Check each row in the process holding its environment.
 ///
@@ -17,7 +16,7 @@ pub fn check_by_environment<R>(
     environment: impl Fn(&R) -> Option<&BTreeMap<String, String>>,
     check: impl Fn(&R) -> TestResult,
 ) -> TestResult {
-    if let Some(case) = child_case() {
+    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
         let wanted: BTreeMap<String, String> = serde_json::from_str(&case)?;
         for row in rows.iter().filter(|row| environment(row) == Some(&wanted)) {
             check(row)?;
@@ -39,7 +38,15 @@ pub fn check_by_environment<R>(
             .iter()
             .map(|(name, value)| (name.as_str(), value.as_str()))
             .collect();
-        rerun(test, case, &pairs)?;
+        {
+            let output = maestro_test_process::TestProcess::current(test)?
+                .nocapture()
+                .env_clear()
+                .envs(pairs.iter().copied())
+                .env("MAESTRO_CHILD_CASE", case)
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
     }
     Ok(())
 }

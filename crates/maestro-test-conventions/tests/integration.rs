@@ -3,9 +3,7 @@
 
 mod architecture;
 mod boundaries;
-#[cfg(unix)]
-#[path = "../../maestro-models/tests/support/child_process.rs"]
-mod child_process;
+mod child_tests;
 mod comments;
 mod dependency_locks;
 mod development_guidance;

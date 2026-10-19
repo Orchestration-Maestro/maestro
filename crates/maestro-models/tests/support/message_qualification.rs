@@ -1,7 +1,7 @@
 //! Recorded message requests observed through public dispatch.
 
 use crate::{
-    bundled, chat, child_process,
+    bundled, chat,
     json::{canonical, event_record},
     message_probes as probes, messages,
 };
@@ -165,15 +165,24 @@ fn rows(test: &str) -> TestResult<Vec<Row>> {
 /// Run only this test's closed set in an environment-isolated process.
 pub fn assert_rows(test: &str) -> TestResult {
     let owned = rows(test)?;
-    if child_process::child_case().is_none() {
-        return child_process::rerun(
-            test,
-            "qualification",
-            &[
-                ("CLOUDFLARE_ACCOUNT_ID", "account-id"),
-                ("CLOUDFLARE_GATEWAY_ID", "gateway-id"),
-            ],
-        );
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output = maestro_test_process::TestProcess::current(test)?
+                .nocapture()
+                .env_clear()
+                .envs(
+                    [
+                        ("CLOUDFLARE_ACCOUNT_ID", "account-id"),
+                        ("CLOUDFLARE_GATEWAY_ID", "gateway-id"),
+                    ]
+                    .iter()
+                    .copied(),
+                )
+                .env("MAESTRO_CHILD_CASE", "qualification")
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     let _registry = bundled::registry();
     maestro_models::reset_api_providers();

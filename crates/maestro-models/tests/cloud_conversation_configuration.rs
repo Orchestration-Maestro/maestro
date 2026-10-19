@@ -4,7 +4,6 @@ use crate::bedrock_cases as cases;
 use crate::bedrock_routes as routes;
 use crate::bedrock_rows as rows;
 use crate::chat;
-use crate::child_process;
 
 use cases::{Case, Expect, run_cases};
 use chat::TestResult;
@@ -89,12 +88,12 @@ fn bearer_and_skip_auth_use_the_selected_authentication() -> TestResult {
         },
     ];
     let is_case =
-        child_process::child_case().is_some_and(|id| cases.iter().any(|case| case.id == id));
+        std::env::var("MAESTRO_CHILD_CASE").is_ok_and(|id| cases.iter().any(|case| case.id == id));
     if is_case {
         return run_cases(TEST, &cases);
     }
     check_rows(TEST)?;
-    if child_process::child_case().is_none() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
         run_cases(TEST, &cases)?;
     }
     Ok(())

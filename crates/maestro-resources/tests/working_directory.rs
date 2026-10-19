@@ -13,15 +13,26 @@ use support::text;
 fn maestro_paths_resolve_absolute_paths_without_a_working_directory() {
     // Removing the process working directory would leave every other test in this
     // executable without one, so this test runs alone in a child process.
-    if crate::child_process::child_case().is_none() {
-        crate::child_process::rerun(
-            "maestro_paths_resolve_absolute_paths_without_a_working_directory",
-            "removed-working-directory",
-            &[],
-        )
-        .unwrap();
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        {
+            let output = maestro_test_process::TestProcess::current(
+                "maestro_paths_resolve_absolute_paths_without_a_working_directory",
+            )
+            .unwrap()
+            .nocapture()
+            .env_clear()
+            .env("MAESTRO_CHILD_CASE", "removed-working-directory")
+            .output()
+            .unwrap();
+            assert!(output.status.success(), "{output:?}");
+        };
         return;
     }
+    check_removed_working_directory();
+}
+
+/// Absolute anchors survive a removed working directory; relative operands remain unchanged.
+fn check_removed_working_directory() {
     let dir = support::Directory::new();
     let file = dir.file("target/skill.md", "hello");
     let skill = dir.file(

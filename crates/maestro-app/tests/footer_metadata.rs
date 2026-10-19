@@ -208,10 +208,11 @@ fn native_git_observations(args: &[String]) {
     let repo = scratch.join("repo");
     let run = |path: &str, exit: &str| {
         probe(
-            &crate::child_process::selector(
+            maestro_test_process::TestProcess::current(
                 "footer_symbolic_lookup_uses_exact_command_and_fallback",
             )
-            .unwrap(),
+            .unwrap()
+            .name(),
             Path::new(&scratch.0),
             &[
                 ("FOOTER_PROBE_REPO", &repo),
@@ -1125,7 +1126,9 @@ fn native_ambient_lines() -> Vec<String> {
     std::fs::write(scratch.join("worktree/.git"), "gitdir: ../repo/.git\n").expect("gitfile");
     let root = scratch.join("");
     probe(
-        &crate::child_process::selector(AMBIENT).unwrap(),
+        maestro_test_process::TestProcess::current(AMBIENT)
+            .unwrap()
+            .name(),
         Path::new(&scratch.join("gone")),
         &[("FOOTER_PROBE_AMBIENT", &root)],
         &[],

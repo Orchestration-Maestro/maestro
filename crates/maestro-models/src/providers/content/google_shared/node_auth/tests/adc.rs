@@ -33,9 +33,8 @@ fn native_metadata_acquires_and_refreshes_controlled_tokens() {
 
 #[test]
 fn adc_quota_override_reaches_generated_headers() {
-    use crate::tests::child_process;
     const TEST: &str = "adc_quota_override_reaches_generated_headers";
-    if child_process::child_case().is_some() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
         let expected = std::env::var("EXPECTED_QUOTA").unwrap();
         let client = super::super::super::ApiClient::new(
             "https://content.invalid".into(),
@@ -72,16 +71,25 @@ fn adc_quota_override_reaches_generated_headers() {
             "credentials.json",
             &serde_json::to_vec(&super::workforce(&server.url, file)).unwrap(),
         );
-        child_process::rerun(
-            TEST,
-            "quota",
-            &[
-                ("GOOGLE_APPLICATION_CREDENTIALS", &path),
-                ("GOOGLE_CLOUD_QUOTA_PROJECT", environment),
-                ("EXPECTED_QUOTA", expected),
-            ],
-        )
-        .unwrap();
+        {
+            let output = maestro_test_process::TestProcess::current(TEST)
+                .unwrap()
+                .nocapture()
+                .env_clear()
+                .envs(
+                    [
+                        ("GOOGLE_APPLICATION_CREDENTIALS", path.as_str()),
+                        ("GOOGLE_CLOUD_QUOTA_PROJECT", environment),
+                        ("EXPECTED_QUOTA", expected),
+                    ]
+                    .iter()
+                    .copied(),
+                )
+                .env("MAESTRO_CHILD_CASE", "quota")
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "{output:?}");
+        };
     }
     server.finish().unwrap();
 }
@@ -132,9 +140,8 @@ fn adc_errors_never_include_credential_material() {
 
 #[test]
 fn adc_without_files_falls_through_to_metadata() {
-    use crate::tests::child_process;
     const TEST: &str = "adc_without_files_falls_through_to_metadata";
-    if let Some(case) = child_process::child_case() {
+    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
         let result = super::run(super::super::NodeAuth::default().headers());
         if case == "metadata" {
             assert_eq!(result.unwrap()["authorization"], "Bearer metadata-access");
@@ -160,19 +167,28 @@ fn adc_without_files_falls_through_to_metadata() {
     let home = files.path("home");
     for (case, detection, expected) in [("disabled", "none", 0), ("metadata", "assume-present", 1)]
     {
-        child_process::rerun(
-            TEST,
-            case,
-            &[
-                ("GOOGLE_APPLICATION_CREDENTIALS", ""),
-                ("google_application_credentials", ""),
-                ("HOME", home.as_str()),
-                ("METADATA_SERVER_DETECTION", detection),
-                ("GCE_METADATA_IP", ""),
-                ("GCE_METADATA_HOST", server.url.as_str()),
-            ],
-        )
-        .unwrap();
+        {
+            let output = maestro_test_process::TestProcess::current(TEST)
+                .unwrap()
+                .nocapture()
+                .env_clear()
+                .envs(
+                    [
+                        ("GOOGLE_APPLICATION_CREDENTIALS", ""),
+                        ("google_application_credentials", ""),
+                        ("HOME", home.as_str()),
+                        ("METADATA_SERVER_DETECTION", detection),
+                        ("GCE_METADATA_IP", ""),
+                        ("GCE_METADATA_HOST", server.url.as_str()),
+                    ]
+                    .iter()
+                    .copied(),
+                )
+                .env("MAESTRO_CHILD_CASE", case)
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "{output:?}");
+        };
         let requests = requests.lock().unwrap();
         assert_eq!(requests.len(), expected);
         assert!(requests.iter().all(|line| {
@@ -202,11 +218,22 @@ fn quota_file(files: &super::Files, name: &str, endpoint: &str, quota: &str) -> 
     )
 }
 
+/// Write the default credential file under a disposable home.
+fn credentials_home(files: &super::Files, endpoint: &str) -> String {
+    let well_known = files.0.join("home").join(".config").join("gcloud");
+    std::fs::create_dir_all(&well_known).unwrap();
+    std::fs::write(
+        well_known.join("application_default_credentials.json"),
+        serde_json::to_vec(&super::workforce(endpoint, "well-known")).unwrap(),
+    )
+    .unwrap();
+    files.0.join("home").to_str().unwrap().to_owned()
+}
+
 #[test]
 fn adc_file_order_prefers_nonempty_explicit_paths() {
-    use crate::tests::child_process;
     const TEST: &str = "adc_file_order_prefers_nonempty_explicit_paths";
-    if let Some(expected) = child_process::child_case() {
+    if let Ok(expected) = std::env::var("MAESTRO_CHILD_CASE") {
         let headers = super::run(super::super::NodeAuth::default().headers()).unwrap();
         assert_eq!(headers["x-goog-user-project"], expected);
         return;
@@ -215,14 +242,7 @@ fn adc_file_order_prefers_nonempty_explicit_paths() {
     let files = super::Files::new();
     let upper = quota_file(&files, "upper.json", &server.url, "upper");
     let lower = quota_file(&files, "lower.json", &server.url, "lower");
-    let well_known = files.0.join("home").join(".config").join("gcloud");
-    std::fs::create_dir_all(&well_known).unwrap();
-    std::fs::write(
-        well_known.join("application_default_credentials.json"),
-        serde_json::to_vec(&super::workforce(&server.url, "well-known")).unwrap(),
-    )
-    .unwrap();
-    let home = files.0.join("home").to_str().unwrap().to_owned();
+    let home = credentials_home(&files, &server.url);
     #[cfg(unix)]
     let link = {
         let link = files.0.join("link.json");
@@ -259,16 +279,25 @@ fn adc_file_order_prefers_nonempty_explicit_paths() {
     ));
     for (expected, mut variables) in cases {
         variables.push(("HOME", home.as_str()));
-        child_process::rerun(TEST, expected, &variables).unwrap();
+        {
+            let output = maestro_test_process::TestProcess::current(TEST)
+                .unwrap()
+                .nocapture()
+                .env_clear()
+                .envs(variables.iter().copied())
+                .env("MAESTRO_CHILD_CASE", expected)
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "{output:?}");
+        };
     }
     server.finish().unwrap();
 }
 
 #[test]
 fn adc_selected_file_failures_do_not_fall_back() {
-    use crate::tests::child_process;
     const TEST: &str = "adc_selected_file_failures_do_not_fall_back";
-    if child_process::child_case().is_some() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
         let error = super::run(super::super::NodeAuth::default().headers())
             .err()
             .unwrap();
@@ -289,18 +318,27 @@ fn adc_selected_file_failures_do_not_fall_back() {
         .iter()
         .enumerate()
     {
-        child_process::rerun(
-            TEST,
-            &index.to_string(),
-            &[
-                ("GOOGLE_APPLICATION_CREDENTIALS", selected.as_str()),
-                ("google_application_credentials", valid.as_str()),
-                ("HOME", directory.as_str()),
-                ("METADATA_SERVER_DETECTION", "assume-present"),
-                ("GCE_METADATA_HOST", host.as_str()),
-            ],
-        )
-        .unwrap();
+        {
+            let output = maestro_test_process::TestProcess::current(TEST)
+                .unwrap()
+                .nocapture()
+                .env_clear()
+                .envs(
+                    [
+                        ("GOOGLE_APPLICATION_CREDENTIALS", selected.as_str()),
+                        ("google_application_credentials", valid.as_str()),
+                        ("HOME", directory.as_str()),
+                        ("METADATA_SERVER_DETECTION", "assume-present"),
+                        ("GCE_METADATA_HOST", host.as_str()),
+                    ]
+                    .iter()
+                    .copied(),
+                )
+                .env("MAESTRO_CHILD_CASE", index.to_string())
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "{output:?}");
+        };
     }
     server.finish().unwrap();
 }
@@ -466,9 +504,8 @@ fn assert_service_scope(authorization: &str) {
 
 #[test]
 fn adc_ordinary_and_external_sources_reach_native_builders() {
-    use crate::tests::child_process;
     const TEST: &str = "adc_ordinary_and_external_sources_reach_native_builders";
-    if let Some(case) = child_process::child_case() {
+    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
         let headers = super::run(super::super::NodeAuth::default().headers()).unwrap();
         if case == "service" {
             assert_service_scope(&headers["authorization"]);
@@ -481,18 +518,27 @@ fn adc_ordinary_and_external_sources_reach_native_builders() {
     let files = super::Files::new();
     for (name, value) in credential_forms(&files, &server.url) {
         let path = files.write(&format!("{name}.json"), value.to_string().as_bytes());
-        child_process::rerun(
-            TEST,
-            name,
-            &[
-                ("GOOGLE_APPLICATION_CREDENTIALS", path.as_str()),
-                ("GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES", "1"),
-                ("AWS_ACCESS_KEY_ID", "controlled-id"),
-                ("AWS_SECRET_ACCESS_KEY", "controlled-secret"),
-                ("AWS_REGION", "us-east-1"),
-            ],
-        )
-        .unwrap();
+        {
+            let output = maestro_test_process::TestProcess::current(TEST)
+                .unwrap()
+                .nocapture()
+                .env_clear()
+                .envs(
+                    [
+                        ("GOOGLE_APPLICATION_CREDENTIALS", path.as_str()),
+                        ("GOOGLE_EXTERNAL_ACCOUNT_ALLOW_EXECUTABLES", "1"),
+                        ("AWS_ACCESS_KEY_ID", "controlled-id"),
+                        ("AWS_SECRET_ACCESS_KEY", "controlled-secret"),
+                        ("AWS_REGION", "us-east-1"),
+                    ]
+                    .iter()
+                    .copied(),
+                )
+                .env("MAESTRO_CHILD_CASE", name)
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "{output:?}");
+        };
         if name != "service" {
             assert_form_requests(name, &log);
         }
@@ -502,9 +548,8 @@ fn adc_ordinary_and_external_sources_reach_native_builders() {
 
 #[test]
 fn native_sources_preserve_proxy_and_nested_transport_configuration() {
-    use crate::tests::child_process;
     const TEST: &str = "native_sources_preserve_proxy_and_nested_transport_configuration";
-    if child_process::child_case().is_some() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
         let headers = super::run(super::super::NodeAuth::default().headers()).unwrap();
         assert_eq!(headers["authorization"], "Bearer controlled-access");
         return;
@@ -516,16 +561,25 @@ fn native_sources_preserve_proxy_and_nested_transport_configuration() {
     let owned = super::workforce(endpoint, "quota");
     for (name, value) in [("native", user), ("owned", owned)] {
         let path = files.write(&format!("{name}.json"), value.to_string().as_bytes());
-        child_process::rerun(
-            TEST,
-            name,
-            &[
-                ("GOOGLE_APPLICATION_CREDENTIALS", path.as_str()),
-                ("HTTP_PROXY", proxy.url.as_str()),
-                ("http_proxy", proxy.url.as_str()),
-            ],
-        )
-        .unwrap();
+        {
+            let output = maestro_test_process::TestProcess::current(TEST)
+                .unwrap()
+                .nocapture()
+                .env_clear()
+                .envs(
+                    [
+                        ("GOOGLE_APPLICATION_CREDENTIALS", path.as_str()),
+                        ("HTTP_PROXY", proxy.url.as_str()),
+                        ("http_proxy", proxy.url.as_str()),
+                    ]
+                    .iter()
+                    .copied(),
+                )
+                .env("MAESTRO_CHILD_CASE", name)
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "{output:?}");
+        };
         let log = log.lock().unwrap();
         assert_eq!(
             log.last().unwrap().request_line,
@@ -572,11 +626,29 @@ fn assert_principal_rules(source: &serde_json::Value) {
     assert!(super::super::google_auth::from_json(missing, Effects::default()).is_err());
 }
 
+/// Validate which credential kinds may supply nested impersonation.
+fn assert_impersonation_sources(token: &str, user: &serde_json::Value) {
+    let sources = [
+        (user.clone(), true),
+        (super::workforce(token, "source-quota"), true),
+        (
+            serde_json::json!({"type":"service_account","client_email":"s@example.invalid","private_key":"k","token_uri":token}),
+            false,
+        ),
+    ];
+    for (source, accepted) in &sources {
+        let result = super::super::google_auth::from_json(
+            outer(&principal(":generateAccessToken"), source),
+            Effects::default(),
+        );
+        assert_eq!(result.is_ok(), *accepted);
+    }
+}
+
 #[test]
 fn nested_impersonation_uses_the_retained_source_credentials() {
-    use crate::tests::child_process;
     const TEST: &str = "nested_impersonation_uses_the_retained_source_credentials";
-    if child_process::child_case().is_some() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
         let error = super::run(super::super::NodeAuth::default().headers())
             .err()
             .unwrap();
@@ -604,21 +676,7 @@ fn nested_impersonation_uses_the_retained_source_credentials() {
     let files = super::Files::new();
     let token = format!("{}/token", failing.url);
     let user = serde_json::json!({"type":"authorized_user","client_id":"id","client_secret":"secret","refresh_token":"controlled-refresh","token_uri":token});
-    let sources = [
-        (user.clone(), true),
-        (super::workforce(&token, "source-quota"), true),
-        (
-            serde_json::json!({"type":"service_account","client_email":"s@example.invalid","private_key":"k","token_uri":token}),
-            false,
-        ),
-    ];
-    for (source, accepted) in &sources {
-        let result = super::super::google_auth::from_json(
-            outer(&principal(":generateAccessToken"), source),
-            Effects::default(),
-        );
-        assert_eq!(result.is_ok(), *accepted);
-    }
+    assert_impersonation_sources(&token, &user);
     let path = files.write(
         "outer.json",
         outer(&principal(":generateAccessToken"), &user)
@@ -629,7 +687,17 @@ fn nested_impersonation_uses_the_retained_source_credentials() {
         ("GOOGLE_APPLICATION_CREDENTIALS", path.as_str()),
         ("HOME", "/nonexistent"),
     ];
-    child_process::rerun(TEST, "source", &variables).unwrap();
+    {
+        let output = maestro_test_process::TestProcess::current(TEST)
+            .unwrap()
+            .nocapture()
+            .env_clear()
+            .envs(variables.iter().copied())
+            .env("MAESTRO_CHILD_CASE", "source")
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+    };
     assert_eq!(hits.load(std::sync::atomic::Ordering::SeqCst), 1);
     assert_principal_rules(&user);
     failing.finish().unwrap();

@@ -1231,12 +1231,6 @@ async fn proxy_borrowed_result_and_final_usage_keep_identity_case() {
 
 #[allow(
     dead_code,
-    reason = "This binary uses part of the shared child-process helper."
-)]
-#[path = "../../maestro-models/tests/support/child_process.rs"]
-pub(crate) mod child_process;
-#[allow(
-    dead_code,
     reason = "This binary uses part of the shared loopback server."
 )]
 #[path = "../../maestro-models/tests/support/loopback.rs"]
@@ -1472,8 +1466,14 @@ fn proxy_unknown_event_warns_and_continues() {
 /// Drive the scenario of `proxy_unknown_event_warns_and_continues` on the test runtime.
 async fn proxy_unknown_event_warns_and_continues_case() {
     const TEST: &str = "proxy_unknown_event_warns_and_continues";
-    if child_process::child_case().is_none() {
-        let output = child_process::capture(TEST, "*", &[]).unwrap();
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        let output = maestro_test_process::TestProcess::current(TEST)
+            .unwrap()
+            .nocapture()
+            .env_clear()
+            .env("MAESTRO_CHILD_CASE", "*")
+            .output()
+            .unwrap();
         let stderr = String::from_utf8_lossy(&output.stderr);
         assert!(output.status.success(), "{stderr}");
         for warning in ["future_event", "undefined"] {

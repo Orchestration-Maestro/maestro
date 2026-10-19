@@ -1,13 +1,11 @@
 //! Event framing, repair and reduction for direct message-protocol invocations.
 
 use crate::chat;
-use crate::child_process;
 use crate::messages;
 
 use std::sync::Arc;
 
 use chat::{TestResult, block_on};
-use child_process::child_case;
 use maestro_models::{
     AnthropicOptions, AssistantContent, AssistantMessage, AssistantMessageEvent,
     AssistantMessageEventStream, Cancellation, FetchError, HttpResponse, SharedAssistantMessage,
@@ -174,7 +172,7 @@ async fn arguments_stream_in_partial_and_final_form() -> TestResult {
 fn messages_repair_event_and_argument_json() -> TestResult {
     block_on(false, async {
         rows_of("messages_repair_event_and_argument_json").await?;
-        if child_case().as_deref() == Some("*") {
+        if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             arguments_stream_in_partial_and_final_form().await?;
         }
         Ok(())
@@ -231,7 +229,7 @@ async fn streamed_arguments_follow_the_shared_reader() -> TestResult {
 fn messages_keep_initial_tool_arguments() -> TestResult {
     block_on(false, async {
         rows_of("messages_keep_initial_tool_arguments").await?;
-        if child_case().as_deref() == Some("*") {
+        if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             streamed_arguments_follow_the_shared_reader().await?;
         }
         Ok(())
@@ -268,7 +266,7 @@ async fn stop_releases_the_body() -> TestResult {
 fn messages_complete_at_terminal() -> TestResult {
     block_on(true, async {
         rows_of("messages_complete_at_terminal").await?;
-        if child_case().as_deref() == Some("*") {
+        if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             stop_releases_the_body().await?;
         }
         Ok(())
@@ -364,7 +362,7 @@ async fn special_bodies_survive_bytewise_delivery(rows: &[messages::Row]) -> Tes
 fn messages_decode_fragmented_sse() -> TestResult {
     block_on(false, async {
         rows_of("messages_decode_fragmented_sse").await?;
-        if child_case().as_deref() == Some("*") {
+        if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             let rows = messages::rows_of(FIXTURE, "messages_decode_fragmented_sse")?;
             framing_survives_every_cut(&rows).await?;
             special_bodies_survive_bytewise_delivery(&rows).await?;
@@ -428,7 +426,7 @@ async fn counts_are_doubles() -> TestResult {
 fn messages_keep_number_and_member_semantics() -> TestResult {
     block_on(false, async {
         rows_of("messages_keep_number_and_member_semantics").await?;
-        if child_case().as_deref() == Some("*") {
+        if std::env::var("MAESTRO_CHILD_CASE").ok().as_deref() == Some("*") {
             counts_are_doubles().await?;
         }
         Ok(())
@@ -489,8 +487,17 @@ async fn opening_arguments_follow_the_conversion_bound() -> TestResult {
 #[test]
 fn messages_skip_unread_deep_values() -> TestResult {
     block_on(false, async {
-        if child_case().is_none() {
-            return child_process::rerun("messages_skip_unread_deep_values", "*", &[]);
+        if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+            return {
+                let output =
+                    maestro_test_process::TestProcess::current("messages_skip_unread_deep_values")?
+                        .nocapture()
+                        .env_clear()
+                        .env("MAESTRO_CHILD_CASE", "*")
+                        .output()?;
+                assert!(output.status.success(), "{output:?}");
+                Ok(())
+            };
         }
         for depth in [127, 128, 10_000] {
             usage_survives_unread_nesting(depth).await?;

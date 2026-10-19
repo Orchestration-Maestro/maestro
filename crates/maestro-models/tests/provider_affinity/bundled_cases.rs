@@ -40,15 +40,26 @@ const PROTOCOLS: [&str; 9] = [
 #[test]
 fn bundled_registered_requests_keep_local_payload_hooks() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    if crate::child_process::child_case().is_none() {
-        return crate::child_process::rerun(
-            "bundled_registered_requests_keep_local_payload_hooks",
-            "registered-protocols",
-            &[
-                ("AWS_BEARER_TOKEN_BEDROCK", "fixture-token"),
-                ("AWS_REGION", "us-east-1"),
-            ],
-        );
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "bundled_registered_requests_keep_local_payload_hooks",
+            )?
+            .nocapture()
+            .env_clear()
+            .envs(
+                [
+                    ("AWS_BEARER_TOKEN_BEDROCK", "fixture-token"),
+                    ("AWS_REGION", "us-east-1"),
+                ]
+                .iter()
+                .copied(),
+            )
+            .env("MAESTRO_CHILD_CASE", "registered-protocols")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     reset_api_providers();
     crate::chat::block_on(
@@ -276,15 +287,26 @@ async fn observe(
 #[test]
 fn default_submission_preserves_protocol_runtime_policy() -> crate::TestResult {
     let _serial = crate::bundled::registry();
-    if crate::child_process::child_case().is_none() {
-        return crate::child_process::rerun(
-            "default_submission_preserves_protocol_runtime_policy",
-            "runtime-policy",
-            &[
-                ("AWS_BEARER_TOKEN_BEDROCK", "fixture-token"),
-                ("AWS_REGION", "us-east-1"),
-            ],
-        );
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "default_submission_preserves_protocol_runtime_policy",
+            )?
+            .nocapture()
+            .env_clear()
+            .envs(
+                [
+                    ("AWS_BEARER_TOKEN_BEDROCK", "fixture-token"),
+                    ("AWS_REGION", "us-east-1"),
+                ]
+                .iter()
+                .copied(),
+            )
+            .env("MAESTRO_CHILD_CASE", "runtime-policy")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     reset_api_providers();
     for protocol in PROTOCOLS {

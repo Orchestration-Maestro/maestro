@@ -192,12 +192,18 @@ fn cloud_owned_producer_keeps_lifetime_and_deadline_policy() -> TestResult {
 
 #[test]
 fn cloud_local_and_threaded_registration_keep_hook_captures() -> TestResult {
-    if crate::child_process::child_case().is_none() {
-        return crate::child_process::rerun(
-            "cloud_local_and_threaded_registration_keep_hook_captures",
-            "cloud",
-            &[],
-        );
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "cloud_local_and_threaded_registration_keep_hook_captures",
+            )?
+            .nocapture()
+            .env_clear()
+            .env("MAESTRO_CHILD_CASE", "cloud")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     crate::provider_affinity::cloud_affinity()
 }
@@ -209,12 +215,18 @@ fn cloud_raw_entry_uses_shared_response_reduction() -> TestResult {
 
 #[test]
 fn cloud_call_counters_are_independent_between_entries() -> TestResult {
-    if crate::child_process::child_case().is_none() {
-        return crate::child_process::rerun(
-            "cloud_call_counters_are_independent_between_entries",
-            "counters",
-            &[],
-        );
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "cloud_call_counters_are_independent_between_entries",
+            )?
+            .nocapture()
+            .env_clear()
+            .env("MAESTRO_CHILD_CASE", "counters")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     crate::chat::block_on(false, async {
         use crate::content_generation_invocation::native;
@@ -264,24 +276,36 @@ mod routes;
 
 #[test]
 fn cloud_root_and_registry_entries_dispatch() -> TestResult {
-    if crate::child_process::child_case().is_none() {
-        return crate::child_process::rerun(
-            "cloud_root_and_registry_entries_dispatch",
-            "roots",
-            &[],
-        );
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "cloud_root_and_registry_entries_dispatch",
+            )?
+            .nocapture()
+            .env_clear()
+            .env("MAESTRO_CHILD_CASE", "roots")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     crate::chat::block_on(false, routes::root_routes())
 }
 
 #[test]
 fn cloud_raw_options_preserve_declared_fields() -> TestResult {
-    if crate::child_process::child_case().is_none() {
-        return crate::child_process::rerun(
-            "cloud_raw_options_preserve_declared_fields",
-            "options",
-            &[],
-        );
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_none() {
+        return {
+            let output = maestro_test_process::TestProcess::current(
+                "cloud_raw_options_preserve_declared_fields",
+            )?
+            .nocapture()
+            .env_clear()
+            .env("MAESTRO_CHILD_CASE", "options")
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+            Ok(())
+        };
     }
     crate::chat::block_on(false, routes::raw_options())
 }
@@ -291,20 +315,30 @@ mod deadline;
 
 #[test]
 fn cloud_authentication_consumes_the_selected_deadline() -> TestResult {
-    if let Some(case) = crate::child_process::child_case() {
+    if let Ok(case) = std::env::var("MAESTRO_CHILD_CASE") {
         return crate::chat::block_on(false, deadline::delayed_refresh(case == "expired"));
     }
     for case in ["expired", "active"] {
         let files = crate::content_credentials::Files::new();
         let path = files.path("adc.json");
-        crate::child_process::rerun(
-            "cloud_authentication_consumes_the_selected_deadline",
-            case,
-            &[
-                ("GOOGLE_APPLICATION_CREDENTIALS", &path),
-                ("NO_PROXY", "127.0.0.1,localhost"),
-            ],
-        )?;
+        {
+            let output = maestro_test_process::TestProcess::current(
+                "cloud_authentication_consumes_the_selected_deadline",
+            )?
+            .nocapture()
+            .env_clear()
+            .envs(
+                [
+                    ("GOOGLE_APPLICATION_CREDENTIALS", path.as_str()),
+                    ("NO_PROXY", "127.0.0.1,localhost"),
+                ]
+                .iter()
+                .copied(),
+            )
+            .env("MAESTRO_CHILD_CASE", case)
+            .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
     }
     Ok(())
 }

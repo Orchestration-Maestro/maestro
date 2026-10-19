@@ -50,8 +50,6 @@ mod chat_response_identity;
 #[path = "chat_tool_choices.rs"]
 mod chat_tool_choices;
 mod checked_tool_arguments;
-#[path = "support/child_process.rs"]
-mod child_process;
 mod circle_fixture;
 mod cloud_content_projection;
 mod cloud_conversation_configuration;

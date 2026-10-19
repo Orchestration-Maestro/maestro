@@ -9,7 +9,6 @@ use maestro_models::providers::cloud::amazon_bedrock::{BedrockOptions, stream_be
 
 use crate::bedrock;
 use crate::chat::{TestResult, block_on};
-use crate::child_process;
 use crate::loopback::{Loopback, Step, serve};
 use crate::transport;
 
@@ -105,7 +104,7 @@ fn converse() -> TestResult {
 
 /// Run each route in a child and check which loopback peer it reached.
 pub fn run_routes(test: &str, routes: &[Route]) -> TestResult {
-    if child_process::child_case().is_some() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
         return converse();
     }
     for route in routes {
@@ -128,7 +127,15 @@ pub fn run_routes(test: &str, routes: &[Route]) -> TestResult {
             .chain([("MAESTRO_ORIGIN".to_owned(), origin_url.clone())])
             .collect();
         let vars: Vec<(&str, &str)> = vars.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
-        child_process::rerun(test, route.id, &vars)?;
+        {
+            let output = maestro_test_process::TestProcess::current(test)?
+                .nocapture()
+                .env_clear()
+                .envs(vars.iter().copied())
+                .env("MAESTRO_CHILD_CASE", route.id)
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
         let (reached, untouched) = if route.proxied {
             (proxy, origin)
         } else {
@@ -160,7 +167,7 @@ pub struct Refusal {
 /// Run each refusal in a child; the origin sees a request only when it redirects, and the
 /// second peer is never contacted.
 pub fn run_refusals(test: &str, refusals: &[Refusal]) -> TestResult {
-    if child_process::child_case().is_some() {
+    if std::env::var("MAESTRO_CHILD_CASE").ok().is_some() {
         return converse();
     }
     for refusal in refusals {
@@ -181,7 +188,15 @@ pub fn run_refusals(test: &str, refusals: &[Refusal]) -> TestResult {
             ])
             .collect();
         let vars: Vec<(&str, &str)> = vars.iter().map(|(k, v)| (k.as_str(), v.as_str())).collect();
-        child_process::rerun(test, refusal.id, &vars)?;
+        {
+            let output = maestro_test_process::TestProcess::current(test)?
+                .nocapture()
+                .env_clear()
+                .envs(vars.iter().copied())
+                .env("MAESTRO_CHILD_CASE", refusal.id)
+                .output()?;
+            assert!(output.status.success(), "{output:?}");
+        };
         let line = origin.request_line()?;
         let expected = refusal.redirects.then(|| format!("POST {PATH} HTTP/1.1"));
         assert_eq!(line, expected, "{}", refusal.id);
