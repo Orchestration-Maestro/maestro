@@ -99,7 +99,7 @@ impl Terminal {
         }
         if width == 1 {
             self.screens.active_mut().cursor_mark_dirty();
-            self.print_cell(cp, Wide::Narrow)?;
+            self.print_cell(cp, Wide::Narrow, self.screens.active().cursor.protected)?;
         } else if !self.print_wide(cp, right)? {
             return Ok(());
         }
@@ -146,7 +146,7 @@ impl Terminal {
     fn print_wide(&mut self, cp: char, right: u16) -> Result<bool, Error> {
         if right - self.scrolling_region.left <= 1 {
             self.screens.active_mut().cursor_mark_dirty();
-            self.print_cell('\0', Wide::Narrow)?;
+            self.print_cell('\0', Wide::Narrow, self.screens.active().cursor.protected)?;
             return Ok(true);
         }
         if self.screens.active().cursor.x == right - 1 {
@@ -163,13 +163,18 @@ impl Terminal {
                 } else {
                     Wide::Narrow
                 },
+                self.screens.active().cursor.protected,
             )?;
             self.print_wrap()?;
         }
         self.screens.active_mut().cursor_mark_dirty();
-        self.print_cell(cp, Wide::Wide)?;
+        self.print_cell(cp, Wide::Wide, self.screens.active().cursor.protected)?;
         self.screens.active_mut().cursor_right(1);
-        self.print_cell('\0', Wide::SpacerTail)?;
+        self.print_cell(
+            '\0',
+            Wide::SpacerTail,
+            self.screens.active().cursor.protected,
+        )?;
         Ok(true)
     }
 

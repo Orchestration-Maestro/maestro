@@ -475,13 +475,9 @@ mod tests {
     /// Reinvoke one test with isolated environment and working directory.
     #[cfg(unix)]
     fn child_test(name: &str, root: &std::path::Path) {
-        let mut command = std::process::Command::new(std::env::current_exe().unwrap());
-        command
-            .args([
-                "--exact",
-                &format!("config_values::tests::{name}"),
-                "--nocapture",
-            ])
+        let command = maestro_test_process::TestProcess::current(name)
+            .unwrap()
+            .nocapture()
             .env("MAESTRO_CONFIG_CHILD", "yes")
             .env("MAESTRO_CONFIG_VALUE", "inherited-value")
             .current_dir(root)
@@ -492,7 +488,6 @@ mod tests {
             command.spawn().unwrap()
         };
         let output = child.wait_with_output().unwrap();
-        assert!(String::from_utf8_lossy(&output.stdout).contains("1 passed; 0 failed"));
         assert!(
             output.status.success(),
             "{}\n{}",

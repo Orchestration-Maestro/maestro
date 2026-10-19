@@ -69,20 +69,62 @@ impl Screen {
     /// # Panics
     /// Panics if the range lies outside the selected page row.
     pub fn clear_unprotected_cells(&mut self, node: NodeId, y: u16, columns: Range<u16>) {
-        let mut x = columns.start;
-        while x < columns.end {
+        if columns.is_empty() {
+            return;
+        }
+        let Some(page) = self.pages.page(node) else {
+            return;
+        };
+        let cells = page.get_cells(y);
+        let start = columns.start
+            - u16::from(
+                columns.start > 0 && cells[usize::from(columns.start)].wide() == Wide::SpacerTail,
+            );
+        let end = columns.end
+            + u16::from(
+                columns.end < page.size.cols
+                    && cells[usize::from(columns.end - 1)].wide() == Wide::Wide,
+            );
+        let clear_previous = start == 0
+            && page.get_row(y).wrap_continuation()
+            && cells[0].wide() == Wide::Wide
+            && !cells[0].protected();
+        if clear_previous {
+            let pin = crate::page_list::Pin {
+                node,
+                x: 0,
+                y,
+                garbage: false,
+            };
+            if let Some(previous) = pin.up(&self.pages, 1) {
+                self.clear_spacer_head(previous);
+            }
+        }
+        let blank = self.blank_cell();
+        let mut x = start;
+        while x < end {
             let Some(page) = self.pages.page(node) else {
                 return;
             };
             let cells = page.get_cells(y);
-            while x < columns.end && cells[usize::from(x)].protected() {
+            while x < end && cells[usize::from(x)].protected() {
                 x += 1;
             }
             let start = x;
-            while x < columns.end && !cells[usize::from(x)].protected() {
+            while x < end && !cells[usize::from(x)].protected() {
                 x += 1;
             }
-            self.clear_cells(node, y, start..x);
+            let Some(page) = self.pages.page_mut(node) else {
+                return;
+            };
+            page.release_cells(y, start..x);
+            page.get_cells_mut(y)[usize::from(start)..usize::from(x)].fill(blank);
+            if start == 0 && x == page.size.cols {
+                page.get_row_mut(y).set_kitty_virtual_placeholder(false);
+            }
+        }
+        if let Some(page) = self.pages.page_mut(node) {
+            page.refresh_row_metadata(y);
         }
     }
 
@@ -140,7 +182,7 @@ impl Screen {
         }
     }
 
-    /// Clear a trailing spacer using its own page's stored width.
+    /// Clear a trailing spacer using its own page's stored width and dirty its row.
     fn clear_spacer_head(&mut self, pin: crate::page_list::Pin) {
         let Some(page) = self.pages.page(pin.node) else {
             return;
@@ -148,6 +190,9 @@ impl Screen {
         let last = page.size.cols - 1;
         if page.get_cells(pin.y)[usize::from(last)].wide() == Wide::SpacerHead {
             self.clear_cells(pin.node, pin.y, last..last + 1);
+            if let Some(page) = self.pages.page_mut(pin.node) {
+                page.get_row_mut(pin.y).set_dirty(true);
+            }
         }
     }
 }

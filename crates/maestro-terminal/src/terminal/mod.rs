@@ -1,12 +1,22 @@
 //! Direct operations on terminal screens and retained protocol state.
 
+mod alignment;
+mod chars;
 mod colors;
 mod cursor;
+mod erase;
 mod line_edit;
 mod lines;
+mod margins;
 mod print;
+mod prompt;
+mod pwd_title;
 mod reads;
+mod resize;
+mod screens;
 pub use reads::ScrollViewport;
+pub use resize::ResizeError;
+pub use screens::{DeccolmMode, SwitchScreenMode};
 
 use std::num::NonZeroU16;
 
@@ -91,6 +101,8 @@ pub struct Flags {
     pub mouse_event: mouse::Event,
     /// The last selected mouse encoding.
     pub mouse_format: mouse::Format,
+    /// Explicit shell permission to clear prompt content when resizing.
+    pub shell_redraws_prompt: crate::osc::semantic_prompt::Redraw,
     /// Terminal-wide renderer invalidation.
     pub dirty: Dirty,
 }
@@ -102,6 +114,7 @@ impl Default for Flags {
             modify_other_keys_2: false,
             mouse_event: mouse::Event::None,
             mouse_format: mouse::Format::X10,
+            shell_redraws_prompt: crate::osc::semantic_prompt::Redraw::False,
             dirty: Dirty::default(),
         }
     }
@@ -127,6 +140,10 @@ pub struct Terminal {
     pub width_px: u32,
     /// Screen height in pixels; zero until supplied by the host.
     pub height_px: u32,
+    /// Directory bytes supplied by the shell.
+    pwd: Vec<u8>,
+    /// Title bytes supplied by the caller.
+    title: Vec<u8>,
     /// Retained tab destinations.
     tabstops: Tabstops,
     /// Configured grid width.
@@ -162,6 +179,8 @@ impl Terminal {
                 right: cols - 1,
             },
             colors: Colors::default(),
+            pwd: Vec::new(),
+            title: Vec::new(),
             previous_char: None,
             status_display: crate::ansi::StatusDisplay::Main,
             tabstops: Tabstops::init(usize::from(cols), TABSTOP_INTERVAL),

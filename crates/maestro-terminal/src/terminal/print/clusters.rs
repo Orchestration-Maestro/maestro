@@ -66,7 +66,7 @@ impl Terminal {
         match grapheme::grapheme_width_effect(previous, cp) {
             GraphemeWidthEffect::Ignore => return Ok(true),
             GraphemeWidthEffect::Wide if cell.wide() != Wide::Wide => {
-                let Some(column) = self.widen_cluster(x, right)? else {
+                let Some(column) = self.widen_cluster(x, right, cell.protected())? else {
                     return Ok(true);
                 };
                 x = column;
@@ -83,7 +83,12 @@ impl Terminal {
     }
 
     /// Expand a cluster, moving its owned suffix across a wrap when necessary.
-    fn widen_cluster(&mut self, mut x: u16, right: u16) -> Result<Option<u16>, Error> {
+    fn widen_cluster(
+        &mut self,
+        mut x: u16,
+        right: u16,
+        protected: bool,
+    ) -> Result<Option<u16>, Error> {
         self.screens.active_mut().cursor_horizontal_absolute(x);
         if x == right - 1 {
             if !self.modes.get(Mode::Wraparound) {
@@ -109,9 +114,10 @@ impl Terminal {
                 } else {
                     Wide::Narrow
                 },
+                protected,
             )?;
             self.print_wrap()?;
-            self.print_cell(cp, Wide::Wide)?;
+            self.print_cell(cp, Wide::Wide, protected)?;
             x = self.screens.active().cursor.x;
             for scalar in suffix.into_iter().flatten() {
                 self.screens.active_mut().append_grapheme(x, scalar)?;
@@ -120,7 +126,7 @@ impl Terminal {
             self.cluster_cell_wide(x, Wide::Wide)?;
         }
         self.screens.active_mut().cursor_right(1);
-        self.print_cell('\0', Wide::SpacerTail)?;
+        self.print_cell('\0', Wide::SpacerTail, protected)?;
         let screen = self.screens.active_mut();
         if screen.cursor.x == right - 1 {
             screen.cursor.pending_wrap = true;

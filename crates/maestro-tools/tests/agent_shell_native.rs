@@ -383,18 +383,19 @@ fn bash_artifact_creation_failure_is_reported() {
     if std::env::var_os("MAESTRO_ARTIFACT_CHILD").is_none() {
         let dir = TempDir::new();
         let missing = dir.0.join("missing");
-        let test =
-            crate::child_process::selector("bash_artifact_creation_failure_is_reported").unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test, "--nocapture"])
-            .env("MAESTRO_ARTIFACT_CHILD", "1")
-            .env("TMPDIR", &missing)
-            .env("TMP", &missing)
-            .env("TEMP", &missing)
-            .output()
-            .unwrap();
+        let output = maestro_test_process::TestProcess::current(
+            "bash_artifact_creation_failure_is_reported",
+        )
+        .unwrap()
+        .nocapture()
+        .env("MAESTRO_ARTIFACT_CHILD", "1")
+        .env("TMPDIR", &missing)
+        .env("TMP", &missing)
+        .env("TEMP", &missing)
+        .output()
+        .unwrap();
         assert!(output.status.success());
-        crate::child_process::assert_executed(&output, &test).unwrap();
+
         return;
     }
     agent_shell_support::runtime().block_on(async {

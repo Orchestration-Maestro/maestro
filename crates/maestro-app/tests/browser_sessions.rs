@@ -711,23 +711,22 @@ fn latest_session_uses_host_locale_instead_of_lexical_order() {
         });
         return;
     }
-    let test =
-        crate::child_process::selector("latest_session_uses_host_locale_instead_of_lexical_order")
-            .unwrap();
     for locale in ["en-US", "sv-SE"] {
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test, "--nocapture"])
-            .env("MAESTRO_SESSION_LOCALE", locale)
-            .env("LC_ALL", locale)
-            .env("LC_MESSAGES", locale)
-            .env("LANG", locale)
-            .output()
-            .unwrap();
+        let output = maestro_test_process::TestProcess::current(
+            "latest_session_uses_host_locale_instead_of_lexical_order",
+        )
+        .unwrap()
+        .nocapture()
+        .env("MAESTRO_SESSION_LOCALE", locale)
+        .env("LC_ALL", locale)
+        .env("LC_MESSAGES", locale)
+        .env("LANG", locale)
+        .output()
+        .unwrap();
         assert!(
             output.status.success(),
             "locale child failed: {}",
             String::from_utf8_lossy(&output.stderr)
         );
-        crate::child_process::assert_executed(&output, &test).unwrap();
     }
 }

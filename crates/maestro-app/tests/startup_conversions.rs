@@ -150,7 +150,7 @@ fn session_destinations_reuse_the_session_directory_owner() {
 #[cfg(windows)]
 fn windows_basename() {
     use maestro_app::configuration::migrations::migrate_sessions_from_agent_root;
-    use std::{fs, process::Command};
+    use std::fs;
     if std::env::var_os("STARTUP_WINDOWS_CHILD").is_some() {
         migrate_sessions_from_agent_root().unwrap();
         return;
@@ -160,17 +160,15 @@ fn windows_basename() {
     let source = root.join("one.jsonl");
     let body = b"{\"type\":\"session\",\"cwd\":\"/work\"}\nopaque";
     fs::write(&source, body).unwrap();
-    let test =
-        crate::child_process::selector("session_destinations_reuse_the_session_directory_owner")
-            .unwrap();
-    let output = Command::new(std::env::current_exe().unwrap())
-        .args(["--exact", &test])
-        .env("STARTUP_WINDOWS_CHILD", "1")
-        .env("MAESTRO_CODING_AGENT_DIR", &root)
-        .output()
-        .unwrap();
+    let output = maestro_test_process::TestProcess::current(
+        "session_destinations_reuse_the_session_directory_owner",
+    )
+    .unwrap()
+    .env("STARTUP_WINDOWS_CHILD", "1")
+    .env("MAESTRO_CODING_AGENT_DIR", &root)
+    .output()
+    .unwrap();
     assert!(output.status.success());
-    crate::child_process::assert_executed(&output, &test).unwrap();
     assert!(!source.exists());
     assert!(fs::read(root.join("sessions/--work--/one.jsonl")).unwrap() == body);
     fs::remove_dir_all(root).unwrap();

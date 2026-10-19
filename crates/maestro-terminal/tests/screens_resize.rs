@@ -849,3 +849,21 @@ fn screen_resize_more_cols_requiring_a_wide_spacer_head() {
     wide_cell(&s, 0, 1, Wide::Wide, '😀');
     wide_cell(&s, 1, 1, Wide::SpacerTail, '\0');
 }
+
+#[test]
+fn screen_resize_clamps_saved_blank_column_without_creating_a_soft_row() {
+    let mut s = small_screen(10, 5, 0);
+    s.cursor_absolute(9, 0);
+    s.saved_cursor = Some(maestro_terminal::screen::SavedCursor {
+        x: 9,
+        y: 0,
+        style: maestro_terminal::Style::default(),
+        protected: false,
+        pending_wrap: false,
+        origin: false,
+        charset: s.charset,
+    });
+    resize(&mut s, 5, 5, true);
+    let saved = s.saved_cursor.unwrap();
+    assert_eq!((saved.x, saved.y), (4, 0));
+}

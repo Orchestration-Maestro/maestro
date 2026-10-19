@@ -142,18 +142,16 @@ fn configured_environment_is_read_on_each_call() {
 #[test]
 fn request_keys_preserve_lower_layer_precedence() {
     if std::env::var_os("MAESTRO_KEYS_CHILD").is_none() {
-        let test = crate::subprocess::child_process::selector(
+        let output = maestro_test_process::TestProcess::current(
             "request_keys_preserve_lower_layer_precedence",
         )
+        .unwrap()
+        .env("MAESTRO_KEYS_CHILD", "1")
+        .env("OPENAI_API_KEY", "ambient-key")
+        .output()
         .unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test])
-            .env("MAESTRO_KEYS_CHILD", "1")
-            .env("OPENAI_API_KEY", "ambient-key")
-            .output()
-            .unwrap();
         assert!(output.status.success(), "key subprocess failed");
-        crate::subprocess::child_process::assert_executed(&output, &test).unwrap();
+
         return;
     }
     let operations = request_support::Operations::default();
@@ -548,17 +546,15 @@ fn selected_request_fields_keep_last_member_values() {
 #[test]
 fn stored_commands_keep_lower_layer_cache_policy() {
     if std::env::var_os("MAESTRO_CACHE_CHILD").is_none() {
-        let test = crate::subprocess::child_process::selector(
+        let output = maestro_test_process::TestProcess::current(
             "stored_commands_keep_lower_layer_cache_policy",
         )
+        .unwrap()
+        .env("MAESTRO_CACHE_CHILD", "1")
+        .output()
         .unwrap();
-        let output = std::process::Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", &test])
-            .env("MAESTRO_CACHE_CHILD", "1")
-            .output()
-            .unwrap();
         assert!(output.status.success(), "cache subprocess failed");
-        crate::subprocess::child_process::assert_executed(&output, &test).unwrap();
+
         return;
     }
     let registry = support::registry(&document(r#""apiKey":"!configured-cache-policy""#, ""));
@@ -1320,5 +1316,60 @@ fn provider_request_lookup_avoids_auth_fallback() {
         let actual =
             serde_json::json!({"branch":"ok", "value":key, "calls":*calls.lock().unwrap()});
         assert!(actual == case.expected, "recorded request lookup");
+    }
+}
+
+/// The shared captured route neither inherits stdin nor replays successful output.
+#[test]
+fn captured_subprocess_preserves_descriptors_and_environment_order() {
+    const NAME: &str = "captured_subprocess_preserves_descriptors_and_environment_order";
+    match std::env::var("MAESTRO_CAPTURE_STAGE").as_deref() {
+        Ok("inner") => {
+            use std::io::Read as _;
+            let mut input = Vec::new();
+            std::io::stdin().read_to_end(&mut input).unwrap();
+            assert!(input.is_empty());
+            assert_eq!(
+                std::env::var("MAESTRO_DYNAMIC_CHILD").unwrap(),
+                "caller-marker"
+            );
+            assert_eq!(std::env::var("MAESTRO_CAPTURE_VALUE").unwrap(), "supplied");
+            assert!(std::env::var_os("MAESTRO_CAPTURE_REMOVE").is_none());
+            println!("INNER-CAPTURE-STDOUT");
+            eprintln!("INNER-CAPTURE-STDERR");
+        }
+        Ok("outer") => {
+            assert_eq!(
+                std::env::var("MAESTRO_CAPTURE_REMOVE").unwrap(),
+                "inherited"
+            );
+            crate::subprocess::run_child(
+                NAME,
+                &[
+                    ("MAESTRO_CAPTURE_STAGE", Some("inner")),
+                    ("MAESTRO_CAPTURE_VALUE", Some("supplied")),
+                    ("MAESTRO_CAPTURE_REMOVE", None),
+                    ("MAESTRO_DYNAMIC_CHILD", Some("caller-marker")),
+                ],
+            );
+        }
+        _ => {
+            let input = support::File::new(b"finite nonempty input");
+            let output = maestro_test_process::TestProcess::current(NAME)
+                .unwrap()
+                .nocapture()
+                .env("MAESTRO_CAPTURE_STAGE", "outer")
+                .env("MAESTRO_CAPTURE_REMOVE", "inherited")
+                .stdin(std::fs::File::open(input.path()).unwrap())
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            assert!(!String::from_utf8_lossy(&output.stdout).contains("INNER-CAPTURE-STDOUT"));
+            assert!(!String::from_utf8_lossy(&output.stderr).contains("INNER-CAPTURE-STDERR"));
+        }
     }
 }

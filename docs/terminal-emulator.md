@@ -210,7 +210,8 @@ applying background-only blanks. `clear_rows` uses inclusive endpoints and each
 page's stored width; selective clearing retains protected cells and row metadata.
 `cursor_reset_wrap` clears pending wrap. When the current row wraps, it also
 clears the next row's continuation and a trailing spacer head. `split_cell_boundary` removes disconnected wide-cell halves without
-changing wrap metadata.
+changing wrap metadata. Clearing a trailing spacer marks its row dirty, including
+when the spacer is on the preceding page.
 
 `cursor_down_scroll` scrolls at the active bottom. With history disabled it rotates
 active rows, or clears a single-row screen. Otherwise it grows retained storage,
@@ -289,7 +290,9 @@ cursor colour does not fall back to the foreground.
 charset translation, pending wrap, insert mode and cluster-width effects.
 `print_string` treats newline as carriage return followed by linefeed. Selecting
 `StatusDisplay::StatusLine` suppresses scalar text, but not that newline handling.
-Rows containing image placeholders are marked for renderer lookup.
+Rows containing image placeholders are marked for renderer lookup. Widening a
+cluster retains the original cell's protection on both halves and any wrap spacer,
+even if cursor protection changed between scalars.
 
 Cursor moves clamp to the current margins or screen edge. `set_cursor_pos`
 uses one-based coordinates and applies scrolling offsets in origin mode.
@@ -303,5 +306,78 @@ line control. `scroll_up`, `scroll_down`, `insert_lines`, `delete_lines` and
 in cleared cells. Managed transfers and printing return typed capacity errors;
 changes applied before an error remain visible.
 
-Margin setters, terminal resizing, erasure and screen-switching facades are not
-provided by these direct text and cursor operations.
+`set_top_and_bottom_margin` takes one-based bounds; zero selects the corresponding
+screen edge. `set_left_and_right_margin` applies the same rules when mode 69 is
+enabled. Both ignore empty or inverted ranges and home the cursor after an
+accepted change, using origin-relative coordinates when origin mode is enabled.
+
+`delete_chars` shifts cells left within the horizontal margins and fills the
+vacated cells with the cursor background. Zero counts and cursors outside the
+margins do nothing. An admitted deletion clears soft-wrap state and marks its
+row dirty. `set_protected_mode` changes cursor protection; turning protection off
+retains the most recently selected ISO or DEC protocol.
+
+`set_pwd` and `set_title` copy raw bytes without decoding or length limits.
+Their getters borrow the retained bytes and return `None` for an empty value.
+OSC ingress validation is separate from these direct setters.
+
+`erase_chars` erases at least one cell, extending through a wide character's
+other half where needed. It reaches the screen edge, independently of horizontal
+margins. ISO protection remains effective after protection is turned off;
+most-recent DEC protection does not make this operation selective. Protected
+wide pairs, links and cluster suffixes survive selective boundary cleanup.
+
+`erase_line` accepts right, left, complete and conditional-right modes. Right
+erasure resets soft wrapping; left and complete erasure retain it. Supported
+modes clear pending wrap and mark the row dirty. Conditional-right erasure does
+nothing while wrap is pending; unknown modes always do nothing. ISO or an explicit
+selective request preserves protected cells. Selective clearing releases managed
+values in one pass and refreshes row metadata once, not once per unprotected run.
+
+`erase_display` clears below, above, the active area or retained history, or
+moves active content into history. Complete clearing on the primary screen first
+preserves a final nonempty prompt row in history, even with trailing empty rows.
+A later nonempty output row or an alternate screen does not trigger that rule.
+The selector shares scroll-clear's cell-emptiness rules. Complete clearing marks
+the terminal clear flag; partial erasure marks only affected rows.
+
+`decaln` fills the grid with unprotected E cells, releases old managed contents,
+resets margins and origin mode, and returns the cursor home. It keeps foreground
+and background colours while clearing other rendition attributes. Cursor
+protection remains selected but does not protect cells from alignment.
+
+`switch_screen` lazily creates alternate storage without history, ends the old
+screen's active hyperlink and carries charset state. Switching to the already
+selected screen changes nothing. It returns the old screen identity on a real
+switch. `switch_screen_mode` applies the protocol ordering: 47 preserves content;
+1047 clears alternate content on exit; 1049 saves on every enable, clears on
+entry and restores the primary cursor on disable. Real switches copy cursor
+state without copying hyperlinks where the selected mode requires it.
+
+`resize(cols, rows, cell_width_px, cell_height_px)` rejects zero grid dimensions
+before mutation. Same-grid calls update effective pixels and end synchronized
+output without resetting margins, tabs or clear flags. Changed columns rebuild
+interval-eight tab stops; changed rows alone retain custom stops. Primary content
+reflows only with wraparound enabled; alternate content never reflows. Cell pixel
+sizes are clamped independently to at least one, and multiplication saturates at
+`u32::MAX`. Managed-storage refusals may leave earlier screen changes applied;
+reset before using content after that refusal.
+
+`deccolm` selects 80 or 132 columns only when mode 40 permits it, clears the active
+display and homes the cursor. Without that permission it only clears mode 3.
+`full_reset` selects primary before removing alternate storage, resets screen and
+keyboard state, restores mode defaults, clears metadata and resets tabs and
+margins. Grid size, pixel dimensions and terminal colours survive. Reset marks
+the terminal clear flag.
+
+`semantic_prompt` applies shell prompt, input and output phases. Prompt and
+continuation marks follow line transitions through the existing line owner.
+Explicit input persists until another shell phase; end-of-line input terminates
+on a line transition. Output beginning at column zero clears the current row's
+prompt mark. `cursor_is_at_prompt` recognizes primary prompt/input state and row
+marks, but always returns false on alternate storage.
+
+Prompt redraw defaults to off, including after full reset. An explicit shell
+option selects False, True or Last: resize preserves prompts, clears the full
+prompt region or clears its last row respectively. Alternate resize never uses
+this primary prompt-redraw policy.

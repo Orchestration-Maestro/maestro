@@ -409,12 +409,12 @@ pub fn isolated_os_output(
     mode: &str,
     envs: &[(&str, Option<&std::ffi::OsStr>)],
 ) -> std::process::Output {
-    let test = crate::child_process::selector(test).unwrap();
-    let mut command = std::process::Command::new(std::env::current_exe().unwrap());
-    command.args(["--exact", &test, "--nocapture"]);
-    command.env("MAESTRO_READ_CHILD", mode);
+    let mut command = maestro_test_process::TestProcess::current(test)
+        .unwrap()
+        .nocapture()
+        .env("MAESTRO_READ_CHILD", mode);
     for (key, value) in envs {
-        match value {
+        command = match value {
             Some(value) => command.env(key, value),
             None => command.env_remove(key),
         };
@@ -426,7 +426,6 @@ pub fn isolated_os_output(
         String::from_utf8_lossy(&output.stdout),
         String::from_utf8_lossy(&output.stderr)
     );
-    crate::child_process::assert_executed(&output, &test).unwrap();
     output
 }
 
