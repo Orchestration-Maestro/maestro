@@ -344,6 +344,30 @@ fn maestro_markdown_render_list_content_inside_blockquotes() {
 }
 
 #[test]
+fn markdown_list_items_skip_children_that_render_empty() {
+    // Rows recorded from the reference terminal component (width 60, plain theme).
+    for (text, expected) in [("- item\n>", vec!["- item"]), ("1. one\n>", vec!["1. one"])] {
+        let component = Markdown::new(
+            text.to_owned(),
+            MarkdownOptions {
+                clean_content: false,
+                padding_x: 0,
+                padding_y: 0,
+                default_text_style: None,
+            },
+            Rc::new(markdown::plain()),
+            TerminalImage::new(|_| None, || 1),
+        );
+        let rows: Vec<String> = component
+            .render(60)
+            .iter()
+            .map(|row| row.trim_end().to_owned())
+            .collect();
+        assert_eq!(rows, expected, "{text:?}");
+    }
+}
+
+#[test]
 fn maestro_markdown_wrap_long_blockquote_lines_and_add_border_to_each_wrapped_line() {
     markdown::cases(
         "maestro_markdown_wrap_long_blockquote_lines_and_add_border_to_each_wrapped_line",

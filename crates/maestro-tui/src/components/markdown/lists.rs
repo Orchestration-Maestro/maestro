@@ -80,7 +80,8 @@ impl Renderer<'_> {
                     rows.push(Row::Content(self.inline(children, style)));
                 }
                 Kind::Heading(..) | Kind::Quote(..) | Kind::Table(_) => {
-                    rows.push(Row::Content(self.inline(std::iter::once(node), style)));
+                    let text = self.inline(std::iter::once(node), style);
+                    rows.extend(Some(text).filter(|text| !text.is_empty()).map(Row::Content));
                 }
                 Kind::CodeBlock(text, info) => rows.extend(
                     self.code_block(text, info.as_deref())
