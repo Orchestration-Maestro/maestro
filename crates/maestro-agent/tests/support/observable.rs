@@ -47,6 +47,22 @@ pub fn drain<C: CustomAgentMessages + 'static>(
 pub fn poll<T>(future: std::pin::Pin<&mut (impl Future<Output = T> + ?Sized)>) -> Poll<T> {
     future.poll(&mut Context::from_waker(Waker::noop()))
 }
+/// Select role tags without losing sequence or repeated occurrences.
+///
+/// # Panics
+/// Panics on a custom entry.
+#[must_use]
+pub fn roles(messages: &[AgentMessage]) -> Vec<&'static str> {
+    messages
+        .iter()
+        .map(|m| match m {
+            AgentMessage::User(_) => "user",
+            AgentMessage::Assistant(_) => "assistant",
+            AgentMessage::ToolResult(_) => "toolResult",
+            AgentMessage::Custom(_) => unreachable!(),
+        })
+        .collect()
+}
 /// Identify variants while retaining the original payloads separately.
 #[must_use]
 pub fn kind<C: CustomAgentMessages>(event: &AgentEvent<C>) -> &'static str {
