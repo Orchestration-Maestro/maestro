@@ -282,7 +282,7 @@ impl Frame {
         &mut self,
         o: &mut maestro_web::AttachmentOverlay,
         events: Vec<Event>,
-    ) -> Result<bool, maestro_web::dialogs::attachment_overlay::AttachmentUiError> {
+    ) -> Result<bool, maestro_web::dialogs::dialog::DialogUiError> {
         self.run(events, |ctx, i, p| o.render(ctx, i, p))
     }
     /// Draw one tile at a deterministic position.
@@ -292,10 +292,8 @@ impl Frame {
         &mut self,
         t: &mut maestro_web::AttachmentTile,
         events: Vec<Event>,
-    ) -> Result<
-        Option<maestro_web::AttachmentOverlay>,
-        maestro_web::dialogs::attachment_overlay::AttachmentUiError,
-    > {
+    ) -> Result<Option<maestro_web::AttachmentOverlay>, maestro_web::dialogs::dialog::DialogUiError>
+    {
         self.run(events, |ctx, i, p| {
             let mut ui = egui::Ui::new(
                 ctx.clone(),

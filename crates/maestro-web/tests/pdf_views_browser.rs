@@ -511,11 +511,9 @@ fn assert_overlay_text_failure(
     *view.host.failure.borrow_mut() = Some("publication rejected".into());
     assert!(matches!(
         view.try_overlay(overlay, vec![]),
-        Err(
-            maestro_web::dialogs::attachment_overlay::AttachmentUiError::Host(
-                AttachmentHostError::Presentation(_)
-            )
-        )
+        Err(maestro_web::dialogs::dialog::DialogUiError::Host(
+            AttachmentHostError::Presentation(_)
+        ))
     ));
     view.overlay(overlay, vec![]);
     assert_eq!(
@@ -561,11 +559,9 @@ fn assert_empty_error_and_save_failure(view: &View, record: &Rc<RefCell<maestro_
     let result = view.try_overlay(&mut overlay, click(egui::pos2(728., 24.)));
     assert!(matches!(
         result,
-        Err(
-            maestro_web::dialogs::attachment_overlay::AttachmentUiError::Host(
-                AttachmentHostError::Host(_)
-            )
-        )
+        Err(maestro_web::dialogs::dialog::DialogUiError::Host(
+            AttachmentHostError::Host(_)
+        ))
     ));
     assert!(Rc::ptr_eq(
         view.host.downloads.borrow().last().unwrap(),
@@ -725,7 +721,7 @@ fn presentation_phase(
         phase == "content"
     );
     assert!(error.to_string().contains("native phase marker"));
-    let nested = maestro_web::dialogs::attachment_overlay::AttachmentUiError::from(error);
+    let nested = maestro_web::dialogs::dialog::DialogUiError::from(error);
     assert!(
         std::error::Error::source(&nested)
             .is_some_and(<dyn std::error::Error>::is::<AttachmentHostError>)

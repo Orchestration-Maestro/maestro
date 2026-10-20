@@ -1,6 +1,6 @@
 //! Attachment classification and content operands.
 use super::AttachmentOverlay;
-use crate::dialogs::attachment_overlay::AttachmentUiError;
+use crate::dialogs::dialog::DialogUiError;
 use crate::{
     Attachment, I18n,
     browser::attachment_content::{
@@ -40,7 +40,7 @@ impl AttachmentOverlay {
         ui: &mut egui::Ui,
         i: &I18n<F>,
         p: &BrandPresentation<'_>,
-    ) -> Result<egui::Rect, AttachmentUiError> {
+    ) -> Result<egui::Rect, DialogUiError> {
         if let Some(error) = self.error.as_ref().filter(|s| !s.is_empty()) {
             return Ok(self.error_view.present(
                 self.host.as_ref(),
@@ -105,12 +105,12 @@ impl AttachmentOverlay {
     /// Capture live content operands without cloning the full record.
     fn content_data(
         &mut self,
-    ) -> Result<(FileType, String, String, Option<String>, bool), AttachmentUiError> {
+    ) -> Result<(FileType, String, String, Option<String>, bool), DialogUiError> {
         Ok({
             let a = self
                 .attachment
                 .try_borrow()
-                .map_err(|_| AttachmentUiError::BorrowConflict)?;
+                .map_err(|_| DialogUiError::BorrowConflict)?;
             let kind = file_type(&a);
             let changed = self
                 .previous
@@ -157,13 +157,13 @@ impl AttachmentOverlay {
         i: &I18n<F>,
         p: &BrandPresentation<'_>,
         reload: bool,
-    ) -> Result<egui::Rect, AttachmentUiError> {
+    ) -> Result<egui::Rect, DialogUiError> {
         let result = if reload {
             let bytes = {
                 let attachment = self
                     .attachment
                     .try_borrow()
-                    .map_err(|_| AttachmentUiError::BorrowConflict)?;
+                    .map_err(|_| DialogUiError::BorrowConflict)?;
                 crate::utils::base64::decode(&attachment.content).map_err(|e| e.to_string())
             };
             bytes.and_then(|bytes| self.pdf.open(bytes))
@@ -192,7 +192,7 @@ impl AttachmentOverlay {
                 ui.ctx().request_repaint();
                 Ok(rect)
             }
-            other => other.map(|()| rect).map_err(AttachmentUiError::Host),
+            other => other.map(|()| rect).map_err(DialogUiError::Host),
         }
     }
     /// Prepare raw attachment bytes once and retain all native sheet bodies.
@@ -202,13 +202,13 @@ impl AttachmentOverlay {
         i: &I18n<F>,
         p: &BrandPresentation<'_>,
         reload: bool,
-    ) -> Result<egui::Rect, AttachmentUiError> {
+    ) -> Result<egui::Rect, DialogUiError> {
         if reload {
             let bytes = {
                 let attachment = self
                     .attachment
                     .try_borrow()
-                    .map_err(|_| AttachmentUiError::BorrowConflict)?;
+                    .map_err(|_| DialogUiError::BorrowConflict)?;
                 crate::utils::base64::decode(&attachment.content).map_err(|e| e.to_string())
             };
             let result = bytes.and_then(|bytes| self.excel.open(&bytes));
@@ -237,7 +237,7 @@ impl AttachmentOverlay {
                 ui.ctx().request_repaint();
                 Ok(rect)
             }
-            other => other.map(|()| rect).map_err(AttachmentUiError::Host),
+            other => other.map(|()| rect).map_err(DialogUiError::Host),
         }
     }
     /// Place selected content in its bounded viewport container.
@@ -247,7 +247,7 @@ impl AttachmentOverlay {
         content: AttachmentContent<'_>,
         p: &BrandPresentation<'_>,
         kind: FileType,
-    ) -> Result<egui::Rect, AttachmentUiError> {
+    ) -> Result<egui::Rect, DialogUiError> {
         let width = if self.extracted || kind == FileType::Text {
             896.
         } else if kind == FileType::Excel || kind == FileType::Image {
@@ -275,7 +275,7 @@ impl AttachmentOverlay {
                 ui.ctx().request_repaint();
                 Ok(rect)
             }
-            other => other.map(|()| rect).map_err(AttachmentUiError::Host),
+            other => other.map(|()| rect).map_err(DialogUiError::Host),
         }
     }
 }

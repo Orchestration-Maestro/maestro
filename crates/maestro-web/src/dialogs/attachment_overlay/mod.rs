@@ -1,5 +1,5 @@
 //! Retained full-screen attachment preview.
-mod ui_error;
+use crate::dialogs::dialog::DialogUiError;
 use crate::{
     Attachment, I18n,
     browser::attachment_content::{
@@ -8,7 +8,6 @@ use crate::{
 };
 use maestro_theme::BrandPresentation;
 use std::{cell::RefCell, rc::Rc};
-pub use ui_error::AttachmentUiError;
 mod content;
 pub(crate) mod error;
 pub(crate) mod excel;
@@ -71,7 +70,7 @@ impl AttachmentOverlay {
         context: &egui::Context,
         i18n: &I18n<F>,
         p: &BrandPresentation<'_>,
-    ) -> Result<bool, AttachmentUiError> {
+    ) -> Result<bool, DialogUiError> {
         if self.closed {
             return Ok(false);
         }
@@ -85,15 +84,15 @@ impl AttachmentOverlay {
             .order(egui::Order::Foreground)
             .fade_in(false)
             .fixed_pos(context.content_rect().min)
-            .show(context, |ui| -> Result<(), AttachmentUiError> {
-                style(ui, p).map_err(|error| AttachmentUiError::Presentation(error.to_string()))?;
+            .show(context, |ui| -> Result<(), DialogUiError> {
+                style(ui, p).map_err(|error| DialogUiError::Presentation(error.to_string()))?;
                 ui.set_min_size(context.content_rect().size());
                 ui.set_max_size(context.content_rect().size());
                 ui.painter().rect_filled(
                     context.content_rect(),
                     0.,
                     color(p, "background")
-                        .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?
+                        .map_err(|error| DialogUiError::Presentation(error.to_string()))?
                         .gamma_multiply(0.9),
                 );
                 let header_background = egui::Rect::from_min_size(
@@ -104,7 +103,7 @@ impl AttachmentOverlay {
                     header_background,
                     0.,
                     color(p, "background")
-                        .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?
+                        .map_err(|error| DialogUiError::Presentation(error.to_string()))?
                         .gamma_multiply(0.95),
                 );
                 ui.painter().hline(
@@ -113,7 +112,7 @@ impl AttachmentOverlay {
                     egui::Stroke::new(
                         1.,
                         color(p, "border")
-                            .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?,
+                            .map_err(|error| DialogUiError::Presentation(error.to_string()))?,
                     ),
                 );
                 ui.horizontal(|ui| self.header(ui, i18n, p, &mut close))
@@ -133,7 +132,7 @@ impl AttachmentOverlay {
         Ok(!self.closed)
     }
     /// Revoke retained state before notifying, then remove owned surfaces.
-    fn close(&mut self) -> Result<(), AttachmentUiError> {
+    fn close(&mut self) -> Result<(), DialogUiError> {
         self.closed = true;
         self.extracted = false;
         self.error = None;
@@ -146,7 +145,7 @@ impl AttachmentOverlay {
         self.host.remove(self.id);
         self.host
             .set_overlay(self.id, false)
-            .map_err(AttachmentUiError::Host)
+            .map_err(DialogUiError::Host)
     }
     /// Draw the filename, conditional toggle and ghost controls.
     fn header<F: ?Sized>(
@@ -155,11 +154,11 @@ impl AttachmentOverlay {
         i: &I18n<F>,
         p: &BrandPresentation<'_>,
         close: &mut bool,
-    ) -> Result<(), AttachmentUiError> {
+    ) -> Result<(), DialogUiError> {
         let name = self
             .attachment
             .try_borrow()
-            .map_err(|_| AttachmentUiError::BorrowConflict)?
+            .map_err(|_| DialogUiError::BorrowConflict)?
             .file_name
             .clone();
         ui.set_min_height(48.);
@@ -194,16 +193,12 @@ impl AttachmentOverlay {
         Ok(())
     }
     /// Select a supported document mode without dispatching repeated selections.
-    fn toggle<F: ?Sized>(
-        &mut self,
-        ui: &mut egui::Ui,
-        i: &I18n<F>,
-    ) -> Result<(), AttachmentUiError> {
+    fn toggle<F: ?Sized>(&mut self, ui: &mut egui::Ui, i: &I18n<F>) -> Result<(), DialogUiError> {
         let (kind, enabled) = {
             let a = self
                 .attachment
                 .try_borrow()
-                .map_err(|_| AttachmentUiError::BorrowConflict)?;
+                .map_err(|_| DialogUiError::BorrowConflict)?;
             (
                 content::file_type(&a),
                 a.extracted_text.as_ref().is_some_and(|s| !s.is_empty()),
@@ -258,7 +253,7 @@ impl Drop for AttachmentOverlay {
             let _ = self
                 .host
                 .set_overlay(self.id, false)
-                .map_err(AttachmentUiError::Host);
+                .map_err(DialogUiError::Host);
         }
     }
 }

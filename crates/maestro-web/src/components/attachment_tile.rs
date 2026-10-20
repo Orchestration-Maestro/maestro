@@ -1,5 +1,5 @@
 //! Attachment thumbnails with optional removal.
-use crate::dialogs::attachment_overlay::AttachmentUiError;
+use crate::dialogs::dialog::DialogUiError;
 use crate::{
     Attachment, AttachmentOverlay, I18n,
     browser::attachment_content::{
@@ -56,7 +56,7 @@ impl AttachmentTile {
         ui: &mut egui::Ui,
         i: &I18n<F>,
         p: &BrandPresentation<'_>,
-    ) -> Result<Option<AttachmentOverlay>, AttachmentUiError> {
+    ) -> Result<Option<AttachmentOverlay>, DialogUiError> {
         ui.allocate_ui_with_layout(
             egui::vec2(64., 64.),
             egui::Layout::top_down(egui::Align::Min),
@@ -70,8 +70,8 @@ impl AttachmentTile {
         ui: &mut egui::Ui,
         i: &I18n<F>,
         p: &BrandPresentation<'_>,
-    ) -> Result<Option<AttachmentOverlay>, AttachmentUiError> {
-        style(ui, p).map_err(|error| AttachmentUiError::Presentation(error.to_string()))?;
+    ) -> Result<Option<AttachmentOverlay>, DialogUiError> {
+        style(ui, p).map_err(|error| DialogUiError::Presentation(error.to_string()))?;
         let (name, preview, pdf, excel) = self.thumbnail_data()?;
         let (_, rect) = ui.allocate_space(egui::vec2(64., 64.));
         let badge = (pdf && preview.is_some()).then_some(rect.with_min_y(rect.bottom() - 19.));
@@ -84,18 +84,18 @@ impl AttachmentTile {
             && ui.input(|i| i.pointer.hover_pos().is_some_and(|pos| image.contains(pos)));
         let opacity = if hovered { 0.8 } else { 1. };
         let muted = color(p, "muted")
-            .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?
+            .map_err(|error| DialogUiError::Presentation(error.to_string()))?
             .gamma_multiply(opacity);
         ui.painter().rect(
             rect,
             egui::CornerRadius::from(points(p.radii["panel"])),
             color(p, "panel")
-                .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?
+                .map_err(|error| DialogUiError::Presentation(error.to_string()))?
                 .gamma_multiply(opacity),
             egui::Stroke::new(
                 1.,
                 color(p, "border")
-                    .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?,
+                    .map_err(|error| DialogUiError::Presentation(error.to_string()))?,
             ),
             egui::StrokeKind::Inside,
         );
@@ -131,11 +131,11 @@ impl AttachmentTile {
         }))
     }
     /// Copy only operands needed outside the record borrow.
-    fn thumbnail_data(&self) -> Result<(String, Option<String>, bool, bool), AttachmentUiError> {
+    fn thumbnail_data(&self) -> Result<(String, Option<String>, bool, bool), DialogUiError> {
         let a = self
             .attachment
             .try_borrow()
-            .map_err(|_| AttachmentUiError::BorrowConflict)?;
+            .map_err(|_| DialogUiError::BorrowConflict)?;
         let mime = if a.r#type == AttachmentType::Image {
             a.mime_type.as_str()
         } else {
@@ -161,7 +161,7 @@ impl AttachmentTile {
         tile_rect: egui::Rect,
         i: &I18n<F>,
         p: &BrandPresentation<'_>,
-    ) -> Result<(bool, Option<egui::Rect>), AttachmentUiError> {
+    ) -> Result<(bool, Option<egui::Rect>), DialogUiError> {
         if !self.show_delete {
             return Ok((false, None));
         }
@@ -183,11 +183,11 @@ impl AttachmentTile {
                 rect.center(),
                 10.,
                 color(p, "panel")
-                    .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?,
+                    .map_err(|error| DialogUiError::Presentation(error.to_string()))?,
                 egui::Stroke::new(
                     1.,
                     color(p, "border")
-                        .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?,
+                        .map_err(|error| DialogUiError::Presentation(error.to_string()))?,
                 ),
             );
             let role = if button.hovered() { "text" } else { "muted" };
@@ -195,8 +195,7 @@ impl AttachmentTile {
                 ui,
                 rect.shrink(4.),
                 "X",
-                color(p, role)
-                    .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?,
+                color(p, role).map_err(|error| DialogUiError::Presentation(error.to_string()))?,
             )?;
         }
         if button.clicked()
@@ -225,7 +224,7 @@ fn fallback(
     name: &str,
     excel: bool,
     tint: egui::Color32,
-) -> Result<(), AttachmentUiError> {
+) -> Result<(), DialogUiError> {
     glyph(
         ui,
         egui::Rect::from_center_size(rect.center() - egui::vec2(0., 8.), egui::vec2(20., 20.)),
@@ -256,21 +255,21 @@ fn pdf_badge<F: ?Sized>(
     badge: egui::Rect,
     i: &I18n<F>,
     p: &BrandPresentation<'_>,
-) -> Result<(), AttachmentUiError> {
+) -> Result<(), DialogUiError> {
     ui.painter()
         .with_clip_rect(badge.intersect(ui.clip_rect()))
         .rect_filled(
             tile,
             egui::CornerRadius::from(points(p.radii["panel"])),
             color(p, "background")
-                .map_err(|error| AttachmentUiError::Presentation(error.to_string()))?,
+                .map_err(|error| DialogUiError::Presentation(error.to_string()))?,
         );
     ui.painter().text(
         badge.center(),
         egui::Align2::CENTER_CENTER,
         i.text("PDF")?,
         caption(ui),
-        color(p, "muted").map_err(|error| AttachmentUiError::Presentation(error.to_string()))?,
+        color(p, "muted").map_err(|error| DialogUiError::Presentation(error.to_string()))?,
     );
     Ok(())
 }

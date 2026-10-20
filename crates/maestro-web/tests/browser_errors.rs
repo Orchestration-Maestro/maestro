@@ -6,7 +6,7 @@ use maestro_web::{
     I18nError,
     browser::attachment_content::{AttachmentHostError, ControlError},
     components::input::InputUiError,
-    dialogs::{attachment_overlay::AttachmentUiError, dialog::DialogUiError},
+    dialogs::dialog::DialogUiError,
     icons::{IconError, IconSize, icon},
     tools::artifacts::{ArtifactUiError, PresentationCause},
 };
@@ -31,7 +31,6 @@ fn operation_errors_preserve_literal_messages_and_leaf_sources() {
             Box::new(AttachmentHostError::Presentation(message.into())),
             Box::new(ControlError::Host(message.into())),
             Box::new(ControlError::Presentation(message.into())),
-            Box::new(AttachmentUiError::Presentation(message.into())),
             Box::new(ArtifactUiError::Presentation(PresentationCause::from(
                 message.to_owned(),
             ))),
@@ -45,7 +44,6 @@ fn operation_errors_preserve_literal_messages_and_leaf_sources() {
     }
     for error in [
         Box::new(AttachmentHostError::BorrowConflict) as Box<dyn Error>,
-        Box::new(AttachmentUiError::BorrowConflict),
         Box::new(ArtifactUiError::BorrowConflict),
         Box::new(DialogUiError::BorrowConflict),
     ] {
@@ -58,7 +56,6 @@ fn operation_errors_preserve_literal_messages_and_leaf_sources() {
 /// Check each public operation without relying on a source-chain length.
 fn leaf_sources() {
     let localization: Vec<Box<dyn Error>> = vec![
-        Box::new(AttachmentUiError::from(I18nError::NotText("*".into()))),
         Box::new(ArtifactUiError::from(I18nError::NotText("*".into()))),
         Box::new(InputUiError::from(I18nError::NotText("*".into()))),
         Box::new(DialogUiError::from(I18nError::NotText("*".into()))),
@@ -69,7 +66,6 @@ fn leaf_sources() {
     }
     let controls: Vec<Box<dyn Error>> = vec![
         Box::new(ControlError::from(icon_error())),
-        Box::new(AttachmentUiError::from(ControlError::from(icon_error()))),
         Box::new(ArtifactUiError::from(ControlError::from(icon_error()))),
         Box::new(DialogUiError::from(ControlError::from(icon_error()))),
     ];
@@ -79,7 +75,6 @@ fn leaf_sources() {
         assert!(original.source().is_some());
     }
     let hosts: Vec<Box<dyn Error>> = vec![
-        Box::new(AttachmentUiError::from(AttachmentHostError::BorrowConflict)),
         Box::new(ArtifactUiError::from(AttachmentHostError::BorrowConflict)),
         Box::new(InputUiError::from(AttachmentHostError::BorrowConflict)),
         Box::new(DialogUiError::from(AttachmentHostError::BorrowConflict)),

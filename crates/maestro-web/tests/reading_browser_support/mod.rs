@@ -251,7 +251,7 @@ impl View {
         &self,
         overlay: &mut AttachmentOverlay,
         events: Vec<egui::Event>,
-    ) -> Result<bool, maestro_web::dialogs::attachment_overlay::AttachmentUiError> {
+    ) -> Result<bool, maestro_web::dialogs::dialog::DialogUiError> {
         let mut input = egui::RawInput {
             screen_rect: Some(egui::Rect::from_min_size(
                 egui::Pos2::ZERO,

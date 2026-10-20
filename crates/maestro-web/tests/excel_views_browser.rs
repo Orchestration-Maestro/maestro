@@ -289,7 +289,7 @@ pub fn excel_native_host_failures_preserve_error_controls_and_download() {
     view.host.fail_download.set(true);
     assert!(matches!(
         view.try_overlay(&mut overlay, click(egui::pos2(728., 24.))),
-        Err(maestro_web::dialogs::attachment_overlay::AttachmentUiError::Host(_))
+        Err(maestro_web::dialogs::dialog::DialogUiError::Host(_))
     ));
     view.host.fail_download.set(false);
     view.overlay(&mut overlay, vec![]);

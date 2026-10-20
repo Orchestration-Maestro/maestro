@@ -16,7 +16,7 @@ pub enum ToolUiError {
     /// Reading preparation failed.
     Reading(ReadingUiError),
     /// Attachment tile or overlay failed.
-    Attachment(crate::dialogs::attachment_overlay::AttachmentUiError),
+    Attachment(crate::dialogs::dialog::DialogUiError),
     /// Tool operands or presentation could not be prepared.
     Presentation(String),
 }

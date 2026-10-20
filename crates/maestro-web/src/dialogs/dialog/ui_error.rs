@@ -3,7 +3,7 @@ use crate::{
     I18nError,
     browser::attachment_content::{AttachmentHostError, ControlError},
 };
-/// Failure from the retained dialog operation.
+/// Failure from a retained dialog or attachment overlay operation.
 #[derive(Debug)]
 pub enum DialogUiError {
     /// Localization failed.

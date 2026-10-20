@@ -43,7 +43,7 @@ fn overlay_images_use_original_bytes_and_contain_fit() {
     }
 }
 use maestro_web::browser::attachment_content::{FileType, TextView};
-use maestro_web::dialogs::attachment_overlay::AttachmentUiError;
+use maestro_web::dialogs::dialog::DialogUiError;
 use serde::Deserialize;
 /// Ordered classification case.
 #[derive(Deserialize)]
@@ -521,7 +521,7 @@ fn overlay_download_propagates_host_failures_without_changing_mode() {
     let pos = frame.control(1);
     assert!(matches!(
         frame.overlay(&mut overlay, click(pos)),
-        Err(AttachmentUiError::Host(_))
+        Err(DialogUiError::Host(_))
     ));
     assert!(Rc::ptr_eq(&host.downloads.borrow()[0], &record));
     host.fail_download.set(false);

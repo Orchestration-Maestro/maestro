@@ -7,7 +7,7 @@ use maestro_web::{
     AbortedMessage, AssistantMessage, AssistantMessageProps, UserMessage, UserMessageInput,
     browser::attachment_content::{AttachmentHost, AttachmentHostError},
     components::code_block::ReadingUiError,
-    dialogs::attachment_overlay::AttachmentUiError,
+    dialogs::dialog::DialogUiError,
     tools::types::{ToolRenderView, ToolUiError},
 };
 use std::{error::Error, rc::Rc, sync::Arc};
@@ -93,9 +93,9 @@ fn attachment_failure(
     .unwrap();
     assert!(matches!(
         error,
-        ToolUiError::Attachment(AttachmentUiError::BorrowConflict)
+        ToolUiError::Attachment(DialogUiError::BorrowConflict)
     ));
-    assert!(error.source().unwrap().is::<AttachmentUiError>());
+    assert!(error.source().unwrap().is::<DialogUiError>());
     drop(borrow);
 }
 

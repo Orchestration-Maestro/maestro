@@ -132,7 +132,7 @@ fn attachment_widgets_keep_the_public_embedding_paths() {
     let guard = record.borrow_mut();
     assert!(matches!(
         frame.tile(&mut tile, vec![]),
-        Err(maestro_web::dialogs::attachment_overlay::AttachmentUiError::BorrowConflict)
+        Err(maestro_web::dialogs::dialog::DialogUiError::BorrowConflict)
     ));
     assert!(host.surfaces.borrow().is_empty());
     drop(guard);
@@ -150,7 +150,7 @@ fn attachment_widgets_keep_the_public_embedding_paths() {
 
 #[test]
 fn attachment_color_errors_use_shared_presentation_route() {
-    use maestro_web::dialogs::attachment_overlay::AttachmentUiError;
+    use maestro_web::dialogs::dialog::DialogUiError;
     let host = Rc::new(Host::default());
     let record = attachment();
     record.borrow_mut().preview = Some("preview".into());
@@ -167,10 +167,7 @@ fn attachment_color_errors_use_shared_presentation_route() {
         );
         tile.render(&mut ui, i, &p)
     });
-    assert!(matches!(
-        tile_result,
-        Err(AttachmentUiError::Presentation(_))
-    ));
+    assert!(matches!(tile_result, Err(DialogUiError::Presentation(_))));
     assert!(host.surfaces.borrow().is_empty());
     let overlay_result = frame.run(vec![], |ctx, i, p| {
         let mut p = p.clone();
@@ -179,7 +176,7 @@ fn attachment_color_errors_use_shared_presentation_route() {
     });
     assert!(matches!(
         overlay_result,
-        Err(AttachmentUiError::Presentation(_))
+        Err(DialogUiError::Presentation(_))
     ));
     assert!(host.surfaces.borrow().is_empty());
     frame.tile(&mut tile, vec![]).unwrap();
