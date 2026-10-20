@@ -1,0 +1,27 @@
+[
+  {
+    "input": "> - a\n      p\n> [s]: /y\ne",
+    "raw": "<blockquote>\n<ul>\n<li>a\np</li>\n</ul>\n<p>e</p>\n</blockquote>\n",
+    "escaped": "<blockquote>\n<ul>\n<li>a\np</li>\n</ul>\n<p>e</p>\n</blockquote>\n"
+  },
+  {
+    "input": "- a\n  - b\n\n  c\n  | x |\n  |---|---|",
+    "raw": "<ul>\n<li><p>a</p>\n<ul>\n<li>b</li>\n</ul>\n<p>c</p>\n<p>| x |\n|---|---|</p>\n</li>\n</ul>\n",
+    "escaped": "<ul>\n<li><p>a</p>\n<ul>\n<li>b</li>\n</ul>\n<p>c</p>\n<p>| x |\n|---|---|</p>\n</li>\n</ul>\n"
+  },
+  {
+    "input": "- item\n  <span>",
+    "raw": "<ul>\n<li>item<span></li>\n</ul>\n",
+    "escaped": "<ul>\n<li>item\n&lt;span&gt;</li>\n</ul>\n"
+  },
+  {
+    "input": "> q\n[r]: https://r.s\n\n[r]\n",
+    "raw": "<blockquote>\n<p>q\n[r]: <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://r.s\">https://r.s</a></p>\n</blockquote>\n<p>[r]</p>\n",
+    "escaped": "<blockquote>\n<p>q\n[r]: <a target=\"_blank\" rel=\"noopener noreferrer\" href=\"https://r.s\">https://r.s</a></p>\n</blockquote>\n<p>[r]</p>\n"
+  },
+  {
+    "input": "- a\n  > b\n  c\n  | x |\n  |---|---|",
+    "raw": "<ul>\n<li>a<blockquote>\n<p>b\nc</p>\n<p>| x |\n|---|---|</p>\n</blockquote>\n</li>\n</ul>\n",
+    "escaped": "<ul>\n<li>a<blockquote>\n<p>b\nc</p>\n<p>| x |\n|---|---|</p>\n</blockquote>\n</li>\n</ul>\n"
+  }
+]

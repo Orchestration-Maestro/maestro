@@ -90,8 +90,8 @@ fn parser_retains_container_source_extents() {
     let Kind::Quote(quote, _) = &document.nodes[0].kind else {
         panic!("quote")
     };
-    assert_eq!(quote[0].authored, "$$x\ny$$\n");
-    assert_eq!(&document.source[quote[0].range.clone()], "$$x\n> y$$\n");
+    assert_eq!(quote[0].authored, "$$x\ny$$");
+    assert_eq!(&document.source[quote[0].range.clone()], "$$x\n> y$$");
     let Kind::List(_, items) = &document.nodes[2].kind else {
         panic!("list")
     };
@@ -325,7 +325,7 @@ fn list_lazy_continuations_stop_after_nonparagraph_blocks() {
         assert!(matches!(&document.nodes[0].kind, Kind::List(..)));
         assert_eq!(
             &document.source[document.nodes[0].range.clone()],
-            format!("- {first}")
+            format!("- {first}\n")
         );
         assert_eq!(&document.source[document.nodes[1].range.clone()], "outside");
     }

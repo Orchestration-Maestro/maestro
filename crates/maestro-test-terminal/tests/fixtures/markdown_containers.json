@@ -1,0 +1,1796 @@
+{
+  "container_frames_follow_configured_grammar": [
+    {
+      "text": "1. step\n| a | b |\n|---|---|\n| 1 | 2 |",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "1. step                                                     ",
+        "  | a | b |                                                 ",
+        "|---|---|                                                   ",
+        "| 1 | 2 |                                                   "
+      ]
+    },
+    {
+      "text": "1. step\n| a | b |\n|---|---|\n| 1 | 2 |",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m1. \u001b[39mstep                                                     ",
+        "  | a | b |                                                 ",
+        "|---|---|                                                   ",
+        "| 1 | 2 |                                                   "
+      ]
+    },
+    {
+      "text": "- item\n| a | b |\n|---|---|",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- item                                                      ",
+        "  | a | b |                                                 ",
+        "|---|---|                                                   "
+      ]
+    },
+    {
+      "text": "- item\n| a | b |\n|---|---|",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39mitem                                                      ",
+        "  | a | b |                                                 ",
+        "|---|---|                                                   "
+      ]
+    },
+    {
+      "text": "- a\nb\n| x | y |\n|---|---|",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "b                                                           ",
+        "  | x | y |                                                 ",
+        "|---|---|                                                   "
+      ]
+    },
+    {
+      "text": "- a\nb\n| x | y |\n|---|---|",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "b                                                           ",
+        "  | x | y |                                                 ",
+        "|---|---|                                                   "
+      ]
+    },
+    {
+      "text": "- item\n  | a | b |\n  |---|---|",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- item                                                      ",
+        "  | a | b |                                                 ",
+        "|---|---|                                                   "
+      ]
+    },
+    {
+      "text": "- item\n  | a | b |\n  |---|---|",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39mitem                                                      ",
+        "  | a | b |                                                 ",
+        "|---|---|                                                   "
+      ]
+    },
+    {
+      "text": "> q\n| A | B |\n| --- | --- |\n| 1 | 2 |",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ q                                                         ",
+        "│                                                           ",
+        "│ ┌───┬───┐                                                 ",
+        "│ │ A │ B │                                                 ",
+        "│ ├───┼───┤                                                 ",
+        "│ │ 1 │ 2 │                                                 ",
+        "│ └───┴───┘                                                 "
+      ]
+    },
+    {
+      "text": "> q\n| A | B |\n| --- | --- |\n| 1 | 2 |",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mq\u001b[23m\u001b[3m\u001b[23m                                                         ",
+        "\u001b[2m│ \u001b[22m                                                          ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m┌───┬───┐\u001b[23m\u001b[3m\u001b[23m                                                 ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m│ \u001b[1mA\u001b[22m │ \u001b[1mB\u001b[22m │\u001b[23m\u001b[3m\u001b[23m                                                 ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m├───┼───┤\u001b[23m\u001b[3m\u001b[23m                                                 ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m│ 1 │ 2 │\u001b[23m\u001b[3m\u001b[23m                                                 ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m└───┴───┘\u001b[23m\u001b[3m\u001b[23m                                                 "
+      ]
+    },
+    {
+      "text": "- item\na  \n|---|---|\nmore text",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- item                                                      ",
+        "a                                                           ",
+        "|---|---|                                                   ",
+        "more text                                                   "
+      ]
+    },
+    {
+      "text": "- item\na  \n|---|---|\nmore text",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39mitem                                                      ",
+        "a                                                           ",
+        "|---|---|                                                   ",
+        "more text                                                   "
+      ]
+    },
+    {
+      "text": "- item\n  a  \n  |---|---|\n  more text",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- item                                                      ",
+        "a                                                           ",
+        "|---|---|                                                   ",
+        "more text                                                   "
+      ]
+    },
+    {
+      "text": "- item\n  a  \n  |---|---|\n  more text",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39mitem                                                      ",
+        "a                                                           ",
+        "|---|---|                                                   ",
+        "more text                                                   "
+      ]
+    },
+    {
+      "text": "- item\n    code\n|---|---|",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- item                                                      ",
+        "  code                                                      ",
+        "|---|---|                                                   "
+      ]
+    },
+    {
+      "text": "- item\n    code\n|---|---|",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39mitem                                                      ",
+        "  code                                                      ",
+        "|---|---|                                                   "
+      ]
+    },
+    {
+      "text": "> quote\nlazy\n===\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ quote                                                     ",
+        "│ lazy                                                      ",
+        "│     ===                                                   "
+      ]
+    },
+    {
+      "text": "> quote\nlazy\n===\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mquote\u001b[23m\u001b[3m\u001b[23m                                                     ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mlazy\u001b[23m\u001b[3m\u001b[23m                                                      ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m    ===\u001b[23m\u001b[3m\u001b[23m                                                   "
+      ]
+    },
+    {
+      "text": "> a\nb\n  ==\nc\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ a                                                         ",
+        "│ b                                                         ",
+        "│     ==                                                    ",
+        "│ c                                                         "
+      ]
+    },
+    {
+      "text": "> a\nb\n  ==\nc\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3ma\u001b[23m\u001b[3m\u001b[23m                                                         ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mb\u001b[23m\u001b[3m\u001b[23m                                                         ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m    ==\u001b[23m\u001b[3m\u001b[23m                                                    ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mc\u001b[23m\u001b[3m\u001b[23m                                                         "
+      ]
+    },
+    {
+      "text": "Some text\n> quote\nlazy\n===\n\nafter",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "Some text                                                   ",
+        "                                                            ",
+        "│ quote                                                     ",
+        "│ lazy                                                      ",
+        "│     ===                                                   ",
+        "                                                            ",
+        "after                                                       "
+      ]
+    },
+    {
+      "text": "Some text\n> quote\nlazy\n===\n\nafter",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "Some text                                                   ",
+        "                                                            ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mquote\u001b[23m\u001b[3m\u001b[23m                                                     ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mlazy\u001b[23m\u001b[3m\u001b[23m                                                      ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m    ===\u001b[23m\u001b[3m\u001b[23m                                                   ",
+        "                                                            ",
+        "after                                                       "
+      ]
+    },
+    {
+      "text": "> quote\nlazy\n===",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ quote                                                     ",
+        "│ lazy                                                      ",
+        "│     ===                                                   "
+      ]
+    },
+    {
+      "text": "> quote\nlazy\n===",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mquote\u001b[23m\u001b[3m\u001b[23m                                                     ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mlazy\u001b[23m\u001b[3m\u001b[23m                                                      ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m    ===\u001b[23m\u001b[3m\u001b[23m                                                   "
+      ]
+    },
+    {
+      "text": "> q\nx\n---\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ q                                                         ",
+        "│ x                                                         ",
+        "                                                            ",
+        "────────────────────────────────────────────────────────────"
+      ]
+    },
+    {
+      "text": "> q\nx\n---\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mq\u001b[23m\u001b[3m\u001b[23m                                                         ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mx\u001b[23m\u001b[3m\u001b[23m                                                         ",
+        "                                                            ",
+        "\u001b[2m────────────────────────────────────────────────────────────\u001b[22m"
+      ]
+    },
+    {
+      "text": "> q\n[r]: https://r.s\n\n[r]\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ q                                                         ",
+        "│ [r]: https://r.s                                          ",
+        "                                                            ",
+        "[r]                                                         "
+      ]
+    },
+    {
+      "text": "> q\n[r]: https://r.s\n\n[r]\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mq\u001b[23m\u001b[3m\u001b[23m                                                         ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m[r]: \u001b[34m\u001b[4mhttps://r.s\u001b[24m\u001b[39m\u001b[23m\u001b[3m\u001b[23m                                          ",
+        "                                                            ",
+        "[r]                                                         "
+      ]
+    },
+    {
+      "text": "> q\n    code\n    more\n> x\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ q                                                         ",
+        "│ code                                                      ",
+        "│ more                                                      ",
+        "│ x                                                         "
+      ]
+    },
+    {
+      "text": "> q\n    code\n    more\n> x\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mq\u001b[23m\u001b[3m\u001b[23m                                                         ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mcode\u001b[23m\u001b[3m\u001b[23m                                                      ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mmore\u001b[23m\u001b[3m\u001b[23m                                                      ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mx\u001b[23m\u001b[3m\u001b[23m                                                         "
+      ]
+    },
+    {
+      "text": "> q\n    code",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ q                                                         ",
+        "│ code                                                      "
+      ]
+    },
+    {
+      "text": "> q\n    code",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mq\u001b[23m\u001b[3m\u001b[23m                                                         ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mcode\u001b[23m\u001b[3m\u001b[23m                                                      "
+      ]
+    },
+    {
+      "text": "> - item\nlazy\n> q *e*\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ - item                                                    ",
+        "│ lazy                                                      ",
+        "│   q *e*                                                   "
+      ]
+    },
+    {
+      "text": "> - item\nlazy\n> q *e*\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m\u001b[36m- \u001b[39mitem\u001b[23m\u001b[3m\u001b[23m                                                    ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mlazy\u001b[23m\u001b[3m\u001b[23m                                                      ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m  q *e*\u001b[23m\u001b[3m\u001b[23m                                                   "
+      ]
+    },
+    {
+      "text": "> > nested\nlazy\n> - item\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ │ nested                                                  ",
+        "│ │ lazy                                                    ",
+        "│ │ - item                                                  "
+      ]
+    },
+    {
+      "text": "> > nested\nlazy\n> - item\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mnested\u001b[23m\u001b[3m\u001b[3m\u001b[3m\u001b[23m\u001b[3m\u001b[3m\u001b[23m\u001b[3m\u001b[23m                                                  ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mlazy\u001b[23m\u001b[3m\u001b[3m\u001b[3m\u001b[23m\u001b[3m\u001b[3m\u001b[23m\u001b[3m\u001b[23m                                                    ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m\u001b[36m- \u001b[39mitem\u001b[23m\u001b[3m\u001b[3m\u001b[3m\u001b[23m\u001b[3m\u001b[3m\u001b[23m\u001b[3m\u001b[23m                                                  "
+      ]
+    },
+    {
+      "text": "> - a\n      p\n> [s]: /y\ne",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ - a                                                       ",
+        "│ p                                                         ",
+        "│                                                           ",
+        "│ e                                                         "
+      ]
+    },
+    {
+      "text": "> - a\n      p\n> [s]: /y\ne",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m\u001b[36m- \u001b[39ma\u001b[23m\u001b[3m\u001b[23m                                                       ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mp\u001b[23m\u001b[3m\u001b[23m                                                         ",
+        "\u001b[2m│ \u001b[22m                                                          ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3me\u001b[23m\u001b[3m\u001b[23m                                                         "
+      ]
+    },
+    {
+      "text": "> - a\n    p\n> [s]: /y\ne",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ - a                                                       ",
+        "│   p                                                       ",
+        "│   [s]: /y                                                 ",
+        "│ e                                                         "
+      ]
+    },
+    {
+      "text": "> - a\n    p\n> [s]: /y\ne",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m\u001b[36m- \u001b[39ma\u001b[23m\u001b[3m\u001b[23m                                                       ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m  p\u001b[23m\u001b[3m\u001b[23m                                                       ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m  [s]: /y\u001b[23m\u001b[3m\u001b[23m                                                 ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3me\u001b[23m\u001b[3m\u001b[23m                                                         "
+      ]
+    },
+    {
+      "text": "> - a\n      p\n> [s]: /y\n> e",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ - a                                                       ",
+        "│ p                                                         ",
+        "│ e                                                         "
+      ]
+    },
+    {
+      "text": "> - a\n      p\n> [s]: /y\n> e",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m\u001b[36m- \u001b[39ma\u001b[23m\u001b[3m\u001b[23m                                                       ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mp\u001b[23m\u001b[3m\u001b[23m                                                         ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3me\u001b[23m\u001b[3m\u001b[23m                                                         "
+      ]
+    },
+    {
+      "text": "> - a\n      p\n[s]: /y\ne",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ - a                                                       ",
+        "│ p                                                         ",
+        "│ e                                                         "
+      ]
+    },
+    {
+      "text": "> - a\n      p\n[s]: /y\ne",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m\u001b[36m- \u001b[39ma\u001b[23m\u001b[3m\u001b[23m                                                       ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mp\u001b[23m\u001b[3m\u001b[23m                                                         ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3me\u001b[23m\u001b[3m\u001b[23m                                                         "
+      ]
+    },
+    {
+      "text": "- a\n      code\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "code                                                        "
+      ]
+    },
+    {
+      "text": "- a\n      code\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "code                                                        "
+      ]
+    },
+    {
+      "text": "- a\n\t  code\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "   code                                                     "
+      ]
+    },
+    {
+      "text": "- a\n\t  code\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "   code                                                     "
+      ]
+    },
+    {
+      "text": "- a\n      x\n       y\n  z\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "x                                                           ",
+        " y                                                          ",
+        "z                                                           "
+      ]
+    },
+    {
+      "text": "- a\n      x\n       y\n  z\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "x                                                           ",
+        " y                                                          ",
+        "z                                                           "
+      ]
+    },
+    {
+      "text": "1. a\n       code\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "1. a                                                        ",
+        "code                                                        "
+      ]
+    },
+    {
+      "text": "1. a\n       code\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m1. \u001b[39ma                                                        ",
+        "code                                                        "
+      ]
+    },
+    {
+      "text": "- a\n    b",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "  b                                                         "
+      ]
+    },
+    {
+      "text": "- a\n    b",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "  b                                                         "
+      ]
+    },
+    {
+      "text": "- [ ] task\n    - deep\n\n\tcode\n\tcode\n      code\n    four",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- task                                                      ",
+        "  - deep                                                    ",
+        "   code                                                     ",
+        " code                                                       ",
+        "    code                                                    ",
+        "  four                                                      "
+      ]
+    },
+    {
+      "text": "- [ ] task\n    - deep\n\n\tcode\n\tcode\n      code\n    four",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39mtask                                                      ",
+        "  \u001b[36m- \u001b[39mdeep                                                    ",
+        "   code                                                     ",
+        " code                                                       ",
+        "    code                                                    ",
+        "  four                                                      "
+      ]
+    },
+    {
+      "text": ">",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        ""
+      ]
+    },
+    {
+      "text": ">",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        ""
+      ]
+    },
+    {
+      "text": "a\n>",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "a                                                           ",
+        "                                                            "
+      ]
+    },
+    {
+      "text": "a\n>",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "a                                                           ",
+        "                                                            "
+      ]
+    },
+    {
+      "text": "- item\n>",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- item                                                      "
+      ]
+    },
+    {
+      "text": "- item\n>",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39mitem                                                      "
+      ]
+    },
+    {
+      "text": ">\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        ""
+      ]
+    },
+    {
+      "text": ">\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        ""
+      ]
+    },
+    {
+      "text": "1. one\n>",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "1. one                                                      "
+      ]
+    },
+    {
+      "text": "1. one\n>",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m1. \u001b[39mone                                                      "
+      ]
+    },
+    {
+      "text": "- >",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "-                                                           "
+      ]
+    },
+    {
+      "text": "- >",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39m                                                          "
+      ]
+    },
+    {
+      "text": "- item\n  2. two",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- item                                                      ",
+        "  2. two                                                    "
+      ]
+    },
+    {
+      "text": "- item\n  2. two",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39mitem                                                      ",
+        "  \u001b[36m2. \u001b[39mtwo                                                    "
+      ]
+    },
+    {
+      "text": "- a\n  - b\n\n  c\n  | x |\n  |---|---|",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "  - b                                                       ",
+        "  c                                                         ",
+        "  | x |                                                     ",
+        "|---|---|                                                   "
+      ]
+    },
+    {
+      "text": "- a\n  - b\n\n  c\n  | x |\n  |---|---|",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "  \u001b[36m- \u001b[39mb                                                       ",
+        "  c                                                         ",
+        "  | x |                                                     ",
+        "|---|---|                                                   "
+      ]
+    },
+    {
+      "text": "- a\n  > b\n  c\n  | x |\n  |---|---|",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "  b                                                         ",
+        "c                                                           ",
+        "| x |                                                       ",
+        "|---|---|                                                   "
+      ]
+    },
+    {
+      "text": "- a\n  > b\n  c\n  | x |\n  |---|---|",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "  b                                                         ",
+        "c                                                           ",
+        "| x |                                                       ",
+        "|---|---|                                                   "
+      ]
+    },
+    {
+      "text": "- item\n  <span>",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- item                                                      ",
+        "  <span>                                                    "
+      ]
+    },
+    {
+      "text": "- item\n  <span>",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39mitem                                                      ",
+        "  <span>                                                    "
+      ]
+    },
+    {
+      "text": "- a\n`b\tc`",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "b   c                                                       "
+      ]
+    },
+    {
+      "text": "- a\n`b\tc`",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "\u001b[33mb   c\u001b[39m                                                       "
+      ]
+    },
+    {
+      "text": "- a\n  `b\tc`",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "b   c                                                       "
+      ]
+    },
+    {
+      "text": "- a\n  `b\tc`",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "\u001b[33mb   c\u001b[39m                                                       "
+      ]
+    },
+    {
+      "text": ">\tvalue\n> x",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│   value                                                   ",
+        "│ x                                                         "
+      ]
+    },
+    {
+      "text": ">\tvalue\n> x",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m  value\u001b[23m\u001b[3m\u001b[23m                                                   ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mx\u001b[23m\u001b[3m\u001b[23m                                                         "
+      ]
+    },
+    {
+      "text": "   > q",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ q                                                         "
+      ]
+    },
+    {
+      "text": "   > q",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mq\u001b[23m\u001b[3m\u001b[23m                                                         "
+      ]
+    },
+    {
+      "text": "    > q",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "```                                                         ",
+        "  > q                                                       ",
+        "```                                                         "
+      ]
+    },
+    {
+      "text": "    > q",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m```\u001b[22m                                                         ",
+        "  \u001b[32m> q\u001b[39m                                                       ",
+        "\u001b[2m```\u001b[22m                                                         "
+      ]
+    },
+    {
+      "text": "-\n- b",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "-                                                           ",
+        "- b                                                         "
+      ]
+    },
+    {
+      "text": "-\n- b",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39m                                                          ",
+        "\u001b[36m- \u001b[39mb                                                         "
+      ]
+    },
+    {
+      "text": "-\n\n- b",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "-                                                           ",
+        "- b                                                         "
+      ]
+    },
+    {
+      "text": "-\n\n- b",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39m                                                          ",
+        "\u001b[36m- \u001b[39mb                                                         "
+      ]
+    },
+    {
+      "text": "- a\n+ b",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "- b                                                         "
+      ]
+    },
+    {
+      "text": "- a\n+ b",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "\u001b[36m- \u001b[39mb                                                         "
+      ]
+    },
+    {
+      "text": "1. a\n2) b",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "1. a                                                        ",
+        "2. b                                                        "
+      ]
+    },
+    {
+      "text": "1. a\n2) b",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m1. \u001b[39ma                                                        ",
+        "\u001b[36m2. \u001b[39mb                                                        "
+      ]
+    },
+    {
+      "text": "123456789. a",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "123456789. a                                                "
+      ]
+    },
+    {
+      "text": "123456789. a",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m123456789. \u001b[39ma                                                "
+      ]
+    },
+    {
+      "text": "1234567890. a",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "1234567890. a                                               "
+      ]
+    },
+    {
+      "text": "1234567890. a",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "1234567890. a                                               "
+      ]
+    },
+    {
+      "text": "- a\n```\nx\n```",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "```                                                         ",
+        "  x                                                         ",
+        "```                                                         "
+      ]
+    },
+    {
+      "text": "- a\n```\nx\n```",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "\u001b[2m```\u001b[22m                                                         ",
+        "  \u001b[32mx\u001b[39m                                                         ",
+        "\u001b[2m```\u001b[22m                                                         "
+      ]
+    },
+    {
+      "text": "- a\n# heading",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "heading                                                     "
+      ]
+    },
+    {
+      "text": "- a\n# heading",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "\u001b[1m\u001b[36m\u001b[1m\u001b[4mheading\u001b[24m\u001b[22m\u001b[1m\u001b[39m\u001b[22m                                                     "
+      ]
+    },
+    {
+      "text": "- a\n---",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "────────────────────────────────────────────────────────────"
+      ]
+    },
+    {
+      "text": "- a\n---",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "\u001b[2m────────────────────────────────────────────────────────────\u001b[22m"
+      ]
+    },
+    {
+      "text": "- a\n> q",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "  q                                                         "
+      ]
+    },
+    {
+      "text": "- a\n> q",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "  q                                                         "
+      ]
+    },
+    {
+      "text": "- a\n<div>\nx\n</div>",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "<div>                                                       ",
+        "x                                                           ",
+        "</div>                                                      "
+      ]
+    },
+    {
+      "text": "- a\n<div>\nx\n</div>",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "<div>                                                       ",
+        "x                                                           ",
+        "</div>                                                      "
+      ]
+    },
+    {
+      "text": "- a\nb\nc",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "b                                                           ",
+        "c                                                           "
+      ]
+    },
+    {
+      "text": "- a\nb\nc",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "b                                                           ",
+        "c                                                           "
+      ]
+    },
+    {
+      "text": "> q\n[r]: /x\n> y",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ q                                                         ",
+        "│ [r]: /x                                                   ",
+        "│ y                                                         "
+      ]
+    },
+    {
+      "text": "> q\n[r]: /x\n> y",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mq\u001b[23m\u001b[3m\u001b[23m                                                         ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m[r]: /x\u001b[23m\u001b[3m\u001b[23m                                                   ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3my\u001b[23m\u001b[3m\u001b[23m                                                         "
+      ]
+    },
+    {
+      "text": "- x\n  [a]: b\n  |---|",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- x                                                         ",
+        "[a]: b                                                      ",
+        "|---|                                                       "
+      ]
+    },
+    {
+      "text": "- x\n  [a]: b\n  |---|",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39mx                                                         ",
+        "[a]: b                                                      ",
+        "|---|                                                       "
+      ]
+    },
+    {
+      "text": "> q\n    code\n>\n> y",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ q                                                         ",
+        "│ code                                                      ",
+        "│                                                           ",
+        "│ y                                                         "
+      ]
+    },
+    {
+      "text": "> q\n    code\n>\n> y",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mq\u001b[23m\u001b[3m\u001b[23m                                                         ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mcode\u001b[23m\u001b[3m\u001b[23m                                                      ",
+        "\u001b[2m│ \u001b[22m                                                          ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3my\u001b[23m\u001b[3m\u001b[23m                                                         "
+      ]
+    },
+    {
+      "text": ">\n> - item\n      deep\n> [s]: /y\n    code\n> > nested\n---\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│                                                           ",
+        "│ - item                                                    ",
+        "│ deep                                                      ",
+        "│   code                                                    ",
+        "│ │ nested                                                  ",
+        "                                                            ",
+        "────────────────────────────────────────────────────────────"
+      ]
+    },
+    {
+      "text": ">\n> - item\n      deep\n> [s]: /y\n    code\n> > nested\n---\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m                                                          ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m\u001b[36m- \u001b[39mitem\u001b[23m\u001b[3m\u001b[23m                                                    ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mdeep\u001b[23m\u001b[3m\u001b[23m                                                      ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m  code\u001b[23m\u001b[3m\u001b[23m                                                    ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mnested\u001b[23m\u001b[3m\u001b[3m\u001b[3m\u001b[23m\u001b[3m\u001b[3m\u001b[23m\u001b[3m\u001b[23m                                                  ",
+        "                                                            ",
+        "\u001b[2m────────────────────────────────────────────────────────────\u001b[22m"
+      ]
+    },
+    {
+      "text": "> - item\n[r]: /x \"t\"\n      deep\n> [s]: /y\n  ==\nmore text\n1. one\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ - item                                                    ",
+        "│ [r]: /x \"t\"                                               ",
+        "│ deep                                                      ",
+        "│ ==                                                        ",
+        "│ more text                                                 ",
+        "                                                            ",
+        "1. one                                                      "
+      ]
+    },
+    {
+      "text": "> - item\n[r]: /x \"t\"\n      deep\n> [s]: /y\n  ==\nmore text\n1. one\n",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m\u001b[36m- \u001b[39mitem\u001b[23m\u001b[3m\u001b[23m                                                    ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m[r]: /x \"t\"\u001b[23m\u001b[3m\u001b[23m                                               ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mdeep\u001b[23m\u001b[3m\u001b[23m                                                      ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m==\u001b[23m\u001b[3m\u001b[23m                                                        ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mmore text\u001b[23m\u001b[3m\u001b[23m                                                 ",
+        "                                                            ",
+        "\u001b[36m1. \u001b[39mone                                                      "
+      ]
+    },
+    {
+      "text": "> é\n    😀\n> https://frame.test/é",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ é                                                         ",
+        "│ 😀                                                        ",
+        "│ https://frame.test/é                                      "
+      ]
+    },
+    {
+      "text": "> é\n    😀\n> https://frame.test/é",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mé\u001b[23m\u001b[3m\u001b[23m                                                         ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m😀\u001b[23m\u001b[3m\u001b[23m                                                        ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3m\u001b[34m\u001b[4mhttps://frame.test/é\u001b[24m\u001b[39m\u001b[23m\u001b[3m\u001b[23m                                      "
+      ]
+    },
+    {
+      "text": "- a\n  ﻿",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "  ﻿                                                          "
+      ]
+    },
+    {
+      "text": "- a\n  ﻿",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "  ﻿                                                          "
+      ]
+    },
+    {
+      "text": "- a\n  ",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "- a                                                         ",
+        "                                                            "
+      ]
+    },
+    {
+      "text": "- a\n  ",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[36m- \u001b[39ma                                                         ",
+        "                                                            "
+      ]
+    },
+    {
+      "text": "> q\r\n> x\r",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "plain",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "│ q                                                         ",
+        "│ x                                                         "
+      ]
+    },
+    {
+      "text": "> q\r\n> x\r",
+      "width": 60,
+      "padding_x": 0,
+      "padding_y": 0,
+      "profile": "ansi",
+      "hyperlinks": false,
+      "indent": null,
+      "lines": [
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mq\u001b[23m\u001b[3m\u001b[23m                                                         ",
+        "\u001b[2m│ \u001b[22m\u001b[3m\u001b[3mx\u001b[23m\u001b[3m\u001b[23m                                                         "
+      ]
+    }
+  ]
+}

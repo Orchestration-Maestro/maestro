@@ -160,7 +160,7 @@ fn blank_lines_retain_block_boundaries() {
     assert_eq!(document.nodes[0].authored, "\n\n");
     assert!(matches!(document.nodes[0].kind, Kind::Gap));
     assert!(matches!(document.nodes[1].kind, Kind::Paragraph(_)));
-    assert!(parse("\n\n  \n".into()).nodes.is_empty());
+    assert!(matches!(parse("\n\n  \n".into()).nodes[0].kind, Kind::Gap));
 }
 
 #[test]
@@ -307,20 +307,14 @@ fn tables_keep_column_alignment_pipes_and_authored_padding() {
     let Kind::Item(children) = &items[0].kind else {
         panic!("item")
     };
-    assert_eq!(children.len(), 1);
-    let Kind::Inline(children) = &children[0].kind else {
-        panic!("lazy inline continuation")
-    };
-    assert_eq!(text(children), "item\n| A | B |\n| --- | --- |\n| 1 | 2 |");
+    assert_eq!(children.len(), 2);
+    assert!(matches!(&children[1].kind, Kind::Table(table) if table.header.len() == 2));
     let document = parse("> q\n| A | B |\n| --- | --- |\n| 1 | 2 |".into());
     let Kind::Quote(children, _) = &document.nodes[0].kind else {
         panic!("quote")
     };
-    assert_eq!(children.len(), 1);
-    let Kind::Paragraph(children) = &children[0].kind else {
-        panic!("lazy paragraph")
-    };
-    assert_eq!(text(children), "q\n| A | B |\n| --- | --- |\n| 1 | 2 |");
+    assert_eq!(children.len(), 2);
+    assert!(matches!(&children[1].kind, Kind::Table(table) if table.rows.len() == 1));
     for input in [
         "- | A | B |\n  | - | - |\n  | 1 | 2 |",
         "> | A | B |\n> | - | - |\n> | 1 | 2 |",
@@ -408,6 +402,11 @@ fn mapped_links_share_one_policy_aware_scanner() {
 #[test]
 fn quotes_keep_lazy_continuations_and_nested_extents() {
     check("quote", 9);
+    for input in ["> > a\n> b\ntail\n", "> - a\n>   b\nc\n"] {
+        let document = parse(input.into());
+        assert_eq!(document.nodes[0].authored, input);
+        assert_eq!(&document.source[document.nodes[0].range.clone()], input);
+    }
     for input in ["> one\n> https://frame.test\n", "> https://frame.test\n"] {
         let mut document = parse(input.into());
         maestro_markdown::autolinks(&mut document);
@@ -539,6 +538,10 @@ fn block_extensions_reject_invalid_prefixes_and_hint_boundaries() {
             Some(&mut InvalidExtension { hint }),
         );
         assert!(matches!(result, Err(maestro_markdown::InvalidBlockToken)));
+        assert_eq!(
+            result.err().unwrap().to_string(),
+            "block tokenizer returned an invalid input prefix or start boundary"
+        );
     }
 }
 

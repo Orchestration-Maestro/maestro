@@ -5,7 +5,7 @@ pub(crate) fn strip_quote(line: &str) -> &str {
     let spaces = line.bytes().take_while(|byte| *byte == b' ').count().min(3);
     line[spaces..]
         .strip_prefix('>')
-        .map_or(line, |line| line.strip_prefix(' ').unwrap_or(line))
+        .map_or(line, |line| line.strip_prefix([' ', '\t']).unwrap_or(line))
 }
 
 /// Container-local authored source with ordered native provenance.
@@ -13,8 +13,6 @@ pub(crate) fn strip_quote(line: &str) -> &str {
 pub(crate) struct ScopeSource {
     /// Bytes before inline interpretation.
     pub(crate) text: String,
-    /// Source-ordered starts of lazy container continuations that cannot open tables.
-    pub(crate) lazy_lines: Vec<usize>,
     /// Ordered identity spans or atomic spelling transformations.
     units: Vec<(Range<usize>, Range<usize>)>,
 }
@@ -36,6 +34,8 @@ impl ScopeSource {
     }
     /// Share boundary projection in both directions, retaining atomic transformations.
     fn project(&self, range: &Range<usize>, reverse: bool) -> Option<Range<usize>> {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.projections += 1);
         let pair = |index| {
             let (native, local) = self.units.get(index)?;
             Some(if reverse {
@@ -48,7 +48,7 @@ impl ScopeSource {
             if reverse {
                 local.end <= range.start
             } else {
-                native.end <= range.start
+                native.end < range.start || native.end == range.start && !native.is_empty()
             }
         });
         let last = self
@@ -84,7 +84,6 @@ impl ScopeSource {
         Self {
             text: text.to_owned(),
             units: vec![(0..text.len(), 0..text.len())],
-            lazy_lines: Vec::new(),
         }
     }
     /// Retain selected authored pieces and their original coordinates.
@@ -92,7 +91,6 @@ impl ScopeSource {
         let mut output = Self {
             text: String::new(),
             units: Vec::new(),
-            lazy_lines: Vec::new(),
         };
         for piece in pieces {
             self.select_piece(piece, &mut output);
@@ -106,7 +104,6 @@ impl ScopeSource {
         if piece.is_empty() {
             return;
         }
-        let base = output.text.len();
         let first = self
             .units
             .partition_point(|(_, local)| local.end <= piece.start);
@@ -125,17 +122,6 @@ impl ScopeSource {
             output.text.push_str(&self.text[start..end]);
             output.units.push((absolute, begin..output.text.len()));
         }
-        let first = self
-            .lazy_lines
-            .partition_point(|offset| *offset < piece.start);
-        let last = self
-            .lazy_lines
-            .partition_point(|offset| *offset < piece.end);
-        output.lazy_lines.extend(
-            self.lazy_lines[first..last]
-                .iter()
-                .map(|offset| base + offset - piece.start),
-        );
     }
 
     /// Source extent of a local selection, including an empty boundary.
@@ -168,20 +154,38 @@ impl ScopeSource {
         let mut start = 0;
         for (offset, _) in self.text.match_indices(from) {
             self.select_piece(start..offset, &mut output);
-            let begin = output.text.len();
-            output.text.push_str(to);
-            output.units.push((
-                self.extent(offset..offset + from.len()),
-                begin..begin + to.len(),
-            ));
+            output.spelling(self.extent(offset..offset + from.len()), to);
             start = offset + from.len();
         }
         self.select_piece(start..self.text.len(), &mut output);
         output
     }
 
-    /// Append a framed span without losing transformations or lazy-line boundaries.
+    /// Replace a known leading prefix with one mapped spelling transformation.
+    pub(crate) fn replace_prefix(&self, length: usize, text: &str) -> Self {
+        let mut output = self.select(std::iter::empty());
+        let native = if length == 0 {
+            let start = self.units.first().map_or(0, |(native, _)| native.start);
+            start..start
+        } else {
+            self.extent(0..length)
+        };
+        output.spelling(native, text);
+        self.select_piece(length..self.text.len(), &mut output);
+        output
+    }
+
+    /// Append an atomic spelling while retaining the authored extent it represents.
+    fn spelling(&mut self, native: Range<usize>, text: &str) {
+        let begin = self.text.len();
+        self.text.push_str(text);
+        self.units.push((native, begin..self.text.len()));
+    }
+
+    /// Append a framed span without losing its transformations.
     pub(crate) fn append(&mut self, other: Self) {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.joined_bytes += other.text.len());
         let base = self.text.len();
         self.text.push_str(&other.text);
         self.units.extend(
@@ -190,8 +194,29 @@ impl ScopeSource {
                 .into_iter()
                 .map(|(native, local)| (native, base + local.start..base + local.end)),
         );
-        self.lazy_lines
-            .extend(other.lazy_lines.into_iter().map(|offset| base + offset));
+    }
+
+    /// Discard a semantic suffix while retaining the existing prefix allocation.
+    pub(crate) fn truncate(&mut self, end: usize) {
+        self.text.truncate(end);
+        let count = self.units.partition_point(|(_, local)| local.start < end);
+        self.units.truncate(count);
+        if let Some((native, local)) = self.units.last_mut()
+            && local.end > end
+        {
+            if native.len() == local.len() {
+                native.end -= local.end - end;
+            }
+            local.end = end;
+        }
+    }
+
+    /// Add a semantic separator without consuming another authored byte.
+    pub(crate) fn newline(&mut self) {
+        let boundary = self.units.last().map_or(0, |(native, _)| native.end);
+        let start = self.text.len();
+        self.text.push('\n');
+        self.units.push((boundary..boundary, start..start + 1));
     }
 
     /// Apply table-pipe spelling once while preserving each atomic source unit.
@@ -213,6 +238,8 @@ pub(crate) struct Source<'a> {
 impl ScopeSource {
     /// Borrow a parser window without allocating text or mapping units.
     pub(crate) fn view(&self, range: Range<usize>) -> Source<'_> {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.source_views += 1);
         Source {
             text: &self.text[range.clone()],
             owner: self,
@@ -248,13 +275,6 @@ impl Source<'_> {
                 .into_iter()
                 .map(|range| self.offset + range.start..self.offset + range.end),
         )
-    }
-    /// A lazy continuation cannot introduce a table at this local boundary.
-    pub(crate) fn is_lazy(&self, offset: usize) -> bool {
-        self.owner
-            .lazy_lines
-            .binary_search(&(self.offset + offset))
-            .is_ok()
     }
     /// Project an original extent into this borrowed window's local coordinates.
     pub(crate) fn local(&self, range: &Range<usize>) -> Option<Range<usize>> {

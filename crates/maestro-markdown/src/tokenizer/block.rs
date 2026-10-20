@@ -4,39 +4,39 @@ use crate::{Kind, MarkedOptions, helpers::rtrim, rules, source::Source};
 use maestro_text::is_whitespace_scalar;
 
 /// Admit a non-container block in grammar order.
-pub(crate) fn leaf(source: &Source<'_>, options: MarkedOptions) -> Option<Block> {
-    code(source)
-        .or_else(|| fences(source))
+pub(crate) fn leaf(source: &Source<'_>) -> Option<Block> {
+    fences(source)
         .or_else(|| heading(source))
         .or_else(|| rule(source))
-        .or_else(|| html(source, options))
 }
 
 /// Remove one indentation unit on every indented-code line.
-fn code(source: &Source<'_>) -> Option<Block> {
+pub(crate) fn code(source: &Source<'_>) -> Option<Block> {
     let matched = rules::BLOCK_CODE.as_ref()?.find(source.text)?;
-    let body: String = source.text[matched.range()]
-        .split_inclusive('\n')
-        .map(|line| {
-            let spaces = line.bytes().take_while(|byte| *byte == b' ').count().min(4);
-            let prefix = if spaces < 4 && line.as_bytes().get(spaces) == Some(&b'\t') {
-                spaces + 1
-            } else {
-                spaces
-            };
-            &line[prefix..]
-        })
-        .collect();
+    let pieces = crate::lexer::lines(&source.text[matched.range()]).map(|range| {
+        let line = &source.text[range.clone()];
+        let spaces = line.bytes().take_while(|byte| *byte == b' ').count().min(4);
+        let prefix = if spaces < 4 && line.as_bytes().get(spaces) == Some(&b'\t') {
+            spaces + 1
+        } else {
+            spaces
+        };
+        range.start + prefix..range.end
+    });
+    let body = source.select(pieces);
     Some(Block {
         consumed: matched.end(),
         node: source.node(
             matched.range(),
             Kind::CodeBlock(
-                code_body(rtrim(&body, '\n').to_owned(), body.ends_with('\n')),
+                code_body(
+                    rtrim(&body.text, '\n').to_owned(),
+                    body.text.ends_with('\n'),
+                ),
                 None,
             ),
         ),
-        inline: None,
+        inline: Some(body),
     })
 }
 
@@ -107,7 +107,7 @@ fn rule(source: &Source<'_>) -> Option<Block> {
 }
 
 /// Raw HTML remains a block only for callers that permit it.
-fn html(source: &Source<'_>, options: MarkedOptions) -> Option<Block> {
+pub(crate) fn html(source: &Source<'_>, options: MarkedOptions) -> Option<Block> {
     if options == MarkedOptions::Export {
         return None;
     }

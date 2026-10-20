@@ -6,7 +6,8 @@ use crate::{
     source::{ScopeSource, Source},
     tokenizer::{capture, node},
 };
-use maestro_text::is_whitespace_scalar;
+use maestro_text::{is_whitespace_scalar, truncate_utf16};
+use std::ops::Range;
 
 /// Marker identity and indentation at the start of one list item.
 struct Marker {
@@ -16,10 +17,12 @@ struct Marker {
     bullet: u8,
     /// Complete first-line extent.
     line: usize,
-    /// Content start after eligible marker whitespace.
-    content: usize,
+    /// End of the marker before first-line whitespace.
+    prefix: usize,
     /// Continuation indentation.
     indent: usize,
+    /// Leading first-line tabs expanded before measuring content.
+    tabs: usize,
 }
 
 impl Marker {
@@ -31,7 +34,7 @@ impl Marker {
 
 /// Recognize a marker without treating a horizontal rule as an item.
 fn marker(source: &str) -> Option<Marker> {
-    let matched = rules::BLOCK_LIST.as_ref()?.find(source)?;
+    let matched = rules::LIST_ITEM.as_ref()?.find(source)?;
     if rules::BLOCK_HR.as_ref()?.find(source).is_some() {
         return None;
     }
@@ -43,64 +46,81 @@ fn marker(source: &str) -> Option<Marker> {
         .flatten();
     let line = matched.end();
     let rest = &source[raw.len()..line];
-    let spaces = rest
-        .bytes()
-        .take_while(|byte| *byte == b' ' || *byte == b'\t')
-        .count();
-    let indent = if (1..=4).contains(&spaces) { spaces } else { 1 };
-    let content = if rest.trim_matches(is_whitespace_scalar).is_empty() {
-        line
+    let blank = rest.trim_matches(is_whitespace_scalar).is_empty();
+    let spaces = rest.bytes().take_while(|byte| *byte == b' ').count();
+    let indent = if blank || spaces > 4 { 1 } else { spaces };
+    let tabs = if blank {
+        0
     } else {
-        raw.len() + indent
+        rest.bytes().take_while(|byte| *byte == b'\t').count()
     };
     Some(Marker {
         start,
         bullet,
         line,
-        content,
+        prefix: raw.len(),
         indent: raw.len() + indent,
+        tabs,
     })
 }
 
-/// A continuation can stop at another block admitted before the item indentation.
-fn interrupts(line: &str, indent: usize, options: MarkedOptions) -> bool {
-    let spaces = line.bytes().take_while(|byte| *byte == b' ').count();
-    if spaces >= indent.min(4) {
-        return false;
+/// Item-local lookahead rules, prepared once for the selected indentation.
+struct ItemRules {
+    /// Fences, headings, neighboring markers, rules and HTML prefixes.
+    stops: [Option<regress::Regex>; 5],
+}
+impl ItemRules {
+    /// Bind the five shared prefix factories to this item's indentation.
+    fn new(indent: usize, options: MarkedOptions) -> Self {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.list_rules += 5);
+        let prefix = format!("^ {{0,{}}}", indent.saturating_sub(1).min(3));
+        let factories = [
+            "(?:```|~~~)",
+            "#",
+            r"(?:[*+-]|\d{1,9}[.)])((?:[ \t][^\n]*)?(?:\n|$))",
+            r"((?:- *){3,}|(?:_ *){3,}|(?:\* *){3,})(?:\n+|$)",
+            if options == (MarkedOptions::Browser { escape_html: true }) {
+                "<!--"
+            } else {
+                "<(?:[a-z].*>|!--)"
+            },
+        ];
+        let stops =
+            factories.map(|rule| regress::Regex::with_flags(&format!("{prefix}{rule}"), "i").ok());
+        Self { stops }
     }
-    let line = &line[spaces..];
-    block_end(line)
-        || marker(line).is_some()
-        || (options != (MarkedOptions::Browser { escape_html: true })
-            && line.strip_prefix('<').is_some_and(|text| {
-                text.starts_with("!--")
-                    || text
-                        .bytes()
-                        .next()
-                        .is_some_and(|byte| byte.is_ascii_alphabetic())
-                        && text.contains('>')
-            }))
-}
 
-/// Headings, fences and rules cannot accept a following lazy paragraph line.
-fn block_end(line: &str) -> bool {
-    line.starts_with("```")
-        || line.starts_with("~~~")
-        || line.starts_with('#')
-        || rules::BLOCK_HR
-            .as_ref()
-            .is_some_and(|rule| rule.find(line).is_some())
-}
+    /// A current line can end framing before it is dedented.
+    fn interrupts(&self, line: &str) -> bool {
+        self.stops
+            .iter()
+            .flatten()
+            .any(|rule| rule.find(line).is_some())
+    }
 
-/// A previous nonparagraph block ends a dedented continuation.
-fn ends_lazy(line: &str, indent: usize) -> bool {
-    let spaces = line.bytes().take_while(|byte| *byte == b' ').count();
-    spaces >= 4 || spaces < indent.min(4) && block_end(&line[spaces..])
+    /// A previous code line or block opener cannot admit another lazy line.
+    fn ends_lazy(&self, line: &str) -> bool {
+        let code = line
+            .find(|scalar| !matches!(scalar, ' ' | '\t'))
+            .is_some_and(|end| {
+                line[..end]
+                    .chars()
+                    .map(|scalar| if scalar == '\t' { 4 } else { 1 })
+                    .sum::<usize>()
+                    >= 4
+            });
+        code || [0, 1, 3]
+            .into_iter()
+            .filter_map(|index| self.stops[index].as_ref())
+            .any(|rule| rule.find(line).is_some())
+    }
 }
 
 impl<E> Lexer<'_, E> {
     /// Capture each item's source before recursively admitting its blocks.
     pub(crate) fn list(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
+        rules::BLOCK_LIST.as_ref()?.find(source.text)?;
         let first = marker(source.text)?;
         let mut cursor = 0;
         let mut items = Vec::new();
@@ -111,23 +131,26 @@ impl<E> Lexer<'_, E> {
             }
             let view = source.suffix(cursor);
             let (consumed, body) = item_lines(&view, &current, self.options);
-            let (body, task) = task(body);
+            let (mut body, task) = task(body);
             let following =
                 marker(&source.text[cursor + consumed..]).is_some_and(|next| next.follows(&first));
-            let end = if following {
-                body.text.trim_end_matches('\n').len()
-            } else {
-                body.text.trim_end_matches(is_whitespace_scalar).len()
-            };
-            let body = body.select(std::iter::once(0..end));
+            if !following {
+                body.truncate(body.text.trim_end_matches(is_whitespace_scalar).len());
+            }
             let mut children = self.item_blocks(&body);
             if let Some(checked) = task {
                 let task_node = node(&body, 0..0, Kind::TaskListMarker(checked));
                 children.insert(0, task_node);
             }
             let raw = &source.text[cursor..cursor + consumed];
-            loose |=
-                raw.trim_end_matches('\n').contains("\n\n") || raw.ends_with("\n\n") && following;
+            loose |= rules::LIST_BLANK_END
+                .as_ref()
+                .is_some_and(|rule| rule.find(raw).is_some())
+                && following
+                || children.iter().any(|node| {
+                    matches!(node.kind, Kind::Gap)
+                        && node.authored.bytes().filter(|byte| *byte == b'\n').count() > 1
+                });
             items.push(source.node(cursor..cursor + consumed, Kind::Item(children)));
             cursor += consumed;
             if cursor == source.text.len() {
@@ -140,66 +163,109 @@ impl<E> Lexer<'_, E> {
         let end = source.text[..cursor]
             .trim_end_matches(is_whitespace_scalar)
             .len();
-        if !loose {
-            items.iter_mut().for_each(tighten);
+        if loose {
+            items.iter_mut().for_each(loosen);
         }
         Some((end, source.node(0..end, Kind::List(first.start, items))))
     }
 }
 
-/// Project a first line and its eligible continuations into one item body.
+/// Retained item framing, independent of emitted text and recursive block state.
+struct ItemLines {
+    /// Emitted spelling with its original source pieces.
+    body: ScopeSource,
+    /// Recognized raw prefix through the last admitted physical line.
+    consumed: usize,
+    /// Whether an admitted line has been blank.
+    blank: bool,
+    /// Whether the previous line prevents another lazy continuation.
+    previous_stops: bool,
+}
+impl ItemLines {
+    /// Append one eligible line using measured indentation and previous-line history.
+    fn append(
+        &mut self,
+        source: &Source<'_>,
+        range: Range<usize>,
+        indent: usize,
+        rules: &ItemRules,
+    ) -> bool {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.list_lines += 1);
+        let raw = &source.text[range.clone()];
+        if rules.interrupts(raw) {
+            return false;
+        }
+        let end = range.end - usize::from(raw.ends_with('\n'));
+        let original = source.select(std::iter::once(range.start..end));
+        let measured = original.replace("\t", "    ");
+        let spaces = measured
+            .text
+            .bytes()
+            .take_while(|byte| *byte == b' ')
+            .count();
+        let empty = original.text.trim_matches(is_whitespace_scalar).is_empty();
+        let aligned = spaces >= indent || empty;
+        if !aligned && (self.blank || self.previous_stops) {
+            return false;
+        }
+        let start = truncate_utf16(&measured.text, indent).len();
+        self.body
+            .append(source.select(std::iter::once(range.start - 1..range.start)));
+        if aligned {
+            self.body
+                .append(measured.select(std::iter::once(start..measured.text.len())));
+        } else {
+            self.body.append(original);
+        }
+        self.previous_stops = rules.ends_lazy(&measured.text[start..]);
+        self.blank |= empty;
+        self.consumed = range.end;
+        true
+    }
+}
+
+/// Frame the first line before collecting continuations and their stopping history.
 fn item_lines(
     source: &Source<'_>,
     marker: &Marker,
     options: MarkedOptions,
 ) -> (usize, ScopeSource) {
-    let mut body = source.select(std::iter::once(marker.content..marker.line));
-    let mut consumed = marker.line;
-    let mut previous = body.text.clone();
-    let mut blank = body.text.trim_matches(is_whitespace_scalar).is_empty();
+    let end = marker.line - usize::from(source.text[..marker.line].ends_with('\n'));
+    let mut first = source.select(std::iter::once(marker.prefix..end));
+    if marker.tabs > 0 {
+        first = first.replace_prefix(marker.tabs, &"   ".repeat(marker.tabs));
+    }
+    let blank = first.text.trim_matches(is_whitespace_scalar).is_empty();
+    let start = if blank {
+        first.text.len()
+    } else {
+        marker.indent - marker.prefix
+    };
+    let body = first.select(std::iter::once(start..first.text.len()));
+    if blank {
+        let Some(next) = lines(&source.text[marker.line..]).next() else {
+            return (marker.line, body);
+        };
+        let text = source.text[marker.line..marker.line + next.end].trim_end_matches('\n');
+        if text.trim_matches([' ', '\t']).is_empty() {
+            return (marker.line + next.end, body);
+        }
+    }
+    let rules = ItemRules::new(marker.indent, options);
+    let mut item = ItemLines {
+        body,
+        consumed: marker.line,
+        blank,
+        previous_stops: rules.ends_lazy(&first.text),
+    };
     for range in lines(&source.text[marker.line..]) {
         let range = marker.line + range.start..marker.line + range.end;
-        let line = &source.text[range.clone()];
-        if interrupts(line, marker.indent, options) {
+        if !item.append(source, range, marker.indent, &rules) {
             break;
         }
-        let aligned = source
-            .select(std::iter::once(range.clone()))
-            .replace("\t", "    ");
-        let spaces = aligned
-            .text
-            .bytes()
-            .take_while(|byte| *byte == b' ')
-            .count();
-        let empty = aligned.text.trim_matches(is_whitespace_scalar).is_empty();
-        if spaces < marker.indent && !empty && (blank || ends_lazy(&previous, marker.indent)) {
-            break;
-        }
-        let strip = if spaces >= marker.indent {
-            marker.indent
-        } else {
-            0
-        };
-        if strip == 0 && !empty {
-            body.lazy_lines.push(body.text.len());
-        }
-        previous = String::from_utf16_lossy(
-            &aligned
-                .text
-                .encode_utf16()
-                .skip(marker.indent)
-                .collect::<Vec<_>>(),
-        );
-        let emitted = if strip == 0 && !empty {
-            source.select(std::iter::once(range.clone()))
-        } else {
-            aligned.select(std::iter::once(strip..aligned.text.len()))
-        };
-        body.append(emitted);
-        consumed = range.end;
-        blank |= empty;
     }
-    (consumed, body)
+    (item.consumed, item.body)
 }
 
 /// Task markers are consumed before the item's ordinary inline grammar.
@@ -225,14 +291,14 @@ fn task(source: ScopeSource) -> (ScopeSource, Option<bool>) {
     }
 }
 
-/// Tight items expose inline containers instead of paragraph wrappers.
-fn tighten(item: &mut Node) {
+/// Loose items promote line text without changing genuine paragraphs.
+fn loosen(item: &mut Node) {
     let Kind::Item(children) = &mut item.kind else {
         return;
     };
     for child in children {
-        if let Kind::Paragraph(content) = &mut child.kind {
-            child.kind = Kind::Inline(std::mem::take(content));
+        if let Kind::Inline(content) = &mut child.kind {
+            child.kind = Kind::Paragraph(std::mem::take(content));
         }
     }
 }

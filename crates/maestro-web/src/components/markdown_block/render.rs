@@ -231,11 +231,18 @@ impl Writer<'_, '_> {
         }
         out.push_str("<table>\n<thead>\n");
         self.row(&table.header, (&table.alignments, "th"), atoms, out);
-        out.push_str("</thead>\n<tbody>");
+        out.push_str("</thead>\n");
+        let body = !table.rows.is_empty() || matches!(self.policy, Policy::Transcript { .. });
+        if body {
+            out.push_str("<tbody>");
+        }
         for row in &table.rows {
             self.row(row, (&table.alignments, "td"), atoms, out);
         }
-        out.push_str("</tbody></table>\n");
+        if body {
+            out.push_str("</tbody>");
+        }
+        out.push_str("</table>\n");
         if matches!(self.policy, Policy::Transcript { .. }) {
             out.push_str("</div>");
         }

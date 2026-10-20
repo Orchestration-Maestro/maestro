@@ -1,98 +1,111 @@
-//! Quoted chunks and nested continuation re-lexing.
-use super::{Lexer, lines};
+//! Quoted chunks and raw-source container reentry.
+use super::{Lexer, blocks::BlockTokens, lines};
 use crate::{
     Kind, Node, helpers, rules,
     source::{ScopeSource, Source},
 };
+
 impl<E> Lexer<'_, E> {
-    /// Admit quoted and continuation chunks using their original source coordinates.
+    /// Recognize raw framing independently of the transformed quote body.
     pub(super) fn quote(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
         let matched = rules::block_blockquote(self.options)?.find(source.text)?;
-        let limit =
-            (helpers::rtrim(&source.text[matched.range()], '\n').len() + 1).min(matched.end());
-        let body = quote_source(source, limit);
-        let mut children = Vec::new();
+        let limit = helpers::rtrim(&source.text[matched.range()], '\n').len();
+        let mut pending = source.select(std::iter::once(0..limit));
         let mut cursor = 0;
-        while cursor < limit {
-            let end = quote_chunk(&source.text[cursor..limit]) + cursor;
-            let local = body.local(&source.extent(cursor..end))?;
-            let chunk = body.select(std::iter::once(local));
-            let mut next = self.blocks(&chunk);
-            self.join_continuation(&body, &mut children, &mut next);
-            children.extend(next);
-            cursor = end;
-            if cursor == limit
-                || children
+        let mut text = source.select(std::iter::empty());
+        let mut output = BlockTokens::default();
+        let mut consumed = 0;
+        loop {
+            let rest = pending.view(cursor..pending.text.len());
+            let end = quote_chunk(rest.text);
+            let chunk_end = end - usize::from(end < rest.text.len());
+            let current = rest.select(std::iter::once(0..chunk_end));
+            cursor += end;
+            consumed = consumed.max(source.local(&current.extent(0..current.text.len()))?.end);
+            let chunk = quote_source(&current);
+            if !text.text.is_empty() {
+                text.newline();
+            }
+            let top = self.top;
+            self.top = true;
+            self.block_tokens(&chunk, &mut output, true);
+            self.top = top;
+            text.append(chunk);
+            if cursor == pending.text.len()
+                || output
                     .last()
                     .is_some_and(|node| matches!(node.kind, Kind::CodeBlock(..)))
             {
                 break;
             }
-            if children
+            if !output
                 .last()
-                .is_some_and(|node| matches!(node.kind, Kind::Quote(..) | Kind::List(..)))
+                .is_some_and(|node| matches!(node.kind, Kind::List(..) | Kind::Quote(..)))
             {
-                let old = children.pop()?;
-                let local = body.local(&old.range)?;
-                self.forget(&old);
-                let (_, node) = self.container(&body.view(local.start..body.text.len()))?;
-                cursor = source.local(&node.range)?.end;
-                cursor += usize::from(source.text.as_bytes().get(cursor) == Some(&b'\n'));
-                children.push(node);
+                continue;
             }
-            if children
+            let quote = output
                 .last()
-                .is_some_and(|node| matches!(node.kind, Kind::Quote(..)))
-            {
+                .is_some_and(|node| matches!(node.kind, Kind::Quote(..)));
+            let remaining = pending.select(std::iter::once(cursor..pending.text.len()));
+            let (used, rest) = self.reenter(&mut output, remaining, &mut text)?;
+            let end = source.local(&used)?.end;
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| {
+                work.reentry_end = end;
+                work.reentry_previous = consumed;
+            });
+            consumed = consumed.max(end);
+            pending = rest;
+            cursor = 0;
+            if quote || pending.text.is_empty() {
                 break;
             }
         }
-        let authored = body
-            .select(std::iter::once(
-                0..body.local(&source.extent(0..cursor))?.end,
-            ))
-            .text;
         Some((
-            cursor,
-            source.node(0..cursor, Kind::Quote(children, authored)),
+            consumed,
+            source.node(0..consumed, Kind::Quote(output.nodes, text.text)),
         ))
     }
 
-    /// Merge the first paragraph of a continuation before admitting inline operands.
-    pub(super) fn join_continuation(
+    /// Replace a trailing container using only its own raw and the unconsumed input.
+    fn reenter(
         &mut self,
-        source: &ScopeSource,
-        previous: &mut [Node],
-        next: &mut Vec<Node>,
-    ) {
-        let Some(last) = previous
-            .last_mut()
-            .filter(|node| matches!(node.kind, Kind::Paragraph(_)))
-        else {
-            return;
+        output: &mut BlockTokens,
+        remaining: ScopeSource,
+        text: &mut ScopeSource,
+    ) -> Option<(std::ops::Range<usize>, ScopeSource)> {
+        let old = output.nodes.pop()?;
+        let mut joined = output.raw()?;
+        let prefix = match &old.kind {
+            Kind::Quote(_, body) => text.text.len().checked_sub(body.len())?,
+            _ => text.local(&joined.extent(0..joined.text.len()))?.start,
         };
-        if !next
-            .first()
-            .is_some_and(|node| matches!(node.kind, Kind::Paragraph(_)))
-        {
-            return;
+        joined.newline();
+        joined.append(remaining);
+        self.forget(&old);
+        let view = joined.view(0..joined.text.len());
+        let (consumed, node) = if matches!(old.kind, Kind::Quote(..)) {
+            self.quote(&view)?
+        } else {
+            self.list(&view)?
+        };
+        let used = view.select(std::iter::once(0..consumed));
+        text.truncate(prefix);
+        let extent = used.extent(0..used.text.len());
+        if let Kind::Quote(_, body) = &node.kind {
+            text.append(used.replace(&used.text, body));
+        } else {
+            text.append(used);
         }
-        let first = next.remove(0);
-        self.scopes
-            .remove(&(last.range.start, last.range.end, false));
-        self.scopes
-            .remove(&(first.range.start, first.range.end, false));
-        last.range.end = first.range.end;
-        let Some(local) = source.local(&last.range) else {
-            return;
-        };
-        let merged = source.select(std::iter::once(local));
-        last.authored.clone_from(&merged.text);
-        self.scopes
-            .insert((last.range.start, last.range.end, false), merged);
+        output.push(&view, consumed, node);
+        Some((
+            extent,
+            view.select(std::iter::once(consumed..view.text.len())),
+        ))
     }
 
-    /// Release source frames belonging to the container being replaced by its continuation.
+    /// Release inline scopes of a replaced container before recursive admission.
     fn forget(&mut self, node: &Node) {
         match &node.kind {
             Kind::Paragraph(_) | Kind::Inline(_) | Kind::Heading(..) => {
@@ -114,10 +127,13 @@ impl<E> Lexer<'_, E> {
         }
     }
 }
-/// Select one quoted run together with any preceding lazy continuation lines.
+
+/// Select one quoted run with its preceding lazy lines and following separator.
 fn quote_chunk(source: &str) -> usize {
     let mut quoted = false;
     for range in lines(source) {
+        #[cfg(test)]
+        crate::tests::WORK.with_borrow_mut(|work| work.quote_lines += 1);
         let line = &source[range.clone()];
         if crate::source::strip_quote(line).len() != line.len() {
             quoted = true;
@@ -128,21 +144,25 @@ fn quote_chunk(source: &str) -> usize {
     source.len()
 }
 
-/// Strip one quote prefix while keeping every line's native provenance.
-fn quote_source(source: &Source<'_>, end: usize) -> ScopeSource {
-    let mut pieces = Vec::new();
-    let mut lazy = Vec::new();
-    let mut local = 0;
-    for range in lines(&source.text[..end]) {
+/// Rewrite unquoted setext spelling within this chunk before removing prefixes.
+fn quote_source(source: &ScopeSource) -> ScopeSource {
+    let mut output = source.select(std::iter::empty());
+    for range in lines(&source.text) {
         let line = &source.text[range.clone()];
         let shown = crate::source::strip_quote(line);
-        if shown.len() == line.len() {
-            lazy.push(local);
+        let mut piece = source.select(std::iter::once(
+            range.start + line.len() - shown.len()..range.end,
+        ));
+        let spaces = line.bytes().take_while(|byte| *byte == b' ').count();
+        let label = line[spaces..].trim_end_matches([' ', '\n']);
+        if range.start > 0
+            && spaces <= 3
+            && !label.is_empty()
+            && (label.bytes().all(|byte| byte == b'=') || label.bytes().all(|byte| byte == b'-'))
+        {
+            piece = piece.replace_prefix(spaces, "    ");
         }
-        pieces.push(range.start + line.len() - shown.len()..range.end);
-        local += shown.len();
+        output.append(piece);
     }
-    let mut body = source.select(pieces);
-    body.lazy_lines = lazy;
-    body
+    output
 }

@@ -21,6 +21,8 @@ struct Row {
     inline_authored: Option<[Option<Vec<String>>; 4]>,
     /// Recorded link labels in traversal order.
     link_labels: Option<[Option<Vec<String>>; 4]>,
+    /// Corrected raw envelopes, when this family asserts source consumption.
+    raw_quotes: Option<[Vec<String>; 4]>,
 }
 
 /// Require the complete selected family without deduplicating repeated observations.
@@ -49,6 +51,9 @@ pub(super) fn check_with_options(group: &str, count: usize, fixture: &str, optio
         for (target, (options, expected)) in options.iter().copied().zip(&row.targets).enumerate() {
             let mut document =
                 parse_with_options(maestro_text::normalize_to_lf(&row.input), options);
+            if let Some(raw) = &row.raw_quotes {
+                check_raw(&document, &raw[target], &row.id);
+            }
             autolinks(&mut document);
             if let Some(difference) = metadata_difference(&row, target, &document.nodes) {
                 failures.push(format!("{} {options:?}: {difference}", row.id));
@@ -129,6 +134,23 @@ fn metadata(input: &[Node]) -> (Vec<String>, Vec<String>) {
         labels.extend(nested_labels);
     }
     (authored, labels)
+}
+
+/// Compare raw quote envelopes separately from semantic inline projections.
+fn check_raw(document: &maestro_markdown::Document, expected: &[String], id: &str) {
+    let quotes: Vec<_> = document
+        .nodes
+        .iter()
+        .filter(|node| matches!(node.kind, Kind::Quote(..)))
+        .collect();
+    assert_eq!(
+        quotes.iter().map(|node| &node.authored).collect::<Vec<_>>(),
+        expected.iter().collect::<Vec<_>>(),
+        "{id}"
+    );
+    for quote in quotes {
+        assert_eq!(quote.authored, document.source[quote.range.clone()], "{id}");
+    }
 }
 
 /// Compare native semantic fields while coalescing adjacent display text only.
