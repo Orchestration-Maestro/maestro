@@ -49,10 +49,9 @@ fn prepare(template: &Template) -> ToolRenderResult {
     if let Some(result) = &mut result {
         result
             .content
-            .push(maestro_app::UserBlock::Text(maestro_app::TextContent {
-                text: "R".into(),
-                text_signature: None,
-            }));
+            .push(maestro_app::UserBlock::Text(maestro_app::TextContent::new(
+                "R".into(),
+            )));
     }
     <ArtifactsToolRenderer as ToolRenderer<Value, Value>>::render(
         &ArtifactsToolRenderer::new(None),
@@ -161,10 +160,9 @@ fn console_release(surface: &mut Surface) {
     let mut result = super::phase("success").unwrap();
     result
         .content
-        .push(maestro_app::UserBlock::Text(maestro_app::TextContent {
-            text: "log\n".repeat(100),
-            text_signature: None,
-        }));
+        .push(maestro_app::UserBlock::Text(maestro_app::TextContent::new(
+            "log\n".repeat(100),
+        )));
     let prepare = |params: &Value| {
         <ArtifactsToolRenderer as ToolRenderer<Value, Value>>::render(
             &ArtifactsToolRenderer::new(None),
@@ -272,10 +270,9 @@ pub async fn copy_feedback() {
     let mut result = super::phase("success").unwrap();
     result
         .content
-        .push(maestro_app::UserBlock::Text(maestro_app::TextContent {
-            text: "literal logs".into(),
-            text_signature: None,
-        }));
+        .push(maestro_app::UserBlock::Text(maestro_app::TextContent::new(
+            "literal logs".into(),
+        )));
     let recipe = <ArtifactsToolRenderer as ToolRenderer<Value, Value>>::render(
         &ArtifactsToolRenderer::new(None),
         Some(&params),

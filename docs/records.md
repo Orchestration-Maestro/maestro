@@ -10,6 +10,10 @@ check. Replacing a protocol preserves its position but replaces its source owner
 source removal affects only registrations still owned by that source. Retained
 handles remain usable after replacement, removal or clear.
 
+`TextContent::new(text)` moves an owned string into a text block unchanged and
+leaves its model-specific signature absent. It preserves empty text, whitespace,
+Unicode and control characters.
+
 Protocol registration, account membership, session cleanup and cloud callback
 selection retain separate owners on each target.
 

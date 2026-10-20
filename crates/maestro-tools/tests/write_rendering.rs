@@ -205,10 +205,7 @@ fn result_of(content: Vec<UserBlock>) -> AgentToolResult<()> {
 
 /// A text block.
 fn text_block(text: &str) -> UserBlock {
-    UserBlock::Text(TextContent {
-        text: text.into(),
-        text_signature: None,
-    })
+    UserBlock::Text(TextContent::new(text.into()))
 }
 
 /// The blocks of a recorded result.

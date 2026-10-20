@@ -39,10 +39,7 @@ fn custom(name: &str) -> ToolDefinition<Value> {
 }
 /// A model-facing text block.
 fn text(value: &str) -> maestro_models::UserBlock {
-    maestro_models::UserBlock::Text(maestro_models::TextContent {
-        text: value.into(),
-        text_signature: None,
-    })
+    maestro_models::UserBlock::Text(maestro_models::TextContent::new(value.into()))
 }
 /// Serialize the complete result using its existing optional-field contract.
 fn result_value<D: serde::Serialize>(result: AgentToolResult<D>) -> Value {

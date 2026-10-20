@@ -50,7 +50,7 @@ pub fn config() -> AgentLoopConfig {
 /// Panics if the fixed usage fixture is invalid.
 #[must_use]
 pub fn assistant(text: &str) -> SharedAssistantMessage {
-    Arc::new(RwLock::new(AssistantMessage { content: vec![AssistantContent::Text(TextContent { text: text.into(), text_signature: None })], api: "fixture".into(), provider: "fixture".into(), model: "fixture".into(), response_model: None, response_id: None, diagnostics: None, usage: serde_json::from_value(serde_json::json!({"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}})).unwrap(), stop_reason: StopReason::Stop, error_message: None, timestamp: 2.0 }))
+    Arc::new(RwLock::new(AssistantMessage { content: vec![AssistantContent::Text(TextContent::new(text.into()))], api: "fixture".into(), provider: "fixture".into(), model: "fixture".into(), response_model: None, response_id: None, diagnostics: None, usage: serde_json::from_value(serde_json::json!({"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"totalTokens":0,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}})).unwrap(), stop_reason: StopReason::Stop, error_message: None, timestamp: 2.0 }))
 }
 /// Execute local futures on the test-owned runtime.
 ///

@@ -31,10 +31,9 @@ pub fn calculate(expression: &str) -> Result<AgentToolResult<()>, String> {
     };
     let result = result.ok_or_else(|| format!("Arithmetic overflow: {expression}"))?;
     Ok(AgentToolResult {
-        content: vec![UserBlock::Text(TextContent {
-            text: format!("{expression} = {result}"),
-            text_signature: None,
-        })],
+        content: vec![UserBlock::Text(TextContent::new(format!(
+            "{expression} = {result}"
+        )))],
         details: None,
         terminate: None,
     })

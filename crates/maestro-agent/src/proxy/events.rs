@@ -300,10 +300,7 @@ fn text_start(
     content_index: usize,
     partial: SharedAssistantMessage,
 ) -> Result<Event, String> {
-    let block = AssistantContent::Text(TextContent {
-        text: String::new(),
-        text_signature: None,
-    });
+    let block = AssistantContent::Text(TextContent::new(String::new()));
     replace(message, content_index, block)?;
     Ok(Event::TextStart {
         content_index,

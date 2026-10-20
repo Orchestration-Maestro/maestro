@@ -12,10 +12,9 @@ mod tests {
             tool_call_id: "c".into(),
             tool_name: "text".into(),
             content: vec![maestro_models::UserBlock::Text(
-                maestro_models::TextContent {
-                    text: sanitize_surrogates(&[65, 0xd800, 0xd83d, 0xde00]),
-                    text_signature: None,
-                },
+                maestro_models::TextContent::new(sanitize_surrogates(&[
+                    65, 0xd800, 0xd83d, 0xde00,
+                ])),
             )],
             details: None,
             is_error: false,

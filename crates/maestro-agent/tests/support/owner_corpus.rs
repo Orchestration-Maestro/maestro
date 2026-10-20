@@ -247,19 +247,17 @@ fn tool(input: &Arc<Input>) -> maestro_agent::SharedAgentTool {
         execute: Arc::new(move |_, _, _, update| {
             if input.fail.as_deref() == Some("tool_execution_update") {
                 update.unwrap()(maestro_agent::AgentToolResult {
-                    content: vec![maestro_models::UserBlock::Text(TextContent {
-                        text: "partial".into(),
-                        text_signature: None,
-                    })],
+                    content: vec![maestro_models::UserBlock::Text(TextContent::new(
+                        "partial".into(),
+                    ))],
                     details: Some(json!({"partial":true})),
                     terminate: None,
                 });
             }
             ready(Ok(maestro_agent::AgentToolResult {
-                content: vec![maestro_models::UserBlock::Text(TextContent {
-                    text: "result".into(),
-                    text_signature: None,
-                })],
+                content: vec![maestro_models::UserBlock::Text(TextContent::new(
+                    "result".into(),
+                ))],
                 details: Some(json!({"result":true})),
                 terminate: Some(true),
             }))
@@ -344,10 +342,7 @@ fn updates(stream: &AssistantMessageEventStream) {
                 redacted: None,
             }),
             6..=8 => AssistantContent::ToolCall(call.clone()),
-            _ => AssistantContent::Text(TextContent {
-                text: content.clone(),
-                text_signature: None,
-            }),
+            _ => AssistantContent::Text(TextContent::new(content.clone())),
         }];
         stream.push(update(i, partial, content, call));
     }

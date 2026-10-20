@@ -109,10 +109,9 @@ pub async fn dropped_reader() -> TestResult {
     let output = result.await;
     assert_eq!(
         output.read().unwrap().content,
-        vec![AssistantContent::Text(maestro_models::TextContent {
-            text: "independent".into(),
-            text_signature: None
-        })]
+        vec![AssistantContent::Text(maestro_models::TextContent::new(
+            "independent".into()
+        ))]
     );
     Ok(())
 }

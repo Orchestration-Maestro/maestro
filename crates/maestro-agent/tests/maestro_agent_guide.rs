@@ -256,12 +256,7 @@ fn echo_tool() -> maestro_agent::SharedAgentTool {
             "required": ["text"]
         }),
     };
-    let text = |text: String| {
-        UserBlock::Text(TextContent {
-            text,
-            text_signature: None,
-        })
-    };
+    let text = |text: String| UserBlock::Text(TextContent::new(text));
     let mut tool = AgentTool::typed(
         definition,
         "Echo".into(),

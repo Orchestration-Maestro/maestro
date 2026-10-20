@@ -53,20 +53,18 @@ fn typed_body(calls: Arc<AtomicUsize>) -> ExecuteTool<Parameters, Details> {
         calls.fetch_add(1, Ordering::SeqCst);
         Box::pin(async move {
             update.unwrap()(AgentToolResult {
-                content: vec![UserBlock::Text(maestro_models::TextContent {
-                    text: "partial".into(),
-                    text_signature: None,
-                })],
+                content: vec![UserBlock::Text(maestro_models::TextContent::new(
+                    "partial".into(),
+                ))],
                 details: Some(Details {
                     doubled: args.count + 1,
                 }),
                 terminate: Some(false),
             });
             Ok(AgentToolResult {
-                content: vec![UserBlock::Text(maestro_models::TextContent {
-                    text: "complete".into(),
-                    text_signature: None,
-                })],
+                content: vec![UserBlock::Text(maestro_models::TextContent::new(
+                    "complete".into(),
+                ))],
                 details: Some(Details {
                     doubled: args.count * 2,
                 }),

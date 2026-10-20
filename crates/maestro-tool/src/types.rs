@@ -35,10 +35,7 @@ impl<D> AgentToolResult<Option<D>, Option<bool>> {
     #[must_use]
     pub fn text_result(text: String, details: Option<D>) -> Self {
         Self {
-            content: vec![UserBlock::Text(TextContent {
-                text,
-                text_signature: None,
-            })],
+            content: vec![UserBlock::Text(TextContent::new(text))],
             details,
             terminate: None,
         }

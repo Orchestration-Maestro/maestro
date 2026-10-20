@@ -60,14 +60,8 @@ pub fn message<D>(details: Option<D>) -> maestro_app::ToolResultMessage<D> {
         tool_name: "original tool".into(),
         timestamp: 17.25,
         content: vec![
-            maestro_app::UserBlock::Text(maestro_app::TextContent {
-                text: "one".into(),
-                text_signature: None,
-            }),
-            maestro_app::UserBlock::Text(maestro_app::TextContent {
-                text: "two".into(),
-                text_signature: None,
-            }),
+            maestro_app::UserBlock::Text(maestro_app::TextContent::new("one".into())),
+            maestro_app::UserBlock::Text(maestro_app::TextContent::new("two".into())),
         ],
         details,
         is_error: true,

@@ -515,10 +515,9 @@ fn tool(input: Arc<Input>, observed: Arc<Mutex<Observations>>) -> SharedAgentToo
             ));
             for index in 0..input.progress {
                 update.as_ref().unwrap()(AgentToolResult {
-                    content: vec![UserBlock::Text(TextContent {
-                        text: format!("partial-{index}"),
-                        text_signature: None,
-                    })],
+                    content: vec![UserBlock::Text(TextContent::new(format!(
+                        "partial-{index}"
+                    )))],
                     details: Some(json!({"index":index})),
                     terminate: None,
                 });

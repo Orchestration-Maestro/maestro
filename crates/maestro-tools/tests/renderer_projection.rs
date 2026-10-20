@@ -862,10 +862,7 @@ fn check_prepared_raw_case(details: Option<&serde_json::Value>, flag: Option<boo
     let (env, setup) = environment();
     let args = json!({});
     let content = vec![maestro_models::UserBlock::Text(
-        maestro_models::TextContent {
-            text: "ordered".into(),
-            text_signature: None,
-        },
+        maestro_models::TextContent::new("ordered".into()),
     )];
     let pointer = content.as_ptr();
     let expected = details.map(std::ptr::from_ref);

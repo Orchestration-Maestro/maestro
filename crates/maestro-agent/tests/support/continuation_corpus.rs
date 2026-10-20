@@ -499,10 +499,7 @@ fn install_tools(agent: &Arc<Agent<Notice>>, input: &Arc<Input>, trace: &Arc<Mut
                     .unwrap()
                     .steer(user(&format!("during:{id}")));
                 ready(Ok(maestro_agent::AgentToolResult {
-                    content: vec![UserBlock::Text(TextContent {
-                        text: format!("result:{id}"),
-                        text_signature: None,
-                    })],
+                    content: vec![UserBlock::Text(TextContent::new(format!("result:{id}")))],
                     details: Some(json!({})),
                     terminate: None,
                 }))

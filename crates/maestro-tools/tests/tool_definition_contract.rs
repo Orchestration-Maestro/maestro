@@ -46,10 +46,7 @@ type Seen = (String, u32, Option<bool>, Option<u32>);
 
 /// Text content for a result.
 fn text(text: &str) -> Vec<UserBlock> {
-    vec![UserBlock::Text(TextContent {
-        text: text.into(),
-        text_signature: None,
-    })]
+    vec![UserBlock::Text(TextContent::new(text.into()))]
 }
 
 /// A caller failure with every field set.

@@ -175,10 +175,7 @@ impl<'a> Reducer<'a> {
             match start.content_block {
                 OpenedBlock::Text => (
                     Kind::Text,
-                    AssistantContent::Text(TextContent {
-                        text: String::new(),
-                        text_signature: None,
-                    }),
+                    AssistantContent::Text(TextContent::new(String::new())),
                     |content_index, partial| AssistantMessageEvent::TextStart {
                         content_index,
                         partial,

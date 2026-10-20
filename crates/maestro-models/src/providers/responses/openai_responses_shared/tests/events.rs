@@ -457,10 +457,7 @@ async fn append_caller_block(queue: &AssistantMessageEventStream, output: &Share
         .unwrap()
         .content
         .push(maestro_models::AssistantContent::Text(
-            maestro_models::TextContent {
-                text: "caller".to_owned(),
-                text_signature: None,
-            },
+            maestro_models::TextContent::new("caller".to_owned()),
         ));
 }
 
