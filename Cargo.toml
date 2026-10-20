@@ -69,5 +69,9 @@ opt-level = 3
 [profile.dev.package.zlib-rs]
 opt-level = 3
 
+# Markdown, highlighting and the hook's conventions check run through it, two to three times slower unoptimised.
+[profile.dev.package.regress]
+opt-level = 3
+
 [profile.test]
 debug = "line-tables-only"
