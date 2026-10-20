@@ -3368,6 +3368,7 @@ dependencies = [
  "maestro-terminal",
  "maestro-tui",
  "maestro-workspace",
+ "regex",
  "serde",
  "serde_json",
  "sha2 0.11.0",

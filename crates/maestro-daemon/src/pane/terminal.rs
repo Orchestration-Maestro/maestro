@@ -2,7 +2,17 @@
 
 mod colors;
 mod cursor;
+mod modes;
+#[cfg(any(windows, test))]
+mod prompt_cwd;
+mod reads;
+mod resize;
+mod retained;
 mod stream;
+
+pub use modes::{InputMode, InputState};
+pub use reads::TerminalReadSnapshot;
+pub use retained::{TerminalTextMatch, TerminalTextPoint, TerminalWordMotion};
 
 use super::{
     osc::{AgentOscStateTracker, DefaultColorEventTracker, OscDebugTracker},
@@ -91,6 +101,9 @@ struct PaneCore {
     cursor_settle_state: super::cursor::CursorPositionSettleState,
     /// Whether image rendering needs the 20 ms redraw settle backstop.
     kitty_graphics_enabled: bool,
+    /// Whether this known shell reports cwd through its default prompt.
+    #[cfg(any(windows, test))]
+    windows_powershell_prompt_cwd_reporting: InputMode,
 }
 
 impl PaneTerminal {
@@ -112,6 +125,8 @@ impl PaneTerminal {
                 xtgettcap_query_tracker: XtgettcapQueryTracker::default(),
                 cursor_settle_state: super::cursor::CursorPositionSettleState::default(),
                 kitty_graphics_enabled: false,
+                #[cfg(any(windows, test))]
+                windows_powershell_prompt_cwd_reporting: InputMode::Disabled,
             }),
         }
     }

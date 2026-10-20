@@ -208,3 +208,75 @@ fn pane_host_appearance_does_not_consume_pending_history_replies() {
         b"\x1b[0n\x1bP1+r5463\x1b\\"
     );
 }
+
+#[test]
+#[cfg(windows)]
+fn pane_cursor_state_holds_pty_position_change_until_settle_window() {
+    let terminal = Terminal::new(80, 24, 0).unwrap();
+    let pane = PaneTerminal::new(terminal);
+    let pane_id = PaneId::from_raw(1);
+
+    pane.process_pty_bytes(pane_id, 0, b"x", None);
+    assert_eq!(
+        pane.cursor_state(Instant::now())
+            .map(|cursor| (cursor.x, cursor.y, cursor.visible)),
+        Some((1, 0, true))
+    );
+
+    let result = pane.process_pty_bytes(pane_id, 0, b"\x1b[6;21H", None);
+
+    assert_eq!(
+        result.render_delay,
+        Some(crate::pane::cursor::CURSOR_POSITION_SETTLE)
+    );
+    assert_eq!(
+        pane.cursor_state(Instant::now())
+            .map(|cursor| (cursor.x, cursor.y, cursor.visible)),
+        Some((1, 0, true))
+    );
+}
+
+#[test]
+#[cfg(not(windows))]
+fn pane_cursor_state_uses_live_position_when_settle_policy_disabled() {
+    let terminal = Terminal::new(80, 24, 0).unwrap();
+    let pane = PaneTerminal::new(terminal);
+    let pane_id = PaneId::from_raw(1);
+
+    pane.process_pty_bytes(pane_id, 0, b"x", None);
+    let result = pane.process_pty_bytes(pane_id, 0, b"\x1b[6;21H", None);
+
+    assert_eq!(result.render_delay, None);
+    assert_eq!(
+        pane.cursor_state(Instant::now())
+            .map(|cursor| (cursor.x, cursor.y, cursor.visible)),
+        Some((20, 5, true))
+    );
+}
+
+#[test]
+fn pane_cursor_settle_policy_controls_render_delay() {
+    let pane = pane();
+    let mut core = pane.core.lock().unwrap();
+    let now = Instant::now();
+    let initial = core.current_cursor_state();
+    core.cursor_settle_state.observe(initial, now);
+    core.terminal.write(b"x");
+    let moved = core.current_cursor_state();
+    core.cursor_settle_state.observe(moved, now);
+    assert!(core.cursor_settle_state.pending());
+    assert_eq!(
+        core.render_delay_after_pty_write(false),
+        if cfg!(windows) {
+            Some(crate::pane::cursor::CURSOR_POSITION_SETTLE)
+        } else {
+            None
+        }
+    );
+    assert_eq!(
+        core.render_delay_after_pty_write(true),
+        Some(Duration::from_millis(20))
+    );
+    core.terminal.write(b"\x1b[?2026h");
+    assert_eq!(core.render_delay_after_pty_write(true), None);
+}

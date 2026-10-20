@@ -6,7 +6,7 @@ use std::time::Instant;
 impl PaneCore {
     /// Refresh the retained viewport once and read its current cursor.
     pub(super) fn current_cursor_state(&mut self) -> Option<TerminalCursorState> {
-        self.render_state.update(&mut self.terminal);
+        self.refresh_render_state();
         let cursor = &self.render_state.cursor;
         let position = cursor.viewport?;
         Some(TerminalCursorState {

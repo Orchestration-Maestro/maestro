@@ -51,6 +51,8 @@ impl PaneTerminal {
             .into_iter()
             .filter_map(|value| parse_reported_cwd(&value))
             .next_back();
+        #[cfg(any(windows, test))]
+        let reported_cwd = reported_cwd.or_else(|| core.windows_powershell_current_prompt_cwd());
         if cfg!(windows) {
             let current = core.current_cursor_state();
             core.cursor_settle_state.observe(current, Instant::now());
@@ -195,7 +197,7 @@ fn custom_response(
 
 impl PaneCore {
     /// Keep synchronized batches hidden and use only configured settle intervals.
-    fn render_delay_after_pty_write(&self, graphics: bool) -> Option<Duration> {
+    pub(super) fn render_delay_after_pty_write(&self, graphics: bool) -> Option<Duration> {
         if self.terminal.modes.get(Mode::SynchronizedOutput) {
             None
         } else if graphics {
