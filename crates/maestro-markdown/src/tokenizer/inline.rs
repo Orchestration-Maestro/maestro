@@ -337,10 +337,13 @@ impl<'a> Tokenizer<'a> {
         if self.options != MarkedOptions::Export {
             self.mask_matches(&mut bytes, rules::inline_block_skip(self.options), true);
         }
-        for atom in atoms
-            .iter()
-            .filter(|range| range.start >= extent.start && range.end <= extent.end)
-        {
+        let first = atoms.partition_point(|atom| atom.end <= extent.start);
+        let last = atoms.partition_point(|atom| atom.start < extent.end);
+        for atom in atoms[first..last].iter().filter(|range| {
+            #[cfg(test)]
+            crate::tests::WORK.with_borrow_mut(|work| work.mask_operands += 1);
+            range.start >= extent.start && range.end <= extent.end
+        }) {
             mask_barrier(
                 &mut bytes,
                 atom.start - extent.start..atom.end - extent.start,

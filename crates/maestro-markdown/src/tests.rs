@@ -5,6 +5,8 @@ use std::cell::RefCell;
 /// Per-thread counters so independent parser tests cannot affect the witness.
 #[derive(Clone, Copy, Debug, Default)]
 pub(crate) struct Work {
+    /// Operand visits while constructing recursive inline masks.
+    pub(crate) mask_operands: usize,
     /// Operand visits inside cursor-generated label windows.
     pub(crate) cursor_label_operands: usize,
     /// Actual quote framing line visits.
@@ -580,4 +582,59 @@ fn check_operand_windows(count: usize) {
     assert_eq!(negative_work, count * count);
     assert_eq!(control_work, count);
     println!("OPERAND-CONTROL n={count} rescan={negative_work} selected={control_work}");
+}
+
+/// Measure masking through the cursor entry while retaining each original code operand.
+fn sibling_mask_work(span: &str, count: usize, strike: bool) -> usize {
+    let document = crate::parse_with_options(
+        span.repeat(count),
+        crate::MarkedOptions::Browser { escape_html: true },
+    );
+    let context = InlineContext::new(&document);
+    let scope = context.scope(&document.nodes[0].range, false).unwrap();
+    WORK.with_borrow_mut(|work| work.mask_operands = 0);
+    let run = scope.interpret_with_tokenizer(scope.content_range(), &mut WorkToken);
+    let Kind::Paragraph(children) = &run.nodes[0].kind else {
+        panic!("paragraph")
+    };
+    let spans: Vec<_> = children
+        .iter()
+        .filter_map(|node| match &node.kind {
+            Kind::Emphasis(children) if !strike => Some(children),
+            Kind::Strike(children) if strike => Some(children),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(spans.len(), count);
+    assert_eq!(run.atoms.len(), count);
+    for (index, children) in spans.iter().enumerate() {
+        assert!(
+            children
+                .iter()
+                .any(|node| matches!(node.kind, Kind::Atom(slot) if slot == index))
+        );
+        let InlineAtom::Resolved(original) = &run.atoms[index] else {
+            panic!("retained code")
+        };
+        assert!(matches!(&original.kind, Kind::Code(text) if text == "q"));
+        assert_eq!(
+            original.range,
+            span.len() * index + 3..span.len() * index + 6
+        );
+    }
+    let visits = WORK.with_borrow(|work| work.mask_operands);
+    println!("SIBLING-MASK-WORK strike={strike} n={count} visited_operands={visits}");
+    visits
+}
+
+#[test]
+fn sibling_emphasis_masks_visit_selected_operands() {
+    let [small, large] = [32, 64].map(|count| sibling_mask_work("*a `q`* ", count, false));
+    assert!(large <= 2 * small + 2, "mask visits: {small} -> {large}");
+}
+
+#[test]
+fn sibling_deletion_masks_visit_selected_operands() {
+    let [small, large] = [32, 64].map(|count| sibling_mask_work("~a `q`~ ", count, true));
+    assert!(large <= 2 * small + 2, "mask visits: {small} -> {large}");
 }
