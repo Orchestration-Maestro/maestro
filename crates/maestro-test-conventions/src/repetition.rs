@@ -55,7 +55,7 @@ fn documentation(source: &Source, generated_bindings: bool) -> Result<(), String
             }
             block.comment(body, line);
         }
-        line += source.contents[offset..end].matches('\n').count();
+        line += crate::source::count_newlines(&source.contents[offset..end]);
         offset = end;
     }
     block.check(source)
