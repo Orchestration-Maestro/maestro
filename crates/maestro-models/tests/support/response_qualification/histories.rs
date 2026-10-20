@@ -60,10 +60,7 @@ async fn fill_message(
                 result.tool_call_id.clone_from(&call.id);
                 if row.test.contains("model_streaming/") {
                     result.tool_name.clone_from(&call.name);
-                    result.content = vec![UserBlock::Text(TextContent {
-                        text: arithmetic(call)?,
-                        text_signature: None,
-                    })];
+                    result.content = vec![UserBlock::Text(TextContent::new(arithmetic(call)?))];
                 }
             }
         }

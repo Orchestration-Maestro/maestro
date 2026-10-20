@@ -196,10 +196,9 @@ pub fn convert_to_llm<T, C: maestro_agent::CustomAgentMessages>(
 /// Convert plain text into one block, retaining existing block arrays.
 fn user_message(content: UserContent, timestamp: f64) -> Message {
     let content = match content {
-        UserContent::Text(text) => UserContent::Blocks(vec![UserBlock::Text(TextContent {
-            text,
-            text_signature: None,
-        })]),
+        UserContent::Text(text) => {
+            UserContent::Blocks(vec![UserBlock::Text(TextContent::new(text))])
+        }
         blocks @ UserContent::Blocks(_) => blocks,
     };
     Message::User(UserMessage { content, timestamp })

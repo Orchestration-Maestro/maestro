@@ -85,10 +85,7 @@ pub fn agent_for(model: &Model, tools: Vec<maestro_agent::SharedAgentTool>) -> A
 /// A user entry made of one text block.
 #[must_use]
 pub fn user<C: maestro_agent::CustomAgentMessages>(text: &str) -> AgentMessage<C> {
-    let block = UserBlock::Text(TextContent {
-        text: text.into(),
-        text_signature: None,
-    });
+    let block = UserBlock::Text(TextContent::new(text.into()));
     AgentMessage::User(Arc::new(RwLock::new(UserMessage {
         content: UserContent::Blocks(vec![block]),
         timestamp: 1.0,

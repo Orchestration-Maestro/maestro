@@ -41,10 +41,9 @@ pub fn run() {
     let weak = Rc::downgrade(&details);
     let mut result = crate::recipes::message(Some(details));
     result.is_error = false;
-    result.content = vec![maestro_app::UserBlock::Text(maestro_app::TextContent {
-        text: "literal result".into(),
-        text_signature: None,
-    })];
+    result.content = vec![maestro_app::UserBlock::Text(maestro_app::TextContent::new(
+        "literal result".into(),
+    ))];
     adapters(&mut surface, &result);
     let call = call();
     tool(&mut surface, &call, &mut result);

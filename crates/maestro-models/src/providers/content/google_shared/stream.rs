@@ -215,10 +215,7 @@ impl<'a> Reducer<'a> {
                     partial,
                 }
             } else {
-                content.push(Block::Text(TextContent {
-                    text: String::new(),
-                    text_signature: None,
-                }));
+                content.push(Block::Text(TextContent::new(String::new())));
                 Update::TextStart {
                     content_index: index,
                     partial,

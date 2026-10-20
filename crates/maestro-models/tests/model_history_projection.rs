@@ -46,10 +46,7 @@ mod tests {
     }
 
     fn text(value: &str) -> TextContent {
-        TextContent {
-            text: value.into(),
-            text_signature: None,
-        }
+        TextContent::new(value.into())
     }
 
     fn thinking(value: &str, signature: Option<&str>, redacted: Option<bool>) -> AssistantContent {

@@ -22,10 +22,7 @@ use std::sync::{
 
 /// A completed assistant response, optionally requesting `calls` as `(id, tool, arguments)`.
 pub fn assistant(text: &str, calls: &[(&str, &str, Value)]) -> SharedAssistantMessage {
-    let mut content = vec![AssistantContent::Text(TextContent {
-        text: text.into(),
-        text_signature: None,
-    })];
+    let mut content = vec![AssistantContent::Text(TextContent::new(text.into()))];
     content.extend(calls.iter().map(|(id, name, arguments)| {
         AssistantContent::ToolCall(ToolCall {
             id: (*id).into(),

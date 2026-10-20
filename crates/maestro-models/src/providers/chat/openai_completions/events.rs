@@ -172,10 +172,7 @@ impl Reducer {
 
     /// Open the one text block.
     fn open_text(&mut self) -> usize {
-        let content = AssistantContent::Text(TextContent {
-            text: String::new(),
-            text_signature: None,
-        });
+        let content = AssistantContent::Text(TextContent::new(String::new()));
         let position = self.push_block(content, Block::Text);
         self.text = Some(position);
         self.announce(|partial| AssistantMessageEvent::TextStart {

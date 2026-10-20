@@ -327,7 +327,7 @@ fn build_content(source: &AssistantMessage, projection: &Projection<'_>) -> Vec<
             }
             Some(match block {
                 AssistantContent::Thinking(value) if !projection.same => {
-                    AssistantContent::Text(unsigned_text(&value.thinking))
+                    AssistantContent::Text(TextContent::new(value.thinking.clone()))
                 }
                 AssistantContent::Thinking(value) => AssistantContent::Thinking(value.clone()),
                 AssistantContent::Text(value) => AssistantContent::Text(TextContent {
@@ -356,14 +356,6 @@ fn build_content(source: &AssistantMessage, projection: &Projection<'_>) -> Vec<
         .collect()
 }
 
-/// Create a text block without a model-specific signature.
-fn unsigned_text(text: &str) -> TextContent {
-    TextContent {
-        text: text.to_owned(),
-        text_signature: None,
-    }
-}
-
 /// Copy retained user blocks, replacing unsupported images with explanatory text.
 fn build_blocks(
     blocks: &[UserBlock],
@@ -376,7 +368,9 @@ fn build_blocks(
         .zip(retained)
         .filter(|(_, retained)| **retained)
         .map(|(block, _)| match block {
-            UserBlock::Image(_) if !images => UserBlock::Text(unsigned_text(placeholder)),
+            UserBlock::Image(_) if !images => {
+                UserBlock::Text(TextContent::new(placeholder.to_owned()))
+            }
             _ => block.clone(),
         })
         .collect()
@@ -391,7 +385,9 @@ fn flush_missing(result: &mut Vec<Message>, projection: &Projection<'_>) {
         result.push(Message::ToolResult(ToolResultMessage {
             tool_call_id,
             tool_name,
-            content: vec![UserBlock::Text(unsigned_text("No result provided"))],
+            content: vec![UserBlock::Text(TextContent::new(
+                "No result provided".to_owned(),
+            ))],
             details: None,
             is_error: true,
             timestamp: timestamp_now(),

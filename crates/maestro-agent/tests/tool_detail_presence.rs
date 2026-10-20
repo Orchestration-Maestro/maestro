@@ -44,10 +44,7 @@ fn expected_state(index: usize) -> Option<Value> {
 }
 /// Text content naming a result.
 fn text(text: &str) -> Vec<UserBlock> {
-    vec![UserBlock::Text(TextContent {
-        text: text.into(),
-        text_signature: None,
-    })]
+    vec![UserBlock::Text(TextContent::new(text.into()))]
 }
 /// The call index encoded in an id such as `c2`.
 fn index_of(id: &str) -> usize {

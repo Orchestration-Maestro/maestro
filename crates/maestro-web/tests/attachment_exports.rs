@@ -42,10 +42,7 @@ fn web_attachment_exports_use_application_records() {
     ];
     assert!(is_user_message_with_attachments(&history[0]));
     assert!(is_artifact_message(&history[1]));
-    let text: maestro_app::TextContent = maestro_app::TextContent {
-        text: "hello".into(),
-        text_signature: None,
-    };
+    let text: maestro_app::TextContent = maestro_app::TextContent::new("hello".into());
     let image: maestro_app::ImageContent = maestro_app::ImageContent {
         data: String::new(),
         mime_type: "image/png".into(),

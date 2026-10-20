@@ -1014,7 +1014,7 @@ macro_rules! builtin {
         let result: $result = shared::ToolResultEvent {
             tool_call_id: "result-id".into(), tool_name: $name.into(),
             input: json!({"unvalidated":false}),
-            content: vec![maestro_models::UserBlock::Text(maestro_models::TextContent { text: "output".into(), text_signature: None })],
+            content: vec![maestro_models::UserBlock::Text(maestro_models::TextContent::new("output".into()))],
             is_error: true, details: Presence::Present($details),
         };
         assert_eq!(result.tool_call_id, "result-id");

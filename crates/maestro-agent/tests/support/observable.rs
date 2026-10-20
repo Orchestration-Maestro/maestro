@@ -106,10 +106,7 @@ pub fn text(message: &AgentMessage) -> String {
 pub fn artifact(text: &str, terminate: bool) -> maestro_agent::AgentToolResult {
     maestro_agent::AgentToolResult {
         content: vec![maestro_models::UserBlock::Text(
-            maestro_models::TextContent {
-                text: text.into(),
-                text_signature: None,
-            },
+            maestro_models::TextContent::new(text.into()),
         )],
         details: Some(serde_json::json!({"output":text})),
         terminate: Some(terminate),

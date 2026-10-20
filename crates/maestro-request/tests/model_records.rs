@@ -3,6 +3,22 @@ mod tests {
     use serde_json::json;
 
     #[test]
+    fn unsigned_text_content_preserves_owned_text_and_omits_signature() {
+        use maestro_request::types::TextContent;
+
+        for text in [
+            "",
+            "first\n雪",
+            " \t\0\r\n\u{feff}\u{0085} ",
+            "\u{1b}[31mraw\u{1b}[0m",
+        ] {
+            let content = TextContent::new(text.to_owned());
+            assert_eq!(content.text, text);
+            assert_eq!(content.text_signature, None);
+        }
+    }
+
+    #[test]
     fn maestro_diagnostics_preserve_name_without_message() {
         use maestro_request::diagnostics::{
             DiagnosticCode, DiagnosticErrorInfo, DiagnosticInput, extract_diagnostic_error,
@@ -326,12 +342,7 @@ fn message_diagnostic_constructors_preserve_fields() {
 #[test]
 fn user_block_text_output_keeps_empty_repeated_and_literal_text() {
     use maestro_request::types::{ImageContent, TextContent, UserBlock};
-    let text = |value: &str| {
-        UserBlock::Text(TextContent {
-            text: value.into(),
-            text_signature: None,
-        })
-    };
+    let text = |value: &str| UserBlock::Text(TextContent::new(value.into()));
     let image = || {
         UserBlock::Image(ImageContent {
             data: "AA==".into(),

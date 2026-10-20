@@ -131,11 +131,9 @@ mod tests {
         row.result.as_mut().unwrap().details = Some(serde_json::json!("YWJj"));
         draw_debug(&mut surface, &mut row);
         check("[...document.querySelectorAll('.maestro-code code')].at(-1).textContent==='YWJj'");
-        row.result.as_mut().unwrap().content =
-            vec![maestro_app::UserBlock::Text(maestro_app::TextContent {
-                text: "1e309".into(),
-                text_signature: None,
-            })];
+        row.result.as_mut().unwrap().content = vec![maestro_app::UserBlock::Text(
+            maestro_app::TextContent::new("1e309".into()),
+        )];
         draw_debug(&mut surface, &mut row);
         check("[...document.querySelectorAll('.maestro-code code')][1].textContent==='null'");
         drop(row);

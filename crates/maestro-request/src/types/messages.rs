@@ -38,6 +38,16 @@ pub struct TextContent {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub text_signature: Option<String>,
 }
+impl TextContent {
+    /// Create text content without a model-specific signature.
+    #[must_use]
+    pub fn new(text: String) -> Self {
+        Self {
+            text,
+            text_signature: None,
+        }
+    }
+}
 /// Carry tagged reasoning, optional signature and redaction flag.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "type", rename = "thinking")]

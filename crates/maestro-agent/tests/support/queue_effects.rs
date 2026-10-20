@@ -138,10 +138,7 @@ fn tools(agent: &Arc<Agent>) -> (Permits, Receipts, Receipts) {
                 enter.send(()).unwrap();
                 permission.await.unwrap();
                 let result = maestro_agent::AgentToolResult {
-                    content: vec![UserBlock::Text(TextContent {
-                        text: format!("result:{id}"),
-                        text_signature: None,
-                    })],
+                    content: vec![UserBlock::Text(TextContent::new(format!("result:{id}")))],
                     details: Some(serde_json::Value::Null),
                     terminate: None,
                 };

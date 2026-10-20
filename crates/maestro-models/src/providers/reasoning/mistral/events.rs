@@ -137,10 +137,7 @@ impl Events {
                 redacted: None,
             })
         } else {
-            AssistantContent::Text(TextContent {
-                text: String::new(),
-                text_signature: None,
-            })
+            AssistantContent::Text(TextContent::new(String::new()))
         };
         let index = {
             let mut message = output.write().unwrap_or_else(PoisonError::into_inner);

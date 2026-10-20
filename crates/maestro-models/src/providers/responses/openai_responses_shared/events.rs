@@ -258,10 +258,7 @@ impl<'a> Reducer<'a> {
             "message" => {
                 let content = member(raw, "content").map(RawValue::to_owned);
                 Current::Message(
-                    self.open(Block::Text(TextContent {
-                        text: String::new(),
-                        text_signature: None,
-                    })),
+                    self.open(Block::Text(TextContent::new(String::new()))),
                     content,
                 )
             }

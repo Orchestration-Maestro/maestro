@@ -783,20 +783,14 @@ async fn native_tool_progress(continuation: bool) {
         let context = support::with_execute(Arc::new(|_, _, _, update| {
             update.unwrap()(maestro_agent::AgentToolResult {
                 content: vec![maestro_models::UserBlock::Text(
-                    maestro_models::TextContent {
-                        text: "native partial".into(),
-                        text_signature: None,
-                    },
+                    maestro_models::TextContent::new("native partial".into()),
                 )],
                 details: Some(serde_json::json!({"phase":"progress"})),
                 terminate: None,
             });
             support::ready(Ok(maestro_agent::AgentToolResult {
                 content: vec![maestro_models::UserBlock::Text(
-                    maestro_models::TextContent {
-                        text: "native final".into(),
-                        text_signature: None,
-                    },
+                    maestro_models::TextContent::new("native final".into()),
                 )],
                 details: Some(serde_json::json!({"phase":"final"})),
                 terminate: Some(true),

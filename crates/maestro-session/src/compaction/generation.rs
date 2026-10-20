@@ -81,10 +81,7 @@ fn request(
         Context {
             system_prompt: Some(utils::SUMMARIZATION_SYSTEM_PROMPT.into()),
             messages: vec![Message::User(UserMessage {
-                content: UserContent::Blocks(vec![UserBlock::Text(TextContent {
-                    text: prompt,
-                    text_signature: None,
-                })]),
+                content: UserContent::Blocks(vec![UserBlock::Text(TextContent::new(prompt))]),
                 timestamp: maestro_models::timestamp_now(),
             })],
             tools: None,

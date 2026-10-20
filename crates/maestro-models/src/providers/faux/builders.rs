@@ -14,10 +14,7 @@ pub(super) fn random_id(prefix: &str) -> String {
 }
 /// Construct unsigned text content.
 pub fn faux_text(text: impl Into<String>) -> TextContent {
-    TextContent {
-        text: text.into(),
-        text_signature: None,
-    }
+    TextContent::new(text.into())
 }
 /// Construct unsigned thinking content.
 pub fn faux_thinking(thinking: impl Into<String>) -> ThinkingContent {

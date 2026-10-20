@@ -115,10 +115,9 @@ impl Reducer {
             return position.position();
         }
         let position = self.update(|message| {
-            message.content.push(AssistantContent::Text(TextContent {
-                text: String::new(),
-                text_signature: None,
-            }));
+            message
+                .content
+                .push(AssistantContent::Text(TextContent::new(String::new())));
             message.content.len() - 1
         });
         self.open

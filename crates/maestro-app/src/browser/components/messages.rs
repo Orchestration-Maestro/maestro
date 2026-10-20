@@ -18,10 +18,10 @@ pub fn convert_attachments(attachments: &[Attachment]) -> Vec<UserBlock> {
                 .as_ref()
                 .filter(|text| !text.is_empty())
                 .map(|text| {
-                    UserBlock::Text(TextContent {
-                        text: format!("\n\n[Document: {}]\n{text}", attachment.file_name),
-                        text_signature: None,
-                    })
+                    UserBlock::Text(TextContent::new(format!(
+                        "\n\n[Document: {}]\n{text}",
+                        attachment.file_name
+                    )))
                 }),
         })
         .collect()
@@ -149,10 +149,9 @@ pub fn default_convert_to_llm<C: CustomMessage>(
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             if let CustomAgentMessages::UserWithAttachments(user) = &*value {
                 let mut content = match &user.content {
-                    UserContent::Text(text) => vec![UserBlock::Text(TextContent {
-                        text: text.clone(),
-                        text_signature: None,
-                    })],
+                    UserContent::Text(text) => {
+                        vec![UserBlock::Text(TextContent::new(text.clone()))]
+                    }
                     UserContent::Blocks(blocks) => blocks.clone(),
                 };
                 if let Some(attachments) = &user.attachments {
