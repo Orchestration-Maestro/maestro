@@ -31,6 +31,8 @@ pub(crate) struct Lexer<'a, E> {
     context: BlockContext,
     /// Whether the preceding paragraph was clipped at an extension hint.
     clipped: bool,
+    /// Extension-hint barriers of the current block source, reused across its paragraphs.
+    barriers: Option<tokenizer::inline::Barriers>,
     /// Immutable caller grammar.
     pub(crate) options: MarkedOptions,
     /// First definition for each folded identity.
@@ -52,6 +54,7 @@ impl<'a, E> Lexer<'a, E> {
             error: None,
             context: BlockContext::TopLevel,
             clipped: false,
+            barriers: None,
             options,
             definitions: HashMap::new(),
             scopes: HashMap::new(),
@@ -83,6 +86,7 @@ impl<'a, E> Lexer<'a, E> {
     /// Restore the enclosing grammar context after recursively admitting containers.
     fn blocks_in(&mut self, source: &ScopeSource, context: BlockContext) -> Vec<Node> {
         let previous_context = std::mem::replace(&mut self.context, context);
+        let previous_barriers = self.barriers.take();
         let mut output = Vec::new();
         let mut cursor = 0;
         let mut clipped = false;
@@ -99,6 +103,7 @@ impl<'a, E> Lexer<'a, E> {
             clipped = self.clipped;
         }
         self.context = previous_context;
+        self.barriers = previous_barriers;
         output
     }
 
@@ -179,12 +184,14 @@ impl<'a, E> Lexer<'a, E> {
         Some(consumed)
     }
 
-    /// Keep paragraph text before the next possible caller-owned block.
-    fn extension_start(&mut self, source: &str) -> usize {
+    /// Keep paragraph text before the next possible caller-owned block; `source` runs to the
+    /// end of its block source.
+    fn extension_start(&mut self, source: &Source<'_>) -> usize {
+        let (whole, offset) = source.whole();
+        let source = source.text;
         if self.context == BlockContext::ListItem || self.tokenizer.is_none() {
             return source.len();
         }
-        let mut barriers = None;
         let mut begin = source.chars().next().map_or(0, char::len_utf8);
         while begin < source.len() {
             let Some(tokenizer) = self.tokenizer.as_mut() else {
@@ -198,14 +205,14 @@ impl<'a, E> Lexer<'a, E> {
                     break;
                 }
             };
-            let barriers =
-                barriers.get_or_insert_with(|| tokenizer::inline::barriers(source, self.options));
-            let boundary = barriers.partition_point(|range| range.end <= start);
-            if let Some(range) = barriers
-                .get(boundary)
-                .filter(|range| range.contains(&start))
-            {
-                begin = range.end;
+            let barriers = match self.barriers.take() {
+                Some(barriers) if barriers.reusable_at(whole, offset) => barriers,
+                _ => tokenizer::inline::Barriers::scan(whole, offset, self.options),
+            };
+            let barrier = barriers.containing(offset + start);
+            self.barriers = Some(barriers);
+            if let Some(range) = barrier {
+                begin = range.end - offset;
             } else {
                 self.clipped = true;
                 return start;
@@ -241,7 +248,7 @@ impl<'a, E> Lexer<'a, E> {
     fn paragraph(&mut self, source: &Source<'_>) -> Option<(usize, Node)> {
         let heading = rules::block_lheading(self.options).and_then(|rule| rule.find(source.text));
         let limit = if heading.is_none() {
-            self.extension_start(source.text)
+            self.extension_start(source)
         } else {
             source.text.len()
         };
