@@ -19,9 +19,18 @@ const SOURCES: [(&str, &str); 3] = [
     (r"(?:(?:https?|ftp)://|www\.)[^\s<]+", "i"),
     (r"[A-Za-z0-9._+-]+@[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+", ""),
 ];
-/// Candidate rules for scanning a text run, validated before reserving any text.
-static SCAN: LazyLock<[Option<Regex>; 3]> =
-    LazyLock::new(|| SOURCES.map(|(source, flags)| Regex::with_flags(source, flags).ok()));
+/// Candidate rules with a non-address alternative consuming failed email-local runs.
+static SCAN: LazyLock<[Option<Regex>; 3]> = LazyLock::new(|| {
+    std::array::from_fn(|index| {
+        let (source, flags) = SOURCES[index];
+        let source = if index == 2 {
+            format!("({source})|{}+", source.split_inclusive(']').next()?)
+        } else {
+            source.to_owned()
+        };
+        Regex::with_flags(&source, flags).ok()
+    })
+});
 /// The same rules anchored at an inline token start.
 static START: LazyLock<[Option<Regex>; 3]> = LazyLock::new(|| {
     SOURCES.map(|(source, flags)| Regex::with_flags(&format!("^(?:{source})"), flags).ok())
@@ -47,6 +56,10 @@ fn links(run: &Run, options: MarkedOptions) -> Vec<(Range<usize>, String)> {
         let mut offset = 0;
         while let Some(matched) = regex.find_from(&run.authored, offset).next() {
             let range = matched.range();
+            if email && matched.group(1).is_none() {
+                offset = range.end;
+                continue;
+            }
             let start = run.recognition_start(range.start);
             if start != range.start {
                 offset = start;

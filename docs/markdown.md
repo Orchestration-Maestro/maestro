@@ -38,6 +38,8 @@ inside such text. Call `autolinks(&mut document)` separately to map bare URL, ww
 and email spans to links.
 Native code, authored links and images remain opaque to that pass. Identity text
 units retain exact selected source subranges; decoded transformations stay atomic.
+The candidate scan consumes failed email-local runs without retrying each suffix;
+this does not bound the cost of parsing emphasis or other inline grammar.
 
 The parser retains link titles, destinations and inline labels; image destinations,
 titles and alt children; table alignments and authored cell spans; task markers;
