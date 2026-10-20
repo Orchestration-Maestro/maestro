@@ -13,7 +13,7 @@ maestro-path = { path = "../maestro-path" }
 num-bigint.workspace = true
 num-traits.workspace = true
 maestro-pattern = { path = "../maestro-pattern" }
-yaml-rust2.workspace = true
+percent-encoding.workspace = true
 ryu-js.workspace = true
 
 [dev-dependencies]
