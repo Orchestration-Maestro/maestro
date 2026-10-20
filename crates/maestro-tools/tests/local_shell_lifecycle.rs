@@ -16,6 +16,7 @@ use std::{
     task::{Context, Poll, Wake, Waker},
     time::Duration,
 };
+#[cfg(target_os = "linux")]
 use tokio::io::AsyncWriteExt;
 
 /// Counts wakes without retaining the operation that registered them.
@@ -72,6 +73,7 @@ fn local_bash_unregisters_pid_and_releases_observers() {
 }
 
 /// Policy applied while a separately owned writer keeps the root's pipe open.
+#[cfg(target_os = "linux")]
 #[derive(Clone, Copy)]
 enum GracePolicy {
     Stream,
@@ -170,6 +172,7 @@ async fn grace_case(policy: GracePolicy) {
 }
 
 /// Settles one grace result and reaps the independent writer.
+#[cfg(target_os = "linux")]
 async fn finish_grace(
     policy: GracePolicy,
     operation: &mut Operation<'_>,
@@ -196,6 +199,7 @@ async fn finish_grace(
 }
 
 /// Advances only the selected policy, leaving the final grace millisecond outstanding.
+#[cfg(target_os = "linux")]
 async fn apply_grace_policy(
     policy: GracePolicy,
     signal: &Cancellation,
@@ -238,6 +242,7 @@ type Operation<'a> = std::pin::Pin<
 >;
 
 /// Drives the same operation until its sink delivers another chunk.
+#[cfg(target_os = "linux")]
 async fn next_chunk(
     operation: &mut Operation<'_>,
     receiver: &mut tokio::sync::mpsc::UnboundedReceiver<Vec<u8>>,
@@ -426,6 +431,7 @@ fn assert_termination(stop: Stop, signal: &Cancellation, witness: ChildWitness, 
 }
 
 /// Polls the operation once and rejects premature settlement.
+#[cfg(target_os = "linux")]
 fn assert_pending(operation: &mut Operation<'_>, waker: &Waker) {
     assert!(
         operation
@@ -436,6 +442,7 @@ fn assert_pending(operation: &mut Operation<'_>, waker: &Waker) {
 }
 
 /// Checks the final error ordering for the same completed operation.
+#[cfg(target_os = "linux")]
 fn assert_grace_result(
     policy: GracePolicy,
     result: Result<maestro_tools::BashExecResult, maestro_tools::BashError>,

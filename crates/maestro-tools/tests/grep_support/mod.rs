@@ -1,26 +1,26 @@
 //! Strict content-search corpus and public-boundary drivers.
 #![cfg(test)]
+use crate::display_support::{Case, search_cases, search_keys};
 #[cfg(unix)]
-use crate::find_support::executable;
 use crate::{
-    display_support::{Case, search_cases, search_keys},
-    find_support::manager,
+    find_support::{executable, manager},
     ls_support::{canon, result_json, with_home},
     read_support::{TempDir, run},
 };
 use maestro_models::{BoxFuture, Cancellation, DiagnosticErrorInfo};
+#[cfg(unix)]
+use maestro_tools::create_grep_tool;
 use maestro_tools::{
     GrepOperations, GrepToolDetails, GrepToolInput, GrepToolOptions, ToolsManager,
-    create_grep_tool, create_grep_tool_definition,
+    create_grep_tool_definition,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
+#[cfg(unix)]
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{
     collections::HashMap,
-    sync::{
-        Arc, Mutex,
-        atomic::{AtomicUsize, Ordering},
-    },
+    sync::{Arc, Mutex},
 };
 /// Parse strict cases and reject repeated queries.
 pub fn cases(test: &str) -> Vec<Case> {
@@ -49,6 +49,7 @@ pub struct Input {
     pub unterminated: bool,
 }
 /// Strict observations returned by the oracle.
+#[cfg(unix)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Expected {
@@ -241,6 +242,7 @@ fn invoke(
     }
 }
 /// Compare success, exact failure or native-prefix failure.
+#[cfg(unix)]
 fn assert_result(case: &Case, result: Result<Value, DiagnosticErrorInfo>, expected: Expected) {
     match result {
         Ok(r) => {
@@ -407,18 +409,22 @@ pub fn check_native(case: &Case, root: &TempDir) {
     }
 }
 /// A drop witness held for the lifetime of a pending adapter future.
+#[cfg(unix)]
 pub struct Dropped(pub Cancellation);
+#[cfg(unix)]
 impl Drop for Dropped {
     fn drop(&mut self) {
         self.0.abort();
     }
 }
 /// Replacement whose selected operation never completes.
+#[cfg(unix)]
 pub struct PendingOperations {
     pub read: bool,
     pub started: Cancellation,
     pub dropped: Cancellation,
 }
+#[cfg(unix)]
 impl PendingOperations {
     /// Pending work acknowledges entry and owns its drop witness.
     fn pending<T: Send + 'static>(&self) -> BoxFuture<Result<T, DiagnosticErrorInfo>> {
@@ -431,6 +437,7 @@ impl PendingOperations {
         })
     }
 }
+#[cfg(unix)]
 impl GrepOperations for PendingOperations {
     fn is_directory(&self, _path: String) -> BoxFuture<Result<bool, DiagnosticErrorInfo>> {
         if self.read {

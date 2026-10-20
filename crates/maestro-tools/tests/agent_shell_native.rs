@@ -1,23 +1,17 @@
 //! Native shell consumption, artifacts and cleanup through the agent factories.
 #![cfg(test)]
-#![cfg(not(target_arch = "wasm32"))]
+#![cfg(unix)]
 use crate::agent_shell_support;
 use crate::process_support;
 use crate::read_support;
 
-#[cfg(unix)]
 use agent_shell_support::{Immediate, result_value};
-#[cfg(unix)]
 use maestro_tools::{BashExecResult, BashSpawnContext, BashToolOptions, create_bash_tool};
-#[cfg(unix)]
 use read_support::{TempDir, run};
-#[cfg(unix)]
 use serde_json::json;
-#[cfg(unix)]
 use std::sync::{Arc, Mutex};
 
 /// Invoke a fresh native tool where definition retention is not under test.
-#[cfg(unix)]
 async fn invoke(
     cwd: String,
     command: &str,
@@ -28,7 +22,6 @@ async fn invoke(
 }
 
 #[test]
-#[cfg(unix)]
 fn bash_native_uses_factory_shell_path_and_override_precedence() {
     let dir = TempDir::new();
     run(async {
@@ -84,7 +77,6 @@ fn bash_native_uses_factory_shell_path_and_override_precedence() {
 }
 
 /// Expected native PATH, retaining the captured value if the tool directory is present.
-#[cfg(unix)]
 fn expected_native_path() -> String {
     let initial = std::env::var("PATH").unwrap_or_default();
     if initial.split(':').any(|entry| entry == "/maestro/tool-bin") {
@@ -97,7 +89,6 @@ fn expected_native_path() -> String {
 }
 
 /// Hook replacement observed through the local operation's real environment.
-#[cfg(unix)]
 fn replacement_hook(cwd: String) -> maestro_tools::BashSpawnHook {
     let initial_hook_value = std::env::var_os("MAESTRO_HOOK_ONLY");
     let expected_path = expected_native_path();
@@ -125,7 +116,6 @@ fn replacement_hook(cwd: String) -> maestro_tools::BashSpawnHook {
 }
 
 #[test]
-#[cfg(unix)]
 fn bash_native_combines_prefix_output_and_environment_hook() {
     let dir = TempDir::new();
     run(async {
@@ -173,7 +163,6 @@ fn bash_native_combines_prefix_output_and_environment_hook() {
 }
 
 /// Read the complete artifact immediately after native settlement.
-#[cfg(unix)]
 async fn native_artifact(tool: &maestro_agent::AgentTool, status: i32) {
     let updates = Arc::new(Mutex::new(Vec::new()));
     let seen = updates.clone();
@@ -205,7 +194,6 @@ async fn native_artifact(tool: &maestro_agent::AgentTool, status: i32) {
 }
 
 #[test]
-#[cfg(unix)]
 fn bash_native_returns_raw_success_and_chatty_failure() {
     let dir = TempDir::new();
     run(async {
@@ -243,7 +231,6 @@ fn bash_native_returns_raw_success_and_chatty_failure() {
 }
 
 /// Readiness output precedes the requested abort or native fractional timeout.
-#[cfg(unix)]
 async fn native_cancel(cwd: String, timeout: Option<f64>) {
     let tool = create_bash_tool(cwd, String::new(), BashToolOptions::default());
     let signal = maestro_models::Cancellation::new();
@@ -282,7 +269,6 @@ async fn native_cancel(cwd: String, timeout: Option<f64>) {
 }
 
 #[test]
-#[cfg(unix)]
 fn bash_native_timeout_and_abort_report_output_after_cleanup() {
     let dir = TempDir::new();
     run(async {
@@ -343,12 +329,10 @@ fn bash_tool_finishes_after_inherited_pipe_grace() {
 }
 
 /// Keeps the failed data callback's operation alive until explicit settlement.
-#[cfg(unix)]
 struct ArtifactPending {
     release: Arc<tokio::sync::Notify>,
     settled: Arc<std::sync::atomic::AtomicBool>,
 }
-#[cfg(unix)]
 impl maestro_tools::BashOperations for ArtifactPending {
     fn exec<'a>(
         &'a self,
@@ -378,7 +362,6 @@ impl maestro_tools::BashOperations for ArtifactPending {
 }
 
 #[test]
-#[cfg(unix)]
 fn bash_artifact_creation_failure_is_reported() {
     if std::env::var_os("MAESTRO_ARTIFACT_CHILD").is_none() {
         let dir = TempDir::new();
@@ -435,7 +418,6 @@ fn bash_artifact_creation_failure_is_reported() {
 }
 
 /// Exercise absent and present prefix through native execution.
-#[cfg(unix)]
 async fn native_prefix(dir: &TempDir) {
     for prefix in [None, Some("printf prefix".into())] {
         let expected = if prefix.is_some() {
@@ -461,7 +443,6 @@ async fn native_prefix(dir: &TempDir) {
 }
 
 /// Select an explicit local executable for native constructor witnesses.
-#[cfg(unix)]
 fn shell_path(path: String) -> BashToolOptions {
     BashToolOptions {
         shell_path: Some(path),

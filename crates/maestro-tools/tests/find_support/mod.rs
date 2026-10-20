@@ -305,6 +305,7 @@ pub fn check_render(test: &str) {
     }
 }
 /// Strict inputs of the controlled native producer.
+#[cfg(unix)]
 #[derive(Default, Deserialize)]
 #[serde(default, rename_all = "camelCase", deny_unknown_fields)]
 struct Native {

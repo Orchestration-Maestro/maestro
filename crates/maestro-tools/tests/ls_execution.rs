@@ -5,9 +5,9 @@
 use crate::ls_support;
 use crate::read_support;
 
-use ls_support::{
-    Case, Scripted, assert_effects, cases, check_execute, check_native, execute, execute_input,
-};
+#[cfg(unix)]
+use ls_support::check_native;
+use ls_support::{Case, Scripted, assert_effects, cases, check_execute, execute, execute_input};
 use maestro_models::Cancellation;
 use maestro_tools::{
     LsToolDetails, LsToolInput, LsToolOptions, create_ls_tool_definition,

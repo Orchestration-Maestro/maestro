@@ -252,6 +252,7 @@ fn shell_environment_is_observed_each_time() {
 }
 
 /// Recorded ordered PID operations.
+#[cfg(unix)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "camelCase")]
 struct TrackingInput {
@@ -263,6 +264,7 @@ struct TrackingInput {
 }
 
 /// Ordered native signal observations.
+#[cfg(unix)]
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct TrackingExpected {
