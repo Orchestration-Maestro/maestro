@@ -1,5 +1,6 @@
 //! Ordered provider registration and credential dispatch.
 #![cfg(test)]
+use crate::clock::epoch_millis;
 use maestro_models::oauth::*;
 use maestro_models::{BoxFuture, Fetch};
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -478,15 +479,6 @@ fn maestro_oauth_registry_restores_builtin_providers() {
     }
 }
 
-/// Current epoch milliseconds, used only to bracket a real provider clock.
-fn now() -> f64 {
-    (std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_secs_f64()
-        * 1000.0)
-        .floor()
-}
 /// Exercise the real selected account provider with controlled transport.
 fn check_builtin_refresh(id: &str) {
     use base64::Engine as _;
@@ -515,9 +507,9 @@ fn check_builtin_refresh(id: &str) {
             })
         })
     });
-    let before = now();
+    let before = epoch_millis();
     let output = run(refresh_oauth_token(id, credentials(0.0), Some(fetch))).unwrap();
-    let after = now();
+    let after = epoch_millis();
     assert_eq!(calls.load(std::sync::atomic::Ordering::SeqCst), 1);
     assert_eq!(output.access, key);
     assert_eq!(

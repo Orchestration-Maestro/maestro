@@ -2,7 +2,7 @@
 
 use crate::{
     bundled, chat,
-    json::{canonical, event_record},
+    json::{canonical, event_record, exact_context},
     message_probes as probes, messages,
 };
 use chat::TestResult;
@@ -237,18 +237,6 @@ fn exact_patch<'de, D: serde::Deserializer<'de>>(decoder: D) -> Result<Option<Pa
         return Err(D::Error::custom("patch fields were not retained"));
     }
     Ok(Some(patch))
-}
-
-/// Reject fixture context fields the public record cannot preserve.
-fn exact_context<'de, D: serde::Deserializer<'de>>(decoder: D) -> Result<Context, D::Error> {
-    use serde::de::Error as _;
-    let value = Value::deserialize(decoder)?;
-    let context: Context = serde_json::from_value(value.clone()).map_err(D::Error::custom)?;
-    let retained = serde_json::to_value(&context).map_err(D::Error::custom)?;
-    if canonical(retained) != canonical(value) {
-        return Err(D::Error::custom("context fixture fields were not retained"));
-    }
-    Ok(context)
 }
 
 /// Resolve the actual catalog API before applying explicit compatibility changes.

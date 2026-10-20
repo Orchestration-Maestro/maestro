@@ -265,10 +265,7 @@ async fn observe(
 fn protocol_test_policies_cover_the_registry() {
     let _serial = crate::bundled::registry();
     reset_api_providers();
-    let registered: Vec<String> = get_api_providers()
-        .into_iter()
-        .map(|provider| provider.api)
-        .collect();
+    let registered = crate::bundled::registered();
     for api in &registered {
         assert_eq!(crate::bundled::policy(api).api, api);
     }

@@ -136,6 +136,14 @@ pub fn policy(api: &str) -> &'static ProtocolPolicy {
         .unwrap_or_else(|| panic!("no protocol test policy for {api}"))
 }
 
+/// Registered protocol identifiers in registry order.
+pub fn registered() -> Vec<String> {
+    maestro_models::get_api_providers()
+        .into_iter()
+        .map(|provider| provider.api)
+        .collect()
+}
+
 /// Serializes tests that read or change process-wide provider and cleanup registries.
 static REGISTRY: Mutex<()> = Mutex::new(());
 

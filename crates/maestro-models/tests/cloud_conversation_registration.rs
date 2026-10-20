@@ -1,7 +1,7 @@
 //! Cloud conversation registration through generic dispatch and replaceable callbacks.
 use crate::bedrock;
 use crate::bedrock_cases as cases;
-use crate::bundled;
+use crate::bundled::{self, registered};
 use crate::chat;
 use crate::transport;
 use bedrock::diagnostic as error;
@@ -283,14 +283,6 @@ fn bedrock_override_snapshots_callbacks_without_holding_locks() -> TestResult {
         assert_eq!(selected(&retained).await?, "D:raw");
         Ok(())
     })
-}
-
-/// Registration order as returned to generic callers.
-fn registered() -> Vec<String> {
-    maestro_models::get_api_providers()
-        .into_iter()
-        .map(|provider| provider.api)
-        .collect()
 }
 
 #[test]

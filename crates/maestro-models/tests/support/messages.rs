@@ -12,7 +12,7 @@ use serde_json::{Map, Value, json};
 use tokio::sync::{mpsc, oneshot};
 
 use crate::chat::TestResult;
-use crate::json::canonical;
+use crate::json::{canonical, decode};
 
 /// Ends a message stream and nothing else.
 pub const STOP: &str = "event: message_stop\ndata: {\"type\":\"message_stop\"}\n\n";
@@ -165,14 +165,6 @@ pub fn scripted_fetch(case: &Case, requests: &Requests) -> maestro_models::Fetch
             body: body(&chunks),
         })))
     })
-}
-
-/// Decode an optional option the case names.
-fn decode<T: serde::de::DeserializeOwned>(spec: &Value, key: &str) -> TestResult<Option<T>> {
-    Ok(spec
-        .get(key)
-        .map(|value| serde_json::from_value(value.clone()))
-        .transpose()?)
 }
 
 /// Options a case names, over the defaults every case shares: a fixed key and no retries.

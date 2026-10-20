@@ -435,11 +435,7 @@ fn root_and_registered_entries_invoke_the_content_provider() -> TestResult {
                 format!("route {route}")
             );
         }
-        let registered: Vec<_> = maestro_models::records::api_registry::get_api_providers()
-            .into_iter()
-            .map(|provider| provider.api)
-            .collect();
-        assert_eq!(registered, bundled::registered_apis());
+        assert_eq!(bundled::registered(), bundled::registered_apis());
         Ok(())
     })
 }

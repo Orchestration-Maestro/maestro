@@ -8,9 +8,9 @@ use crate::bundled;
 use crate::chat;
 use crate::key_selection;
 
-use bundled::{PROTOCOLS, Protocol};
+use bundled::{PROTOCOLS, Protocol, registered};
 use chat::{TestResult, block_on};
-use maestro_models::records::api_registry::{get_api_provider, get_api_providers};
+use maestro_models::records::api_registry::get_api_provider;
 use maestro_models::{
     AnthropicOptions, ApiProvider, AssistantMessageEvent, AssistantMessageEventStream,
     AzureOpenAIResponsesOptions, DiagnosticErrorInfo, MistralOptions, OnPayload, OnResponse,
@@ -256,14 +256,6 @@ fn custom(api: &str, label: &'static str) -> ApiProvider {
         stream: Arc::new(SetupFailure(label)),
         stream_simple: Arc::new(SetupFailure(label)),
     }
-}
-
-/// Registered protocol identifiers in registry order.
-fn registered() -> Vec<String> {
-    get_api_providers()
-        .into_iter()
-        .map(|provider| provider.api)
-        .collect()
 }
 
 #[test]
