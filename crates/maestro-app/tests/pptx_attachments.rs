@@ -2,6 +2,126 @@
 #![cfg(test)]
 #![cfg(not(target_arch = "wasm32"))]
 use crate::support;
+use maestro_app::browser::utils::attachment_utils::{
+    Attachment, AttachmentError, AttachmentSource, load_attachment,
+};
+use maestro_models::Fetch;
+use std::io::{Cursor, Read, Write};
+use std::sync::Arc;
+
+/// Run the public loader without allowing a local package to fetch.
+fn load(bytes: &[u8]) -> Result<Attachment, AttachmentError> {
+    let fetch: Fetch = Arc::new(|_| panic!("local source fetched"));
+    tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap()
+        .block_on(load_attachment(
+            AttachmentSource::Buffer(bytes),
+            Some("a.pptx"),
+            &fetch,
+        ))
+}
+
+/// One deflated slide whose headers declare `declared` expanded bytes.
+fn slide_package(declared: u32, corrupt: bool) -> Vec<u8> {
+    let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+    writer.start_file("ppt/slides/slide1.xml", options).unwrap();
+    writer.write_all(b"<a:t>hi</a:t>").unwrap();
+    let mut bytes = writer.finish().unwrap().into_inner();
+    for (signature, offset) in [(b"PK\x03\x04", 22), (b"PK\x01\x02", 24)] {
+        let positions: Vec<_> = bytes
+            .windows(4)
+            .enumerate()
+            .filter_map(|(at, w)| (w == signature).then_some(at + offset))
+            .collect();
+        for at in positions {
+            bytes[at..at + 4].copy_from_slice(&declared.to_le_bytes());
+        }
+    }
+    if corrupt {
+        // BFINAL plus reserved BTYPE makes the deflate stream invalid.
+        let start = 30
+            + usize::from(u16::from_le_bytes([bytes[26], bytes[27]]))
+            + usize::from(u16::from_le_bytes([bytes[28], bytes[29]]));
+        bytes[start] = 7;
+    }
+    bytes
+}
+
+#[test]
+fn pptx_entries_past_the_size_bound_fail_without_inflating() {
+    const BOUND: u32 = 512 << 20;
+    for (declared, expected) in [
+        (BOUND, Ok("hi")),
+        (1, Err("File is larger than its declared uncompressed size")),
+        (BOUND + 1, Err("entry is larger than 512 MiB")),
+    ] {
+        let result = load(&slide_package(declared, declared > BOUND));
+        match expected {
+            Ok(text) => assert!(
+                result.unwrap().extracted_text.unwrap().contains(text),
+                "{declared}"
+            ),
+            Err(message) => assert_eq!(
+                result.unwrap_err().to_string(),
+                format!("Failed to process PPTX: {message}"),
+                "{declared}"
+            ),
+        }
+    }
+}
+
+#[test]
+fn pptx_large_part_total_with_small_output_extracts() {
+    let bytes = large_slide_package(false);
+    let result = load(&bytes);
+    assert_eq!(
+        result.unwrap().extracted_text.unwrap(),
+        "<pptx filename=\"a.pptx\">\n<slide number=\"1\">\nhi\n</slide>\n<slide number=\"2\">\nhi\n</slide>\n<slide number=\"3\">\nhi\n</slide>\n<slide number=\"4\">\nhi\n</slide>\n</pptx>"
+    );
+}
+
+/// Four genuinely inflated slides with either large text runs or large comments.
+fn large_slide_package(text: bool) -> Vec<u8> {
+    let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+    for index in 1..=4 {
+        writer
+            .start_file(format!("ppt/slides/slide{index}.xml"), options)
+            .unwrap();
+        writer
+            .write_all(if text { b"<a:t>" } else { b"<!--" })
+            .unwrap();
+        std::io::copy(&mut std::io::repeat(b'x').take(128 << 20), &mut writer).unwrap();
+        writer
+            .write_all(if text { b"</a:t>" } else { b"--><a:t>hi</a:t>" })
+            .unwrap();
+    }
+    writer.finish().unwrap().into_inner()
+}
+
+#[test]
+fn pptx_extracted_output_past_the_bound_fails() {
+    let bytes = large_slide_package(true);
+    let result = load(&bytes);
+    assert!(result.is_err(), "oversized extracted output was accepted");
+    assert!(
+        !matches!(
+            &result,
+            Err(AttachmentError::Pptx(
+                maestro_app::browser::docx_preview::DocxError::Archive(_)
+            ))
+        ),
+        "output overflow was classified as an archive failure"
+    );
+    assert_eq!(
+        result.unwrap_err().to_string(),
+        "Failed to process PPTX: extracted text exceeds 512 MiB"
+    );
+}
 
 #[test]
 fn pptx_detection_selects_mime_or_suffix() {

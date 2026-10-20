@@ -1,6 +1,6 @@
 //! Shared byte decoding through the text boundary.
 #![cfg(test)]
-use maestro_text::decode_utf8;
+use maestro_text::{decode_utf8, lossy_string};
 
 #[test]
 fn utf8_decoding_strips_one_bom_and_replaces_invalid_bytes() {
@@ -25,4 +25,19 @@ fn utf8_decoding_strips_one_bom_and_replaces_invalid_bytes() {
     ] {
         assert_eq!(decode_utf8(bytes), expected);
     }
+}
+
+#[test]
+fn lossy_strings_keep_valid_buffers_and_replace_invalid_bytes() {
+    let valid = b"\xEF\xBB\xBFa\xF0\x9F\x98\x80".to_vec();
+    let address = valid.as_ptr();
+    let text = lossy_string(valid);
+    assert_eq!(
+        (text.as_str(), text.as_ptr()),
+        ("\u{feff}a\u{1f600}", address)
+    );
+    assert_eq!(
+        lossy_string(vec![65, 192, 175, 226, 130]),
+        "A\u{fffd}\u{fffd}\u{fffd}"
+    );
 }

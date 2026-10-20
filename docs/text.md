@@ -15,6 +15,9 @@ stable sorting and comparator lifetime.
 - **UTF-8 decoding.** `decode_utf8` removes one initial byte-order mark and uses
   lossy UTF-8 decoding for invalid bytes. Attachments and HTTP response readers
   share this decoder.
+- **Owned UTF-8 decoding.** `lossy_string` takes owned bytes and keeps their buffer
+  when they are valid; otherwise it decodes them lossily. It keeps a byte-order mark.
+  Process output and Office package entries share it.
 - **Environment flags.** `is_truthy_env_flag` accepts `1`, ASCII-case-insensitive
   `true` or `yes` without trimming; absent values are false. Tools and packages share it.
 - **Whitespace.** `WHITESPACE` lists the 25 scalars once: Unicode white space except

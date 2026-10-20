@@ -506,3 +506,57 @@ fn spreadsheet_extraction_keeps_empty_failed_sheet_wrapper() {
         "Failed to process Excel: all-corrupt-two.xlsx: xl/worksheets/sheet1.xml: shared string 3"
     );
 }
+
+/// Shared strings amplify four individually bounded sheets beyond the output bound.
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+fn spreadsheet_extracted_output_past_the_bound_fails() {
+    use maestro_app::browser::ssf::WorkbookError;
+    use maestro_app::browser::utils::attachment_utils::AttachmentError;
+    use std::io::{Cursor, Write};
+
+    let mut writer = zip::ZipWriter::new(Cursor::new(Vec::new()));
+    let options = zip::write::SimpleFileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+    for (path, text) in [
+        (
+            "[Content_Types].xml",
+            "<Types><Override ContentType=\"application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml\" PartName=\"/xl/sharedStrings.xml\"/></Types>",
+        ),
+        (
+            "xl/workbook.xml",
+            "<workbook><sheets><sheet name=\"One\"/><sheet name=\"Two\"/><sheet name=\"Three\"/><sheet name=\"Four\"/></sheets></workbook>",
+        ),
+    ] {
+        writer.start_file(path, options).unwrap();
+        writer.write_all(text.as_bytes()).unwrap();
+    }
+    writer.start_file("xl/sharedStrings.xml", options).unwrap();
+    writer.write_all(b"<sst><si><t>").unwrap();
+    writer.write_all(&vec![b'x'; 1 << 20]).unwrap();
+    writer.write_all(b"</t></si></sst>").unwrap();
+    for index in 1..=4 {
+        writer
+            .start_file(format!("xl/worksheets/sheet{index}.xml"), options)
+            .unwrap();
+        writer.write_all(b"<worksheet><sheetData>").unwrap();
+        for row in 1..=129 {
+            write!(
+                writer,
+                "<row r=\"{row}\"><c r=\"A{row}\" t=\"s\"><v>0</v></c></row>"
+            )
+            .unwrap();
+        }
+        writer.write_all(b"</sheetData></worksheet>").unwrap();
+    }
+    let bytes = writer.finish().unwrap().into_inner();
+    let error = extract_workbook(&bytes, "large.xlsx").unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "Failed to process Excel: extracted text exceeds 512 MiB"
+    );
+    assert!(
+        !matches!(error, AttachmentError::Excel(WorkbookError::Reader(_))),
+        "output overflow was classified as a value-reader failure"
+    );
+}

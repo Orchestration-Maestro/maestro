@@ -4,7 +4,6 @@ use crate::browser::ssf::{self, Ssf, WorkbookError};
 use base64::{Engine, engine::general_purpose::STANDARD};
 use maestro_models::{Fetch, FetchError, HttpRequest};
 use serde::{Deserialize, Serialize};
-use std::fmt::Write;
 use std::{borrow::Cow, fmt};
 
 /// Native PDF text extraction and page rendering.
@@ -216,32 +215,36 @@ const PPTX_MIME: &str = "application/vnd.openxmlformats-officedocument.presentat
 /// Extract selected slide text without admitting whole-part XML.
 fn process_pptx(bytes: &[u8], file_name: &str) -> Result<String, DocxError> {
     let package = OpenXmlPackage::open(bytes, Options::default())?;
-    let mut output = format!("<pptx filename=\"{file_name}\">");
+    let mut output = String::new();
+    let mut append =
+        |text: &str| append_extracted_text(&mut output, text).map_err(DocxError::Output);
+    append(&format!("<pptx filename=\"{file_name}\">"))?;
     for (position, (name, _)) in pptx_parts(&package, "ppt/slides/slide").iter().enumerate() {
         let source = package.text_exact(name)?.unwrap_or_default();
         let (matched, runs) = pptx_runs(&source);
         if matched {
-            let _ = write!(output, "\n<slide number=\"{}\">", position + 1);
+            append(&format!("\n<slide number=\"{}\">", position + 1))?;
             if !runs.is_empty() {
-                output.push('\n');
-                output.push_str(&runs.join("\n"));
+                append("\n")?;
+                append(&runs.join("\n"))?;
             }
-            output.push_str("\n</slide>");
+            append("\n</slide>")?;
         }
     }
     let notes = pptx_parts(&package, "ppt/notesSlides/notesSlide");
     if !notes.is_empty() {
-        output.push_str("\n<notes>");
+        append("\n<notes>")?;
         for (name, digits) in notes {
             let source = package.text_exact(name)?.unwrap_or_default();
             let (_, runs) = pptx_runs(&source);
             if !runs.is_empty() {
-                let _ = write!(output, "\n[Slide {digits} notes]: {}", runs.join(" "));
+                append(&format!("\n[Slide {digits} notes]: "))?;
+                append(&runs.join(" "))?;
             }
         }
-        output.push_str("\n</notes>");
+        append("\n</notes>")?;
     }
-    output.push_str("\n</pptx>");
+    append("\n</pptx>")?;
     Ok(output)
 }
 
@@ -353,17 +356,34 @@ fn attachment_text(
 fn process_excel(bytes: &[u8], name: &str) -> Result<String, WorkbookError> {
     let mut ssf = Ssf::default();
     let mut workbook = ssf::read(bytes, name, &mut ssf)?;
-    let mut output = format!("<excel filename=\"{name}\">");
+    let mut output = String::new();
+    let mut append =
+        |text: &str| append_extracted_text(&mut output, text).map_err(WorkbookError::Output);
+    append(&format!("<excel filename=\"{name}\">"))?;
     for (index, (name, sheet)) in workbook.sheets.iter_mut().enumerate() {
         let csv = sheet
             .as_mut()
             .map_or_else(|_| String::new(), |sheet| ssf::sheet_to_csv(sheet, &ssf));
-        let _ = write!(
-            output,
-            "\n<sheet name=\"{name}\" index=\"{}\">\n{csv}\n</sheet>",
+        append(&format!(
+            "\n<sheet name=\"{name}\" index=\"{}\">\n",
             index + 1
-        );
+        ))?;
+        append(&csv)?;
+        append("\n</sheet>")?;
     }
-    output.push_str("\n</excel>");
+    append("\n</excel>")?;
     Ok(output)
+}
+
+/// Append extracted output only while it fits the document text bound.
+fn append_extracted_text(output: &mut String, text: &str) -> Result<(), String> {
+    const LIMIT: usize = 512 << 20;
+    if text.len() > LIMIT.saturating_sub(output.len()) {
+        return Err("extracted text exceeds 512 MiB".into());
+    }
+    output
+        .try_reserve(text.len())
+        .map_err(|error| error.to_string())?;
+    output.push_str(text);
+    Ok(())
 }

@@ -78,9 +78,10 @@ entities are decoded once; invalid fragments retain the original complete run.
 Slide runs are joined by LF inside `<slide number="<position>">`; note runs use
 one space. A slide with no matched run is omitted, but a whitespace-only match
 keeps an empty slide wrapper. Selected notes always produce a `<notes>` wrapper,
-with headings only for retained text. Wrapper separators are LF. Package failures
+with headings only for retained text. Wrapper separators are LF. Extracted output
+above 512 MiB returns a processing error. Processing failures
 return `AttachmentError::Pptx`, display `Failed to process PPTX: ` before the
-package diagnostic and expose the retained package error through `Error::source`.
+diagnostic and expose the retained document error through `Error::source`.
 This additional variant requires exhaustive SDK matches to handle it.
 
 Spreadsheet recognition uses exact XLSX/Excel MIME strings or case-insensitive
@@ -99,7 +100,8 @@ The literal `<excel filename="NAME">` wrapper contains workbook-ordered sheets,
 each `\n<sheet name="NAME" index="N">\nCSV\n</sheet>`, followed by
 `\n</excel>`. Names are not escaped; indices start at one and include empty
 sheets. [Default CSV serialization](document-formats.md#default-csv) uses the
-shared workbook formatter. Processing failures return `AttachmentError::Excel`,
+shared workbook formatter. Extracted output above 512 MiB returns a processing
+error. Processing failures return `AttachmentError::Excel`,
 display `Failed to process Excel: ` before the diagnostic and expose the retained
 `WorkbookError` through `Error::source`. Exhaustive SDK matches must handle it.
 
