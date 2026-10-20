@@ -6,6 +6,66 @@ use crate::toolchain_support;
 use crate::recipe_support;
 use recipe_support::Workspace;
 
+/// Failed setup commands retain Cargo diagnostics in both output destinations.
+#[test]
+fn browser_setup_errors_reach_stderr_and_transcript() {
+    if let Ok(stage) = std::env::var("MAESTRO_SETUP_FAILURE") {
+        if stage == "recipe" {
+            let _workspace = Workspace::new();
+        } else {
+            let browser = Browser::new();
+            fs::write(
+                browser.fixture("Cargo.toml"),
+                "invalid_manifest_marker = [\n",
+            )
+            .unwrap();
+            if stage == "lockfile" {
+                browser.generate_lockfile();
+            } else {
+                browser_support::cold_sources(&browser);
+            }
+        }
+        panic!("setup must fail");
+    }
+    let mut failures = Vec::new();
+    for stage in ["recipe", "lockfile", "vendor"] {
+        let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
+            "../../target/browser-author-diagnostics/setup-{}-{stage}",
+            std::process::id()
+        ));
+        fs::create_dir_all(&directory).unwrap();
+        let child = maestro_test_process::TestProcess::current(
+            "browser_setup_errors_reach_stderr_and_transcript",
+        )
+        .unwrap()
+        .nocapture()
+        .env("MAESTRO_SETUP_FAILURE", stage)
+        .env("MAESTRO_TEST_DIAGNOSTICS_DIR", &directory);
+        let child = if stage == "recipe" {
+            child.env("RUSTC", directory.join("missing-setup-rustc"))
+        } else {
+            child
+        };
+        let output = child.output().unwrap();
+        assert!(!output.status.success());
+        let marker = if stage == "recipe" {
+            "missing-setup-rustc"
+        } else {
+            "invalid_manifest_marker"
+        };
+        let transcript = fs::read_dir(&directory)
+            .unwrap()
+            .map(|entry| fs::read_to_string(entry.unwrap().path()).unwrap())
+            .collect::<String>();
+        assert!(transcript.contains(marker), "{stage}: {transcript}");
+        let stderr = String::from_utf8(output.stderr).unwrap();
+        if !stderr.contains(marker) {
+            failures.push(format!("{stage}: Cargo error absent from stderr: {stderr}"));
+        }
+    }
+    assert!(failures.is_empty(), "{}", failures.join("\n"));
+}
+
 #[test]
 fn browser_clean_preserves_authored_inputs() {
     let browser = Browser::new();

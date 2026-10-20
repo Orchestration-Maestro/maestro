@@ -75,13 +75,11 @@ impl Browser {
 
     pub fn generate_lockfile(&self) {
         record("phase: cargo generate-lockfile");
-        let status = super::toolchain_support::command("cargo")
-            .args(["generate-lockfile", "--offline", "--manifest-path"])
-            .arg(self.fixture("Cargo.toml"))
-            .stdout(super::recipe_support::transcript())
-            .stderr(super::recipe_support::transcript())
-            .status()
-            .unwrap();
+        let status = super::recipe_support::setup_status(
+            super::toolchain_support::command("cargo")
+                .args(["generate-lockfile", "--offline", "--manifest-path"])
+                .arg(self.fixture("Cargo.toml")),
+        );
         record(format!("phase: cargo generate-lockfile complete {status}"));
         assert!(status.success());
     }
@@ -305,19 +303,22 @@ fn collect(path: &Path, result: &mut std::collections::BTreeMap<PathBuf, Vec<u8>
 pub fn cold_sources(browser: &Browser) -> (PathBuf, PathBuf) {
     let sources = browser.path("local-sources");
     record("phase: cargo vendor cold sources");
-    let staged = super::toolchain_support::command(env!("CARGO"))
+    let mut child = super::toolchain_support::command(env!("CARGO"))
         .current_dir(&browser.workspace.0)
         .args(["vendor", "--locked", "--offline", "--sync"])
         .arg(browser.fixture("Cargo.toml"))
         .arg(&sources)
-        .stderr(super::recipe_support::transcript())
-        .output()
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
         .unwrap();
-    record(format!(
-        "phase: cargo vendor complete {}\n{}",
-        staged.status,
-        String::from_utf8_lossy(&staged.stderr)
-    ));
+    let stderr = child.stderr.take().unwrap();
+    let (send, receive) = std::sync::mpsc::channel();
+    let reader = super::recipe_support::capture_lines(move || stderr, send);
+    let staged = child.wait_with_output().unwrap();
+    reader.join().unwrap();
+    drop(receive);
+    record(format!("phase: cargo vendor complete {}", staged.status));
     success(&staged);
     let home = browser.path("cold-home");
     let target = browser.path("cold-target");

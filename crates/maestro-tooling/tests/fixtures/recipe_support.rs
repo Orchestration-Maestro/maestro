@@ -48,15 +48,13 @@ impl Workspace {
                 .join("tests/fixtures/recipe_tools/Cargo.toml");
             let target = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/recipe-tools");
             record("phase: recipe tool cargo build");
-            let status = super::toolchain_support::command("cargo")
-                .args(["build", "--locked", "--manifest-path"])
-                .arg(manifest)
-                .arg("--target-dir")
-                .arg(&target)
-                .stdout(transcript())
-                .stderr(transcript())
-                .status()
-                .unwrap();
+            let status = setup_status(
+                super::toolchain_support::command("cargo")
+                    .args(["build", "--locked", "--manifest-path"])
+                    .arg(manifest)
+                    .arg("--target-dir")
+                    .arg(&target),
+            );
             record(format!("phase: recipe tool cargo complete {status}"));
             assert!(status.success());
             target.join("debug/recipe-command")
@@ -167,6 +165,28 @@ pub fn capture_lines<R: std::io::Read>(
             record("phase: reader finished");
         })
         .unwrap()
+}
+
+/// Run setup with both streams delivered through the shared capture owner.
+pub fn setup_status(command: &mut Command) -> std::process::ExitStatus {
+    use std::process::Stdio;
+    let mut child = command
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let stdout = child.stdout.take().unwrap();
+    let stderr = child.stderr.take().unwrap();
+    let (send, receive) = std::sync::mpsc::channel();
+    let readers = [
+        capture_lines(move || stdout, send.clone()),
+        capture_lines(move || stderr, send),
+    ];
+    for _ in receive {}
+    for reader in readers {
+        reader.join().unwrap();
+    }
+    child.wait().unwrap()
 }
 
 #[cfg(unix)]
