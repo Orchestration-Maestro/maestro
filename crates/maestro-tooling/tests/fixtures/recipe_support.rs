@@ -122,8 +122,10 @@ impl Drop for ProcessGroup {
 pub fn transcript() -> fs::File {
     let thread = std::thread::current();
     let name = thread.name().unwrap_or("unnamed").replace("::", "_");
-    let directory =
-        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/browser-author-diagnostics");
+    let directory = std::env::var_os("MAESTRO_TEST_DIAGNOSTICS_DIR").map_or_else(
+        || Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/browser-author-diagnostics"),
+        PathBuf::from,
+    );
     fs::create_dir_all(&directory).unwrap();
     fs::OpenOptions::new()
         .create(true)

@@ -1545,7 +1545,7 @@ fn catalog_cargo_tests_and_watch_routes_stay_offline() {
 #[cfg(unix)]
 #[test]
 fn watch_child_transcript_survives_forced_kill() {
-    use std::io::{BufRead, Read, Write};
+    use std::io::{Read, Write};
     if std::env::var_os("MAESTRO_CAPTURE_CONTROL").is_some() {
         let (reader, mut writer) = std::os::unix::net::UnixStream::pair().unwrap();
         let (send, receive) = std::sync::mpsc::channel();
@@ -1561,10 +1561,28 @@ fn watch_child_transcript_survives_forced_kill() {
         let _ = std::io::stdin().read(&mut [0]).unwrap();
         panic!("controller must kill the blocked test");
     }
+    assert_killed_transcript(None);
+    let directory = Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
+        "../../target/browser-author-diagnostics/override-{}",
+        std::process::id()
+    ));
+    assert_killed_transcript(Some(&directory));
+}
+
+/// Exercise the configured transcript location in a fresh blocked test process.
+#[cfg(unix)]
+fn assert_killed_transcript(directory: Option<&Path>) {
+    use std::io::{BufRead, Read};
     let process =
         maestro_test_process::TestProcess::current("watch_child_transcript_survives_forced_kill")
             .unwrap();
     let name = process.name().replace("::", "_");
+    let process = process.env_remove("MAESTRO_TEST_DIAGNOSTICS_DIR");
+    let process = if let Some(directory) = directory {
+        process.env("MAESTRO_TEST_DIAGNOSTICS_DIR", directory)
+    } else {
+        process
+    };
     let mut child = process
         .nocapture()
         .env("MAESTRO_CAPTURE_CONTROL", "1")
@@ -1593,8 +1611,10 @@ fn watch_child_transcript_survives_forced_kill() {
         stderr.contains("watch phase: compiling\nwatch phase: ready\n"),
         "{stderr}"
     );
-    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../target/browser-author-diagnostics")
+    let fallback =
+        Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/browser-author-diagnostics");
+    let path = directory
+        .unwrap_or(&fallback)
         .join(format!("{pid}-{name}.log"));
     let transcript =
         fs::read_to_string(&path).expect("killed test must leave a durable transcript");
