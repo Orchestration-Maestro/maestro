@@ -56,9 +56,10 @@ impl Renderer<'_> {
         rows.push((self.theme.code_block_border)("```"));
         rows
     }
-    /// Styles quote children and wraps them inside the two-cell border.
+    /// Styles quote children, reserving a two-cell border only when one content cell fits.
     fn quote(&self, nodes: &[Node], width: usize) -> Vec<String> {
-        let width = width.saturating_sub(2).max(1);
+        let bordered = width >= 3;
+        let width = if bordered { width - 2 } else { width.max(1) };
         let prefix = self.extract_prefix(Style::Quote(""));
         let mut rows = self.blocks(nodes, width, Style::Quote(&prefix));
         while rows.last().is_some_and(String::is_empty) {
@@ -69,8 +70,13 @@ impl Renderer<'_> {
                 let row = row.replace("\x1b[0m", &format!("\x1b[0m{prefix}"));
                 let row = (self.theme.quote)(&(self.theme.italic)(&row));
                 crate::wrap_text_with_ansi(&row, width)
-                    .into_iter()
-                    .map(|row| format!("{}{row}", (self.theme.quote_border)("│ ")))
+            })
+            .map(|row| {
+                if bordered {
+                    format!("{}{row}", (self.theme.quote_border)("│ "))
+                } else {
+                    row
+                }
             })
             .collect()
     }

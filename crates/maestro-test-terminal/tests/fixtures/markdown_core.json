@@ -2129,18 +2129,12 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[2m│",
-        "\u001b[2m\u001b[22m\u001b[3m\u001b[3ma",
-        "\u001b[2m│",
-        "\u001b[2m\u001b[22m\u001b[3mb",
-        "\u001b[2m│",
-        "\u001b[2m\u001b[22m\u001b[3mc",
-        "\u001b[2m│",
-        "\u001b[2m\u001b[22m\u001b[3md",
-        "\u001b[2m│",
-        "\u001b[2m\u001b[22m\u001b[3me",
-        "\u001b[2m│",
-        "\u001b[2m\u001b[22m\u001b[3mf\u001b[23m\u001b[3m\u001b[23m"
+        "\u001b[3m\u001b[3ma",
+        "\u001b[3mb",
+        "\u001b[3mc",
+        "\u001b[3md",
+        "\u001b[3me",
+        "\u001b[3mf\u001b[23m\u001b[3m\u001b[23m"
       ]
     },
     {
@@ -2152,18 +2146,9 @@
       "hyperlinks": false,
       "indent": null,
       "lines": [
-        "\u001b[2m│ ",
-        "\u001b[2m\u001b[22m\u001b[3m\u001b[3ma ",
-        "\u001b[2m│ ",
-        "\u001b[2m\u001b[22m\u001b[3mb ",
-        "\u001b[2m│ ",
-        "\u001b[2m\u001b[22m\u001b[3mc ",
-        "\u001b[2m│ ",
-        "\u001b[2m\u001b[22m\u001b[3md ",
-        "\u001b[2m│ ",
-        "\u001b[2m\u001b[22m\u001b[3me ",
-        "\u001b[2m│ ",
-        "\u001b[2m\u001b[22m\u001b[3mf\u001b[23m\u001b[3m\u001b[23m "
+        "\u001b[3m\u001b[3mab",
+        "\u001b[3mcd",
+        "\u001b[3mef\u001b[23m\u001b[3m\u001b[23m"
       ]
     },
     {

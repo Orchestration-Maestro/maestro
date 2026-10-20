@@ -102,6 +102,7 @@ pub fn corpus(name: &str) -> Vec<Case> {
         include_str!("../fixtures/markdown_core.json"),
         include_str!("../fixtures/markdown_tables.json"),
         include_str!("../fixtures/markdown_containers.json"),
+        include_str!("../fixtures/markdown_quote_width.json"),
     ] {
         let decoded: Result<std::collections::BTreeMap<String, Vec<Case>>, _> =
             serde_json::from_str(json);
