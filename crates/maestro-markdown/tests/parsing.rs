@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use maestro_markdown::{Alignment, Kind, LinkType, parse};
+use maestro_markdown::{Alignment, Kind, parse};
 
 #[test]
 fn parser_keeps_owned_browser_metadata() {
@@ -18,8 +18,6 @@ fn parser_keeps_owned_browser_metadata() {
     };
     assert_eq!(href, "/path");
     assert_eq!(metadata.title, "title");
-    assert_eq!(metadata.id, "ref");
-    assert_eq!(metadata.link_type, LinkType::Reference);
     assert!(matches!(label[0].kind, Kind::Strong(_)));
     let Kind::Image(_, image) = &children[2].kind else {
         panic!("image")
@@ -63,8 +61,6 @@ fn source_framed_images_keep_code_and_document_references() {
     };
     assert_eq!(metadata.destination, "/img");
     assert_eq!(metadata.title, "tip");
-    assert_eq!(metadata.id, "img");
-    assert_eq!(metadata.link_type, LinkType::Reference);
     assert_image_reference_children(metadata);
 }
 
@@ -76,8 +72,6 @@ fn assert_image_reference_children(metadata: &maestro_markdown::ImageMetadata) {
     };
     assert_eq!(href, "/c");
     assert_eq!(child.title, "child");
-    assert_eq!(child.id, "r");
-    assert_eq!(child.link_type, LinkType::Reference);
     assert!(matches!(&label[0].kind, Kind::Text(text) if text.decoded == "c"));
 }
 

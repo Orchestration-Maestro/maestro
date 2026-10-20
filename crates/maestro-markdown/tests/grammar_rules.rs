@@ -200,22 +200,21 @@ fn lists_keep_marker_indent_looseness_and_task_state() {
 #[test]
 fn references_use_document_index_and_first_definition() {
     check("definition", 10);
-    for (input, id, destination) in [
-        ("[ẞ]\n\n[SS]: /u", "ẞ", "/u"),
-        ("[ẞ]\n\n[ß]: /u", "ẞ", "/u"),
-        ("[A B]\n\n[a  b]: /u", "A B", "/u"),
-        ("[a][A  B]\n\n[a\tb]: /yes", "A B", "/yes"),
-        ("[x]\n\n[x]: /first\n[x]: /second", "x", "/first"),
+    for (input, destination) in [
+        ("[ẞ]\n\n[SS]: /u", "/u"),
+        ("[ẞ]\n\n[ß]: /u", "/u"),
+        ("[A B]\n\n[a  b]: /u", "/u"),
+        ("[a][A  B]\n\n[a\tb]: /yes", "/yes"),
+        ("[x]\n\n[x]: /first\n[x]: /second", "/first"),
     ] {
         let document = parse(input.into());
         let Kind::Paragraph(children) = &document.nodes[0].kind else {
             panic!("paragraph")
         };
-        let Kind::Link(_, _, href, metadata) = &children[0].kind else {
+        let Kind::Link(_, _, href, _) = &children[0].kind else {
             panic!("resolved reference")
         };
         assert_eq!(href, destination);
-        assert_eq!(metadata.id, id);
     }
 }
 

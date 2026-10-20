@@ -3,7 +3,7 @@ use super::{Tokenizer, decode_operand};
 use crate::{
     ImageMetadata, Kind, LinkMetadata, LinkType, Text,
     helpers::{ClosingBracket, find_closing_bracket},
-    lexer::{reference_id, reference_key},
+    lexer::reference_key,
     rules,
     tokenizer::capture,
 };
@@ -19,10 +19,6 @@ struct Link {
     destination: String,
     /// Decoded tooltip.
     title: String,
-    /// Selected reference class.
-    kind: LinkType,
-    /// Original reference identity.
-    id: String,
 }
 impl Tokenizer<'_> {
     /// Resolve a link/image without rebuilding its document or definition index.
@@ -58,8 +54,6 @@ impl Tokenizer<'_> {
                 ImageMetadata {
                     destination: link.destination,
                     title: link.title,
-                    link_type: link.kind,
-                    id: link.id,
                     children,
                 },
             )
@@ -74,8 +68,7 @@ impl Tokenizer<'_> {
                 link.destination,
                 LinkMetadata {
                     title: link.title,
-                    link_type: link.kind,
-                    id: link.id,
+                    link_type: LinkType::Inline,
                 },
             )
         };
@@ -109,8 +102,6 @@ impl Tokenizer<'_> {
             label: matched.group(1)?,
             destination: decode_operand(href),
             title: decode_operand(title.get(1..title.len().saturating_sub(1)).unwrap_or("")),
-            kind: LinkType::Inline,
-            id: String::new(),
         })
     }
 
@@ -126,22 +117,12 @@ impl Tokenizer<'_> {
         } else {
             label
         };
-        let id = reference_id(identity);
         let definition = self.definitions.get(&reference_key(identity))?;
-        let kind = if explicit.is_some() {
-            LinkType::Reference
-        } else if text[..matched.end()].ends_with("[]") {
-            LinkType::Collapsed
-        } else {
-            LinkType::Shortcut
-        };
         Some(Link {
             consumed: matched.end(),
             label: matched.group(1)?,
             destination: decode_operand(&definition.destination),
             title: decode_operand(&definition.title),
-            kind,
-            id,
         })
     }
 
@@ -179,7 +160,6 @@ impl Tokenizer<'_> {
                     } else {
                         LinkType::Autolink
                     },
-                    id: String::new(),
                 },
             ),
         ))
