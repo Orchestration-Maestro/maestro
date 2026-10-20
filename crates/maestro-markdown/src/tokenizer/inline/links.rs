@@ -168,7 +168,7 @@ impl Tokenizer<'_> {
             range: self
                 .source
                 .extent(range.start + 1..range.start + 1 + label.len()),
-            authored: label.to_owned(),
+            authored: label.to_owned().into(),
             kind: Kind::Text(Text {
                 authored: label.to_owned(),
                 decoded: label.to_owned(),

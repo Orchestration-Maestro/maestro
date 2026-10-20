@@ -40,6 +40,14 @@ impl Renderer<'_> {
         let prefix = self.prefix(style);
         self.inline_with_prefix(nodes, style, &prefix)
     }
+    /// Clean native text before applying the parent style to each line.
+    fn plain_inline(&self, text: &str, style: Style<'_>) -> String {
+        self.clean(text)
+            .split('\n')
+            .map(|part| self.style(part, style))
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
     /// Reuses the parent's prefix through nested formatted spans.
     fn inline_with_prefix<'a>(
         &self,
@@ -50,27 +58,15 @@ impl Renderer<'_> {
         let mut result = String::new();
         for node in nodes {
             let (text, restore) = match &node.kind {
-                Kind::Text(text) => (
-                    self.clean(&text.decoded)
-                        .split('\n')
-                        .map(|part| self.style(part, style))
-                        .collect::<Vec<_>>()
-                        .join("\n"),
-                    false,
-                ),
+                Kind::Text(text) => (self.plain_inline(&text.decoded, style), false),
                 Kind::Html(text)
                 | Kind::HtmlBlock(text)
                 | Kind::Image(text, _)
                 | Kind::Heading(_, _, text)
-                | Kind::Quote(_, text)
-                | Kind::Table(super::nodes::Table { authored: text, .. }) => (
-                    self.clean(text)
-                        .split('\n')
-                        .map(|part| self.style(part, style))
-                        .collect::<Vec<_>>()
-                        .join("\n"),
-                    false,
-                ),
+                | Kind::Table(super::nodes::Table { authored: text, .. }) => {
+                    (self.plain_inline(text, style), false)
+                }
+                Kind::Quote(_, text) => (self.plain_inline(&text.to_owned_string(), style), false),
                 Kind::Code(text) => ((self.theme.code)(&self.clean(text)), true),
                 Kind::Emphasis(children) => (
                     (self.theme.italic)(&self.inline_with_prefix(children, style, prefix)),

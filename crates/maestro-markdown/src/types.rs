@@ -64,7 +64,7 @@ pub struct Node {
     /// Semantic content.
     pub kind: Kind,
     /// Authored content with enclosing native continuation prefixes removed.
-    pub authored: String,
+    pub authored: crate::MappedText,
     /// Extent in the normalized source.
     pub range: Range<usize>,
 }
@@ -93,7 +93,7 @@ pub enum Kind {
     /// Authored blank gap.
     Gap,
     /// Quote children and authored content without quote markers.
-    Quote(Vec<Node>, String),
+    Quote(Vec<Node>, crate::MappedText),
     /// Decoded text.
     Text(Text),
     /// Code text and optional full fence information.

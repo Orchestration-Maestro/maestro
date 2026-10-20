@@ -145,7 +145,7 @@ impl<E> Lexer<'_, E> {
             let scope = self
                 .scopes
                 .remove(&(last.range.start, last.range.end, false));
-            last.authored.push_str(&source.text[..1]);
+            last.authored.append(&source.text[..1].to_owned().into());
             last.range.end = source.extent(0..1).end;
             if let Some(scope) = scope {
                 self.scopes
@@ -240,10 +240,10 @@ impl<E> Lexer<'_, E> {
             previous.newline();
         }
         previous.append(body);
-        if !last.authored.ends_with('\n') {
-            last.authored.push('\n');
+        if !last.authored.ends_with_newline() {
+            last.authored.append(&"\n".to_owned().into());
         }
-        last.authored.push_str(&node.authored);
+        last.authored.append(&node.authored);
         last.range.end = node.range.end;
         self.scopes
             .insert((last.range.start, last.range.end, false), previous);

@@ -64,7 +64,7 @@ impl<E> Lexer<'_, E> {
         }
         Some((
             consumed,
-            source.node(0..consumed, Kind::Quote(output.nodes, text.text)),
+            source.node(0..consumed, Kind::Quote(output.nodes, text.text.into())),
         ))
     }
 
@@ -94,7 +94,7 @@ impl<E> Lexer<'_, E> {
         text.truncate(prefix);
         let extent = used.extent(0..used.text.len());
         if let Kind::Quote(_, body) = &node.kind {
-            text.append(used.replace(&used.text, body));
+            text.append(used.replace(&used.text, &body.to_owned_string()));
         } else {
             text.append(used);
         }

@@ -149,7 +149,13 @@ impl<E> Lexer<'_, E> {
                 && following
                 || children.iter().any(|node| {
                     matches!(node.kind, Kind::Gap)
-                        && node.authored.bytes().filter(|byte| *byte == b'\n').count() > 1
+                        && node
+                            .authored
+                            .chunks()
+                            .flat_map(str::bytes)
+                            .filter(|byte| *byte == b'\n')
+                            .count()
+                            > 1
                 });
             items.push(source.node(cursor..cursor + consumed, Kind::Item(children)));
             cursor += consumed;

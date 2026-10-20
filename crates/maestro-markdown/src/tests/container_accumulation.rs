@@ -188,7 +188,7 @@ fn duplicate_definition_keeps_visible_tail() {
 fn raw_list_space_keeps_the_consumed_source_spelling() {
     let document = parse("- a ".into());
     assert_eq!(
-        document.nodes[0].authored,
+        document.nodes[0].authored.to_owned_string(),
         document.source[document.nodes[0].range.clone()]
     );
 }

@@ -282,7 +282,7 @@ impl Source<'_> {
     /// Build an owned semantic node from the current window.
     pub(crate) fn node(&self, range: Range<usize>, kind: crate::Kind) -> crate::Node {
         crate::Node {
-            authored: self.text[range.clone()].to_owned(),
+            authored: self.text[range.clone()].to_owned().into(),
             range: self.extent(range),
             kind,
         }

@@ -2,6 +2,8 @@
 use crate::{InlineAtom, InlineContext, Kind, Node, parse};
 use std::cell::RefCell;
 
+mod shared_text;
+
 /// Per-thread counters so independent parser tests cannot affect the witness.
 #[derive(Clone, Copy, Debug, Default)]
 pub(crate) struct Work {
@@ -268,10 +270,11 @@ fn hinted_blocks(source: &str, options: crate::MarkedOptions, mut block: Delimit
         .nodes
         .iter()
         .filter_map(|node| match node.kind {
-            Kind::Paragraph(_) => Some(node.authored.trim_end().to_owned()),
-            Kind::CustomBlock(..) => {
-                Some(format!("block {}", node.authored.trim_end_matches('\n')))
-            }
+            Kind::Paragraph(_) => Some(node.authored.to_owned_string().trim_end().to_owned()),
+            Kind::CustomBlock(..) => Some(format!(
+                "block {}",
+                node.authored.to_owned_string().trim_end_matches('\n')
+            )),
             _ => None,
         })
         .collect()

@@ -151,11 +151,12 @@ pub(super) fn metadata(
             _ => (false, Vec::new()),
         };
         if scope {
-            authored.extend(
-                children
+            authored.extend(children.iter().map(|nodes| {
+                nodes
                     .iter()
-                    .map(|nodes| nodes.iter().map(|child| child.authored.as_str()).collect()),
-            );
+                    .flat_map(|child| child.authored.chunks())
+                    .collect()
+            }));
         }
         for nodes in children {
             metadata(nodes, authored, labels, destinations, options);
@@ -171,12 +172,19 @@ fn check_raw(document: &maestro_markdown::Document, expected: &[String], id: &st
         .filter(|node| matches!(node.kind, Kind::Quote(..)))
         .collect();
     assert_eq!(
-        quotes.iter().map(|node| &node.authored).collect::<Vec<_>>(),
-        expected.iter().collect::<Vec<_>>(),
+        quotes
+            .iter()
+            .map(|node| node.authored.to_owned_string())
+            .collect::<Vec<_>>(),
+        expected,
         "{id}"
     );
     for quote in quotes {
-        assert_eq!(quote.authored, document.source[quote.range.clone()], "{id}");
+        assert_eq!(
+            quote.authored.to_owned_string(),
+            document.source[quote.range.clone()],
+            "{id}"
+        );
     }
 }
 

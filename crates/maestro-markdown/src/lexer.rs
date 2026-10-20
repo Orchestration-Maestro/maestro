@@ -98,7 +98,7 @@ impl<'a, E> Lexer<'a, E> {
         let consumed = raw.len();
         output.push(Node {
             range: source.extent(0..consumed),
-            authored: raw,
+            authored: raw.into(),
             kind: Kind::CustomBlock(kind, text),
         });
         Some(consumed)
