@@ -18,5 +18,5 @@ test-group = "oauth-callback"
 max-threads = 1
 
 [[profile.default.overrides]]
-filter = "package(maestro-tooling) & binary(browser_author_build)"
+filter = "package(maestro-tooling) & test(/^browser_author_build::/)"
 test-group = "browser-author"

@@ -112,7 +112,7 @@ impl Drop for ProcessGroup {
     }
 }
 
-/// Captures complete lines from the reader supplied to the thread.
+/// Echoes child lines to test stderr while forwarding them to the watch consumer.
 pub fn capture_lines<R: std::io::Read>(
     reader: impl FnOnce() -> R + Send + 'static,
     send: std::sync::mpsc::Sender<String>,
@@ -120,7 +120,9 @@ pub fn capture_lines<R: std::io::Read>(
     use std::io::{BufRead, BufReader};
     std::thread::spawn(move || {
         for line in BufReader::new(reader()).lines() {
-            if send.send(line.unwrap()).is_err() {
+            let line = line.unwrap();
+            eprintln!("{line}");
+            if send.send(line).is_err() {
                 break;
             }
         }

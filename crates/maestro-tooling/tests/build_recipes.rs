@@ -6,8 +6,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 
-#[path = "fixtures/recipe_support.rs"]
-mod recipe_support;
+use crate::recipe_support;
 #[cfg(unix)]
 use recipe_support::ProcessGroup;
 use recipe_support::{Workspace, install_executable};
@@ -1537,4 +1536,32 @@ fn catalog_cargo_tests_and_watch_routes_stay_offline() {
     let log = workspace.log();
     assert!(!log.contains("generate_catalog_data"));
     assert!(!log.contains("models-generate"));
+}
+
+/// Child output must remain visible while the watch consumer receives its lines.
+#[test]
+fn watch_child_lines_reach_test_output() {
+    if std::env::var_os("MAESTRO_CAPTURE_CONTROL").is_some() {
+        let (send, receive) = std::sync::mpsc::channel();
+        let reader = recipe_support::capture_lines(
+            || std::io::Cursor::new(b"watch phase: compiling\nwatch phase: ready\n"),
+            send,
+        );
+        assert_eq!(receive.recv().unwrap(), "watch phase: compiling");
+        assert_eq!(receive.recv().unwrap(), "watch phase: ready");
+        reader.join().unwrap();
+        return;
+    }
+    let output = maestro_test_process::TestProcess::current("watch_child_lines_reach_test_output")
+        .unwrap()
+        .nocapture()
+        .env("MAESTRO_CAPTURE_CONTROL", "1")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let transcript = String::from_utf8(output.stderr).unwrap();
+    assert!(
+        transcript.contains("watch phase: compiling\nwatch phase: ready\n"),
+        "{transcript}"
+    );
 }

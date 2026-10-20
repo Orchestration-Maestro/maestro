@@ -1,11 +1,9 @@
 #![cfg(test)]
 #![cfg(unix)]
 
-#[path = "fixtures/toolchain_support.rs"]
-mod toolchain_support;
+use crate::toolchain_support;
 
-#[path = "fixtures/recipe_support.rs"]
-mod recipe_support;
+use crate::recipe_support;
 use recipe_support::Workspace;
 
 #[test]
