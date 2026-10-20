@@ -222,22 +222,20 @@ fn encoded_executable_targets_keep_only_their_text() {
 }
 
 #[test]
-fn image_data_targets_preserve_images_and_refuse_other_media() {
+fn image_data_targets_preserve_every_declared_media_type() {
     for target in [
         "data:image/svg+xml;base64,PHN2Zy8+",
         "DATA:IMAGE/SVG+XML;base64,PHN2Zy8+",
+        "data:text/html;base64,PHNjcmlwdD4=",
+        "data:text/plain,hello",
+        "data:,hello",
+        "data:application/octet-stream;base64,iVBORw0KGgo=",
     ] {
         assert_eq!(
             prepare(&format!("![i]({target})"), true).html,
             format!("<p><img src=\"{target}\" alt=\"i\"></p>\n"),
             "{target:?}",
         );
-    }
-    for target in [
-        "data:text/html;base64,PHNjcmlwdD4=",
-        "data:text/plain,hello",
-    ] {
-        assert_eq!(prepare(&format!("![i]({target})"), true).html, "<p>i</p>\n");
     }
 }
 

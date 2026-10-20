@@ -1,6 +1,7 @@
 //! Shared owned document to transcript HTML, with contextual math.
 use super::admission::{Formula, MathBlocks, block_formula, scan, starts_display};
 use maestro_app::{
+    browser::script_scheme,
     is_whitespace_scalar,
     markdown::{self, Alignment, InlineAtom, InlineContext, InlineScope, Kind, Node, Table},
     markup::{EscapeMode, escape_into},
@@ -515,7 +516,7 @@ fn task(checked: bool, out: &mut String) {
 /// Write an image with its plain alternative text, or only that text for a refused target.
 fn image(meta: &markdown::ImageMetadata, out: &mut String) {
     let destination = utf8_percent_encode(&meta.destination, URL_SAFE).to_string();
-    if maestro_app::browser::non_image(&destination) {
+    if url::Url::parse(&destination).is_ok_and(|url| script_scheme(url.scheme())) {
         return plain(&meta.children, out);
     }
     out.push_str("<img src=\"");

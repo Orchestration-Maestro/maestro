@@ -10,7 +10,7 @@ pub fn executable(target: &str) -> bool {
         return false;
     };
     match url.scheme() {
-        "javascript" | "vbscript" => true,
+        scheme if script_scheme(scheme) => true,
         "data" => {
             let mime = url
                 .path()
@@ -36,21 +36,23 @@ pub fn executable(target: &str) -> bool {
     }
 }
 
-/// Whether `target` uses a script scheme or a non-image data media type.
-///
-/// Unparsable targets and other schemes are not refused.
+/// Whether a normalized URL scheme is `javascript` or `vbscript`.
 #[must_use]
-pub fn non_image(target: &str) -> bool {
-    let Ok(url) = url::Url::parse(target) else {
-        return false;
-    };
-    match url.scheme() {
-        "javascript" | "vbscript" => true,
-        "data" => !url
-            .path()
-            .trim_start()
-            .to_ascii_lowercase()
-            .starts_with("image/"),
-        _ => false,
+pub fn script_scheme(scheme: &str) -> bool {
+    matches!(scheme, "javascript" | "vbscript")
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn data_targets_are_not_script_schemes() {
+        for target in [
+            "data:text/plain,hello",
+            "data:,hello",
+            "data:image/svg+xml,<svg/>",
+        ] {
+            let url = url::Url::parse(target).unwrap();
+            assert!(!super::script_scheme(url.scheme()), "{target}");
+        }
     }
 }
