@@ -460,11 +460,7 @@ mod tests {
             let root = Directory::new("native_helpers_work_inside_running_runtime");
             return child_test("native_helpers_work_inside_running_runtime", &root.0);
         }
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-        runtime.block_on(async {
+        crate::support::block_on(async {
             let operations = ProcessConfigValueOperations::new(|| unreachable!());
             assert_eq!(
                 resolve_config_value_uncached("!printf nested", &operations).as_deref(),

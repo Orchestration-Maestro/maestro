@@ -7,6 +7,9 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Mutex, RwLock, RwLockReadGuard};
 
+mod runtime;
+pub use runtime::block_on;
+
 /// Held shared by tests whose file locks must be released exactly when dropped, and
 /// exclusively while a child process is created: a forked child owns a copy of every
 /// open descriptor until it executes, so a lock released meanwhile would stay held.
@@ -111,23 +114,9 @@ pub fn memory_text(backend: &InMemoryAuthStorageBackend) -> Option<String> {
     text
 }
 
-/// Run `future` to completion on a fresh current-thread runtime.
-pub fn block_on<F: std::future::Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()
-        .unwrap()
-        .block_on(future)
-}
-
 /// Run `future` on a current-thread runtime whose clock starts paused.
 pub fn block_on_paused<F: std::future::Future>(future: F) -> F::Output {
-    tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .start_paused(true)
-        .build()
-        .unwrap()
-        .block_on(future)
+    runtime::runtime(true).block_on(future)
 }
 
 #[cfg(test)]
