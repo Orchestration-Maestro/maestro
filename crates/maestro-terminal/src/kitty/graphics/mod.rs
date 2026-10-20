@@ -11,3 +11,5 @@ pub mod render;
 pub mod exec;
 
 pub mod unicode;
+
+pub mod placements;

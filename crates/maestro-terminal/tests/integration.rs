@@ -205,3 +205,5 @@ mod graphics_exec;
 
 mod graphics_render;
 mod graphics_unicode;
+
+mod graphics_placements;

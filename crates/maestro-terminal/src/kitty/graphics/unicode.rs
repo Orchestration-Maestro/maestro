@@ -297,14 +297,12 @@ impl Placement {
         Ok(result)
     }
 
-    /// Resolve an explicit prototype or the first virtual prototype for this image.
-    fn grid(
+    /// Resolve the prototype shared by fragment rendering and image projection.
+    pub(super) fn prototype<'a>(
         &self,
-        storage: &ImageStorage,
-        image: &Image,
-        cell: (u32, u32),
-    ) -> Result<(u32, u32), Error> {
-        let placement = if self.placement_id > 0 {
+        storage: &'a ImageStorage,
+    ) -> Option<&'a super::storage::Placement> {
+        if self.placement_id > 0 {
             storage.placements.get(&PlacementKey {
                 image_id: self.image_id,
                 placement_id: PlacementId::External(self.placement_id),
@@ -318,7 +316,18 @@ impl Placement {
                 })
                 .map(|(_, placement)| placement)
         }
-        .ok_or(Error::PlacementMissingPlacement)?;
+    }
+
+    /// Resolve the prototype's explicit or image-sized grid.
+    fn grid(
+        &self,
+        storage: &ImageStorage,
+        image: &Image,
+        cell: (u32, u32),
+    ) -> Result<(u32, u32), Error> {
+        let placement = self
+            .prototype(storage)
+            .ok_or(Error::PlacementMissingPlacement)?;
         let cols = if placement.columns > 0 {
             placement.columns
         } else {

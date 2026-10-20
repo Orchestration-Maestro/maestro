@@ -127,6 +127,8 @@ impl Default for Flags {
 
 /// Retained terminal screens with direct text and cursor operations.
 pub struct Terminal {
+    /// Renderer payload cache, independent of screen storage ownership.
+    pub(crate) kitty_projection: crate::kitty::graphics::placements::Projection,
     /// Whether this terminal admits PNG decoding during image execution.
     pub(crate) kitty_png_enabled: bool,
     /// APC routing and caller-selected image payload limit.
@@ -189,6 +191,7 @@ impl Terminal {
         modes.defaults[Mode::GraphemeCluster as usize] = true;
         Ok(Self {
             kitty_png_enabled: false,
+            kitty_projection: crate::kitty::graphics::placements::Projection::default(),
             apc_handler: crate::apc::Handler::default(),
             color_scheme: None,
             size_report: crate::size_report::Size {
