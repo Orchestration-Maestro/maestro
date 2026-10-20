@@ -2,7 +2,7 @@
 
 use super::{
     image::Image,
-    render::{RenderPlacement, rounded},
+    render::RenderPlacement,
     storage::{ImageStorage, Location, PlacementId, PlacementKey},
 };
 use crate::{
@@ -226,7 +226,7 @@ const DIACRITICS: [u32; 297] = [
 pub enum Error {
     /// No matching prototype exists for the image.
     PlacementMissingPlacement,
-    /// The grid cannot be represented in terminal cell counts.
+    /// The fragment starts outside the prototype grid.
     PlacementGridOutOfBounds,
 }
 
@@ -238,63 +238,40 @@ impl std::fmt::Display for Error {
 impl std::error::Error for Error {}
 
 impl Placement {
-    /// Fit the image into its prototype grid and select this run's fragment.
+    /// Select a source fragment and stretch it across its placeholder cells.
     ///
     /// # Errors
-    /// Returns an error for missing prototypes or unrepresentable grid dimensions.
+    /// Returns an error for missing prototypes or fragments outside the grid.
     pub fn render_placement(
         &self,
         storage: &ImageStorage,
         image: &Image,
         cell: (u32, u32),
     ) -> Result<RenderPlacement, Error> {
+        let cell = (cell.0.max(1), cell.1.max(1));
         let (cols, rows) = self.grid(storage, image, cell)?;
-        let grid_width = f64::from(cols) * f64::from(cell.0);
-        let grid_height = f64::from(rows) * f64::from(cell.1);
-        let width = f64::from(image.width);
-        let height = f64::from(image.height);
-        let scale = if width * grid_height > height * grid_width {
-            grid_width / width.max(1.0)
-        } else {
-            grid_height / height.max(1.0)
-        };
-        let x = fragment_axis(
-            width,
-            grid_width,
-            scale,
-            (self.col, self.width, cols),
-            cell.0,
-        );
-        let y = fragment_axis(
-            height,
-            grid_height,
-            scale,
-            (self.row, self.height, rows),
-            cell.1,
-        );
-        let mut result = RenderPlacement {
-            top_left: self.pin,
+        if self.col >= cols || self.row >= rows {
+            return Err(Error::PlacementGridOutOfBounds);
+        }
+        let visible_cols = self.width.min(cols - self.col).max(1);
+        let source_x = fragment_size(self.col, image.width, cols);
+        let source_y = fragment_size(self.row, image.height, rows);
+        Ok(RenderPlacement {
             offset_x: 0,
             offset_y: 0,
-            source_x: 0,
-            source_y: 0,
-            source_width: 0,
-            source_height: 0,
-            dest_width: 0,
-            dest_height: 0,
-        };
-        if x.1 <= 0.0 || y.1 <= 0.0 {
-            return Ok(result);
-        }
-        result.offset_x = rounded(x.2);
-        result.offset_y = rounded(y.2);
-        result.source_x = rounded(x.0);
-        result.source_y = rounded(y.0);
-        result.source_width = rounded(x.1);
-        result.source_height = rounded(y.1);
-        result.dest_width = rounded(x.3);
-        result.dest_height = rounded(y.3);
-        Ok(result)
+            source_x,
+            source_y,
+            source_width: fragment_size(visible_cols, image.width, cols)
+                .max(1)
+                .min(image.width - source_x),
+            source_height: fragment_size(1, image.height, rows)
+                .max(1)
+                .min(image.height - source_y),
+            dest_width: visible_cols.saturating_mul(cell.0).max(1),
+            dest_height: cell.1,
+            grid_cols: visible_cols,
+            grid_rows: 1,
+        })
     }
 
     /// Resolve the prototype shared by fragment rendering and image projection.
@@ -328,61 +305,24 @@ impl Placement {
         let placement = self
             .prototype(storage)
             .ok_or(Error::PlacementMissingPlacement)?;
-        let cols = if placement.columns > 0 {
-            placement.columns
-        } else {
-            image
-                .width
-                .checked_div(cell.0)
-                .map_or(0, |_| image.width.div_ceil(cell.0))
-        };
-        let rows = if placement.rows > 0 {
-            placement.rows
-        } else {
-            image
-                .height
-                .checked_div(cell.1)
-                .map_or(0, |_| image.height.div_ceil(cell.1))
-        };
-        if cols == 0 || rows == 0 || u16::try_from(cols).is_err() || u16::try_from(rows).is_err() {
-            return Err(Error::PlacementGridOutOfBounds);
-        }
-        Ok((cols, rows))
+        Ok((
+            if placement.columns > 0 {
+                placement.columns
+            } else {
+                image.width.div_ceil(cell.0).max(1)
+            },
+            if placement.rows > 0 {
+                placement.rows
+            } else {
+                image.height.div_ceil(cell.1).max(1)
+            },
+        ))
     }
 }
 
-/// Project one source axis through centered padding into a destination fragment.
-fn fragment_axis(
-    image: f64,
-    grid: f64,
-    scale: f64,
-    fragment: (u32, u32, u32),
-    cell: u32,
-) -> (f64, f64, f64, f64) {
-    let padding = (grid - image * scale) / 2.0 / scale;
-    let padded = image + padding * 2.0;
-    let mut source = padded * (f64::from(fragment.0) / f64::from(fragment.2));
-    let mut length = padded * (f64::from(fragment.1) / f64::from(fragment.2));
-    let mut offset = 0.0;
-    let mut dest = f64::from(fragment.1) * f64::from(cell);
-    if source < padding {
-        offset = padding - source;
-        length -= offset;
-        dest -= offset * scale;
-        source = 0.0;
-        if length > image {
-            length = image;
-            dest = image * scale;
-        }
-    } else if source + length > padded - padding {
-        source -= padding;
-        length = padded - padding - source;
-        length -= padding;
-        dest = length * scale;
-    } else {
-        source -= padding;
-    }
-    (source, length, offset * scale, dest)
+/// Scale a grid fragment into source pixels with integer truncation.
+fn fragment_size(value: u32, source: u32, grid: u32) -> u32 {
+    u32::try_from(u64::from(value) * u64::from(source) / u64::from(grid)).unwrap_or(u32::MAX)
 }
 
 #[cfg(test)]

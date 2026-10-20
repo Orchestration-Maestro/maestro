@@ -277,7 +277,7 @@ fn projection_refreshes_on_screen_switches_and_resets() {
 }
 
 #[test]
-fn placeholder_projection_uses_shared_geometry_and_z_order_with_physical_images() {
+fn placeholder_projection_fills_cells_after_resize_and_keeps_z_order() {
     let mut terminal = terminal();
     terminal.write(b"\x1b_Ga=T,f=32,i=1,p=1,s=1,v=1,c=1,r=1,z=3,C=1;/wAA/w==\x1b\\");
     terminal.write(b"\x1b_Ga=p,U=1,i=1,p=2,c=2,r=1,z=-3\x1b\\");
@@ -302,9 +302,9 @@ fn placeholder_projection_uses_shared_geometry_and_z_order_with_physical_images(
             resized[0].render.pixel_width,
             resized[0].render.pixel_height
         ),
-        (16, 16)
+        (16, 24)
     );
-    assert_eq!((resized[0].x_offset, resized[0].y_offset), (0, 4));
+    assert_eq!((resized[0].x_offset, resized[0].y_offset), (0, 0));
     assert_eq!(resized[0].data_fingerprint, first[1].data_fingerprint);
     for _ in 0..20 {
         terminal.write(b"line\r\n");
@@ -318,4 +318,61 @@ fn placeholder_projection_uses_shared_geometry_and_z_order_with_physical_images(
     let restored = terminal.kitty_image_placements_with_data_filter(|_| false);
     assert_eq!(restored.len(), 2);
     assert_eq!(restored[0].placement_id, identity);
+}
+
+#[test]
+fn placeholder_projection_keeps_constructor_only_placements() {
+    let mut terminal = Terminal::new(10, 5, 100_000).unwrap();
+    terminal.enable_kitty_graphics();
+    terminal.write(b"\x1b_Ga=t,f=32,i=1,s=1,v=1;/wAA/w==\x1b\\");
+    terminal.write(b"\x1b_Ga=p,U=1,i=1\x1b\\");
+    terminal.write("\x1b[38;2;0;0;1m\u{10eeee}".as_bytes());
+    let placements = terminal.kitty_image_placements_with_data_filter(|_| true);
+    assert_eq!(placements.len(), 1);
+    assert_eq!(
+        (
+            placements[0].render.pixel_width,
+            placements[0].render.pixel_height
+        ),
+        (1, 1)
+    );
+    assert_eq!(
+        (
+            placements[0].render.source_width,
+            placements[0].render.source_height
+        ),
+        (1, 1)
+    );
+    assert_eq!((placements[0].x_offset, placements[0].y_offset), (0, 0));
+}
+
+#[test]
+fn placeholder_projection_clips_source_fragments_to_the_prototype_grid() {
+    use base64::Engine;
+    let mut terminal = terminal();
+    let data = base64::engine::general_purpose::STANDARD.encode([0; 60]);
+    terminal.write(format!("\x1b_Ga=t,f=32,i=1,s=5,v=3;{data}\x1b\\").as_bytes());
+    terminal.write(b"\x1b_Ga=p,U=1,i=1,c=3,r=2\x1b\\");
+    terminal.write("\x1b[38;2;0;0;1m\u{10eeee}\u{30d}\u{30d}\u{10eeee}\u{10eeee}".as_bytes());
+    let placements = terminal.kitty_image_placements_with_data_filter(|_| false);
+    assert_eq!(placements.len(), 1);
+    let render = placements[0].render;
+    assert_eq!((render.grid_cols, render.grid_rows), (2, 1));
+    assert_eq!((render.pixel_width, render.pixel_height), (16, 16));
+    assert_eq!(
+        (
+            render.source_x,
+            render.source_y,
+            render.source_width,
+            render.source_height
+        ),
+        (1, 1, 3, 1)
+    );
+    terminal.write("\r\n\u{10eeee}\u{30e}\u{305}\r\n\u{10eeee}\u{305}\u{310}".as_bytes());
+    assert_eq!(
+        terminal
+            .kitty_image_placements_with_data_filter(|_| false)
+            .len(),
+        1
+    );
 }

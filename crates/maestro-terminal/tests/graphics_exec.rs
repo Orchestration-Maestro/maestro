@@ -330,3 +330,34 @@ fn row_shifts_and_partial_height_history_scroll_dirty_images() {
     terminal.index().unwrap();
     assert!(terminal.screens.active().kitty_images.dirty);
 }
+
+#[test]
+fn zero_height_display_clears_pending_wrap_only_when_moving() {
+    use base64::Engine;
+    let data = base64::engine::general_purpose::STANDARD.encode([0; 300]);
+    for stationary in [true, false] {
+        let mut terminal = terminal();
+        terminal.write(b"abcde");
+        assert!(terminal.screens.active().cursor.pending_wrap);
+        terminal.write(
+            format!(
+                "\x1b_Ga=T,f=24,i=1,s=100,v=1,c=1,C={},q=2;{data}\x1b\\",
+                u8::from(stationary)
+            )
+            .as_bytes(),
+        );
+        let pending_wrap = terminal.screens.active().cursor.pending_wrap;
+        terminal.write(b"X");
+        assert_eq!(
+            (
+                pending_wrap,
+                terminal
+                    .screen_cell(if stationary { 0 } else { 4 }, u32::from(stationary))
+                    .unwrap()
+                    .1
+            ),
+            (stationary, vec!['X']),
+            "display must settle pending wrap before the next byte"
+        );
+    }
+}

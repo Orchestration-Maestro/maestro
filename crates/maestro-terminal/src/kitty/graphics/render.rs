@@ -208,8 +208,6 @@ impl Placement {
 /// Pixel rectangles positioning a placeholder fragment from a retained origin.
 #[derive(Clone, Copy, Debug)]
 pub struct RenderPlacement {
-    /// First screen cell containing the fragment.
-    pub top_left: Pin,
     /// Horizontal destination offset within the first cell.
     pub offset_x: u32,
     /// Vertical destination offset within the first cell.
@@ -226,6 +224,10 @@ pub struct RenderPlacement {
     pub dest_width: u32,
     /// Destination pixel height.
     pub dest_height: u32,
+    /// Visible placeholder columns.
+    pub grid_cols: u32,
+    /// Visible placeholder rows.
+    pub grid_rows: u32,
 }
 
 /// Round a nonnegative pixel dimension without runtime overflow traps.

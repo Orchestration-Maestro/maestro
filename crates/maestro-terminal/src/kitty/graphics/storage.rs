@@ -369,10 +369,13 @@ impl ImageStorage {
             .placements
             .iter()
             .filter_map(|(&key, placement)| {
-                let rect = self
-                    .images
-                    .get(&key.image_id)
-                    .and_then(|image| placement.rect(image, pages, cell));
+                let rect = match target {
+                    DeleteTarget::Cell(..) | DeleteTarget::Column(_) | DeleteTarget::Row(_) => self
+                        .images
+                        .get(&key.image_id)
+                        .and_then(|image| placement.rect(image, pages, cell)),
+                    _ => None,
+                };
                 target.matches(key, placement, rect, pages).then_some(key)
             })
             .collect();
@@ -490,3 +493,6 @@ fn cell_target(pages: &PageList, x: u32, y: u32, z: Option<i32>) -> DeleteTarget
         .and_then(|(x, y)| pages.pin(Point::Active(Coordinate { x, y })))
         .map_or(DeleteTarget::None, |pin| DeleteTarget::Cell(pin, z))
 }
+
+#[cfg(test)]
+mod tests;

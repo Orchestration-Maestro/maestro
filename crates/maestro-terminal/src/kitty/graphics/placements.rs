@@ -240,14 +240,14 @@ impl Projection {
             let Ok(fragment) = run.render_placement(storage, image, cell) else {
                 continue;
             };
-            if fragment.dest_width == 0 || fragment.dest_height == 0 {
+            if fragment.source_width == 0 || fragment.source_height == 0 {
                 continue;
             }
             let Some(point) = pages.point_from_pin(Tag::Viewport, run.pin) else {
                 continue;
             };
             let coord = point.coord();
-            let render = placeholder_render_info(fragment, run, coord);
+            let render = placeholder_render_info(fragment, coord);
             let id = synthetic_placement_id(run, coord);
             let Some(descriptor) = self.descriptor(image, id) else {
                 continue;
@@ -283,14 +283,13 @@ fn synthetic_placement_id(run: super::unicode::Placement, coord: crate::point::C
 /// Convert the shared fragment geometry without re-decoding placeholder cells.
 fn placeholder_render_info(
     fragment: super::render::RenderPlacement,
-    run: super::unicode::Placement,
     coord: crate::point::Coordinate,
 ) -> PlacementRenderInfo {
     PlacementRenderInfo {
         pixel_width: fragment.dest_width,
         pixel_height: fragment.dest_height,
-        grid_cols: run.width,
-        grid_rows: run.height,
+        grid_cols: fragment.grid_cols,
+        grid_rows: fragment.grid_rows,
         viewport_col: i64::from(coord.x),
         viewport_row: i64::from(coord.y),
         viewport_visible: true,

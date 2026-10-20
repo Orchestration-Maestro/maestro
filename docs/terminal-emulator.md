@@ -143,8 +143,9 @@ its content generation.
 occupied cells, viewport-relative position, visibility and a source rectangle
 clamped to the image. Placeholder runs use U+10EEEE cells, foreground image
 identifiers, underline placement identifiers and the constant combining-mark
-table for row, column and high image-id bytes. Physical placements and
-placeholder runs share render geometry.
+table for row, column and high image-id bytes. Placeholder source fragments
+fill their occupied cells without centering or aspect-ratio padding. Before
+cell pixels are configured, placeholder projection uses one pixel per dimension.
 
 `Terminal::kitty_image_placements_with_data_filter` returns visible placements
 in ascending z order. Virtual prototypes appear only through resolved

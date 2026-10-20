@@ -307,6 +307,7 @@ fn move_cursor(terminal: &mut Terminal, pin: TrackedPin, size: (u32, u32)) {
         let x = u32::from(pin.x)
             .saturating_add(size.0)
             .min(u32::from(screen.pages.cols() - 1));
+        screen.cursor.pending_wrap = false;
         screen.cursor_horizontal_absolute(u16::try_from(x).unwrap_or(u16::MAX));
     }
 }
