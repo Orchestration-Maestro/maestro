@@ -124,10 +124,7 @@ fn inline_document_work_stays_constant_as_math_paragraphs_grow() {
                 assert_eq!(work.reference_indexes, 1);
                 assert_eq!(work.indexes, 1);
             }
-            assert_eq!(
-                counts[2].visits - counts[1].visits,
-                2 * (counts[1].visits - counts[0].visits)
-            );
+            assert!(grows_linearly(counts.map(|work| work.visits)), "{counts:?}");
             assert_eq!(counts[2].local_bytes, 2 * counts[1].local_bytes);
             assert_eq!(counts[1].local_bytes, 2 * counts[0].local_bytes);
             eprintln!("references={references} escaping={escaping} work={counts:?}");
@@ -384,12 +381,17 @@ fn absent_extension_hints_skip_extension_scans() {
     suffix_work(true, "ordinary paragraph\n\n");
 }
 
-/// Fallback text work for one plain paragraph: recognizer bytes and line-end search bytes.
-fn plain_text_work(source: String, options: crate::MarkedOptions) -> (usize, usize) {
+/// Parser work for a source that parses to one paragraph.
+fn paragraph_work(source: String, options: crate::MarkedOptions) -> Work {
     WORK.with_borrow_mut(|work| *work = Work::default());
     let document = crate::parse_with_options(source, options);
     assert_eq!(document.nodes.len(), 1);
-    WORK.with_borrow(|work| (work.text_bytes, work.line_bytes))
+    WORK.with_borrow(|work| *work)
+}
+
+/// Whether work measured at N, 2N and 4N units grows by the same amount per unit.
+fn grows_linearly([small, medium, large]: [usize; 3]) -> bool {
+    large - medium == 2 * (medium - small)
 }
 
 #[test]
@@ -402,25 +404,16 @@ fn paragraph_text_work_grows_linearly_with_its_lines() {
         crate::MarkedOptions::Browser { escape_html: true },
     ] {
         let grows = |shape: &str| {
-            let [small, medium, large] =
-                [64, 128, 256].map(|count| plain_text_work(shape.repeat(count), options));
+            let work = [64, 128, 256].map(|count| paragraph_work(shape.repeat(count), options));
             (
-                large.0 - medium.0 == 2 * (medium.0 - small.0),
-                large.1 - medium.1 == 2 * (medium.1 - small.1),
+                grows_linearly(work.map(|work| work.text_bytes)),
+                grows_linearly(work.map(|work| work.line_bytes)),
             )
         };
         assert_eq!(grows("plain line.\n"), (true, true), "{options:?} lines");
         // One line keeps the rest of the line visible to the recognizer, but finds its end once.
         assert!(grows("a_ ").1, "{options:?} one line");
     }
-}
-
-/// Bytes compared by the plain-text merge check for one line of identical plain pieces.
-fn plain_merge_work(pieces: usize, options: crate::MarkedOptions) -> usize {
-    WORK.with_borrow_mut(|work| *work = Work::default());
-    let document = crate::parse_with_options("a_".repeat(pieces), options);
-    assert_eq!(document.nodes.len(), 1);
-    WORK.with_borrow(|work| work.merge_bytes)
 }
 
 #[test]
@@ -432,22 +425,14 @@ fn plain_text_merge_work_grows_linearly_with_its_pieces() {
         crate::MarkedOptions::Browser { escape_html: false },
         crate::MarkedOptions::Browser { escape_html: true },
     ] {
-        let [small, medium, large] = [64, 128, 256].map(|pieces| plain_merge_work(pieces, options));
-        assert_eq!(large - medium, 2 * (medium - small), "{options:?}");
+        let merged =
+            [64, 128, 256].map(|pieces| paragraph_work("a_".repeat(pieces), options).merge_bytes);
+        assert!(grows_linearly(merged), "{options:?} {merged:?}");
     }
 }
 
-/// Bare-address start checks and matched candidate bytes for one paragraph.
-fn address_work(lines: usize, line: &str, options: crate::MarkedOptions) -> (usize, usize) {
-    WORK.with_borrow_mut(|work| *work = Work::default());
-    let document = crate::parse_with_options(line.repeat(lines), options);
-    assert_eq!(document.nodes.len(), 1);
-    WORK.with_borrow(|work| (work.address_checks, work.address_bytes))
-}
-
 #[test]
-fn address_start_checks_grow_linearly_with_their_addresses() {
-    let linear = |small: usize, medium: usize, large: usize| large - medium == 2 * (medium - small);
+fn address_start_checks_grow_linearly_with_their_lines() {
     for options in [
         crate::MarkedOptions::Terminal,
         crate::MarkedOptions::Export,
@@ -455,32 +440,32 @@ fn address_start_checks_grow_linearly_with_their_addresses() {
         crate::MarkedOptions::Browser { escape_html: true },
     ] {
         for line in ["see www.a.io or b@c.io now\n", "ordinary words only\n"] {
-            let [small, medium, large] =
-                [32, 64, 128].map(|lines| address_work(lines, line, options));
-            eprintln!(
-                "{options:?} {line:?} N/2N/4N work={:?}",
-                [small, medium, large]
-            );
+            let work = [32, 64, 128].map(|lines| paragraph_work(line.repeat(lines), options));
+            let checks = work.map(|work| work.address_checks);
+            let bytes = work.map(|work| work.address_bytes);
+            eprintln!("{options:?} {line:?} N/2N/4N checks={checks:?} bytes={bytes:?}");
             assert!(
-                small.0 > 0 && linear(small.0, medium.0, large.0),
+                checks[0] > 0 && grows_linearly(checks),
                 "{options:?} {line:?}"
             );
-            assert!(linear(small.1, medium.1, large.1), "{options:?} {line:?}");
+            assert!(grows_linearly(bytes), "{options:?} {line:?}");
             // Ordinary text never reaches a candidate, so the patterns match nothing.
             assert_eq!(
-                small.1 == 0,
+                bytes[0] == 0,
                 line.starts_with("ordinary"),
                 "{options:?} {line:?}"
             );
         }
     }
     // Documentation text keeps addresses as plain text and never runs the check.
-    let documentation = address_work(
-        32,
-        "see www.a.io now\n",
+    let documentation = paragraph_work(
+        "see www.a.io now\n".repeat(32),
         crate::MarkedOptions::Documentation,
     );
-    assert_eq!(documentation, (0, 0));
+    assert_eq!(
+        (documentation.address_checks, documentation.address_bytes),
+        (0, 0)
+    );
 }
 
 mod container_accumulation;
